@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -146,10 +145,13 @@ const MathPuzzles: React.FC = () => {
         // Then set the selected one to true
         updatedOptions[index].isCorrect = Boolean(value);
       } else {
+        // For the text field, we need to ensure the value is always a string
+        // For isCorrect field, we need to ensure the value is always a boolean
+        // Use type assertion to tell TypeScript exactly what type we're working with
         updatedOptions[index] = { 
           ...updatedOptions[index], 
           [field]: field === 'text' ? String(value) : Boolean(value) 
-        };
+        } as { text: string; isCorrect: boolean }; // Type assertion to help TypeScript understand
       }
       
       return { ...prev, options: updatedOptions };
