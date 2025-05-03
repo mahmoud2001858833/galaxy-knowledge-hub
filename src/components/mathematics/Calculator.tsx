@@ -1,195 +1,293 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
-import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from 'framer-motion';
 
-const Calculator: React.FC = () => {
-  const [display, setDisplay] = useState('0');
-  const [result, setResult] = useState<string | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
+const Calculator = () => {
+  const [num1, setNum1] = useState<string>('0');
+  const [num2, setNum2] = useState<string>('0');
+  const [operation, setOperation] = useState<string>('+');
+  const [result, setResult] = useState<number | string>(0);
+  const [activeTab, setActiveTab] = useState<string>('basic');
+  const [angle, setAngle] = useState<string>('0');
+  const [angleUnit, setAngleUnit] = useState<'deg' | 'rad'>('deg');
+  const [trigResult, setTrigResult] = useState<number | string>(0);
+  const [trigFunction, setTrigFunction] = useState<string>('sin');
   
-  const handleButtonClick = (value: string) => {
-    setDisplay(prev => {
-      if (prev === '0' && value !== '.') {
-        return value;
-      } else {
-        return prev + value;
-      }
-    });
-  };
+  // Clear result when changing tabs
+  useEffect(() => {
+    if (activeTab === 'basic') {
+      setResult(0);
+    } else {
+      setTrigResult(0);
+    }
+  }, [activeTab]);
   
-  const handleCalculate = () => {
-    try {
-      // Using Function constructor instead of eval for better safety
-      // eslint-disable-next-line no-new-func
-      const calculatedResult = new Function('return ' + display)();
-      setResult(String(calculatedResult));
-      setHistory(prev => [...prev, `${display} = ${calculatedResult}`]);
-      toast.success('تم حساب النتيجة بنجاح');
-    } catch (error) {
-      setResult('Error');
-      toast.error('حدث خطأ في العملية الحسابية');
+  const calculateBasicResult = () => {
+    const n1 = parseFloat(num1);
+    const n2 = parseFloat(num2);
+    
+    if (isNaN(n1) || isNaN(n2)) {
+      setResult('خطأ: يرجى إدخال أرقام صحيحة');
+      return;
+    }
+    
+    switch (operation) {
+      case '+':
+        setResult(n1 + n2);
+        break;
+      case '-':
+        setResult(n1 - n2);
+        break;
+      case '*':
+        setResult(n1 * n2);
+        break;
+      case '/':
+        if (n2 === 0) {
+          setResult('خطأ: لا يمكن القسمة على صفر');
+        } else {
+          setResult(n1 / n2);
+        }
+        break;
+      case '%':
+        setResult(n1 % n2);
+        break;
+      case 'pow':
+        setResult(Math.pow(n1, n2));
+        break;
+      case 'log':
+        if (n1 <= 0) {
+          setResult('خطأ: القيمة يجب أن تكون موجبة');
+        } else {
+          setResult(Math.log(n1) / Math.log(n2));
+        }
+        break;
+      case 'root':
+        if (n1 < 0 && n2 % 2 === 0) {
+          setResult('خطأ: لا يوجد جذر حقيقي');
+        } else {
+          setResult(Math.sign(n1) * Math.pow(Math.abs(n1), 1 / n2));
+        }
+        break;
+      default:
+        setResult(0);
     }
   };
   
-  const handleClear = () => {
-    setDisplay('0');
-    setResult(null);
-  };
-  
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-  
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-  
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const calculateTrigResult = () => {
+    const angleValue = parseFloat(angle);
     
-    // In a real implementation, we would process the dropped file
-    // Here we're just simulating the behavior
-    toast.info('تم استلام الملف، جاري معالجة البيانات...');
+    if (isNaN(angleValue)) {
+      setTrigResult('خطأ: يرجى إدخال قيمة صحيحة');
+      return;
+    }
     
-    setTimeout(() => {
-      setDisplay('25 * 4 + 10');
-      toast.success('تم تحليل الملف واستخراج العملية الحسابية');
-    }, 1500);
-  };
-  
-  const handleImageUpload = () => {
-    // Simulating image upload and processing
-    toast.info('تم استلام الصورة، جاري معالجة البيانات...');
+    // Convert to radians if needed
+    const angleInRadians = angleUnit === 'deg' ? (angleValue * Math.PI / 180) : angleValue;
     
-    setTimeout(() => {
-      setDisplay('15 + 27');
-      toast.success('تم تحليل الصورة واستخراج العملية الحسابية');
-    }, 1500);
+    switch (trigFunction) {
+      case 'sin':
+        setTrigResult(Math.sin(angleInRadians));
+        break;
+      case 'cos':
+        setTrigResult(Math.cos(angleInRadians));
+        break;
+      case 'tan':
+        const tanResult = Math.tan(angleInRadians);
+        setTrigResult(isFinite(tanResult) ? tanResult : 'غير معرف');
+        break;
+      case 'asin':
+        if (angleValue >= -1 && angleValue <= 1) {
+          const asinResult = Math.asin(angleValue);
+          setTrigResult(angleUnit === 'deg' ? asinResult * 180 / Math.PI : asinResult);
+        } else {
+          setTrigResult('خطأ: القيمة يجب أن تكون بين -1 و 1');
+        }
+        break;
+      case 'acos':
+        if (angleValue >= -1 && angleValue <= 1) {
+          const acosResult = Math.acos(angleValue);
+          setTrigResult(angleUnit === 'deg' ? acosResult * 180 / Math.PI : acosResult);
+        } else {
+          setTrigResult('خطأ: القيمة يجب أن تكون بين -1 و 1');
+        }
+        break;
+      case 'atan':
+        const atanResult = Math.atan(angleValue);
+        setTrigResult(angleUnit === 'deg' ? atanResult * 180 / Math.PI : atanResult);
+        break;
+      case 'sinh':
+        setTrigResult(Math.sinh(angleValue));
+        break;
+      case 'cosh':
+        setTrigResult(Math.cosh(angleValue));
+        break;
+      case 'tanh':
+        setTrigResult(Math.tanh(angleValue));
+        break;
+      default:
+        setTrigResult(0);
+    }
   };
-  
-  const calculatorButtons = [
-    '7', '8', '9', '/',
-    '4', '5', '6', '*',
-    '1', '2', '3', '-',
-    '0', '.', '=', '+'
-  ];
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="order-2 md:order-1">
-        <h2 className="text-2xl font-bold text-white mb-6 text-right">الآلة الحاسبة</h2>
+    <div>
+      <h2 className="text-2xl font-bold text-white mb-6 text-right">الآلة الحاسبة</h2>
+      
+      <Tabs 
+        value={activeTab} 
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <TabsList className="w-full grid grid-cols-2 mb-6 bg-white/5 p-1 rounded-lg">
+          <TabsTrigger 
+            value="basic"
+            className="text-white data-[state=active]:bg-space-deep-purple data-[state=active]:text-white"
+          >
+            العمليات الأساسية
+          </TabsTrigger>
+          <TabsTrigger 
+            value="trigonometry"
+            className="text-white data-[state=active]:bg-space-deep-purple data-[state=active]:text-white"
+          >
+            حساب المثلثات
+          </TabsTrigger>
+        </TabsList>
         
-        <div className="bg-space-cosmic-black/50 backdrop-blur-sm p-6 rounded-2xl border border-space-neon-blue/30 shadow-lg shadow-space-neon-blue/10">
-          {/* Calculator Display */}
-          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg mb-4 overflow-x-auto">
-            <div className="text-white text-right text-2xl font-mono">
-              {display}
+        <TabsContent value="basic" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white mb-2 text-right">الرقم الأول:</label>
+              <Input 
+                type="number"
+                value={num1}
+                onChange={(e) => setNum1(e.target.value)}
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
             </div>
-            {result && (
-              <div className="text-space-neon-blue text-right text-3xl font-mono mt-1">
-                {result}
-              </div>
-            )}
+            <div>
+              <label className="block text-white mb-2 text-right">الرقم الثاني:</label>
+              <Input 
+                type="number"
+                value={num2}
+                onChange={(e) => setNum2(e.target.value)}
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
           </div>
           
-          {/* Calculator Buttons */}
-          <div className="grid grid-cols-4 gap-2">
-            <button
-              onClick={handleClear}
-              className="col-span-2 bg-space-deep-purple hover:bg-space-deep-purple/80 text-white py-3 rounded-lg transition-colors text-xl"
-            >
-              مسح
-            </button>
-            <button
-              onClick={() => setDisplay(prev => prev.slice(0, -1) || '0')}
-              className="col-span-2 bg-white/10 hover:bg-white/20 text-white py-3 rounded-lg transition-colors text-xl"
-            >
-              ⌫
-            </button>
-            
-            {calculatorButtons.map((btn, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  if (btn === '=') {
-                    handleCalculate();
-                  } else {
-                    handleButtonClick(btn);
-                  }
-                }}
-                className={`py-3 rounded-lg transition-colors text-xl ${
-                  btn === '=' 
-                    ? 'bg-space-neon-blue hover:bg-space-bright-blue text-white' 
-                    : ['/', '*', '-', '+'].includes(btn)
-                      ? 'bg-space-deep-purple/70 hover:bg-space-deep-purple text-white'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-              >
-                {btn}
-              </button>
-            ))}
+          <div>
+            <label className="block text-white mb-2 text-right">العملية:</label>
+            <Select value={operation} onValueChange={setOperation}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="اختر العملية" />
+              </SelectTrigger>
+              <SelectContent className="bg-space-cosmic-black border-white/20">
+                <SelectItem value="+">جمع (+)</SelectItem>
+                <SelectItem value="-">طرح (-)</SelectItem>
+                <SelectItem value="*">ضرب (×)</SelectItem>
+                <SelectItem value="/">قسمة (÷)</SelectItem>
+                <SelectItem value="%">باقي القسمة (%)</SelectItem>
+                <SelectItem value="pow">قوة (^)</SelectItem>
+                <SelectItem value="root">جذر</SelectItem>
+                <SelectItem value="log">لوغاريتم</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-      </div>
-      
-      <div className="order-1 md:order-2">
-        <h2 className="text-2xl font-bold text-white mb-6 text-right">تحميل الملفات</h2>
-        
-        <div 
-          className={`border-2 border-dashed rounded-2xl p-6 mb-6 transition-colors flex flex-col items-center justify-center ${
-            isDragging ? 'border-space-neon-blue bg-space-neon-blue/5' : 'border-white/30'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          style={{ minHeight: '200px' }}
-        >
-          <div className="text-center">
-            <Upload className="mx-auto h-12 w-12 text-white/50 mb-4" />
-            <h3 className="text-xl font-medium text-white mb-2">قم بإسقاط الملف هنا</h3>
-            <p className="text-white/70 mb-4">أو انقر لتحميل ملف يحتوي على مسائل رياضية</p>
-            <Button 
-              className="bg-white/10 hover:bg-white/20 text-white"
-              onClick={() => toast.info('الرجاء سحب وإفلات الملف بدلاً من ذلك')}
-            >
-              تصفح الملفات
-            </Button>
-          </div>
-        </div>
-        
-        <div className="bg-white/5 rounded-2xl p-6">
-          <h3 className="text-xl font-medium text-white mb-4 text-right">رفع صورة</h3>
-          <p className="text-white/70 mb-4 text-right">قم برفع صورة تحتوي على مسائل رياضية وسنقوم بتحليلها</p>
+          
           <Button 
-            className="bg-space-deep-purple hover:bg-space-deep-purple/80 text-white w-full"
-            onClick={handleImageUpload}
+            className="w-full bg-space-neon-blue hover:bg-space-bright-blue text-white"
+            onClick={calculateBasicResult}
           >
-            <Upload className="h-4 w-4 mr-2" />
-            رفع صورة
+            حساب
           </Button>
           
-          {/* History */}
-          {history.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-xl font-medium text-white mb-2 text-right">العمليات السابقة</h3>
-              <div className="bg-white/5 rounded-lg p-3 max-h-40 overflow-y-auto">
-                <ul className="space-y-1">
-                  {history.map((item, index) => (
-                    <li key={index} className="text-white/80 text-right border-b border-white/10 pb-1">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+            <label className="block text-white mb-2 text-right">الناتج:</label>
+            <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right overflow-x-auto">
+              {typeof result === 'number' ? result.toLocaleString('ar-EG') : result}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="trigonometry" className="space-y-6">
+          <div>
+            <label className="block text-white mb-2 text-right">الدالة المثلثية:</label>
+            <Select value={trigFunction} onValueChange={setTrigFunction}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="اختر الدالة" />
+              </SelectTrigger>
+              <SelectContent className="bg-space-cosmic-black border-white/20">
+                <SelectItem value="sin">جيب (sin)</SelectItem>
+                <SelectItem value="cos">جيب تمام (cos)</SelectItem>
+                <SelectItem value="tan">ظل (tan)</SelectItem>
+                <SelectItem value="asin">جيب عكسي (arcsin)</SelectItem>
+                <SelectItem value="acos">جيب تمام عكسي (arccos)</SelectItem>
+                <SelectItem value="atan">ظل عكسي (arctan)</SelectItem>
+                <SelectItem value="sinh">جيب زائد (sinh)</SelectItem>
+                <SelectItem value="cosh">جيب تمام زائد (cosh)</SelectItem>
+                <SelectItem value="tanh">ظل زائد (tanh)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white mb-2 text-right">القيمة:</label>
+              <Input 
+                type="number"
+                value={angle}
+                onChange={(e) => setAngle(e.target.value)}
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-white mb-2 text-right">الوحدة:</label>
+              <Select 
+                value={angleUnit} 
+                onValueChange={(value: 'deg' | 'rad') => setAngleUnit(value)}
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="اختر الوحدة" />
+                </SelectTrigger>
+                <SelectContent className="bg-space-cosmic-black border-white/20">
+                  <SelectItem value="deg">درجة (°)</SelectItem>
+                  <SelectItem value="rad">راديان (rad)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <Button 
+            className="w-full bg-space-neon-blue hover:bg-space-bright-blue text-white"
+            onClick={calculateTrigResult}
+          >
+            حساب
+          </Button>
+          
+          <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+            <label className="block text-white mb-2 text-right">الناتج:</label>
+            <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right overflow-x-auto">
+              {typeof trigResult === 'number' ? 
+                trigResult.toLocaleString('ar-EG', {maximumFractionDigits: 10}) : 
+                trigResult}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -68,6 +68,7 @@ export type Database = {
       }
       puzzles: {
         Row: {
+          admin_password: string
           correct_answer: string
           created_at: string
           created_by: string | null
@@ -80,6 +81,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          admin_password?: string
           correct_answer: string
           created_at?: string
           created_by?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           title: string
         }
         Update: {
+          admin_password?: string
           correct_answer?: string
           created_at?: string
           created_by?: string | null
@@ -102,6 +105,33 @@ export type Database = {
           points?: number
           question?: string
           title?: string
+        }
+        Relationships: []
+      }
+      users_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          last_login: string | null
+          role: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          last_login?: string | null
+          role?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          last_login?: string | null
+          role?: string
+          username?: string
         }
         Relationships: []
       }
