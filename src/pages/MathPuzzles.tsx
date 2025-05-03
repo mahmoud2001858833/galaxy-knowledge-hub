@@ -26,7 +26,7 @@ interface Puzzle {
   title: string;
   question: string;
   options: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'easy' | 'medium' | 'hard';  // Explicitly define allowed values
   correct_answer: string;
   points: number;
   image?: string;
@@ -62,7 +62,13 @@ const MathPuzzles: React.FC = () => {
       
       if (error) throw error;
       
-      setPuzzles(data || []);
+      // Fix the type issue by explicitly mapping the database response to the Puzzle type
+      const typedPuzzles: Puzzle[] = data?.map(item => ({
+        ...item,
+        difficulty: item.difficulty as 'easy' | 'medium' | 'hard' // Type assertion
+      })) || [];
+      
+      setPuzzles(typedPuzzles);
     } catch (error: any) {
       console.error('Error fetching puzzles:', error);
       toast.error('حدث خطأ أثناء تحميل الألغاز');

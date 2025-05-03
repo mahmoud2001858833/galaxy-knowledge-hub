@@ -10,7 +10,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { useToast } from 'sonner';
+import { toast } from 'sonner'; // Fixed import: useToast -> toast
 import { supabase } from '@/integrations/supabase/client';
 import { PlusCircle, Circle, ArrowRight } from 'lucide-react';
 
@@ -28,7 +28,6 @@ interface PuzzleFormData {
 
 const MathPuzzleAdmin = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useToast();
   
   // New puzzle form
   const [newPuzzle, setNewPuzzle] = useState<PuzzleFormData>({
@@ -55,7 +54,11 @@ const MathPuzzleAdmin = () => {
         // Then set the selected one to true
         updatedOptions[index].isCorrect = true;
       } else {
-        updatedOptions[index][field] = field === 'text' ? String(value) : Boolean(value);
+        // Fixed type issue: Ensure we're setting the correct types
+        updatedOptions[index] = {
+          ...updatedOptions[index],
+          [field]: field === 'text' ? String(value) : Boolean(value)
+        };
       }
       
       return { ...prev, options: updatedOptions };
