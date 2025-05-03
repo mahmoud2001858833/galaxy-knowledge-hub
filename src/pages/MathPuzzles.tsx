@@ -36,7 +36,17 @@ interface UserProfile {
   id: string;
   username: string;
   score: number;
-  solved_puzzles: string[]; // This should be an array of strings (puzzle IDs)
+  // This represents how we use solved_puzzles in the code
+  solved_puzzles: string[]; 
+}
+
+// Interface reflecting the actual database schema
+interface DBUserProfile {
+  id: string;
+  username: string;
+  score: number | null;
+  solved_puzzles: number | null; // In DB it's a number
+  created_at: string;
 }
 
 const MathPuzzles: React.FC = () => {
@@ -93,49 +103,43 @@ const MathPuzzles: React.FC = () => {
       }
       
       if (data) {
-        // Fixed: Simplify the nested ternary structure to avoid syntax issues
+        // Convert the database's number representation to a useful string array
         let puzzlesArray: string[] = [];
         
-        if (data.solved_puzzles) {
-          // If it's a number (legacy data), convert to empty array
-          if (typeof data.solved_puzzles === 'number') {
-            puzzlesArray = [];
-          } 
-          // If it's already an array, use it
-          else if (Array.isArray(data.solved_puzzles)) {
-            puzzlesArray = data.solved_puzzles;
-          }
-        }
+        // No need for type conversion - DB has only the count, not the actual IDs
+        // We'll just keep an empty array and track solved puzzles on the client
         
-        const profile = {
-          ...data,
+        const profile: UserProfile = {
+          id: data.id,
+          username: data.username,
+          score: data.score || 0,
           solved_puzzles: puzzlesArray
-        } as UserProfile;
+        };
         
         setUserProfile(profile);
-        setSolvedPuzzles(profile.solved_puzzles || []);
+        setSolvedPuzzles(puzzlesArray);
       } else {
-        // Create a new profile if not exists
+        // Create a new profile if not exists - note how solved_puzzles is a number in DB
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
-          .insert([
-            { 
-              id: userId,
-              username: 'User',
-              score: 0,
-              solved_puzzles: [] // Initialize as empty array
-            }
-          ])
+          .insert({
+            id: userId,
+            username: 'User',
+            score: 0,
+            solved_puzzles: 0 // Initialize as 0 (count) since DB expects number
+          })
           .select()
           .single();
           
         if (createError) throw createError;
         
         if (newProfile) {
-          const profile = {
-            ...newProfile,
-            solved_puzzles: [] // Ensure it's an array
-          } as UserProfile;
+          const profile: UserProfile = {
+            id: newProfile.id,
+            username: newProfile.username,
+            score: newProfile.score || 0,
+            solved_puzzles: [] // Start with empty array in app
+          };
           
           setUserProfile(profile);
           setSolvedPuzzles([]);
@@ -208,7 +212,7 @@ const MathPuzzles: React.FC = () => {
         // First time solving this puzzle
         pointsAdjustment = selectedPuzzle.points;
         
-        // Update solved puzzles list
+        // Update solved puzzles list (locally only)
         const updatedSolvedPuzzles = [...solvedPuzzles, selectedPuzzle.id];
         setSolvedPuzzles(updatedSolvedPuzzles);
         
@@ -227,11 +231,11 @@ const MathPuzzles: React.FC = () => {
             
             if (error) throw error;
             
-            // Update solved puzzles list
+            // Update solved puzzles counter (just increment the number)
             const { error: updateError } = await supabase
               .from('profiles')
               .update({ 
-                solved_puzzles: updatedSolvedPuzzles 
+                solved_puzzles: (userProfile?.solved_puzzles.length || 0) + 1 
               })
               .eq('id', user.id);
               
