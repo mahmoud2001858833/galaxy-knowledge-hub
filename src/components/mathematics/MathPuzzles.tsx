@@ -144,9 +144,12 @@ const MathPuzzles: React.FC = () => {
         // First, set all options to false
         updatedOptions.forEach(option => option.isCorrect = false);
         // Then set the selected one to true
-        updatedOptions[index].isCorrect = true;
+        updatedOptions[index].isCorrect = Boolean(value);
       } else {
-        updatedOptions[index] = { ...updatedOptions[index], [field]: value };
+        updatedOptions[index] = { 
+          ...updatedOptions[index], 
+          [field]: field === 'text' ? String(value) : Boolean(value) 
+        };
       }
       
       return { ...prev, options: updatedOptions };
