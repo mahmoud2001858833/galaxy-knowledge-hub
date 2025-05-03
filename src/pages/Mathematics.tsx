@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import StarField from '@/components/StarField';
@@ -10,7 +9,8 @@ import MathPuzzles from '@/components/mathematics/MathPuzzles';
 import GraphVisualizer from '@/components/mathematics/GraphVisualizer';
 import MathematiciansGallery from '@/components/mathematics/MathematiciansGallery';
 import { Button } from '@/components/ui/button';
-import { ArrowDown, Brain, Calculator as CalculatorIcon, PuzzlePiece } from 'lucide-react';
+import { ArrowDown, Brain, Calculator as CalculatorIcon } from 'lucide-react';
+import PuzzlePiece from '@/components/mathematics/PuzzlePiece';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
