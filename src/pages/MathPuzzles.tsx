@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,15 +93,23 @@ const MathPuzzles: React.FC = () => {
       }
       
       if (data) {
-        // Fixed version: Properly format the ternary operator and nested logic
+        // Fixed: Simplify the nested ternary structure to avoid syntax issues
+        let puzzlesArray: string[] = [];
+        
+        if (data.solved_puzzles) {
+          // If it's a number (legacy data), convert to empty array
+          if (typeof data.solved_puzzles === 'number') {
+            puzzlesArray = [];
+          } 
+          // If it's already an array, use it
+          else if (Array.isArray(data.solved_puzzles)) {
+            puzzlesArray = data.solved_puzzles;
+          }
+        }
+        
         const profile = {
           ...data,
-          solved_puzzles: data.solved_puzzles ? 
-            (typeof data.solved_puzzles === 'number' ? 
-              [] : 
-              (Array.isArray(data.solved_puzzles) ? 
-                data.solved_puzzles : 
-                []))
+          solved_puzzles: puzzlesArray
         } as UserProfile;
         
         setUserProfile(profile);
