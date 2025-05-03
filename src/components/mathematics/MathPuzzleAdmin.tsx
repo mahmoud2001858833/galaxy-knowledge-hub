@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,11 +52,11 @@ const MathPuzzleAdmin = () => {
         updatedOptions.forEach(option => option.isCorrect = false);
         // Then set the selected one to true
         updatedOptions[index].isCorrect = true;
-      } else {
-        // Fixed type issue: Ensure we're setting the correct types
+      } else if (field === 'text') {
+        // For text field, ensure we're using string
         updatedOptions[index] = {
           ...updatedOptions[index],
-          [field]: field === 'text' ? String(value) : Boolean(value)
+          text: String(value)
         };
       }
       
