@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Select, 
   SelectContent, 
@@ -12,101 +11,179 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import MathPuzzleAdmin from '@/components/mathematics/MathPuzzleAdmin';
+import { motion } from 'framer-motion';
+import { Trophy, FrownIcon, Clock } from 'lucide-react';
 
 // Puzzle data structure
-interface Option {
-  id: string;
-  text: string;
-  isCorrect: boolean;
-}
-
 interface Puzzle {
   id: string;
   title: string;
   question: string;
-  options: Option[];
-  difficulty: 'easy' | 'medium' | 'hard';
-  imageUrl?: string;
+  options: string[];
+  difficulty: 'easy' | 'medium' | 'hard' | string; // Allow any string but specify common values
+  correct_answer: string;
+  points: number;
+  image?: string;
 }
 
-// Sample puzzles
-const samplePuzzles: Puzzle[] = [
-  {
-    id: '1',
-    title: 'معادلة تربيعية',
-    question: 'ما هي جذور المعادلة x² - 5x + 6 = 0؟',
-    options: [
-      { id: '1a', text: 'x = 2, x = 3', isCorrect: true },
-      { id: '1b', text: 'x = -2, x = -3', isCorrect: false },
-      { id: '1c', text: 'x = 1, x = 6', isCorrect: false },
-      { id: '1d', text: 'x = -1, x = -6', isCorrect: false },
-    ],
-    difficulty: 'easy',
-  },
-  {
-    id: '2',
-    title: 'مجموع متتالية',
-    question: 'ما هو مجموع المتتالية الحسابية 2, 5, 8, 11, ... حتى الحد العاشر؟',
-    options: [
-      { id: '2a', text: '155', isCorrect: false },
-      { id: '2b', text: '137', isCorrect: true },
-      { id: '2c', text: '145', isCorrect: false },
-      { id: '2d', text: '125', isCorrect: false },
-    ],
-    difficulty: 'medium',
-  },
-  {
-    id: '3',
-    title: 'احتمالات متقدمة',
-    question: 'في كيس يحتوي على 3 كرات حمراء و4 كرات زرقاء، إذا سحبت كرتين بالتتابع دون إرجاع، ما هو احتمال أن تكون الكرتان من نفس اللون؟',
-    options: [
-      { id: '3a', text: '4/7', isCorrect: false },
-      { id: '3b', text: '1/2', isCorrect: false },
-      { id: '3c', text: '2/7', isCorrect: false },
-      { id: '3d', text: '3/7', isCorrect: true },
-    ],
-    difficulty: 'hard',
-    imageUrl: 'https://images.unsplash.com/photo-166152608126-afe0a0b2fc96?q=80&w=600',
-  },
-];
+interface UserProfile {
+  id: string;
+  username: string;
+  score: number;
+  // This represents how we use solved_puzzles in the code
+  solved_puzzles: string[]; 
+}
+
+// Interface reflecting the actual database schema
+interface DBUserProfile {
+  id: string;
+  username: string;
+  score: number | null;
+  solved_puzzles: number | null; // In DB it's a number
+  created_at: string;
+}
 
 const MathPuzzles: React.FC = () => {
-  const [puzzles, setPuzzles] = useState<Puzzle[]>(samplePuzzles);
+  const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState<boolean>(false);
+  const [adminPassword, setAdminPassword] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [solvedPuzzles, setSolvedPuzzles] = useState<string[]>([]);
+  const [retryPenalty, setRetryPenalty] = useState<boolean>(false);
   
-  // New puzzle form
-  const [newPuzzle, setNewPuzzle] = useState<{
-    title: string;
-    question: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    options: {
-      text: string;
-      isCorrect: boolean;
-    }[];
-    imageUrl: string;
-  }>({
-    title: '',
-    question: '',
-    difficulty: 'medium',
-    options: [
-      { text: '', isCorrect: true },
-      { text: '', isCorrect: false },
-      { text: '', isCorrect: false },
-      { text: '', isCorrect: false },
-    ],
-    imageUrl: '',
-  });
+  useEffect(() => {
+    // Get current user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+    });
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+        setSolvedPuzzles([]);
+      }
+    });
+    
+    fetchPuzzles();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      if (data) {
+        // Convert the database's number representation to a useful string array
+        let puzzlesArray: string[] = [];
+        
+        // No need for type conversion - DB has only the count, not the actual IDs
+        // We'll just keep an empty array and track solved puzzles on the client
+        
+        const profile: UserProfile = {
+          id: data.id,
+          username: data.username,
+          score: data.score || 0,
+          solved_puzzles: puzzlesArray
+        };
+        
+        setUserProfile(profile);
+        setSolvedPuzzles(puzzlesArray);
+      } else {
+        // Create a new profile if not exists - note how solved_puzzles is a number in DB
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            username: 'User',
+            score: 0,
+            solved_puzzles: 0 // Initialize as 0 (count) since DB expects number
+          })
+          .select()
+          .single();
+          
+        if (createError) throw createError;
+        
+        if (newProfile) {
+          const profile: UserProfile = {
+            id: newProfile.id,
+            username: newProfile.username,
+            score: newProfile.score || 0,
+            solved_puzzles: [] // Start with empty array in app
+          };
+          
+          setUserProfile(profile);
+          setSolvedPuzzles([]);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+  
+  const fetchPuzzles = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('puzzles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Fix the type issue by explicitly mapping the database response to the Puzzle type
+      const typedPuzzles: Puzzle[] = data?.map(item => ({
+        ...item,
+        difficulty: item.difficulty as 'easy' | 'medium' | 'hard' | string // Type assertion
+      })) || [];
+      
+      setPuzzles(typedPuzzles);
+    } catch (error: any) {
+      console.error('Error fetching puzzles:', error);
+      toast.error('حدث خطأ أثناء تحميل الألغاز');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleAdminAccess = () => {
+    if (adminPassword === 'mahmoud') {
+      setIsAdmin(true);
+      setIsPasswordDialogOpen(false);
+      toast.success('تم تسجيل الدخول بنجاح كمشرف');
+    } else {
+      toast.error('كلمة المرور غير صحيحة');
+    }
+  };
   
   const filteredPuzzles = selectedDifficulty === 'all'
     ? puzzles
@@ -115,100 +192,143 @@ const MathPuzzles: React.FC = () => {
   const handlePuzzleSelect = (puzzle: Puzzle) => {
     setSelectedPuzzle(puzzle);
     setSelectedOption(null);
+    setRetryPenalty(solvedPuzzles.includes(puzzle.id));
   };
   
-  const handleSubmitAnswer = () => {
-    if (!selectedPuzzle || !selectedOption) return;
-    
-    const selectedChoice = selectedPuzzle.options.find(option => option.id === selectedOption);
-    
-    if (selectedChoice?.isCorrect) {
-      toast.success('إجابة صحيحة! تم إضافة 5 نقاط إلى حسابك.');
-    } else {
-      toast.error('إجابة خاطئة. حاول مرة أخرى.');
-    }
-    
-    // Reset selection
-    setTimeout(() => {
-      setSelectedPuzzle(null);
-      setSelectedOption(null);
-    }, 2000);
-  };
-  
-  const handleOptionChange = (index: number, field: 'text' | 'isCorrect', value: string | boolean) => {
-    setNewPuzzle(prev => {
-      const updatedOptions = [...prev.options];
-      
-      if (field === 'isCorrect') {
-        // First, set all options to false
-        updatedOptions.forEach(option => option.isCorrect = false);
-        // Then set the selected one to true
-        updatedOptions[index].isCorrect = Boolean(value);
-      } else {
-        // For the text field, we need to ensure the value is always a string
-        // For isCorrect field, we need to ensure the value is always a boolean
-        // Use type assertion to tell TypeScript exactly what type we're working with
-        updatedOptions[index] = { 
-          ...updatedOptions[index], 
-          [field]: field === 'text' ? String(value) : Boolean(value) 
-        } as { text: string; isCorrect: boolean }; // Type assertion to help TypeScript understand
+  const handleSubmitAnswer = async () => {
+    if (!selectedPuzzle || !selectedOption || !user) {
+      if (!user) {
+        toast.error('يرجى تسجيل الدخول أولاً لحفظ تقدمك');
       }
-      
-      return { ...prev, options: updatedOptions };
-    });
+      return;
+    }
+    
+    const isCorrect = selectedOption === selectedPuzzle.correct_answer;
+    const puzzleAlreadySolved = solvedPuzzles.includes(selectedPuzzle.id);
+    let pointsAdjustment = 0;
+    
+    if (isCorrect) {
+      if (!puzzleAlreadySolved) {
+        // First time solving this puzzle
+        pointsAdjustment = selectedPuzzle.points;
+        
+        // Update solved puzzles list (locally only)
+        const updatedSolvedPuzzles = [...solvedPuzzles, selectedPuzzle.id];
+        setSolvedPuzzles(updatedSolvedPuzzles);
+        
+        toast.success(`إجابة صحيحة! تم إضافة ${selectedPuzzle.points} نقاط إلى حسابك.`, {
+          icon: <Trophy className="text-yellow-300" />
+        });
+        
+        try {
+          // Update user profile in database
+          if (user) {
+            // Update points
+            const { error } = await supabase.rpc('adjust_user_score', {
+              user_id: user.id,
+              points_adjustment: pointsAdjustment
+            });
+            
+            if (error) throw error;
+            
+            // Update solved puzzles counter (just increment the number)
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ 
+                solved_puzzles: (userProfile?.solved_puzzles.length || 0) + 1 
+              })
+              .eq('id', user.id);
+              
+            if (updateError) throw updateError;
+            
+            // Update local user profile
+            if (userProfile) {
+              setUserProfile({
+                ...userProfile,
+                score: (userProfile.score || 0) + pointsAdjustment,
+                solved_puzzles: updatedSolvedPuzzles
+              });
+            }
+          }
+        } catch (error: any) {
+          console.error('Error updating score:', error);
+        }
+      } else {
+        // Already solved before
+        toast.success('إجابة صحيحة! لقد قمت بحل هذا اللغز من قبل.', {
+          icon: <Clock className="text-blue-300" />
+        });
+      }
+    } else {
+      // Incorrect answer
+      if (retryPenalty && user) {
+        // Apply penalty for retry
+        pointsAdjustment = -5;
+        
+        toast.error('إجابة خاطئة! تم خصم 5 نقاط لإعادة المحاولة.', {
+          icon: <FrownIcon className="text-red-300" />
+        });
+        
+        try {
+          // Update points in database
+          const { error } = await supabase.rpc('adjust_user_score', {
+            user_id: user.id,
+            points_adjustment: pointsAdjustment
+          });
+          
+          if (error) throw error;
+          
+          // Update local user profile
+          if (userProfile) {
+            setUserProfile({
+              ...userProfile,
+              score: Math.max(0, (userProfile.score || 0) + pointsAdjustment)
+            });
+          }
+        } catch (error: any) {
+          console.error('Error updating score:', error);
+        }
+      } else {
+        toast.error('إجابة خاطئة. حاول مرة أخرى.', {
+          icon: <FrownIcon className="text-red-300" />
+        });
+      }
+    }
+    
+    // Reset selection after a short delay
+    if (isCorrect) {
+      setTimeout(() => {
+        setSelectedPuzzle(null);
+        setSelectedOption(null);
+      }, 2000);
+    }
   };
   
-  const handleAddPuzzle = () => {
-    // Simple validation
-    if (!newPuzzle.title || !newPuzzle.question) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة');
-      return;
-    }
-    
-    if (newPuzzle.options.some(option => !option.text)) {
-      toast.error('يرجى ملء جميع خيارات الإجابة');
-      return;
-    }
-    
-    // Create new puzzle
-    const newPuzzleObj: Puzzle = {
-      id: Date.now().toString(),
-      title: newPuzzle.title,
-      question: newPuzzle.question,
-      options: newPuzzle.options.map((opt, index) => ({
-        id: `new-${Date.now()}-${index}`,
-        text: opt.text,
-        isCorrect: opt.isCorrect,
-      })),
-      difficulty: newPuzzle.difficulty,
-      imageUrl: newPuzzle.imageUrl || undefined,
-    };
-    
-    // Add to puzzles
-    setPuzzles(prev => [...prev, newPuzzleObj]);
-    
-    // Reset form
-    setNewPuzzle({
-      title: '',
-      question: '',
-      difficulty: 'medium',
-      options: [
-        { text: '', isCorrect: true },
-        { text: '', isCorrect: false },
-        { text: '', isCorrect: false },
-        { text: '', isCorrect: false },
-      ],
-      imageUrl: '',
-    });
-    
-    setIsDialogOpen(false);
-    toast.success('تم إضافة اللغز بنجاح');
-  };
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="space-y-4 text-center">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-space-neon-blue"></div>
+          <p className="text-white/70">جاري تحميل الألغاز...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold text-white text-right">ألغاز رياضية</h2>
+        <div className="flex flex-col items-end">
+          <h2 className="text-2xl font-bold text-white">ألغاز رياضية</h2>
+          {userProfile && (
+            <div className="flex items-center gap-2 text-space-neon-blue">
+              <span className="font-bold">{userProfile.score || 0}</span>
+              <span>النقاط:</span>
+              <Trophy className="h-4 w-4" />
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center gap-4">
           <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
@@ -224,115 +344,43 @@ const MathPuzzles: React.FC = () => {
           </Select>
           
           {isAdmin ? (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-space-deep-purple hover:bg-space-deep-purple/80 text-white">
-                  إضافة لغز
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-space-cosmic-black border-white/20 text-white sm:max-w-xl">
-                <DialogHeader>
-                  <DialogTitle className="text-right">إضافة لغز جديد</DialogTitle>
-                  <DialogDescription className="text-right text-white/70">
-                    أدخل تفاصيل اللغز الجديد هنا
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4 text-right">
-                  <div>
-                    <label className="block mb-1">عنوان اللغز</label>
-                    <Input 
-                      value={newPuzzle.title} 
-                      onChange={(e) => setNewPuzzle(prev => ({ ...prev, title: e.target.value }))}
-                      className="bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block mb-1">نص اللغز</label>
-                    <Textarea 
-                      value={newPuzzle.question} 
-                      onChange={(e) => setNewPuzzle(prev => ({ ...prev, question: e.target.value }))}
-                      className="bg-white/10 border-white/20 text-white"
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block mb-1">مستوى الصعوبة</label>
-                    <Select 
-                      value={newPuzzle.difficulty} 
-                      onValueChange={(val: 'easy' | 'medium' | 'hard') => 
-                        setNewPuzzle(prev => ({ ...prev, difficulty: val }))
-                      }
-                    >
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                        <SelectValue placeholder="اختر المستوى" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-space-cosmic-black border-white/20">
-                        <SelectItem value="easy">سهل</SelectItem>
-                        <SelectItem value="medium">متوسط</SelectItem>
-                        <SelectItem value="hard">صعب</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="block mb-1">خيارات الإجابة</label>
-                    <div className="space-y-2">
-                      {newPuzzle.options.map((option, index) => (
-                        <div key={index} className="flex gap-2 items-center">
-                          <Input
-                            value={option.text}
-                            onChange={(e) => handleOptionChange(index, 'text', e.target.value)}
-                            className="bg-white/10 border-white/20 text-white flex-1"
-                            placeholder={`الخيار ${index + 1}`}
-                          />
-                          <div className="flex items-center">
-                            <input
-                              type="radio"
-                              checked={option.isCorrect}
-                              onChange={() => handleOptionChange(index, 'isCorrect', true)}
-                              className="mr-2"
-                            />
-                            <span className="text-white/70">صحيح</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block mb-1">رابط الصورة (اختياري)</label>
-                    <Input 
-                      value={newPuzzle.imageUrl} 
-                      onChange={(e) => setNewPuzzle(prev => ({ ...prev, imageUrl: e.target.value }))}
-                      className="bg-white/10 border-white/20 text-white"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button 
-                    className="bg-space-deep-purple hover:bg-space-deep-purple/80 text-white"
-                    onClick={handleAddPuzzle}
-                  >
-                    إضافة اللغز
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <div className="z-30">
+              <MathPuzzleAdmin />
+            </div>
           ) : (
             <Button 
               className="bg-space-neon-blue/10 hover:bg-space-neon-blue/20 text-space-neon-blue border border-space-neon-blue/30"
-              onClick={() => setIsAdmin(true)}
+              onClick={() => setIsPasswordDialogOpen(true)}
             >
               المشرف
             </Button>
           )}
         </div>
       </div>
+      
+      {/* Admin Password Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="bg-space-cosmic-black border-white/20 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-white">أدخل كلمة مرور المشرف</DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <Input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="كلمة المرور"
+              className="bg-white/10 border-white/20 text-white text-center"
+            />
+          </div>
+          <Button 
+            className="w-full bg-space-deep-purple hover:bg-space-deep-purple/80"
+            onClick={handleAdminAccess}
+          >
+            تأكيد
+          </Button>
+        </DialogContent>
+      </Dialog>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {selectedPuzzle ? (
@@ -349,22 +397,41 @@ const MathPuzzles: React.FC = () => {
                 {selectedPuzzle.title}
               </h3>
               
-              <div className={`text-white/80 mb-6 text-right ${selectedPuzzle.difficulty === 'easy' 
-                ? 'text-green-300' 
-                : selectedPuzzle.difficulty === 'medium' 
-                  ? 'text-yellow-300' 
-                  : 'text-red-300'}`}
-              >
-                {selectedPuzzle.difficulty === 'easy' && 'سهل'}
-                {selectedPuzzle.difficulty === 'medium' && 'متوسط'}
-                {selectedPuzzle.difficulty === 'hard' && 'صعب'}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-space-neon-blue text-xs px-2 py-1 rounded-full bg-space-neon-blue/10">
+                    {selectedPuzzle.points} نقطة
+                  </span>
+                  {solvedPuzzles.includes(selectedPuzzle.id) && (
+                    <span className="text-green-300 text-xs px-2 py-1 rounded-full bg-green-900/30 flex items-center gap-1">
+                      <Trophy className="h-3 w-3" />
+                      تم الحل
+                    </span>
+                  )}
+                  {retryPenalty && (
+                    <span className="text-red-300 text-xs px-2 py-1 rounded-full bg-red-900/30">
+                      -5 للمحاولة الخاطئة
+                    </span>
+                  )}
+                </div>
+                
+                <div className={`text-right ${selectedPuzzle.difficulty === 'easy' 
+                  ? 'text-green-300' 
+                  : selectedPuzzle.difficulty === 'medium' 
+                    ? 'text-yellow-300' 
+                    : 'text-red-300'}`}
+                >
+                  {selectedPuzzle.difficulty === 'easy' && 'سهل'}
+                  {selectedPuzzle.difficulty === 'medium' && 'متوسط'}
+                  {selectedPuzzle.difficulty === 'hard' && 'صعب'}
+                </div>
               </div>
             </div>
             
-            {selectedPuzzle.imageUrl && (
+            {selectedPuzzle.image && (
               <div className="mb-6 flex justify-center">
                 <img 
-                  src={selectedPuzzle.imageUrl} 
+                  src={selectedPuzzle.image} 
                   alt={selectedPuzzle.title}
                   className="rounded-lg max-h-60 object-contain"
                 />
@@ -378,15 +445,15 @@ const MathPuzzles: React.FC = () => {
             <div className="space-y-3 mb-6">
               {selectedPuzzle.options.map((option) => (
                 <div 
-                  key={option.id} 
+                  key={option} 
                   className={`p-4 rounded-lg border cursor-pointer transition-colors text-right ${
-                    selectedOption === option.id
+                    selectedOption === option
                       ? 'bg-space-deep-purple/40 border-space-deep-purple'
                       : 'bg-white/5 border-white/10 hover:bg-white/10'
                   }`}
-                  onClick={() => setSelectedOption(option.id)}
+                  onClick={() => setSelectedOption(option)}
                 >
-                  {option.text}
+                  {option}
                 </div>
               ))}
             </div>
@@ -402,15 +469,20 @@ const MathPuzzles: React.FC = () => {
         ) : (
           // Puzzles list
           filteredPuzzles.map(puzzle => (
-            <div 
+            <motion.div 
               key={puzzle.id}
-              className="bg-white/5 rounded-2xl overflow-hidden hover:bg-white/10 transition-colors cursor-pointer border border-white/10 hover:border-white/30"
+              className={`bg-white/5 rounded-2xl overflow-hidden hover:bg-white/10 transition-colors cursor-pointer border border-white/10 hover:border-white/30 ${
+                solvedPuzzles.includes(puzzle.id) ? 'border-green-500/30' : ''
+              }`}
               onClick={() => handlePuzzleSelect(puzzle)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              {puzzle.imageUrl && (
+              {puzzle.image && (
                 <div className="h-40 overflow-hidden">
                   <img 
-                    src={puzzle.imageUrl} 
+                    src={puzzle.image} 
                     alt={puzzle.title}
                     className="w-full h-full object-cover"
                   />
@@ -440,11 +512,24 @@ const MathPuzzles: React.FC = () => {
                   {puzzle.question}
                 </p>
                 
-                <div className="mt-4 flex justify-end">
-                  <span className="text-space-neon-blue text-sm">اضغط للحل &larr;</span>
+                <div className="mt-4 flex justify-between items-center">
+                  <div className="flex items-center">
+                    <span className="text-space-neon-blue text-xs px-2 py-1 rounded-full bg-space-neon-blue/10">
+                      {puzzle.points} نقطة
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {solvedPuzzles.includes(puzzle.id) && (
+                      <span className="text-green-300 text-xs px-2 py-1 rounded-full bg-green-900/30 flex items-center gap-1">
+                        <Trophy className="h-3 w-3" />
+                        تم الحل
+                      </span>
+                    )}
+                    <span className="text-space-neon-blue text-sm">اضغط للحل &larr;</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))
         )}
       </div>
@@ -452,6 +537,14 @@ const MathPuzzles: React.FC = () => {
       {filteredPuzzles.length === 0 && (
         <div className="text-center py-12">
           <p className="text-white/70">لا توجد ألغاز متاحة بهذا المستوى حالياً</p>
+        </div>
+      )}
+      
+      {!user && (
+        <div className="mt-8 p-4 border border-yellow-500/30 bg-yellow-500/10 rounded-lg text-right">
+          <p className="text-yellow-300">
+            قم بتسجيل الدخول للاحتفاظ بتقدمك والنقاط التي تحصل عليها!
+          </p>
         </div>
       )}
     </div>
