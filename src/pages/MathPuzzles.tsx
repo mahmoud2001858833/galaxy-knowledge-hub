@@ -93,17 +93,16 @@ const MathPuzzles: React.FC = () => {
       }
       
       if (data) {
-        // Make sure we handle the solved_puzzles correctly
+        // Here's the fixed code block - make sure to properly format the object and type assertion
         const profile = {
           ...data,
           solved_puzzles: data.solved_puzzles ? 
-            // If it's a number, convert it to an empty array (legacy data)
-            typeof data.solved_puzzles === 'number' ? 
+            (typeof data.solved_puzzles === 'number' ? 
               [] : 
-              // Otherwise ensure it's an array of strings
-              Array.isArray(data.solved_puzzles) ? 
+              (Array.isArray(data.solved_puzzles) ? 
                 data.solved_puzzles : 
-                []
+                [])
+            )
         } as UserProfile;
         
         setUserProfile(profile);
