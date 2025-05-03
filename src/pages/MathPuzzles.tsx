@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,7 +94,7 @@ const MathPuzzles: React.FC = () => {
       }
       
       if (data) {
-        // Here's the fixed code block - make sure to properly format the object and type assertion
+        // Fixed version: Properly format the ternary operator and nested logic
         const profile = {
           ...data,
           solved_puzzles: data.solved_puzzles ? 
@@ -101,8 +102,7 @@ const MathPuzzles: React.FC = () => {
               [] : 
               (Array.isArray(data.solved_puzzles) ? 
                 data.solved_puzzles : 
-                [])
-            )
+                []))
         } as UserProfile;
         
         setUserProfile(profile);
