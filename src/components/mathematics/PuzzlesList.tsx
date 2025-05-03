@@ -11,7 +11,7 @@ interface Puzzle {
   id: string;
   title: string;
   question: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'easy' | 'medium' | 'hard' | string; // Allow any string but specify common values
   points: number;
   created_at: string;
 }
@@ -31,7 +31,8 @@ const PuzzlesList = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPuzzles(data || []);
+      // Cast the data to ensure TypeScript recognizes it as a valid Puzzle array
+      setPuzzles(data as Puzzle[] || []);
     } catch (error: any) {
       console.error('Error fetching puzzles:', error);
       toast.error('فشل في تحميل الألغاز');

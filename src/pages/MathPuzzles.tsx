@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +26,7 @@ interface Puzzle {
   title: string;
   question: string;
   options: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'easy' | 'medium' | 'hard' | string; // Allow any string but specify common values
   correct_answer: string;
   points: number;
   image?: string;
@@ -37,7 +36,7 @@ interface UserProfile {
   id: string;
   username: string;
   score: number;
-  solved_puzzles: string[];
+  solved_puzzles: string[]; // This should be an array of strings (puzzle IDs)
 }
 
 const MathPuzzles: React.FC = () => {
@@ -94,8 +93,21 @@ const MathPuzzles: React.FC = () => {
       }
       
       if (data) {
-        setUserProfile(data);
-        setSolvedPuzzles(data.solved_puzzles || []);
+        // Make sure we handle the solved_puzzles correctly
+        const profile = {
+          ...data,
+          solved_puzzles: data.solved_puzzles ? 
+            // If it's a number, convert it to an empty array (legacy data)
+            typeof data.solved_puzzles === 'number' ? 
+              [] : 
+              // Otherwise ensure it's an array of strings
+              Array.isArray(data.solved_puzzles) ? 
+                data.solved_puzzles : 
+                []
+        } as UserProfile;
+        
+        setUserProfile(profile);
+        setSolvedPuzzles(profile.solved_puzzles || []);
       } else {
         // Create a new profile if not exists
         const { data: newProfile, error: createError } = await supabase
@@ -103,8 +115,9 @@ const MathPuzzles: React.FC = () => {
           .insert([
             { 
               id: userId,
+              username: 'User',
               score: 0,
-              solved_puzzles: []
+              solved_puzzles: [] // Initialize as empty array
             }
           ])
           .select()
@@ -113,7 +126,12 @@ const MathPuzzles: React.FC = () => {
         if (createError) throw createError;
         
         if (newProfile) {
-          setUserProfile(newProfile);
+          const profile = {
+            ...newProfile,
+            solved_puzzles: [] // Ensure it's an array
+          } as UserProfile;
+          
+          setUserProfile(profile);
           setSolvedPuzzles([]);
         }
       }
@@ -135,7 +153,7 @@ const MathPuzzles: React.FC = () => {
       // Fix the type issue by explicitly mapping the database response to the Puzzle type
       const typedPuzzles: Puzzle[] = data?.map(item => ({
         ...item,
-        difficulty: item.difficulty as 'easy' | 'medium' | 'hard' // Type assertion
+        difficulty: item.difficulty as 'easy' | 'medium' | 'hard' | string // Type assertion
       })) || [];
       
       setPuzzles(typedPuzzles);

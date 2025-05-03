@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +10,7 @@ import MathPuzzles from '@/components/mathematics/MathPuzzles';
 import GraphVisualizer from '@/components/mathematics/GraphVisualizer';
 import MathematiciansGallery from '@/components/mathematics/MathematiciansGallery';
 import { Button } from '@/components/ui/button';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, Brain } from 'lucide-react';
 
 const Mathematics = () => {
   const [selectedTab, setSelectedTab] = useState("assistant");
