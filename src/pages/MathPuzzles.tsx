@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import MathPuzzleAdmin from '@/components/mathematics/MathPuzzleAdmin';
 import { motion } from 'framer-motion';
+import { Trophy, FrownIcon, Clock } from 'lucide-react';
 
 // Puzzle data structure
 interface Puzzle {
@@ -26,10 +27,17 @@ interface Puzzle {
   title: string;
   question: string;
   options: string[];
-  difficulty: 'easy' | 'medium' | 'hard';  // Explicitly define allowed values
+  difficulty: 'easy' | 'medium' | 'hard';
   correct_answer: string;
   points: number;
   image?: string;
+}
+
+interface UserProfile {
+  id: string;
+  username: string;
+  score: number;
+  solved_puzzles: string[];
 }
 
 const MathPuzzles: React.FC = () => {
@@ -42,15 +50,77 @@ const MathPuzzles: React.FC = () => {
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [solvedPuzzles, setSolvedPuzzles] = useState<string[]>([]);
+  const [retryPenalty, setRetryPenalty] = useState<boolean>(false);
   
   useEffect(() => {
     // Get current user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+    });
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+        setSolvedPuzzles([]);
+      }
     });
     
     fetchPuzzles();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+  
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      if (data) {
+        setUserProfile(data);
+        setSolvedPuzzles(data.solved_puzzles || []);
+      } else {
+        // Create a new profile if not exists
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: userId,
+              score: 0,
+              solved_puzzles: []
+            }
+          ])
+          .select()
+          .single();
+          
+        if (createError) throw createError;
+        
+        if (newProfile) {
+          setUserProfile(newProfile);
+          setSolvedPuzzles([]);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
   
   const fetchPuzzles = async () => {
     setIsLoading(true);
@@ -94,38 +164,116 @@ const MathPuzzles: React.FC = () => {
   const handlePuzzleSelect = (puzzle: Puzzle) => {
     setSelectedPuzzle(puzzle);
     setSelectedOption(null);
+    setRetryPenalty(solvedPuzzles.includes(puzzle.id));
   };
   
   const handleSubmitAnswer = async () => {
-    if (!selectedPuzzle || !selectedOption || !user) return;
+    if (!selectedPuzzle || !selectedOption || !user) {
+      if (!user) {
+        toast.error('يرجى تسجيل الدخول أولاً لحفظ تقدمك');
+      }
+      return;
+    }
     
     const isCorrect = selectedOption === selectedPuzzle.correct_answer;
+    const puzzleAlreadySolved = solvedPuzzles.includes(selectedPuzzle.id);
+    let pointsAdjustment = 0;
     
     if (isCorrect) {
-      toast.success(`إجابة صحيحة! تم إضافة ${selectedPuzzle.points} نقاط إلى حسابك.`);
-      
-      try {
-        // Update user score in database
-        if (user) {
+      if (!puzzleAlreadySolved) {
+        // First time solving this puzzle
+        pointsAdjustment = selectedPuzzle.points;
+        
+        // Update solved puzzles list
+        const updatedSolvedPuzzles = [...solvedPuzzles, selectedPuzzle.id];
+        setSolvedPuzzles(updatedSolvedPuzzles);
+        
+        toast.success(`إجابة صحيحة! تم إضافة ${selectedPuzzle.points} نقاط إلى حسابك.`, {
+          icon: <Trophy className="text-yellow-300" />
+        });
+        
+        try {
+          // Update user profile in database
+          if (user) {
+            // Update points
+            const { error } = await supabase.rpc('adjust_user_score', {
+              user_id: user.id,
+              points_adjustment: pointsAdjustment
+            });
+            
+            if (error) throw error;
+            
+            // Update solved puzzles list
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ 
+                solved_puzzles: updatedSolvedPuzzles 
+              })
+              .eq('id', user.id);
+              
+            if (updateError) throw updateError;
+            
+            // Update local user profile
+            if (userProfile) {
+              setUserProfile({
+                ...userProfile,
+                score: (userProfile.score || 0) + pointsAdjustment,
+                solved_puzzles: updatedSolvedPuzzles
+              });
+            }
+          }
+        } catch (error: any) {
+          console.error('Error updating score:', error);
+        }
+      } else {
+        // Already solved before
+        toast.success('إجابة صحيحة! لقد قمت بحل هذا اللغز من قبل.', {
+          icon: <Clock className="text-blue-300" />
+        });
+      }
+    } else {
+      // Incorrect answer
+      if (retryPenalty && user) {
+        // Apply penalty for retry
+        pointsAdjustment = -5;
+        
+        toast.error('إجابة خاطئة! تم خصم 5 نقاط لإعادة المحاولة.', {
+          icon: <FrownIcon className="text-red-300" />
+        });
+        
+        try {
+          // Update points in database
           const { error } = await supabase.rpc('adjust_user_score', {
             user_id: user.id,
-            points_adjustment: selectedPuzzle.points
+            points_adjustment: pointsAdjustment
           });
           
           if (error) throw error;
+          
+          // Update local user profile
+          if (userProfile) {
+            setUserProfile({
+              ...userProfile,
+              score: Math.max(0, (userProfile.score || 0) + pointsAdjustment)
+            });
+          }
+        } catch (error: any) {
+          console.error('Error updating score:', error);
         }
-      } catch (error: any) {
-        console.error('Error updating score:', error);
+      } else {
+        toast.error('إجابة خاطئة. حاول مرة أخرى.', {
+          icon: <FrownIcon className="text-red-300" />
+        });
       }
-    } else {
-      toast.error('إجابة خاطئة. حاول مرة أخرى.');
     }
     
-    // Reset selection
-    setTimeout(() => {
-      setSelectedPuzzle(null);
-      setSelectedOption(null);
-    }, 2000);
+    // Reset selection after a short delay
+    if (isCorrect) {
+      setTimeout(() => {
+        setSelectedPuzzle(null);
+        setSelectedOption(null);
+      }, 2000);
+    }
   };
   
   // Loading state
@@ -143,7 +291,16 @@ const MathPuzzles: React.FC = () => {
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold text-white text-right">ألغاز رياضية</h2>
+        <div className="flex flex-col items-end">
+          <h2 className="text-2xl font-bold text-white">ألغاز رياضية</h2>
+          {userProfile && (
+            <div className="flex items-center gap-2 text-space-neon-blue">
+              <span className="font-bold">{userProfile.score || 0}</span>
+              <span>النقاط:</span>
+              <Trophy className="h-4 w-4" />
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center gap-4">
           <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
@@ -159,7 +316,9 @@ const MathPuzzles: React.FC = () => {
           </Select>
           
           {isAdmin ? (
-            <MathPuzzleAdmin />
+            <div className="z-30">
+              <MathPuzzleAdmin />
+            </div>
           ) : (
             <Button 
               className="bg-space-neon-blue/10 hover:bg-space-neon-blue/20 text-space-neon-blue border border-space-neon-blue/30"
@@ -210,15 +369,34 @@ const MathPuzzles: React.FC = () => {
                 {selectedPuzzle.title}
               </h3>
               
-              <div className={`text-white/80 mb-6 text-right ${selectedPuzzle.difficulty === 'easy' 
-                ? 'text-green-300' 
-                : selectedPuzzle.difficulty === 'medium' 
-                  ? 'text-yellow-300' 
-                  : 'text-red-300'}`}
-              >
-                {selectedPuzzle.difficulty === 'easy' && 'سهل'}
-                {selectedPuzzle.difficulty === 'medium' && 'متوسط'}
-                {selectedPuzzle.difficulty === 'hard' && 'صعب'}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-space-neon-blue text-xs px-2 py-1 rounded-full bg-space-neon-blue/10">
+                    {selectedPuzzle.points} نقطة
+                  </span>
+                  {solvedPuzzles.includes(selectedPuzzle.id) && (
+                    <span className="text-green-300 text-xs px-2 py-1 rounded-full bg-green-900/30 flex items-center gap-1">
+                      <Trophy className="h-3 w-3" />
+                      تم الحل
+                    </span>
+                  )}
+                  {retryPenalty && (
+                    <span className="text-red-300 text-xs px-2 py-1 rounded-full bg-red-900/30">
+                      -5 للمحاولة الخاطئة
+                    </span>
+                  )}
+                </div>
+                
+                <div className={`text-right ${selectedPuzzle.difficulty === 'easy' 
+                  ? 'text-green-300' 
+                  : selectedPuzzle.difficulty === 'medium' 
+                    ? 'text-yellow-300' 
+                    : 'text-red-300'}`}
+                >
+                  {selectedPuzzle.difficulty === 'easy' && 'سهل'}
+                  {selectedPuzzle.difficulty === 'medium' && 'متوسط'}
+                  {selectedPuzzle.difficulty === 'hard' && 'صعب'}
+                </div>
               </div>
             </div>
             
@@ -265,7 +443,9 @@ const MathPuzzles: React.FC = () => {
           filteredPuzzles.map(puzzle => (
             <motion.div 
               key={puzzle.id}
-              className="bg-white/5 rounded-2xl overflow-hidden hover:bg-white/10 transition-colors cursor-pointer border border-white/10 hover:border-white/30"
+              className={`bg-white/5 rounded-2xl overflow-hidden hover:bg-white/10 transition-colors cursor-pointer border border-white/10 hover:border-white/30 ${
+                solvedPuzzles.includes(puzzle.id) ? 'border-green-500/30' : ''
+              }`}
               onClick={() => handlePuzzleSelect(puzzle)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -310,7 +490,15 @@ const MathPuzzles: React.FC = () => {
                       {puzzle.points} نقطة
                     </span>
                   </div>
-                  <span className="text-space-neon-blue text-sm">اضغط للحل &larr;</span>
+                  <div className="flex items-center gap-2">
+                    {solvedPuzzles.includes(puzzle.id) && (
+                      <span className="text-green-300 text-xs px-2 py-1 rounded-full bg-green-900/30 flex items-center gap-1">
+                        <Trophy className="h-3 w-3" />
+                        تم الحل
+                      </span>
+                    )}
+                    <span className="text-space-neon-blue text-sm">اضغط للحل &larr;</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -321,6 +509,14 @@ const MathPuzzles: React.FC = () => {
       {filteredPuzzles.length === 0 && (
         <div className="text-center py-12">
           <p className="text-white/70">لا توجد ألغاز متاحة بهذا المستوى حالياً</p>
+        </div>
+      )}
+      
+      {!user && (
+        <div className="mt-8 p-4 border border-yellow-500/30 bg-yellow-500/10 rounded-lg text-right">
+          <p className="text-yellow-300">
+            قم بتسجيل الدخول للاحتفاظ بتقدمك والنقاط التي تحصل عليها!
+          </p>
         </div>
       )}
     </div>

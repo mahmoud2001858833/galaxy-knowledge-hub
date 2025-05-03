@@ -2,9 +2,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Brain } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+
+// Gemini API Key
+const GEMINI_API_KEY = "AIzaSyAdBB8Cvm4l8O9_JqqFvkk2QeQd6BOV9Wo";
 
 const MathAIAssistant = () => {
   const [prompt, setPrompt] = useState('');
@@ -20,20 +24,39 @@ const MathAIAssistant = () => {
     setError(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          prompt: prompt.trim(),
-          subject: 'math'
+      // Call Gemini API directly
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `كمساعد للرياضيات، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
+              }]
+            }]
+          })
         }
-      });
+      );
       
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'خطأ في الاتصال بالمساعد الذكي');
+      }
       
-      setResponse(data.result);
+      const data = await response.json();
+      const result = data.candidates[0]?.content?.parts[0]?.text || 'لا يوجد رد من المساعد الذكي';
+      
+      setResponse(result);
+      toast.success('تم استلام الإجابة بنجاح!');
     } catch (err: any) {
       console.error('Error calling AI assistant:', err);
       setError(err.message || 'حدث خطأ أثناء معالجة طلبك');
       setResponse('');
+      toast.error('فشل الاتصال بالمساعد الذكي');
     } finally {
       setIsLoading(false);
     }
