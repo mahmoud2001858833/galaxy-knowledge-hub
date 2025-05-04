@@ -83,12 +83,42 @@ const Index = () => {
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Hero Section */}
+        {/* Hero Section with Logo */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-center mb-16"
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2 }}
+            className="mb-8 flex justify-center"
+          >
+            <div className="relative w-64 h-64 md:w-80 md:h-80">
+              <motion.div
+                className="absolute inset-0 rounded-full bg-space-neon-blue/10"
+                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <img
+                src="https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-0e58-61f7-8efe-aa9fd8a59c7a/raw?se=2025-05-03T13%3A50%3A25Z&sp=r&sv=2024-08-04&sr=b&scid=c725ed43-1deb-5989-ad2e-8e45df1c63ae&skoid=fa7966e7-f8ea-483c-919a-13acfd61d696&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-02T20%3A35%3A20Z&ske=2025-05-03T20%3A35%3A20Z&sks=b&skv=2024-08-04&sig=e3pTLmVb8mzHluQ3bC3Dx2uZJFMLr0fNdCRpCIS7XL0%3D"
+                alt="فلك المعرفة"
+                className="w-full h-full object-contain z-10 relative"
+              />
+              <motion.div
+                className="absolute -inset-4 bg-gradient-to-r from-space-neon-blue/0 via-space-neon-blue/10 to-space-deep-purple/0 rounded-full z-0"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.div
+                className="absolute -inset-8 bg-gradient-to-r from-space-vivid-purple/0 via-space-vivid-purple/5 to-space-neon-blue/0 rounded-full z-0"
+                animate={{ rotate: -360 }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+          </motion.div>
+          
           <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-space-neon-blue via-white to-space-vivid-purple">
             فلك المعرفة
           </h1>

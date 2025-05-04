@@ -117,24 +117,24 @@ const Mathematics = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
           >
+            <motion.h1 
+              className="text-5xl md:text-7xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-space-neon-blue via-white to-space-vivid-purple"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            >
+              عالم الرياضيات
+            </motion.h1>
+
             <motion.div
               className="mb-16 relative w-full max-w-2xl h-80"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1.5 }}
             >
-              {/* Mathematics Platform Logo */}
-              <div className="absolute inset-0 flex justify-center items-center">
-                <img 
-                  src="https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-0e58-61f7-8efe-aa9fd8a59c7a/raw?se=2025-05-03T13%3A50%3A25Z&sp=r&sv=2024-08-04&sr=b&scid=c725ed43-1deb-5989-ad2e-8e45df1c63ae&skoid=fa7966e7-f8ea-483c-919a-13acfd61d696&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-02T20%3A35%3A20Z&ske=2025-05-03T20%3A35%3A20Z&sks=b&skv=2024-08-04&sig=e3pTLmVb8mzHluQ3bC3Dx2uZJFMLr0fNdCRpCIS7XL0%3D"
-                  alt="Mathematics Platform Logo"
-                  className="max-w-full max-h-full object-contain rounded-lg z-10"
-                />
-              </div>
-
               {/* Interactive Graph Visualization */}
               <svg 
-                className="absolute inset-0 w-full h-full opacity-40" 
+                className="w-full h-full" 
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"
               >
@@ -162,15 +162,6 @@ const Mathematics = () => {
                 ))}
               </svg>
             </motion.div>
-
-            <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-space-neon-blue via-white to-space-vivid-purple"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-            >
-              عالم الرياضيات
-            </motion.h1>
             
             <motion.div
               initial={{ opacity: 0, y: 50 }}

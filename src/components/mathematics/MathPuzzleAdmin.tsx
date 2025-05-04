@@ -128,7 +128,7 @@ const MathPuzzleAdmin = () => {
       // Format options for database
       const formattedOptions = newPuzzle.options.map(opt => opt.text);
       
-      // Insert into database
+      // Insert into database - don't use user_id here to fix the permission issue
       const { data, error } = await supabase
         .from('puzzles')
         .insert([
@@ -140,6 +140,7 @@ const MathPuzzleAdmin = () => {
             difficulty: newPuzzle.difficulty,
             points: newPuzzle.points,
             image: newPuzzle.imageUrl || null,
+            // Don't include created_by field that references users
           }
         ]);
       
