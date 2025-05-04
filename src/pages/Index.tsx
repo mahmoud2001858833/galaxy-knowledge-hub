@@ -24,13 +24,36 @@ const Index = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.7 }}
-            className="mb-10 w-48 h-48 md:w-64 md:h-64"
+            className="mb-10 relative"
           >
-            <img 
-              src="https://drive.google.com/uc?export=view&id=1wN5NyTRy5cijOuTBgiQYo0fFXDlWcR0D" 
-              alt="فلك المعرفة" 
-              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" 
-            />
+            {/* Circular space-themed frame */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/30 via-purple-500/20 to-cyan-500/30 p-1 -m-4 blur-md"></div>
+            <div className="absolute inset-0 rounded-full animate-pulse-glow opacity-50 bg-gradient-to-r from-cyan-500/20 via-blue-400/10 to-purple-600/20 -m-2"></div>
+            
+            {/* Animated ring */}
+            <motion.div 
+              className="absolute inset-0 rounded-full border-2 border-blue-400/50 -m-3"
+              animate={{ 
+                scale: [1, 1.05, 1],
+                opacity: [0.7, 1, 0.7],
+                rotate: [0, 360]
+              }}
+              transition={{ 
+                duration: 15, 
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            ></motion.div>
+            
+            {/* Logo */}
+            <div className="w-56 h-56 md:w-64 md:h-64 rounded-full p-3 bg-blue-900/30 backdrop-blur-sm border border-blue-500/30 relative overflow-hidden flex items-center justify-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-60"></div>
+              <img 
+                src="https://drive.usercontent.google.com/download?id=1wN5NyTRy5cijOuTBgiQYo0fFXDlWcR0D&export=view&authuser=0" 
+                alt="فلك المعرفة" 
+                className="w-48 h-48 md:w-56 md:h-56 object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" 
+              />
+            </div>
           </motion.div>
           
           <motion.h1 

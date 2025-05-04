@@ -22,7 +22,7 @@ serve(async (req) => {
       )
     }
 
-    const API_KEY = Deno.env.get('GOOGLE_API_KEY')
+    const API_KEY = Deno.env.get('GOOGLE_API_KEY') || 'AIzaSyC4qVy7Fa3G-ZcxkRI0N_E2yLASf3B2QaA'
     
     if (!API_KEY) {
       return new Response(
@@ -36,24 +36,25 @@ serve(async (req) => {
     if (subject) {
       switch (subject) {
         case 'math':
-          fullPrompt = `كمساعد للرياضيات، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
+          fullPrompt = `كمساعد للرياضيات، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
           break
         case 'chemistry':
-          fullPrompt = `كمساعد للكيمياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
+          fullPrompt = `كمساعد للكيمياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. قدم معلومات دقيقة عن العناصر والتفاعلات والمركبات الكيميائية. استخدم أمثلة محددة وشروحات مبسطة: ${prompt}`
           break
         case 'physics':
-          fullPrompt = `كمساعد للفيزياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
+          fullPrompt = `كمساعد للفيزياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
           break
         case 'biology':
-          fullPrompt = `كمساعد للأحياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
+          fullPrompt = `كمساعد للأحياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
           break
         default:
-          fullPrompt = `كمساعد علمي، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
+          fullPrompt = `كمساعد علمي، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
       }
     }
 
+    // Use Gemini 2.0 API
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
       {
         method: 'POST',
         headers: {
@@ -91,7 +92,7 @@ serve(async (req) => {
     }
 
     // Extract the text from the response
-    const result = data.candidates[0]?.content?.parts[0]?.text || 'لا يوجد رد من المساعد الذكي'
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || 'لا يوجد رد من المساعد الذكي'
 
     return new Response(
       JSON.stringify({ result }),

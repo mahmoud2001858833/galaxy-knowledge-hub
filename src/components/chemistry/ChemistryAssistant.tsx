@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 type Message = {
   id: number;
@@ -38,28 +40,41 @@ const ChemistryAssistant = () => {
     setInput('');
     setIsTyping(true);
     
-    // Simulate AI response - in a real app this would be an API call
-    setTimeout(() => {
-      const aiResponses = [
-        "تفاعل الأكسجين مع الهيدروجين يؤدي إلى تكوين الماء (H₂O).",
-        "الجدول الدوري يضم ١١٨ عنصرًا مرتبة حسب العدد الذري.",
-        "في تفاعلات الأكسدة والاختزال، يحدث نقل للإلكترونات بين المتفاعلات.",
-        "الرقم الهيدروجيني (pH) يقيس حموضة أو قلوية محلول ما.",
-        "الرابطة التساهمية تحدث عندما تشارك الذرات الإلكترونات لتكوين جزيء.",
-        "عند حساب المول، يمكنك استخدام عدد أفوجادرو وهو ٦٫٠٢٢ × ١٠^٢٣."
-      ];
-      
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+    try {
+      // Call Supabase Edge Function for AI response
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          prompt: input,
+          subject: 'chemistry'
+        }
+      });
+
+      if (error) throw error;
+
+      const aiResponse = data?.result || "عذراً، لم أتمكن من الحصول على إجابة الآن. حاول مرة أخرى لاحقاً.";
       
       const assistantMessage: Message = {
         id: messages.length + 2,
         role: 'assistant',
-        content: randomResponse
+        content: aiResponse
       };
       
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error: any) {
+      console.error("Error calling AI assistant:", error);
+      toast.error("حدث خطأ أثناء الاتصال بالمساعد الذكي");
+      
+      // Fallback response
+      const fallbackMessage: Message = {
+        id: messages.length + 2,
+        role: 'assistant',
+        content: "عذراً، حدث خطأ في الاتصال بالمساعد الذكي. يرجى المحاولة مرة أخرى."
+      };
+      
+      setMessages((prev) => [...prev, fallbackMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
