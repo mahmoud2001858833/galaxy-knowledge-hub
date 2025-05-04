@@ -102,7 +102,7 @@ const Index = () => {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               />
               <img
-                src="https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-0e58-61f7-8efe-aa9fd8a59c7a/raw?se=2025-05-03T13%3A50%3A25Z&sp=r&sv=2024-08-04&sr=b&scid=c725ed43-1deb-5989-ad2e-8e45df1c63ae&skoid=fa7966e7-f8ea-483c-919a-13acfd61d696&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-02T20%3A35%3A20Z&ske=2025-05-03T20%3A35%3A20Z&sks=b&skv=2024-08-04&sig=e3pTLmVb8mzHluQ3bC3Dx2uZJFMLr0fNdCRpCIS7XL0%3D"
+                src="https://drive.google.com/uc?export=view&id=1wN5NyTRy5cijOuTBgiQYo0fFXDlWcR0D"
                 alt="فلك المعرفة"
                 className="w-full h-full object-contain z-10 relative"
               />

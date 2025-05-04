@@ -28,7 +28,7 @@ const StarField: React.FC = () => {
   useEffect(() => {
     // Generate random stars - increased density
     const generateStars = () => {
-      const starCount = Math.floor(window.innerWidth * window.innerHeight / 3000); // More stars
+      const starCount = Math.floor(window.innerWidth * window.innerHeight / 2000); // More stars
       const newStars: Star[] = [];
       
       for (let i = 0; i < starCount; i++) {
@@ -52,7 +52,7 @@ const StarField: React.FC = () => {
     
     // Generate space objects (planets, meteors, comets)
     const generateSpaceObjects = () => {
-      const objectCount = Math.floor((window.innerWidth + window.innerHeight) / 500);
+      const objectCount = Math.floor((window.innerWidth + window.innerHeight) / 400);
       const newObjects: SpaceObject[] = [];
       
       for (let i = 0; i < objectCount; i++) {
@@ -105,18 +105,35 @@ const StarField: React.FC = () => {
             style={{ 
               width: object.size, 
               height: object.size,
-              boxShadow: '0 0 10px rgba(155, 135, 245, 0.3)'
+              boxShadow: '0 0 20px rgba(155, 135, 245, 0.3)'
             }} 
           />
         );
       case 'meteor':
         return (
-          <div className="relative">
+          <motion.div 
+            className="relative"
+            animate={{
+              translateX: [`${-100}px`, `${window.innerWidth + 100}px`],
+              translateY: [`${-100}px`, `${window.innerHeight + 100}px`],
+            }}
+            transition={{
+              duration: object.duration / 2,
+              delay: object.delay,
+              repeat: Infinity,
+              repeatType: "loop",
+              ease: "linear"
+            }}
+          >
             <div 
-              className="h-1 w-10 bg-gradient-to-r from-orange-500/30 to-transparent rounded absolute"
+              className="h-1 w-16 bg-gradient-to-r from-orange-500/40 to-transparent rounded absolute"
               style={{ transform: `rotate(${object.rotation}deg)` }}
             />
-          </div>
+            <div 
+              className="h-2 w-2 rounded-full bg-orange-300/50 absolute"
+              style={{ transform: `rotate(${object.rotation}deg)` }}
+            />
+          </motion.div>
         );
       case 'comet':
         return (
@@ -134,8 +151,8 @@ const StarField: React.FC = () => {
             }}
             className="absolute"
           >
-            <div className="h-1 w-20 bg-gradient-to-r from-blue-400/60 to-transparent rounded" />
-            <div className="h-2 w-2 rounded-full bg-blue-300/60 absolute -left-1 -top-0.5" />
+            <div className="h-1 w-32 bg-gradient-to-r from-blue-400/60 to-transparent rounded" />
+            <div className="h-3 w-3 rounded-full bg-blue-300/80 absolute -left-1 -top-1" />
           </motion.div>
         );
       default:
@@ -172,6 +189,10 @@ const StarField: React.FC = () => {
           {renderSpaceObject(object)}
         </div>
       ))}
+      
+      {/* Additional nebula effects */}
+      <div className="fixed top-1/4 left-1/3 w-1/3 h-1/3 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="fixed top-2/3 left-1/6 w-1/4 h-1/4 bg-gradient-to-tl from-blue-500/5 to-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
     </div>
   );
 };

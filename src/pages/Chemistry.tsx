@@ -1,16 +1,42 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import MathPuzzles from '@/pages/MathPuzzles';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calculator, FlaskConical, User, HelpCircle } from "lucide-react";
+import ChemistryAssistant from '@/components/chemistry/ChemistryAssistant';
+import ChemistryPuzzles from '@/components/chemistry/ChemistryPuzzles';
+import ChemistryCalculations from '@/components/chemistry/ChemistryCalculations';
+import ChemistryScientists from '@/components/chemistry/ChemistryScientists';
 
 const Chemistry = () => {
-  const [selectedTab, setSelectedTab] = useState("puzzles");
+  const [selectedTab, setSelectedTab] = useState("");
+  const [showOptions, setShowOptions] = useState(false);
+  const [electrons, setElectrons] = useState<{ x: number, y: number, angle: number, speed: number, radius: number }[]>([]);
   
-  // Floating chemistry symbols
+  useEffect(() => {
+    // Create electrons with different angles, speeds, and radiuses
+    const electronCount = 6;
+    const newElectrons = [];
+    
+    for (let i = 0; i < electronCount; i++) {
+      newElectrons.push({
+        x: 0,
+        y: 0,
+        angle: (Math.PI * 2 / electronCount) * i,
+        speed: 0.5 + Math.random() * 0.5,
+        radius: 80 + (i % 3) * 40
+      });
+    }
+    
+    setElectrons(newElectrons);
+  }, []);
+  
+  // Chemistry symbols floating
   const chemistrySymbols = [
     { symbol: "H", top: "15%", left: "8%", size: "text-4xl", animationDelay: "0s" },
     { symbol: "O", top: "25%", left: "92%", size: "text-5xl", animationDelay: "0.5s" },
@@ -20,15 +46,42 @@ const Chemistry = () => {
     { symbol: "Cu", top: "50%", left: "95%", size: "text-5xl", animationDelay: "2.5s" }
   ];
   
+  const optionCards = [
+    {
+      title: "الحسابات الكيميائية",
+      icon: <Calculator className="w-12 h-12 text-cyan-400" />,
+      color: "from-cyan-500/20 to-blue-500/30",
+      tab: "calculations"
+    },
+    {
+      title: "علماء الكيمياء",
+      icon: <User className="w-12 h-12 text-cyan-400" />,
+      color: "from-blue-500/20 to-cyan-500/30",
+      tab: "scientists"
+    },
+    {
+      title: "المساعد الذكي",
+      icon: <HelpCircle className="w-12 h-12 text-cyan-400" />,
+      color: "from-cyan-400/20 to-blue-600/30",
+      tab: "assistant"
+    },
+    {
+      title: "ألغاز الكيمياء",
+      icon: <FlaskConical className="w-12 h-12 text-cyan-400" />,
+      color: "from-blue-400/20 to-cyan-600/30",
+      tab: "puzzles"
+    }
+  ];
+  
   return (
-    <div className="min-h-screen flex flex-col text-right" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
       <StarField />
       
       {/* Floating Chemistry Symbols */}
       {chemistrySymbols.map((symbol, index) => (
         <div 
           key={index}
-          className={`absolute text-green-500/30 ${symbol.size} math-symbol pointer-events-none`}
+          className={`absolute text-cyan-500/30 ${symbol.size} math-symbol pointer-events-none`}
           style={{ 
             top: symbol.top, 
             left: symbol.left, 
@@ -41,97 +94,184 @@ const Chemistry = () => {
       
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-white to-emerald-500">
-            منصة الكيمياء
-          </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف عالم الكيمياء من خلال ألغاز تفاعلية، مساعد ذكي، وحسابات كيميائية
-          </p>
-        </motion.div>
-        
-        <div className="mb-8">
-          <Tabs 
-            defaultValue="puzzles"
-            value={selectedTab}
-            onValueChange={setSelectedTab}
-            className="w-full"
+      <main className="flex-1 container mx-auto px-4 py-12 flex flex-col items-center">
+        {!showOptions ? (
+          <motion.div 
+            className="flex flex-col items-center justify-center max-w-4xl mx-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
           >
-            <TabsList className="flex justify-center mb-8 bg-white/5 p-1 rounded-lg w-full sm:w-fit mx-auto">
-              <TabsTrigger 
-                value="puzzles"
-                className="text-white data-[state=active]:bg-emerald-700 data-[state=active]:text-white"
-              >
-                ألغاز الكيمياء
-              </TabsTrigger>
-              <TabsTrigger 
-                value="assistant"
-                className="text-white data-[state=active]:bg-emerald-700 data-[state=active]:text-white"
-              >
-                المساعد الذكي
-              </TabsTrigger>
-              <TabsTrigger 
-                value="scientists"
-                className="text-white data-[state=active]:bg-emerald-700 data-[state=active]:text-white"
-              >
-                علماء الكيمياء
-              </TabsTrigger>
-              <TabsTrigger 
-                value="calculations"
-                className="text-white data-[state=active]:bg-emerald-700 data-[state=active]:text-white"
-              >
-                الحسابات الكيميائية
-              </TabsTrigger>
-            </TabsList>
-            
-            <motion.div
-              key={selectedTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="glass-card rounded-2xl p-6"
+            <motion.h1 
+              className="text-5xl md:text-7xl font-bold mb-16 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-white to-blue-500"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.7 }}
             >
-              <TabsContent value="puzzles" className="mt-0">
-                <MathPuzzles />
-              </TabsContent>
+              عالم الكيمياء
+            </motion.h1>
+
+            {/* Animated Atom */}
+            <motion.div 
+              className="relative w-64 h-64 mb-16"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.7 }}
+            >
+              {/* Nucleus */}
+              <motion.div 
+                className="absolute top-1/2 left-1/2 w-16 h-16 -ml-8 -mt-8 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-full shadow-lg shadow-cyan-500/50"
+                animate={{ 
+                  scale: [1, 1.05, 1],
+                  boxShadow: [
+                    "0 0 15px 5px rgba(56, 189, 248, 0.3)", 
+                    "0 0 20px 8px rgba(56, 189, 248, 0.5)", 
+                    "0 0 15px 5px rgba(56, 189, 248, 0.3)"
+                  ] 
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              />
               
-              <TabsContent value="assistant" className="mt-0">
-                <div className="text-center py-12">
-                  <p className="text-white/70">سيتم إضافة المساعد الذكي قريباً</p>
+              {/* Electron Orbits */}
+              {electrons.map((electron, index) => (
+                <React.Fragment key={index}>
+                  {/* Orbit Path */}
+                  <motion.div 
+                    className="absolute top-1/2 left-1/2 rounded-full border border-cyan-500/20"
+                    style={{ 
+                      width: electron.radius * 2, 
+                      height: electron.radius * 2, 
+                      marginLeft: -electron.radius, 
+                      marginTop: -electron.radius,
+                      transform: `rotate(${index * 30}deg)`
+                    }}
+                  />
+                  
+                  {/* Electron */}
+                  <motion.div 
+                    className="absolute w-4 h-4 bg-cyan-400 rounded-full shadow-md shadow-cyan-500/50"
+                    animate={{
+                      x: [
+                        Math.cos(0) * electron.radius,
+                        Math.cos(Math.PI / 2) * electron.radius,
+                        Math.cos(Math.PI) * electron.radius,
+                        Math.cos(3 * Math.PI / 2) * electron.radius,
+                        Math.cos(2 * Math.PI) * electron.radius
+                      ],
+                      y: [
+                        Math.sin(0) * electron.radius,
+                        Math.sin(Math.PI / 2) * electron.radius,
+                        Math.sin(Math.PI) * electron.radius,
+                        Math.sin(3 * Math.PI / 2) * electron.radius,
+                        Math.sin(2 * Math.PI) * electron.radius
+                      ]
+                    }}
+                    transition={{
+                      duration: 4 / electron.speed,
+                      ease: "linear",
+                      repeat: Infinity,
+                      delay: index * 0.2
+                    }}
+                    style={{
+                      top: "calc(50% - 8px)",
+                      left: "calc(50% - 8px)"
+                    }}
+                  />
+                </React.Fragment>
+              ))}
+            </motion.div>
+            
+            {/* Start Experience Button */}
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1, duration: 0.7 }}
+            >
+              <Button 
+                onClick={() => setShowOptions(true)}
+                className="text-xl px-8 py-6 bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-500 hover:to-blue-700 text-white rounded-full shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300"
+              >
+                ابدأ الآن
+              </Button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <div className="w-full">
+            {selectedTab === "" ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="text-center mb-12">
+                  <h2 className="text-4xl font-bold text-cyan-400 mb-4">اختر الخدمة</h2>
+                  <p className="text-xl text-white/70">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="scientists" className="mt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-center">
-                  {Array(6).fill(0).map((_, i) => (
-                    <div key={i} className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors border border-white/10">
-                      <div className="mb-4 w-full aspect-square overflow-hidden rounded-lg">
-                        <img 
-                          src="https://i0.wp.com/www.ibelieveinsci.com/wp-content/uploads/learn-chemistry-lessons-online.jpg?fit=640%2C484&ssl=1" 
-                          alt="Chemistry Scientist" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <h3 className="text-xl font-bold text-white">عالم الكيمياء {i+1}</h3>
-                      <p className="text-white/70 mt-2">وصف مختصر عن إنجازات العالم واكتشافاته في مجال الكيمياء.</p>
-                    </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {optionCards.map((card, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.5 }}
+                      onClick={() => setSelectedTab(card.tab)}
+                    >
+                      <Card className={`h-64 cursor-pointer overflow-hidden relative bg-gradient-to-br ${card.color} border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1`}>
+                        <div className="absolute inset-0 opacity-20">
+                          <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                        </div>
+                        <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                          <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm">
+                            {card.icon}
+                          </div>
+                          <h3 className="text-2xl font-bold text-white mb-2">{card.title}</h3>
+                          <div className="mt-auto">
+                            <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
+                              استكشف الآن
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
                   ))}
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="calculations" className="mt-0">
-                <div className="text-center py-12">
-                  <p className="text-white/70">سيتم إضافة الحسابات الكيميائية قريباً</p>
-                </div>
-              </TabsContent>
-            </motion.div>
-          </Tabs>
-        </div>
+              </motion.div>
+            ) : (
+              <div>
+                <motion.div
+                  className="mb-6"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Button
+                    onClick={() => setSelectedTab("")}
+                    variant="ghost"
+                    className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30"
+                  >
+                    &larr; العودة للخيارات
+                  </Button>
+                </motion.div>
+                
+                <motion.div
+                  key={selectedTab}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-cyan-500/20 p-6"
+                >
+                  {selectedTab === "calculations" && <ChemistryCalculations />}
+                  {selectedTab === "scientists" && <ChemistryScientists />}
+                  {selectedTab === "assistant" && <ChemistryAssistant />}
+                  {selectedTab === "puzzles" && <ChemistryPuzzles />}
+                </motion.div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
       
       <Footer />
