@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chemistry_puzzles: {
+        Row: {
+          admin_password: string | null
+          correct_answer: string
+          created_at: string
+          created_by: string | null
+          difficulty: string
+          id: string
+          image: string | null
+          options: string[]
+          points: number
+          question: string
+          title: string
+        }
+        Insert: {
+          admin_password?: string | null
+          correct_answer: string
+          created_at?: string
+          created_by?: string | null
+          difficulty: string
+          id?: string
+          image?: string | null
+          options: string[]
+          points: number
+          question: string
+          title: string
+        }
+        Update: {
+          admin_password?: string | null
+          correct_answer?: string
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          id?: string
+          image?: string | null
+          options?: string[]
+          points?: number
+          question?: string
+          title?: string
+        }
+        Relationships: []
+      }
       generated_codes: {
         Row: {
           code: string

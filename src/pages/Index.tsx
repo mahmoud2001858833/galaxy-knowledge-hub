@@ -1,215 +1,166 @@
-
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Card, CardContent } from "@/components/ui/card";
+import { Calculator, Atom, FlaskConical, Leaf } from "lucide-react";
+import { Link } from "react-router-dom";
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
-// Platform Card Component
-const PlatformCard = ({ 
-  title, 
-  icon, 
-  color, 
-  path, 
-  delay 
-}: { 
-  title: string; 
-  icon: string; 
-  color: string; 
-  path: string;
-  delay: number;
-}) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay, duration: 0.5 }}
-      className="group"
-    >
-      <Link to={path} className="block">
-        <div className="platform-card h-64 w-full sm:w-72 md:h-80 md:w-80">
-          <div className="glow-effect" />
-          <div 
-            className="platform-icon"
-            style={{ color }}
-          >
-            {icon}
-          </div>
-          <h3 className="text-2xl font-bold text-white text-center mb-2">{title}</h3>
-          <p className="text-white/70 text-center text-sm">استكشف عالم {title}</p>
-          
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <span className="px-4 py-1 rounded-full bg-white/10 text-white/80 text-xs">
-              دخول المنصة
-            </span>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-};
-
-// Secondary Options Component
-const SecondaryOption = ({ 
-  title, 
-  icon, 
-  path, 
-  delay 
-}: { 
-  title: string; 
-  icon: string; 
-  path: string;
-  delay: number;
-}) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: delay, duration: 0.5 }}
-    >
-      <Link to={path} className="flex items-center space-x-2 space-x-reverse bg-white/5 hover:bg-white/10 p-3 rounded-lg transition-colors">
-        <div className="text-2xl text-space-neon-blue">{icon}</div>
-        <span className="text-white">{title}</span>
-      </Link>
-    </motion.div>
-  );
-};
-
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col text-right" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
       <StarField />
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Hero Section with Logo */}
+      <main className="flex-1 container mx-auto px-4 py-12 flex flex-col items-center">
         <motion.div 
+          className="flex flex-col items-center justify-center max-w-4xl mx-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center mb-16"
+          transition={{ duration: 0.5 }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2 }}
-            className="mb-8 flex justify-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+            className="mb-10 w-48 h-48 md:w-64 md:h-64"
           >
-            <div className="relative w-64 h-64 md:w-80 md:h-80">
-              <motion.div
-                className="absolute inset-0 rounded-full bg-space-neon-blue/10"
-                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              />
-              <img
-                src="https://drive.google.com/uc?export=view&id=1wN5NyTRy5cijOuTBgiQYo0fFXDlWcR0D"
-                alt="فلك المعرفة"
-                className="w-full h-full object-contain z-10 relative"
-              />
-              <motion.div
-                className="absolute -inset-4 bg-gradient-to-r from-space-neon-blue/0 via-space-neon-blue/10 to-space-deep-purple/0 rounded-full z-0"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              />
-              <motion.div
-                className="absolute -inset-8 bg-gradient-to-r from-space-vivid-purple/0 via-space-vivid-purple/5 to-space-neon-blue/0 rounded-full z-0"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              />
-            </div>
+            <img 
+              src="https://drive.google.com/uc?export=view&id=1wN5NyTRy5cijOuTBgiQYo0fFXDlWcR0D" 
+              alt="فلك المعرفة" 
+              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" 
+            />
           </motion.div>
           
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-space-neon-blue via-white to-space-vivid-purple">
+          <motion.h1 
+            className="text-5xl md:text-7xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-blue-500"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.7 }}
+          >
             فلك المعرفة
-          </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            منصة تعليمية تفاعلية تجمع بين المعرفة العلمية والتكنولوجيا الحديثة بتصميم فضائي مميز
-          </p>
+          </motion.h1>
+          
+          <motion.p 
+            className="text-xl text-white/70 text-center mb-12 max-w-2xl"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.7 }}
+          >
+            منصة تفاعلية للتعلم الذكي في مجالات العلوم الأساسية
+          </motion.p>
+          
+          {/* Subject Cards */}
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1, duration: 0.7 }}
+          >
+            {/* Mathematics */}
+            <Link to="/mathematics">
+              <Card className="h-64 overflow-hidden relative hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-blue-500/20 to-blue-700/30 border-blue-500/20">
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                </div>
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm">
+                    <Calculator className="w-12 h-12 text-blue-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">الرياضيات</h3>
+                  <p className="text-white/70 mb-4">استكشف عالم الأرقام والمعادلات</p>
+                  <span className="inline-block px-4 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-full">
+                    ابدأ التعلم
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            {/* Physics */}
+            <Link to="/physics">
+              <Card className="h-64 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-500/20 to-purple-700/30 border-purple-500/20">
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                </div>
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <div className="mb-6 p-4 rounded-full bg-purple-900/30 backdrop-blur-sm">
+                    <Atom className="w-12 h-12 text-purple-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">الفيزياء</h3>
+                  <p className="text-white/70 mb-4">تعرف على قوانين الكون والطاقة</p>
+                  <span className="inline-block px-4 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-full">
+                    ابدأ التعلم
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            {/* Chemistry */}
+            <Link to="/chemistry">
+              <Card className="h-64 overflow-hidden relative hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-cyan-500/20 to-cyan-700/30 border-cyan-500/20">
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                </div>
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <div className="mb-6 p-4 rounded-full bg-cyan-900/30 backdrop-blur-sm">
+                    <FlaskConical className="w-12 h-12 text-cyan-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">الكيمياء</h3>
+                  <p className="text-white/70 mb-4">اكتشف عالم المركبات والتفاعلات</p>
+                  <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
+                    ابدأ التعلم
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            {/* Biology */}
+            <Link to="/biology">
+              <Card className="h-64 overflow-hidden relative hover:border-green-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-green-500/20 to-green-700/30 border-green-500/20">
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                </div>
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <div className="mb-6 p-4 rounded-full bg-green-900/30 backdrop-blur-sm">
+                    <Leaf className="w-12 h-12 text-green-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">الأحياء</h3>
+                  <p className="text-white/70 mb-4">اكتشف أسرار الحياة والكائنات الحية</p>
+                  <span className="inline-block px-4 py-1 bg-green-500/20 text-green-300 text-sm rounded-full">
+                    ابدأ التعلم
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+          </motion.div>
         </motion.div>
-        
-        {/* Main Platforms */}
-        <div className="mb-16">
-          <motion.h2 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-2xl font-bold text-white mb-8 text-right"
-          >
-            منصات الصفحة
-          </motion.h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
-            <PlatformCard 
-              title="الكيمياء" 
-              icon="🧪" 
-              color="#33C3F0" 
-              path="/chemistry" 
-              delay={0.1}
-            />
-            <PlatformCard 
-              title="الرياضيات" 
-              icon="📐" 
-              color="#9b87f5" 
-              path="/mathematics" 
-              delay={0.2}
-            />
-            <PlatformCard 
-              title="الفيزياء" 
-              icon="⚛️" 
-              color="#F06292" 
-              path="/physics" 
-              delay={0.3}
-            />
-            <PlatformCard 
-              title="الأحياء" 
-              icon="🧬" 
-              color="#66BB6A" 
-              path="/biology" 
-              delay={0.4}
-            />
-          </div>
-        </div>
-        
-        {/* Secondary Options */}
-        <div>
-          <motion.h2 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-2xl font-bold text-white mb-8 text-right"
-          >
-            خيارات الصفحة
-          </motion.h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <SecondaryOption 
-              title="الدردشة الذكية" 
-              icon="💬" 
-              path="/chat" 
-              delay={0.6}
-            />
-            <SecondaryOption 
-              title="تنظيم الوقت" 
-              icon="🗓️" 
-              path="/scheduler" 
-              delay={0.7}
-            />
-            <SecondaryOption 
-              title="المكتبة المرئية" 
-              icon="🗄️" 
-              path="/library" 
-              delay={0.8}
-            />
-            <SecondaryOption 
-              title="المجلة العلمية" 
-              icon="📓" 
-              path="/journal"
-              delay={0.9}
-            />
-          </div>
-        </div>
       </main>
       
       <Footer />
+      
+      {/* Enhanced Starfield Animation with more stars and space elements */}
+      <div className="fixed inset-0 pointer-events-none">
+        {Array.from({ length: 20 }).map((_, index) => (
+          <div
+            key={index}
+            className="absolute rounded-full bg-white opacity-20 animate-pulse"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              width: `${Math.random() * 4 + 1}px`,
+              height: `${Math.random() * 4 + 1}px`,
+              animationDuration: `${Math.random() * 5 + 3}s`,
+              animationDelay: `${Math.random() * 2}s`
+            }}
+          />
+        ))}
+        
+        {/* Add some nebula-like elements */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-blue-500/5 blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/5 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl" />
+        <div className="absolute top-2/3 right-1/4 w-48 h-48 rounded-full bg-cyan-500/5 blur-3xl" />
+      </div>
     </div>
   );
 };

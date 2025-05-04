@@ -14,19 +14,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChemistryPuzzleType } from '@/types/chemistry';
 import { Loader2, FlaskConical, Award, Lock } from "lucide-react";
 
-// Define types for Chemistry Puzzles
-interface ChemistryPuzzleType {
-  id: string;
-  title: string;
-  question: string;
-  options: string[];
-  correct_answer: string;
-  difficulty: string;
-  points: number;
-  image: string | null;
-  created_at: string;
-}
-
 const ChemistryPuzzles = () => {
   const [puzzles, setPuzzles] = useState<ChemistryPuzzleType[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -62,7 +49,7 @@ const ChemistryPuzzles = () => {
       if (error) throw error;
       
       if (data) {
-        setPuzzles(data);
+        setPuzzles(data as ChemistryPuzzleType[]);
       }
     } catch (error) {
       console.error('Error fetching puzzles:', error);
@@ -102,7 +89,7 @@ const ChemistryPuzzles = () => {
     }
   };
   
-  const handleNewPuzzleChange = (field: string, value: string) => {
+  const handleNewPuzzleChange = (field: string, value: string | number) => {
     setNewPuzzle(prev => ({
       ...prev,
       [field]: value
@@ -313,7 +300,7 @@ const ChemistryPuzzles = () => {
                     min="1"
                     className="bg-blue-950/50 border-cyan-900/30"
                     value={newPuzzle.points}
-                    onChange={(e) => handleNewPuzzleChange("points", Number(e.target.value))}
+                    onChange={(e) => handleNewPuzzleChange("points", parseInt(e.target.value))}
                   />
                 </div>
               </div>
