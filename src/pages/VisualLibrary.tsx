@@ -1,11 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import StarField from '@/components/StarField';
 import Footer from '@/components/Footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SubjectImagesGrid from '@/components/visualLibrary/SubjectImagesGrid';
+import UploadImageDrawer from '@/components/visualLibrary/UploadImageDrawer';
+import { SubjectType } from '@/components/shared/types/educationalContentTypes';
 
 const VisualLibrary = () => {
+  const [activeSubject, setActiveSubject] = useState<SubjectType>('physics');
+  
   return (
     <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
       <StarField />
@@ -18,19 +24,42 @@ const VisualLibrary = () => {
           transition={{ duration: 0.5 }}
           className="max-w-6xl mx-auto"
         >
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-blue-500 mb-8">
-            المكتبة المرئية
-          </h1>
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-blue-500">
+              المكتبة المرئية
+            </h1>
+            
+            <UploadImageDrawer />
+          </div>
           
           <p className="text-white text-lg mb-8">
             مرحبًا بك في المكتبة المرئية! هنا يمكنك العثور على صور تعليمية لمختلف المواضيع العلمية.
           </p>
 
-          <div className="flex justify-center items-center h-64">
-            <p className="text-blue-300 text-xl">
-              قريبًا سيتم إضافة المزيد من الصور والمحتوى التعليمي هنا...
-            </p>
-          </div>
+          <Tabs defaultValue="physics" dir="rtl" onValueChange={(value) => setActiveSubject(value as SubjectType)}>
+            <TabsList className="grid grid-cols-4 mb-8">
+              <TabsTrigger value="physics">الفيزياء</TabsTrigger>
+              <TabsTrigger value="chemistry">الكيمياء</TabsTrigger>
+              <TabsTrigger value="biology">الأحياء</TabsTrigger>
+              <TabsTrigger value="mathematics">الرياضيات</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="physics">
+              <SubjectImagesGrid subject="physics" />
+            </TabsContent>
+            
+            <TabsContent value="chemistry">
+              <SubjectImagesGrid subject="chemistry" />
+            </TabsContent>
+            
+            <TabsContent value="biology">
+              <SubjectImagesGrid subject="biology" />
+            </TabsContent>
+            
+            <TabsContent value="mathematics">
+              <SubjectImagesGrid subject="mathematics" />
+            </TabsContent>
+          </Tabs>
         </motion.div>
       </main>
       

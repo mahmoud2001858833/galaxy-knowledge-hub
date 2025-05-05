@@ -51,6 +51,36 @@ export type Database = {
         }
         Relationships: []
       }
+      educational_images: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string
+          subject: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          subject: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          subject?: string
+          title?: string
+        }
+        Relationships: []
+      }
       generated_codes: {
         Row: {
           code: string
@@ -146,6 +176,39 @@ export type Database = {
           options?: string[]
           points?: number
           question?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      scientific_journals: {
+        Row: {
+          cover_image_url: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          pdf_url: string
+          subject: string
+          title: string
+        }
+        Insert: {
+          cover_image_url: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          pdf_url: string
+          subject: string
+          title: string
+        }
+        Update: {
+          cover_image_url?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          pdf_url?: string
+          subject?: string
           title?: string
         }
         Relationships: []
