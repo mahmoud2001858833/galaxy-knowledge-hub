@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -11,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
 
+// Define interfaces outside of component
 interface Puzzle {
   id: string;
   title: string;
@@ -29,6 +29,7 @@ interface PuzzleFormValues {
   difficulty: string;
 }
 
+// Explicitly define the shape of the database items
 interface DatabasePuzzle {
   id: string;
   title: string;
@@ -37,7 +38,12 @@ interface DatabasePuzzle {
   difficulty: string;
   hint?: string;
   created_at: string;
-  [key: string]: any; // To accommodate other fields in the database
+  // Other fields that might be present
+  admin_password?: string;
+  image?: string | null;
+  options?: string[];
+  points?: number;
+  created_by?: string | null;
 }
 
 const PhysicsPuzzles = () => {
@@ -67,15 +73,22 @@ const PhysicsPuzzles = () => {
         
       if (error) throw error;
       
-      const physicsPuzzles: Puzzle[] = (data || []).map((item: DatabasePuzzle) => ({
-        id: item.id,
-        title: item.title,
-        description: item.question,
-        answer: item.correct_answer,
-        difficulty: item.difficulty,
-        hint: item.hint,
-        created_at: item.created_at
-      }));
+      // Explicitly type the mapping to avoid deep type instantiation
+      const physicsPuzzles: Puzzle[] = [];
+      
+      if (data) {
+        for (const item of data) {
+          physicsPuzzles.push({
+            id: item.id,
+            title: item.title,
+            description: item.question,
+            answer: item.correct_answer,
+            difficulty: item.difficulty,
+            hint: item.hint,
+            created_at: item.created_at
+          });
+        }
+      }
       
       setPuzzles(physicsPuzzles);
       if (physicsPuzzles.length > 0) {

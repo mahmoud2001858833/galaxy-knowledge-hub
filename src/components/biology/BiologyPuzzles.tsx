@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -37,7 +36,11 @@ interface DatabasePuzzle {
   difficulty: string;
   hint?: string;
   created_at: string;
-  [key: string]: any; // To accommodate other fields in the database
+  admin_password?: string;
+  image?: string | null;
+  options?: string[];
+  points?: number;
+  created_by?: string | null;
 }
 
 const BiologyPuzzles = () => {
@@ -67,15 +70,21 @@ const BiologyPuzzles = () => {
         
       if (error) throw error;
       
-      const biologyPuzzles: Puzzle[] = (data || []).map((item: DatabasePuzzle) => ({
-        id: item.id,
-        title: item.title,
-        description: item.question,
-        answer: item.correct_answer,
-        difficulty: item.difficulty,
-        hint: item.hint,
-        created_at: item.created_at
-      }));
+      const biologyPuzzles: Puzzle[] = [];
+      
+      if (data) {
+        for (const item of data) {
+          biologyPuzzles.push({
+            id: item.id,
+            title: item.title,
+            description: item.question,
+            answer: item.correct_answer,
+            difficulty: item.difficulty,
+            hint: item.hint,
+            created_at: item.created_at
+          });
+        }
+      }
       
       setPuzzles(biologyPuzzles);
       if (biologyPuzzles.length > 0) {
