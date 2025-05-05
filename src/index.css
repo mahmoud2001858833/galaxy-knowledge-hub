@@ -3,234 +3,55 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 261.1 73.4% 59.8%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 199.4 95.5% 73.9%;
-    --secondary-foreground: 0 0% 12%;
-
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-
-    --radius: 1rem;
-
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 261.1 73.4% 59.8%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 240 4.9% 83.9%;
-  }
+:root {
+  --space-deep-purple: #2d1b69;
+  --space-bright-blue: #1e88e5;
+  --space-neon-blue: #3db2ff;
+  --space-vivid-purple: #9c27b0;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  
   body {
-    @apply bg-space-cosmic-black text-foreground bg-space-gradient;
-    font-family: 'Poppins', sans-serif;
+    @apply bg-black text-white font-sans;
   }
 
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
-    @apply w-2;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    @apply bg-black/20 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-space-deep-purple/50 rounded-full;
+    @apply bg-cyan-800/50 rounded-full hover:bg-cyan-700/60;
   }
 }
 
 @layer components {
-  .star {
-    @apply absolute bg-white rounded-full;
-  }
-
-  .star-sm {
-    @apply w-1 h-1 animate-startwinkle;
-  }
-
-  .star-md {
-    @apply w-1.5 h-1.5 animate-startwinkle animation-delay-100;
-  }
-
-  .star-lg {
-    @apply w-2 h-2 animate-startwinkle animation-delay-200;
-  }
-
-  .platform-card {
-    @apply relative overflow-hidden rounded-2xl p-6 flex flex-col items-center justify-center
-    border border-white/10 bg-gradient-to-br from-white/5 to-white/0
-    backdrop-blur-sm shadow-lg transition-all duration-300 
-    hover:shadow-space-neon-blue/20 hover:border-space-neon-blue/30
-    hover:translate-y-[-10px] hover:scale-[1.03];
-  }
-
-  .platform-icon {
-    @apply text-6xl mb-4 text-space-neon-blue transition-all duration-300
-    group-hover:text-space-deep-purple group-hover:scale-110;
-  }
-
-  .glow-effect {
-    @apply absolute inset-0 -z-10 bg-gradient-to-br opacity-0
-    from-space-deep-purple/20 via-transparent to-space-neon-blue/20 
-    transition-opacity duration-500 blur-xl group-hover:opacity-100;
-  }
-
   .nav-link {
-    @apply px-4 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors;
+    @apply px-3 py-2 rounded-md text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors;
   }
 
   .nav-link.active {
-    @apply text-white bg-white/10;
+    @apply bg-cyan-600/40 text-white;
   }
-  
-  /* إضافة تأثيرات توهج للمواد المختلفة */
-  .text-glow-green {
-    @apply text-subject-biology-primary drop-shadow-[0_0_8px_rgba(16,185,129,0.7)];
-  }
-  
-  .text-glow-purple {
-    @apply text-subject-physics-primary drop-shadow-[0_0_8px_rgba(155,135,245,0.7)];
-  }
-  
-  .text-glow-blue {
-    @apply text-subject-math-primary drop-shadow-[0_0_8px_rgba(139,92,246,0.7)];
-  }
-  
-  .shadow-glow-green {
-    @apply shadow-[0_0_15px_rgba(16,185,129,0.5)];
-  }
-  
-  .shadow-glow-purple {
-    @apply shadow-[0_0_15px_rgba(155,135,245,0.5)];
-  }
-  
-  .shadow-glow-blue {
-    @apply shadow-[0_0_15px_rgba(139,92,246,0.5)];
-  }
-  
-  .shadow-glow-md {
-    @apply shadow-[0_0_25px_rgba(255,255,255,0.4)];
-  }
-  
-  .glass-card {
-    @apply backdrop-blur-md bg-white/5 border border-white/10;
-  }
-  
-  .glass-card-biology {
-    @apply backdrop-blur-md bg-subject-biology-primary/5 border border-subject-biology-primary/20;
-  }
-  
-  .glass-card-physics {
-    @apply backdrop-blur-md bg-subject-physics-primary/5 border border-subject-physics-primary/20;
-  }
-  
-  .glass-card-math {
-    @apply backdrop-blur-md bg-subject-math-primary/5 border border-subject-math-primary/20;
-  }
-  
-  .glass-card-chemistry {
-    @apply backdrop-blur-md bg-subject-chemistry-primary/5 border border-subject-chemistry-primary/20;
-  }
-}
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
+  /* Custom animation for cosmic elements */
+  .animate-pulse-glow {
+    animation: pulse-glow 3s infinite;
   }
-  50% {
-    transform: translateY(-10px);
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.05);
+    }
   }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes startwinkle {
-  0%, 100% {
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.animation-delay-100 {
-  animation-delay: 0.1s;
-}
-
-.animation-delay-200 {
-  animation-delay: 0.2s;
-}
-
-.animation-delay-300 {
-  animation-delay: 0.3s;
-}
-
-.animation-delay-400 {
-  animation-delay: 0.4s;
-}
-
-.animation-delay-500 {
-  animation-delay: 0.5s;
-}
-
-.math-symbol {
-  animation: float 3s infinite ease-in-out;
-}
-
-.rotate-element {
-  animation: spin-slow 15s linear infinite;
-}
-
-.hover-glow {
-  @apply transition-all duration-300;
-}
-
-.hover-glow:hover {
-  @apply shadow-lg shadow-space-neon-blue/30;
 }

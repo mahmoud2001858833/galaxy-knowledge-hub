@@ -4,12 +4,34 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const location = useLocation();
+  const [user, setUser] = useState<any>(null);
   
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+
+    fetchUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const isActive = (path: string) => {
     return location.pathname === path ? 'active' : '';
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
@@ -17,11 +39,13 @@ const Navbar = () => {
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
         <div className="hidden md:flex items-center space-x-1 rtl:space-x-reverse">
           <Link to="/" className="flex items-center">
-            <img 
-              src="https://i.postimg.cc/mr48sKY6/image.png" 
-              alt="في فلك المعرفة" 
-              className="h-9 w-auto"
-            />
+            <div className="relative h-9 w-9 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center">
+              <img 
+                src="https://i.postimg.cc/mr48sKY6/image.png" 
+                alt="في فلك المعرفة" 
+                className="h-8 w-8 object-contain"
+              />
+            </div>
             <span className="text-xl font-bold ml-2 text-white">في فلك المعرفة</span>
           </Link>
         </div>
@@ -32,19 +56,26 @@ const Navbar = () => {
           <Link to="/chemistry" className={`nav-link ${isActive('/chemistry')}`}>الكيمياء</Link>
           <Link to="/biology" className={`nav-link ${isActive('/biology')}`}>الأحياء</Link>
           <Link to="/mathematics" className={`nav-link ${isActive('/mathematics')}`}>الرياضيات</Link>
-          <Link to="/auth" className="mr-2">
-            <Button size="sm" variant="outline">تسجيل الدخول</Button>
-          </Link>
+          <Link to="/chat-rooms" className={`nav-link ${isActive('/chat-rooms')}`}>المحادثات</Link>
+          {user ? (
+            <Button onClick={handleLogout} size="sm" variant="outline" className="mr-2">تسجيل الخروج</Button>
+          ) : (
+            <Link to="/auth" className="mr-2">
+              <Button size="sm" variant="outline">تسجيل الدخول</Button>
+            </Link>
+          )}
         </div>
         
         {/* Mobile logo */}
         <div className="md:hidden flex items-center">
           <Link to="/" className="flex items-center">
-            <img 
-              src="https://i.postimg.cc/mr48sKY6/image.png" 
-              alt="في فلك المعرفة" 
-              className="h-8 w-auto"
-            />
+            <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center">
+              <img 
+                src="https://i.postimg.cc/mr48sKY6/image.png" 
+                alt="في فلك المعرفة" 
+                className="h-7 w-7 object-contain"
+              />
+            </div>
             <span className="text-lg font-bold ml-2 text-white">في فلك المعرفة</span>
           </Link>
         </div>
@@ -64,9 +95,14 @@ const Navbar = () => {
                 <Link to="/chemistry" className={`nav-link ${isActive('/chemistry')}`}>الكيمياء</Link>
                 <Link to="/biology" className={`nav-link ${isActive('/biology')}`}>الأحياء</Link>
                 <Link to="/mathematics" className={`nav-link ${isActive('/mathematics')}`}>الرياضيات</Link>
-                <Link to="/auth">
-                  <Button variant="outline" className="w-full">تسجيل الدخول</Button>
-                </Link>
+                <Link to="/chat-rooms" className={`nav-link ${isActive('/chat-rooms')}`}>المحادثات</Link>
+                {user ? (
+                  <Button onClick={handleLogout} variant="outline" className="w-full">تسجيل الخروج</Button>
+                ) : (
+                  <Link to="/auth">
+                    <Button variant="outline" className="w-full">تسجيل الدخول</Button>
+                  </Link>
+                )}
               </div>
             </SheetContent>
           </Sheet>
