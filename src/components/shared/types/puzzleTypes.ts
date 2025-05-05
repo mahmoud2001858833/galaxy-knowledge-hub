@@ -12,10 +12,11 @@ export interface Puzzle {
   created_at: string;
   created_by?: string | null;
   admin_password?: string;
+  
+  // Additional properties that may not exist in the database
+  // but are used in the components
   subject?: string;
   hint?: string;
-  
-  // Alternative property names used in some components
   description?: string;
   answer?: string;
 }
@@ -30,23 +31,24 @@ export interface PuzzleFormValues {
   difficulty: string;
   points: number;
   image?: string | null;
-  
-  // Alternative property names used in some components
   answer?: string;
 }
 
+// This interface strictly reflects the database structure
 export interface DatabasePuzzle {
   id: string;
   title: string;
   question: string;
   correct_answer: string;
   difficulty: string;
-  hint?: string;
-  created_at: string;
-  admin_password?: string;
+  admin_password: string;
   image?: string | null;
-  options?: string[];
-  points?: number;
+  options: string[];
+  points: number;
+  created_at: string;
   created_by?: string | null;
+  
+  // These fields might not exist in all tables
+  hint?: string;
   subject?: string;
 }

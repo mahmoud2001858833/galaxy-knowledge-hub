@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Puzzle } from './types/puzzleTypes';
+import { Puzzle, DatabasePuzzle } from './types/puzzleTypes';
 import { motion } from 'framer-motion';
 import PuzzleItem from './PuzzleItem';
 import BiologyAIAssistant from './BiologyAIAssistant';
@@ -28,23 +28,28 @@ const BiologyPuzzles = () => {
       if (error) throw error;
       
       // Properly type the data and map to Puzzle type
-      const puzzlesData: Puzzle[] = data?.map(item => ({
-        id: item.id || '',
-        title: item.title || '',
-        question: item.question || '',
-        description: item.question || '', // Map question to description
-        options: item.options || [],
-        correct_answer: item.correct_answer || '',
-        answer: item.correct_answer || '', // Map correct_answer to answer
-        difficulty: item.difficulty || '',
-        points: item.points || 0,
-        image: item.image || null,
-        created_at: item.created_at || '',
-        created_by: item.created_by || null,
-        admin_password: item.admin_password || '',
-        subject: 'biology', // Set a default subject
-        hint: item.hint || ''
-      })) || [];
+      const puzzlesData: Puzzle[] = data?.map(item => {
+        // Type assertion to make TypeScript happy
+        const dbPuzzle = item as unknown as DatabasePuzzle;
+        
+        return {
+          id: dbPuzzle.id || '',
+          title: dbPuzzle.title || '',
+          question: dbPuzzle.question || '',
+          description: dbPuzzle.question || '', // Map question to description
+          options: dbPuzzle.options || [],
+          correct_answer: dbPuzzle.correct_answer || '',
+          answer: dbPuzzle.correct_answer || '', // Map correct_answer to answer
+          difficulty: dbPuzzle.difficulty || '',
+          points: dbPuzzle.points || 0,
+          image: dbPuzzle.image || null,
+          created_at: dbPuzzle.created_at || '',
+          created_by: dbPuzzle.created_by || null,
+          admin_password: dbPuzzle.admin_password || '',
+          subject: 'biology', // Set a default subject
+          hint: dbPuzzle.hint || '' // Use hint if exists in database, otherwise empty string
+        };
+      }) || [];
       
       setPuzzles(puzzlesData);
     } catch (error: any) {

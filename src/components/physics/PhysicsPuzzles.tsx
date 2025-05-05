@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -10,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
-import { Puzzle, PuzzleFormValues } from './types/puzzleTypes';
+import { Puzzle, DatabasePuzzle, PuzzleFormValues } from './types/puzzleTypes';
 import PuzzleItem from './PuzzleItem';
 
 const PhysicsPuzzles = () => {
@@ -46,20 +45,23 @@ const PhysicsPuzzles = () => {
       if (data) {
         // Explicitly type and map each property
         data.forEach(item => {
+          // Type assertion to make TypeScript happy
+          const dbPuzzle = item as unknown as DatabasePuzzle;
+          
           physicsPuzzles.push({
-            id: item.id || '',
-            title: item.title || '',
-            question: item.question || '',
-            description: item.question || '', // Map question to description for compatibility
-            options: item.options || [],
-            correct_answer: item.correct_answer || '',
-            answer: item.correct_answer || '', // Map correct_answer to answer for compatibility
-            difficulty: item.difficulty || '',
-            points: item.points || 0,
-            image: item.image || null,
-            created_at: item.created_at || '',
-            created_by: item.created_by || null,
-            hint: item.hint || '',
+            id: dbPuzzle.id || '',
+            title: dbPuzzle.title || '',
+            question: dbPuzzle.question || '',
+            description: dbPuzzle.question || '', // Map question to description for compatibility
+            options: dbPuzzle.options || [],
+            correct_answer: dbPuzzle.correct_answer || '',
+            answer: dbPuzzle.correct_answer || '', // Map correct_answer to answer for compatibility
+            difficulty: dbPuzzle.difficulty || '',
+            points: dbPuzzle.points || 0,
+            image: dbPuzzle.image || null,
+            created_at: dbPuzzle.created_at || '',
+            created_by: dbPuzzle.created_by || null,
+            hint: dbPuzzle.hint || '', // Use hint if exists in database, otherwise empty string
             subject: 'physics'
           });
         });
@@ -100,7 +102,7 @@ const PhysicsPuzzles = () => {
     if (isAnswerCorrect) {
       toast({
         title: "إجابة صحيحة! 🎉",
-        description: "أحسنت! لقد أجبت بشكل صحيح على اللغز.",
+        description: "أحسنت! لقد أجبت بشكل صحي�� على اللغز.",
         variant: "default"
       });
     } else {
