@@ -15,9 +15,9 @@ interface Puzzle {
   id: string;
   title: string;
   description: string;
-  hint?: string;
   answer: string;
   difficulty: string;
+  hint?: string;
   created_at: string;
 }
 
@@ -61,7 +61,7 @@ const PhysicsPuzzles = () => {
         title: item.title,
         description: item.question, // Map question field to description
         answer: item.correct_answer,
-        hint: item.hint,
+        hint: item.hint || undefined, // Handle potentially missing hint field
         difficulty: item.difficulty,
         created_at: item.created_at
       })) || [];
