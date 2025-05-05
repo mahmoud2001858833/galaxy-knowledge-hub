@@ -49,15 +49,26 @@ const PhysicsPuzzles = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('physics_puzzles')
+        .from('puzzles')
         .select('*')
+        .eq('subject', 'physics')
         .order('created_at', { ascending: false });
         
       if (error) throw error;
       
-      setPuzzles(data || []);
-      if (data && data.length > 0) {
-        setSelectedPuzzle(data[0]);
+      const physicsPuzzles = data?.map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.question, // Map question field to description
+        answer: item.correct_answer,
+        hint: item.hint,
+        difficulty: item.difficulty,
+        created_at: item.created_at
+      })) || [];
+      
+      setPuzzles(physicsPuzzles);
+      if (physicsPuzzles.length > 0) {
+        setSelectedPuzzle(physicsPuzzles[0]);
       }
     } catch (error: any) {
       console.error('Error fetching puzzles:', error);
@@ -103,7 +114,16 @@ const PhysicsPuzzles = () => {
   
   const onSubmitPuzzle = async (data: PuzzleFormValues) => {
     try {
-      const { error } = await supabase.from('physics_puzzles').insert([data]);
+      const { error } = await supabase.from('puzzles').insert([{
+        title: data.title,
+        question: data.description,
+        correct_answer: data.answer,
+        hint: data.hint,
+        difficulty: data.difficulty,
+        subject: 'physics',
+        options: [], // Empty array as placeholder
+        points: 10 // Default points
+      }]);
       
       if (error) throw error;
       
@@ -128,7 +148,7 @@ const PhysicsPuzzles = () => {
   
   const deletePuzzle = async (id: string) => {
     try {
-      const { error } = await supabase.from('physics_puzzles').delete().eq('id', id);
+      const { error } = await supabase.from('puzzles').delete().eq('id', id);
       
       if (error) throw error;
       

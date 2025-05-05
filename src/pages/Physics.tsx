@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Microscope, Atom, Flask } from 'lucide-react';
+import { Microscope, Atom, FlaskConical } from 'lucide-react';
 import PhysicsScientists from '@/components/physics/PhysicsScientists';
 import PhysicsPuzzles from '@/components/physics/PhysicsPuzzles';
 import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
@@ -173,7 +172,7 @@ const Physics = () => {
           >
             <Card className="h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Flask className="h-16 w-16 text-subject-physics-primary mb-4" />
+                <FlaskConical className="h-16 w-16 text-subject-physics-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-2 text-glow-purple">المساعد الذكي</h3>
                 <p className="text-white/70 mb-4">اسأل المساعد الذكي أي سؤال عن الفيزياء</p>
                 <Button 

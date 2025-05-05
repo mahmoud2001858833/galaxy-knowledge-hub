@@ -37,19 +37,24 @@ const StarField: React.FC<StarFieldProps> = ({
       brightness: number;
       twinkleSpeed: number;
       twinklePhase: number;
-      size: number;
     }> = [];
     
-    // Initialize stars
+    // Initialize stars - optimized for performance
     const initStars = () => {
       stars = [];
-      // Adjust star count based on screen size for performance
-      const finalStarCount = window.innerWidth < 768 ? Math.min(starCount, 150) : starCount;
+      
+      // Adjust star count based on screen size and device performance
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const isLowPerformanceDevice = devicePixelRatio < 1.5;
+      const finalStarCount = isLowPerformanceDevice ? 
+        Math.min(starCount, window.innerWidth < 768 ? 100 : 150) : 
+        window.innerWidth < 768 ? Math.min(starCount, 150) : starCount;
       
       for (let i = 0; i < finalStarCount; i++) {
         const radius = Math.random() * (maxSize - minSize) + minSize;
         const brightness = 0.2 + Math.random() * 0.8;
-        const twinkleSpeed = 0.5 + Math.random() * 2; // Reduced for performance
+        // Reduced animation complexity for better performance
+        const twinkleSpeed = 0.3 + Math.random() * 1.5;
         const twinklePhase = Math.random() * Math.PI * 2;
         
         stars.push({
@@ -58,16 +63,16 @@ const StarField: React.FC<StarFieldProps> = ({
           radius,
           brightness,
           twinkleSpeed,
-          twinklePhase,
-          size: radius
+          twinklePhase
         });
       }
     };
     
-    // Animate stars
+    // Animate stars - optimized for performance
     let animationFrameId: number;
     let lastFrameTime = 0;
-    const fps = 30; // Limit FPS for better performance
+    // Lower FPS for better performance on lower-end devices
+    const fps = window.innerWidth < 768 ? 20 : 30;
     const fpsInterval = 1000 / fps;
     
     const animate = (currentTime: number) => {
@@ -79,15 +84,15 @@ const StarField: React.FC<StarFieldProps> = ({
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw stars
+      // Draw stars with optimized rendering
       stars.forEach(star => {
-        // Calculate current brightness based on twinkling
+        // Simplified twinkling calculation
         const currentBrightness = 
           star.brightness * 
-          (0.5 + 0.5 * Math.sin(Date.now() * 0.0008 * star.twinkleSpeed + star.twinklePhase));
+          (0.5 + 0.5 * Math.sin(Date.now() * 0.0005 * star.twinkleSpeed + star.twinklePhase));
         
-        // Update position
-        star.y += speed / (star.radius * 0.5);
+        // Update position - slower for less CPU usage
+        star.y += speed / (star.radius * 0.7);
         
         // Reset position if star goes off screen
         if (star.y > canvas.height) {
@@ -101,29 +106,33 @@ const StarField: React.FC<StarFieldProps> = ({
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
         ctx.fill();
         
-        // Only draw glow effect for larger stars
-        if (star.radius > maxSize * 0.7) {
-          // Create gradient for star glow
+        // Only draw glow effect for larger stars and on higher-end devices
+        if (star.radius > maxSize * 0.8 && window.devicePixelRatio > 1) {
+          // Create gradient for star glow - simplified for performance
           const gradient = ctx.createRadialGradient(
             star.x, star.y, 0,
-            star.x, star.y, star.radius * 1.5
+            star.x, star.y, star.radius * 1.3
           );
           
-          gradient.addColorStop(0, `rgba(255, 255, 255, ${currentBrightness * 0.8})`);
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${currentBrightness * 0.7})`);
           gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
           ctx.beginPath();
           ctx.fillStyle = gradient;
-          ctx.arc(star.x, star.y, star.radius * 1.5, 0, Math.PI * 2);
+          ctx.arc(star.x, star.y, star.radius * 1.3, 0, Math.PI * 2);
           ctx.fill();
         }
       });
     };
     
-    // Handle resize
+    // Handle resize with debouncing for performance
+    let resizeTimeout: number;
     const handleResize = () => {
-      setCanvasDimensions();
-      initStars();
+      clearTimeout(resizeTimeout);
+      resizeTimeout = window.setTimeout(() => {
+        setCanvasDimensions();
+        initStars();
+      }, 200);
     };
     
     window.addEventListener('resize', handleResize);
@@ -137,6 +146,7 @@ const StarField: React.FC<StarFieldProps> = ({
     return () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
+      clearTimeout(resizeTimeout);
     };
   }, [starCount, speed, minSize, maxSize]);
   
