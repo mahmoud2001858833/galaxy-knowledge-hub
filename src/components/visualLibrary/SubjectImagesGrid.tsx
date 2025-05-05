@@ -32,7 +32,13 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
           throw error;
         }
 
-        setImages(data || []);
+        // Type cast the data to ensure it matches the EducationalImage interface
+        const typedData = data?.map(item => ({
+          ...item,
+          subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics'
+        })) || [];
+
+        setImages(typedData as EducationalImage[]);
       } catch (error: any) {
         console.error('Error fetching images:', error);
         toast({

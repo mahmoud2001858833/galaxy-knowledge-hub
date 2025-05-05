@@ -33,7 +33,13 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
           throw error;
         }
 
-        setJournals(data || []);
+        // Type cast the data to ensure it matches the ScientificJournal interface
+        const typedData = data?.map(item => ({
+          ...item,
+          subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics'
+        })) || [];
+
+        setJournals(typedData as ScientificJournal[]);
       } catch (error: any) {
         console.error('Error fetching journals:', error);
         toast({
