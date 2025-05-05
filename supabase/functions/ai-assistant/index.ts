@@ -22,7 +22,21 @@ serve(async (req) => {
       )
     }
 
-    const API_KEY = Deno.env.get('GOOGLE_API_KEY') || 'AIzaSyC4qVy7Fa3G-ZcxkRI0N_E2yLASf3B2QaA'
+    // Choose the appropriate API key based on the subject
+    let API_KEY = Deno.env.get('GOOGLE_API_KEY')
+    
+    // If subject is physics, use the physics-specific API key
+    if (subject === 'physics') {
+      API_KEY = Deno.env.get('PHYSICS_API_KEY') || 'AIzaSyCrbnTAA8tPj52LzXQOgQpv7EFxcflzODs'
+    } 
+    // If subject is biology, use the biology-specific API key
+    else if (subject === 'biology') {
+      API_KEY = Deno.env.get('BIOLOGY_API_KEY') || 'AIzaSyAtdFTqQjqBEjepbCxo7bIF4Cfsu7JzDjs'
+    } 
+    // Default API key for other subjects (currently used for math and chemistry)
+    else {
+      API_KEY = API_KEY || 'AIzaSyC4qVy7Fa3G-ZcxkRI0N_E2yLASf3B2QaA'
+    }
     
     if (!API_KEY) {
       return new Response(
@@ -42,10 +56,10 @@ serve(async (req) => {
           fullPrompt = `كمساعد للكيمياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. قدم معلومات دقيقة عن العناصر والتفاعلات والمركبات الكيميائية. استخدم أمثلة محددة وشروحات مبسطة مع رسم المعادلات الكيميائية إذا لزم الأمر. قدم المعرفة الأكثر تطوراً في مجال الكيمياء عن: ${prompt}`
           break
         case 'physics':
-          fullPrompt = `كمساعد للفيزياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة مع توضيح القوانين والمعادلات الفيزيائية ذات الصلة: ${prompt}`
+          fullPrompt = `كمساعد للفيزياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة مع الأخذ في الاعتبار أن المستخدم قد يكون طالباً في المدرسة أو الجامعة. استخدم أمثلة وشروحات بسيطة مع توضيح القوانين والمعادلات الفيزيائية ذات الصلة. اكتب المعادلات الفيزيائية بشكل واضح ودقيق، وقم بتوضيح معنى الرموز المستخدمة. اشرح التطبيقات العملية للمفاهيم الفيزيائية في حياتنا اليومية. السؤال هو: ${prompt}`
           break
         case 'biology':
-          fullPrompt = `كمساعد للأحياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة مع توضيح العمليات الحيوية والتكوينات والوظائف: ${prompt}`
+          fullPrompt = `كمساعد للأحياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة مع الأخذ في الاعتبار أن المستخدم قد يكون طالباً في المدرسة أو الجامعة. استخدم أمثلة وشروحات بسيطة مع توضيح العمليات الحيوية والتكوينات والوظائف بطريقة مبسطة. اشرح العلاقات بين مختلف الأنظمة البيولوجية وكيف تعمل معاً. قدم معلومات دقيقة وحديثة في مجال الأحياء. السؤال هو: ${prompt}`
           break
         default:
           fullPrompt = `كمساعد علمي متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`

@@ -1,0 +1,138 @@
+
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface FormValues {
+  question: string;
+}
+
+const PhysicsAIAssistant = () => {
+  const { register, handleSubmit, formState: { isSubmitting }, reset } = useForm<FormValues>();
+  const [response, setResponse] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showExampleQuestions, setShowExampleQuestions] = useState(true);
+  const { toast } = useToast();
+  
+  const exampleQuestions = [
+    "ما هو قانون نيوتن الثالث للحركة؟",
+    "كيف تعمل الثقوب السوداء؟",
+    "ما هي النظرية النسبية لأينشتاين؟",
+    "كيف يعمل المسرع الجزيئي؟",
+    "ما هو الفرق بين الطاقة الحركية والطاقة الكامنة؟"
+  ];
+  
+  const handleQuestionClick = (question: string) => {
+    reset({ question });
+    setShowExampleQuestions(false);
+  };
+  
+  const onSubmit = async (data: FormValues) => {
+    if (!data.question.trim()) {
+      toast({
+        title: "لا يمكن إرسال سؤال فارغ",
+        description: "يرجى كتابة سؤالك قبل الإرسال",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setResponse('');
+      
+      const { data: responseData, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          prompt: data.question,
+          subject: 'physics'
+        }
+      });
+      
+      if (error) throw error;
+      
+      setResponse(responseData.result);
+      setShowExampleQuestions(false);
+    } catch (error: any) {
+      console.error('Error calling AI assistant:', error);
+      toast({
+        title: "حدث خطأ",
+        description: "لم نتمكن من معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div className="text-center md:text-right">
+        <h2 className="text-2xl font-bold text-glow-purple mb-2">المساعد الذكي للفيزياء</h2>
+        <p className="text-white/70">استخدم المساعد الذكي للإجابة على أسئلتك في مجال الفيزياء</p>
+      </div>
+      
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <Textarea
+            {...register('question')}
+            placeholder="اكتب سؤالك هنا..."
+            className="min-h-[120px] bg-white/5 border-subject-physics-primary/30 focus:border-subject-physics-primary focus-visible:ring-subject-physics-primary/20"
+          />
+        </div>
+        
+        <div className="flex justify-end">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || isLoading}
+            className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            إرسال السؤال
+          </Button>
+        </div>
+      </form>
+      
+      {showExampleQuestions && !response && (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-3 text-white/90">أسئلة مقترحة:</h3>
+          <div className="flex flex-wrap gap-2">
+            {exampleQuestions.map((question, index) => (
+              <Button 
+                key={index} 
+                variant="outline" 
+                onClick={() => handleQuestionClick(question)}
+                className="border-subject-physics-primary/30 hover:bg-subject-physics-primary/20 hover:text-white"
+              >
+                {question}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {(response || isLoading) && (
+        <Card className="p-6 bg-white/5 border-subject-physics-primary/30 mt-6">
+          <h3 className="text-xl font-semibold mb-4 text-subject-physics-primary">الإجابة:</h3>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-subject-physics-primary" />
+              <span className="mr-3 text-white/70">جاري التفكير...</span>
+            </div>
+          ) : (
+            <div 
+              className="prose prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
+            />
+          )}
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default PhysicsAIAssistant;
