@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
-import { Puzzle, DatabasePuzzle, PuzzleFormValues } from './types/puzzleTypes';
+import { Puzzle, PuzzleFormValues } from './types/puzzleTypes';
 import PuzzleItem from './PuzzleItem';
 
 const PhysicsPuzzles = () => {
@@ -34,7 +34,6 @@ const PhysicsPuzzles = () => {
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
-        .eq('subject', 'physics')
         .order('created_at', { ascending: false });
         
       if (error) throw error;
@@ -43,7 +42,6 @@ const PhysicsPuzzles = () => {
       const physicsPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Explicitly type and map each property
         data.forEach((item: any) => {
           physicsPuzzles.push({
             id: item.id || '',
@@ -58,8 +56,8 @@ const PhysicsPuzzles = () => {
             image: item.image || null,
             created_at: item.created_at || '',
             created_by: item.created_by || null,
-            hint: item.hint || '', // Use hint if exists in database, otherwise empty string
-            subject: 'physics'
+            hint: item.hint || undefined, // Use hint if exists in database
+            subject: 'physics' // Add subject manually since it's not in the database
           });
         });
       }
@@ -119,7 +117,6 @@ const PhysicsPuzzles = () => {
         correct_answer: data.correct_answer || data.answer,
         hint: data.hint,
         difficulty: data.difficulty,
-        subject: 'physics',
         options: [], // Empty array as placeholder
         points: 10 // Default points
       }]);
