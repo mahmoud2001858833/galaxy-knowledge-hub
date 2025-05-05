@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
 
-// تعريف واضح للواجهات لتجنب التداخل المعقد في الأنواع
+// Explicit interface for puzzles to avoid deep type instantiation
 interface Puzzle {
   id: string;
   title: string;
@@ -30,7 +30,7 @@ interface PuzzleFormValues {
   difficulty: string;
 }
 
-// تعريف واضح لنوع بيانات قاعدة البيانات
+// Explicitly define the raw database puzzle type
 interface DatabasePuzzle {
   id: string;
   title: string;
@@ -77,8 +77,8 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // استخدام تعريف واضح للنوع لتجنب التكرار العميق
-        const typedData = data as DatabasePuzzle[];
+        // Using explicit type casting to avoid recursive type issues
+        const typedData = data as unknown as DatabasePuzzle[];
         typedData.forEach(item => {
           biologyPuzzles.push({
             id: item.id,
