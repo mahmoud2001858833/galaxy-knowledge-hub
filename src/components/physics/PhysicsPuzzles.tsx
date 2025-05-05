@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -9,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
-import { Puzzle, PuzzleFormValues, DatabasePuzzle } from './types/puzzleTypes';
+import { Puzzle, PuzzleFormValues } from './types/puzzleTypes';
 import PuzzleItem from './PuzzleItem';
 
 const PhysicsPuzzles = () => {
@@ -39,23 +40,27 @@ const PhysicsPuzzles = () => {
         
       if (error) throw error;
       
-      // Use explicit typing to avoid deep instantiation error
+      // Map the data to ensure consistent types
       const physicsPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Type the data explicitly to avoid deep instantiation issues
-        const puzzlesData = data as unknown as DatabasePuzzle[];
-        
-        // Map database schema to our Puzzle type
-        puzzlesData.forEach(item => {
+        // Explicitly type and map each property
+        data.forEach(item => {
           physicsPuzzles.push({
-            id: item.id,
-            title: item.title,
-            description: item.question,
-            answer: item.correct_answer,
-            difficulty: item.difficulty,
-            hint: item.hint,
-            created_at: item.created_at
+            id: item.id || '',
+            title: item.title || '',
+            question: item.question || '',
+            description: item.question || '', // Map question to description for compatibility
+            options: item.options || [],
+            correct_answer: item.correct_answer || '',
+            answer: item.correct_answer || '', // Map correct_answer to answer for compatibility
+            difficulty: item.difficulty || '',
+            points: item.points || 0,
+            image: item.image || null,
+            created_at: item.created_at || '',
+            created_by: item.created_by || null,
+            hint: item.hint || '',
+            subject: 'physics'
           });
         });
       }
@@ -86,7 +91,8 @@ const PhysicsPuzzles = () => {
     if (!selectedPuzzle) return;
     
     const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-    const normalizedCorrectAnswer = selectedPuzzle.answer.trim().toLowerCase();
+    const correctAnswer = selectedPuzzle.correct_answer || selectedPuzzle.answer || '';
+    const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
     
     const isAnswerCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
     setIsCorrect(isAnswerCorrect);
@@ -111,7 +117,7 @@ const PhysicsPuzzles = () => {
       const { error } = await supabase.from('puzzles').insert([{
         title: data.title,
         question: data.description,
-        correct_answer: data.answer,
+        correct_answer: data.correct_answer || data.answer,
         hint: data.hint,
         difficulty: data.difficulty,
         subject: 'physics',
@@ -306,7 +312,7 @@ const PhysicsPuzzles = () => {
                       key={puzzle.id}
                       puzzle={puzzle}
                       isSelected={selectedPuzzle?.id === puzzle.id}
-                      onSelect={handlePuzzleSelect}
+                      onSelect={() => handlePuzzleSelect(puzzle)}
                       difficultyColor={difficultyColor}
                     />
                   ))}
@@ -321,7 +327,7 @@ const PhysicsPuzzles = () => {
                         {selectedPuzzle.title}
                       </h3>
                       
-                      <p className="text-white/90 mb-6">{selectedPuzzle.description}</p>
+                      <p className="text-white/90 mb-6">{selectedPuzzle.description || selectedPuzzle.question}</p>
                       
                       <div className="space-y-4">
                         {selectedPuzzle.hint && (
@@ -410,7 +416,7 @@ const PhysicsPuzzles = () => {
                           {puzzle.difficulty}
                         </span>
                       </td>
-                      <td className="p-3">{puzzle.answer}</td>
+                      <td className="p-3">{puzzle.correct_answer || puzzle.answer}</td>
                       <td className="p-3">
                         <Button
                           variant="destructive"
@@ -428,6 +434,77 @@ const PhysicsPuzzles = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Dialog for adding a new puzzle */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle className="text-right">إضافة لغز فيزياء جديد</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmitPuzzle)} className="space-y-4 text-right">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">عنوان اللغز</label>
+              <Input
+                {...register('title', { required: true })}
+                className="bg-white/5 border-subject-physics-primary/30"
+                placeholder="أدخل عنوان اللغز"
+              />
+              {errors.title && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">وصف اللغز</label>
+              <Input
+                {...register('description', { required: true })}
+                className="bg-white/5 border-subject-physics-primary/30"
+                placeholder="أدخل وصف اللغز"
+              />
+              {errors.description && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">تلميح (اختياري)</label>
+              <Input
+                {...register('hint')}
+                className="bg-white/5 border-subject-physics-primary/30"
+                placeholder="أدخل تلميحاً للمساعدة (اختياري)"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">الإجابة الصحيحة</label>
+              <Input
+                {...register('correct_answer', { required: true })}
+                className="bg-white/5 border-subject-physics-primary/30"
+                placeholder="أدخل الإجابة الصحيحة"
+              />
+              {errors.correct_answer && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">مستوى الصعوبة</label>
+              <select
+                {...register('difficulty', { required: true })}
+                className="w-full bg-white/5 border border-subject-physics-primary/30 rounded-md px-3 py-2"
+              >
+                <option value="سهل">سهل</option>
+                <option value="متوسط">متوسط</option>
+                <option value="صعب">صعب</option>
+              </select>
+              {errors.difficulty && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
+            </div>
+            
+            <div className="flex justify-start">
+              <Button 
+                type="submit"
+                className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+              >
+                إضافة اللغز
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

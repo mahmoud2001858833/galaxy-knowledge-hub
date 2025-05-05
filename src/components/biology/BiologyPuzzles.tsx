@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Puzzle } from '@/components/shared/types/puzzleTypes';
+import { Puzzle } from './types/puzzleTypes';
 import { motion } from 'framer-motion';
 import PuzzleItem from './PuzzleItem';
 import BiologyAIAssistant from './BiologyAIAssistant';
@@ -33,8 +33,10 @@ const BiologyPuzzles = () => {
         id: item.id || '',
         title: item.title || '',
         question: item.question || '',
+        description: item.question || '', // Map question to description
         options: item.options || [],
         correct_answer: item.correct_answer || '',
+        answer: item.correct_answer || '', // Map correct_answer to answer
         difficulty: item.difficulty || '',
         points: item.points || 0,
         image: item.image || null,
@@ -84,9 +86,9 @@ const BiologyPuzzles = () => {
         .from('puzzles')
         .insert([{
           title: newPuzzle.title,
-          question: newPuzzle.question,
+          question: newPuzzle.question || newPuzzle.description,
           options: newPuzzle.options,
-          correct_answer: newPuzzle.correct_answer,
+          correct_answer: newPuzzle.correct_answer || newPuzzle.answer,
           difficulty: newPuzzle.difficulty,
           points: newPuzzle.points,
           image: newPuzzle.image,
@@ -111,9 +113,9 @@ const BiologyPuzzles = () => {
         .from('puzzles')
         .update({
           title: updatedPuzzle.title,
-          question: updatedPuzzle.question,
+          question: updatedPuzzle.question || updatedPuzzle.description,
           options: updatedPuzzle.options,
-          correct_answer: updatedPuzzle.correct_answer,
+          correct_answer: updatedPuzzle.correct_answer || updatedPuzzle.answer,
           difficulty: updatedPuzzle.difficulty,
           points: updatedPuzzle.points,
           image: updatedPuzzle.image,
@@ -147,6 +149,16 @@ const BiologyPuzzles = () => {
       toast.success('Puzzle deleted successfully!');
     } catch (error: any) {
       toast.error(`Error deleting puzzle: ${error.message}`);
+    }
+  };
+  
+  // Utility function for PuzzleAdminPanel
+  const difficultyColor = (difficulty: string) => {
+    switch(difficulty.toLowerCase()) {
+      case 'سهل': return 'bg-green-600';
+      case 'متوسط': return 'bg-yellow-600';
+      case 'صعب': return 'bg-red-600';
+      default: return 'bg-blue-600';
     }
   };
 
@@ -185,22 +197,22 @@ const BiologyPuzzles = () => {
               <PuzzleItem
                 key={puzzle.id}
                 puzzle={puzzle}
-                onClick={() => handlePuzzleClick(puzzle)}
+                onSelect={() => handlePuzzleClick(puzzle)}
               />
             ))}
           </motion.div>
         )}
 
         {selectedPuzzle && (
-          <PuzzleDetails puzzle={selectedPuzzle} onClose={handleCloseDetails} />
+          <PuzzleDetails selectedPuzzle={selectedPuzzle} />
         )}
 
         {showAdmin && (
           <PuzzleAdminPanel
+            puzzles={puzzles}
+            fetchPuzzles={fetchPuzzles}
+            difficultyColor={difficultyColor}
             onClose={handleCloseAdminPanel}
-            addPuzzle={addPuzzle}
-            updatePuzzle={updatePuzzle}
-            deletePuzzle={deletePuzzle}
           />
         )}
 

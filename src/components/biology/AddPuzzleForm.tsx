@@ -22,7 +22,7 @@ const AddPuzzleForm: React.FC<AddPuzzleFormProps> = ({ onSuccess, onClose }) => 
       const { error } = await supabase.from('puzzles').insert([{
         title: data.title,
         question: data.description,
-        correct_answer: data.answer,
+        correct_answer: data.correct_answer || data.answer, // Use whichever is available
         hint: data.hint,
         difficulty: data.difficulty,
         subject: 'biology',
@@ -89,11 +89,11 @@ const AddPuzzleForm: React.FC<AddPuzzleFormProps> = ({ onSuccess, onClose }) => 
         <div className="space-y-2">
           <label className="text-sm font-medium">الإجابة الصحيحة</label>
           <Input
-            {...register('answer', { required: true })}
+            {...register('correct_answer', { required: true })}
             className="bg-white/5 border-subject-biology-primary/30"
             placeholder="أدخل الإجابة الصحيحة"
           />
-          {errors.answer && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
+          {errors.correct_answer && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
         </div>
         
         <div className="space-y-2">

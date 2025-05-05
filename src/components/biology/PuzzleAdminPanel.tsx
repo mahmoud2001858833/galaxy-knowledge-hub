@@ -9,9 +9,15 @@ interface PuzzleAdminPanelProps {
   puzzles: Puzzle[];
   fetchPuzzles: () => Promise<void>;
   difficultyColor: (difficulty: string) => string;
+  onClose?: () => void; // Make onClose optional
 }
 
-const PuzzleAdminPanel: React.FC<PuzzleAdminPanelProps> = ({ puzzles, fetchPuzzles, difficultyColor }) => {
+const PuzzleAdminPanel: React.FC<PuzzleAdminPanelProps> = ({ 
+  puzzles, 
+  fetchPuzzles, 
+  difficultyColor,
+  onClose
+}) => {
   const { toast } = useToast();
 
   const deletePuzzle = async (id: string) => {
@@ -60,7 +66,7 @@ const PuzzleAdminPanel: React.FC<PuzzleAdminPanelProps> = ({ puzzles, fetchPuzzl
                   {puzzle.difficulty}
                 </span>
               </td>
-              <td className="p-3">{puzzle.answer}</td>
+              <td className="p-3">{puzzle.correct_answer || puzzle.answer}</td>
               <td className="p-3">
                 <Button
                   variant="destructive"

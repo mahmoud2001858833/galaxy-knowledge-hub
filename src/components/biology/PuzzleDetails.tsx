@@ -21,7 +21,8 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
     if (!selectedPuzzle) return;
     
     const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-    const normalizedCorrectAnswer = selectedPuzzle.answer.trim().toLowerCase();
+    const correctAnswer = selectedPuzzle.correct_answer || selectedPuzzle.answer || '';
+    const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
     
     const isAnswerCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
     setIsCorrect(isAnswerCorrect);
@@ -49,6 +50,9 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
     );
   }
 
+  // Get the puzzle description from either description or question field
+  const puzzleDescription = selectedPuzzle.description || selectedPuzzle.question || '';
+
   return (
     <Card className="bg-white/5 border-subject-biology-primary/30">
       <CardContent className="p-6">
@@ -56,7 +60,7 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
           {selectedPuzzle.title}
         </h3>
         
-        <p className="text-white/90 mb-6">{selectedPuzzle.description}</p>
+        <p className="text-white/90 mb-6">{puzzleDescription}</p>
         
         <div className="space-y-4">
           {selectedPuzzle.hint && (

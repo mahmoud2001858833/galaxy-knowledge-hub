@@ -14,6 +14,10 @@ export interface Puzzle {
   admin_password?: string;
   subject?: string;
   hint?: string;
+  
+  // Alternative property names used in some components
+  description?: string;
+  answer?: string;
 }
 
 export interface PuzzleFormValues {
@@ -26,6 +30,9 @@ export interface PuzzleFormValues {
   difficulty: string;
   points: number;
   image?: string | null;
+  
+  // Alternative property name used in some components
+  answer?: string;
 }
 
 export interface DatabasePuzzle {
