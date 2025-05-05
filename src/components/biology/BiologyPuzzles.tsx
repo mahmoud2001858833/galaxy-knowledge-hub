@@ -75,7 +75,8 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        for (const item of data as DatabasePuzzle[]) {
+        const typedData = data as Array<DatabasePuzzle>;
+        for (const item of typedData) {
           biologyPuzzles.push({
             id: item.id,
             title: item.title,
