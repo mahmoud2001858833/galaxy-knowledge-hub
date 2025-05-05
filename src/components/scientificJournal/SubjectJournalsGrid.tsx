@@ -37,7 +37,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
         const typedData = data?.map(item => ({
           ...item,
           subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics',
-          author: item.author || 'غير معروف'
+          author: item.author || 'غير معروف' // Add default author if not present
         })) || [];
 
         setJournals(typedData as ScientificJournal[]);
