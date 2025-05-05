@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -10,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
-import { Puzzle, PuzzleFormValues } from './types/puzzleTypes';
+import { Puzzle, PuzzleFormValues, DatabasePuzzle } from './types/puzzleTypes';
 import PuzzleItem from './PuzzleItem';
 
 const PhysicsPuzzles = () => {
@@ -40,21 +39,14 @@ const PhysicsPuzzles = () => {
         
       if (error) throw error;
       
-      // Use explicit typing and type assertion
+      // Use explicit typing to avoid deep instantiation error
       const physicsPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Use type assertion to simplify handling
-        const puzzlesData = data as unknown as Array<{
-          id: string;
-          title: string;
-          question: string;
-          correct_answer: string;
-          difficulty: string;
-          hint?: string;
-          created_at: string;
-        }>;
+        // Type the data explicitly to avoid deep instantiation issues
+        const puzzlesData = data as unknown as DatabasePuzzle[];
         
+        // Map database schema to our Puzzle type
         puzzlesData.forEach(item => {
           physicsPuzzles.push({
             id: item.id,
@@ -108,7 +100,7 @@ const PhysicsPuzzles = () => {
     } else {
       toast({
         title: "إجابة خاطئة",
-        description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
+        description: "حاول مرة أخرى أو استخدم التلميح للم��اعدة.",
         variant: "destructive"
       });
     }

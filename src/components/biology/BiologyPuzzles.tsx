@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus } from 'lucide-react';
-import { Puzzle } from './types/puzzleTypes';
+import { Puzzle, DatabasePuzzle } from './types/puzzleTypes';
 import PuzzlesList from './PuzzlesList';
 import PuzzleDetails from './PuzzleDetails';
 import PuzzleAdminPanel from './PuzzleAdminPanel';
@@ -38,17 +37,10 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Use type assertion to simplify handling
-        const puzzlesData = data as unknown as Array<{
-          id: string;
-          title: string;
-          question: string;
-          correct_answer: string;
-          difficulty: string;
-          hint?: string;
-          created_at: string;
-        }>;
+        // Type the data explicitly to avoid deep instantiation error
+        const puzzlesData = data as unknown as DatabasePuzzle[];
         
+        // Map database schema to our Puzzle type
         puzzlesData.forEach(item => {
           biologyPuzzles.push({
             id: item.id,
