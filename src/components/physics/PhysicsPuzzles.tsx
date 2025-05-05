@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -44,6 +45,7 @@ interface DatabasePuzzle {
   options?: string[];
   points?: number;
   created_by?: string | null;
+  subject?: string;
 }
 
 const PhysicsPuzzles = () => {
@@ -77,7 +79,7 @@ const PhysicsPuzzles = () => {
       const physicsPuzzles: Puzzle[] = [];
       
       if (data) {
-        for (const item of data) {
+        for (const item of data as DatabasePuzzle[]) {
           physicsPuzzles.push({
             id: item.id,
             title: item.title,
