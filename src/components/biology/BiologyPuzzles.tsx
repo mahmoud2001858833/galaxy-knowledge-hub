@@ -29,6 +29,17 @@ interface PuzzleFormValues {
   difficulty: string;
 }
 
+interface DatabasePuzzle {
+  id: string;
+  title: string;
+  question: string;
+  correct_answer: string;
+  difficulty: string;
+  hint?: string;
+  created_at: string;
+  [key: string]: any; // To accommodate other fields in the database
+}
+
 const BiologyPuzzles = () => {
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +67,7 @@ const BiologyPuzzles = () => {
         
       if (error) throw error;
       
-      const biologyPuzzles: Puzzle[] = data?.map(item => ({
+      const biologyPuzzles: Puzzle[] = (data || []).map((item: DatabasePuzzle) => ({
         id: item.id,
         title: item.title,
         description: item.question,
@@ -64,7 +75,7 @@ const BiologyPuzzles = () => {
         difficulty: item.difficulty,
         hint: item.hint,
         created_at: item.created_at
-      })) || [];
+      }));
       
       setPuzzles(biologyPuzzles);
       if (biologyPuzzles.length > 0) {

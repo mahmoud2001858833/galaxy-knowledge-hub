@@ -29,6 +29,17 @@ interface PuzzleFormValues {
   difficulty: string;
 }
 
+interface DatabasePuzzle {
+  id: string;
+  title: string;
+  question: string;
+  correct_answer: string;
+  difficulty: string;
+  hint?: string;
+  created_at: string;
+  [key: string]: any; // To accommodate other fields in the database
+}
+
 const PhysicsPuzzles = () => {
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +67,7 @@ const PhysicsPuzzles = () => {
         
       if (error) throw error;
       
-      const physicsPuzzles: Puzzle[] = data?.map(item => ({
+      const physicsPuzzles: Puzzle[] = (data || []).map((item: DatabasePuzzle) => ({
         id: item.id,
         title: item.title,
         description: item.question,
@@ -64,7 +75,7 @@ const PhysicsPuzzles = () => {
         difficulty: item.difficulty,
         hint: item.hint,
         created_at: item.created_at
-      })) || [];
+      }));
       
       setPuzzles(physicsPuzzles);
       if (physicsPuzzles.length > 0) {
