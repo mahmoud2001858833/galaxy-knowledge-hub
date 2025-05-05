@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -26,6 +27,7 @@ const BiologyPuzzles = () => {
   const fetchPuzzles = async () => {
     try {
       setLoading(true);
+      // Explicitly type the response to avoid TypeScript inference issues
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
@@ -37,8 +39,8 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Type the data explicitly to avoid deep instantiation error
-        const puzzlesData = data as unknown as DatabasePuzzle[];
+        // Use a simple type assertion without complex nested types
+        const puzzlesData = data as any[];
         
         // Map database schema to our Puzzle type
         puzzlesData.forEach(item => {
