@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,29 +21,31 @@ import ChatRooms from "./pages/ChatRooms";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/mathematics" element={<Mathematics />} />
-            <Route path="/chemistry" element={<Chemistry />} />
-            <Route path="/biology" element={<Biology />} />
-            <Route path="/physics" element={<Physics />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/visual-library" element={<VisualLibrary />} />
-            <Route path="/scientific-journal" element={<ScientificJournal />} />
-            <Route path="/study-organization" element={<StudyOrganization />} />
-            <Route path="/chat-rooms" element={<ChatRooms />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AnimatePresence>
+        <TooltipProvider>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/mathematics" element={<Mathematics />} />
+              <Route path="/chemistry" element={<Chemistry />} />
+              <Route path="/biology" element={<Biology />} />
+              <Route path="/physics" element={<Physics />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/visual-library" element={<VisualLibrary />} />
+              <Route path="/scientific-journal" element={<ScientificJournal />} />
+              <Route path="/study-organization" element={<StudyOrganization />} />
+              <Route path="/chat-rooms" element={<ChatRooms />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AnimatePresence>
+          <Toaster />
+          <Sonner />
+        </TooltipProvider>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;
