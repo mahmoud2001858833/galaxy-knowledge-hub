@@ -37,7 +37,8 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
         const typedData = data?.map(item => ({
           ...item,
           subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics',
-          author: item.author || null // Ensure author is set to null if not present
+          // Since 'author' might not exist in the database schema, we handle it explicitly
+          author: null // Default to null since our interface declares it as nullable
         })) || [];
 
         setJournals(typedData as ScientificJournal[]);
