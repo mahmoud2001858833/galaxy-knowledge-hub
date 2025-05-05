@@ -69,7 +69,17 @@ export default {
 					'deep-purple': '#8B5CF6',
 					'vivid-purple': '#9b87f5',
 					'bright-blue': '#1EAEDB',
-				}
+				},
+                subject: {
+                    'math-primary': '#8B5CF6',
+                    'math-secondary': '#7E69AB',
+                    'chemistry-primary': '#33C3F0',
+                    'chemistry-secondary': '#0EA5E9',
+                    'physics-primary': '#9b87f5',
+                    'physics-secondary': '#7E69AB',
+                    'biology-primary': '#10B981',
+                    'biology-secondary': '#059669'
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

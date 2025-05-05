@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send } from "lucide-react";
+import { Send, BookOpen } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 type Message = {
   id: number;
@@ -89,7 +89,7 @@ const ChemistryAssistant = () => {
       <motion.h2 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-bold text-cyan-400 mb-6 text-center"
+        className="text-3xl font-bold text-cyan-400 mb-6 text-center text-glow-cyan"
       >
         المساعد الكيميائي الذكي
       </motion.h2>
@@ -105,7 +105,7 @@ const ChemistryAssistant = () => {
         </TabsList>
         
         <TabsContent value="chat" className="flex-1 flex flex-col space-y-4 mt-2 data-[state=inactive]:hidden">
-          <div className="flex-1 overflow-auto p-4 rounded-md bg-blue-950/50 border border-cyan-900/30">
+          <div className="flex-1 overflow-auto p-4 rounded-md bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20">
             {messages.map((message) => (
               <motion.div
                 key={message.id}
@@ -118,8 +118,8 @@ const ChemistryAssistant = () => {
                 <div
                   className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
                     message.role === 'user'
-                      ? 'bg-cyan-600 text-white'
-                      : 'bg-blue-900/70 text-cyan-50'
+                      ? 'bg-cyan-600 text-white shadow-md'
+                      : 'bg-blue-900/80 text-cyan-50 border border-cyan-500/30'
                   }`}
                 >
                   {message.content}
@@ -132,7 +132,7 @@ const ChemistryAssistant = () => {
                 animate={{ opacity: 1 }}
                 className="text-right"
               >
-                <div className="inline-block rounded-lg px-4 py-2 bg-blue-900/70 text-cyan-50">
+                <div className="inline-block rounded-lg px-4 py-2 bg-blue-900/80 text-cyan-50 border border-cyan-500/30">
                   <span className="inline-block">
                     <span className="typing-dot animate-pulse">.</span>
                     <span className="typing-dot animate-pulse delay-150">.</span>
@@ -156,7 +156,7 @@ const ChemistryAssistant = () => {
               onClick={handleSend}
               type="submit"
               size="icon"
-              className="bg-cyan-600 hover:bg-cyan-700"
+              className="bg-cyan-600 hover:bg-cyan-700 shadow-glow-sm shadow-cyan-500/20"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -164,25 +164,31 @@ const ChemistryAssistant = () => {
         </TabsContent>
         
         <TabsContent value="references" className="flex-1 overflow-auto space-y-4 data-[state=inactive]:hidden">
-          <div className="p-6 rounded-md bg-blue-950/50 border border-cyan-900/30">
-            <h3 className="text-xl font-semibold text-cyan-400 mb-4">المصادر والمراجع الكيميائية</h3>
+          <div className="p-6 rounded-md bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20">
+            <h3 className="text-xl font-semibold text-cyan-400 mb-4 text-glow-cyan">المصادر والمراجع الكيميائية</h3>
             <ul className="space-y-3 text-white">
-              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors">
+              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors flex items-center">
+                <BookOpen className="h-4 w-4 ml-2 text-cyan-400" />
                 الكيمياء العامة - المفاهيم الأساسية
               </li>
-              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors">
+              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors flex items-center">
+                <BookOpen className="h-4 w-4 ml-2 text-cyan-400" />
                 الجدول الدوري للعناصر الكيميائية المحدث
               </li>
-              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors">
+              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors flex items-center">
+                <BookOpen className="h-4 w-4 ml-2 text-cyan-400" />
                 الكيمياء العضوية - المركبات والتفاعلات
               </li>
-              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors">
+              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors flex items-center">
+                <BookOpen className="h-4 w-4 ml-2 text-cyan-400" />
                 الكيمياء غير العضوية - العناصر والمعادن
               </li>
-              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors">
+              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors flex items-center">
+                <BookOpen className="h-4 w-4 ml-2 text-cyan-400" />
                 الكيمياء التحليلية - طرق القياس والتحليل
               </li>
-              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors">
+              <li className="p-2 hover:bg-blue-900/30 rounded transition-colors flex items-center">
+                <BookOpen className="h-4 w-4 ml-2 text-cyan-400" />
                 الكيمياء الحيوية - التفاعلات في الكائنات الحية
               </li>
             </ul>

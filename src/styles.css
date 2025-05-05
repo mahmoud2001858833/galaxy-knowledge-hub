@@ -1,0 +1,67 @@
+
+/* Add this to your global CSS file */
+@keyframes glow {
+  0% {
+    text-shadow: 0 0 5px rgba(56, 189, 248, 0.5), 0 0 10px rgba(56, 189, 248, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 0 15px rgba(56, 189, 248, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(56, 189, 248, 0.5), 0 0 10px rgba(56, 189, 248, 0.3);
+  }
+}
+
+@keyframes glow-purple {
+  0% {
+    text-shadow: 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.8), 0 0 15px rgba(139, 92, 246, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
+  }
+}
+
+@keyframes glow-green {
+  0% {
+    text-shadow: 0 0 5px rgba(52, 211, 153, 0.5), 0 0 10px rgba(52, 211, 153, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.8), 0 0 15px rgba(52, 211, 153, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(52, 211, 153, 0.5), 0 0 10px rgba(52, 211, 153, 0.3);
+  }
+}
+
+@layer utilities {
+  .text-glow-cyan {
+    animation: glow 2s ease-in-out infinite;
+  }
+  
+  .text-glow-purple {
+    animation: glow-purple 2s ease-in-out infinite;
+  }
+  
+  .text-glow-green {
+    animation: glow-green 2s ease-in-out infinite;
+  }
+  
+  .shadow-glow-sm {
+    box-shadow: 0 0 15px -3px rgba(56, 189, 248, 0.3);
+  }
+  
+  .shadow-glow-md {
+    box-shadow: 0 0 20px -3px rgba(56, 189, 248, 0.4);
+  }
+  
+  .shadow-glow-purple {
+    box-shadow: 0 0 15px -3px rgba(139, 92, 246, 0.3);
+  }
+  
+  .shadow-glow-green {
+    box-shadow: 0 0 15px -3px rgba(52, 211, 153, 0.3);
+  }
+}

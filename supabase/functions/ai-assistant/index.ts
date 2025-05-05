@@ -31,28 +31,28 @@ serve(async (req) => {
       )
     }
 
-    // Prepare the prompt based on the subject
+    // Prepare the prompt based on the subject with enhanced instructions
     let fullPrompt = prompt
     if (subject) {
       switch (subject) {
         case 'math':
-          fullPrompt = `كمساعد للرياضيات، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
+          fullPrompt = `كمساعد للرياضيات متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة. قدم الحلول خطوة بخطوة مع شرح المفاهيم الرياضية ذات الصلة: ${prompt}`
           break
         case 'chemistry':
-          fullPrompt = `كمساعد للكيمياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. قدم معلومات دقيقة عن العناصر والتفاعلات والمركبات الكيميائية. استخدم أمثلة محددة وشروحات مبسطة: ${prompt}`
+          fullPrompt = `كمساعد للكيمياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. قدم معلومات دقيقة عن العناصر والتفاعلات والمركبات الكيميائية. استخدم أمثلة محددة وشروحات مبسطة مع رسم المعادلات الكيميائية إذا لزم الأمر. قدم المعرفة الأكثر تطوراً في مجال الكيمياء عن: ${prompt}`
           break
         case 'physics':
-          fullPrompt = `كمساعد للفيزياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
+          fullPrompt = `كمساعد للفيزياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة مع توضيح القوانين والمعادلات الفيزيائية ذات الصلة: ${prompt}`
           break
         case 'biology':
-          fullPrompt = `كمساعد للأحياء، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
+          fullPrompt = `كمساعد للأحياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة مع توضيح العمليات الحيوية والتكوينات والوظائف: ${prompt}`
           break
         default:
-          fullPrompt = `كمساعد علمي، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
+          fullPrompt = `كمساعد علمي متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة. استخدم أمثلة وشروحات بسيطة: ${prompt}`
       }
     }
 
-    // Use Gemini 2.0 API
+    // Use Gemini API - with enhanced model and configuration
     const response = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
       {
@@ -75,7 +75,14 @@ serve(async (req) => {
             temperature: 0.7,
             topP: 0.8,
             topK: 40,
+            maxOutputTokens: 2048,
           },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_ONLY_HIGH"
+            }
+          ]
         }),
       }
     )

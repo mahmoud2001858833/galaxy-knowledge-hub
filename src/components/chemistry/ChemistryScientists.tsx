@@ -1,63 +1,54 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight } from "lucide-react";
 
 const scientists = [
   {
-    name: "جابر بن حيّان",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jabir_ibn_Hayyan.jpg/440px-Jabir_ibn_Hayyan.jpg",
-    era: "721-815",
-    contributions: "مؤسس الكيمياء العربية. اشتهر باكتشافاته في التقطير والتبلور والتنقية. طور أدوات مثل الأنبيق."
+    name: "أنطوان لافوازييه",
+    years: "1743 - 1794",
+    contribution: "أبو الكيمياء الحديثة، وواضع قانون حفظ المادة، طور نظرية الاحتراق وتصنيف العناصر الكيميائية.",
+    discoveries: ["قانون حفظ المادة", "تفسير عملية الاحتراق", "تصنيف العناصر الكيميائية"],
+    nationality: "فرنسي"
   },
   {
-    name: "أنطوان لافوازييه",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Antoine_lavoisier_color.jpg/440px-Antoine_lavoisier_color.jpg",
-    era: "1743-1794",
-    contributions: "أبو الكيمياء الحديثة. صاغ قانون حفظ المادة وساهم في فهم الاحتراق والتنفس."
+    name: "جون دالتون",
+    years: "1766 - 1844",
+    contribution: "مؤسس النظرية الذرية الحديثة، حدد مفهوم الذرات والجزيئات وقدم نموذجاً للذرة.",
+    discoveries: ["النظرية الذرية", "قانون النسب المتعددة", "قانون الضغط الجزئي"],
+    nationality: "بريطاني"
   },
   {
     name: "ماري كوري",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Marie_Curie_c1920.jpg/440px-Marie_Curie_c1920.jpg",
-    era: "1867-1934",
-    contributions: "اكتشفت عنصري البولونيوم والراديوم وطورت نظرية النشاط الإشعاعي. أول شخص يحصل على جائزتي نوبل في مجالين مختلفين."
+    years: "1867 - 1934",
+    contribution: "اكتشفت عناصر البولونيوم والراديوم، وطورت نظرية النشاط الإشعاعي، حازت على جائزة نوبل مرتين.",
+    discoveries: ["اكتشاف البولونيوم", "اكتشاف الراديوم", "نظرية النشاط الإشعاعي"],
+    nationality: "بولندية-فرنسية"
   },
   {
-    name: "ديمتري مندليف",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/DIMendeleevCab.jpg/440px-DIMendeleevCab.jpg",
-    era: "1834-1907",
-    contributions: "مبتكر الجدول الدوري للعناصر. تنبأ بوجود عناصر لم تكن معروفة بعد وبخصائصها."
+    name: "ديميتري مندليف",
+    years: "1834 - 1907",
+    contribution: "مبتكر الجدول الدوري للعناصر، تنبأ بوجود عناصر جديدة وخصائصها.",
+    discoveries: ["الجدول الدوري", "تنبؤات العناصر الجديدة", "قانون الدورية"],
+    nationality: "روسي"
   },
   {
-    name: "لينوس باولنج",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Linus_Pauling_1962.jpg/440px-Linus_Pauling_1962.jpg",
-    era: "1901-1994",
-    contributions: "رائد في فهم الرابطة الكيميائية. حاصل على جائزتي نوبل: في الكيمياء والسلام."
+    name: "روبرت بويل",
+    years: "1627 - 1691",
+    contribution: "أحد مؤسسي الكيمياء الحديثة، صاغ قانون بويل وقدم مفهوم العناصر الكيميائية.",
+    discoveries: ["قانون بويل", "تعريف العنصر الكيميائي", "تجارب الغازات"],
+    nationality: "أيرلندي"
   },
   {
-    name: "روزالند فرانكلين",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Rosalind_Franklin.jpg/440px-Rosalind_Franklin.jpg",
-    era: "1920-1958",
-    contributions: "ساهمت بشكل كبير في فهم بنية الحمض النووي DNA من خلال تصوير الأشعة السينية."
+    name: "جابر بن حيان",
+    years: "722 - 815",
+    contribution: "أحد مؤسسي علم الكيمياء، طور العديد من الأدوات والمعدات المعملية، وأسس الكيمياء التجريبية.",
+    discoveries: ["تقنيات التقطير", "حمض الكبريتيك", "تحضير الأحماض"],
+    nationality: "عربي"
   },
-  {
-    name: "ألفرد نوبل",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Alfred_Nobel3.jpg/440px-Alfred_Nobel3.jpg",
-    era: "1833-1896",
-    contributions: "اخترع الديناميت والعديد من المتفجرات. أسس جوائز نوبل، بما في ذلك جائزة نوبل في الكيمياء."
-  },
-  {
-    name: "دوروثي هودجكين",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Hodgkin.jpeg/440px-Hodgkin.jpeg",
-    era: "1910-1994",
-    contributions: "رائدة في تقنية التبلور بالأشعة السينية. حددت بنية البنسلين والإنسولين وفيتامين B12."
-  },
-  {
-    name: "عمر الخيام",
-    image: "https://upload.wikimedia.org/wikipedia/commons/a/a1/Omar_Khayyam2.JPG",
-    era: "1048-1131",
-    contributions: "إلى جانب كونه شاعرًا ورياضيًا، ساهم في علم الكيمياء القديمة وفي تطوير الشعر الفارسي."
-  }
 ];
 
 const ChemistryScientists = () => {
@@ -66,10 +57,14 @@ const ChemistryScientists = () => {
       <motion.h2 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-bold text-cyan-400 mb-6 text-center"
+        className="text-3xl font-bold text-cyan-400 mb-6 text-center text-glow-cyan"
       >
         علماء الكيمياء
       </motion.h2>
+      
+      <div className="mb-6 text-white/80 text-center">
+        <p>استكشف إنجازات وإسهامات أبرز علماء الكيمياء عبر التاريخ</p>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {scientists.map((scientist, index) => (
@@ -79,27 +74,46 @@ const ChemistryScientists = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
           >
-            <Card className="h-full overflow-hidden border-cyan-800/20 bg-blue-950/30 hover:border-cyan-700/40 transition-all duration-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-cyan-400 text-xl">{scientist.name}</CardTitle>
-                <span className="text-white/60 text-sm">{scientist.era}</span>
+            <Card className="h-full bg-blue-900/20 border-cyan-900/30 overflow-hidden shadow-glow-sm shadow-cyan-500/10">
+              <CardHeader className="pb-3">
+                <div className="flex justify-center mb-4">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-cyan-400/50 shadow-glow-sm shadow-cyan-500/20">
+                    <img 
+                      src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYYeicpqHLfxEoRF1mR5aUn8bda5xZKp_50w&s" 
+                      alt={scientist.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                <CardTitle className="text-cyan-400 text-center text-glow-cyan">{scientist.name}</CardTitle>
+                <div className="flex justify-center space-x-2 space-x-reverse mt-1">
+                  <Badge variant="outline" className="border-cyan-800/50 text-cyan-300">
+                    {scientist.years}
+                  </Badge>
+                  <Badge className="bg-cyan-700/30 text-cyan-200">
+                    {scientist.nationality}
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="pb-2">
-                <div className="aspect-[4/3] mb-4 overflow-hidden rounded-md">
-                  <img 
-                    src={scientist.image} 
-                    alt={scientist.name} 
-                    className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
-                  />
+              <CardContent>
+                <p className="text-white/80 text-right mb-4">{scientist.contribution}</p>
+                <div className="space-y-2">
+                  <p className="text-cyan-400 font-semibold">أهم الاكتشافات:</p>
+                  <ul className="list-disc list-inside text-white/80 pr-2 space-y-1">
+                    {scientist.discoveries.map((discovery, idx) => (
+                      <li key={idx}>{discovery}</li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="text-white/80 text-sm">{scientist.contributions}</p>
               </CardContent>
-              <CardFooter>
-                <div className="w-full text-center">
-                  <span className="inline-block px-3 py-1 text-xs bg-blue-900/40 text-cyan-300 rounded-full">
-                    عالم كيمياء
-                  </span>
-                </div>
+              <CardFooter className="pt-0">
+                <Button 
+                  className="w-full bg-cyan-900/50 hover:bg-cyan-800/50 text-cyan-300"
+                  variant="ghost"
+                >
+                  <span>المزيد من المعلومات</span>
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                </Button>
               </CardFooter>
             </Card>
           </motion.div>

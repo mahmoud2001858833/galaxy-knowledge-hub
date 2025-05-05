@@ -36,14 +36,12 @@ const Chemistry = () => {
     setElectrons(newElectrons);
   }, []);
   
-  // Chemistry symbols floating
+  // Chemistry symbols floating - reduced number for performance
   const chemistrySymbols = [
     { symbol: "H", top: "15%", left: "8%", size: "text-4xl", animationDelay: "0s" },
     { symbol: "O", top: "25%", left: "92%", size: "text-5xl", animationDelay: "0.5s" },
     { symbol: "C", top: "70%", left: "5%", size: "text-5xl", animationDelay: "1s" },
-    { symbol: "N", top: "80%", left: "93%", size: "text-4xl", animationDelay: "1.5s" },
-    { symbol: "Fe", top: "40%", left: "7%", size: "text-3xl", animationDelay: "2s" },
-    { symbol: "Cu", top: "50%", left: "95%", size: "text-5xl", animationDelay: "2.5s" }
+    { symbol: "N", top: "80%", left: "93%", size: "text-4xl", animationDelay: "1.5s" }
   ];
   
   const optionCards = [
@@ -74,10 +72,13 @@ const Chemistry = () => {
   ];
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
-      <StarField />
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950 bg-fixed" dir="rtl">
+      {/* Limited number of stars for better performance */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <StarField starCount={300} />
+      </div>
       
-      {/* Floating Chemistry Symbols */}
+      {/* Floating Chemistry Symbols - reduced for performance */}
       {chemistrySymbols.map((symbol, index) => (
         <div 
           key={index}
@@ -94,7 +95,7 @@ const Chemistry = () => {
       
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-12 flex flex-col items-center">
+      <main className="flex-1 container mx-auto px-4 py-12 flex flex-col items-center relative z-10">
         {!showOptions ? (
           <motion.div 
             className="flex flex-col items-center justify-center max-w-4xl mx-auto"
@@ -103,7 +104,7 @@ const Chemistry = () => {
             transition={{ duration: 0.5 }}
           >
             <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-16 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-white to-blue-500"
+              className="text-5xl md:text-7xl font-bold mb-16 text-center text-glow-cyan bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-white to-blue-500"
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.7 }}
@@ -136,8 +137,8 @@ const Chemistry = () => {
                 }}
               />
               
-              {/* Electron Orbits */}
-              {electrons.map((electron, index) => (
+              {/* Electron Orbits - only render a few for performance */}
+              {electrons.slice(0, 3).map((electron, index) => (
                 <React.Fragment key={index}>
                   {/* Orbit Path */}
                   <motion.div 
@@ -208,8 +209,8 @@ const Chemistry = () => {
                 transition={{ duration: 0.5 }}
               >
                 <div className="text-center mb-12">
-                  <h2 className="text-4xl font-bold text-cyan-400 mb-4">اختر الخدمة</h2>
-                  <p className="text-xl text-white/70">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
+                  <h2 className="text-4xl font-bold text-cyan-400 mb-4 text-glow-cyan">اختر الخدمة</h2>
+                  <p className="text-xl text-white/80">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -221,15 +222,15 @@ const Chemistry = () => {
                       transition={{ delay: index * 0.1, duration: 0.5 }}
                       onClick={() => setSelectedTab(card.tab)}
                     >
-                      <Card className={`h-64 cursor-pointer overflow-hidden relative bg-gradient-to-br ${card.color} border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1`}>
+                      <Card className={`h-64 cursor-pointer overflow-hidden relative bg-gradient-to-br ${card.color} border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 shadow-glow-sm shadow-cyan-500/10`}>
                         <div className="absolute inset-0 opacity-20">
                           <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
                         </div>
                         <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                          <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm">
+                          <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm shadow-glow-sm shadow-cyan-500/20">
                             {card.icon}
                           </div>
-                          <h3 className="text-2xl font-bold text-white mb-2">{card.title}</h3>
+                          <h3 className="text-2xl font-bold text-white mb-2 text-glow-cyan">{card.title}</h3>
                           <div className="mt-auto">
                             <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
                               استكشف الآن
@@ -261,7 +262,7 @@ const Chemistry = () => {
                   key={selectedTab}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-cyan-500/20 p-6"
+                  className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-cyan-500/30 p-6 shadow-glow-sm shadow-cyan-500/10"
                 >
                   {selectedTab === "calculations" && <ChemistryCalculations />}
                   {selectedTab === "scientists" && <ChemistryScientists />}
