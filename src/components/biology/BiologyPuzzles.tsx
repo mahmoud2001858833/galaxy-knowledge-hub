@@ -1,63 +1,24 @@
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Check, X } from 'lucide-react';
-
-// Explicit interface for puzzles to avoid deep type instantiation
-interface Puzzle {
-  id: string;
-  title: string;
-  description: string;
-  answer: string;
-  difficulty: string;
-  hint?: string;
-  created_at: string;
-}
-
-interface PuzzleFormValues {
-  title: string;
-  description: string;
-  hint?: string;
-  answer: string;
-  difficulty: string;
-}
-
-// Explicitly define the raw database puzzle type
-interface DatabasePuzzle {
-  id: string;
-  title: string;
-  question: string;
-  correct_answer: string;
-  difficulty: string;
-  hint?: string;
-  created_at: string;
-  admin_password?: string;
-  image?: string | null;
-  options?: string[];
-  points?: number;
-  created_by?: string | null;
-  subject?: string;
-}
+import { Loader2, Plus } from 'lucide-react';
+import { Puzzle, DatabasePuzzle } from './types/puzzleTypes';
+import PuzzlesList from './PuzzlesList';
+import PuzzleDetails from './PuzzleDetails';
+import PuzzleAdminPanel from './PuzzleAdminPanel';
+import AddPuzzleForm from './AddPuzzleForm';
 
 const BiologyPuzzles = () => {
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<PuzzleFormValues>();
   
   useEffect(() => {
     fetchPuzzles();
@@ -77,7 +38,7 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Fixing type issue by casting properly
+        // Avoid deep type instantiation by using a simple array type
         const dbData = data as any[];
         
         dbData.forEach(item => {
@@ -111,88 +72,6 @@ const BiologyPuzzles = () => {
   
   const handlePuzzleSelect = (puzzle: Puzzle) => {
     setSelectedPuzzle(puzzle);
-    setUserAnswer('');
-    setIsCorrect(null);
-  };
-  
-  const checkAnswer = () => {
-    if (!selectedPuzzle) return;
-    
-    const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-    const normalizedCorrectAnswer = selectedPuzzle.answer.trim().toLowerCase();
-    
-    const isAnswerCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
-    setIsCorrect(isAnswerCorrect);
-    
-    if (isAnswerCorrect) {
-      toast({
-        title: "إجابة صحيحة! 🎉",
-        description: "أحسنت! لقد أجبت بشكل صحيح على اللغز.",
-        variant: "default"
-      });
-    } else {
-      toast({
-        title: "إجابة خاطئة",
-        description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const onSubmitPuzzle = async (data: PuzzleFormValues) => {
-    try {
-      const { error } = await supabase.from('puzzles').insert([{
-        title: data.title,
-        question: data.description,
-        correct_answer: data.answer,
-        hint: data.hint,
-        difficulty: data.difficulty,
-        subject: 'biology',
-        options: [], // Empty array as placeholder
-        points: 10 // Default points
-      }]);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "تم إضافة اللغز بنجاح",
-        description: "تمت إضافة اللغز الجديد إلى قاعدة البيانات",
-        variant: "default"
-      });
-      
-      reset();
-      setIsDialogOpen(false);
-      fetchPuzzles();
-    } catch (error: any) {
-      console.error('Error adding puzzle:', error);
-      toast({
-        title: "خطأ في إضافة اللغز",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const deletePuzzle = async (id: string) => {
-    try {
-      const { error } = await supabase.from('puzzles').delete().eq('id', id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "تم حذف اللغز بنجاح",
-        variant: "default"
-      });
-      
-      fetchPuzzles();
-    } catch (error: any) {
-      console.error('Error deleting puzzle:', error);
-      toast({
-        title: "خطأ في حذف اللغز",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
   };
   
   const difficultyColor = (difficulty: string) => {
@@ -230,71 +109,10 @@ const BiologyPuzzles = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[525px]">
-                <DialogHeader>
-                  <DialogTitle className="text-right">إضافة لغز أحياء جديد</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmitPuzzle)} className="space-y-4 text-right">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">عنوان اللغز</label>
-                    <Input
-                      {...register('title', { required: true })}
-                      className="bg-white/5 border-subject-biology-primary/30"
-                      placeholder="أدخل عنوان اللغز"
-                    />
-                    {errors.title && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">وصف اللغز</label>
-                    <Input
-                      {...register('description', { required: true })}
-                      className="bg-white/5 border-subject-biology-primary/30"
-                      placeholder="أدخل وصف اللغز"
-                    />
-                    {errors.description && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">تلميح (اختياري)</label>
-                    <Input
-                      {...register('hint')}
-                      className="bg-white/5 border-subject-biology-primary/30"
-                      placeholder="أدخل تلميحاً للمساعدة (اختياري)"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">الإجابة الصحيحة</label>
-                    <Input
-                      {...register('answer', { required: true })}
-                      className="bg-white/5 border-subject-biology-primary/30"
-                      placeholder="أدخل الإجابة الصحيحة"
-                    />
-                    {errors.answer && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">مستوى الصعوبة</label>
-                    <select
-                      {...register('difficulty', { required: true })}
-                      className="w-full bg-white/5 border border-subject-biology-primary/30 rounded-md px-3 py-2"
-                    >
-                      <option value="سهل">سهل</option>
-                      <option value="متوسط">متوسط</option>
-                      <option value="صعب">صعب</option>
-                    </select>
-                    {errors.difficulty && <p className="text-red-500 text-sm">هذا الحقل مطلوب</p>}
-                  </div>
-                  
-                  <div className="flex justify-start">
-                    <Button 
-                      type="submit"
-                      className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
-                    >
-                      إضافة اللغز
-                    </Button>
-                  </div>
-                </form>
+                <AddPuzzleForm 
+                  onSuccess={fetchPuzzles} 
+                  onClose={() => setIsDialogOpen(false)} 
+                />
               </DialogContent>
             </Dialog>
           )}
@@ -331,101 +149,16 @@ const BiologyPuzzles = () => {
             </div>
           ) : (
             <div className="grid md:grid-cols-12 gap-6">
-              <div className="md:col-span-4">
-                <h3 className="mb-3 font-medium">الألغاز المتاحة:</h3>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                  {puzzles.map((puzzle) => (
-                    <div
-                      key={puzzle.id}
-                      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                        selectedPuzzle?.id === puzzle.id
-                          ? 'bg-subject-biology-primary/20 border-r-4 border-subject-biology-primary'
-                          : 'bg-white/5 hover:bg-white/10'
-                      }`}
-                      onClick={() => handlePuzzleSelect(puzzle)}
-                    >
-                      <h4 className="font-medium">{puzzle.title}</h4>
-                      <div className="flex items-center mt-2">
-                        <span
-                          className={`${difficultyColor(
-                            puzzle.difficulty
-                          )} text-xs rounded-full px-2 py-1 text-white`}
-                        >
-                          {puzzle.difficulty}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <PuzzlesList 
+                puzzles={puzzles}
+                loading={loading}
+                selectedPuzzle={selectedPuzzle}
+                handlePuzzleSelect={handlePuzzleSelect}
+                difficultyColor={difficultyColor}
+              />
               
               <div className="md:col-span-8">
-                {selectedPuzzle ? (
-                  <Card className="bg-white/5 border-subject-biology-primary/30">
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2 text-subject-biology-primary">
-                        {selectedPuzzle.title}
-                      </h3>
-                      
-                      <p className="text-white/90 mb-6">{selectedPuzzle.description}</p>
-                      
-                      <div className="space-y-4">
-                        {selectedPuzzle.hint && (
-                          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-                            <h4 className="font-medium text-yellow-400 mb-1">تلميح:</h4>
-                            <p className="text-white/80">{selectedPuzzle.hint}</p>
-                          </div>
-                        )}
-                        
-                        <div>
-                          <div className="flex space-x-3 items-center">
-                            <Input
-                              value={userAnswer}
-                              onChange={(e) => {
-                                setUserAnswer(e.target.value);
-                                setIsCorrect(null);
-                              }}
-                              placeholder="أدخل إجابتك هنا..."
-                              className="bg-white/5 border-subject-biology-primary/30 focus:border-subject-biology-primary"
-                            />
-                            <Button 
-                              onClick={checkAnswer}
-                              className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
-                            >
-                              تحقق
-                            </Button>
-                          </div>
-                          
-                          {isCorrect !== null && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className={`mt-3 p-2 rounded-md flex items-center ${
-                                isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'
-                              }`}
-                            >
-                              {isCorrect ? (
-                                <>
-                                  <Check className="w-5 h-5 text-green-400 ml-2" />
-                                  <span>إجابة صحيحة! أحسنت!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <X className="w-5 h-5 text-red-400 ml-2" />
-                                  <span>إجابة خاطئة. حاول مرة أخرى!</span>
-                                </>
-                              )}
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-white/70">الرجاء اختيار لغز من القائمة</p>
-                  </div>
-                )}
+                <PuzzleDetails selectedPuzzle={selectedPuzzle} />
               </div>
             </div>
           )}
@@ -433,44 +166,11 @@ const BiologyPuzzles = () => {
         
         {showAdminPanel && (
           <TabsContent value="management">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-white/5 text-right">
-                    <th className="p-3 border-b border-white/10">العنوان</th>
-                    <th className="p-3 border-b border-white/10">مستوى الصعوبة</th>
-                    <th className="p-3 border-b border-white/10">الإجابة</th>
-                    <th className="p-3 border-b border-white/10">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {puzzles.map((puzzle) => (
-                    <tr key={puzzle.id} className="border-b border-white/10 hover:bg-white/5">
-                      <td className="p-3">{puzzle.title}</td>
-                      <td className="p-3">
-                        <span
-                          className={`${difficultyColor(
-                            puzzle.difficulty
-                          )} text-xs rounded-full px-2 py-1 text-white`}
-                        >
-                          {puzzle.difficulty}
-                        </span>
-                      </td>
-                      <td className="p-3">{puzzle.answer}</td>
-                      <td className="p-3">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deletePuzzle(puzzle.id)}
-                        >
-                          حذف
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PuzzleAdminPanel 
+              puzzles={puzzles}
+              fetchPuzzles={fetchPuzzles}
+              difficultyColor={difficultyColor}
+            />
           </TabsContent>
         )}
       </Tabs>
