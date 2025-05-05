@@ -18,6 +18,7 @@ import { Loader2, Upload, FileText } from 'lucide-react';
 const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
   description: z.string().optional(),
+  author: z.string().min(3, { message: "يجب أن يكون اسم المؤلف 3 أحرف على الأقل" }),
   subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics']),
   coverImage: z.instanceof(File).refine(
     (file) => file.size < 5 * 1024 * 1024, // 5MB
@@ -46,6 +47,7 @@ const UploadJournalDrawer = () => {
     defaultValues: {
       title: "",
       description: "",
+      author: "",
       subject: "physics",
     },
   });
@@ -129,6 +131,7 @@ const UploadJournalDrawer = () => {
           title: data.title,
           description: data.description || null,
           subject: data.subject,
+          author: data.author,
           cover_image_url: coverPublicUrlData.publicUrl,
           pdf_url: pdfPublicUrlData.publicUrl,
           created_by: user.id,
@@ -163,7 +166,7 @@ const UploadJournalDrawer = () => {
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
-        <Button className="group">
+        <Button className="group bg-purple-500 hover:bg-purple-600">
           <Upload className="mr-2 h-4 w-4" />
           رفع مجلة علمية
         </Button>
@@ -205,6 +208,20 @@ const UploadJournalDrawer = () => {
                         className="min-h-[80px]" 
                         {...field}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="author"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>مؤلف المجلة</FormLabel>
+                    <FormControl>
+                      <Input placeholder="اسم مؤلف المجلة" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -296,9 +313,18 @@ const UploadJournalDrawer = () => {
               />
             
               <DrawerFooter>
-                <Button type="submit" disabled={isUploading} className="w-full">
-                  {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isUploading ? "جارٍ الرفع..." : "رفع المجلة"}
+                <Button type="submit" disabled={isUploading} className="w-full bg-purple-500 hover:bg-purple-600">
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      جارٍ الرفع...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      رفع المجلة
+                    </>
+                  )}
                 </Button>
                 <DrawerClose asChild>
                   <Button variant="outline" className="w-full">إلغاء</Button>

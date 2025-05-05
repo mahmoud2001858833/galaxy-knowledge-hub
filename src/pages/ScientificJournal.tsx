@@ -13,7 +13,12 @@ const ScientificJournal = () => {
   const [activeSubject, setActiveSubject] = useState<SubjectType>('physics');
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-purple-900/40 to-purple-950" dir="rtl">
+    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b ${
+      activeSubject === 'physics' ? 'from-blue-900/40 to-blue-950' :
+      activeSubject === 'chemistry' ? 'from-purple-900/40 to-purple-950' :
+      activeSubject === 'biology' ? 'from-green-900/40 to-green-950' :
+      'from-cyan-900/40 to-cyan-950'
+    }`} dir="rtl">
       <StarField />
       <Navbar />
 
@@ -25,7 +30,12 @@ const ScientificJournal = () => {
           className="max-w-6xl mx-auto"
         >
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-white to-purple-500 mb-0">
+            <h1 className={`text-4xl font-bold bg-clip-text text-transparent ${
+              activeSubject === 'physics' ? 'bg-gradient-to-r from-blue-400 via-white to-blue-500' :
+              activeSubject === 'chemistry' ? 'bg-gradient-to-r from-purple-400 via-white to-purple-500' :
+              activeSubject === 'biology' ? 'bg-gradient-to-r from-green-400 via-white to-green-500' :
+              'bg-gradient-to-r from-cyan-400 via-white to-cyan-500'
+            }`}>
               المجلة العلمية
             </h1>
             
@@ -36,12 +46,17 @@ const ScientificJournal = () => {
             مرحبًا بك في المجلة العلمية! هنا يمكنك العثور على مقالات ودراسات علمية في مختلف التخصصات.
           </p>
 
-          <Tabs defaultValue="physics" dir="rtl" onValueChange={(value) => setActiveSubject(value as SubjectType)}>
+          <Tabs 
+            defaultValue="physics" 
+            dir="rtl" 
+            value={activeSubject}
+            onValueChange={(value) => setActiveSubject(value as SubjectType)}
+          >
             <TabsList className="grid grid-cols-4 mb-8">
-              <TabsTrigger value="physics">الفيزياء</TabsTrigger>
-              <TabsTrigger value="chemistry">الكيمياء</TabsTrigger>
-              <TabsTrigger value="biology">الأحياء</TabsTrigger>
-              <TabsTrigger value="mathematics">الرياضيات</TabsTrigger>
+              <TabsTrigger value="physics" className="data-[state=active]:bg-blue-600">الفيزياء</TabsTrigger>
+              <TabsTrigger value="chemistry" className="data-[state=active]:bg-purple-600">الكيمياء</TabsTrigger>
+              <TabsTrigger value="biology" className="data-[state=active]:bg-green-600">الأحياء</TabsTrigger>
+              <TabsTrigger value="mathematics" className="data-[state=active]:bg-cyan-600">الرياضيات</TabsTrigger>
             </TabsList>
             
             <TabsContent value="physics">

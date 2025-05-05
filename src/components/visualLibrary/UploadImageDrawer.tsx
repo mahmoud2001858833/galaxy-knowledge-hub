@@ -129,7 +129,7 @@ const UploadImageDrawer = () => {
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
-        <Button className="group">
+        <Button className="group bg-blue-500 hover:bg-blue-600">
           <Upload className="mr-2 h-4 w-4" />
           رفع صورة تعليمية
         </Button>
@@ -235,9 +235,18 @@ const UploadImageDrawer = () => {
               />
             
               <DrawerFooter>
-                <Button type="submit" disabled={isUploading} className="w-full">
-                  {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isUploading ? "جارٍ الرفع..." : "رفع الصورة"}
+                <Button type="submit" disabled={isUploading} className="w-full bg-blue-500 hover:bg-blue-600">
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      جارٍ الرفع...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      رفع الصورة
+                    </>
+                  )}
                 </Button>
                 <DrawerClose asChild>
                   <Button variant="outline" className="w-full">إلغاء</Button>

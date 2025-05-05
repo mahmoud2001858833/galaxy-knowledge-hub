@@ -13,6 +13,7 @@ export interface ScientificJournal {
   id: string;
   title: string;
   description: string | null;
+  author: string;
   subject: 'physics' | 'chemistry' | 'biology' | 'mathematics';
   cover_image_url: string;
   pdf_url: string;

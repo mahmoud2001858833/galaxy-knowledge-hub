@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText } from "lucide-react";
+import { FileText, User } from "lucide-react";
 
 interface SubjectJournalsGridProps {
   subject: SubjectType;
@@ -36,7 +36,8 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
         // Type cast the data to ensure it matches the ScientificJournal interface
         const typedData = data?.map(item => ({
           ...item,
-          subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics'
+          subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics',
+          author: item.author || 'غير معروف'
         })) || [];
 
         setJournals(typedData as ScientificJournal[]);
@@ -62,6 +63,16 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
       case 'biology': return 'الأحياء';
       case 'mathematics': return 'الرياضيات';
       default: return '';
+    }
+  };
+
+  const getSubjectColor = (subject: SubjectType): string => {
+    switch (subject) {
+      case 'physics': return 'border-blue-500/30';
+      case 'chemistry': return 'border-purple-500/30';
+      case 'biology': return 'border-green-500/30';
+      case 'mathematics': return 'border-cyan-500/30';
+      default: return 'border-white/10';
     }
   };
 
@@ -104,7 +115,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
         {journals.map((journal) => (
           <Card 
             key={journal.id} 
-            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${getSubjectColor(subject)}`}
             onClick={() => setSelectedJournal(journal)}
           >
             <div className="h-48 w-full overflow-hidden">
@@ -116,6 +127,12 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
             </div>
             <CardContent className="p-4">
               <h3 className="font-bold text-lg mb-1">{journal.title}</h3>
+              {journal.author && (
+                <div className="flex items-center text-sm text-gray-300 mb-2">
+                  <User className="h-3 w-3 mr-1" />
+                  <span>{journal.author}</span>
+                </div>
+              )}
               {journal.description && (
                 <p className="text-sm text-gray-200 line-clamp-2">{journal.description}</p>
               )}
@@ -129,6 +146,12 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
           <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle className="text-right">{selectedJournal.title}</DialogTitle>
+              {selectedJournal.author && (
+                <div className="flex items-center justify-end text-sm text-gray-300 mt-1">
+                  <span>{selectedJournal.author}</span>
+                  <User className="h-3 w-3 ml-1" />
+                </div>
+              )}
               {selectedJournal.description && (
                 <DialogDescription className="text-right">
                   {selectedJournal.description}
