@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Puzzle } from './types/puzzleTypes';
@@ -43,7 +42,7 @@ const BiologyPuzzles = () => {
         created_at: item.created_at || '',
         created_by: item.created_by || null,
         admin_password: item.admin_password || '',
-        subject: item.subject || 'biology',
+        subject: 'biology', // Set a default subject
         hint: item.hint || ''
       })) || [];
       
@@ -197,7 +196,9 @@ const BiologyPuzzles = () => {
               <PuzzleItem
                 key={puzzle.id}
                 puzzle={puzzle}
+                isSelected={false}
                 onSelect={() => handlePuzzleClick(puzzle)}
+                difficultyColor={difficultyColor}
               />
             ))}
           </motion.div>

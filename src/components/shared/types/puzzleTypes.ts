@@ -31,7 +31,7 @@ export interface PuzzleFormValues {
   points: number;
   image?: string | null;
   
-  // Alternative property name used in some components
+  // Alternative property names used in some components
   answer?: string;
 }
 
