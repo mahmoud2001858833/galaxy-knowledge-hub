@@ -56,13 +56,13 @@ const BiologyPuzzles = () => {
         
       if (error) throw error;
       
-      const biologyPuzzles = data?.map(item => ({
+      const biologyPuzzles: Puzzle[] = data?.map(item => ({
         id: item.id,
         title: item.title,
-        description: item.question, // Map question field to description
+        description: item.question,
         answer: item.correct_answer,
-        hint: item.hint || undefined, // Handle potentially missing hint field
         difficulty: item.difficulty,
+        hint: item.hint,
         created_at: item.created_at
       })) || [];
       
