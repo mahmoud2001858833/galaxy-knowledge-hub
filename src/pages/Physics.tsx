@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Microscope, Atom, FlaskConical } from 'lucide-react';
+import { Microscope, Atom, FlaskConical, Magnet } from 'lucide-react';
 import PhysicsScientists from '@/components/physics/PhysicsScientists';
 import PhysicsPuzzles from '@/components/physics/PhysicsPuzzles';
 import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
@@ -25,13 +26,6 @@ const Physics = () => {
     { symbol: "∆", top: "80%", left: "93%", size: "text-4xl", animationDelay: "1.5s" },
     { symbol: "λ", top: "40%", left: "7%", size: "text-3xl", animationDelay: "2s" },
     { symbol: "∞", top: "50%", left: "95%", size: "text-5xl", animationDelay: "2.5s" }
-  ];
-
-  // Newton's Laws animation
-  const newtonLaws = [
-    { law: "القوة = الكتلة × التسارع", direction: 1 },
-    { law: "الفعل = رد الفعل", direction: -1 },
-    { law: "الجسم يبقى في حالته ما لم تؤثر عليه قوة", direction: 1 }
   ];
   
   if (!showMainContent) {
@@ -51,28 +45,62 @@ const Physics = () => {
               عالم الفيزياء
             </h1>
             
-            <div className="relative h-64 mb-12">
-              {newtonLaws.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ x: item.direction * 100, opacity: 0 }}
-                  animate={{ 
-                    x: [item.direction * 100, 0, 0, -item.direction * 100],
-                    opacity: [0, 1, 1, 0]
-                  }}
-                  transition={{ 
-                    duration: 5,
-                    times: [0, 0.2, 0.8, 1],
-                    repeat: Infinity,
-                    repeatDelay: index * 2
-                  }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <p className="text-2xl md:text-4xl font-semibold text-subject-physics-primary shadow-glow-purple">
-                    {item.law}
-                  </p>
-                </motion.div>
-              ))}
+            {/* Magnetic Field Animation */}
+            <div className="relative h-80 mb-12">
+              <motion.div 
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.05, 1]
+                }}
+                transition={{ 
+                  rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-subject-physics-primary/10 rounded-full blur-3xl transform scale-150 animate-pulse-glow"></div>
+                  <div className="absolute inset-0 bg-subject-physics-primary/5 rounded-full blur-2xl transform scale-[2] animate-pulse-glow animation-delay-200"></div>
+                  <div className="absolute inset-0 bg-subject-physics-primary/5 rounded-full blur-xl transform scale-[2.5] animate-pulse-glow animation-delay-400"></div>
+                  
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                    className="relative z-10"
+                  >
+                    <Magnet className="h-24 w-24 md:h-32 md:w-32 text-subject-physics-primary" />
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                      opacity: [0, 0.8, 0],
+                      scale: [0.8, 1.2, 1.5]
+                    }}
+                    transition={{ 
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatType: "loop"
+                    }}
+                    className="absolute inset-0 border-2 border-subject-physics-primary/50 rounded-full"
+                  ></motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                      opacity: [0, 0.6, 0],
+                      scale: [1, 1.5, 2]
+                    }}
+                    transition={{ 
+                      duration: 3,
+                      delay: 0.5,
+                      repeat: Infinity,
+                      repeatType: "loop"
+                    }}
+                    className="absolute inset-0 border border-subject-physics-primary/30 rounded-full"
+                  ></motion.div>
+                </div>
+              </motion.div>
             </div>
             
             <Button 

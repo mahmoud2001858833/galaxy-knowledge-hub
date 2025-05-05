@@ -10,43 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
-
-// Define interfaces outside of component
-interface Puzzle {
-  id: string;
-  title: string;
-  description: string;
-  answer: string;
-  difficulty: string;
-  hint?: string;
-  created_at: string;
-}
-
-interface PuzzleFormValues {
-  title: string;
-  description: string;
-  hint?: string;
-  answer: string;
-  difficulty: string;
-}
-
-// Explicitly define the shape of the database items
-interface DatabasePuzzle {
-  id: string;
-  title: string;
-  question: string;
-  correct_answer: string;
-  difficulty: string;
-  hint?: string;
-  created_at: string;
-  // Other fields that might be present
-  admin_password?: string;
-  image?: string | null;
-  options?: string[];
-  points?: number;
-  created_by?: string | null;
-  subject?: string;
-}
+import { Puzzle, PuzzleFormValues, DatabasePuzzle } from './types/puzzleTypes';
+import PuzzleItem from './PuzzleItem';
 
 const PhysicsPuzzles = () => {
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
@@ -75,11 +40,14 @@ const PhysicsPuzzles = () => {
         
       if (error) throw error;
       
-      // Explicitly type the mapping to avoid deep type instantiation
+      // Use explicit typing to avoid deep instantiation
       const physicsPuzzles: Puzzle[] = [];
       
       if (data) {
-        for (const item of data as DatabasePuzzle[]) {
+        // Cast to any to avoid type issues
+        const puzzlesData = data as any[];
+        
+        for (const item of puzzlesData) {
           physicsPuzzles.push({
             id: item.id,
             title: item.title,
@@ -334,26 +302,13 @@ const PhysicsPuzzles = () => {
                 <h3 className="mb-3 font-medium">الألغاز المتاحة:</h3>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                   {puzzles.map((puzzle) => (
-                    <div
+                    <PuzzleItem
                       key={puzzle.id}
-                      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                        selectedPuzzle?.id === puzzle.id
-                          ? 'bg-subject-physics-primary/20 border-r-4 border-subject-physics-primary'
-                          : 'bg-white/5 hover:bg-white/10'
-                      }`}
-                      onClick={() => handlePuzzleSelect(puzzle)}
-                    >
-                      <h4 className="font-medium">{puzzle.title}</h4>
-                      <div className="flex items-center mt-2">
-                        <span
-                          className={`${difficultyColor(
-                            puzzle.difficulty
-                          )} text-xs rounded-full px-2 py-1 text-white`}
-                        >
-                          {puzzle.difficulty}
-                        </span>
-                      </div>
-                    </div>
+                      puzzle={puzzle}
+                      isSelected={selectedPuzzle?.id === puzzle.id}
+                      onSelect={handlePuzzleSelect}
+                      difficultyColor={difficultyColor}
+                    />
                   ))}
                 </div>
               </div>
