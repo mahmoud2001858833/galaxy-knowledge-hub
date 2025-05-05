@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Book, FileImage, FilePdf, Upload, MessageSquare } from 'lucide-react';
+import { Book, FileText, Image, Upload, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from 'framer-motion';
@@ -27,7 +27,7 @@ const EducationalResources = () => {
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-4">
                 <div className="flex flex-col items-center">
-                  <FileImage className="w-8 h-8 text-blue-400 mb-3" />
+                  <Image className="w-8 h-8 text-blue-400 mb-3" />
                   <h3 className="text-xl font-bold text-white">المكتبة المرئية</h3>
                 </div>
               </CardContent>
@@ -42,7 +42,7 @@ const EducationalResources = () => {
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-4">
                 <div className="flex flex-col items-center">
-                  <FilePdf className="w-8 h-8 text-purple-400 mb-3" />
+                  <FileText className="w-8 h-8 text-purple-400 mb-3" />
                   <h3 className="text-xl font-bold text-white">المجلة العلمية</h3>
                 </div>
               </CardContent>

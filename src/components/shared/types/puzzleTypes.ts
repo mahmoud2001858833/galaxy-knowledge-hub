@@ -3,19 +3,29 @@
 export interface Puzzle {
   id: string;
   title: string;
-  description: string;
-  answer: string;
+  question: string;
+  options: string[];
+  correct_answer: string;
   difficulty: string;
-  hint?: string;
+  points: number;
+  image?: string | null;
   created_at: string;
+  created_by?: string | null;
+  admin_password?: string;
+  subject?: string;
+  hint?: string;
 }
 
 export interface PuzzleFormValues {
   title: string;
-  description: string;
+  description?: string;
   hint?: string;
-  answer: string;
+  question: string;
+  options: string[];
+  correct_answer: string;
   difficulty: string;
+  points: number;
+  image?: string | null;
 }
 
 export interface DatabasePuzzle {

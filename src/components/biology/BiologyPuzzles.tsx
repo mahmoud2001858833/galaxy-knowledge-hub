@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Puzzle } from '@/components/shared/types/puzzleTypes';
@@ -27,20 +28,24 @@ const BiologyPuzzles = () => {
         
       if (error) throw error;
       
-      // Explicitly type the data to avoid deep type instantiation
-      setPuzzles((data as Record<string, any>[]).map(item => ({
-        id: item.id,
-        title: item.title,
-        question: item.question,
-        options: item.options,
-        correct_answer: item.correct_answer,
-        difficulty: item.difficulty,
-        points: item.points,
-        image: item.image,
-        created_at: item.created_at,
-        created_by: item.created_by,
-        admin_password: item.admin_password
-      })));
+      // Properly type the data and map to Puzzle type
+      const puzzlesData: Puzzle[] = data?.map(item => ({
+        id: item.id || '',
+        title: item.title || '',
+        question: item.question || '',
+        options: item.options || [],
+        correct_answer: item.correct_answer || '',
+        difficulty: item.difficulty || '',
+        points: item.points || 0,
+        image: item.image || null,
+        created_at: item.created_at || '',
+        created_by: item.created_by || null,
+        admin_password: item.admin_password || '',
+        subject: item.subject || 'biology',
+        hint: item.hint || ''
+      })) || [];
+      
+      setPuzzles(puzzlesData);
     } catch (error: any) {
       toast.error(`Error fetching puzzles: ${error.message}`);
     } finally {
@@ -77,7 +82,17 @@ const BiologyPuzzles = () => {
     try {
       const { data, error } = await supabase
         .from('puzzles')
-        .insert([newPuzzle]);
+        .insert([{
+          title: newPuzzle.title,
+          question: newPuzzle.question,
+          options: newPuzzle.options,
+          correct_answer: newPuzzle.correct_answer,
+          difficulty: newPuzzle.difficulty,
+          points: newPuzzle.points,
+          image: newPuzzle.image,
+          subject: 'biology',
+          hint: newPuzzle.hint
+        }]);
 
       if (error) {
         throw new Error(`Could not add puzzle: ${error.message}`);
@@ -94,7 +109,16 @@ const BiologyPuzzles = () => {
     try {
       const { data, error } = await supabase
         .from('puzzles')
-        .update(updatedPuzzle)
+        .update({
+          title: updatedPuzzle.title,
+          question: updatedPuzzle.question,
+          options: updatedPuzzle.options,
+          correct_answer: updatedPuzzle.correct_answer,
+          difficulty: updatedPuzzle.difficulty,
+          points: updatedPuzzle.points,
+          image: updatedPuzzle.image,
+          hint: updatedPuzzle.hint
+        })
         .eq('id', updatedPuzzle.id);
 
       if (error) {
