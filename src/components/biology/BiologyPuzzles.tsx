@@ -77,9 +77,10 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Using explicit type casting to avoid recursive type issues
-        const typedData = data as unknown as DatabasePuzzle[];
-        typedData.forEach(item => {
+        // Fixing type issue by casting properly
+        const dbData = data as any[];
+        
+        dbData.forEach(item => {
           biologyPuzzles.push({
             id: item.id,
             title: item.title,
