@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
-import { Puzzle, PuzzleFormValues, DatabasePuzzle } from './types/puzzleTypes';
+import { Puzzle, PuzzleFormValues } from './types/puzzleTypes';
 import PuzzleItem from './PuzzleItem';
 
 const PhysicsPuzzles = () => {
@@ -40,14 +40,22 @@ const PhysicsPuzzles = () => {
         
       if (error) throw error;
       
-      // Use explicit typing to avoid deep instantiation
+      // Use explicit typing and type assertion
       const physicsPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Cast to any to avoid type issues
-        const puzzlesData = data as any[];
+        // Use type assertion to simplify handling
+        const puzzlesData = data as unknown as Array<{
+          id: string;
+          title: string;
+          question: string;
+          correct_answer: string;
+          difficulty: string;
+          hint?: string;
+          created_at: string;
+        }>;
         
-        for (const item of puzzlesData) {
+        puzzlesData.forEach(item => {
           physicsPuzzles.push({
             id: item.id,
             title: item.title,
@@ -57,7 +65,7 @@ const PhysicsPuzzles = () => {
             hint: item.hint,
             created_at: item.created_at
           });
-        }
+        });
       }
       
       setPuzzles(physicsPuzzles);

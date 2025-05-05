@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus } from 'lucide-react';
-import { Puzzle, DatabasePuzzle } from './types/puzzleTypes';
+import { Puzzle } from './types/puzzleTypes';
 import PuzzlesList from './PuzzlesList';
 import PuzzleDetails from './PuzzleDetails';
 import PuzzleAdminPanel from './PuzzleAdminPanel';
@@ -38,10 +38,18 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Avoid deep type instantiation by using a simple array type
-        const dbData = data as any[];
+        // Use type assertion to simplify handling
+        const puzzlesData = data as unknown as Array<{
+          id: string;
+          title: string;
+          question: string;
+          correct_answer: string;
+          difficulty: string;
+          hint?: string;
+          created_at: string;
+        }>;
         
-        dbData.forEach(item => {
+        puzzlesData.forEach(item => {
           biologyPuzzles.push({
             id: item.id,
             title: item.title,
