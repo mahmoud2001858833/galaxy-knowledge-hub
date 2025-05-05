@@ -1,180 +1,236 @@
-
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus } from 'lucide-react';
-import { Puzzle, DatabasePuzzle } from './types/puzzleTypes';
-import PuzzlesList from './PuzzlesList';
+import { Puzzle } from '@/components/shared/types/puzzleTypes';
+import { motion } from 'framer-motion';
+import PuzzleItem from './PuzzleItem';
+import BiologyAIAssistant from './BiologyAIAssistant';
 import PuzzleDetails from './PuzzleDetails';
 import PuzzleAdminPanel from './PuzzleAdminPanel';
-import AddPuzzleForm from './AddPuzzleForm';
+import { toast } from 'sonner';
 
 const BiologyPuzzles = () => {
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
-  
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+
   useEffect(() => {
     fetchPuzzles();
   }, []);
-  
+
   const fetchPuzzles = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('puzzles')
-        .select('*')
-        .eq('subject', 'biology')
-        .order('created_at', { ascending: false });
+        .select('*');
         
       if (error) throw error;
       
-      const biologyPuzzles: Puzzle[] = [];
-      
-      if (data) {
-        // Explicitly type as any[] to avoid deep type instantiation error
-        const puzzlesData: any[] = data;
-        
-        // Map database schema to our Puzzle type
-        puzzlesData.forEach(item => {
-          biologyPuzzles.push({
-            id: item.id,
-            title: item.title,
-            description: item.question,
-            answer: item.correct_answer,
-            difficulty: item.difficulty,
-            hint: item.hint,
-            created_at: item.created_at
-          });
-        });
-      }
-      
-      setPuzzles(biologyPuzzles);
-      if (biologyPuzzles.length > 0) {
-        setSelectedPuzzle(biologyPuzzles[0]);
-      }
+      // Explicitly type the data to avoid deep type instantiation
+      setPuzzles((data as Record<string, any>[]).map(item => ({
+        id: item.id,
+        title: item.title,
+        question: item.question,
+        options: item.options,
+        correct_answer: item.correct_answer,
+        difficulty: item.difficulty,
+        points: item.points,
+        image: item.image,
+        created_at: item.created_at,
+        created_by: item.created_by,
+        admin_password: item.admin_password
+      })));
     } catch (error: any) {
-      console.error('Error fetching puzzles:', error);
-      toast({
-        title: "خطأ في تحميل الألغاز",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error(`Error fetching puzzles: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
-  
-  const handlePuzzleSelect = (puzzle: Puzzle) => {
+
+  const handlePuzzleClick = (puzzle: Puzzle) => {
     setSelectedPuzzle(puzzle);
   };
-  
-  const difficultyColor = (difficulty: string) => {
-    switch(difficulty.toLowerCase()) {
-      case 'سهل': return 'bg-green-600';
-      case 'متوسط': return 'bg-yellow-600';
-      case 'صعب': return 'bg-red-600';
-      default: return 'bg-blue-600';
+
+  const handleCloseDetails = () => {
+    setSelectedPuzzle(null);
+  };
+
+  const handleAdminPanel = () => {
+    setShowAdmin(true);
+  };
+
+  const handleCloseAdminPanel = () => {
+    setShowAdmin(false);
+    setAdminPassword('');
+  };
+
+  const handleSubmitPassword = () => {
+    if (adminPassword === 'admin123') {
+      handleAdminPanel();
+    } else {
+      toast.error('Incorrect admin password.');
     }
   };
-  
+
+  const addPuzzle = async (newPuzzle: Puzzle) => {
+    try {
+      const { data, error } = await supabase
+        .from('puzzles')
+        .insert([newPuzzle]);
+
+      if (error) {
+        throw new Error(`Could not add puzzle: ${error.message}`);
+      }
+
+      fetchPuzzles();
+      toast.success('Puzzle added successfully!');
+    } catch (error: any) {
+      toast.error(`Error adding puzzle: ${error.message}`);
+    }
+  };
+
+  const updatePuzzle = async (updatedPuzzle: Puzzle) => {
+    try {
+      const { data, error } = await supabase
+        .from('puzzles')
+        .update(updatedPuzzle)
+        .eq('id', updatedPuzzle.id);
+
+      if (error) {
+        throw new Error(`Could not update puzzle: ${error.message}`);
+      }
+
+      fetchPuzzles();
+      toast.success('Puzzle updated successfully!');
+    } catch (error: any) {
+      toast.error(`Error updating puzzle: ${error.message}`);
+    }
+  };
+
+  const deletePuzzle = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('puzzles')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Could not delete puzzle: ${error.message}`);
+      }
+
+      fetchPuzzles();
+      toast.success('Puzzle deleted successfully!');
+    } catch (error: any) {
+      toast.error(`Error deleting puzzle: ${error.message}`);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-glow-green mb-2">ألغاز الأحياء</h2>
-          <p className="text-white/70">اختبر معرفتك بالأحياء من خلال مجموعة من الألغاز المتنوعة</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowAdminPanel(!showAdminPanel)}
-            className="border-subject-biology-primary text-subject-biology-primary hover:bg-subject-biology-primary/20"
+    <div className="min-h-screen bg-gray-100 py-6">
+      <div className="container mx-auto px-4">
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-3xl font-bold text-center text-gray-800 mb-8"
+        >
+          Biology Puzzles
+        </motion.h1>
+
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() => setShowAdmin(true)}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
-            {showAdminPanel ? 'إخفاء لوحة المشرف' : 'لوحة المشرف'}
-          </Button>
-          
-          {showAdminPanel && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-subject-biology-primary hover:bg-subject-biology-secondary">
-                  <Plus className="w-4 h-4 ml-2" />
-                  إضافة لغز جديد
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[525px]">
-                <AddPuzzleForm 
-                  onSuccess={fetchPuzzles} 
-                  onClose={() => setIsDialogOpen(false)} 
-                />
-              </DialogContent>
-            </Dialog>
-          )}
+            Admin Panel
+          </button>
+          <BiologyAIAssistant />
         </div>
-      </div>
-      
-      <Tabs defaultValue="puzzles">
-        <TabsList className="bg-white/5 border-b border-white/10">
-          <TabsTrigger 
-            value="puzzles"
-            className="text-white data-[state=active]:text-subject-biology-primary"
+
+        {loading ? (
+          <div className="text-center">Loading puzzles...</div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
           >
-            قائمة الألغاز
-          </TabsTrigger>
-          
-          {showAdminPanel && (
-            <TabsTrigger 
-              value="management"
-              className="text-white data-[state=active]:text-subject-biology-primary"
-            >
-              إدارة الألغاز
-            </TabsTrigger>
-          )}
-        </TabsList>
-        
-        <TabsContent value="puzzles">
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-subject-biology-primary" />
-            </div>
-          ) : puzzles.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-white/70">لا توجد ألغاز متاحة حالياً</p>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-12 gap-6">
-              <PuzzlesList 
-                puzzles={puzzles}
-                loading={loading}
-                selectedPuzzle={selectedPuzzle}
-                handlePuzzleSelect={handlePuzzleSelect}
-                difficultyColor={difficultyColor}
+            {puzzles.map((puzzle) => (
+              <PuzzleItem
+                key={puzzle.id}
+                puzzle={puzzle}
+                onClick={() => handlePuzzleClick(puzzle)}
               />
-              
-              <div className="md:col-span-8">
-                <PuzzleDetails selectedPuzzle={selectedPuzzle} />
+            ))}
+          </motion.div>
+        )}
+
+        {selectedPuzzle && (
+          <PuzzleDetails puzzle={selectedPuzzle} onClose={handleCloseDetails} />
+        )}
+
+        {showAdmin && (
+          <PuzzleAdminPanel
+            onClose={handleCloseAdminPanel}
+            addPuzzle={addPuzzle}
+            updatePuzzle={updatePuzzle}
+            deletePuzzle={deletePuzzle}
+          />
+        )}
+
+        {/* Admin Password Modal */}
+        {showAdmin && !adminPassword && (
+          <div className="fixed z-10 inset-0 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+              </div>
+
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        Enter Admin Password
+                      </h3>
+                      <div className="mt-2">
+                        <input
+                          type="password"
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          id="admin-password"
+                          placeholder="Password"
+                          value={adminPassword}
+                          onChange={(e) => setAdminPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={handleSubmitPassword}
+                  >
+                    Submit
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                    onClick={handleCloseAdminPanel}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
-          )}
-        </TabsContent>
-        
-        {showAdminPanel && (
-          <TabsContent value="management">
-            <PuzzleAdminPanel 
-              puzzles={puzzles}
-              fetchPuzzles={fetchPuzzles}
-              difficultyColor={difficultyColor}
-            />
-          </TabsContent>
+          </div>
         )}
-      </Tabs>
+      </div>
     </div>
   );
 };

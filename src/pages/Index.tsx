@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Link } from "react-router-dom";
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import EducationalResources from '@/components/EducationalResources';
 
 const Index = () => {
   return (
@@ -158,6 +160,9 @@ const Index = () => {
             </Link>
           </motion.div>
         </motion.div>
+        
+        {/* Add the Educational Resources section */}
+        <EducationalResources />
       </main>
       
       <Footer />

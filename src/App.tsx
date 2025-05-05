@@ -12,6 +12,10 @@ import Biology from "./pages/Biology";
 import Physics from "./pages/Physics";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import VisualLibrary from "./pages/VisualLibrary";
+import ScientificJournal from "./pages/ScientificJournal";
+import StudyOrganization from "./pages/StudyOrganization";
+import ChatRooms from "./pages/ChatRooms";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +33,10 @@ const App = () => (
             <Route path="/biology" element={<Biology />} />
             <Route path="/physics" element={<Physics />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/visual-library" element={<VisualLibrary />} />
+            <Route path="/scientific-journal" element={<ScientificJournal />} />
+            <Route path="/study-organization" element={<StudyOrganization />} />
+            <Route path="/chat-rooms" element={<ChatRooms />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>
