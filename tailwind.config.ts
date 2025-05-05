@@ -71,14 +71,14 @@ export default {
 					'bright-blue': '#1EAEDB',
 				},
                 subject: {
-                    'math-primary': '#8B5CF6',
-                    'math-secondary': '#7E69AB',
-                    'chemistry-primary': '#33C3F0',
-                    'chemistry-secondary': '#0EA5E9',
-                    'physics-primary': '#9b87f5',
-                    'physics-secondary': '#7E69AB',
-                    'biology-primary': '#10B981',
-                    'biology-secondary': '#059669'
+                    'math-primary': '#1EAEDB', // أزرق
+                    'math-secondary': '#33C3F0', // أزرق فاتح
+                    'chemistry-primary': '#9b87f5', // بنفسجي
+                    'chemistry-secondary': '#8B5CF6', // بنفسجي داكن
+                    'physics-primary': '#9b87f5', // مزيج من الأزرق والبنفسجي
+                    'physics-secondary': '#7E69AB', // بنفسجي متوسط
+                    'biology-primary': '#10B981', // أخضر
+                    'biology-secondary': '#059669'  // أخضر داكن
                 }
 			},
 			borderRadius: {

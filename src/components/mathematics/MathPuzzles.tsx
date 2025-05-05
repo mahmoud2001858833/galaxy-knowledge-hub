@@ -344,15 +344,13 @@ const MathPuzzles: React.FC = () => {
           </Select>
           
           {isAdmin ? (
-            <div className="z-30">
-              <MathPuzzleAdmin />
-            </div>
+            <MathPuzzleAdmin />
           ) : (
             <Button 
-              className="bg-space-neon-blue/10 hover:bg-space-neon-blue/20 text-space-neon-blue border border-space-neon-blue/30"
+              className="bg-subject-math-primary/10 hover:bg-subject-math-primary/20 text-subject-math-primary border border-subject-math-primary/30"
               onClick={() => setIsPasswordDialogOpen(true)}
             >
-              المشرف
+              لوحة المشرف
             </Button>
           )}
         </div>
@@ -374,7 +372,7 @@ const MathPuzzles: React.FC = () => {
             />
           </div>
           <Button 
-            className="w-full bg-space-deep-purple hover:bg-space-deep-purple/80"
+            className="w-full bg-subject-math-primary hover:bg-subject-math-secondary"
             onClick={handleAdminAccess}
           >
             تأكيد

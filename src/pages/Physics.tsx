@@ -243,44 +243,9 @@ const Physics = () => {
           transition={{ duration: 0.3 }}
           className="glass-card rounded-2xl p-6"
         >
-          <Tabs 
-            value={selectedTab}
-            onValueChange={setSelectedTab}
-            className="w-full"
-          >
-            <TabsList className="mb-8 bg-white/5 p-1 rounded-lg w-full sm:w-fit mx-auto">
-              <TabsTrigger 
-                value="puzzles"
-                className="text-white data-[state=active]:bg-subject-physics-primary data-[state=active]:text-white"
-              >
-                ألغاز الفيزياء
-              </TabsTrigger>
-              <TabsTrigger 
-                value="assistant"
-                className="text-white data-[state=active]:bg-subject-physics-primary data-[state=active]:text-white"
-              >
-                المساعد الذكي
-              </TabsTrigger>
-              <TabsTrigger 
-                value="scientists"
-                className="text-white data-[state=active]:bg-subject-physics-primary data-[state=active]:text-white"
-              >
-                علماء الفيزياء
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="puzzles" className="mt-0">
-              <PhysicsPuzzles />
-            </TabsContent>
-            
-            <TabsContent value="assistant" className="mt-0">
-              <PhysicsAIAssistant />
-            </TabsContent>
-            
-            <TabsContent value="scientists" className="mt-0">
-              <PhysicsScientists />
-            </TabsContent>
-          </Tabs>
+          {selectedTab === "puzzles" && <PhysicsPuzzles />}
+          {selectedTab === "assistant" && <PhysicsAIAssistant />}
+          {selectedTab === "scientists" && <PhysicsScientists />}
         </motion.div>
       </main>
       

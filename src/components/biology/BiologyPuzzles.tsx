@@ -27,7 +27,6 @@ const BiologyPuzzles = () => {
   const fetchPuzzles = async () => {
     try {
       setLoading(true);
-      // Use explicit Promise type to avoid deep type instantiation
       const { data, error } = await supabase
         .from('puzzles')
         .select('*')
@@ -39,8 +38,8 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        // Use type assertion with Record<string, any> for a cleaner approach
-        const puzzlesData = data as Record<string, any>[];
+        // Explicitly type as any[] to avoid deep type instantiation error
+        const puzzlesData: any[] = data;
         
         // Map database schema to our Puzzle type
         puzzlesData.forEach(item => {

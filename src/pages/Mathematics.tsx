@@ -87,7 +87,7 @@ const Mathematics = () => {
       {mathSymbols.map((symbol, index) => (
         <motion.div 
           key={index}
-          className={`absolute text-space-neon-blue/30 ${symbol.size} pointer-events-none`}
+          className={`absolute text-subject-math-primary/30 ${symbol.size} pointer-events-none`}
           style={{ top: symbol.top, left: symbol.left }}
           initial={{ opacity: 0, scale: 0, rotate: symbol.rotate }}
           animate={{ 
@@ -118,7 +118,7 @@ const Mathematics = () => {
             transition={{ duration: 1 }}
           >
             <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-space-neon-blue via-white to-space-vivid-purple"
+              className="text-5xl md:text-7xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-subject-math-primary via-white to-subject-math-secondary"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 1.2, ease: "easeOut" }}
@@ -140,7 +140,7 @@ const Mathematics = () => {
               >
                 <motion.path
                   d={`M ${graphPoints.map(point => `${point.x},${point.y}`).join(' L ')}`}
-                  stroke="rgba(155, 135, 245, 0.8)"
+                  stroke="rgba(139, 92, 246, 0.8)"
                   strokeWidth="0.8"
                   fill="none"
                   initial={{ pathLength: 0 }}
@@ -154,7 +154,7 @@ const Mathematics = () => {
                     cx={point.x}
                     cy={point.y}
                     r="1.5"
-                    fill="#9b87f5"
+                    fill="#8b5cf6"
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.1, duration: 0.5 }}
@@ -170,7 +170,7 @@ const Mathematics = () => {
             >
               <Button 
                 onClick={handleStartExperience}
-                className="text-xl bg-space-deep-purple hover:bg-space-neon-blue text-white px-8 py-6 rounded-full flex items-center gap-3 transform transition-all hover:scale-110"
+                className="text-xl bg-subject-math-primary hover:bg-subject-math-secondary text-white px-8 py-6 rounded-full flex items-center gap-3 transform transition-all hover:scale-110"
               >
                 ابدأ التجربة
                 <motion.div
@@ -197,7 +197,7 @@ const Mathematics = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-12"
             >
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-space-neon-blue via-white to-space-vivid-purple">
+              <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-subject-math-primary via-white to-subject-math-secondary">
                 منصة الرياضيات
               </h1>
               <p className="text-xl text-white/80 max-w-2xl mx-auto">
@@ -211,8 +211,8 @@ const Mathematics = () => {
                 <CategoryCard 
                   title="المساعد الذكي"
                   description="اطرح أسئلة متعلقة بالرياضيات واحصل على إجابات فورية من المساعد الذكي"
-                  bgColor="from-space-deep-purple/80 to-space-deep-purple/30"
-                  iconColor="bg-space-neon-blue/20 text-space-neon-blue"
+                  bgColor="from-subject-math-primary/80 to-subject-math-primary/30"
+                  iconColor="bg-subject-math-primary/20 text-white"
                   icon={<Brain className="h-6 w-6" />}
                   onClick={() => handleCardSelect('assistant')}
                 />
@@ -221,7 +221,7 @@ const Mathematics = () => {
                 <CategoryCard 
                   title="ألغاز رياضية"
                   description="اختبر معلوماتك في الرياضيات مع مجموعة متنوعة من الألغاز والتحديات"
-                  bgColor="from-space-neon-blue/80 to-space-neon-blue/30"
+                  bgColor="from-subject-math-secondary/80 to-subject-math-secondary/30"
                   iconColor="bg-white/20 text-white"
                   icon={<PuzzlePiece className="h-6 w-6" />}
                   onClick={() => handleCardSelect('puzzles')}
@@ -231,7 +231,7 @@ const Mathematics = () => {
                 <CategoryCard 
                   title="الآلة الحاسبة"
                   description="أداة حاسبة متقدمة لإجراء العمليات الحسابية والمعادلات الرياضية"
-                  bgColor="from-green-600/80 to-green-600/30"
+                  bgColor="from-subject-math-primary/80 to-subject-math-primary/30"
                   iconColor="bg-white/20 text-white"
                   icon={<CalculatorIcon className="h-6 w-6" />}
                   onClick={() => handleCardSelect('calculator')}
@@ -241,7 +241,7 @@ const Mathematics = () => {
                 <CategoryCard 
                   title="التمثيل البياني"
                   description="رسم وتحليل الدوال والمعادلات الرياضية بيانيًا بطريقة تفاعلية"
-                  bgColor="from-amber-600/80 to-amber-600/30"
+                  bgColor="from-subject-math-secondary/80 to-subject-math-secondary/30"
                   iconColor="bg-white/20 text-white"
                   icon={
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
@@ -256,7 +256,7 @@ const Mathematics = () => {
                 <CategoryCard 
                   title="علماء الرياضيات"
                   description="تعرف على أهم علماء الرياضيات عبر التاريخ وإسهاماتهم العلمية"
-                  bgColor="from-purple-600/80 to-purple-600/30"
+                  bgColor="from-subject-math-primary/80 to-subject-math-primary/30"
                   iconColor="bg-white/20 text-white"
                   icon={
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
@@ -278,7 +278,7 @@ const Mathematics = () => {
               >
                 <button 
                   onClick={handleBackToCards}
-                  className="text-space-neon-blue hover:text-space-bright-blue mb-6 text-right flex items-center gap-2"
+                  className="text-subject-math-primary hover:text-subject-math-secondary mb-6 text-right flex items-center gap-2"
                 >
                   العودة إلى الخيارات
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
@@ -322,7 +322,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 }) => {
   return (
     <motion.div
-      className={cn("bg-gradient-to-br", bgColor, "p-6 rounded-2xl border border-white/10 hover:border-white/30 cursor-pointer transition-all hover:shadow-lg hover:shadow-space-neon-blue/20 h-full")}
+      className={cn("bg-gradient-to-br", bgColor, "p-6 rounded-2xl border border-white/10 hover:border-white/30 cursor-pointer transition-all hover:shadow-lg hover:shadow-subject-math-primary/20 h-full")}
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
       onClick={onClick}

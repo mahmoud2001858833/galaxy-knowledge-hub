@@ -112,6 +112,55 @@
   .nav-link.active {
     @apply text-white bg-white/10;
   }
+  
+  /* إضافة تأثيرات توهج للمواد المختلفة */
+  .text-glow-green {
+    @apply text-subject-biology-primary drop-shadow-[0_0_8px_rgba(16,185,129,0.7)];
+  }
+  
+  .text-glow-purple {
+    @apply text-subject-physics-primary drop-shadow-[0_0_8px_rgba(155,135,245,0.7)];
+  }
+  
+  .text-glow-blue {
+    @apply text-subject-math-primary drop-shadow-[0_0_8px_rgba(139,92,246,0.7)];
+  }
+  
+  .shadow-glow-green {
+    @apply shadow-[0_0_15px_rgba(16,185,129,0.5)];
+  }
+  
+  .shadow-glow-purple {
+    @apply shadow-[0_0_15px_rgba(155,135,245,0.5)];
+  }
+  
+  .shadow-glow-blue {
+    @apply shadow-[0_0_15px_rgba(139,92,246,0.5)];
+  }
+  
+  .shadow-glow-md {
+    @apply shadow-[0_0_25px_rgba(255,255,255,0.4)];
+  }
+  
+  .glass-card {
+    @apply backdrop-blur-md bg-white/5 border border-white/10;
+  }
+  
+  .glass-card-biology {
+    @apply backdrop-blur-md bg-subject-biology-primary/5 border border-subject-biology-primary/20;
+  }
+  
+  .glass-card-physics {
+    @apply backdrop-blur-md bg-subject-physics-primary/5 border border-subject-physics-primary/20;
+  }
+  
+  .glass-card-math {
+    @apply backdrop-blur-md bg-subject-math-primary/5 border border-subject-math-primary/20;
+  }
+  
+  .glass-card-chemistry {
+    @apply backdrop-blur-md bg-subject-chemistry-primary/5 border border-subject-chemistry-primary/20;
+  }
 }
 
 @keyframes float {
@@ -168,10 +217,6 @@
 
 .animation-delay-500 {
   animation-delay: 0.5s;
-}
-
-.glass-card {
-  @apply backdrop-blur-md bg-white/5 border border-white/10;
 }
 
 .math-symbol {
