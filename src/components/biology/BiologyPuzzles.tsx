@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Check, X } from 'lucide-react';
 
+// تعريف واضح للواجهات لتجنب التداخل المعقد في الأنواع
 interface Puzzle {
   id: string;
   title: string;
@@ -29,6 +30,7 @@ interface PuzzleFormValues {
   difficulty: string;
 }
 
+// تعريف واضح لنوع بيانات قاعدة البيانات
 interface DatabasePuzzle {
   id: string;
   title: string;
@@ -75,8 +77,9 @@ const BiologyPuzzles = () => {
       const biologyPuzzles: Puzzle[] = [];
       
       if (data) {
-        const typedData = data as Array<DatabasePuzzle>;
-        for (const item of typedData) {
+        // استخدام تعريف واضح للنوع لتجنب التكرار العميق
+        const typedData = data as DatabasePuzzle[];
+        typedData.forEach(item => {
           biologyPuzzles.push({
             id: item.id,
             title: item.title,
@@ -86,7 +89,7 @@ const BiologyPuzzles = () => {
             hint: item.hint,
             created_at: item.created_at
           });
-        }
+        });
       }
       
       setPuzzles(biologyPuzzles);

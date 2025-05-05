@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -44,23 +43,57 @@ const Biology = () => {
               عالم الأحياء
             </h1>
             
-            <div className="relative h-64 mb-12 flex justify-center">
+            <div className="relative h-96 mb-12 flex justify-center">
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
-                className="w-48 h-auto"
+                className="w-64 h-auto"
               >
-                {/* Human Skeleton SVG - simplified and stylized */}
-                <svg viewBox="0 0 100 200" className="w-full h-full">
+                {/* جسم الإنسان بشكل أكثر تفصيلًا */}
+                <svg viewBox="0 0 200 400" className="w-full h-full">
                   <g className="text-subject-biology-primary">
-                    <path d="M50,10 C45,20 45,30 50,40 C55,30 55,20 50,10" fill="currentColor" />
-                    <path d="M50,40 L50,70" stroke="currentColor" strokeWidth="2" />
-                    <path d="M50,50 L30,65" stroke="currentColor" strokeWidth="2" />
-                    <path d="M50,50 L70,65" stroke="currentColor" strokeWidth="2" />
-                    <path d="M50,70 L35,100" stroke="currentColor" strokeWidth="2" />
-                    <path d="M50,70 L65,100" stroke="currentColor" strokeWidth="2" />
-                    <circle cx="50" cy="25" r="10" fill="currentColor" />
+                    {/* الرأس */}
+                    <circle cx="100" cy="50" r="40" fill="currentColor" fillOpacity="0.7" />
+                    <ellipse cx="100" cy="45" rx="25" ry="20" fill="#00120b" />
+                    
+                    {/* العنق */}
+                    <rect x="90" y="90" width="20" height="20" fill="currentColor" />
+                    
+                    {/* الجذع */}
+                    <path d="M70,110 L130,110 L140,230 L60,230 Z" fill="currentColor" fillOpacity="0.7" />
+                    
+                    {/* القلب (يظهر داخل الجذع) */}
+                    <path d="M95,150 C85,140 70,150 70,165 C70,185 100,195 100,195 C100,195 130,185 130,165 C130,150 115,140 105,150 C100,145 95,150 95,150 Z" 
+                          fill="#ff4d4d" fillOpacity="0.7" />
+                    
+                    {/* الأذرع */}
+                    <path d="M70,115 L40,180 L55,190 L80,140 Z" fill="currentColor" fillOpacity="0.7" />
+                    <path d="M130,115 L160,180 L145,190 L120,140 Z" fill="currentColor" fillOpacity="0.7" />
+                    
+                    {/* الأيدي */}
+                    <circle cx="40" cy="190" r="10" fill="currentColor" />
+                    <circle cx="160" cy="190" r="10" fill="currentColor" />
+                    
+                    {/* الساقان */}
+                    <path d="M80,230 L60,350 L80,350 L95,230 Z" fill="currentColor" fillOpacity="0.7" />
+                    <path d="M120,230 L140,350 L120,350 L105,230 Z" fill="currentColor" fillOpacity="0.7" />
+                    
+                    {/* القدمان */}
+                    <ellipse cx="70" cy="360" rx="20" ry="10" fill="currentColor" />
+                    <ellipse cx="130" cy="360" rx="20" ry="10" fill="currentColor" />
+
+                    {/* DNA شريط في الخلفية */}
+                    <path d="M30,50 C40,70 60,90 30,110 C60,130 40,150 30,170 C40,190 60,210 30,230" 
+                          stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" fill="none"/>
+                    <path d="M170,50 C160,70 140,90 170,110 C140,130 160,150 170,170 C160,190 140,210 170,230" 
+                          stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" fill="none"/>
+                          
+                    {/* خطوط توصيل DNA */}
+                    <line x1="30" y1="50" x2="170" y2="50" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+                    <line x1="30" y1="110" x2="170" y2="110" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+                    <line x1="30" y1="170" x2="170" y2="170" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+                    <line x1="30" y1="230" x2="170" y2="230" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
                   </g>
                 </svg>
               </motion.div>
@@ -76,8 +109,8 @@ const Biology = () => {
           </motion.div>
         </main>
         
-        {/* Floating Biology Symbols - limited for performance */}
-        {biologySymbols.slice(0, 3).map((symbol, index) => (
+        {/* Floating Biology Symbols */}
+        {biologySymbols.map((symbol, index) => (
           <div 
             key={index}
             className={`absolute ${symbol.size} text-subject-biology-primary/30 math-symbol pointer-events-none`}
@@ -100,8 +133,8 @@ const Biology = () => {
     <div className="min-h-screen flex flex-col text-right" dir="rtl">
       <StarField starCount={150} speed={0.2} />
       
-      {/* Floating Biology Symbols - reduced for performance */}
-      {biologySymbols.slice(0, 3).map((symbol, index) => (
+      {/* Floating Biology Symbols */}
+      {biologySymbols.map((symbol, index) => (
         <div 
           key={index}
           className={`absolute ${symbol.size} text-subject-biology-primary/30 math-symbol pointer-events-none`}
