@@ -49,6 +49,7 @@ const UploadJournalDrawer = () => {
         const { data: bucketExists } = await supabase.storage.getBucket('scientific_journals');
         
         if (!bucketExists) {
+          console.log("Creating scientific_journals bucket");
           const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
             public: true,
             fileSizeLimit: 20971520, // 20MB
@@ -59,6 +60,8 @@ const UploadJournalDrawer = () => {
           } else {
             console.log("Created scientific_journals bucket successfully");
           }
+        } else {
+          console.log("scientific_journals bucket already exists");
         }
       } catch (error) {
         console.error("Error checking bucket:", error);
@@ -207,6 +210,12 @@ const UploadJournalDrawer = () => {
     }
   };
 
+  // Form submission handler that properly prevents default behavior
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    form.handleSubmit(onSubmit)();
+  };
+
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
@@ -225,7 +234,7 @@ const UploadJournalDrawer = () => {
         
         <div className="px-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
+            <form onSubmit={handleFormSubmit} className="space-y-6 text-right">
               <FormField
                 control={form.control}
                 name="title"

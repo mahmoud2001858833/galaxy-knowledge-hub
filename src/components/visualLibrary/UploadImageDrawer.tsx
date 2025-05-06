@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -39,6 +40,7 @@ const UploadImageDrawer = () => {
         const { data: bucketExists } = await supabase.storage.getBucket('educational_images');
         
         if (!bucketExists) {
+          console.log("Creating educational_images bucket");
           const { error: createBucketError } = await supabase.storage.createBucket('educational_images', {
             public: true,
             fileSizeLimit: 5242880, // 5MB
@@ -49,6 +51,8 @@ const UploadImageDrawer = () => {
           } else {
             console.log("Created educational_images bucket successfully");
           }
+        } else {
+          console.log("educational_images bucket already exists");
         }
       } catch (error) {
         console.error("Error checking bucket:", error);
@@ -163,6 +167,12 @@ const UploadImageDrawer = () => {
     }
   };
 
+  // Form submission handler that properly prevents default behavior
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    form.handleSubmit(onSubmit)();
+  };
+
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
@@ -181,7 +191,7 @@ const UploadImageDrawer = () => {
         
         <div className="px-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
+            <form onSubmit={handleFormSubmit} className="space-y-6 text-right">
               <FormField
                 control={form.control}
                 name="title"

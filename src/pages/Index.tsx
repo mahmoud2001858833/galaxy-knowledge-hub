@@ -28,13 +28,13 @@ const Index = () => {
             transition={{ delay: 0.2, duration: 0.7 }}
             className="mb-10 relative"
           >
-            {/* Circular space-themed frame */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/30 via-purple-500/20 to-cyan-500/30 p-1 -m-4 blur-md"></div>
-            <div className="absolute inset-0 rounded-full animate-pulse-glow opacity-50 bg-gradient-to-r from-cyan-500/20 via-blue-400/10 to-purple-600/20 -m-2"></div>
+            {/* Circular space-themed frame - adjusted size */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/30 via-purple-500/20 to-cyan-500/30 p-1 -m-3 blur-md"></div>
+            <div className="absolute inset-0 rounded-full animate-pulse-glow opacity-50 bg-gradient-to-r from-cyan-500/20 via-blue-400/10 to-purple-600/20 -m-1"></div>
             
-            {/* Animated ring */}
+            {/* Animated ring - adjusted size */}
             <motion.div 
-              className="absolute inset-0 rounded-full border-2 border-blue-400/50 -m-3"
+              className="absolute inset-0 rounded-full border-2 border-blue-400/50 -m-2"
               animate={{ 
                 scale: [1, 1.05, 1],
                 opacity: [0.7, 1, 0.7],
@@ -47,13 +47,13 @@ const Index = () => {
               }}
             ></motion.div>
             
-            {/* Logo */}
-            <div className="w-56 h-56 md:w-64 md:h-64 rounded-full p-3 bg-blue-900/30 backdrop-blur-sm border border-blue-500/30 relative overflow-hidden flex items-center justify-center">
+            {/* Logo - adjusted size */}
+            <div className="w-48 h-48 md:w-52 md:h-52 rounded-full p-3 bg-blue-900/30 backdrop-blur-sm border border-blue-500/30 relative overflow-hidden flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-60"></div>
               <img 
                 src="https://i.postimg.cc/mr48sKY6/image.png" 
                 alt="فلك المعرفة" 
-                className="w-48 h-48 md:w-56 md:h-56 object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" 
+                className="w-40 h-40 md:w-44 md:h-44 object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" 
               />
             </div>
           </motion.div>
