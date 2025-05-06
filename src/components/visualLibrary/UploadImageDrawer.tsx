@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,6 +31,32 @@ const UploadImageDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if the educational_images bucket exists when component mounts
+    const checkBucket = async () => {
+      try {
+        const { data: bucketExists } = await supabase.storage.getBucket('educational_images');
+        
+        if (!bucketExists) {
+          const { error: createBucketError } = await supabase.storage.createBucket('educational_images', {
+            public: true,
+            fileSizeLimit: 5242880, // 5MB
+          });
+          
+          if (createBucketError) {
+            console.error("Error creating bucket:", createBucketError);
+          } else {
+            console.log("Created educational_images bucket successfully");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking bucket:", error);
+      }
+    };
+    
+    checkBucket();
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -74,22 +99,6 @@ const UploadImageDrawer = () => {
         return;
       }
 
-      // التحقق من وجود Storage bucket وإنشائه إذا لم يكن موجوداً
-      let { data: bucketExists } = await supabase.storage.getBucket('educational_images');
-      
-      if (!bucketExists) {
-        const { error: createBucketError } = await supabase.storage.createBucket('educational_images', {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-        });
-        
-        if (createBucketError) {
-          throw createBucketError;
-        }
-      }
-
-      console.log("تم التحقق من Storage bucket");
-
       // Upload image to storage
       const fileExt = data.image.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
@@ -97,7 +106,7 @@ const UploadImageDrawer = () => {
 
       console.log("جاري رفع الصورة إلى:", filePath);
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('educational_images')
         .upload(filePath, data.image);
 

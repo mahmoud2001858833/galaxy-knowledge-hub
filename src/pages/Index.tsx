@@ -51,7 +51,7 @@ const Index = () => {
             <div className="w-56 h-56 md:w-64 md:h-64 rounded-full p-3 bg-blue-900/30 backdrop-blur-sm border border-blue-500/30 relative overflow-hidden flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-60"></div>
               <img 
-                src="https://drive.usercontent.google.com/download?id=1wN5NyTRy5cijOuTBgiQYo0fFXDlWcR0D&export=view&authuser=0" 
+                src="https://i.postimg.cc/mr48sKY6/image.png" 
                 alt="فلك المعرفة" 
                 className="w-48 h-48 md:w-56 md:h-56 object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" 
               />

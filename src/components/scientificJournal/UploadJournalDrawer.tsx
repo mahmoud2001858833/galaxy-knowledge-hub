@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,6 +41,32 @@ const UploadJournalDrawer = () => {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if the scientific_journals bucket exists when component mounts
+    const checkBucket = async () => {
+      try {
+        const { data: bucketExists } = await supabase.storage.getBucket('scientific_journals');
+        
+        if (!bucketExists) {
+          const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
+            public: true,
+            fileSizeLimit: 20971520, // 20MB
+          });
+          
+          if (createBucketError) {
+            console.error("Error creating bucket:", createBucketError);
+          } else {
+            console.log("Created scientific_journals bucket successfully");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking bucket:", error);
+      }
+    };
+    
+    checkBucket();
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -91,22 +117,6 @@ const UploadJournalDrawer = () => {
         setIsUploading(false);
         return;
       }
-
-      // التحقق من وجود Storage bucket وإنشائه إذا لم يكن موجوداً
-      let { data: bucketExists } = await supabase.storage.getBucket('scientific_journals');
-      
-      if (!bucketExists) {
-        const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
-          public: true,
-          fileSizeLimit: 20971520, // 20MB
-        });
-        
-        if (createBucketError) {
-          throw createBucketError;
-        }
-      }
-
-      console.log("تم التحقق من Storage bucket");
 
       // Upload cover image to storage
       const coverExt = data.coverImage.name.split('.').pop();
