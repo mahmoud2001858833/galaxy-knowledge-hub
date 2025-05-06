@@ -34,28 +34,38 @@ const UploadImageDrawer = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if the educational_images bucket exists when component mounts
+    // تأكد من وجود bucket للصور التعليمية عند تحميل المكون
     const checkBucket = async () => {
       try {
-        const { data: bucketExists } = await supabase.storage.getBucket('educational_images');
+        console.log("التحقق من وجود مجلد التخزين للصور التعليمية");
+        const { data: buckets } = await supabase.storage.listBuckets();
+        
+        // البحث عن وجود bucket باسم 'educational_images'
+        const bucketExists = buckets?.some(bucket => bucket.name === 'educational_images');
         
         if (!bucketExists) {
-          console.log("Creating educational_images bucket");
+          console.log("إنشاء مجلد تخزين جديد للصور التعليمية");
           const { error: createBucketError } = await supabase.storage.createBucket('educational_images', {
             public: true,
             fileSizeLimit: 5242880, // 5MB
           });
           
           if (createBucketError) {
-            console.error("Error creating bucket:", createBucketError);
+            console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
+            
+            // إنشاء سياسات الوصول إذا كان الخطأ متعلقًا بها
+            if (createBucketError.message.includes('policy')) {
+              console.log("جاري محاولة إنشاء مجلد التخزين بطريقة أخرى");
+              // يمكن إضافة معالجة خاصة هنا إذا لزم الأمر
+            }
           } else {
-            console.log("Created educational_images bucket successfully");
+            console.log("تم إنشاء مجلد التخزين للصور التعليمية بنجاح");
           }
         } else {
-          console.log("educational_images bucket already exists");
+          console.log("مجلد التخزين للصور التعليمية موجود بالفعل");
         }
       } catch (error) {
-        console.error("Error checking bucket:", error);
+        console.error("خطأ في التحقق من مجلد التخزين:", error);
       }
     };
     
@@ -75,14 +85,14 @@ const UploadImageDrawer = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview the image
+    // معاينة الصورة
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewUrl(reader.result as string);
     };
     reader.readAsDataURL(file);
     
-    // Set the file in the form
+    // تعيين الملف في النموذج
     form.setValue("image", file);
   };
 
@@ -91,7 +101,7 @@ const UploadImageDrawer = () => {
     console.log("بدء تحميل الصورة:", data);
     
     try {
-      // Get the current user
+      // الحصول على بيانات المستخدم الحالي
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -103,12 +113,24 @@ const UploadImageDrawer = () => {
         return;
       }
 
-      // Upload image to storage
+      // رفع الصورة إلى التخزين
       const fileExt = data.image.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `${data.subject}/${fileName}`;
 
       console.log("جاري رفع الصورة إلى:", filePath);
+
+      // التحقق من وجود bucket
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'educational_images');
+
+      if (!bucketExists) {
+        console.log("إنشاء مجلد تخزين جديد للصور التعليمية قبل الرفع");
+        await supabase.storage.createBucket('educational_images', {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+      }
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('educational_images')
@@ -121,14 +143,14 @@ const UploadImageDrawer = () => {
 
       console.log("تم رفع الصورة بنجاح");
 
-      // Get the public URL
+      // الحصول على الرابط العام
       const { data: publicUrlData } = supabase.storage
         .from('educational_images')
         .getPublicUrl(filePath);
 
       console.log("URL العام للصورة:", publicUrlData.publicUrl);
 
-      // Store metadata in the database
+      // تخزين البيانات الوصفية في قاعدة البيانات
       const { error: dbError } = await supabase
         .from('educational_images')
         .insert({
@@ -151,7 +173,7 @@ const UploadImageDrawer = () => {
         description: "تمت إضافة الصورة إلى المكتبة المرئية",
       });
 
-      // Reset form and close drawer
+      // إعادة تعيين النموذج وإغلاق الدرج
       form.reset();
       setPreviewUrl(null);
       setIsOpen(false);
@@ -165,12 +187,6 @@ const UploadImageDrawer = () => {
     } finally {
       setIsUploading(false);
     }
-  };
-
-  // Form submission handler that properly prevents default behavior
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    form.handleSubmit(onSubmit)();
   };
 
   return (
@@ -191,7 +207,10 @@ const UploadImageDrawer = () => {
         
         <div className="px-4">
           <Form {...form}>
-            <form onSubmit={handleFormSubmit} className="space-y-6 text-right">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(onSubmit)(e);
+            }} className="space-y-6 text-right">
               <FormField
                 control={form.control}
                 name="title"

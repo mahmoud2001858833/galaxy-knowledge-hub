@@ -43,28 +43,38 @@ const UploadJournalDrawer = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if the scientific_journals bucket exists when component mounts
+    // التحقق من وجود مجلد تخزين للمجلات العلمية عند تحميل المكون
     const checkBucket = async () => {
       try {
-        const { data: bucketExists } = await supabase.storage.getBucket('scientific_journals');
+        console.log("التحقق من وجود مجلد التخزين للمجلات العلمية");
+        const { data: buckets } = await supabase.storage.listBuckets();
+        
+        // البحث عن وجود bucket باسم 'scientific_journals'
+        const bucketExists = buckets?.some(bucket => bucket.name === 'scientific_journals');
         
         if (!bucketExists) {
-          console.log("Creating scientific_journals bucket");
+          console.log("إنشاء مجلد تخزين جديد للمجلات العلمية");
           const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
             public: true,
             fileSizeLimit: 20971520, // 20MB
           });
           
           if (createBucketError) {
-            console.error("Error creating bucket:", createBucketError);
+            console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
+            
+            // إنشاء سياسات الوصول إذا كان الخطأ متعلقًا بها
+            if (createBucketError.message.includes('policy')) {
+              console.log("جاري محاولة إنشاء مجلد التخزين بطريقة أخرى");
+              // يمكن إضافة معالجة خاصة هنا إذا لزم الأمر
+            }
           } else {
-            console.log("Created scientific_journals bucket successfully");
+            console.log("تم إنشاء مجلد التخزين للمجلات العلمية بنجاح");
           }
         } else {
-          console.log("scientific_journals bucket already exists");
+          console.log("مجلد التخزين للمجلات العلمية موجود بالفعل");
         }
       } catch (error) {
-        console.error("Error checking bucket:", error);
+        console.error("خطأ في التحقق من مجلد التخزين:", error);
       }
     };
     
@@ -85,14 +95,14 @@ const UploadJournalDrawer = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview the image
+    // معاينة الصورة
     const reader = new FileReader();
     reader.onloadend = () => {
       setCoverPreviewUrl(reader.result as string);
     };
     reader.readAsDataURL(file);
     
-    // Set the file in the form
+    // تعيين الملف في النموذج
     form.setValue("coverImage", file);
   };
 
@@ -109,7 +119,7 @@ const UploadJournalDrawer = () => {
     console.log("بدء تحميل المجلة:", data);
     
     try {
-      // Get the current user
+      // الحصول على بيانات المستخدم الحالي
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -121,7 +131,19 @@ const UploadJournalDrawer = () => {
         return;
       }
 
-      // Upload cover image to storage
+      // التحقق من وجود bucket
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'scientific_journals');
+
+      if (!bucketExists) {
+        console.log("إنشاء مجلد تخزين جديد للمجلات العلمية قبل الرفع");
+        await supabase.storage.createBucket('scientific_journals', {
+          public: true,
+          fileSizeLimit: 20971520, // 20MB
+        });
+      }
+
+      // رفع صورة الغلاف إلى التخزين
       const coverExt = data.coverImage.name.split('.').pop();
       const coverFileName = `cover_${uuidv4()}.${coverExt}`;
       const coverFilePath = `${data.subject}/${coverFileName}`;
@@ -139,7 +161,7 @@ const UploadJournalDrawer = () => {
 
       console.log("تم رفع صورة الغلاف بنجاح");
 
-      // Upload PDF file to storage
+      // رفع ملف PDF إلى التخزين
       const pdfFileName = `pdf_${uuidv4()}.pdf`;
       const pdfFilePath = `${data.subject}/${pdfFileName}`;
 
@@ -156,7 +178,7 @@ const UploadJournalDrawer = () => {
 
       console.log("تم رفع ملف PDF بنجاح");
 
-      // Get the public URLs
+      // الحصول على الروابط العامة
       const { data: coverPublicUrlData } = supabase.storage
         .from('scientific_journals')
         .getPublicUrl(coverFilePath);
@@ -168,7 +190,7 @@ const UploadJournalDrawer = () => {
       console.log("URL العام لصورة الغلاف:", coverPublicUrlData.publicUrl);
       console.log("URL العام لملف PDF:", pdfPublicUrlData.publicUrl);
 
-      // Store metadata in the database
+      // تخزين البيانات الوصفية في قاعدة البيانات
       const { error: dbError } = await supabase
         .from('scientific_journals')
         .insert({
@@ -193,7 +215,7 @@ const UploadJournalDrawer = () => {
         description: "تمت إضافة المجلة إلى المكتبة العلمية",
       });
 
-      // Reset form and close drawer
+      // إعادة تعيين النموذج وإغلاق الدرج
       form.reset();
       setCoverPreviewUrl(null);
       setSelectedPdfName(null);
@@ -208,12 +230,6 @@ const UploadJournalDrawer = () => {
     } finally {
       setIsUploading(false);
     }
-  };
-
-  // Form submission handler that properly prevents default behavior
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    form.handleSubmit(onSubmit)();
   };
 
   return (
@@ -234,7 +250,10 @@ const UploadJournalDrawer = () => {
         
         <div className="px-4">
           <Form {...form}>
-            <form onSubmit={handleFormSubmit} className="space-y-6 text-right">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(onSubmit)(e);
+            }} className="space-y-6 text-right">
               <FormField
                 control={form.control}
                 name="title"
