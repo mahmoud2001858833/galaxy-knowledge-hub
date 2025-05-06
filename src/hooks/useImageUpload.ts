@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabaseStorageService } from '@/services/supabaseStorage';
 import { SubjectType } from '@/components/shared/types/educationalContentTypes';
 
-interface ImageUploadFormData {
+export interface ImageUploadFormData {
   title: string;
   description?: string;
   subject: SubjectType;

@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +20,14 @@ const UploadImageDrawer = () => {
 
   const handleSubmit = async (data: ImageUploadFormValues) => {
     try {
-      const success = await uploadImage(data);
+      // Make sure data matches required type by ensuring all required fields
+      const success = await uploadImage({
+        title: data.title,
+        description: data.description,
+        subject: data.subject,
+        image: data.image
+      });
+      
       if (success) {
         setIsOpen(false);
       }
