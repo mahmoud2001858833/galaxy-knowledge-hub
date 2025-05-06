@@ -77,6 +77,8 @@ const UploadJournalDrawer = () => {
 
   const onSubmit = async (data: FormValues) => {
     setIsUploading(true);
+    console.log("بدء تحميل المجلة:", data);
+    
     try {
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -90,30 +92,56 @@ const UploadJournalDrawer = () => {
         return;
       }
 
+      // التحقق من وجود Storage bucket وإنشائه إذا لم يكن موجوداً
+      let { data: bucketExists } = await supabase.storage.getBucket('scientific_journals');
+      
+      if (!bucketExists) {
+        const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
+          public: true,
+          fileSizeLimit: 20971520, // 20MB
+        });
+        
+        if (createBucketError) {
+          throw createBucketError;
+        }
+      }
+
+      console.log("تم التحقق من Storage bucket");
+
       // Upload cover image to storage
       const coverExt = data.coverImage.name.split('.').pop();
       const coverFileName = `cover_${uuidv4()}.${coverExt}`;
       const coverFilePath = `${data.subject}/${coverFileName}`;
+
+      console.log("جاري رفع صورة الغلاف إلى:", coverFilePath);
 
       const { error: coverUploadError } = await supabase.storage
         .from('scientific_journals')
         .upload(coverFilePath, data.coverImage);
 
       if (coverUploadError) {
+        console.error("خطأ في رفع صورة الغلاف:", coverUploadError);
         throw coverUploadError;
       }
+
+      console.log("تم رفع صورة الغلاف بنجاح");
 
       // Upload PDF file to storage
       const pdfFileName = `pdf_${uuidv4()}.pdf`;
       const pdfFilePath = `${data.subject}/${pdfFileName}`;
+
+      console.log("جاري رفع ملف PDF إلى:", pdfFilePath);
 
       const { error: pdfUploadError } = await supabase.storage
         .from('scientific_journals')
         .upload(pdfFilePath, data.pdfFile);
 
       if (pdfUploadError) {
+        console.error("خطأ في رفع ملف PDF:", pdfUploadError);
         throw pdfUploadError;
       }
+
+      console.log("تم رفع ملف PDF بنجاح");
 
       // Get the public URLs
       const { data: coverPublicUrlData } = supabase.storage
@@ -123,6 +151,9 @@ const UploadJournalDrawer = () => {
       const { data: pdfPublicUrlData } = supabase.storage
         .from('scientific_journals')
         .getPublicUrl(pdfFilePath);
+
+      console.log("URL العام لصورة الغلاف:", coverPublicUrlData.publicUrl);
+      console.log("URL العام لملف PDF:", pdfPublicUrlData.publicUrl);
 
       // Store metadata in the database
       const { error: dbError } = await supabase
@@ -138,8 +169,11 @@ const UploadJournalDrawer = () => {
         });
 
       if (dbError) {
+        console.error("خطأ في حفظ بيانات المجلة:", dbError);
         throw dbError;
       }
+
+      console.log("تم حفظ بيانات المجلة بنجاح");
 
       toast({
         title: "تم رفع المجلة بنجاح",

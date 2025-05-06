@@ -59,6 +59,8 @@ const UploadImageDrawer = () => {
 
   const onSubmit = async (data: FormValues) => {
     setIsUploading(true);
+    console.log("بدء تحميل الصورة:", data);
+    
     try {
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -72,23 +74,46 @@ const UploadImageDrawer = () => {
         return;
       }
 
+      // التحقق من وجود Storage bucket وإنشائه إذا لم يكن موجوداً
+      let { data: bucketExists } = await supabase.storage.getBucket('educational_images');
+      
+      if (!bucketExists) {
+        const { error: createBucketError } = await supabase.storage.createBucket('educational_images', {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+        
+        if (createBucketError) {
+          throw createBucketError;
+        }
+      }
+
+      console.log("تم التحقق من Storage bucket");
+
       // Upload image to storage
       const fileExt = data.image.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `${data.subject}/${fileName}`;
+
+      console.log("جاري رفع الصورة إلى:", filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('educational_images')
         .upload(filePath, data.image);
 
       if (uploadError) {
+        console.error("خطأ في رفع الصورة:", uploadError);
         throw uploadError;
       }
+
+      console.log("تم رفع الصورة بنجاح");
 
       // Get the public URL
       const { data: publicUrlData } = supabase.storage
         .from('educational_images')
         .getPublicUrl(filePath);
+
+      console.log("URL العام للصورة:", publicUrlData.publicUrl);
 
       // Store metadata in the database
       const { error: dbError } = await supabase
@@ -102,8 +127,11 @@ const UploadImageDrawer = () => {
         });
 
       if (dbError) {
+        console.error("خطأ في حفظ بيانات الصورة:", dbError);
         throw dbError;
       }
+
+      console.log("تم حفظ بيانات الصورة بنجاح");
 
       toast({
         title: "تم رفع الصورة بنجاح",
