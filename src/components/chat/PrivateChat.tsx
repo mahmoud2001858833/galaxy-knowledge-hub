@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Plus, Search, UserPlus, Loader2, MessageSquare } from 'lucide-react';
@@ -238,7 +239,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     };
 
     fetchContacts();
-  }, [user, toast, currentChat]);
+  }, [user, toast]);
 
   // تحميل الرسائل عند تغيير المحادثة
   useEffect(() => {
@@ -310,17 +311,28 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
+      // Optimistically add message to the UI
+      const optimisticMsg: PrivateChatMessage = {
+        id: `temp-${Date.now()}`,
+        content: newMessage.trim(),
+        created_at: new Date().toISOString(),
+        user_id: user.id,
+        username: 'أنت'
+      };
+      
+      setMessages(prev => [...prev, optimisticMsg]);
+      setNewMessage('');
+      
       const { error } = await supabase
         .from('private_messages')
         .insert({
           chat_id: currentChat,
           user_id: user.id,
-          content: newMessage.trim()
+          content: optimisticMsg.content
         });
 
       if (error) throw error;
       
-      setNewMessage('');
     } catch (error) {
       console.error('خطأ في إرسال الرسالة:', error);
       toast({
@@ -328,6 +340,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         description: "لم نتمكن من إرسال الرسالة",
         variant: "destructive",
       });
+      // Remove the optimistic message if it failed
+      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
+      setNewMessage(optimisticMsg.content);
     } finally {
       setSendingMessage(false);
     }
@@ -473,7 +488,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   }
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-4 w-full">
       {/* زر إضافة جهة اتصال */}
       <div className="flex justify-end">
         <Dialog open={isAddContactDialogOpen} onOpenChange={setIsAddContactDialogOpen}>
@@ -547,7 +562,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           </motion.div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[450px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[450px] w-full">
           {/* قائمة جهات الاتصال */}
           <div className="lg:col-span-1 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
             <div className="p-3 border-b border-white/10">

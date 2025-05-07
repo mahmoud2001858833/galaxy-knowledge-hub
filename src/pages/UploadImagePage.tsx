@@ -20,7 +20,7 @@ const UploadImagePage = () => {
     try {
       const success = await uploadImage({
         title: data.title,
-        description: data.description,
+        description: data.description || "",
         subject: data.subject,
         image: data.image
       });
@@ -43,16 +43,16 @@ const UploadImagePage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950 w-full" dir="rtl">
       <StarField />
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-12">
+      <main className="flex-1 w-full px-0 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto"
+          className="max-w-2xl mx-auto px-4 sm:px-6"
         >
           <div className="flex justify-between items-center mb-8">
             <Button 

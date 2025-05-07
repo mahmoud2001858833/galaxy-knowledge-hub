@@ -50,7 +50,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
           table: 'group_messages',
         },
         async (payload) => {
-          if (payload.new) {
+          if (payload.new && payload.new.chat_id === currentGroup) {
             try {
               // الحصول على معلومات المستخدم المرسل
               const { data: userData } = await supabase
@@ -76,7 +76,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [currentGroup]);
 
   // تحميل المجموعات
   useEffect(() => {
@@ -179,17 +179,28 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
+      // Optimistically add message to the UI
+      const optimisticMsg: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        content: newMessage.trim(),
+        created_at: new Date().toISOString(),
+        user_id: user.id,
+        username: 'أنت'
+      };
+      
+      setMessages(prev => [...prev, optimisticMsg]);
+      setNewMessage('');
+      
       const { error } = await supabase
         .from('group_messages')
         .insert({
           chat_id: currentGroup,
           user_id: user.id,
-          content: newMessage.trim()
+          content: optimisticMsg.content
         });
 
       if (error) throw error;
       
-      setNewMessage('');
     } catch (error) {
       console.error('خطأ في إرسال الرسالة:', error);
       toast({
@@ -197,6 +208,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         description: "لم نتمكن من إرسال الرسالة",
         variant: "destructive",
       });
+      // Remove the optimistic message if it failed
+      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
+      setNewMessage(optimisticMsg.content);
     } finally {
       setSendingMessage(false);
     }
@@ -218,7 +232,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {groups.length > 0 && (
         <>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -235,7 +249,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
             ))}
           </div>
 
-          <div className="h-[450px] bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-y-auto flex flex-col p-4">
+          <div className="h-[450px] bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-y-auto flex flex-col p-4 w-full">
             <div className="flex-1 space-y-4 overflow-y-auto">
               {messages.length === 0 && !loading ? (
                 <div className="flex flex-col items-center justify-center h-full text-white/70">

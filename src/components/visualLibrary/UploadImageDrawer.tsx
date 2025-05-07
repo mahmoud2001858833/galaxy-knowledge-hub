@@ -25,7 +25,7 @@ const UploadImageDrawer = () => {
       // Make sure data matches required type by ensuring all required fields
       const success = await uploadImage({
         title: data.title,
-        description: data.description,
+        description: data.description || "",
         subject: data.subject,
         image: data.image
       });
@@ -53,39 +53,13 @@ const UploadImageDrawer = () => {
 
   return (
     <div>
-      <Drawer open={isOpen} onOpenChange={setIsOpen}>
-        <DrawerTrigger asChild>
-          <Button className="group bg-blue-500 hover:bg-blue-600">
-            <Upload className="mr-2 h-4 w-4" />
-            رفع صورة تعليمية
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent className="max-h-[90vh] overflow-y-auto">
-          <DrawerHeader>
-            <DrawerTitle className="text-right">رفع صورة تعليمية جديدة</DrawerTitle>
-            <DrawerDescription className="text-right">
-              أضف صورة تعليمية إلى المكتبة المرئية لمشاركتها مع الطلاب والمعلمين
-            </DrawerDescription>
-          </DrawerHeader>
-          
-          <div className="px-4">
-            <ImageUploadForm onSubmit={handleSubmit} isUploading={isUploading} />
-          </div>
-          
-          <DrawerFooter className="flex flex-col gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleOpenFullPage} 
-              className="w-full"
-            >
-              فتح في صفحة مستقلة
-            </Button>
-            <DrawerClose asChild>
-              <Button variant="outline" className="w-full">إلغاء</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      <Button 
+        className="group bg-blue-500 hover:bg-blue-600"
+        onClick={handleOpenFullPage}
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        رفع صورة تعليمية
+      </Button>
     </div>
   );
 };
