@@ -50,6 +50,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isAddContactDialogOpen, setIsAddContactDialogOpen] = useState(false);
+  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
 
   // تحميل جهات الاتصال للمستخدم
   useEffect(() => {
@@ -104,28 +105,31 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   useEffect(() => {
     if (!currentChat || !user?.id) return;
     
-    // فتح القناة للتحديثات المباشرة للرسائل الخاصة
-    const channelName = `private_messages_${user.id}_${currentChat}`;
-    console.log(`Setting up real-time channel: ${channelName}`);
+    // إلغاء الاشتراك السابق إن وجد
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+    }
+    
+    // فتح القناة للتحديثات المباشرة للرسائل الخاصة مع معرف فريد لتجنب الاشتراكات المتكررة
+    const channelName = `private_messages_${user.id}_${currentChat}_${Date.now()}`;
+    console.log(`إعداد قناة الوقت الحقيقي: ${channelName}`);
     
     const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // استماع لكل الأحداث (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'private_messages',
+          filter: `or(and(user_id.eq.${user.id},chat_id.eq.${currentChat}),and(user_id.eq.${currentChat},chat_id.eq.${user.id}))`,
         },
         async (payload) => {
-          console.log("Real-time private message received:", payload);
-          
-          // التحقق من أن الرسالة تنتمي إلى المحادثة الحالية
-          const messageData = payload.new as any;
-          if (messageData && 
-              ((messageData.user_id === user.id && messageData.chat_id === currentChat) || 
-              (messageData.user_id === currentChat && messageData.chat_id === user.id))) {
+          console.log("استلام رسالة خاصة في الوقت الحقيقي:", payload);
+          // تحديث المحادثة فورًا عند استلام رسالة جديدة
+          if (payload.eventType === 'INSERT') {
             try {
+              const messageData = payload.new;
               const { data: userData } = await supabase
                 .from('users_profiles')
                 .select('username')
@@ -137,17 +141,33 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
                 username: userData?.username || 'مستخدم'
               } as ChatMessage;
               
-              setMessages(prev => [...prev, newMsg]);
+              // تحديث المحادثة بالرسالة الجديدة فورًا
+              setMessages(prev => {
+                // تجنب إضافة الرسائل المكررة
+                const messageExists = prev.some(msg => msg.id === newMsg.id);
+                if (messageExists) return prev;
+                return [...prev, newMsg];
+              });
             } catch (error) {
               console.error('خطأ في تحميل معلومات المستخدم:', error);
             }
+          } else {
+            // إعادة تحميل المحادثة بالكامل في حالة تحديث أو حذف رسائل
+            await fetchMessages(currentChat);
           }
         }
       )
       .subscribe((status) => {
-        console.log(`Private message channel status: ${status}`);
+        console.log(`حالة قناة الرسائل الخاصة: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          toast({
+            title: "متصل",
+            description: "أنت الآن متصل بنظام المراسلة المباشر",
+          });
+        }
       });
 
+    setRealtimeChannel(channel);
     console.log(`تم الاشتراك في تحديثات المحادثة الخاصة (${currentChat})`);
     
     return () => {
@@ -158,81 +178,84 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
 
   // تحميل الرسائل عند تغيير المحادثة
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!currentChat || !user?.id) return;
+    if (currentChat) {
+      fetchMessages(currentChat);
+    }
+  }, [currentChat]);
+
+  // دالة لتحميل الرسائل الخاصة
+  const fetchMessages = async (chatPartnerId: string) => {
+    if (!chatPartnerId || !user?.id) return;
+    
+    try {
+      setLoading(true);
       
-      try {
-        setLoading(true);
-        
-        // استعلام معدل عن الرسائل الخاصة بين المستخدمين
-        const { data: messagesData, error } = await supabase
-          .from('private_messages')
-          .select('id, content, created_at, user_id, chat_id')
-          .or(`and(user_id.eq.${user.id},chat_id.eq.${currentChat}),and(user_id.eq.${currentChat},chat_id.eq.${user.id})`)
-          .order('created_at', { ascending: true });
+      // استعلام معدل عن الرسائل الخاصة بين المستخدمين
+      const { data: messagesData, error } = await supabase
+        .from('private_messages')
+        .select('id, content, created_at, user_id, chat_id')
+        .or(`and(user_id.eq.${user.id},chat_id.eq.${chatPartnerId}),and(user_id.eq.${chatPartnerId},chat_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
 
-        if (error) {
-          console.error("Error fetching private messages:", error);
-          throw error;
-        }
-        
-        // الحصول على معلومات المستخدمين
-        if (messagesData && messagesData.length > 0) {
-          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
-          const { data: usersData, error: usersError } = await supabase
-            .from('users_profiles')
-            .select('id, username')
-            .in('id', userIds);
-
-          if (usersError) {
-            console.error("Error fetching user profiles:", usersError);
-          }
-
-          const usersMap = (usersData || []).reduce((acc, user) => {
-            acc[user.id] = user.username;
-            return acc;
-          }, {} as Record<string, string>);
-
-          const messagesWithUsernames = messagesData.map(msg => ({
-            id: msg.id,
-            content: msg.content,
-            created_at: msg.created_at,
-            user_id: msg.user_id,
-            username: usersMap[msg.user_id] || 'مستخدم'
-          }));
-
-          setMessages(messagesWithUsernames);
-        } else {
-          setMessages([]);
-        }
-        
-        // الحصول على معلومات المستخدم الآخر
-        const { data: otherUserData, error: otherUserError } = await supabase
-          .from('users_profiles')
-          .select('id, username, avatar_url')
-          .eq('id', currentChat)
-          .single();
-        
-        if (otherUserError) {
-          console.error("Error fetching other user data:", otherUserError);
-          throw otherUserError;
-        }
-        
-        setOtherUser(otherUserData);
-      } catch (error) {
-        console.error('خطأ في تحميل الرسائل:', error);
-        toast({
-          title: "خطأ",
-          description: "لم نتمكن من تحميل الرسائل",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error("خطأ في تحميل الرسائل الخاصة:", error);
+        throw error;
       }
-    };
+      
+      // الحصول على معلومات المستخدمين
+      if (messagesData && messagesData.length > 0) {
+        const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+        const { data: usersData, error: usersError } = await supabase
+          .from('users_profiles')
+          .select('id, username')
+          .in('id', userIds);
 
-    fetchMessages();
-  }, [currentChat, user?.id, toast]);
+        if (usersError) {
+          console.error("خطأ في تحميل معلومات المستخدمين:", usersError);
+        }
+
+        const usersMap = (usersData || []).reduce((acc, user) => {
+          acc[user.id] = user.username;
+          return acc;
+        }, {} as Record<string, string>);
+
+        const messagesWithUsernames = messagesData.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          created_at: msg.created_at,
+          user_id: msg.user_id,
+          username: usersMap[msg.user_id] || 'مستخدم'
+        }));
+
+        setMessages(messagesWithUsernames);
+      } else {
+        setMessages([]);
+      }
+      
+      // الحصول على معلومات المستخدم الآخر
+      const { data: otherUserData, error: otherUserError } = await supabase
+        .from('users_profiles')
+        .select('id, username, avatar_url')
+        .eq('id', chatPartnerId)
+        .single();
+      
+      if (otherUserError) {
+        console.error("خطأ في تحميل معلومات المستخدم الآخر:", otherUserError);
+        throw otherUserError;
+      }
+      
+      setOtherUser(otherUserData);
+    } catch (error) {
+      console.error('خطأ في تحميل الرسائل:', error);
+      toast({
+        title: "خطأ",
+        description: "لم نتمكن من تحميل الرسائل",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // تمرير للأسفل عند وصول رسائل جديدة
   useEffect(() => {
@@ -344,12 +367,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
-      // Generate a unique temporary ID
-      const tempId = `temp-${Date.now()}`;
-      
       // إضافة رسالة مؤقتة للواجهة (Optimistic UI)
       const tempMessage: ChatMessage = {
-        id: tempId,
+        id: `temp-${Date.now()}`,
         content: newMessage.trim(),
         created_at: new Date().toISOString(),
         user_id: user.id,
@@ -357,20 +377,24 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       };
       
       setMessages(prev => [...prev, tempMessage]);
-      setNewMessage('');
-      
+      setNewMessage(''); // مسح حقل الإدخال
+
       // إرسال الرسالة إلى Supabase
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('private_messages')
         .insert({
           chat_id: currentChat,
           user_id: user.id,
           content: tempMessage.content
-        });
+        })
+        .select();
 
       if (error) {
+        console.error('خطأ في إرسال الرسالة:', error);
         throw error;
       }
+      
+      console.log('تم إرسال الرسالة الخاصة بنجاح:', data);
       
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
@@ -379,9 +403,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         description: "لم نتمكن من إرسال الرسالة",
         variant: "destructive",
       });
-      // إزالة الرسالة المؤقتة إذا فشلت
-      const tempId = `temp-${Date.now()}`;
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      // إعادة المحتوى السابق لحقل الإدخال في حالة الفشل
       setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);

@@ -26,28 +26,46 @@ const ChatRooms = () => {
           return;
         }
 
-        // إعداد قناة الوقت الحقيقي للجدول
-        const channel = supabase.channel('schema-db-changes')
+        // إعداد قناة الوقت الحقيقي للرسائل الجماعية
+        const groupMessagesChannel = supabase.channel('group-messages-channel')
           .on('postgres_changes', { 
             event: '*', 
             schema: 'public', 
             table: 'group_messages' 
           }, payload => {
-            console.log('تم استلام تغيير في الوقت الحقيقي:', payload);
+            console.log('تم استلام تغيير في رسائل المجموعات:', payload);
           })
           .subscribe(status => {
             if (status === 'SUBSCRIBED') {
-              console.log('تم تهيئة الوقت الحقيقي بنجاح');
+              console.log('تم الاشتراك في قناة رسائل المجموعات بنجاح');
             } else {
-              console.error('فشل في الاشتراك بالوقت الحقيقي:', status);
+              console.error('فشل في الاشتراك بقناة رسائل المجموعات:', status);
+            }
+          });
+        
+        // إعداد قناة الوقت الحقيقي للرسائل الخاصة
+        const privateMessagesChannel = supabase.channel('private-messages-channel')
+          .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'private_messages' 
+          }, payload => {
+            console.log('تم استلام تغيير في الرسائل الخاصة:', payload);
+          })
+          .subscribe(status => {
+            if (status === 'SUBSCRIBED') {
+              console.log('تم الاشتراك في قناة الرسائل الخاصة بنجاح');
+            } else {
+              console.error('فشل في الاشتراك بقناة الرسائل الخاصة:', status);
             }
           });
         
         return () => {
-          supabase.removeChannel(channel);
+          supabase.removeChannel(groupMessagesChannel);
+          supabase.removeChannel(privateMessagesChannel);
         };
       } catch (error) {
-        console.error('Error setting up realtime:', error);
+        console.error('خطأ في إعداد الوقت الحقيقي:', error);
       }
     };
 

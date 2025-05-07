@@ -35,39 +35,52 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
 
   // تحسينات الاشتراك في التحديثات المباشرة للمحادثة الجماعية
   useEffect(() => {
     if (!currentGroup) return;
+
+    // إلغاء الاشتراك السابق إن وجد
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+    }
     
     // فتح القناة للتحديثات المباشرة بطريقة أكثر فعالية
     const channel = supabase
-      .channel(`group_messages_${currentGroup}`)
+      .channel(`group_messages_${currentGroup}_${Date.now()}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // استماع لكل الأحداث (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'group_messages',
           filter: `chat_id=eq.${currentGroup}`,
         },
         async (payload) => {
-          if (payload.new) {
-            console.log("Received new message in real-time:", payload.new);
-            // إعادة تحميل الرسائل للتأكد من التزامن بشكل فوري
-            await fetchMessages(currentGroup);
-          }
+          console.log("استلام تحديث للمحادثة الجماعية:", payload);
+          // إعادة تحميل الرسائل للتأكد من التزامن بشكل فوري
+          await fetchMessages(currentGroup);
         }
       )
       .subscribe((status) => {
         console.log(`حالة اشتراك القناة للمحادثة الجماعية: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          toast({
+            title: "متصل",
+            description: "أنت الآن متصل بنظام المحادثة المباشر",
+          });
+        }
       });
 
+    setRealtimeChannel(channel);
     console.log(`تم الاشتراك في تحديثات المحادثة الجماعية (${currentGroup})`);
 
     return () => {
-      supabase.removeChannel(channel);
-      console.log('تم إلغاء الاشتراك في تحديثات المحادثة الجماعية');
+      if (channel) {
+        supabase.removeChannel(channel);
+        console.log('تم إلغاء الاشتراك في تحديثات المحادثة الجماعية');
+      }
     };
   }, [currentGroup]);
 
@@ -81,7 +94,10 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
           .select('id, name')
           .order('created_at', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+          console.error('خطأ في تحميل المجموعات:', error);
+          throw error;
+        }
         
         setGroups(data || []);
         
@@ -123,15 +139,22 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         .eq('chat_id', groupId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('خطأ في تحميل الرسائل:', error);
+        throw error;
+      }
 
       // الحصول على معلومات المستخدمين المرسلين
       if (messagesData && messagesData.length > 0) {
         const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
-        const { data: usersData } = await supabase
+        const { data: usersData, error: usersError } = await supabase
           .from('users_profiles')
           .select('id, username')
           .in('id', userIds);
+
+        if (usersError) {
+          console.error('خطأ في تحميل معلومات المستخدمين:', usersError);
+        }
 
         const usersMap = (usersData || []).reduce((acc, user) => {
           acc[user.id] = user.username;
@@ -175,21 +198,33 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
-      const { error } = await supabase
+      // إضافة رسالة مؤقتة للواجهة (Optimistic UI)
+      const tempMessage: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        content: newMessage.trim(),
+        created_at: new Date().toISOString(),
+        user_id: user.id,
+        username: 'أنت'
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      setNewMessage(''); // مسح حقل الإدخال
+      
+      const { error, data } = await supabase
         .from('group_messages')
         .insert({
           chat_id: currentGroup,
           user_id: user.id,
           content: newMessage.trim()
-        });
+        })
+        .select();
 
       if (error) {
+        console.error('خطأ في إرسال الرسالة:', error);
         throw error;
       }
       
-      // إعادة تحميل الرسائل بعد الإرسال للتأكد من ظهور الرسالة الجديدة
-      setNewMessage(''); // نظف حقل الإدخال قبل إعادة تحميل الرسائل
-      await fetchMessages(currentGroup);
+      console.log('تم إرسال الرسالة بنجاح:', data);
       
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
@@ -198,6 +233,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         description: "لم نتمكن من إرسال الرسالة",
         variant: "destructive",
       });
+      // إعادة المحتوى السابق لحقل الإدخال في حالة الفشل
+      setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
     }
