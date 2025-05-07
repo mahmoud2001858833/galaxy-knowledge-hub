@@ -343,7 +343,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       });
       // Remove the optimistic message if it failed
       setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
-      setNewMessage(optimisticMsg.content);
+      setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
     }
