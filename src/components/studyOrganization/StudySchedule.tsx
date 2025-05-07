@@ -18,7 +18,7 @@ interface StudyEvent {
   id: string;
   title: string;
   subject: string;
-  date: Date;
+  date: Date | string; // إما تاريخ أو سلسلة نصية
   startTime: string;
   endTime: string;
   notes: string;
@@ -49,26 +49,50 @@ const StudySchedule = () => {
   useEffect(() => {
     const savedEvents = localStorage.getItem('studyEvents');
     if (savedEvents) {
-      const parsedEvents = JSON.parse(savedEvents).map((event: any) => ({
-        ...event,
-        date: new Date(event.date)
-      }));
-      setEvents(parsedEvents);
+      try {
+        const parsedEvents = JSON.parse(savedEvents).map((event: any) => ({
+          ...event,
+          // تحويل سلسلة التاريخ إلى كائن Date
+          date: new Date(event.date)
+        }));
+        setEvents(parsedEvents);
+      } catch (error) {
+        console.error("خطأ في تحميل جدول الدراسة:", error);
+        toast({
+          title: "خطأ",
+          description: "لم نتمكن من تحميل جدول الدراسة المخزن",
+          variant: "destructive",
+        });
+      }
     }
-  }, []);
+  }, [toast]);
 
   // حفظ الأحداث في التخزين المحلي عند تغييرها
   useEffect(() => {
-    localStorage.setItem('studyEvents', JSON.stringify(events));
+    if (events.length > 0) {
+      try {
+        // تحويل كائنات Date إلى سلاسل نصية قبل التخزين
+        const eventsToStore = events.map(event => ({
+          ...event,
+          date: event.date instanceof Date ? event.date.toISOString() : event.date
+        }));
+        localStorage.setItem('studyEvents', JSON.stringify(eventsToStore));
+      } catch (error) {
+        console.error("خطأ في حفظ جدول الدراسة:", error);
+      }
+    }
   }, [events]);
 
   // تحديث الأحداث المعروضة عند تغيير التاريخ المحدد
   useEffect(() => {
     if (date) {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const filteredEvents = events.filter(event => 
-        format(event.date, 'yyyy-MM-dd') === dateStr
-      );
+      const filteredEvents = events.filter(event => {
+        const eventDate = event.date instanceof Date 
+          ? format(event.date, 'yyyy-MM-dd') 
+          : format(new Date(event.date), 'yyyy-MM-dd');
+        return eventDate === dateStr;
+      });
       setSelectedDateEvents(filteredEvents);
     } else {
       setSelectedDateEvents([]);
@@ -128,11 +152,14 @@ const StudySchedule = () => {
 
   const getDaysWithEvents = () => {
     return events.reduce((acc, event) => {
-      const dateStr = format(event.date, 'yyyy-MM-dd');
-      if (!acc[dateStr]) {
-        acc[dateStr] = 1;
+      const eventDate = event.date instanceof Date 
+        ? format(event.date, 'yyyy-MM-dd') 
+        : format(new Date(event.date), 'yyyy-MM-dd');
+      
+      if (!acc[eventDate]) {
+        acc[eventDate] = 1;
       } else {
-        acc[dateStr]++;
+        acc[eventDate]++;
       }
       return acc;
     }, {} as Record<string, number>);

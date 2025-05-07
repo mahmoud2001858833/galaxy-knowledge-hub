@@ -1,4 +1,5 @@
 
+
 -- هذا الملف لإظهار الكود SQL المطلوب لتشغيل الوقت الحقيقي
 -- يجب تنفيذ هذا الاستعلام في لوحة تحكم Supabase SQL:
 
@@ -10,3 +11,4 @@ ALTER publication supabase_realtime ADD TABLE private_messages;
 
 -- ملاحظة: تم إلغاء استخدام وظيفة enable_realtime لأنه لا يمكن استخدامها من خلال واجهة JavaScript
 -- بدلاً من ذلك، يجب تنفيذ الأوامر SQL أعلاه مباشرة في لوحة تحكم Supabase
+

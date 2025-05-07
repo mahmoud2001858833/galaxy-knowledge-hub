@@ -67,8 +67,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
                 username: userData?.username || 'مستخدم'
               } as ChatMessage;
               
-              // إضافة الرسالة الجديدة في وقت حقيقي
-              setMessages((prev) => [...prev, newMsg]);
+              // إضافة الرسالة الجديدة في وقت حقيقي وإعادة تحميل الرسائل للتأكد من التزامن
+              await fetchMessages(currentGroup);
             } catch (error) {
               console.error('خطأ في تحميل معلومات المستخدم:', error);
             }
@@ -122,55 +122,58 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
 
   // تحميل الرسائل عند تغيير المجموعة
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!currentGroup) return;
-      
-      try {
-        setLoading(true);
-        const { data: messagesData, error } = await supabase
-          .from('group_messages')
-          .select('id, content, created_at, user_id')
-          .eq('chat_id', currentGroup)
-          .order('created_at', { ascending: true });
+    if (currentGroup) {
+      fetchMessages(currentGroup);
+    }
+  }, [currentGroup]);
 
-        if (error) throw error;
+  // دالة لتحميل الرسائل وقابلة لإعادة الاستخدام
+  const fetchMessages = async (groupId: string) => {
+    if (!groupId) return;
+    
+    try {
+      setLoading(true);
+      const { data: messagesData, error } = await supabase
+        .from('group_messages')
+        .select('id, content, created_at, user_id')
+        .eq('chat_id', groupId)
+        .order('created_at', { ascending: true });
 
-        // الحصول على معلومات المستخدمين المرسلين
-        if (messagesData && messagesData.length > 0) {
-          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
-          const { data: usersData } = await supabase
-            .from('users_profiles')
-            .select('id, username')
-            .in('id', userIds);
+      if (error) throw error;
 
-          const usersMap = (usersData || []).reduce((acc, user) => {
-            acc[user.id] = user.username;
-            return acc;
-          }, {} as Record<string, string>);
+      // الحصول على معلومات المستخدمين المرسلين
+      if (messagesData && messagesData.length > 0) {
+        const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+        const { data: usersData } = await supabase
+          .from('users_profiles')
+          .select('id, username')
+          .in('id', userIds);
 
-          const messagesWithUsernames = messagesData.map(msg => ({
-            ...msg,
-            username: usersMap[msg.user_id] || 'مستخدم'
-          }));
+        const usersMap = (usersData || []).reduce((acc, user) => {
+          acc[user.id] = user.username;
+          return acc;
+        }, {} as Record<string, string>);
 
-          setMessages(messagesWithUsernames);
-        } else {
-          setMessages([]);
-        }
-      } catch (error) {
-        console.error('خطأ في تحميل الرسائل:', error);
-        toast({
-          title: "خطأ",
-          description: "لم نتمكن من تحميل الرسائل",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        const messagesWithUsernames = messagesData.map(msg => ({
+          ...msg,
+          username: usersMap[msg.user_id] || 'مستخدم'
+        }));
+
+        setMessages(messagesWithUsernames);
+      } else {
+        setMessages([]);
       }
-    };
-
-    fetchMessages();
-  }, [currentGroup, toast]);
+    } catch (error) {
+      console.error('خطأ في تحميل الرسائل:', error);
+      toast({
+        title: "خطأ",
+        description: "لم نتمكن من تحميل الرسائل",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -188,29 +191,21 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
-      // Optimistically add message to the UI
-      const tempMessage: ChatMessage = {
-        id: `temp-${Date.now()}`,
-        content: newMessage.trim(),
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-        username: 'أنت'
-      };
-      
-      setMessages(prev => [...prev, tempMessage]);
-      setNewMessage('');
-      
       const { error } = await supabase
         .from('group_messages')
         .insert({
           chat_id: currentGroup,
           user_id: user.id,
-          content: tempMessage.content
+          content: newMessage.trim()
         });
 
       if (error) {
         throw error;
       }
+      
+      // إعادة تحميل الرسائل بعد الإرسال للتأكد من ظهور الرسالة الجديدة
+      await fetchMessages(currentGroup);
+      setNewMessage('');
       
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
@@ -219,10 +214,6 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         description: "لم نتمكن من إرسال الرسالة",
         variant: "destructive",
       });
-      // Remove the optimistic message if it failed
-      const tempId = `temp-${Date.now()}`;
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
-      setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
     }
