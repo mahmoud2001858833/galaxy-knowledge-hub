@@ -26,17 +26,26 @@ const ChatRooms = () => {
           return;
         }
 
-        // إعداد البث المباشر للجدول
-        const { error } = await supabase.rpc('enable_realtime', {
-          table_name: 'group_messages'
-        }).single();
-
-        if (error) {
-          console.error("خطأ في تهيئة الوقت الحقيقي:", error);
-        } else {
-          console.log("تم تهيئة الوقت الحقيقي بنجاح");
-        }
+        // إعداد قناة الوقت الحقيقي للجدول
+        const channel = supabase.channel('schema-db-changes')
+          .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'group_messages' 
+          }, payload => {
+            console.log('تم استلام تغيير في الوقت الحقيقي:', payload);
+          })
+          .subscribe(status => {
+            if (status === 'SUBSCRIBED') {
+              console.log('تم تهيئة الوقت الحقيقي بنجاح');
+            } else {
+              console.error('فشل في الاشتراك بالوقت الحقيقي:', status);
+            }
+          });
         
+        return () => {
+          supabase.removeChannel(channel);
+        };
       } catch (error) {
         console.error('Error setting up realtime:', error);
       }
