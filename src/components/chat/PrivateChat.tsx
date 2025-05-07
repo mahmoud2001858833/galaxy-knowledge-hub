@@ -117,18 +117,19 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         },
         async (payload) => {
           // التحقق من أن الرسالة تنتمي إلى المحادثة الحالية
-          if (payload.new && 
-              (payload.new.user_id === user.id || payload.new.user_id === currentChat) && 
-              (payload.new.chat_id === user.id || payload.new.chat_id === currentChat)) {
+          const messageData = payload.new as any;
+          if (messageData && 
+              (messageData.user_id === user.id || messageData.user_id === currentChat) && 
+              (messageData.chat_id === user.id || messageData.chat_id === currentChat)) {
             try {
               const { data: userData } = await supabase
                 .from('users_profiles')
                 .select('username')
-                .eq('id', payload.new.user_id)
+                .eq('id', messageData.user_id)
                 .single();
               
               const newMsg = {
-                ...payload.new,
+                ...messageData,
                 username: userData?.username || 'مستخدم'
               } as ChatMessage;
               
@@ -160,7 +161,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         // استعلام عن الرسائل المرسلة من المستخدم الحالي إلى المستخدم الآخر
         const { data: sentMessages, error: sentError } = await supabase
           .from('private_messages')
-          .select('id, content, created_at, user_id')
+          .select('id, content, created_at, user_id, chat_id')
           .or(`user_id.eq.${user.id},user_id.eq.${currentChat}`)
           .or(`chat_id.eq.${user.id},chat_id.eq.${currentChat}`);
 
@@ -179,13 +180,18 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
             return acc;
           }, {} as Record<string, string>);
 
+          // Here's the fix - we're explicitly checking the sender and recipient relationship
           const messagesWithUsernames = sentMessages
-            .filter(msg => 
-              (msg.user_id === user.id && msg.chat_id === currentChat) || 
-              (msg.user_id === currentChat && msg.chat_id === user.id)
-            )
+            .filter(msg => {
+              // Check if this message is part of the current conversation
+              return (msg.user_id === user.id && msg.chat_id === currentChat) || 
+                     (msg.user_id === currentChat && msg.chat_id === user.id);
+            })
             .map(msg => ({
-              ...msg,
+              id: msg.id,
+              content: msg.content,
+              created_at: msg.created_at,
+              user_id: msg.user_id,
               username: usersMap[msg.user_id] || 'مستخدم'
             }))
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -330,9 +336,12 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
+      // Generate a unique temporary ID
+      const tempId = `temp-${Date.now()}`;
+      
       // إضافة رسالة مؤقتة للواجهة (Optimistic UI)
       const tempMessage: ChatMessage = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         content: newMessage.trim(),
         created_at: new Date().toISOString(),
         user_id: user.id,
@@ -363,7 +372,8 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         variant: "destructive",
       });
       // إزالة الرسالة المؤقتة إذا فشلت
-      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
+      const tempId = `temp-${Date.now()}`;
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
