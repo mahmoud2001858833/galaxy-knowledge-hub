@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Plus, Search, UserPlus, Loader2, MessageSquare } from 'lucide-react';
@@ -54,8 +53,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
 
   // فتح القناة للتحديثات المباشرة
   useEffect(() => {
-    if (!currentChat) return;
-    
     const channel = supabase
       .channel('public:private_messages')
       .on(
@@ -64,10 +61,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'private_messages',
-          filter: `chat_id=eq.${currentChat}`
         },
         async (payload) => {
-          if (payload.new && currentChat === payload.new.chat_id) {
+          if (payload.new) {
             try {
               // الحصول على معلومات المستخدم المرسل
               const { data: userData } = await supabase
@@ -81,7 +77,25 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
                 username: userData?.username || 'مستخدم'
               } as PrivateChatMessage;
               
-              setMessages((prev) => [...prev, newMsg]);
+              // Check if this message is for the current chat
+              if (currentChat === payload.new.chat_id) {
+                setMessages((prev) => [...prev, newMsg]);
+              }
+              
+              // Update last message for contact
+              if (contacts.some(contact => contact.chat_id === payload.new.chat_id)) {
+                setContacts(prevContacts => 
+                  prevContacts.map(contact => 
+                    contact.chat_id === payload.new.chat_id 
+                      ? {
+                          ...contact,
+                          last_message: payload.new.content,
+                          last_message_time: payload.new.created_at
+                        }
+                      : contact
+                  )
+                );
+              }
             } catch (error) {
               console.error('خطأ في تحميل معلومات المستخدم:', error);
             }
@@ -93,7 +107,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentChat]);
+  }, [currentChat, contacts]);
 
   // تحميل جهات الاتصال
   useEffect(() => {
@@ -128,6 +142,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         
         // الحصول على المحادثات الخاصة
         const chatsPromises = contactIds.map(async (contactId) => {
+          const userData = usersData?.find(u => u.id === contactId);
+          if (!userData) return null;
+          
           // البحث عن محادثة خاصة موجودة بين المستخدمين
           const { data: participantsData } = await supabase
             .from('private_chat_participants')
@@ -158,8 +175,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
               .eq('chat_id', chatId)
               .order('created_at', { ascending: false })
               .limit(1);
-
-            const userData = usersData?.find(u => u.id === contactId);
             
             return {
               id: contactId,
@@ -169,15 +184,47 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
               last_message: lastMessageData?.[0]?.content,
               last_message_time: lastMessageData?.[0]?.created_at,
             };
+          } else {
+            // إنشاء محادثة جديدة إذا لم توجد
+            const { data: newChatData, error: newChatError } = await supabase
+              .from('private_chats')
+              .insert({})
+              .select();
+
+            if (newChatError || !newChatData) {
+              return null;
+            }
+            
+            const newChatId = newChatData[0].id;
+            
+            // إضافة المستخدمين كمشاركين في المحادثة
+            await supabase
+              .from('private_chat_participants')
+              .insert([
+                { chat_id: newChatId, user_id: user.id },
+                { chat_id: newChatId, user_id: contactId }
+              ]);
+              
+            return {
+              id: contactId,
+              chat_id: newChatId,
+              username: userData?.username || 'مستخدم',
+              user_id: contactId,
+            };
           }
-          
-          return null;
         });
 
         const chatsResults = await Promise.all(chatsPromises);
         const validChats = chatsResults.filter(chat => chat !== null) as ChatContact[];
         
+        console.log("Loaded contacts:", validChats);
         setContacts(validChats);
+        
+        // Set default chat if there are contacts but no current chat
+        if (validChats.length > 0 && !currentChat) {
+          setCurrentChat(validChats[0].chat_id);
+          setCurrentContactId(validChats[0].id);
+        }
       } catch (error) {
         console.error('خطأ في تحميل جهات الاتصال:', error);
         toast({
@@ -191,7 +238,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     };
 
     fetchContacts();
-  }, [user, toast]);
+  }, [user, toast, currentChat]);
 
   // تحميل الرسائل عند تغيير المحادثة
   useEffect(() => {

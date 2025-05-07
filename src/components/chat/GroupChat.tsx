@@ -37,8 +37,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // فتح القناة للتحديثات المباشرة
+  // Subscribe to realtime messages
   useEffect(() => {
+    // فتح القناة للتحديثات المباشرة
     const channel = supabase
       .channel('public:group_messages')
       .on(
@@ -47,10 +48,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'group_messages',
-          filter: currentGroup ? `chat_id=eq.${currentGroup}` : undefined
         },
         async (payload) => {
-          if (payload.new && currentGroup === payload.new.chat_id) {
+          if (payload.new) {
             try {
               // الحصول على معلومات المستخدم المرسل
               const { data: userData } = await supabase
@@ -76,7 +76,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentGroup]);
+  }, []);
 
   // تحميل المجموعات
   useEffect(() => {

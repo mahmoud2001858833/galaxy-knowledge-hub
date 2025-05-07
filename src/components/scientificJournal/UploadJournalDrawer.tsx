@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { v4 as uuidv4 } from 'uuid';
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/integrations/supabase/client';
-import { SubjectType } from '@/components/shared/types/educationalContentTypes';
-import { Loader2, Upload, FileText } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
@@ -41,45 +41,40 @@ const UploadJournalDrawer = () => {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // التحقق من وجود مجلد تخزين للمجلات العلمية عند تحميل المكون
-    const checkBucket = async () => {
-      try {
-        console.log("التحقق من وجود مجلد التخزين للمجلات العلمية");
-        const { data: buckets } = await supabase.storage.listBuckets();
-        
-        // البحث عن وجود bucket باسم 'scientific_journals'
-        const bucketExists = buckets?.some(bucket => bucket.name === 'scientific_journals');
-        
-        if (!bucketExists) {
-          console.log("إنشاء مجلد تخزين جديد للمجلات العلمية");
-          const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
-            public: true,
-            fileSizeLimit: 20971520, // 20MB
-          });
-          
-          if (createBucketError) {
-            console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
-            
-            // إنشاء سياسات الوصول إذا كان الخطأ متعلقًا بها
-            if (createBucketError.message.includes('policy')) {
-              console.log("جاري محاولة إنشاء مجلد التخزين بطريقة أخرى");
-              // يمكن إضافة معالجة خاصة هنا إذا لزم الأمر
-            }
-          } else {
-            console.log("تم إنشاء مجلد التخزين للمجلات العلمية بنجاح");
-          }
-        } else {
-          console.log("مجلد التخزين للمجلات العلمية موجود بالفعل");
-        }
-      } catch (error) {
-        console.error("خطأ في التحقق من مجلد التخزين:", error);
-      }
-    };
-    
     checkBucket();
   }, []);
+
+  const checkBucket = async () => {
+    try {
+      console.log("التحقق من وجود مجلد التخزين للمجلات العلمية");
+      const { data: buckets } = await supabase.storage.listBuckets();
+      
+      // البحث عن وجود bucket باسم 'scientific_journals'
+      const bucketExists = buckets?.some(bucket => bucket.name === 'scientific_journals');
+      
+      if (!bucketExists) {
+        console.log("إنشاء مجلد تخزين جديد للمجلات العلمية");
+        const { error: createBucketError } = await supabase.storage.createBucket('scientific_journals', {
+          public: true,
+          fileSizeLimit: 20971520, // 20MB
+        });
+        
+        if (createBucketError) {
+          console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
+        } else {
+          console.log("تم إنشاء مجلد التخزين للمجلات العلمية بنجاح");
+        }
+      } else {
+        console.log("مجلد التخزين للمجلات العلمية موجود بالفعل");
+      }
+    } catch (error) {
+      console.error("خطأ في التحقق من مجلد التخزين:", error);
+    }
+  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -230,6 +225,10 @@ const UploadJournalDrawer = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleOpenFullPage = () => {
+    navigate('/upload-journal');
   };
 
   return (
@@ -385,7 +384,12 @@ const UploadJournalDrawer = () => {
               />
             
               <DrawerFooter>
-                <Button type="submit" disabled={isUploading} className="w-full bg-purple-500 hover:bg-purple-600">
+                <Button 
+                  type="submit"
+                  onClick={form.handleSubmit(onSubmit)} 
+                  disabled={isUploading} 
+                  className="w-full bg-purple-500 hover:bg-purple-600"
+                >
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -397,6 +401,13 @@ const UploadJournalDrawer = () => {
                       رفع المجلة
                     </>
                   )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleOpenFullPage} 
+                  className="w-full"
+                >
+                  فتح في صفحة مستقلة
                 </Button>
                 <DrawerClose asChild>
                   <Button variant="outline" className="w-full">إلغاء</Button>
