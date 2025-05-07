@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, MessageSquare, UserPlus, Search, X, UserCheck } from 'lucide-react';
@@ -103,11 +102,14 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
 
   // الاشتراك في التحديثات المباشرة للرسائل الخاصة
   useEffect(() => {
-    if (!currentChat) return;
+    if (!currentChat || !user?.id) return;
     
     // فتح القناة للتحديثات المباشرة للرسائل الخاصة
+    const channelName = `private_messages_${user.id}_${currentChat}`;
+    console.log(`Setting up real-time channel: ${channelName}`);
+    
     const channel = supabase
-      .channel('public:private_messages')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -116,11 +118,13 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           table: 'private_messages',
         },
         async (payload) => {
+          console.log("Real-time private message received:", payload);
+          
           // التحقق من أن الرسالة تنتمي إلى المحادثة الحالية
           const messageData = payload.new as any;
           if (messageData && 
-              (messageData.user_id === user.id || messageData.user_id === currentChat) && 
-              (messageData.chat_id === user.id || messageData.chat_id === currentChat)) {
+              ((messageData.user_id === user.id && messageData.chat_id === currentChat) || 
+              (messageData.user_id === currentChat && messageData.chat_id === user.id))) {
             try {
               const { data: userData } = await supabase
                 .from('users_profiles')
@@ -140,7 +144,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Private message channel status: ${status}`);
+      });
 
     console.log(`تم الاشتراك في تحديثات المحادثة الخاصة (${currentChat})`);
     
@@ -158,43 +164,42 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       try {
         setLoading(true);
         
-        // استعلام عن الرسائل المرسلة من المستخدم الحالي إلى المستخدم الآخر
-        const { data: sentMessages, error: sentError } = await supabase
+        // استعلام معدل عن الرسائل الخاصة بين المستخدمين
+        const { data: messagesData, error } = await supabase
           .from('private_messages')
           .select('id, content, created_at, user_id, chat_id')
-          .or(`user_id.eq.${user.id},user_id.eq.${currentChat}`)
-          .or(`chat_id.eq.${user.id},chat_id.eq.${currentChat}`);
+          .or(`and(user_id.eq.${user.id},chat_id.eq.${currentChat}),and(user_id.eq.${currentChat},chat_id.eq.${user.id})`)
+          .order('created_at', { ascending: true });
 
-        if (sentError) throw sentError;
+        if (error) {
+          console.error("Error fetching private messages:", error);
+          throw error;
+        }
         
         // الحصول على معلومات المستخدمين
-        if (sentMessages && sentMessages.length > 0) {
-          const userIds = [...new Set(sentMessages.map(msg => msg.user_id))];
-          const { data: usersData } = await supabase
+        if (messagesData && messagesData.length > 0) {
+          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+          const { data: usersData, error: usersError } = await supabase
             .from('users_profiles')
             .select('id, username')
             .in('id', userIds);
+
+          if (usersError) {
+            console.error("Error fetching user profiles:", usersError);
+          }
 
           const usersMap = (usersData || []).reduce((acc, user) => {
             acc[user.id] = user.username;
             return acc;
           }, {} as Record<string, string>);
 
-          // Here's the fix - we're explicitly checking the sender and recipient relationship
-          const messagesWithUsernames = sentMessages
-            .filter(msg => {
-              // Check if this message is part of the current conversation
-              return (msg.user_id === user.id && msg.chat_id === currentChat) || 
-                     (msg.user_id === currentChat && msg.chat_id === user.id);
-            })
-            .map(msg => ({
-              id: msg.id,
-              content: msg.content,
-              created_at: msg.created_at,
-              user_id: msg.user_id,
-              username: usersMap[msg.user_id] || 'مستخدم'
-            }))
-            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          const messagesWithUsernames = messagesData.map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            created_at: msg.created_at,
+            user_id: msg.user_id,
+            username: usersMap[msg.user_id] || 'مستخدم'
+          }));
 
           setMessages(messagesWithUsernames);
         } else {
@@ -208,7 +213,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           .eq('id', currentChat)
           .single();
         
-        if (otherUserError) throw otherUserError;
+        if (otherUserError) {
+          console.error("Error fetching other user data:", otherUserError);
+          throw otherUserError;
+        }
         
         setOtherUser(otherUserData);
       } catch (error) {

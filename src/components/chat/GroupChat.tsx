@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, MessageSquare, Users } from 'lucide-react';
@@ -43,7 +42,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     
     // فتح القناة للتحديثات المباشرة بطريقة أكثر فعالية
     const channel = supabase
-      .channel(`public:group_messages:chat_id=eq.${currentGroup}`)
+      .channel(`group_messages_${currentGroup}`)
       .on(
         'postgres_changes',
         {
@@ -54,24 +53,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         },
         async (payload) => {
           if (payload.new) {
-            try {
-              // الحصول على معلومات المستخدم المرسل
-              const { data: userData } = await supabase
-                .from('users_profiles')
-                .select('username')
-                .eq('id', payload.new.user_id)
-                .single();
-              
-              const newMsg = {
-                ...payload.new,
-                username: userData?.username || 'مستخدم'
-              } as ChatMessage;
-              
-              // إضافة الرسالة الجديدة في وقت حقيقي وإعادة تحميل الرسائل للتأكد من التزامن
-              await fetchMessages(currentGroup);
-            } catch (error) {
-              console.error('خطأ في تحميل معلومات المستخدم:', error);
-            }
+            console.log("Received new message in real-time:", payload.new);
+            // إعادة تحميل الرسائل للتأكد من التزامن بشكل فوري
+            await fetchMessages(currentGroup);
           }
         }
       )
@@ -204,8 +188,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
       }
       
       // إعادة تحميل الرسائل بعد الإرسال للتأكد من ظهور الرسالة الجديدة
+      setNewMessage(''); // نظف حقل الإدخال قبل إعادة تحميل الرسائل
       await fetchMessages(currentGroup);
-      setNewMessage('');
       
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);

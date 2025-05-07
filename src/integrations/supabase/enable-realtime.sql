@@ -3,6 +3,10 @@
 -- هذا الملف لإظهار الكود SQL المطلوب لتشغيل الوقت الحقيقي
 -- يجب تنفيذ هذا الاستعلام في لوحة تحكم Supabase SQL:
 
+-- إعداد REPLICA IDENTITY FULL لضمان الحصول على البيانات الكاملة للصفوف المتغيرة
+ALTER TABLE public.group_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.private_messages REPLICA IDENTITY FULL;
+
 -- تمكين الوقت الحقيقي للجدول group_messages
 ALTER publication supabase_realtime ADD TABLE group_messages;
 

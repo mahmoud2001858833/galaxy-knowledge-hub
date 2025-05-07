@@ -326,6 +326,7 @@ export type Database = {
       }
       scientific_journals: {
         Row: {
+          author: string | null
           cover_image_url: string
           created_at: string | null
           created_by: string | null
@@ -336,6 +337,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          author?: string | null
           cover_image_url: string
           created_at?: string | null
           created_by?: string | null
@@ -346,6 +348,7 @@ export type Database = {
           title: string
         }
         Update: {
+          author?: string | null
           cover_image_url?: string
           created_at?: string | null
           created_by?: string | null
