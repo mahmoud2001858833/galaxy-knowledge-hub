@@ -23,15 +23,18 @@ export const useImageUpload = () => {
     
     try {
       // الحصول على بيانات المستخدم الحالي
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "خطأ في تحميل الصورة",
-          description: "يجب تسجيل الدخول أولاً لرفع الصور",
-          variant: "destructive",
-        });
-        return false;
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        throw new Error(`فشل في الحصول على بيانات المستخدم: ${userError.message}`);
       }
+      
+      if (!user) {
+        throw new Error("يجب تسجيل الدخول أولاً لرفع الصور");
+      }
+
+      // إنشاء مجلد التخزين إذا لم يكن موجودًا
+      await supabaseStorageService.checkAndCreateBucket('educational_images');
 
       // رفع الصورة إلى التخزين
       const fileExt = data.image.name.split('.').pop();
@@ -48,6 +51,8 @@ export const useImageUpload = () => {
         throw uploadError || new Error("فشل تحميل الصورة");
       }
 
+      console.log("تم رفع الصورة بنجاح، العنوان:", publicUrl);
+
       // تخزين البيانات الوصفية في قاعدة البيانات
       const { error: dbError } = await supabase
         .from('educational_images')
@@ -61,7 +66,7 @@ export const useImageUpload = () => {
 
       if (dbError) {
         console.error("خطأ في حفظ بيانات الصورة:", dbError);
-        throw dbError;
+        throw new Error(`فشل في حفظ بيانات الصورة: ${dbError.message}`);
       }
 
       console.log("تم حفظ بيانات الصورة بنجاح");

@@ -12,7 +12,7 @@
 
 @layer base {
   body {
-    @apply bg-black text-white font-sans;
+    @apply bg-black text-white font-sans min-w-full max-w-full overflow-x-hidden m-0 p-0;
   }
 
   /* Custom scrollbar */
@@ -54,4 +54,26 @@
       transform: scale(1.05);
     }
   }
+  
+  /* إضافة تحسينات لجعل المحتوى يمتد بكامل عرض الشاشة */
+  .container {
+    @apply w-full max-w-full px-0;
+  }
+
+  main {
+    @apply w-full px-0;
+  }
+  
+  .main-content {
+    @apply w-full max-w-full px-0;
+  }
+}
+
+/* تحسينات إضافية لإلغاء الهوامش */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }

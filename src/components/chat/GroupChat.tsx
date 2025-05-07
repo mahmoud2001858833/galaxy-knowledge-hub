@@ -39,6 +39,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
 
   // Subscribe to realtime messages
   useEffect(() => {
+    if (!currentGroup) return;
+    
     // فتح القناة للتحديثات المباشرة
     const channel = supabase
       .channel('public:group_messages')
@@ -48,9 +50,10 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'group_messages',
+          filter: `chat_id=eq.${currentGroup}`,
         },
         async (payload) => {
-          if (payload.new && payload.new.chat_id === currentGroup) {
+          if (payload.new) {
             try {
               // الحصول على معلومات المستخدم المرسل
               const { data: userData } = await supabase
@@ -73,8 +76,11 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
       )
       .subscribe();
 
+    console.log(`تم الاشتراك في تحديثات المحادثة الجماعية (${currentGroup})`);
+
     return () => {
       supabase.removeChannel(channel);
+      console.log('تم إلغاء الاشتراك في تحديثات المحادثة الجماعية');
     };
   }, [currentGroup]);
 
@@ -180,7 +186,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
       setSendingMessage(true);
       
       // Optimistically add message to the UI
-      const optimisticMsg: ChatMessage = {
+      const tempMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         content: newMessage.trim(),
         created_at: new Date().toISOString(),
@@ -188,7 +194,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         username: 'أنت'
       };
       
-      setMessages(prev => [...prev, optimisticMsg]);
+      setMessages(prev => [...prev, tempMessage]);
       setNewMessage('');
       
       const { error } = await supabase
@@ -196,7 +202,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         .insert({
           chat_id: currentGroup,
           user_id: user.id,
-          content: optimisticMsg.content
+          content: tempMessage.content
         });
 
       if (error) {

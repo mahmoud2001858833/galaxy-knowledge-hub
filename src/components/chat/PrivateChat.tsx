@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Plus, Search, UserPlus, Loader2, MessageSquare } from 'lucide-react';
@@ -53,6 +54,8 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
 
   // فتح القناة للتحديثات المباشرة
   useEffect(() => {
+    if (!currentChat) return;
+    
     const channel = supabase
       .channel('public:private_messages')
       .on(
@@ -61,6 +64,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'private_messages',
+          filter: `chat_id=eq.${currentChat}`,
         },
         async (payload) => {
           if (payload.new) {
@@ -104,8 +108,11 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       )
       .subscribe();
 
+    console.log(`تم الاشتراك في تحديثات المحادثة الخاصة (${currentChat})`);
+
     return () => {
       supabase.removeChannel(channel);
+      console.log('تم إلغاء الاشتراك في تحديثات المحادثة الخاصة');
     };
   }, [currentChat, contacts]);
 
@@ -123,7 +130,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           .select('contact_id')
           .eq('user_id', user.id);
 
-        if (contactsError) throw contactsError;
+        if (contactsError) {
+          console.error('خطأ في تحميل جهات الاتصال:', contactsError);
+          throw contactsError;
+        }
         
         if (!contactsData || contactsData.length === 0) {
           setLoading(false);
@@ -138,7 +148,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           .select('id, username')
           .in('id', contactIds);
 
-        if (usersError) throw usersError;
+        if (usersError) {
+          console.error('خطأ في تحميل معلومات المستخدمين:', usersError);
+          throw usersError;
+        }
         
         // الحصول على المحادثات الخاصة
         const chatsPromises = contactIds.map(async (contactId) => {
@@ -146,10 +159,15 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           if (!userData) return null;
           
           // البحث عن محادثة خاصة موجودة بين المستخدمين
-          const { data: participantsData } = await supabase
+          const { data: participantsData, error: participantsError } = await supabase
             .from('private_chat_participants')
             .select('chat_id')
             .eq('user_id', user.id);
+
+          if (participantsError) {
+            console.error('خطأ في تحميل المشاركين في المحادثة:', participantsError);
+            return null;
+          }
 
           if (!participantsData || participantsData.length === 0) {
             return null;
@@ -157,11 +175,16 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
 
           const chatIds = participantsData.map(p => p.chat_id);
           
-          const { data: contactParticipations } = await supabase
+          const { data: contactParticipations, error: contactParticipationsError } = await supabase
             .from('private_chat_participants')
             .select('chat_id')
             .eq('user_id', contactId)
             .in('chat_id', chatIds);
+
+          if (contactParticipationsError) {
+            console.error('خطأ في تحميل مشاركات جهة الاتصال:', contactParticipationsError);
+            return null;
+          }
 
           let chatId = null;
           
@@ -169,12 +192,16 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
             chatId = contactParticipations[0].chat_id;
             
             // الحصول على آخر رسالة
-            const { data: lastMessageData } = await supabase
+            const { data: lastMessageData, error: lastMessageError } = await supabase
               .from('private_messages')
               .select('content, created_at')
               .eq('chat_id', chatId)
               .order('created_at', { ascending: false })
               .limit(1);
+            
+            if (lastMessageError) {
+              console.error('خطأ في تحميل آخر رسالة:', lastMessageError);
+            }
             
             return {
               id: contactId,
@@ -192,18 +219,24 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
               .select();
 
             if (newChatError || !newChatData) {
+              console.error('خطأ في إنشاء محادثة جديدة:', newChatError);
               return null;
             }
             
             const newChatId = newChatData[0].id;
             
             // إضافة المستخدمين كمشاركين في المحادثة
-            await supabase
+            const { error: participantsInsertError } = await supabase
               .from('private_chat_participants')
               .insert([
                 { chat_id: newChatId, user_id: user.id },
                 { chat_id: newChatId, user_id: contactId }
               ]);
+              
+            if (participantsInsertError) {
+              console.error('خطأ في إضافة المشاركين للمحادثة:', participantsInsertError);
+              return null;
+            }
               
             return {
               id: contactId,
@@ -217,7 +250,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         const chatsResults = await Promise.all(chatsPromises);
         const validChats = chatsResults.filter(chat => chat !== null) as ChatContact[];
         
-        console.log("Loaded contacts:", validChats);
+        console.log("تم تحميل جهات الاتصال:", validChats);
         setContacts(validChats);
         
         // Set default chat if there are contacts but no current chat
@@ -311,7 +344,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       setSendingMessage(true);
       
       // Optimistically add message to the UI
-      const optimisticMsg: PrivateChatMessage = {
+      const tempMessage: PrivateChatMessage = {
         id: `temp-${Date.now()}`,
         content: newMessage.trim(),
         created_at: new Date().toISOString(),
@@ -319,7 +352,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         username: 'أنت'
       };
       
-      setMessages(prev => [...prev, optimisticMsg]);
+      setMessages(prev => [...prev, tempMessage]);
       setNewMessage('');
       
       const { error } = await supabase
@@ -327,7 +360,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         .insert({
           chat_id: currentChat,
           user_id: user.id,
-          content: optimisticMsg.content
+          content: tempMessage.content
         });
 
       if (error) {
@@ -389,7 +422,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         .eq('user_id', user.id)
         .eq('contact_id', contactId);
 
-      if (checkError) throw checkError;
+      if (checkError) {
+        console.error('خطأ في التحقق من وجود جهة الاتصال:', checkError);
+        throw checkError;
+      }
       
       if (existingContact && existingContact.length > 0) {
         toast({
@@ -407,7 +443,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           { user_id: user.id, contact_id: contactId }
         ]);
 
-      if (addError) throw addError;
+      if (addError) {
+        console.error('خطأ في إضافة جهة الاتصال:', addError);
+        throw addError;
+      }
       
       // إنشاء محادثة خاصة
       const { data: chatData, error: chatError } = await supabase
@@ -415,17 +454,25 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         .insert({})
         .select();
 
-      if (chatError) throw chatError;
+      if (chatError) {
+        console.error('خطأ في إنشاء المحادثة:', chatError);
+        throw chatError;
+      }
       
       const chatId = chatData[0].id;
       
       // إضافة المستخدمين كمشاركين في المحادثة
-      await supabase
+      const { error: participantsError } = await supabase
         .from('private_chat_participants')
         .insert([
           { chat_id: chatId, user_id: user.id },
           { chat_id: chatId, user_id: contactId }
         ]);
+
+      if (participantsError) {
+        console.error('خطأ في إضافة المشاركين:', participantsError);
+        throw participantsError;
+      }
 
       // الحصول على معلومات المستخدم المضاف
       const { data: userData, error: userError } = await supabase
@@ -434,7 +481,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         .eq('id', contactId)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('خطأ في الحصول على معلومات المستخدم:', userError);
+        throw userError;
+      }
       
       // إضافة جهة الاتصال للقائمة
       const newContact: ChatContact = {
@@ -456,11 +506,11 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       // تحديد المحادثة الجديدة كمحادثة حالية
       setCurrentChat(chatId);
       setCurrentContactId(contactId);
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إضافة جهة الاتصال:', error);
       toast({
-        title: "خطأ",
-        description: "لم نتمكن من إضافة جهة الاتصال",
+        title: "خطأ في إضافة جهة الاتصال",
+        description: error.message || "لم نتمكن من إضافة جهة الاتصال",
         variant: "destructive",
       });
     }

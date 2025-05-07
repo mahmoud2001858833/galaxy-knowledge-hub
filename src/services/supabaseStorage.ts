@@ -6,12 +6,19 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const supabaseStorageService = {
   /**
-   * التحقق من وجود مجلد تخزين للصور التعليمية
+   * التحقق من وجود مجلد تخزين وإنشاءه إذا لم يكن موجوداً
    */
   async checkAndCreateBucket(bucketName: string): Promise<boolean> {
     try {
       console.log(`التحقق من وجود مجلد التخزين ${bucketName}`);
-      const { data: buckets } = await supabase.storage.listBuckets();
+      
+      // التحقق أولاً من وجود مجلد التخزين
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        console.error("خطأ في استعلام مجلدات التخزين:", listError);
+        throw new Error(`فشل في استعلام مجلدات التخزين: ${listError.message}`);
+      }
       
       // البحث عن وجود bucket بالاسم المحدد
       const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
@@ -19,30 +26,26 @@ export const supabaseStorageService = {
       if (!bucketExists) {
         console.log(`إنشاء مجلد تخزين جديد: ${bucketName}`);
         
-        try {
-          const { error: createBucketError } = await supabase.storage.createBucket(bucketName, {
-            public: true,
-            fileSizeLimit: 5242880, // 5MB
-          });
-          
-          if (createBucketError) {
-            console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
-            return false;
-          } else {
-            console.log(`تم إنشاء مجلد التخزين ${bucketName} بنجاح`);
-            return true;
-          }
-        } catch (error) {
-          console.error("خطأ استثنائي في إنشاء مجلد التخزين:", error);
-          return false;
+        // محاولة إنشاء مجلد التخزين
+        const { data: bucketData, error: createBucketError } = await supabase.storage.createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+        });
+        
+        if (createBucketError) {
+          console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
+          throw new Error(`فشل في إنشاء مجلد التخزين: ${createBucketError.message}`);
         }
+        
+        console.log(`تم إنشاء مجلد التخزين ${bucketName} بنجاح`, bucketData);
+        return true;
       } else {
         console.log(`مجلد التخزين ${bucketName} موجود بالفعل`);
         return true;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("خطأ في التحقق من مجلد التخزين:", error);
-      return false;
+      throw new Error(`فشل في إنشاء مجلد التخزين: ${error.message}`);
     }
   },
   
@@ -52,24 +55,24 @@ export const supabaseStorageService = {
   async uploadImage(bucketName: string, filePath: string, file: File): Promise<{success: boolean, publicUrl?: string, error?: any}> {
     try {
       // التحقق من وجود bucket
-      const bucketReady = await this.checkAndCreateBucket(bucketName);
-      
-      if (!bucketReady) {
-        throw new Error("فشل إنشاء مجلد التخزين");
-      }
+      await this.checkAndCreateBucket(bucketName);
       
       console.log(`جاري رفع الصورة إلى: ${filePath}`);
       
+      // محاولة رفع الصورة
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from(bucketName)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error("خطأ في رفع الصورة:", uploadError);
         return { success: false, error: uploadError };
       }
 
-      console.log("تم رفع الصورة بنجاح");
+      console.log("تم رفع الصورة بنجاح", uploadData);
 
       // الحصول على الرابط العام
       const { data: publicUrlData } = supabase.storage
@@ -79,8 +82,8 @@ export const supabaseStorageService = {
       console.log("URL العام للصورة:", publicUrlData.publicUrl);
       
       return { success: true, publicUrl: publicUrlData.publicUrl };
-    } catch (error) {
-      console.error('Error uploading image:', error);
+    } catch (error: any) {
+      console.error('خطأ في رفع الصورة:', error);
       return { success: false, error };
     }
   }

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import StarField from '@/components/StarField';
@@ -10,11 +10,30 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import ImageUploadForm, { ImageUploadFormValues } from '@/components/visualLibrary/ImageUploadForm';
+import { supabaseStorageService } from '@/services/supabaseStorage';
 
 const UploadImagePage = () => {
   const { uploadImage, isUploading } = useImageUpload();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // التأكد من وجود مجلد تخزين للصور عند تحميل الصفحة
+  useEffect(() => {
+    const initializeStorage = async () => {
+      try {
+        await supabaseStorageService.checkAndCreateBucket('educational_images');
+      } catch (error: any) {
+        console.error("خطأ في إعداد التخزين:", error);
+        toast({
+          title: "خطأ في إعداد التخزين",
+          description: `لم نتمكن من التحقق من مجلد التخزين: ${error.message}`,
+          variant: "destructive",
+        });
+      }
+    };
+    
+    initializeStorage();
+  }, [toast]);
 
   const handleSubmit = async (data: ImageUploadFormValues) => {
     try {
@@ -32,11 +51,11 @@ const UploadImagePage = () => {
         });
         navigate('/visual-library');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in form submission:", error);
       toast({
         title: "خطأ في النموذج",
-        description: "حدث خطأ أثناء معالجة النموذج",
+        description: error.message || "حدث خطأ أثناء معالجة النموذج",
         variant: "destructive",
       });
     }

@@ -64,4 +64,16 @@
   .shadow-glow-green {
     box-shadow: 0 0 15px -3px rgba(52, 211, 153, 0.3);
   }
+  
+  /* تعديلات العرض الكامل */
+  .w-full-screen {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+  }
+  
+  .no-side-padding {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
 }
