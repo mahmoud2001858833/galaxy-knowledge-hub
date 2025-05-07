@@ -10,10 +10,10 @@ const ChatRooms = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Enable real-time functionality on tables
+    // تهيئة الاتصال بالوقت الحقيقي
     const setupRealtime = async () => {
       try {
-        // Get current user
+        // التحقق من تسجيل دخول المستخدم
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -25,6 +25,18 @@ const ChatRooms = () => {
           navigate('/auth');
           return;
         }
+
+        // إعداد البث المباشر للجدول
+        const { error } = await supabase.rpc('enable_realtime', {
+          table_name: 'group_messages'
+        }).single();
+
+        if (error) {
+          console.error("خطأ في تهيئة الوقت الحقيقي:", error);
+        } else {
+          console.log("تم تهيئة الوقت الحقيقي بنجاح");
+        }
+        
       } catch (error) {
         console.error('Error setting up realtime:', error);
       }

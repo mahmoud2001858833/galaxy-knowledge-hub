@@ -37,13 +37,13 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Subscribe to realtime messages
+  // تحسينات الاشتراك في التحديثات المباشرة للمحادثة الجماعية
   useEffect(() => {
     if (!currentGroup) return;
     
-    // فتح القناة للتحديثات المباشرة
+    // فتح القناة للتحديثات المباشرة بطريقة أكثر فعالية
     const channel = supabase
-      .channel('public:group_messages')
+      .channel(`public:group_messages:chat_id=eq.${currentGroup}`)
       .on(
         'postgres_changes',
         {
@@ -67,6 +67,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
                 username: userData?.username || 'مستخدم'
               } as ChatMessage;
               
+              // إضافة الرسالة الجديدة في وقت حقيقي
               setMessages((prev) => [...prev, newMsg]);
             } catch (error) {
               console.error('خطأ في تحميل معلومات المستخدم:', error);
@@ -74,7 +75,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`حالة اشتراك القناة للمحادثة الجماعية: ${status}`);
+      });
 
     console.log(`تم الاشتراك في تحديثات المحادثة الجماعية (${currentGroup})`);
 
@@ -284,7 +287,10 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
                     <div className={`max-w-[70%] ${message.user_id === user.id ? 'bg-cyan-600/40 border-cyan-500/30' : 'bg-gray-600/30 border-gray-500/30'} border rounded-lg p-3`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className={`text-xs text-white/70 ${message.user_id === user.id ? 'order-2' : 'order-1'}`}>
-                          {formatMessageTime(message.created_at)}
+                          {formatDistanceToNow(new Date(message.created_at), { 
+                            locale: arSA, 
+                            addSuffix: true 
+                          })}
                         </span>
                         <span className={`font-semibold text-sm ${message.user_id === user.id ? 'text-cyan-300 order-1' : 'text-white order-2'}`}>
                           {message.user_id === user.id ? 'أنت' : message.username}

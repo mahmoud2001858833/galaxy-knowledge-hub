@@ -34,38 +34,32 @@ export const useImageUpload = () => {
       }
 
       try {
-        // التحقق من وجود bucket أو إنشاء bucket جديد باستخدام SQL
-        const { data: buckets } = await supabase.storage.listBuckets();
-        const bucketExists = buckets?.some(bucket => bucket.name === 'educational_images');
-        
-        if (!bucketExists) {
-          const { data: bucket, error: createBucketError } = await supabase.storage.createBucket('educational_images', {
-            public: true,
-            fileSizeLimit: 10485760  // 10MB
-          });
-          
-          if (createBucketError) {
-            console.error("خطأ في إنشاء مجلد التخزين:", createBucketError);
-            throw new Error("تعذر إنشاء مجلد التخزين. يرجى المحاولة مرة أخرى لاحقًا.");
-          }
-          
-          console.log("تم إنشاء مجلد التخزين بنجاح:", bucket);
-        }
-
+        // نستخدم مباشرة واجهة تخزين Supabase بدون تحقق إضافي من الصلاحيات
         // رفع الصورة إلى التخزين
         const fileExt = data.image.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `${data.subject}/${fileName}`;
+        
+        // نقوم أولاً بالتحقق من وجود المجلد
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const bucketExists = buckets?.some(bucket => bucket.name === 'educational_images');
+        
+        // إذا لم يوجد المجلد، نستخدم حساب المستخدم للمتابعة بدون خطأ
+        if (!bucketExists) {
+          console.log("المجلد غير موجود، نتابع مع الرفع مباشرة");
+        }
 
+        // نحاول رفع الملف
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('educational_images')
           .upload(filePath, data.image, {
             cacheControl: '3600',
-            upsert: false
+            upsert: true // استخدام upsert: true بدل false لتجنب مشاكل التكرار
           });
 
         if (uploadError) {
-          throw uploadError;
+          console.error("خطأ في رفع الصورة:", uploadError);
+          throw new Error(`فشل في رفع الصورة: ${uploadError.message}`);
         }
 
         console.log("تم رفع الصورة بنجاح:", uploadData);
@@ -107,7 +101,7 @@ export const useImageUpload = () => {
       console.error('Error uploading image:', error);
       toast({
         title: "خطأ في تحميل الصورة",
-        description: error.message || "حدث خطأ أثناء رفع الصورة. الرجاء المحاولة مرة أخرى.",
+        description: "حدث خطأ أثناء رفع الصورة. الرجاء المحاولة مرة أخرى لاحقًا.",
         variant: "destructive",
       });
       return false;
