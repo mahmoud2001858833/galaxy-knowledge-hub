@@ -209,7 +209,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         throw error;
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
       toast({
         title: "خطأ",
@@ -217,7 +217,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         variant: "destructive",
       });
       // Remove the optimistic message if it failed
-      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
+      const tempId = `temp-${Date.now()}`;
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);

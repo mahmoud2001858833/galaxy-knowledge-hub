@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Plus, Search, UserPlus, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Loader2, MessageSquare, UserPlus, Search, X, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
@@ -15,7 +15,18 @@ interface PrivateChatProps {
   user: any;
 }
 
-interface PrivateChatMessage {
+interface UserProfile {
+  id: string;
+  username: string;
+  avatar_url?: string;
+}
+
+interface ChatRoom {
+  id: string;
+  contact: UserProfile;
+}
+
+interface ChatMessage {
   id: string;
   content: string;
   created_at: string;
@@ -23,39 +34,78 @@ interface PrivateChatMessage {
   username?: string;
 }
 
-interface ChatContact {
-  id: string;
-  chat_id: string;
-  username: string;
-  user_id: string;
-  last_message?: string;
-  last_message_time?: string;
-}
-
-interface UserProfile {
-  id: string;
-  username: string;
-}
-
 const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
-  const [contacts, setContacts] = useState<ChatContact[]>([]);
-  const [currentChat, setCurrentChat] = useState<string | null>(null);
-  const [currentContactId, setCurrentContactId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<PrivateChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sendingMessage, setSendingMessage] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
+  const [chats, setChats] = useState<ChatRoom[]>([]);
+  const [contacts, setContacts] = useState<UserProfile[]>([]);
+  const [currentChat, setCurrentChat] = useState<string | null>(null);
+  const [otherUser, setOtherUser] = useState<UserProfile | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [isAddContactDialogOpen, setIsAddContactDialogOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [addingContact, setAddingContact] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [isAddContactDialogOpen, setIsAddContactDialogOpen] = useState(false);
 
-  // فتح القناة للتحديثات المباشرة
+  // تحميل جهات الاتصال للمستخدم
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        setLoading(true);
+        
+        // الحصول على جهات اتصال المستخدم
+        const { data: contactsData, error: contactsError } = await supabase
+          .from('contacts')
+          .select('contact_id')
+          .eq('user_id', user.id);
+
+        if (contactsError) throw contactsError;
+        
+        if (contactsData && contactsData.length > 0) {
+          // الحصول على بيانات المستخدمين لجهات الاتصال
+          const contactIds = contactsData.map(contact => contact.contact_id);
+          const { data: usersData, error: usersError } = await supabase
+            .from('users_profiles')
+            .select('id, username, avatar_url')
+            .in('id', contactIds);
+
+          if (usersError) throw usersError;
+          
+          setContacts(usersData || []);
+          
+          // إنشاء غرف المحادثة لكل جهة اتصال
+          const contactChats = (usersData || []).map(contact => ({
+            id: contact.id, // سنستخدم معرف المستخدم كمعرف للمحادثة
+            contact: contact
+          }));
+          
+          setChats(contactChats);
+        } else {
+          setContacts([]);
+          setChats([]);
+        }
+      } catch (error) {
+        console.error('خطأ في تحميل جهات الاتصال:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchContacts();
+    }
+  }, [user?.id]);
+
+  // الاشتراك في التحديثات المباشرة للرسائل الخاصة
   useEffect(() => {
     if (!currentChat) return;
     
+    // فتح القناة للتحديثات المباشرة للرسائل الخاصة
     const channel = supabase
       .channel('public:private_messages')
       .on(
@@ -64,12 +114,13 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'private_messages',
-          filter: `chat_id=eq.${currentChat}`,
         },
         async (payload) => {
-          if (payload.new) {
+          // التحقق من أن الرسالة تنتمي إلى المحادثة الحالية
+          if (payload.new && 
+              (payload.new.user_id === user.id || payload.new.user_id === currentChat) && 
+              (payload.new.chat_id === user.id || payload.new.chat_id === currentChat)) {
             try {
-              // الحصول على معلومات المستخدم المرسل
               const { data: userData } = await supabase
                 .from('users_profiles')
                 .select('username')
@@ -79,27 +130,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
               const newMsg = {
                 ...payload.new,
                 username: userData?.username || 'مستخدم'
-              } as PrivateChatMessage;
+              } as ChatMessage;
               
-              // Check if this message is for the current chat
-              if (currentChat === payload.new.chat_id) {
-                setMessages((prev) => [...prev, newMsg]);
-              }
-              
-              // Update last message for contact
-              if (contacts.some(contact => contact.chat_id === payload.new.chat_id)) {
-                setContacts(prevContacts => 
-                  prevContacts.map(contact => 
-                    contact.chat_id === payload.new.chat_id 
-                      ? {
-                          ...contact,
-                          last_message: payload.new.content,
-                          last_message_time: payload.new.created_at
-                        }
-                      : contact
-                  )
-                );
-              }
+              setMessages(prev => [...prev, newMsg]);
             } catch (error) {
               console.error('خطأ في تحميل معلومات المستخدم:', error);
             }
@@ -109,190 +142,33 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       .subscribe();
 
     console.log(`تم الاشتراك في تحديثات المحادثة الخاصة (${currentChat})`);
-
+    
     return () => {
       supabase.removeChannel(channel);
       console.log('تم إلغاء الاشتراك في تحديثات المحادثة الخاصة');
     };
-  }, [currentChat, contacts]);
-
-  // تحميل جهات الاتصال
-  useEffect(() => {
-    const fetchContacts = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        
-        // الحصول على جهات الاتصال
-        const { data: contactsData, error: contactsError } = await supabase
-          .from('contacts')
-          .select('contact_id')
-          .eq('user_id', user.id);
-
-        if (contactsError) {
-          console.error('خطأ في تحميل جهات الاتصال:', contactsError);
-          throw contactsError;
-        }
-        
-        if (!contactsData || contactsData.length === 0) {
-          setLoading(false);
-          return;
-        }
-
-        const contactIds = contactsData.map(contact => contact.contact_id);
-        
-        // الحصول على معلومات المستخدمين
-        const { data: usersData, error: usersError } = await supabase
-          .from('users_profiles')
-          .select('id, username')
-          .in('id', contactIds);
-
-        if (usersError) {
-          console.error('خطأ في تحميل معلومات المستخدمين:', usersError);
-          throw usersError;
-        }
-        
-        // الحصول على المحادثات الخاصة
-        const chatsPromises = contactIds.map(async (contactId) => {
-          const userData = usersData?.find(u => u.id === contactId);
-          if (!userData) return null;
-          
-          // البحث عن محادثة خاصة موجودة بين المستخدمين
-          const { data: participantsData, error: participantsError } = await supabase
-            .from('private_chat_participants')
-            .select('chat_id')
-            .eq('user_id', user.id);
-
-          if (participantsError) {
-            console.error('خطأ في تحميل المشاركين في المحادثة:', participantsError);
-            return null;
-          }
-
-          if (!participantsData || participantsData.length === 0) {
-            return null;
-          }
-
-          const chatIds = participantsData.map(p => p.chat_id);
-          
-          const { data: contactParticipations, error: contactParticipationsError } = await supabase
-            .from('private_chat_participants')
-            .select('chat_id')
-            .eq('user_id', contactId)
-            .in('chat_id', chatIds);
-
-          if (contactParticipationsError) {
-            console.error('خطأ في تحميل مشاركات جهة الاتصال:', contactParticipationsError);
-            return null;
-          }
-
-          let chatId = null;
-          
-          if (contactParticipations && contactParticipations.length > 0) {
-            chatId = contactParticipations[0].chat_id;
-            
-            // الحصول على آخر رسالة
-            const { data: lastMessageData, error: lastMessageError } = await supabase
-              .from('private_messages')
-              .select('content, created_at')
-              .eq('chat_id', chatId)
-              .order('created_at', { ascending: false })
-              .limit(1);
-            
-            if (lastMessageError) {
-              console.error('خطأ في تحميل آخر رسالة:', lastMessageError);
-            }
-            
-            return {
-              id: contactId,
-              chat_id: chatId,
-              username: userData?.username || 'مستخدم',
-              user_id: contactId,
-              last_message: lastMessageData?.[0]?.content,
-              last_message_time: lastMessageData?.[0]?.created_at,
-            };
-          } else {
-            // إنشاء محادثة جديدة إذا لم توجد
-            const { data: newChatData, error: newChatError } = await supabase
-              .from('private_chats')
-              .insert({})
-              .select();
-
-            if (newChatError || !newChatData) {
-              console.error('خطأ في إنشاء محادثة جديدة:', newChatError);
-              return null;
-            }
-            
-            const newChatId = newChatData[0].id;
-            
-            // إضافة المستخدمين كمشاركين في المحادثة
-            const { error: participantsInsertError } = await supabase
-              .from('private_chat_participants')
-              .insert([
-                { chat_id: newChatId, user_id: user.id },
-                { chat_id: newChatId, user_id: contactId }
-              ]);
-              
-            if (participantsInsertError) {
-              console.error('خطأ في إضافة المشاركين للمحادثة:', participantsInsertError);
-              return null;
-            }
-              
-            return {
-              id: contactId,
-              chat_id: newChatId,
-              username: userData?.username || 'مستخدم',
-              user_id: contactId,
-            };
-          }
-        });
-
-        const chatsResults = await Promise.all(chatsPromises);
-        const validChats = chatsResults.filter(chat => chat !== null) as ChatContact[];
-        
-        console.log("تم تحميل جهات الاتصال:", validChats);
-        setContacts(validChats);
-        
-        // Set default chat if there are contacts but no current chat
-        if (validChats.length > 0 && !currentChat) {
-          setCurrentChat(validChats[0].chat_id);
-          setCurrentContactId(validChats[0].id);
-        }
-      } catch (error) {
-        console.error('خطأ في تحميل جهات الاتصال:', error);
-        toast({
-          title: "خطأ",
-          description: "لم نتمكن من تحميل جهات الاتصال",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContacts();
-  }, [user, toast]);
+  }, [currentChat, user?.id]);
 
   // تحميل الرسائل عند تغيير المحادثة
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!currentChat) return;
+      if (!currentChat || !user?.id) return;
       
       try {
         setLoading(true);
         
-        const { data: messagesData, error } = await supabase
+        // استعلام عن الرسائل المرسلة من المستخدم الحالي إلى المستخدم الآخر
+        const { data: sentMessages, error: sentError } = await supabase
           .from('private_messages')
           .select('id, content, created_at, user_id')
-          .eq('chat_id', currentChat)
-          .order('created_at', { ascending: true });
+          .or(`user_id.eq.${user.id},user_id.eq.${currentChat}`)
+          .or(`chat_id.eq.${user.id},chat_id.eq.${currentChat}`);
 
-        if (error) throw error;
-
-        // الحصول على معلومات المستخدمين المرسلين
-        if (messagesData && messagesData.length > 0) {
-          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
-          
+        if (sentError) throw sentError;
+        
+        // الحصول على معلومات المستخدمين
+        if (sentMessages && sentMessages.length > 0) {
+          const userIds = [...new Set(sentMessages.map(msg => msg.user_id))];
           const { data: usersData } = await supabase
             .from('users_profiles')
             .select('id, username')
@@ -303,15 +179,32 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
             return acc;
           }, {} as Record<string, string>);
 
-          const messagesWithUsernames = messagesData.map(msg => ({
-            ...msg,
-            username: usersMap[msg.user_id] || 'مستخدم'
-          }));
+          const messagesWithUsernames = sentMessages
+            .filter(msg => 
+              (msg.user_id === user.id && msg.chat_id === currentChat) || 
+              (msg.user_id === currentChat && msg.chat_id === user.id)
+            )
+            .map(msg => ({
+              ...msg,
+              username: usersMap[msg.user_id] || 'مستخدم'
+            }))
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
           setMessages(messagesWithUsernames);
         } else {
           setMessages([]);
         }
+        
+        // الحصول على معلومات المستخدم الآخر
+        const { data: otherUserData, error: otherUserError } = await supabase
+          .from('users_profiles')
+          .select('id, username, avatar_url')
+          .eq('id', currentChat)
+          .single();
+        
+        if (otherUserError) throw otherUserError;
+        
+        setOtherUser(otherUserData);
       } catch (error) {
         console.error('خطأ في تحميل الرسائل:', error);
         toast({
@@ -325,8 +218,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     };
 
     fetchMessages();
-  }, [currentChat, toast]);
+  }, [currentChat, user?.id, toast]);
 
+  // تمرير للأسفل عند وصول رسائل جديدة
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -335,6 +229,99 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // البحث عن مستخدمين
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) return;
+    
+    try {
+      setSearchLoading(true);
+      
+      // البحث في أسماء المستخدمين
+      const { data, error } = await supabase
+        .from('users_profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${searchTerm}%`)
+        .neq('id', user.id)
+        .limit(5);
+
+      if (error) throw error;
+      
+      // استبعاد جهات الاتصال الموجودة بالفعل
+      const contactIds = contacts.map(contact => contact.id);
+      const filteredResults = data?.filter(result => !contactIds.includes(result.id)) || [];
+      
+      setSearchResults(filteredResults);
+      setSearching(true);
+    } catch (error) {
+      console.error('خطأ في البحث:', error);
+      toast({
+        title: "خطأ في البحث",
+        description: "حدث خطأ أثناء البحث عن المستخدمين",
+        variant: "destructive",
+      });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // إضافة جهة اتصال
+  const handleAddContact = async (contactId: string) => {
+    try {
+      setAddingContact(true);
+      
+      // إضافة جهة الاتصال
+      const { error } = await supabase
+        .from('contacts')
+        .insert({ user_id: user.id, contact_id: contactId });
+
+      if (error) {
+        console.error('خطأ في إضافة جهة الاتصال:', error);
+        // عرض رسالة خطأ صديقة للمستخدم بدلاً من الرسالة التقنية
+        throw new Error("تعذر إضافة جهة الاتصال، يرجى المحاولة لاحقًا.");
+      }
+      
+      // إحضار بيانات جهة الاتصال
+      const { data: contactData } = await supabase
+        .from('users_profiles')
+        .select('id, username, avatar_url')
+        .eq('id', contactId)
+        .single();
+      
+      if (contactData) {
+        // إضافة جهة الاتصال إلى القائمة
+        setContacts(prev => [...prev, contactData]);
+        
+        // إضافة المحادثة الجديدة
+        const newChat: ChatRoom = {
+          id: contactData.id,
+          contact: contactData
+        };
+        
+        setChats(prev => [...prev, newChat]);
+        
+        toast({
+          title: "تمت الإضافة",
+          description: `تمت إضافة ${contactData.username} إلى جهات الاتصال`,
+        });
+        
+        // إغلاق مربع الحوار بعد الإضافة
+        setIsAddContactDialogOpen(false);
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في إضافة جهة الاتصال",
+        description: error.message || "حدث خطأ أثناء إضافة جهة الاتصال",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingContact(false);
+      setSearchTerm('');
+      setSearchResults([]);
+      setSearching(false);
+    }
+  };
+
+  // إرسال رسالة
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -343,8 +330,8 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
-      // Optimistically add message to the UI
-      const tempMessage: PrivateChatMessage = {
+      // إضافة رسالة مؤقتة للواجهة (Optimistic UI)
+      const tempMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         content: newMessage.trim(),
         created_at: new Date().toISOString(),
@@ -355,6 +342,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       setMessages(prev => [...prev, tempMessage]);
       setNewMessage('');
       
+      // إرسال الرسالة إلى Supabase
       const { error } = await supabase
         .from('private_messages')
         .insert({
@@ -367,306 +355,220 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         throw error;
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
       toast({
         title: "خطأ",
         description: "لم نتمكن من إرسال الرسالة",
         variant: "destructive",
       });
-      // Remove the optimistic message if it failed
-      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
+      // إزالة الرسالة المؤقتة إذا فشلت
+      const tempId = `temp-${Date.now()}`;
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!searchTerm.trim()) return;
-    
-    try {
-      setSearchLoading(true);
-      
-      // البحث عن المستخدمين
-      const { data, error } = await supabase
-        .from('users_profiles')
-        .select('id, username')
-        .ilike('username', `%${searchTerm}%`)
-        .neq('id', user.id)
-        .limit(10);
-
-      if (error) throw error;
-      
-      setSearchResults(data || []);
-    } catch (error) {
-      console.error('خطأ في البحث عن المستخدمين:', error);
-      toast({
-        title: "خطأ",
-        description: "لم نتمكن من البحث عن المستخدمين",
-        variant: "destructive",
-      });
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleAddContact = async (contactId: string) => {
-    try {
-      // التحقق من وجود جهة الاتصال مسبقاً
-      const { data: existingContact, error: checkError } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('contact_id', contactId);
-
-      if (checkError) {
-        console.error('خطأ في التحقق من وجود جهة الاتصال:', checkError);
-        throw checkError;
-      }
-      
-      if (existingContact && existingContact.length > 0) {
-        toast({
-          title: "جهة الاتصال موجودة بالفعل",
-          description: "لقد قمت بإضافة هذا المستخدم مسبقاً",
-          variant: "default",
-        });
-        return;
-      }
-
-      // إضافة جهة الاتصال
-      const { error: addError } = await supabase
-        .from('contacts')
-        .insert([
-          { user_id: user.id, contact_id: contactId }
-        ]);
-
-      if (addError) {
-        console.error('خطأ في إضافة جهة الاتصال:', addError);
-        throw addError;
-      }
-      
-      // إنشاء محادثة خاصة
-      const { data: chatData, error: chatError } = await supabase
-        .from('private_chats')
-        .insert({})
-        .select();
-
-      if (chatError) {
-        console.error('خطأ في إنشاء المحادثة:', chatError);
-        throw chatError;
-      }
-      
-      const chatId = chatData[0].id;
-      
-      // إضافة المستخدمين كمشاركين في المحادثة
-      const { error: participantsError } = await supabase
-        .from('private_chat_participants')
-        .insert([
-          { chat_id: chatId, user_id: user.id },
-          { chat_id: chatId, user_id: contactId }
-        ]);
-
-      if (participantsError) {
-        console.error('خطأ في إضافة المشاركين:', participantsError);
-        throw participantsError;
-      }
-
-      // الحصول على معلومات المستخدم المضاف
-      const { data: userData, error: userError } = await supabase
-        .from('users_profiles')
-        .select('username')
-        .eq('id', contactId)
-        .single();
-
-      if (userError) {
-        console.error('خطأ في الحصول على معلومات المستخدم:', userError);
-        throw userError;
-      }
-      
-      // إضافة جهة الاتصال للقائمة
-      const newContact: ChatContact = {
-        id: contactId,
-        chat_id: chatId,
-        username: userData?.username || 'مستخدم',
-        user_id: contactId
-      };
-      
-      setContacts(prev => [...prev, newContact]);
-      setIsAddContactDialogOpen(false);
-      
-      toast({
-        title: "تمت إضافة جهة الاتصال",
-        description: `تمت إضافة ${userData?.username} إلى جهات الاتصال الخاصة بك`,
-        variant: "default",
-      });
-      
-      // تحديد المحادثة الجديدة كمحادثة حالية
-      setCurrentChat(chatId);
-      setCurrentContactId(contactId);
-    } catch (error: any) {
-      console.error('خطأ في إضافة جهة الاتصال:', error);
-      toast({
-        title: "خطأ في إضافة جهة الاتصال",
-        description: error.message || "لم نتمكن من إضافة جهة الاتصال",
-        variant: "destructive",
-      });
-    }
-  };
-
   const formatMessageTime = (timestamp: string) => {
-    if (!timestamp) return '';
     return formatDistanceToNow(new Date(timestamp), { 
       locale: arSA, 
       addSuffix: true 
     });
   };
 
-  const getChatHeaderName = () => {
-    if (!currentContactId) return '';
-    const contact = contacts.find(c => c.id === currentContactId);
-    return contact?.username || '';
+  // التحويل إلى محادثة معينة
+  const openChat = (chatId: string) => {
+    setCurrentChat(chatId);
   };
 
-  if (loading && contacts.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 text-white animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col space-y-4 w-full">
-      {/* زر إضافة جهة اتصال */}
-      <div className="flex justify-end">
+    <div className="space-y-6 w-full">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-semibold text-white">المحادثات الخاصة</h3>
         <Dialog open={isAddContactDialogOpen} onOpenChange={setIsAddContactDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-cyan-600 hover:bg-cyan-700">
-              <UserPlus className="h-4 w-4 mr-2" /> إضافة جهة اتصال
+            <Button variant="outline" className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              <span>إضافة جهة اتصال</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md" dir="rtl">
             <DialogHeader>
-              <DialogTitle className="text-center">البحث عن مستخدمين</DialogTitle>
+              <DialogTitle className="text-right mb-4">إضافة جهة اتصال جديدة</DialogTitle>
             </DialogHeader>
-            
-            <form onSubmit={handleSearch} className="flex gap-2 my-4">
-              <Button type="submit" disabled={searchLoading}>
-                {searchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </Button>
-              <Input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="ابحث عن مستخدم..."
-                className="flex-1 text-right"
-              />
-            </form>
-            
-            <div className="max-h-[300px] overflow-y-auto">
-              {searchResults.length === 0 ? (
-                <p className="text-center text-muted-foreground">لا توجد نتائج</p>
-              ) : (
-                <div className="space-y-2">
-                  {searchResults.map((user) => (
-                    <div key={user.id} className="flex justify-between items-center p-2 rounded-md hover:bg-white/5">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleAddContact(user.id)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" /> إضافة
-                      </Button>
-                      
-                      <div className="flex items-center gap-2">
-                        <span>{user.username}</span>
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>{user.username[0] || "م"}</AvatarFallback>
-                        </Avatar>
-                      </div>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSearch} 
+                  disabled={searchLoading || !searchTerm.trim()}
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                >
+                  {searchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="ابحث عن مستخدمين..."
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch();
+                    }
+                  }}
+                />
+              </div>
+              
+              {searching && (
+                <div className="mt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        setSearching(false);
+                        setSearchResults([]);
+                        setSearchTerm('');
+                      }}
+                      className="p-0 h-auto"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <h4 className="font-medium">نتائج البحث</h4>
+                  </div>
+                  
+                  {searchResults.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">لا توجد نتائج</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {searchResults.map((result) => (
+                        <div key={result.id} className="flex justify-between items-center p-2 rounded-md bg-white/5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAddContact(result.id)}
+                            disabled={addingContact}
+                            className="text-cyan-400"
+                          >
+                            {addingContact ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3 w-3" />}
+                          </Button>
+                          <div className="flex items-center gap-2">
+                            <span>{result.username}</span>
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs bg-cyan-800">
+                                {result.username?.[0] || "م"}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
+
+              <div className="mt-4">
+                <h4 className="font-medium mb-2 text-right">جهات الاتصال المضافة</h4>
+                {contacts.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">لا توجد جهات اتصال بعد</p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {contacts.map((contact) => (
+                      <div key={contact.id} className="flex justify-between items-center p-2 rounded-md bg-white/5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setCurrentChat(contact.id);
+                            setIsAddContactDialogOpen(false);
+                          }}
+                          className="text-cyan-400"
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <span>{contact.username}</span>
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs bg-cyan-800">
+                              {contact.username?.[0] || "م"}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {contacts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <UserPlus className="h-16 w-16 text-cyan-400/60 mx-auto" />
-            <p className="text-white/70 mt-4 mb-6">لا توجد محادثات خاصة بعد</p>
-            <Button 
-              onClick={() => setIsAddContactDialogOpen(true)}
-              className="bg-cyan-600 hover:bg-cyan-700"
-            >
-              <Plus className="h-4 w-4 mr-2" /> إضافة جهة اتصال
-            </Button>
-          </motion.div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[450px] w-full">
-          {/* قائمة جهات الاتصال */}
-          <div className="lg:col-span-1 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
-            <div className="p-3 border-b border-white/10">
-              <h3 className="font-semibold text-white">جهات الاتصال</h3>
-            </div>
-            
-            <div className="overflow-y-auto h-[402px]">
-              {contacts.map(contact => (
-                <motion.button
-                  key={contact.id}
-                  className={`w-full text-right p-3 border-b border-white/10 hover:bg-white/10 transition-colors flex flex-col ${currentContactId === contact.id ? 'bg-white/10' : ''}`}
-                  onClick={() => {
-                    setCurrentChat(contact.chat_id);
-                    setCurrentContactId(contact.id);
-                  }}
-                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+      {chats.length > 0 && (
+        <div className="grid md:grid-cols-[250px_1fr] gap-4">
+          {/* قائمة المحادثات */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-3">
+            <div className="space-y-2">
+              <h4 className="font-medium text-white/70 mb-2 text-right">جهات الاتصال</h4>
+              {chats.map((chat) => (
+                <div 
+                  key={chat.id} 
+                  onClick={() => openChat(chat.id)}
+                  className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-white/10 ${currentChat === chat.id ? 'bg-white/10' : ''}`}
                 >
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-white/50">
-                      {contact.last_message_time && formatMessageTime(contact.last_message_time)}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{contact.username}</span>
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{contact.username[0] || "م"}</AvatarFallback>
-                      </Avatar>
-                    </div>
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-cyan-800">
+                      {chat.contact.username?.[0] || "م"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium text-right">{chat.contact.username}</p>
                   </div>
-                  
-                  {contact.last_message && (
-                    <p className="text-white/70 text-sm truncate mt-1">
-                      {contact.last_message}
-                    </p>
-                  )}
-                </motion.button>
+                </div>
               ))}
             </div>
           </div>
-          
-          {/* منطقة المحادثة */}
-          <div className="lg:col-span-2 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden flex flex-col">
+
+          {/* منطقة عرض الرسائل */}
+          <div className="h-[450px] bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 flex flex-col">
             {currentChat ? (
               <>
-                <div className="p-3 border-b border-white/10 flex justify-between items-center">
-                  <div></div> {/* عنصر فارغ للحفاظ على التوازن */}
-                  <h3 className="font-semibold text-white">{getChatHeaderName()}</h3>
+                {/* رأس المحادثة */}
+                <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="md:hidden"
+                    onClick={() => setCurrentChat(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    {otherUser && (
+                      <>
+                        <span className="font-medium">{otherUser.username}</span>
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-cyan-800">
+                            {otherUser.username?.[0] || "م"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {messages.length === 0 ? (
+
+                {/* الرسائل */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                  {loading ? (
+                    <div className="flex justify-center items-center h-full">
+                      <Loader2 className="h-8 w-8 text-white animate-spin" />
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-white/70">
                       <MessageSquare className="h-12 w-12 mb-2 text-cyan-400/60" />
-                      <p>لا توجد رسائل بعد. ابدأ المحادثة!</p>
+                      <p>لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p>
                     </div>
                   ) : (
                     messages.map((message, index) => (
@@ -700,12 +602,14 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
                   )}
                   <div ref={messagesEndRef} />
                 </div>
-                
+
+                {/* نموذج إرسال الرسائل */}
                 <form onSubmit={handleSendMessage} className="p-3 border-t border-white/10 flex gap-2">
                   <Button 
                     type="submit" 
                     disabled={sendingMessage || !newMessage.trim()} 
-                    className="bg-cyan-600 hover:bg-cyan-700">
+                    className="bg-cyan-600 hover:bg-cyan-700"
+                  >
                     {sendingMessage ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -723,11 +627,26 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-white/70">
-                <MessageSquare className="h-16 w-16 mb-2 text-cyan-400/30" />
-                <p>اختر محادثة للبدء</p>
+                <MessageSquare className="h-12 w-12 mb-2 text-cyan-400/60" />
+                <p>اختر محادثة لبدء الدردشة</p>
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {chats.length === 0 && !loading && (
+        <div className="h-[300px] bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 flex flex-col items-center justify-center">
+          <UserCheck className="h-12 w-12 mb-4 text-cyan-400/60" />
+          <p className="text-white/70 mb-4">لا توجد لديك جهات اتصال حتى الآن</p>
+          <Dialog open={isAddContactDialogOpen} onOpenChange={setIsAddContactDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" className="bg-cyan-600 hover:bg-cyan-700">
+                <UserPlus className="h-4 w-4 mr-2" />
+                أضف جهات اتصال جديدة
+              </Button>
+            </DialogTrigger>
+          </Dialog>
         </div>
       )}
     </div>
