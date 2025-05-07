@@ -363,8 +363,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         variant: "destructive",
       });
       // إزالة الرسالة المؤقتة إذا فشلت
-      const tempId = `temp-${Date.now()}`;
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
       setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
