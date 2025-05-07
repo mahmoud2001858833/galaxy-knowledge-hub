@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Plus, Search, UserPlus, Loader2, MessageSquare } from 'lucide-react';
@@ -331,7 +330,9 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
           content: optimisticMsg.content
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
     } catch (error) {
       console.error('خطأ في إرسال الرسالة:', error);

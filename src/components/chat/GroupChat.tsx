@@ -199,7 +199,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
           content: optimisticMsg.content
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
     } catch (error) {
       console.error('خطأ في إرسال الرسالة:', error);
@@ -210,7 +212,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
       });
       // Remove the optimistic message if it failed
       setMessages(prev => prev.filter(msg => msg.id !== `temp-${Date.now()}`));
-      setNewMessage(optimisticMsg.content);
+      setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
     }
