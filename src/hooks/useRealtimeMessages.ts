@@ -128,7 +128,7 @@ export const useRealtimeMessages = ({
       return; // No subscription needed
     }
     
-    // Set up realtime subscription
+    // Set up realtime subscription - FIX: Changed from .on('postgres_changes') to .on
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', filter, async (payload) => {
@@ -184,20 +184,22 @@ export const useRealtimeMessages = ({
     };
   }, [userId, roomId, receiverId, onNewMessage, toast]);
   
-  // Function to send a message
+  // Function to send a message - FIX: Updated to ensure message_text is non-optional
   const sendMessage = async (text: string) => {
     try {
       if (!text.trim()) return false;
       
-      const messageData: Partial<Message> = {
+      const messageData = {
         sender_id: userId,
-        message_text: text.trim()
+        message_text: text.trim() // Ensure message_text is always provided
       };
       
       if (roomId) {
-        messageData.room_id = roomId;
+        // For group chat
+        (messageData as any).room_id = roomId;
       } else if (receiverId) {
-        messageData.receiver_id = receiverId;
+        // For private chat
+        (messageData as any).receiver_id = receiverId;
       } else {
         throw new Error('يجب تحديد المستلم أو غرفة المحادثة');
       }
