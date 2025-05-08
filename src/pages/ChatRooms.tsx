@@ -10,8 +10,7 @@ const ChatRooms = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // تهيئة الاتصال بالوقت الحقيقي
-    const setupRealtime = async () => {
+    const checkUser = async () => {
       try {
         // التحقق من تسجيل دخول المستخدم
         const { data: { session } } = await supabase.auth.getSession();
@@ -23,55 +22,20 @@ const ChatRooms = () => {
             variant: "destructive",
           });
           navigate('/auth');
-          return;
         }
-
-        // إعداد قناة الوقت الحقيقي للرسائل الجماعية
-        const groupMessagesChannel = supabase.channel('group-messages-channel')
-          .on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'group_messages' 
-          }, payload => {
-            console.log('تم استلام تغيير في رسائل المجموعات:', payload);
-          })
-          .subscribe(status => {
-            if (status === 'SUBSCRIBED') {
-              console.log('تم الاشتراك في قناة رسائل المجموعات بنجاح');
-            } else {
-              console.error('فشل في الاشتراك بقناة رسائل المجموعات:', status);
-            }
-          });
-        
-        // إعداد قناة الوقت الحقيقي للرسائل الخاصة
-        const privateMessagesChannel = supabase.channel('private-messages-channel')
-          .on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'private_messages' 
-          }, payload => {
-            console.log('تم استلام تغيير في الرسائل الخاصة:', payload);
-          })
-          .subscribe(status => {
-            if (status === 'SUBSCRIBED') {
-              console.log('تم الاشتراك في قناة الرسائل الخاصة بنجاح');
-            } else {
-              console.error('فشل في الاشتراك بقناة الرسائل الخاصة:', status);
-            }
-          });
-        
-        return () => {
-          supabase.removeChannel(groupMessagesChannel);
-          supabase.removeChannel(privateMessagesChannel);
-        };
       } catch (error) {
-        console.error('خطأ في إعداد الوقت الحقيقي:', error);
+        console.error('خطأ في التحقق من المستخدم:', error);
+        toast({
+          title: "حدث خطأ",
+          description: "يرجى المحاولة مرة أخرى",
+          variant: "destructive",
+        });
       }
     };
 
-    setupRealtime();
+    checkUser();
   }, [navigate, toast]);
-
+  
   return <ChatLayout />;
 };
 

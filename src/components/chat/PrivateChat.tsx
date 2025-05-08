@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, MessageSquare, UserPlus, Search, X, UserCheck } from 'lucide-react';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { arSA } from 'date-fns/locale';
+import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 
 interface PrivateChatProps {
   user: any;
@@ -25,14 +27,6 @@ interface ChatRoom {
   contact: UserProfile;
 }
 
-interface ChatMessage {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  username?: string;
-}
-
 const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
@@ -40,7 +34,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   const [contacts, setContacts] = useState<UserProfile[]>([]);
   const [currentChat, setCurrentChat] = useState<string | null>(null);
   const [otherUser, setOtherUser] = useState<UserProfile | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -50,7 +43,16 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isAddContactDialogOpen, setIsAddContactDialogOpen] = useState(false);
-  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+
+  // Use our realtime messages hook
+  const { messages, loading: messagesLoading, sendMessage } = useRealtimeMessages({
+    userId: user?.id,
+    receiverId: currentChat,
+    onNewMessage: () => {
+      // Scroll to bottom when new message arrives
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  });
 
   // تحميل جهات الاتصال للمستخدم
   useEffect(() => {
@@ -100,162 +102,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       fetchContacts();
     }
   }, [user?.id]);
-
-  // الاشتراك في التحديثات المباشرة للرسائل الخاصة
-  useEffect(() => {
-    if (!currentChat || !user?.id) return;
-    
-    // إلغاء الاشتراك السابق إن وجد
-    if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel);
-    }
-    
-    // فتح القناة للتحديثات المباشرة للرسائل الخاصة مع معرف فريد لتجنب الاشتراكات المتكررة
-    const channelName = `private_messages_${user.id}_${currentChat}_${Date.now()}`;
-    console.log(`إعداد قناة الوقت الحقيقي: ${channelName}`);
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // استماع لكل الأحداث (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'private_messages',
-          filter: `or(and(user_id.eq.${user.id},chat_id.eq.${currentChat}),and(user_id.eq.${currentChat},chat_id.eq.${user.id}))`,
-        },
-        async (payload) => {
-          console.log("استلام رسالة خاصة في الوقت الحقيقي:", payload);
-          // تحديث المحادثة فورًا عند استلام رسالة جديدة
-          if (payload.eventType === 'INSERT') {
-            try {
-              const messageData = payload.new;
-              const { data: userData } = await supabase
-                .from('users_profiles')
-                .select('username')
-                .eq('id', messageData.user_id)
-                .single();
-              
-              const newMsg = {
-                ...messageData,
-                username: userData?.username || 'مستخدم'
-              } as ChatMessage;
-              
-              // تحديث المحادثة بالرسالة الجديدة فورًا
-              setMessages(prev => {
-                // تجنب إضافة الرسائل المكررة
-                const messageExists = prev.some(msg => msg.id === newMsg.id);
-                if (messageExists) return prev;
-                return [...prev, newMsg];
-              });
-            } catch (error) {
-              console.error('خطأ في تحميل معلومات المستخدم:', error);
-            }
-          } else {
-            // إعادة تحميل المحادثة بالكامل في حالة تحديث أو حذف رسائل
-            await fetchMessages(currentChat);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`حالة قناة الرسائل الخاصة: ${status}`);
-        if (status === 'SUBSCRIBED') {
-          toast({
-            title: "متصل",
-            description: "أنت الآن متصل بنظام المراسلة المباشر",
-          });
-        }
-      });
-
-    setRealtimeChannel(channel);
-    console.log(`تم الاشتراك في تحديثات المحادثة الخاصة (${currentChat})`);
-    
-    return () => {
-      supabase.removeChannel(channel);
-      console.log('تم إلغاء الاشتراك في تحديثات المحادثة الخاصة');
-    };
-  }, [currentChat, user?.id]);
-
-  // تحميل الرسائل عند تغيير المحادثة
-  useEffect(() => {
-    if (currentChat) {
-      fetchMessages(currentChat);
-    }
-  }, [currentChat]);
-
-  // دالة لتحميل الرسائل الخاصة
-  const fetchMessages = async (chatPartnerId: string) => {
-    if (!chatPartnerId || !user?.id) return;
-    
-    try {
-      setLoading(true);
-      
-      // استعلام معدل عن الرسائل الخاصة بين المستخدمين
-      const { data: messagesData, error } = await supabase
-        .from('private_messages')
-        .select('id, content, created_at, user_id, chat_id')
-        .or(`and(user_id.eq.${user.id},chat_id.eq.${chatPartnerId}),and(user_id.eq.${chatPartnerId},chat_id.eq.${user.id})`)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error("خطأ في تحميل الرسائل الخاصة:", error);
-        throw error;
-      }
-      
-      // الحصول على معلومات المستخدمين
-      if (messagesData && messagesData.length > 0) {
-        const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
-        const { data: usersData, error: usersError } = await supabase
-          .from('users_profiles')
-          .select('id, username')
-          .in('id', userIds);
-
-        if (usersError) {
-          console.error("خطأ في تحميل معلومات المستخدمين:", usersError);
-        }
-
-        const usersMap = (usersData || []).reduce((acc, user) => {
-          acc[user.id] = user.username;
-          return acc;
-        }, {} as Record<string, string>);
-
-        const messagesWithUsernames = messagesData.map(msg => ({
-          id: msg.id,
-          content: msg.content,
-          created_at: msg.created_at,
-          user_id: msg.user_id,
-          username: usersMap[msg.user_id] || 'مستخدم'
-        }));
-
-        setMessages(messagesWithUsernames);
-      } else {
-        setMessages([]);
-      }
-      
-      // الحصول على معلومات المستخدم الآخر
-      const { data: otherUserData, error: otherUserError } = await supabase
-        .from('users_profiles')
-        .select('id, username, avatar_url')
-        .eq('id', chatPartnerId)
-        .single();
-      
-      if (otherUserError) {
-        console.error("خطأ في تحميل معلومات المستخدم الآخر:", otherUserError);
-        throw otherUserError;
-      }
-      
-      setOtherUser(otherUserData);
-    } catch (error) {
-      console.error('خطأ في تحميل الرسائل:', error);
-      toast({
-        title: "خطأ",
-        description: "لم نتمكن من تحميل الرسائل",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // تمرير للأسفل عند وصول رسائل جديدة
   useEffect(() => {
@@ -367,48 +213,43 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     try {
       setSendingMessage(true);
       
-      // إضافة رسالة مؤقتة للواجهة (Optimistic UI)
-      const tempMessage: ChatMessage = {
-        id: `temp-${Date.now()}`,
-        content: newMessage.trim(),
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-        username: 'أنت'
-      };
+      const success = await sendMessage(newMessage);
       
-      setMessages(prev => [...prev, tempMessage]);
-      setNewMessage(''); // مسح حقل الإدخال
-
-      // إرسال الرسالة إلى Supabase
-      const { error, data } = await supabase
-        .from('private_messages')
-        .insert({
-          chat_id: currentChat,
-          user_id: user.id,
-          content: tempMessage.content
-        })
-        .select();
-
-      if (error) {
-        console.error('خطأ في إرسال الرسالة:', error);
-        throw error;
+      if (success) {
+        setNewMessage(''); // مسح حقل الإدخال
       }
-      
-      console.log('تم إرسال الرسالة الخاصة بنجاح:', data);
-      
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
-      toast({
-        title: "خطأ",
-        description: "لم نتمكن من إرسال الرسالة",
-        variant: "destructive",
-      });
-      // إعادة المحتوى السابق لحقل الإدخال في حالة الفشل
-      setNewMessage(newMessage.trim());
     } finally {
       setSendingMessage(false);
     }
   };
+
+  // الحصول على معلومات المستخدم الآخر عند تغيير المحادثة
+  useEffect(() => {
+    const fetchOtherUserInfo = async () => {
+      if (!currentChat) {
+        setOtherUser(null);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('users_profiles')
+          .select('id, username, avatar_url')
+          .eq('id', currentChat)
+          .single();
+          
+        if (error) throw error;
+        
+        setOtherUser(data);
+      } catch (error) {
+        console.error('خطأ في تحميل معلومات المستخدم:', error);
+      }
+    };
+    
+    fetchOtherUserInfo();
+  }, [currentChat]);
 
   const formatMessageTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), { 
@@ -600,7 +441,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
 
                 {/* الرسائل */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                  {loading ? (
+                  {messagesLoading ? (
                     <div className="flex justify-center items-center h-full">
                       <Loader2 className="h-8 w-8 text-white animate-spin" />
                     </div>
@@ -616,25 +457,25 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05, duration: 0.3 }}
-                        className={`flex ${message.user_id === user.id ? 'justify-start flex-row-reverse' : 'justify-start'} gap-2`}
+                        className={`flex ${message.sender_id === user.id ? 'justify-start flex-row-reverse' : 'justify-start'} gap-2`}
                       >
                         <div className="flex-shrink-0">
                           <Avatar>
-                            <AvatarFallback className={message.user_id === user.id ? 'bg-cyan-700' : 'bg-gray-700'}>
+                            <AvatarFallback className={message.sender_id === user.id ? 'bg-cyan-700' : 'bg-gray-700'}>
                               {message.username?.[0] || "م"}
                             </AvatarFallback>
                           </Avatar>
                         </div>
-                        <div className={`max-w-[70%] ${message.user_id === user.id ? 'bg-cyan-600/40 border-cyan-500/30' : 'bg-gray-600/30 border-gray-500/30'} border rounded-lg p-3`}>
+                        <div className={`max-w-[70%] ${message.sender_id === user.id ? 'bg-cyan-600/40 border-cyan-500/30' : 'bg-gray-600/30 border-gray-500/30'} border rounded-lg p-3`}>
                           <div className="flex justify-between items-center mb-1">
-                            <span className={`text-xs text-white/70 ${message.user_id === user.id ? 'order-2' : 'order-1'}`}>
+                            <span className={`text-xs text-white/70 ${message.sender_id === user.id ? 'order-2' : 'order-1'}`}>
                               {formatMessageTime(message.created_at)}
                             </span>
-                            <span className={`font-semibold text-sm ${message.user_id === user.id ? 'text-cyan-300 order-1' : 'text-white order-2'}`}>
-                              {message.user_id === user.id ? 'أنت' : message.username}
+                            <span className={`font-semibold text-sm ${message.sender_id === user.id ? 'text-cyan-300 order-1' : 'text-white order-2'}`}>
+                              {message.sender_id === user.id ? 'أنت' : message.username}
                             </span>
                           </div>
-                          <p className="text-white whitespace-pre-wrap break-words text-right">{message.content}</p>
+                          <p className="text-white whitespace-pre-wrap break-words text-right">{message.message_text}</p>
                         </div>
                       </motion.div>
                     ))
