@@ -31,7 +31,7 @@ export const useRealtimeMessages = ({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch initial messages
+  // تحميل الرسائل الأولية
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -44,14 +44,14 @@ export const useRealtimeMessages = ({
           .order('created_at', { ascending: true });
         
         if (roomId) {
-          // Group chat messages
+          // رسائل المحادثات الجماعية
           query = query.eq('room_id', roomId);
         } else if (receiverId) {
-          // Private chat messages (where the user is either sender or receiver)
+          // رسائل المحادثات الخاصة (حيث المستخدم إما مرسل أو مستقبل)
           query = query.or(`and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId})`);
         } else {
           setLoading(false);
-          return; // Neither roomId nor receiverId provided
+          return; // لم يتم توفير معرف الغرفة أو معرف المستقبل
         }
         
         const { data, error: fetchError } = await query;
@@ -60,7 +60,7 @@ export const useRealtimeMessages = ({
           throw fetchError;
         }
         
-        // Fetch usernames for each message
+        // جلب أسماء المستخدمين لكل رسالة
         if (data && data.length > 0) {
           const userIds = [...new Set(data.map(msg => msg.sender_id))];
           const { data: usersData, error: usersError } = await supabase
@@ -104,28 +104,28 @@ export const useRealtimeMessages = ({
     }
   }, [userId, roomId, receiverId, toast]);
   
-  // Function to play notification sound
+  // تشغيل صوت الإشعار
   const playNotificationSound = useCallback(() => {
     try {
       const audio = new Audio('/message-notification.mp3');
-      audio.volume = 0.5; // Lower the volume to make it less intrusive
+      audio.volume = 0.5; // خفض مستوى الصوت ليكون أقل إزعاجاً
       audio.play().catch(e => console.log('Audio play error:', e));
     } catch (err) {
       console.error('Error playing notification sound:', err);
     }
   }, []);
   
-  // Subscribe to realtime updates
+  // الاشتراك في تحديثات الوقت الفعلي
   useEffect(() => {
     if (!userId) return;
     
-    // Fixing the realtime subscription issue by using a consistent channel name
-    // without Date.now() which causes new subscriptions each time
+    // إصلاح مشكلة الاشتراك في الوقت الفعلي باستخدام اسم قناة ثابت
+    // بدون استخدام Date.now() الذي يتسبب في إنشاء اشتراكات جديدة في كل مرة
     let channelName = '';
     let filterObject = {};
     
     if (roomId) {
-      // Group chat subscription - using a fixed name, not including Date.now()
+      // اشتراك المحادثة الجماعية - باستخدام اسم ثابت
       channelName = `room-${roomId}`;
       filterObject = { 
         event: 'INSERT', 
@@ -134,8 +134,8 @@ export const useRealtimeMessages = ({
         filter: `room_id=eq.${roomId}` 
       };
     } else if (receiverId) {
-      // Private chat subscription - using consistent naming
-      // Order user IDs to ensure the same channel name regardless of who initiates
+      // اشتراك المحادثة الخاصة - باستخدام تسمية متسقة
+      // ترتيب معرفات المستخدمين لضمان نفس اسم القناة بغض النظر عمن يبدأ
       const [firstId, secondId] = [userId, receiverId].sort();
       channelName = `private-${firstId}-${secondId}`;
       filterObject = { 
@@ -145,27 +145,27 @@ export const useRealtimeMessages = ({
         filter: `or(and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId}))` 
       };
     } else {
-      return; // No subscription needed
+      return; // لا حاجة للاشتراك
     }
     
-    console.log(`Subscribing to channel: ${channelName} with filter:`, filterObject);
+    console.log(`الاشتراك في القناة: ${channelName} مع الفلتر:`, filterObject);
     
-    // Using the correct Supabase Realtime API syntax
+    // استخدام صيغة Supabase Realtime API الصحيحة
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', filterObject as any, async (payload) => {
-        console.log('New message received:', payload);
+        console.log('تم استلام رسالة جديدة:', payload);
         
         try {
           const newMessage = payload.new as Message;
           
-          // Only process messages we don't already have
+          // تجاهل الرسائل التي لدينا بالفعل
           if (messages.some(msg => msg.id === newMessage.id)) {
-            console.log('Message already exists, skipping:', newMessage.id);
+            console.log('الرسالة موجودة بالفعل، تم تجاهلها:', newMessage.id);
             return;
           }
           
-          // Get sender username
+          // الحصول على اسم المستخدم المرسل
           const { data: userData } = await supabase
             .from('users_profiles')
             .select('username')
@@ -177,14 +177,14 @@ export const useRealtimeMessages = ({
             username: userData?.username || 'مستخدم'
           };
           
-          // Add message to state
+          // إضافة الرسالة إلى الحالة
           setMessages(prev => [...prev, messageWithUsername]);
           
-          // Don't play notification sound for the sender's own messages
+          // عدم تشغيل صوت الإشعار للرسائل الخاصة بالمستخدم نفسه
           if (newMessage.sender_id !== userId) {
             playNotificationSound();
             
-            // Show toast notification for new messages not from the current user
+            // إظهار إشعار toast للرسائل الجديدة التي ليست من المستخدم الحالي
             toast({
               title: `رسالة جديدة من ${messageWithUsername.username}`,
               description: messageWithUsername.message_text.length > 30 ? 
@@ -194,7 +194,7 @@ export const useRealtimeMessages = ({
             });
           }
           
-          // Trigger callback if provided
+          // تنفيذ callback إذا تم توفيره
           if (onNewMessage) {
             onNewMessage(messageWithUsername);
           }
@@ -203,9 +203,9 @@ export const useRealtimeMessages = ({
         }
       })
       .subscribe((status) => {
-        console.log(`Subscription status for ${channelName}: ${status}`);
+        console.log(`حالة الاشتراك في ${channelName}: ${status}`);
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to channel:', channelName);
+          console.log('تم الاشتراك بنجاح في القناة:', channelName);
           toast({
             title: "متصل",
             description: "أنت الآن متصل بنظام المراسلة المباشر",
@@ -214,17 +214,17 @@ export const useRealtimeMessages = ({
       });
       
     return () => {
-      console.log(`Unsubscribing from channel: ${channelName}`);
+      console.log(`إلغاء الاشتراك من القناة: ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [userId, roomId, receiverId, onNewMessage, toast, messages, playNotificationSound]);
   
-  // Function to send a message
+  // وظيفة إرسال رسالة
   const sendMessage = async (text: string) => {
     try {
       if (!text.trim()) return false;
       
-      // Create a properly typed message object
+      // إنشاء كائن رسالة بأنواع صحيحة
       const messageData: {
         sender_id: string;
         message_text: string;
@@ -236,16 +236,16 @@ export const useRealtimeMessages = ({
       };
       
       if (roomId) {
-        // For group chat
+        // للمحادثة الجماعية
         messageData.room_id = roomId;
       } else if (receiverId) {
-        // For private chat
+        // للمحادثة الخاصة
         messageData.receiver_id = receiverId;
       } else {
         throw new Error('يجب تحديد المستلم أو غرفة المحادثة');
       }
       
-      console.log('Sending message:', messageData);
+      console.log('جاري إرسال الرسالة:', messageData);
       
       const { data, error } = await supabase
         .from('messages')
@@ -254,7 +254,7 @@ export const useRealtimeMessages = ({
         
       if (error) throw error;
       
-      console.log('Message sent successfully:', data);
+      console.log('تم إرسال الرسالة بنجاح:', data);
       return true;
     } catch (err: any) {
       console.error('خطأ في إرسال الرسالة:', err);
