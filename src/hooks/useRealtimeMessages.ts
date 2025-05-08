@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -104,6 +104,17 @@ export const useRealtimeMessages = ({
     }
   }, [userId, roomId, receiverId, toast]);
   
+  // Function to play notification sound
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audio = new Audio('/message-notification.mp3');
+      audio.volume = 0.5; // Lower the volume to make it less intrusive
+      audio.play().catch(e => console.log('Audio play error:', e));
+    } catch (err) {
+      console.error('Error playing notification sound:', err);
+    }
+  }, []);
+  
   // Subscribe to realtime updates
   useEffect(() => {
     if (!userId) return;
@@ -148,6 +159,12 @@ export const useRealtimeMessages = ({
         try {
           const newMessage = payload.new as Message;
           
+          // Only process messages we don't already have
+          if (messages.some(msg => msg.id === newMessage.id)) {
+            console.log('Message already exists, skipping:', newMessage.id);
+            return;
+          }
+          
           // Get sender username
           const { data: userData } = await supabase
             .from('users_profiles')
@@ -161,21 +178,26 @@ export const useRealtimeMessages = ({
           };
           
           // Add message to state
-          setMessages(prev => {
-            // Avoid duplicates
-            const exists = prev.some(msg => msg.id === newMessage.id);
-            if (exists) return prev;
-            return [...prev, messageWithUsername];
-          });
+          setMessages(prev => [...prev, messageWithUsername]);
+          
+          // Don't play notification sound for the sender's own messages
+          if (newMessage.sender_id !== userId) {
+            playNotificationSound();
+            
+            // Show toast notification for new messages not from the current user
+            toast({
+              title: `رسالة جديدة من ${messageWithUsername.username}`,
+              description: messageWithUsername.message_text.length > 30 ? 
+                `${messageWithUsername.message_text.substring(0, 30)}...` :
+                messageWithUsername.message_text,
+              variant: "default",
+            });
+          }
           
           // Trigger callback if provided
           if (onNewMessage) {
             onNewMessage(messageWithUsername);
           }
-          
-          // Play notification sound
-          const audio = new Audio('/message-notification.mp3');
-          audio.play().catch(e => console.log('Audio play error:', e));
         } catch (err) {
           console.error('Error processing new message:', err);
         }
@@ -195,7 +217,7 @@ export const useRealtimeMessages = ({
       console.log(`Unsubscribing from channel: ${channelName}`);
       supabase.removeChannel(channel);
     };
-  }, [userId, roomId, receiverId, onNewMessage, toast]);
+  }, [userId, roomId, receiverId, onNewMessage, toast, messages, playNotificationSound]);
   
   // Function to send a message
   const sendMessage = async (text: string) => {

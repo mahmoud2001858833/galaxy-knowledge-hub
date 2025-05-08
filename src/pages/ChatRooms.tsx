@@ -34,6 +34,14 @@ const ChatRooms = () => {
     };
 
     checkUser();
+    
+    // Set page title
+    document.title = "المحادثات - منصة تعليمية";
+    
+    return () => {
+      // Reset title when unmounting
+      document.title = "منصة تعليمية";
+    };
   }, [navigate, toast]);
   
   return <ChatLayout />;
