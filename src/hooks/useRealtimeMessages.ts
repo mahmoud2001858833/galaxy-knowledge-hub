@@ -128,10 +128,11 @@ export const useRealtimeMessages = ({
       return; // No subscription needed
     }
     
-    // Set up realtime subscription - FIX: Changed from .on('postgres_changes') to .on
+    // Set up realtime subscription - FIX: Use the correct supabase realtime API
     const channel = supabase
       .channel(channelName)
-      .on('postgres_changes', filter, async (payload) => {
+      // The issue is here - we need to properly call the .on method with the correct parameters
+      .on('postgres_changes', filter as any, async (payload) => {
         console.log('تم استلام رسالة جديدة:', payload);
         
         try {
@@ -184,22 +185,28 @@ export const useRealtimeMessages = ({
     };
   }, [userId, roomId, receiverId, onNewMessage, toast]);
   
-  // Function to send a message - FIX: Updated to ensure message_text is non-optional
+  // Function to send a message - With the fix to ensure message_text is non-optional
   const sendMessage = async (text: string) => {
     try {
       if (!text.trim()) return false;
       
-      const messageData = {
+      // Create a properly typed message object
+      const messageData: {
+        sender_id: string;
+        message_text: string;
+        room_id?: string;
+        receiver_id?: string;
+      } = {
         sender_id: userId,
-        message_text: text.trim() // Ensure message_text is always provided
+        message_text: text.trim()
       };
       
       if (roomId) {
         // For group chat
-        (messageData as any).room_id = roomId;
+        messageData.room_id = roomId;
       } else if (receiverId) {
         // For private chat
-        (messageData as any).receiver_id = receiverId;
+        messageData.receiver_id = receiverId;
       } else {
         throw new Error('يجب تحديد المستلم أو غرفة المحادثة');
       }
