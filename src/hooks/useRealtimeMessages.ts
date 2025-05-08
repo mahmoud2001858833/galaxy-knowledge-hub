@@ -108,17 +108,26 @@ export const useRealtimeMessages = ({
   useEffect(() => {
     if (!userId) return;
     
+    // Fixing the realtime subscription issue by using a consistent channel name
+    // without Date.now() which causes new subscriptions each time
     let channelName = '';
-    let filter = {};
+    let filterObject = {};
     
     if (roomId) {
-      // Group chat subscription
-      channelName = `room-${roomId}-${Date.now()}`;
-      filter = { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` };
+      // Group chat subscription - using a fixed name, not including Date.now()
+      channelName = `room-${roomId}`;
+      filterObject = { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages', 
+        filter: `room_id=eq.${roomId}` 
+      };
     } else if (receiverId) {
-      // Private chat subscription
-      channelName = `private-${userId}-${receiverId}-${Date.now()}`;
-      filter = { 
+      // Private chat subscription - using consistent naming
+      // Order user IDs to ensure the same channel name regardless of who initiates
+      const [firstId, secondId] = [userId, receiverId].sort();
+      channelName = `private-${firstId}-${secondId}`;
+      filterObject = { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'messages',
@@ -128,12 +137,13 @@ export const useRealtimeMessages = ({
       return; // No subscription needed
     }
     
-    // Set up realtime subscription - FIX: Use the correct supabase realtime API
+    console.log(`Subscribing to channel: ${channelName} with filter:`, filterObject);
+    
+    // Using the correct Supabase Realtime API syntax
     const channel = supabase
       .channel(channelName)
-      // The issue is here - we need to properly call the .on method with the correct parameters
-      .on('postgres_changes', filter as any, async (payload) => {
-        console.log('تم استلام رسالة جديدة:', payload);
+      .on('postgres_changes', filterObject as any, async (payload) => {
+        console.log('New message received:', payload);
         
         try {
           const newMessage = payload.new as Message;
@@ -170,9 +180,10 @@ export const useRealtimeMessages = ({
           console.error('Error processing new message:', err);
         }
       })
-      .subscribe(status => {
-        console.log(`حالة الاشتراك في القناة: ${status} (${channelName})`);
+      .subscribe((status) => {
+        console.log(`Subscription status for ${channelName}: ${status}`);
         if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to channel:', channelName);
           toast({
             title: "متصل",
             description: "أنت الآن متصل بنظام المراسلة المباشر",
@@ -181,11 +192,12 @@ export const useRealtimeMessages = ({
       });
       
     return () => {
+      console.log(`Unsubscribing from channel: ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [userId, roomId, receiverId, onNewMessage, toast]);
   
-  // Function to send a message - With the fix to ensure message_text is non-optional
+  // Function to send a message
   const sendMessage = async (text: string) => {
     try {
       if (!text.trim()) return false;
@@ -211,11 +223,16 @@ export const useRealtimeMessages = ({
         throw new Error('يجب تحديد المستلم أو غرفة المحادثة');
       }
       
-      const { error } = await supabase
+      console.log('Sending message:', messageData);
+      
+      const { data, error } = await supabase
         .from('messages')
-        .insert(messageData);
+        .insert(messageData)
+        .select();
         
       if (error) throw error;
+      
+      console.log('Message sent successfully:', data);
       return true;
     } catch (err: any) {
       console.error('خطأ في إرسال الرسالة:', err);
