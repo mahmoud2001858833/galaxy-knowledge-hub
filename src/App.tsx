@@ -16,6 +16,7 @@ import VisualLibrary from './pages/VisualLibrary';
 import ScientificJournal from './pages/ScientificJournal';
 import UploadImagePage from './pages/UploadImagePage';
 import UploadJournalPage from './pages/UploadJournalPage';
+import SubjectPuzzles from './pages/SubjectPuzzles';
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/scientific-journal" element={<ScientificJournal />} />
         <Route path="/upload-image" element={<UploadImagePage />} />
         <Route path="/upload-journal" element={<UploadJournalPage />} />
+        <Route path="/subject-puzzles" element={<SubjectPuzzles />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
