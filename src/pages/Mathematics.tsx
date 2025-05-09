@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import StarField from '@/components/StarField';
@@ -5,12 +6,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Calculator from '@/components/mathematics/Calculator';
 import MathAIAssistant from '@/components/mathematics/MathAIAssistant';
-import MathPuzzles from '@/components/mathematics/MathPuzzles';
 import GraphVisualizer from '@/components/mathematics/GraphVisualizer';
 import MathematiciansGallery from '@/components/mathematics/MathematiciansGallery';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Brain, Calculator as CalculatorIcon } from 'lucide-react';
-import PuzzlePiece from '@/components/mathematics/PuzzlePiece';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -217,16 +216,6 @@ const Mathematics = () => {
                   onClick={() => handleCardSelect('assistant')}
                 />
                 
-                {/* Math Puzzles Card */}
-                <CategoryCard 
-                  title="ألغاز رياضية"
-                  description="اختبر معلوماتك في الرياضيات مع مجموعة متنوعة من الألغاز والتحديات"
-                  bgColor="from-subject-math-secondary/80 to-subject-math-secondary/30"
-                  iconColor="bg-white/20 text-white"
-                  icon={<PuzzlePiece className="h-6 w-6" />}
-                  onClick={() => handleCardSelect('puzzles')}
-                />
-                
                 {/* Calculator Card */}
                 <CategoryCard 
                   title="الآلة الحاسبة"
@@ -287,7 +276,6 @@ const Mathematics = () => {
                 </button>
 
                 {selectedComponent === 'assistant' && <MathAIAssistant />}
-                {selectedComponent === 'puzzles' && <MathPuzzles />}
                 {selectedComponent === 'calculator' && <Calculator />}
                 {selectedComponent === 'graph' && <GraphVisualizer />}
                 {selectedComponent === 'mathematicians' && <MathematiciansGallery />}

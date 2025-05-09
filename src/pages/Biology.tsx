@@ -10,12 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Microscope, Leaf, TestTube } from 'lucide-react';
 import BiologyScientists from '@/components/biology/BiologyScientists';
-import BiologyPuzzles from '@/components/biology/BiologyPuzzles';
 import BiologyAIAssistant from '@/components/biology/BiologyAIAssistant';
 
 const Biology = () => {
   const [showMainContent, setShowMainContent] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("puzzles");
+  const [selectedTab, setSelectedTab] = useState("assistant");
   const navigate = useNavigate();
   
   // Floating biology symbols - reduced for performance
@@ -161,33 +160,11 @@ const Biology = () => {
             منصة الأحياء
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف عالم الأحياء من خلال ألغاز تفاعلية، مساعد ذكي، وموسوعة علمية
+            استكشف عالم الأحياء من خلال مساعد ذكي وموسوعة علمية
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ scale: 1.03 }}
-            className="col-span-1"
-          >
-            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
-              <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Leaf className="h-16 w-16 text-subject-biology-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-green">ألغاز الأحياء</h3>
-                <p className="text-white/70 mb-4">اختبر معرفتك بالأحياء من خلال تحديات متنوعة</p>
-                <Button 
-                  onClick={() => setSelectedTab("puzzles")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
-                >
-                  استكشف الألغاز
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -240,7 +217,6 @@ const Biology = () => {
           transition={{ duration: 0.3 }}
           className="glass-card rounded-2xl p-6"
         >
-          {selectedTab === "puzzles" && <BiologyPuzzles />}
           {selectedTab === "assistant" && <BiologyAIAssistant />}
           {selectedTab === "scientists" && <BiologyScientists />}
         </motion.div>

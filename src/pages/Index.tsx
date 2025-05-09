@@ -5,6 +5,7 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EducationalResources from '@/components/EducationalResources';
+import EducationalPlatforms from '@/components/EducationalPlatforms';
 
 const Index = () => {
   return (
@@ -73,6 +74,9 @@ const Index = () => {
             منصة تفاعلية للتعلم الذكي في مجالات العلوم الأساسية
           </motion.p>
         </motion.div>
+        
+        {/* Add the Educational Platforms section */}
+        <EducationalPlatforms />
         
         {/* Add the Educational Resources section */}
         <EducationalResources />

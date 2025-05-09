@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calculator, FlaskConical, User, HelpCircle } from "lucide-react";
 import ChemistryAssistant from '@/components/chemistry/ChemistryAssistant';
-import ChemistryPuzzles from '@/components/chemistry/ChemistryPuzzles';
 import ChemistryCalculations from '@/components/chemistry/ChemistryCalculations';
 import ChemistryScientists from '@/components/chemistry/ChemistryScientists';
 
@@ -62,12 +61,6 @@ const Chemistry = () => {
       icon: <HelpCircle className="w-12 h-12 text-cyan-400" />,
       color: "from-cyan-400/20 to-blue-600/30",
       tab: "assistant"
-    },
-    {
-      title: "ألغاز الكيمياء",
-      icon: <FlaskConical className="w-12 h-12 text-cyan-400" />,
-      color: "from-blue-400/20 to-cyan-600/30",
-      tab: "puzzles"
     }
   ];
   
@@ -213,7 +206,7 @@ const Chemistry = () => {
                   <p className="text-xl text-white/80">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {optionCards.map((card, index) => (
                     <motion.div
                       key={index}
@@ -267,7 +260,6 @@ const Chemistry = () => {
                   {selectedTab === "calculations" && <ChemistryCalculations />}
                   {selectedTab === "scientists" && <ChemistryScientists />}
                   {selectedTab === "assistant" && <ChemistryAssistant />}
-                  {selectedTab === "puzzles" && <ChemistryPuzzles />}
                 </motion.div>
               </div>
             )}
