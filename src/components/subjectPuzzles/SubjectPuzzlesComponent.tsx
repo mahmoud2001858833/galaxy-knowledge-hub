@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,31 +141,36 @@ const SubjectPuzzlesComponent: React.FC = () => {
   const fetchPuzzles = async () => {
     setIsLoading(true);
     try {
+      // Use query without type assertion, just get the raw data
       const { data, error } = await supabase
-        .from('subject_puzzles' as any)
+        .from('subject_puzzles')
         .select('*')
         .eq('subject', selectedSubject)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      // Fix the type issue by explicitly mapping the database response to the Puzzle type
-      const typedPuzzles: Puzzle[] = (data || []).map(item => ({
-        id: item.id,
-        title: item.title,
-        question: item.question,
-        options: item.options,
-        correct_answer: item.correct_answer,
-        difficulty: item.difficulty,
-        points: item.points,
-        image: item.image,
-        created_at: item.created_at,
-        created_by: item.created_by,
-        admin_password: item.admin_password,
-        subject: item.subject
-      }));
-      
-      setPuzzles(typedPuzzles);
+      // Fix the type issue by explicitly checking if data exists and mapping to Puzzle type
+      if (data) {
+        const typedPuzzles: Puzzle[] = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          question: item.question,
+          options: item.options,
+          correct_answer: item.correct_answer,
+          difficulty: item.difficulty,
+          points: item.points,
+          image: item.image,
+          created_at: item.created_at,
+          created_by: item.created_by,
+          admin_password: item.admin_password,
+          subject: item.subject
+        }));
+        
+        setPuzzles(typedPuzzles);
+      } else {
+        setPuzzles([]);
+      }
     } catch (error: any) {
       console.error('Error fetching puzzles:', error);
       toast.error('حدث خطأ أثناء تحميل الألغاز');

@@ -24,30 +24,36 @@ const SubjectPuzzlesList = ({ subject, onRefresh, refreshTrigger }: SubjectPuzzl
   const fetchPuzzles = async () => {
     setIsLoading(true);
     try {
+      // Use query without type assertion, just get the raw data
       const { data, error } = await supabase
-        .from('subject_puzzles' as any)
+        .from('subject_puzzles')
         .select('id, title, question, difficulty, points, created_at, subject')
         .eq('subject', subject)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Transform any data to ensure it matches the Puzzle type
-      const typedPuzzles: Puzzle[] = (data || []).map(item => ({
-        id: item.id,
-        title: item.title,
-        question: item.question,
-        difficulty: item.difficulty,
-        points: item.points,
-        created_at: item.created_at,
-        subject: item.subject,
-        // These are required by the Puzzle type but may not be in our query
-        // So we provide default values
-        options: [],
-        correct_answer: ""
-      }));
-      
-      setPuzzles(typedPuzzles);
+      // Check if data exists before mapping
+      if (data) {
+        // Transform any data to ensure it matches the Puzzle type
+        const typedPuzzles: Puzzle[] = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          question: item.question,
+          difficulty: item.difficulty,
+          points: item.points,
+          created_at: item.created_at,
+          subject: item.subject,
+          // These are required by the Puzzle type but may not be in our query
+          // So we provide default values
+          options: [],
+          correct_answer: ""
+        }));
+        
+        setPuzzles(typedPuzzles);
+      } else {
+        setPuzzles([]);
+      }
     } catch (error: any) {
       console.error('Error fetching puzzles:', error);
       toast.error('فشل في تحميل الألغاز');
@@ -148,8 +154,15 @@ const SubjectPuzzlesList = ({ subject, onRefresh, refreshTrigger }: SubjectPuzzl
                   <div className="space-y-1 text-right flex-1">
                     <CardTitle className="text-lg">{puzzle.title}</CardTitle>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className={`px-2 py-1 rounded-full ${getDifficultyColor(puzzle.difficulty)}`}>
-                        {getDifficultyText(puzzle.difficulty)}
+                      <span className={`px-2 py-1 rounded-full ${
+                        puzzle.difficulty === 'easy' 
+                          ? 'bg-green-900/50 text-green-300' 
+                          : puzzle.difficulty === 'medium' 
+                            ? 'bg-yellow-900/50 text-yellow-300' 
+                            : 'bg-red-900/50 text-red-300'
+                      }`}>
+                        {puzzle.difficulty === 'easy' ? 'سهل' : 
+                         puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب'}
                       </span>
                       <span className={`text-subject-${subject}-primary bg-subject-${subject}-primary/10 px-2 py-1 rounded-full`}>
                         {puzzle.points} نقطة
