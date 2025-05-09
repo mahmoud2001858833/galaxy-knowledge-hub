@@ -25,13 +25,29 @@ const SubjectPuzzlesList = ({ subject, onRefresh, refreshTrigger }: SubjectPuzzl
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('subject_puzzles')
+        .from('subject_puzzles' as any)
         .select('id, title, question, difficulty, points, created_at, subject')
         .eq('subject', subject)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPuzzles(data as Puzzle[] || []);
+      
+      // Transform any data to ensure it matches the Puzzle type
+      const typedPuzzles: Puzzle[] = (data || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        question: item.question,
+        difficulty: item.difficulty,
+        points: item.points,
+        created_at: item.created_at,
+        subject: item.subject,
+        // These are required by the Puzzle type but may not be in our query
+        // So we provide default values
+        options: [],
+        correct_answer: ""
+      }));
+      
+      setPuzzles(typedPuzzles);
     } catch (error: any) {
       console.error('Error fetching puzzles:', error);
       toast.error('فشل في تحميل الألغاز');

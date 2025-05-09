@@ -395,6 +395,51 @@ export type Database = {
         }
         Relationships: []
       }
+      subject_puzzles: {
+        Row: {
+          admin_password: string
+          correct_answer: string
+          created_at: string
+          created_by: string | null
+          difficulty: string
+          id: string
+          image: string | null
+          options: string[]
+          points: number
+          question: string
+          subject: string
+          title: string
+        }
+        Insert: {
+          admin_password?: string
+          correct_answer: string
+          created_at?: string
+          created_by?: string | null
+          difficulty: string
+          id?: string
+          image?: string | null
+          options: string[]
+          points: number
+          question: string
+          subject: string
+          title: string
+        }
+        Update: {
+          admin_password?: string
+          correct_answer?: string
+          created_at?: string
+          created_by?: string | null
+          difficulty?: string
+          id?: string
+          image?: string | null
+          options?: string[]
+          points?: number
+          question?: string
+          subject?: string
+          title?: string
+        }
+        Relationships: []
+      }
       users_profiles: {
         Row: {
           avatar_url: string | null

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,7 +136,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
       
       // Insert into database with returning data to confirm insertion
       const { data, error } = await supabase
-        .from('subject_puzzles')
+        .from('subject_puzzles' as any)
         .insert([
           {
             title: newPuzzle.title,
