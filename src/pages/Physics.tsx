@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -15,7 +14,7 @@ import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
 
 const Physics = () => {
   const [showMainContent, setShowMainContent] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("puzzles");
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
   const navigate = useNavigate();
   
   // Floating physics symbols with reduced animation for performance
@@ -27,6 +26,19 @@ const Physics = () => {
     { symbol: "λ", top: "40%", left: "7%", size: "text-3xl", animationDelay: "2s" },
     { symbol: "∞", top: "50%", left: "95%", size: "text-5xl", animationDelay: "2.5s" }
   ];
+  
+  const renderSelectedComponent = () => {
+    switch(activeComponent) {
+      case 'puzzles':
+        return <PhysicsPuzzles />;
+      case 'assistant':
+        return <PhysicsAIAssistant />;
+      case 'scientists':
+        return <PhysicsScientists />;
+      default:
+        return null;
+    }
+  };
   
   if (!showMainContent) {
     return (
@@ -175,14 +187,14 @@ const Physics = () => {
             transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
+            onClick={() => setActiveComponent('puzzles')}
           >
-            <Card className="h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300">
+            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'puzzles' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                 <Atom className="h-16 w-16 text-subject-physics-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-2 text-glow-purple">ألغاز الفيزياء</h3>
                 <p className="text-white/70 mb-4">اختبر معرفتك بالفيزياء من خلال تحديات متنوعة</p>
                 <Button 
-                  onClick={() => setSelectedTab("puzzles")}
                   className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
                 >
                   استكشف الألغاز
@@ -197,14 +209,14 @@ const Physics = () => {
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
+            onClick={() => setActiveComponent('assistant')}
           >
-            <Card className="h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300">
+            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'assistant' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                 <FlaskConical className="h-16 w-16 text-subject-physics-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-2 text-glow-purple">المساعد الذكي</h3>
                 <p className="text-white/70 mb-4">اسأل المساعد الذكي أي سؤال عن الفيزياء</p>
                 <Button 
-                  onClick={() => setSelectedTab("assistant")}
                   className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
                 >
                   تحدث مع المساعد
@@ -219,14 +231,14 @@ const Physics = () => {
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
+            onClick={() => setActiveComponent('scientists')}
           >
-            <Card className="h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300">
+            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'scientists' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                 <Microscope className="h-16 w-16 text-subject-physics-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-2 text-glow-purple">علماء الفيزياء</h3>
                 <p className="text-white/70 mb-4">تعرف على أبرز علماء الفيزياء عبر التاريخ</p>
                 <Button 
-                  onClick={() => setSelectedTab("scientists")}
                   className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
                 >
                   استكشف العلماء
@@ -236,17 +248,17 @@ const Physics = () => {
           </motion.div>
         </div>
         
-        <motion.div
-          key={selectedTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="glass-card rounded-2xl p-6"
-        >
-          {selectedTab === "puzzles" && <PhysicsPuzzles />}
-          {selectedTab === "assistant" && <PhysicsAIAssistant />}
-          {selectedTab === "scientists" && <PhysicsScientists />}
-        </motion.div>
+        {activeComponent && (
+          <motion.div
+            key={activeComponent}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="glass-card rounded-2xl p-6"
+          >
+            {renderSelectedComponent()}
+          </motion.div>
+        )}
       </main>
       
       <Footer />

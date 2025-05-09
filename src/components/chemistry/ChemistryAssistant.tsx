@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -41,11 +40,12 @@ const ChemistryAssistant = () => {
     setIsTyping(true);
     
     try {
-      // Call Supabase Edge Function for AI response
+      // Call Gemini API via Supabase Edge Function for AI response
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           prompt: input,
-          subject: 'chemistry'
+          subject: 'chemistry',
+          useGemini: true
         }
       });
 

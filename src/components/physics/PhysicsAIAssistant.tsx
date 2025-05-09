@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -49,7 +48,8 @@ const PhysicsAIAssistant = () => {
       const { data: responseData, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           prompt: data.question,
-          subject: 'physics'
+          subject: 'physics',
+          useGemini: true
         }
       });
       
