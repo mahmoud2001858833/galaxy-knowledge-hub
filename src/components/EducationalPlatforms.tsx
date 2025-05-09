@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
-import { Atom, FlaskConical, Function, Dna } from 'lucide-react';
+import { Atom, FlaskConical, Calculator, Dna } from 'lucide-react';
 
 const EducationalPlatforms = () => {
   return (
@@ -59,7 +59,7 @@ const EducationalPlatforms = () => {
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
                 <div className="flex flex-col items-center">
-                  <Function className="w-12 h-12 text-purple-400 mb-3" />
+                  <Calculator className="w-12 h-12 text-purple-400 mb-3" />
                   <h3 className="text-2xl font-bold text-white mb-2">الرياضيات</h3>
                   <p className="text-white/80 text-sm max-w-md">استكشف عالم الأرقام والمعادلات والنظريات الرياضية</p>
                 </div>
