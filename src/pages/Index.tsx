@@ -85,17 +85,22 @@ const Index = () => {
           >
             {/* Mathematics */}
             <Link to="/mathematics">
-              <Card className="h-64 overflow-hidden relative hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-blue-500/20 to-blue-700/30 border-blue-500/20">
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+              <Card className="h-64 overflow-hidden relative hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-1 border-blue-500/20 rounded-2xl">
+                <div className="absolute inset-0">
+                  <img 
+                    src="https://cdn.sotor.com/thumbs/fit630x300/21018/1578422030/%D8%AA%D8%B9%D8%B1%D9%8A%D9%81_%D8%B9%D9%84%D9%85_%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A7%D8%AA.jpg" 
+                    alt="الرياضيات"
+                    className="w-full h-full object-cover opacity-40"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/60 to-blue-900/80" />
                 </div>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10">
+                  <div className="mb-6 p-4 rounded-full bg-blue-900/50 backdrop-blur-sm">
                     <Calculator className="w-12 h-12 text-blue-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">الرياضيات</h3>
-                  <p className="text-white/70 mb-4">استكشف عالم الأرقام والمعادلات</p>
-                  <span className="inline-block px-4 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-full">
+                  <p className="text-white/90 mb-4">استكشف عالم الأرقام والمعادلات</p>
+                  <span className="inline-block px-4 py-1 bg-blue-500/40 text-blue-100 text-sm rounded-full">
                     ابدأ التعلم
                   </span>
                 </CardContent>
@@ -104,17 +109,22 @@ const Index = () => {
             
             {/* Physics */}
             <Link to="/physics">
-              <Card className="h-64 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-500/20 to-purple-700/30 border-purple-500/20">
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+              <Card className="h-64 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 border-purple-500/20 rounded-2xl">
+                <div className="absolute inset-0">
+                  <img 
+                    src="https://modo3.com/thumbs/fit630x300/11168/1630299222/%D8%AA%D8%B9%D8%B1%D9%8A%D9%81_%D8%B9%D9%84%D9%85_%D8%A7%D9%84%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1.jpg" 
+                    alt="الفيزياء"
+                    className="w-full h-full object-cover opacity-40"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/60 to-purple-900/80" />
                 </div>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <div className="mb-6 p-4 rounded-full bg-purple-900/30 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10">
+                  <div className="mb-6 p-4 rounded-full bg-purple-900/50 backdrop-blur-sm">
                     <Atom className="w-12 h-12 text-purple-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">الفيزياء</h3>
-                  <p className="text-white/70 mb-4">تعرف على قوانين الكون والطاقة</p>
-                  <span className="inline-block px-4 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-full">
+                  <p className="text-white/90 mb-4">تعرف على قوانين الكون والطاقة</p>
+                  <span className="inline-block px-4 py-1 bg-purple-500/40 text-purple-100 text-sm rounded-full">
                     ابدأ التعلم
                   </span>
                 </CardContent>
@@ -123,17 +133,22 @@ const Index = () => {
             
             {/* Chemistry */}
             <Link to="/chemistry">
-              <Card className="h-64 overflow-hidden relative hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-cyan-500/20 to-cyan-700/30 border-cyan-500/20">
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+              <Card className="h-64 overflow-hidden relative hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 border-cyan-500/20 rounded-2xl">
+                <div className="absolute inset-0">
+                  <img 
+                    src="https://adminassets.devops.arabiaweather.com/sites/default/files/field/image/chemistry.jpg" 
+                    alt="الكيمياء"
+                    className="w-full h-full object-cover opacity-40"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/60 to-cyan-900/80" />
                 </div>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <div className="mb-6 p-4 rounded-full bg-cyan-900/30 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10">
+                  <div className="mb-6 p-4 rounded-full bg-cyan-900/50 backdrop-blur-sm">
                     <FlaskConical className="w-12 h-12 text-cyan-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">الكيمياء</h3>
-                  <p className="text-white/70 mb-4">اكتشف عالم المركبات والتفاعلات</p>
-                  <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
+                  <p className="text-white/90 mb-4">اكتشف عالم المركبات والتفاعلات</p>
+                  <span className="inline-block px-4 py-1 bg-cyan-500/40 text-cyan-100 text-sm rounded-full">
                     ابدأ التعلم
                   </span>
                 </CardContent>
@@ -142,17 +157,22 @@ const Index = () => {
             
             {/* Biology */}
             <Link to="/biology">
-              <Card className="h-64 overflow-hidden relative hover:border-green-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-green-500/20 to-green-700/30 border-green-500/20">
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+              <Card className="h-64 overflow-hidden relative hover:border-green-400/50 transition-all duration-300 hover:-translate-y-1 border-green-500/20 rounded-2xl">
+                <div className="absolute inset-0">
+                  <img 
+                    src="https://png.pngtree.com/thumb_back/fh260/background/20230704/pngtree-d-rendered-chromosomes-against-a-scientific-backdrop-exploring-life-and-biology-image_3739831.jpg" 
+                    alt="الأحياء"
+                    className="w-full h-full object-cover opacity-40"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/60 to-green-900/80" />
                 </div>
-                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <div className="mb-6 p-4 rounded-full bg-green-900/30 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10">
+                  <div className="mb-6 p-4 rounded-full bg-green-900/50 backdrop-blur-sm">
                     <Leaf className="w-12 h-12 text-green-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">الأحياء</h3>
-                  <p className="text-white/70 mb-4">اكتشف أسرار الحياة والكائنات الحية</p>
-                  <span className="inline-block px-4 py-1 bg-green-500/20 text-green-300 text-sm rounded-full">
+                  <p className="text-white/90 mb-4">اكتشف أسرار الحياة والكائنات الحية</p>
+                  <span className="inline-block px-4 py-1 bg-green-500/40 text-green-100 text-sm rounded-full">
                     ابدأ التعلم
                   </span>
                 </CardContent>

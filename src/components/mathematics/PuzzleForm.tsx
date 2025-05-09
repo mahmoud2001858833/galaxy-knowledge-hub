@@ -141,11 +141,11 @@ const PuzzleForm = ({ onSuccess }: PuzzleFormProps) => {
             points: newPuzzle.points,
             image: newPuzzle.imageUrl || null,
           }
-        ])
-        .select();
+        ]);
       
       if (error) throw error;
       
+      console.log('Puzzle added successfully:', data);
       toast.success('تم إضافة اللغز بنجاح');
       
       // Reset form

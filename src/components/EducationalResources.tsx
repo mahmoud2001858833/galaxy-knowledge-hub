@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Book, FileText, Image, Upload, MessageSquare } from 'lucide-react';
+import { Book, FileText, Image, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from 'framer-motion';
@@ -13,15 +13,15 @@ const EducationalResources = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.7 }}
     >
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold mb-10 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-blue-500">
           مصادر تعليمية
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4 md:px-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 md:px-0">
           {/* Visual Library */}
           <Link to="/visual-library">
-            <Card className="h-32 overflow-hidden relative hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-blue-500/20 to-blue-700/30 border-blue-500/20">
+            <Card className="h-32 overflow-hidden relative hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-blue-500/20 to-blue-700/30 border-blue-500/20 rounded-2xl">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
               </div>
@@ -36,7 +36,7 @@ const EducationalResources = () => {
           
           {/* Scientific Journal */}
           <Link to="/scientific-journal">
-            <Card className="h-32 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-500/20 to-purple-700/30 border-purple-500/20">
+            <Card className="h-32 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-500/20 to-purple-700/30 border-purple-500/20 rounded-2xl">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
               </div>
@@ -51,7 +51,7 @@ const EducationalResources = () => {
           
           {/* Study Organization */}
           <Link to="/study-organization">
-            <Card className="h-32 overflow-hidden relative hover:border-green-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-green-500/20 to-green-700/30 border-green-500/20">
+            <Card className="h-32 overflow-hidden relative hover:border-green-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-green-500/20 to-green-700/30 border-green-500/20 rounded-2xl">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
               </div>
@@ -66,7 +66,7 @@ const EducationalResources = () => {
           
           {/* Chat Rooms */}
           <Link to="/chat-rooms">
-            <Card className="h-32 overflow-hidden relative hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-cyan-500/20 to-cyan-700/30 border-cyan-500/20">
+            <Card className="h-32 overflow-hidden relative hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-cyan-500/20 to-cyan-700/30 border-cyan-500/20 rounded-2xl">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
               </div>

@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PuzzlesList from './PuzzlesList';
 import PuzzleForm from './PuzzleForm';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const MathPuzzleAdmin = () => {
   const [activeTab, setActiveTab] = useState<string>("add");
@@ -16,7 +18,30 @@ const MathPuzzleAdmin = () => {
     setActiveTab("manage");
     // Trigger a refresh of the puzzles list
     setRefreshTrigger(prev => prev + 1);
+    toast.success("تم إضافة اللغز بنجاح!");
   };
+
+  // Listen for Supabase realtime events
+  useEffect(() => {
+    const channel = supabase
+      .channel('puzzles_changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'puzzles' 
+        }, 
+        () => {
+          console.log('New puzzle detected via realtime, refreshing list');
+          setRefreshTrigger(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   
   return (
     <motion.div 
