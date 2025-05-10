@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,15 +43,13 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           setLeaderboard(data as UserProfile[]);
         }
       } else {
-        // Fetch subject-specific leaderboard using direct query
-        // Instead of using the RPC function, we'll use a direct query
+        // Fetch subject-specific leaderboard using a different approach
+        // Use a SQL query to count user_solved_puzzles by user_id for the specific subject
         const { data: solvedData, error: solvedError } = await supabase
-          .from('user_solved_puzzles')
-          .select('user_id, count(*)')
-          .eq('subject', subject)
-          .group('user_id')
-          .order('count', { ascending: false })
-          .limit(10);
+          .rpc(
+            'get_subject_leaderboard',
+            { subject_name: subject }
+          );
 
         if (solvedError) {
           console.error('Error fetching subject leaderboard:', solvedError);
@@ -58,7 +57,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           // Fall back to raw query approach
           const { data: rawData, error: rawError } = await supabase
             .from('user_solved_puzzles')
-            .select('user_id')
+            .select('user_id, puzzle_id')
             .eq('subject', subject);
             
           if (rawError) throw rawError;
@@ -68,7 +67,9 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             const userCounts: Record<string, number> = {};
             
             rawData.forEach(item => {
-              const userId = item.user_id;
+              if (!item || typeof item !== 'object') return;
+              
+              const userId = 'user_id' in item ? item.user_id : null;
               if (userId) {
                 if (!userCounts[userId]) {
                   userCounts[userId] = 0;
@@ -123,7 +124,10 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           }
         } else if (solvedData) {
           // Get user profiles for the solved data
-          const userIds = solvedData.map(item => item.user_id);
+          const userIds = solvedData.map(item => {
+            if (!item || typeof item !== 'object') return null;
+            return 'user_id' in item ? item.user_id : null;
+          }).filter(Boolean) as string[];
           
           if (userIds.length > 0) {
             const { data: profiles, error: profilesError } = await supabase
@@ -136,10 +140,18 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             if (profiles) {
               // Merge the profiles with the solved count
               const leaderboardData = profiles.map(profile => {
-                const solvedItem = solvedData.find(item => item.user_id === profile.id);
+                const solvedItem = solvedData.find(item => {
+                  if (!item || typeof item !== 'object') return false;
+                  return 'user_id' in item && item.user_id === profile.id;
+                });
+                
+                const count = solvedItem && typeof solvedItem === 'object' && 'count' in solvedItem 
+                  ? (typeof solvedItem.count === 'string' ? parseInt(solvedItem.count) : solvedItem.count) 
+                  : 0;
+                
                 return {
                   ...profile,
-                  subject_solved_count: solvedItem ? parseInt(solvedItem.count as any) : 0
+                  subject_solved_count: count
                 };
               });
               
