@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -5,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Award, Star, StarHalf, CircleCheck, Trophy, FrownIcon, Clock } from 'lucide-react';
 import SubjectPuzzleAdmin from './SubjectPuzzleAdmin';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from '@/hooks/use-toast';
 import PuzzleDifficultyLevel from './PuzzleDifficultyLevel';
 import LeaderboardSidebar from './LeaderboardSidebar';
+import { useNavigate } from 'react-router-dom';
 
 // Types
 export type Puzzle = {
@@ -46,6 +48,11 @@ const SubjectPuzzlesComponent = () => {
   const [solvedPuzzles, setSolvedPuzzles] = useState<string[]>([]);
   const [retryPenalty, setRetryPenalty] = useState<boolean>(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
+  const [answerResult, setAnswerResult] = useState<{isCorrect: boolean | null, message: string | null}>({
+    isCorrect: null, 
+    message: null
+  });
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Get current user
@@ -60,6 +67,14 @@ const SubjectPuzzlesComponent = () => {
       
       if (currentUser) {
         fetchUserProfile(currentUser.id);
+      } else {
+        // Redirect to auth if not logged in
+        navigate('/auth');
+        toast({
+          title: "تسجيل الدخول مطلوب",
+          description: "يرجى تسجيل الدخول للوصول إلى الألغاز",
+          variant: "destructive"
+        });
       }
     });
     
@@ -80,6 +95,8 @@ const SubjectPuzzlesComponent = () => {
       } else {
         setUserProfile(null);
         setSolvedPuzzles([]);
+        // Redirect to auth if not logged in
+        navigate('/auth');
       }
     });
     
@@ -88,7 +105,7 @@ const SubjectPuzzlesComponent = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [subject, difficultyFilter]);
+  }, [subject, difficultyFilter, navigate, toast]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -201,13 +218,25 @@ const SubjectPuzzlesComponent = () => {
     setSubject(newSubject);
     setDifficultyFilter(null); // Reset difficulty filter when changing subjects
     setSelectedPuzzle(null);
+    setAnswerResult({ isCorrect: null, message: null });
   };
   
   // Handle selecting a puzzle
   const handlePuzzleSelect = (puzzle: Puzzle) => {
+    if (!user) {
+      toast({
+        title: "تسجيل الدخول مطلوب",
+        description: "يرجى تسجيل الدخول لحل الألغاز",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    
     setSelectedPuzzle(puzzle);
     setSelectedOption(null);
     setRetryPenalty(solvedPuzzles.includes(puzzle.id));
+    setAnswerResult({ isCorrect: null, message: null });
   };
   
   // Handle submitting an answer
@@ -219,6 +248,7 @@ const SubjectPuzzlesComponent = () => {
           description: "لحفظ تقدمك والحصول على النقاط",
           variant: "destructive"
         });
+        navigate('/auth');
       }
       return;
     }
@@ -235,6 +265,11 @@ const SubjectPuzzlesComponent = () => {
         // Update solved puzzles list locally
         const updatedSolvedPuzzles = [...solvedPuzzles, selectedPuzzle.id];
         setSolvedPuzzles(updatedSolvedPuzzles);
+        
+        setAnswerResult({ 
+          isCorrect: true, 
+          message: `إجابة صحيحة! تم إضافة ${selectedPuzzle.points} نقاط إلى حسابك.` 
+        });
         
         toast({
           title: "إجابة صحيحة!",
@@ -288,6 +323,11 @@ const SubjectPuzzlesComponent = () => {
         }
       } else {
         // Already solved before
+        setAnswerResult({
+          isCorrect: true,
+          message: "إجابة صحيحة! لقد قمت بحل هذا اللغز من قبل."
+        });
+        
         toast({
           title: "إجابة صحيحة!",
           description: "لقد قمت بحل هذا اللغز من قبل.",
@@ -296,6 +336,11 @@ const SubjectPuzzlesComponent = () => {
       }
     } else {
       // Incorrect answer
+      setAnswerResult({
+        isCorrect: false,
+        message: retryPenalty ? "إجابة خاطئة! تم خصم 5 نقاط لإعادة المحاولة." : "إجابة خاطئة. حاول مرة أخرى."
+      });
+      
       if (retryPenalty && user) {
         // Apply penalty for retry
         pointsAdjustment = -5;
@@ -339,7 +384,8 @@ const SubjectPuzzlesComponent = () => {
       setTimeout(() => {
         setSelectedPuzzle(null);
         setSelectedOption(null);
-      }, 2000);
+        setAnswerResult({ isCorrect: null, message: null });
+      }, 3000);
     }
   };
 
@@ -547,7 +593,10 @@ const SubjectPuzzlesComponent = () => {
                 <div className="col-span-full bg-white/5 rounded-2xl p-6 border border-white/10">
                   <div className="mb-6">
                     <button 
-                      onClick={() => setSelectedPuzzle(null)}
+                      onClick={() => {
+                        setSelectedPuzzle(null); 
+                        setAnswerResult({ isCorrect: null, message: null });
+                      }}
                       className={`${getSubjectColor().text} hover:underline mb-4 text-right`}
                     >
                       &larr; العودة إلى الألغاز
@@ -614,6 +663,23 @@ const SubjectPuzzlesComponent = () => {
                       </div>
                     ))}
                   </div>
+                  
+                  {answerResult.isCorrect !== null && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
+                        answerResult.isCorrect ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'
+                      }`}
+                    >
+                      {answerResult.isCorrect ? (
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                      ) : (
+                        <FrownIcon className="w-5 h-5 text-red-400" />
+                      )}
+                      <p>{answerResult.message}</p>
+                    </motion.div>
+                  )}
                   
                   <Button 
                     className={`${getSubjectColor().primary} hover:${getSubjectColor().primary}/80 text-white w-full`}
@@ -683,50 +749,25 @@ const SubjectPuzzlesComponent = () => {
                     <div className="text-center py-12 text-white/70">
                       {difficultyFilter ? 
                         `لا توجد ألغاز من مستوى ${difficultyFilter} لمادة ${subject} حالياً` : 
-                        `لا توج�� ألغاز متاحة لمادة ${subject} حالياً`}
+                        `لا توجد ألغاز متاحة لمادة ${subject} حالياً`}
                     </div>
                   )}
                 </>
               )}
             </div>
 
-            {/* Admin Panel - shown if admin is logged in or super admin */}
+            {/* Admin Panel if needed */}
             {(isAdmin || isSuperAdmin) && (
-              <SubjectPuzzleAdmin
-                subject={subject}
-                onSuccess={() => {
-                  fetchPuzzles();
-                  toast({
-                    title: "تم تحديث الألغاز",
-                    description: "تم تحديث قائمة الألغاز بنجاح"
-                  });
-                }}
-              />
-            )}
-
-            {/* Admin Login Button - only shown if not admin and not super admin */}
-            {!isAdmin && !isSuperAdmin && (
-              <motion.div
-                className="text-center mt-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const password = prompt('أدخل كلمة مرور المشرف');
-                    if (password) verifyAdminPassword(password);
-                  }}
-                  className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
-                >
-                  تسجيل الدخول كمشرف
-                </Button>
-              </motion.div>
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+                <SubjectPuzzleAdmin 
+                  subject={subject} 
+                  onPuzzleAdded={fetchPuzzles}
+                />
+              </div>
             )}
           </div>
-
-          {/* Leaderboard Sidebar */}
+          
+          {/* Leaderboard sidebar */}
           {showLeaderboard && (
             <LeaderboardSidebar subject={subject} />
           )}

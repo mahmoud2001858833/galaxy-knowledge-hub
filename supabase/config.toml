@@ -30,3 +30,4 @@ enabled = true
 
 [functions.insert_solved_puzzle]
 verify_jwt = true
+

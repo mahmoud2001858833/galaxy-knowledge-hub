@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Award, User, CircleDot } from 'lucide-react';
+import { Award, User, CircleDot, Trophy, Medal, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { UserProfile } from './SubjectPuzzlesComponent';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface LeaderboardSidebarProps {
   subject: string;
@@ -14,29 +15,79 @@ interface LeaderboardSidebarProps {
 const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [leaderboardType, setLeaderboardType] = useState<'global' | 'subject'>('global');
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [subject]);
+  }, [subject, leaderboardType]);
 
   const fetchLeaderboard = async () => {
     try {
       setIsLoading(true);
-      // Fetch user profiles ordered by score
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('score', { ascending: false })
-        .limit(10);
+      
+      if (leaderboardType === 'global') {
+        // Fetch global leaderboard across all subjects
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('score', { ascending: false })
+          .limit(10);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data) {
-        setLeaderboard(data as UserProfile[]);
+        if (data) {
+          setLeaderboard(data as UserProfile[]);
+        }
+      } else {
+        // Fetch subject-specific leaderboard
+        // First get the users who have solved puzzles in this subject and count them
+        const { data: solvedData, error: solvedError } = await supabase
+          .from('user_solved_puzzles')
+          .select('user_id, count(*)')
+          .eq('subject', subject)
+          .group('user_id')
+          .order('count', { ascending: false })
+          .limit(10);
+
+        if (solvedError) throw solvedError;
+
+        if (solvedData && solvedData.length > 0) {
+          // Now get the profiles for these users
+          const userIds = solvedData.map(item => item.user_id);
+          
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+            
+          if (profilesError) throw profilesError;
+          
+          if (profiles) {
+            // Merge the profiles with the solved count
+            const leaderboardData = profiles.map(profile => {
+              const solvedItem = solvedData.find(item => item.user_id === profile.id);
+              return {
+                ...profile,
+                subject_solved_count: solvedItem ? parseInt(solvedItem.count as any) : 0
+              };
+            });
+            
+            // Sort by subject-specific solved count
+            leaderboardData.sort((a, b) => b.subject_solved_count - a.subject_solved_count);
+            
+            setLeaderboard(leaderboardData as any);
+          }
+        } else {
+          setLeaderboard([]);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching leaderboard:', error);
-      toast.error("خطأ في تحميل قائمة المتصدرين");
+      toast({
+        title: "خطأ في تحميل قائمة المتصدرين",
+        description: error.message,
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -48,49 +99,54 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
         return {
           primary: 'bg-subject-physics-primary',
           text: 'text-subject-physics-primary',
-          glow: 'shadow-glow-purple'
+          glow: 'shadow-glow-purple',
+          border: 'border-subject-physics-primary/30'
         };
       case 'chemistry':
         return {
           primary: 'bg-subject-chemistry-primary',
           text: 'text-subject-chemistry-primary',
-          glow: 'shadow-glow-blue'
+          glow: 'shadow-glow-blue',
+          border: 'border-subject-chemistry-primary/30'
         };
       case 'biology':
         return {
           primary: 'bg-subject-biology-primary',
           text: 'text-subject-biology-primary',
-          glow: 'shadow-glow-green'
+          glow: 'shadow-glow-green',
+          border: 'border-subject-biology-primary/30'
         };
       case 'mathematics':
         return {
           primary: 'bg-subject-mathematics-primary',
           text: 'text-subject-mathematics-primary',
-          glow: 'shadow-glow-orange'
+          glow: 'shadow-glow-orange',
+          border: 'border-subject-mathematics-primary/30'
         };
       default:
         return {
           primary: 'bg-blue-600',
           text: 'text-blue-500',
-          glow: 'shadow-glow-blue'
+          glow: 'shadow-glow-blue',
+          border: 'border-blue-500/30'
         };
     }
   };
 
-  const colors = getSubjectColor();
-
-  const getMedalColor = (index: number) => {
+  const getMedalIcon = (index: number) => {
     switch (index) {
       case 0:
-        return 'text-yellow-400';
+        return <Crown className="h-6 w-6 text-yellow-400" />;
       case 1:
-        return 'text-gray-400';
+        return <Medal className="h-6 w-6 text-gray-400" />;
       case 2:
-        return 'text-amber-600';
+        return <Medal className="h-6 w-6 text-amber-600" />;
       default:
-        return 'text-white/60';
+        return <Trophy className="h-5 w-5 text-white/60" />;
     }
   };
+
+  const colors = getSubjectColor();
 
   return (
     <motion.div
@@ -98,11 +154,32 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
       animate={{ opacity: 1, x: 0 }}
       className="lg:w-1/4"
     >
-      <Card className="bg-white/5 backdrop-blur-sm border-white/10 sticky top-4">
+      <Card className={`bg-white/5 backdrop-blur-sm ${colors.border} sticky top-4`}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white">المتصدرون</h3>
             <Award className={`h-6 w-6 ${colors.text}`} />
+          </div>
+          
+          <div className="mb-4">
+            <Tabs 
+              defaultValue="global" 
+              value={leaderboardType} 
+              onValueChange={(value) => setLeaderboardType(value as 'global' | 'subject')}
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-2 mb-2">
+                <TabsTrigger value="global" className={`data-[state=active]:${colors.primary}`}>
+                  عام
+                </TabsTrigger>
+                <TabsTrigger value="subject" className={`data-[state=active]:${colors.primary}`}>
+                  {subject === 'physics' ? 'الفيزياء' : 
+                   subject === 'chemistry' ? 'الكيمياء' : 
+                   subject === 'biology' ? 'الأحياء' : 
+                   subject === 'mathematics' ? 'الرياضيات' : 'المادة'}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
           {isLoading ? (
@@ -119,12 +196,12 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`flex items-center p-2 rounded-lg ${
-                    index < 3 ? `${colors.primary}/20 border border-${colors.primary}/30` : 'bg-white/5'
+                  className={`flex items-center p-3 rounded-lg ${
+                    index < 3 ? `${colors.primary}/20 ${colors.border}` : 'bg-white/5'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${getMedalColor(index)}`}>
-                    {index + 1}
+                  <div className="mr-2 flex items-center justify-center">
+                    {getMedalIcon(index)}
                   </div>
                   
                   <div className="relative mx-2">
@@ -148,10 +225,19 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                   
                   <div className="flex-1 mr-2">
                     <p className="font-medium text-white">{user.username}</p>
-                    <div className="flex items-center text-xs text-white/70">
-                      <span>{user.score} نقطة</span>
-                      <span className="mx-1">•</span>
-                      <span>{user.solved_puzzles || 0} لغز</span>
+                    <div className="flex items-center gap-2 text-xs text-white/70">
+                      {leaderboardType === 'global' ? (
+                        <>
+                          <span>{user.score} نقطة</span>
+                          <span className="mx-1">•</span>
+                          <span>{user.solved_puzzles || 0} لغز</span>
+                        </>
+                      ) : (
+                        <span>{(user as any).subject_solved_count} لغز في {subject === 'physics' ? 'الفيزياء' : 
+                         subject === 'chemistry' ? 'الكيمياء' : 
+                         subject === 'biology' ? 'الأحياء' : 
+                         subject === 'mathematics' ? 'الرياضيات' : 'المادة'}</span>
+                      )}
                     </div>
                   </div>
                 </motion.li>
@@ -159,9 +245,20 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             </ul>
           ) : (
             <div className="text-center py-10 text-white/70">
-              لا يوجد متصدرون حاليًا
+              {leaderboardType === 'global' ? 
+                'لا يوجد متصدرون حاليًا' : 
+                `لا يوجد متصدرون في ${subject === 'physics' ? 'الفيزياء' : 
+                 subject === 'chemistry' ? 'الكيمياء' : 
+                 subject === 'biology' ? 'الأحياء' : 
+                 subject === 'mathematics' ? 'الرياضيات' : 'المادة'} حاليًا`}
             </div>
           )}
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-white/60">
+              سجل دخولك وحل الألغاز لتظهر في قائمة المتصدرين
+            </p>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

@@ -1,6 +1,6 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.14.0";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,24 +8,43 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: req.headers.get("Authorization")! },
+        },
+      }
     );
 
-    const { p_user_id, p_puzzle_id, p_subject } = await req.json();
+    // Get user ID from JWT
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
 
-    if (!p_user_id || !p_puzzle_id || !p_subject) {
+    if (!user) {
       return new Response(
-        JSON.stringify({
-          error: "Missing required parameters",
-        }),
+        JSON.stringify({ error: "حدث خطأ في التحقق من المستخدم" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get the puzzle data from the request
+    const { puzzle_id, subject } = await req.json();
+
+    if (!puzzle_id || !subject) {
+      return new Response(
+        JSON.stringify({ error: "يرجى توفير معرف اللغز والمادة" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -33,30 +52,44 @@ serve(async (req) => {
       );
     }
 
-    // Insert the solved puzzle record
-    const { data, error } = await supabaseClient
+    // Insert into user_solved_puzzles table
+    const { data: insertData, error: insertError } = await supabaseClient
       .from("user_solved_puzzles")
       .insert({
-        user_id: p_user_id,
-        puzzle_id: p_puzzle_id,
-        subject: p_subject,
+        user_id: user.id,
+        puzzle_id: puzzle_id,
+        subject: subject,
       })
       .select();
 
-    if (error) {
-      console.error("Error inserting solved puzzle:", error);
-      throw error;
+    if (insertError) {
+      // Check if it's a duplicate entry
+      if (insertError.code === "23505") { // Unique violation
+        return new Response(
+          JSON.stringify({ message: "تم حل هذا اللغز مسبقًا" }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      throw insertError;
     }
 
+    // Return success response
     return new Response(
-      JSON.stringify({ success: true, data }),
+      JSON.stringify({
+        message: "تم تسجيل الحل بنجاح",
+        data: insertData,
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
-    console.error("Error processing request:", error);
+    console.error("Error:", error.message);
     
     return new Response(
       JSON.stringify({ error: error.message }),
