@@ -243,20 +243,17 @@ const SubjectPuzzlesComponent = () => {
         });
         
         try {
-          // Save that this user solved this puzzle using raw SQL through RPC
-          const { error: insertError } = await supabase.rpc('insert_solved_puzzle', {
-            p_user_id: user.id,
-            p_puzzle_id: selectedPuzzle.id,
-            p_subject: selectedPuzzle.subject
-          });
+          // Save that this user solved this puzzle using direct insert to the table
+          const { error: insertError } = await supabase
+            .from('user_solved_puzzles')
+            .insert({
+              user_id: user.id,
+              puzzle_id: selectedPuzzle.id,
+              subject: selectedPuzzle.subject
+            });
           
           if (insertError) {
-            // If RPC fails, try with direct insert as fallback
-            await supabase.rpc('insert_solved_puzzle_direct', {
-              p_user_id: user.id,
-              p_puzzle_id: selectedPuzzle.id,
-              p_subject: selectedPuzzle.subject
-            });
+            console.error('Error saving solved puzzle:', insertError);
           }
           
           // Update user profile in database
