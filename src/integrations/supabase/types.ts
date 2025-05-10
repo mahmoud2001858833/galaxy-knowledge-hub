@@ -440,6 +440,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_solved_puzzles: {
+        Row: {
+          id: string
+          puzzle_id: string
+          solved_at: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          puzzle_id: string
+          solved_at?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          puzzle_id?: string
+          solved_at?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users_profiles: {
         Row: {
           avatar_url: string | null

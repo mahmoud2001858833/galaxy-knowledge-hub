@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -114,12 +113,17 @@ const SubjectPuzzlesComponent = () => {
         
         setUserProfile(profile);
         
-        // Fetch the solved puzzles IDs for this user
-        const { data: solvedData } = await supabase
+        // Fetch the solved puzzles IDs for this user using custom query
+        const { data: solvedData, error: solvedError } = await supabase
           .from('user_solved_puzzles')
           .select('puzzle_id')
           .eq('user_id', userId);
           
+        if (solvedError) {
+          console.error('Error fetching solved puzzles:', solvedError);
+          return;
+        }
+        
         const solvedIds = solvedData?.map(item => item.puzzle_id) || [];
         setSolvedPuzzles(solvedIds);
         
@@ -239,14 +243,21 @@ const SubjectPuzzlesComponent = () => {
         });
         
         try {
-          // Save that this user solved this puzzle
-          await supabase
-            .from('user_solved_puzzles')
-            .insert({
-              user_id: user.id,
-              puzzle_id: selectedPuzzle.id,
-              subject: selectedPuzzle.subject
+          // Save that this user solved this puzzle using raw SQL through RPC
+          const { error: insertError } = await supabase.rpc('insert_solved_puzzle', {
+            p_user_id: user.id,
+            p_puzzle_id: selectedPuzzle.id,
+            p_subject: selectedPuzzle.subject
+          });
+          
+          if (insertError) {
+            // If RPC fails, try with direct insert as fallback
+            await supabase.rpc('insert_solved_puzzle_direct', {
+              p_user_id: user.id,
+              p_puzzle_id: selectedPuzzle.id,
+              p_subject: selectedPuzzle.subject
             });
+          }
           
           // Update user profile in database
           // Update points
@@ -675,7 +686,7 @@ const SubjectPuzzlesComponent = () => {
                     <div className="text-center py-12 text-white/70">
                       {difficultyFilter ? 
                         `لا توجد ألغاز من مستوى ${difficultyFilter} لمادة ${subject} حالياً` : 
-                        `لا توجد ألغاز متاحة لمادة ${subject} حالياً`}
+                        `لا توج�� ألغاز متاحة لمادة ${subject} حالياً`}
                     </div>
                   )}
                 </>

@@ -1,5 +1,32 @@
 
 project_id = "esifpjjehdnpkhyilctv"
 
-[functions.ai-assistant]
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+[storage]
+enabled = true
+
+[realtime]
+enabled = true
+
+[functions.insert_solved_puzzle]
 verify_jwt = true
