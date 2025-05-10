@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -761,7 +760,7 @@ const SubjectPuzzlesComponent = () => {
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6">
                 <SubjectPuzzleAdmin 
                   subject={subject} 
-                  onPuzzleAdded={fetchPuzzles}
+                  onSuccess={fetchPuzzles}
                 />
               </div>
             )}

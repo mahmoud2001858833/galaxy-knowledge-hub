@@ -40,45 +40,53 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
         }
       } else {
         // Fetch subject-specific leaderboard
-        // First get the users who have solved puzzles in this subject and count them
+        // First get the users who have solved puzzles in this subject
         const { data: solvedData, error: solvedError } = await supabase
-          .from('user_solved_puzzles')
-          .select('user_id, count(*)')
-          .eq('subject', subject)
-          .group('user_id')
-          .order('count', { ascending: false })
+          .rpc('get_subject_leaderboard', { subject_name: subject })
           .limit(10);
 
-        if (solvedError) throw solvedError;
-
-        if (solvedData && solvedData.length > 0) {
-          // Now get the profiles for these users
-          const userIds = solvedData.map(item => item.user_id);
+        if (solvedError) {
+          // Fall back to raw SQL query approach
+          const { data: rawData, error: rawError } = await supabase
+            .from('user_solved_puzzles')
+            .select('user_id, count(*)')
+            .eq('subject', subject)
+            .order('count', { ascending: false })
+            .limit(10);
+            
+          if (rawError) throw rawError;
           
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', userIds);
+          if (rawData && rawData.length > 0) {
+            // Now get the profiles for these users
+            const userIds = rawData.map(item => item.user_id);
             
-          if (profilesError) throw profilesError;
-          
-          if (profiles) {
-            // Merge the profiles with the solved count
-            const leaderboardData = profiles.map(profile => {
-              const solvedItem = solvedData.find(item => item.user_id === profile.id);
-              return {
-                ...profile,
-                subject_solved_count: solvedItem ? parseInt(solvedItem.count as any) : 0
-              };
-            });
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', userIds);
+              
+            if (profilesError) throw profilesError;
             
-            // Sort by subject-specific solved count
-            leaderboardData.sort((a, b) => b.subject_solved_count - a.subject_solved_count);
-            
-            setLeaderboard(leaderboardData as any);
+            if (profiles) {
+              // Merge the profiles with the solved count
+              const leaderboardData = profiles.map(profile => {
+                const solvedItem = rawData.find(item => item.user_id === profile.id);
+                return {
+                  ...profile,
+                  subject_solved_count: solvedItem ? parseInt(solvedItem.count as any) : 0
+                };
+              });
+              
+              // Sort by subject-specific solved count
+              leaderboardData.sort((a, b) => b.subject_solved_count - a.subject_solved_count);
+              
+              setLeaderboard(leaderboardData as any);
+            }
+          } else {
+            setLeaderboard([]);
           }
-        } else {
-          setLeaderboard([]);
+        } else if (solvedData) {
+          setLeaderboard(solvedData as any);
         }
       }
     } catch (error: any) {

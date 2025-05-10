@@ -12,20 +12,28 @@ import { supabase } from '@/integrations/supabase/client';
 interface SubjectPuzzleAdminProps {
   subject: string;
   onSuccess?: () => void;
+  onPuzzleAdded?: () => Promise<void>;
 }
 
-const SubjectPuzzleAdmin = ({ subject, onSuccess }: SubjectPuzzleAdminProps) => {
+const SubjectPuzzleAdmin = ({ subject, onSuccess, onPuzzleAdded }: SubjectPuzzleAdminProps) => {
   const [activeTab, setActiveTab] = useState<string>("add");
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   
-  const handlePuzzleAdded = () => {
+  const handlePuzzleAdded = async () => {
     // Switch to the manage tab after adding
     setActiveTab("manage");
     // Trigger a refresh of the puzzles list
     setRefreshTrigger(prev => prev + 1);
+    
+    // Call both callbacks if provided
     if (onSuccess) {
       onSuccess();
     }
+    
+    if (onPuzzleAdded) {
+      await onPuzzleAdded();
+    }
+    
     toast.success("تم إضافة اللغز بنجاح!");
   };
 
@@ -42,8 +50,13 @@ const SubjectPuzzleAdmin = ({ subject, onSuccess }: SubjectPuzzleAdminProps) => 
         () => {
           console.log('New puzzle detected via realtime, refreshing list');
           setRefreshTrigger(prev => prev + 1);
+          
           if (onSuccess) {
             onSuccess();
+          }
+          
+          if (onPuzzleAdded) {
+            onPuzzleAdded();
           }
         }
       )
@@ -52,7 +65,7 @@ const SubjectPuzzleAdmin = ({ subject, onSuccess }: SubjectPuzzleAdminProps) => 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [onSuccess]);
+  }, [onSuccess, onPuzzleAdded]);
   
   return (
     <motion.div 

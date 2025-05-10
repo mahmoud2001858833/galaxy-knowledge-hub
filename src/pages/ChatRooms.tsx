@@ -100,18 +100,23 @@ const ChatRooms = () => {
           table: 'group_messages'
         } as any,
         (payload) => {
-          // Check if user is part of this group chat
-          checkIfUserInGroup(payload.new.chat_id).then(isInGroup => {
-            if (isInGroup) {
-              if (document.hidden) {
-                setHasNewMessages(true);
-                playNotificationSound();
+          // Use the correct property accessor with type checking
+          const chatId = payload.new && typeof payload.new === 'object' ? payload.new.chat_id : null;
+          
+          if (chatId) {
+            // Check if user is part of this group chat
+            checkIfUserInGroup(chatId).then(isInGroup => {
+              if (isInGroup) {
+                if (document.hidden) {
+                  setHasNewMessages(true);
+                  playNotificationSound();
+                }
+                
+                // Refresh page data in realtime
+                refreshMessages();
               }
-              
-              // Refresh page data in realtime
-              refreshMessages();
-            }
-          });
+            });
+          }
         }
       )
       .subscribe();
@@ -191,7 +196,7 @@ const ChatRooms = () => {
       // البحث عن المستخدم بواسطة البريد الإلكتروني
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username')
         .ilike('username', contactEmail);
         
       if (userError) throw userError;
@@ -201,7 +206,13 @@ const ChatRooms = () => {
         return;
       }
       
+      // Safely access the user data
       const contactUser = userData[0];
+      
+      if (!contactUser || !contactUser.id) {
+        setErrorMessage('بيانات المستخدم غير صالحة');
+        return;
+      }
       
       // التأكد من أن المستخدم لا يضيف نفسه
       if (contactUser.id === userId) {
