@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Award, Star, StarHalf, CircleCheck } from 'lucide-react';
+import { Award, Star, StarHalf, CircleCheck, Trophy, FrownIcon, Clock } from 'lucide-react';
 import SubjectPuzzleAdmin from './SubjectPuzzleAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,11 +40,121 @@ const SubjectPuzzlesComponent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
+  const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [solvedPuzzles, setSolvedPuzzles] = useState<string[]>([]);
+  const [retryPenalty, setRetryPenalty] = useState<boolean>(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
   
   useEffect(() => {
+    // Get current user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      
+      // Check for super admin
+      if (currentUser?.email === 'jowmahmoud6@gmail.com') {
+        setIsSuperAdmin(true);
+      }
+      
+      if (currentUser) {
+        fetchUserProfile(currentUser.id);
+      }
+    });
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      
+      // Check for super admin
+      if (currentUser?.email === 'jowmahmoud6@gmail.com') {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(false);
+      }
+      
+      if (currentUser) {
+        fetchUserProfile(currentUser.id);
+      } else {
+        setUserProfile(null);
+        setSolvedPuzzles([]);
+      }
+    });
+    
     fetchPuzzles();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [subject, difficultyFilter]);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      if (data) {
+        // We got a profile, use it
+        const profile: UserProfile = {
+          id: data.id,
+          username: data.username,
+          score: data.score || 0,
+          solved_puzzles: data.solved_puzzles || 0
+        };
+        
+        setUserProfile(profile);
+        
+        // Fetch the solved puzzles IDs for this user
+        const { data: solvedData } = await supabase
+          .from('user_solved_puzzles')
+          .select('puzzle_id')
+          .eq('user_id', userId);
+          
+        const solvedIds = solvedData?.map(item => item.puzzle_id) || [];
+        setSolvedPuzzles(solvedIds);
+        
+      } else {
+        // Create a new profile if not exists
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            username: 'User',
+            score: 0,
+            solved_puzzles: 0
+          })
+          .select()
+          .single();
+          
+        if (createError) throw createError;
+        
+        if (newProfile) {
+          const profile: UserProfile = {
+            id: newProfile.id,
+            username: newProfile.username,
+            score: newProfile.score || 0,
+            solved_puzzles: newProfile.solved_puzzles || 0
+          };
+          
+          setUserProfile(profile);
+          setSolvedPuzzles([]);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+  
   const fetchPuzzles = async () => {
     setIsLoading(true);
     try {
@@ -86,6 +196,143 @@ const SubjectPuzzlesComponent = () => {
   const handleSubjectChange = (newSubject: string) => {
     setSubject(newSubject);
     setDifficultyFilter(null); // Reset difficulty filter when changing subjects
+    setSelectedPuzzle(null);
+  };
+  
+  // Handle selecting a puzzle
+  const handlePuzzleSelect = (puzzle: Puzzle) => {
+    setSelectedPuzzle(puzzle);
+    setSelectedOption(null);
+    setRetryPenalty(solvedPuzzles.includes(puzzle.id));
+  };
+  
+  // Handle submitting an answer
+  const handleSubmitAnswer = async () => {
+    if (!selectedPuzzle || !selectedOption || !user) {
+      if (!user) {
+        toast({
+          title: "يرجى تسجيل الدخول أولاً",
+          description: "لحفظ تقدمك والحصول على النقاط",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+    
+    const isCorrect = selectedOption === selectedPuzzle.correct_answer;
+    const puzzleAlreadySolved = solvedPuzzles.includes(selectedPuzzle.id);
+    let pointsAdjustment = 0;
+    
+    if (isCorrect) {
+      if (!puzzleAlreadySolved) {
+        // First time solving this puzzle
+        pointsAdjustment = selectedPuzzle.points;
+        
+        // Update solved puzzles list locally
+        const updatedSolvedPuzzles = [...solvedPuzzles, selectedPuzzle.id];
+        setSolvedPuzzles(updatedSolvedPuzzles);
+        
+        toast({
+          title: "إجابة صحيحة!",
+          description: `تم إضافة ${selectedPuzzle.points} نقاط إلى حسابك.`,
+          variant: "default"
+        });
+        
+        try {
+          // Save that this user solved this puzzle
+          await supabase
+            .from('user_solved_puzzles')
+            .insert({
+              user_id: user.id,
+              puzzle_id: selectedPuzzle.id,
+              subject: selectedPuzzle.subject
+            });
+          
+          // Update user profile in database
+          // Update points
+          const { error } = await supabase.rpc('adjust_user_score', {
+            user_id: user.id,
+            points_adjustment: pointsAdjustment
+          });
+          
+          if (error) throw error;
+          
+          // Update solved puzzles counter
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ 
+              solved_puzzles: (userProfile?.solved_puzzles || 0) + 1 
+            })
+            .eq('id', user.id);
+            
+          if (updateError) throw updateError;
+          
+          // Update local user profile
+          if (userProfile) {
+            setUserProfile({
+              ...userProfile,
+              score: (userProfile.score || 0) + pointsAdjustment,
+              solved_puzzles: (userProfile.solved_puzzles || 0) + 1
+            });
+          }
+        } catch (error: any) {
+          console.error('Error updating score:', error);
+        }
+      } else {
+        // Already solved before
+        toast({
+          title: "إجابة صحيحة!",
+          description: "لقد قمت بحل هذا اللغز من قبل.",
+          variant: "default"
+        });
+      }
+    } else {
+      // Incorrect answer
+      if (retryPenalty && user) {
+        // Apply penalty for retry
+        pointsAdjustment = -5;
+        
+        toast({
+          title: "إجابة خاطئة!",
+          description: "تم خصم 5 نقاط لإعادة المحاولة.",
+          variant: "destructive"
+        });
+        
+        try {
+          // Update points in database
+          const { error } = await supabase.rpc('adjust_user_score', {
+            user_id: user.id,
+            points_adjustment: pointsAdjustment
+          });
+          
+          if (error) throw error;
+          
+          // Update local user profile
+          if (userProfile) {
+            setUserProfile({
+              ...userProfile,
+              score: Math.max(0, (userProfile.score || 0) + pointsAdjustment)
+            });
+          }
+        } catch (error: any) {
+          console.error('Error updating score:', error);
+        }
+      } else {
+        toast({
+          title: "إجابة خاطئة",
+          description: "حاول مرة أخرى.",
+          variant: "destructive"
+        });
+      }
+    }
+    
+    // Reset selection after a short delay if correct
+    if (isCorrect) {
+      setTimeout(() => {
+        setSelectedPuzzle(null);
+        setSelectedOption(null);
+      }, 2000);
+    }
   };
 
   // Get the appropriate color scheme based on subject
@@ -190,6 +437,25 @@ const SubjectPuzzlesComponent = () => {
           >
             اختبر معرفتك العلمية من خلال مجموعة من الألغاز المتنوعة في مختلف المواد الدراسية
           </motion.p>
+          
+          {userProfile && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 flex items-center gap-4 bg-white/10 px-4 py-2 rounded-full"
+            >
+              <div className="flex items-center gap-1 text-white">
+                <Trophy className="h-4 w-4 text-yellow-400" />
+                <span>النقاط: </span>
+                <span className="font-bold text-yellow-400">{userProfile.score}</span>
+              </div>
+              <div className="flex items-center gap-1 text-white">
+                <CircleCheck className="h-4 w-4 text-green-400" />
+                <span>الألغاز المحلولة: </span>
+                <span className="font-bold text-green-400">{userProfile.solved_puzzles}</span>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Main content with optional sidebar */}
@@ -267,67 +533,157 @@ const SubjectPuzzlesComponent = () => {
                 </Button>
               </div>
 
-              {/* Display puzzles based on subject and difficulty */}
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className={`h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-subject-${subject}-primary`}></div>
-                </div>
-              ) : puzzles.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {puzzles.map((puzzle) => (
-                    <motion.div 
-                      key={puzzle.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-white/10 border border-white/20 rounded-lg overflow-hidden hover:bg-white/15 transition-colors"
+              {/* Display puzzles or selected puzzle for solving */}
+              {selectedPuzzle ? (
+                // Puzzle solving screen
+                <div className="col-span-full bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <div className="mb-6">
+                    <button 
+                      onClick={() => setSelectedPuzzle(null)}
+                      className={`${getSubjectColor().text} hover:underline mb-4 text-right`}
                     >
-                      {puzzle.image && (
-                        <div className="h-40 overflow-hidden">
-                          <img src={puzzle.image} alt={puzzle.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            puzzle.difficulty === 'easy' 
-                              ? 'bg-green-900/50 text-green-300' 
-                              : puzzle.difficulty === 'medium' 
-                                ? 'bg-yellow-900/50 text-yellow-300' 
-                                : 'bg-red-900/50 text-red-300'
-                          }`}>
-                            {getArabicDifficulty(puzzle.difficulty)}
+                      &larr; العودة إلى الألغاز
+                    </button>
+                    <h3 className="text-xl font-bold text-white mb-1 text-right">
+                      {selectedPuzzle.title}
+                    </h3>
+                    
+                    <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-2">
+                        <span className={`${getSubjectColor().text} text-xs px-2 py-1 rounded-full ${getSubjectColor().primary}/10`}>
+                          {selectedPuzzle.points} نقطة
+                        </span>
+                        {solvedPuzzles.includes(selectedPuzzle.id) && (
+                          <span className="text-green-300 text-xs px-2 py-1 rounded-full bg-green-900/30 flex items-center gap-1">
+                            <Trophy className="h-3 w-3" />
+                            تم الحل
                           </span>
-                          <h3 className="text-lg font-bold text-white text-right">{puzzle.title}</h3>
-                        </div>
-                        <p className="text-white/70 text-sm line-clamp-2 text-right mb-3">{puzzle.question}</p>
-                        <div className="flex justify-between items-center">
-                          <span className={`text-subject-${subject}-primary bg-subject-${subject}-primary/20 text-xs px-2 py-1 rounded-full`}>
-                            {puzzle.points} نقطة
+                        )}
+                        {retryPenalty && (
+                          <span className="text-red-300 text-xs px-2 py-1 rounded-full bg-red-900/30">
+                            -5 للمحاولة الخاطئة
                           </span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-white/70 hover:text-white"
-                          >
-                            حل اللغز
-                          </Button>
-                        </div>
+                        )}
                       </div>
-                    </motion.div>
-                  ))}
+                      
+                      <div className={`text-right ${selectedPuzzle.difficulty === 'easy' 
+                        ? 'text-green-300' 
+                        : selectedPuzzle.difficulty === 'medium' 
+                          ? 'text-yellow-300' 
+                          : 'text-red-300'}`}
+                      >
+                        {getArabicDifficulty(selectedPuzzle.difficulty)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {selectedPuzzle.image && (
+                    <div className="mb-6 flex justify-center">
+                      <img 
+                        src={selectedPuzzle.image} 
+                        alt={selectedPuzzle.title}
+                        className="rounded-lg max-h-60 object-contain"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="mb-8 text-white text-right">
+                    {selectedPuzzle.question}
+                  </div>
+                  
+                  <div className="space-y-3 mb-6">
+                    {selectedPuzzle.options.map((option) => (
+                      <div 
+                        key={option} 
+                        className={`p-4 rounded-lg border cursor-pointer transition-colors text-right ${
+                          selectedOption === option
+                            ? `bg-${getSubjectColor().primary}/40 ${getSubjectColor().border}`
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                        }`}
+                        onClick={() => setSelectedOption(option)}
+                      >
+                        {option}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    className={`${getSubjectColor().primary} hover:${getSubjectColor().primary}/80 text-white w-full`}
+                    disabled={!selectedOption}
+                    onClick={handleSubmitAnswer}
+                  >
+                    تأكيد الإجابة
+                  </Button>
                 </div>
               ) : (
-                <div className="text-center py-12 text-white/70">
-                  {difficultyFilter ? 
-                    `لا توجد ألغاز من مستوى ${difficultyFilter} لمادة ${subject} حالياً` : 
-                    `لا توجد ألغاز متاحة لمادة ${subject} حالياً`}
-                </div>
+                // Puzzles list
+                <>
+                  {isLoading ? (
+                    <div className="flex justify-center py-12">
+                      <div className={`h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-subject-${subject}-primary`}></div>
+                    </div>
+                  ) : puzzles.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {puzzles.map((puzzle) => (
+                        <motion.div 
+                          key={puzzle.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className={`bg-white/10 border rounded-lg overflow-hidden hover:bg-white/15 transition-colors cursor-pointer ${
+                            solvedPuzzles.includes(puzzle.id) ? 'border-green-500/30' : 'border-white/20'
+                          }`}
+                          onClick={() => handlePuzzleSelect(puzzle)}
+                        >
+                          {puzzle.image && (
+                            <div className="h-40 overflow-hidden">
+                              <img src={puzzle.image} alt={puzzle.title} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                puzzle.difficulty === 'easy' 
+                                  ? 'bg-green-900/50 text-green-300' 
+                                  : puzzle.difficulty === 'medium' 
+                                    ? 'bg-yellow-900/50 text-yellow-300' 
+                                    : 'bg-red-900/50 text-red-300'
+                              }`}>
+                                {getArabicDifficulty(puzzle.difficulty)}
+                              </span>
+                              <h3 className="text-lg font-bold text-white text-right">{puzzle.title}</h3>
+                            </div>
+                            <p className="text-white/70 text-sm line-clamp-2 text-right mb-3">{puzzle.question}</p>
+                            <div className="flex justify-between items-center">
+                              <span className={`${getSubjectColor().text} ${getSubjectColor().primary}/20 text-xs px-2 py-1 rounded-full`}>
+                                {puzzle.points} نقطة
+                              </span>
+                              {solvedPuzzles.includes(puzzle.id) ? (
+                                <div className="flex items-center gap-1 text-green-400">
+                                  <Trophy className="h-4 w-4" />
+                                  <span>تم الحل</span>
+                                </div>
+                              ) : (
+                                <span className={`${getSubjectColor().text} text-sm`}>حل اللغز &larr;</span>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-white/70">
+                      {difficultyFilter ? 
+                        `لا توجد ألغاز من مستوى ${difficultyFilter} لمادة ${subject} حالياً` : 
+                        `لا توجد ألغاز متاحة لمادة ${subject} حالياً`}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {/* Admin Panel - only shown if admin is logged in */}
-            {isAdmin && (
+            {/* Admin Panel - shown if admin is logged in or super admin */}
+            {(isAdmin || isSuperAdmin) && (
               <SubjectPuzzleAdmin
                 subject={subject}
                 onSuccess={() => {
@@ -340,8 +696,8 @@ const SubjectPuzzlesComponent = () => {
               />
             )}
 
-            {/* Admin Login Button - only shown if not admin */}
-            {!isAdmin && (
+            {/* Admin Login Button - only shown if not admin and not super admin */}
+            {!isAdmin && !isSuperAdmin && (
               <motion.div
                 className="text-center mt-8"
                 initial={{ opacity: 0 }}

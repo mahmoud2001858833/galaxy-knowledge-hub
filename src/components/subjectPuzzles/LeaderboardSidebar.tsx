@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Award, User, CircleDot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { UserProfile } from './SubjectPuzzlesComponent';
 
 interface LeaderboardSidebarProps {
@@ -14,7 +14,6 @@ interface LeaderboardSidebarProps {
 const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchLeaderboard();
@@ -37,11 +36,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
       }
     } catch (error: any) {
       console.error('Error fetching leaderboard:', error);
-      toast({
-        title: "خطأ في تحميل قائمة المتصدرين",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("خطأ في تحميل قائمة المتصدرين");
     } finally {
       setIsLoading(false);
     }

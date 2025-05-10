@@ -69,8 +69,8 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
       // Get current user
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-
-      // Prepare puzzle data with required fields from the table schema
+      
+      // Prepare the complete puzzle data required by the database schema
       const puzzleData = {
         title: data.title,
         question: data.question,
@@ -80,24 +80,25 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
         points: data.points,
         image: data.image || null,
         subject: subject,
-        admin_password: 'mahmoud' // Default admin password as required by the schema
+        admin_password: 'mahmoud', // Default admin password as required by the schema
+        created_by: userId || null  // Set created_by explicitly
       };
-
-      if (userId) {
-        // Add user ID to puzzle data
-        const puzzleDataWithUser = {
-          ...puzzleData,
-          created_by: userId
-        };
         
-        // Create user profile if it doesn't exist
-        const { data: profileData } = await supabase
+      if (userId) {
+        // Check if user profile exists
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .single();
           
-        if (!profileData) {
+        // If profile doesn't exist or there's an error, create it
+        if (!profileData || profileError) {
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.warn("Profile check error:", profileError);
+          }
+          
+          // Create user profile if it doesn't exist
           await supabase.from('profiles').insert({
             id: userId,
             username: 'User',
@@ -105,21 +106,14 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
             solved_puzzles: 0
           });
         }
-
-        // Insert into subject_puzzles table with user ID
-        const { error } = await supabase
-          .from('subject_puzzles')
-          .insert(puzzleDataWithUser);
-
-        if (error) throw error;
-      } else {
-        // Insert into subject_puzzles table without user ID
-        const { error } = await supabase
-          .from('subject_puzzles')
-          .insert(puzzleData);
-
-        if (error) throw error;
       }
+
+      // Insert into subject_puzzles table
+      const { error } = await supabase
+        .from('subject_puzzles')
+        .insert(puzzleData);
+
+      if (error) throw error;
 
       toast.success('تم إضافة اللغز بنجاح');
       onSuccess();
