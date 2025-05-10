@@ -1,32 +1,28 @@
 
 import React, { useState } from 'react';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRight, Circle, Minus, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
 
-interface PuzzleFormData {
-  title: string;
-  question: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  options: {
-    text: string;
-    isCorrect: boolean;
-  }[];
-  points: number;
-  imageUrl: string;
-  subject: string;
-}
+// Define form schema with Zod
+const puzzleFormSchema = z.object({
+  title: z.string().min(3, { message: 'العنوان يجب أن يكون 3 أحرف على الأقل' }),
+  question: z.string().min(5, { message: 'السؤال يجب أن يكون 5 أحرف على الأقل' }),
+  options: z.array(z.string()).min(2, { message: 'يجب إضافة خيارين على الأقل' }),
+  correct_answer: z.string().min(1, { message: 'يرجى تحديد الإجابة الصحيحة' }),
+  difficulty: z.string().min(1, { message: 'يرجى تحديد مستوى الصعوبة' }),
+  points: z.number().min(1, { message: 'يجب أن تكون النقاط أكبر من 0' }),
+  image: z.string().optional(),
+});
+
+type PuzzleFormValues = z.infer<typeof puzzleFormSchema>;
 
 interface SubjectPuzzleFormProps {
   subject: string;
@@ -34,294 +30,283 @@ interface SubjectPuzzleFormProps {
 }
 
 const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
+  const [options, setOptions] = useState<string[]>(['', '']); // Initialize with two empty options
+  const [currentOption, setCurrentOption] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newPuzzle, setNewPuzzle] = useState<PuzzleFormData>({
-    title: '',
-    question: '',
-    difficulty: 'medium',
-    subject: subject,
-    options: [
-      { text: '', isCorrect: true },
-      { text: '', isCorrect: false },
-      { text: '', isCorrect: false },
-      { text: '', isCorrect: false },
-    ],
-    points: 5,
-    imageUrl: '',
+
+  const form = useForm<PuzzleFormValues>({
+    resolver: zodResolver(puzzleFormSchema),
+    defaultValues: {
+      title: '',
+      question: '',
+      options: [],
+      correct_answer: '',
+      difficulty: '',
+      points: 10,
+      image: '',
+    },
   });
   
-  const handleOptionChange = (index: number, field: 'text' | 'isCorrect', value: string | boolean) => {
-    setNewPuzzle(prev => {
-      const updatedOptions = [...prev.options];
-      
-      if (field === 'isCorrect') {
-        // First, set all options to false
-        updatedOptions.forEach(option => option.isCorrect = false);
-        // Then set the selected one to true
-        updatedOptions[index].isCorrect = true;
-      } else if (field === 'text') {
-        // For text field, ensure we're using string
-        updatedOptions[index] = {
-          ...updatedOptions[index],
-          text: String(value)
-        };
-      }
-      
-      return { ...prev, options: updatedOptions };
-    });
-  };
-  
   const addOption = () => {
-    if (newPuzzle.options.length >= 6) {
-      toast.error('الحد الأقصى للخيارات هو 6 خيارات');
-      return;
+    if (currentOption.trim() !== '') {
+      const updatedOptions = [...options, currentOption];
+      setOptions(updatedOptions);
+      form.setValue('options', updatedOptions.filter(opt => opt.trim() !== ''));
+      setCurrentOption('');
     }
-    
-    setNewPuzzle(prev => ({
-      ...prev,
-      options: [...prev.options, { text: '', isCorrect: false }]
-    }));
   };
-  
+
   const removeOption = (index: number) => {
-    if (newPuzzle.options.length <= 2) {
-      toast.error('يجب أن يكون هناك خياران على الأقل');
-      return;
-    }
-    
-    // Check if we're removing the correct answer
-    const isRemovingCorrect = newPuzzle.options[index].isCorrect;
-    
-    setNewPuzzle(prev => {
-      const updatedOptions = prev.options.filter((_, i) => i !== index);
-      
-      // If we removed the correct answer, set the first option as correct
-      if (isRemovingCorrect && updatedOptions.length > 0) {
-        updatedOptions[0].isCorrect = true;
-      }
-      
-      return { ...prev, options: updatedOptions };
-    });
+    const updatedOptions = options.filter((_, i) => i !== index);
+    setOptions(updatedOptions);
+    form.setValue('options', updatedOptions.filter(opt => opt.trim() !== ''));
   };
-  
-  const handleAddPuzzle = async () => {
-    // Simple validation
-    if (!newPuzzle.title || !newPuzzle.question) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة');
-      return;
-    }
-    
-    if (newPuzzle.options.some(option => !option.text)) {
-      toast.error('يرجى ملء جميع خيارات الإجابة');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
+
+  const onSubmit = async (data: PuzzleFormValues) => {
     try {
-      // Find the correct answer text
-      const correctOption = newPuzzle.options.find(opt => opt.isCorrect);
-      
-      if (!correctOption) {
-        toast.error('يرجى تحديد الإجابة الصحيحة');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Format options for database
-      const formattedOptions = newPuzzle.options.map(opt => opt.text);
-      
+      setIsSubmitting(true);
+
+      // Make sure the subject is included in the data
+      const puzzleData = {
+        ...data,
+        subject,
+        options: options.filter(opt => opt.trim() !== ''),
+      };
+
       // Get current user
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      
-      // Insert into database with returning data to confirm insertion
-      const { data, error } = await supabase
+
+      if (userId) {
+        // Add user ID to puzzle data
+        puzzleData.created_by = userId;
+        
+        // Create user profile if it doesn't exist
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (!profileData) {
+          await supabase.from('profiles').insert({
+            id: userId,
+            username: 'User',
+            score: 0,
+            solved_puzzles: 0
+          });
+        }
+      }
+
+      // Insert into subject_puzzles table
+      const { error } = await supabase
         .from('subject_puzzles')
-        .insert([
-          {
-            title: newPuzzle.title,
-            question: newPuzzle.question,
-            options: formattedOptions,
-            correct_answer: correctOption.text,
-            difficulty: newPuzzle.difficulty,
-            points: newPuzzle.points,
-            image: newPuzzle.imageUrl || null,
-            subject: newPuzzle.subject,
-            created_by: userId || null,
-            admin_password: 'mahmoud'
-          }
-        ]);
-      
+        .insert(puzzleData);
+
       if (error) throw error;
-      
-      console.log('Puzzle added successfully:', data);
+
       toast.success('تم إضافة اللغز بنجاح');
+      onSuccess();
       
       // Reset form
-      setNewPuzzle({
-        title: '',
-        question: '',
-        difficulty: 'medium',
-        subject: subject,
-        options: [
-          { text: '', isCorrect: true },
-          { text: '', isCorrect: false },
-          { text: '', isCorrect: false },
-          { text: '', isCorrect: false },
-        ],
-        points: 5,
-        imageUrl: '',
-      });
-      
-      // Call the success callback
-      onSuccess();
+      form.reset();
+      setOptions(['', '']);
     } catch (error: any) {
-      console.error('Error adding puzzle:', error);
-      toast.error('حدث خطأ أثناء إضافة اللغز: ' + error.message);
+      console.error('Error submitting puzzle:', error);
+      toast.error(`فشل في إضافة اللغز: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="grid gap-4 py-4 text-right"
-    >
-      <div>
-        <label className="block mb-1 text-white">عنوان اللغز</label>
-        <Input 
-          value={newPuzzle.title} 
-          onChange={(e) => setNewPuzzle(prev => ({ ...prev, title: e.target.value }))}
-          className="bg-white/10 border-white/20 text-white"
-          placeholder="مثال: معادلة تربيعية"
-        />
-      </div>
-      
-      <div>
-        <label className="block mb-1 text-white">نص اللغز</label>
-        <Textarea 
-          value={newPuzzle.question} 
-          onChange={(e) => setNewPuzzle(prev => ({ ...prev, question: e.target.value }))}
-          className="bg-white/10 border-white/20 text-white"
-          rows={4}
-          placeholder="مثال: ما هي جذور المعادلة x² - 5x + 6 = 0؟"
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1 text-white">مستوى الصعوبة</label>
-          <Select 
-            value={newPuzzle.difficulty} 
-            onValueChange={(val: 'easy' | 'medium' | 'hard') => 
-              setNewPuzzle(prev => ({ ...prev, difficulty: val }))
-            }
-          >
-            <SelectTrigger className="bg-white/10 border-white/20 text-white">
-              <SelectValue placeholder="اختر المستوى" />
-            </SelectTrigger>
-            <SelectContent className="bg-space-cosmic-black border-white/20">
-              <SelectItem value="easy">سهل</SelectItem>
-              <SelectItem value="medium">متوسط</SelectItem>
-              <SelectItem value="hard">صعب</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block mb-1 text-white">النقاط</label>
-          <Input 
-            type="number" 
-            value={newPuzzle.points} 
-            onChange={(e) => setNewPuzzle(prev => ({ ...prev, points: parseInt(e.target.value) || 0 }))}
-            className="bg-white/10 border-white/20 text-white"
-            min={1}
-            max={20}
-          />
-        </div>
-      </div>
-      
-      <div>
-        <label className="block mb-1 text-white">رابط الصورة (اختياري)</label>
-        <Input 
-          value={newPuzzle.imageUrl} 
-          onChange={(e) => setNewPuzzle(prev => ({ ...prev, imageUrl: e.target.value }))}
-          className="bg-white/10 border-white/20 text-white"
-          placeholder="https://example.com/image.jpg"
-        />
-      </div>
-      
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <Button 
-            type="button" 
-            variant="outline"
-            size="sm"
-            className={`text-subject-${subject}-primary border-subject-${subject}-primary/30 hover:bg-subject-${subject}-primary/10`}
-            onClick={addOption}
-          >
-            <Plus className="h-4 w-4 ml-1" />
-            إضافة خيار
-          </Button>
-          <label className="text-white">خيارات الإجابة</label>
-        </div>
-        <div className="space-y-3">
-          {newPuzzle.options.map((option, index) => (
-            <motion.div 
-              key={index} 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex gap-2 items-center bg-white/5 p-3 rounded-lg border border-white/10"
-            >
-              <Button 
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-600/10"
-                onClick={() => removeOption(index)}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex-1">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem className="text-right">
+              <FormLabel className="text-white">عنوان اللغز</FormLabel>
+              <FormControl>
                 <Input
-                  value={option.text}
-                  onChange={(e) => handleOptionChange(index, 'text', e.target.value)}
+                  placeholder="أدخل عنوان اللغز"
                   className="bg-white/10 border-white/20 text-white"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="question"
+          render={({ field }) => (
+            <FormItem className="text-right">
+              <FormLabel className="text-white">السؤال</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="أدخل سؤال اللغز"
+                  className="bg-white/10 border-white/20 text-white min-h-24"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="space-y-4 text-right">
+          <FormLabel className="text-white">الخيارات</FormLabel>
+          <div className="space-y-2">
+            {options.map((option, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                  onClick={() => removeOption(index)}
+                >
+                  ×
+                </Button>
+                <Input 
+                  value={option}
+                  onChange={(e) => {
+                    const updatedOptions = [...options];
+                    updatedOptions[index] = e.target.value;
+                    setOptions(updatedOptions);
+                    form.setValue('options', updatedOptions.filter(opt => opt.trim() !== ''));
+                  }}
                   placeholder={`الخيار ${index + 1}`}
+                  className="bg-white/10 border-white/20 text-white"
                 />
               </div>
-              <button 
-                type="button"
-                onClick={() => handleOptionChange(index, 'isCorrect', true)}
-                className="flex items-center justify-center h-10 w-10 rounded-full"
-              >
-                {option.isCorrect ? (
-                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
-                    <Circle className="h-2 w-2 text-white fill-white" />
-                  </div>
-                ) : (
-                  <div className="h-5 w-5 rounded-full border-2 border-white/50 hover:border-green-500" />
-                )}
-              </button>
-            </motion.div>
-          ))}
+            ))}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Input
+              value={currentOption}
+              onChange={(e) => setCurrentOption(e.target.value)}
+              placeholder="أضف خيار جديد"
+              className="bg-white/10 border-white/20 text-white"
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
+            />
+            <Button 
+              type="button"
+              onClick={addOption}
+              className={`bg-subject-${subject}-primary hover:bg-subject-${subject}-primary/80`}
+            >
+              إضافة
+            </Button>
+          </div>
+          {form.formState.errors.options && (
+            <p className="text-red-500 text-sm">{form.formState.errors.options.message}</p>
+          )}
         </div>
-      </div>
-      
-      <Button 
-        className={`w-full bg-subject-${subject}-primary hover:bg-subject-${subject}-secondary flex items-center justify-center gap-2 mt-6`}
-        onClick={handleAddPuzzle}
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? 'جاري الإضافة...' : 'إضافة اللغز'}
-        <ArrowRight className="h-5 w-5" />
-      </Button>
-    </motion.div>
+        
+        <FormField
+          control={form.control}
+          name="correct_answer"
+          render={({ field }) => (
+            <FormItem className="text-right">
+              <FormLabel className="text-white">الإجابة الصحيحة</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="اختر الإجابة الصحيحة" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="bg-gray-900 border-white/20 text-white">
+                  {options.map((option, index) => (
+                    option.trim() !== '' && (
+                      <SelectItem key={index} value={option}>
+                        {option}
+                      </SelectItem>
+                    )
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="difficulty"
+            render={({ field }) => (
+              <FormItem className="text-right">
+                <FormLabel className="text-white">مستوى الصعوبة</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                      <SelectValue placeholder="اختر مستوى الصعوبة" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-gray-900 border-white/20 text-white">
+                    <SelectItem value="easy">سهل</SelectItem>
+                    <SelectItem value="medium">متوسط</SelectItem>
+                    <SelectItem value="hard">صعب</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="points"
+            render={({ field }) => (
+              <FormItem className="text-right">
+                <FormLabel className="text-white">النقاط</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    className="bg-white/10 border-white/20 text-white"
+                    placeholder="أدخل عدد النقاط"
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <FormField
+          control={form.control}
+          name="image"
+          render={({ field }) => (
+            <FormItem className="text-right">
+              <FormLabel className="text-white">رابط الصورة (اختياري)</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="أدخل رابط الصورة (اختياري)"
+                  className="bg-white/10 border-white/20 text-white"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <Button 
+          type="submit" 
+          className={`w-full bg-subject-${subject}-primary hover:bg-subject-${subject}-primary/80`}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'جاري الإضافة...' : 'إضافة اللغز'}
+        </Button>
+      </form>
+    </Form>
   );
 };
 

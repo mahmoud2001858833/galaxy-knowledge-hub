@@ -39,6 +39,48 @@ const SubjectPuzzlesComponent = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
+  
+  useEffect(() => {
+    fetchPuzzles();
+  }, [subject, difficultyFilter]);
+
+  const fetchPuzzles = async () => {
+    setIsLoading(true);
+    try {
+      let query = supabase
+        .from('subject_puzzles')
+        .select('*')
+        .eq('subject', subject);
+        
+      if (difficultyFilter) {
+        // Map Arabic difficulty levels to English database values
+        const difficultyMap: {[key: string]: string} = {
+          'سهل': 'easy',
+          'متوسط': 'medium',
+          'صعب': 'hard'
+        };
+        
+        const dbDifficulty = difficultyMap[difficultyFilter] || difficultyFilter;
+        query = query.eq('difficulty', dbDifficulty);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      setPuzzles(data || []);
+    } catch (error: any) {
+      console.error('Error fetching puzzles:', error);
+      toast({
+        title: "خطأ في تحميل الألغاز",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle subject change
   const handleSubjectChange = (newSubject: string) => {
@@ -116,6 +158,16 @@ const SubjectPuzzlesComponent = () => {
         description: error.message,
         variant: "destructive"
       });
+    }
+  };
+
+  // Map difficulty from English to Arabic
+  const getArabicDifficulty = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 'سهل';
+      case 'medium': return 'متوسط';
+      case 'hard': return 'صعب';
+      default: return difficulty;
     }
   };
 
@@ -215,11 +267,63 @@ const SubjectPuzzlesComponent = () => {
                 </Button>
               </div>
 
-              {/* This is where the actual puzzles would be displayed based on subject and difficulty */}
-              {/* For now, we'll just show a placeholder */}
-              <div className="text-center py-20 text-white/70">
-                اختر مستوى الصعوبة لعرض الألغاز المتاحة
-              </div>
+              {/* Display puzzles based on subject and difficulty */}
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className={`h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-subject-${subject}-primary`}></div>
+                </div>
+              ) : puzzles.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {puzzles.map((puzzle) => (
+                    <motion.div 
+                      key={puzzle.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-white/10 border border-white/20 rounded-lg overflow-hidden hover:bg-white/15 transition-colors"
+                    >
+                      {puzzle.image && (
+                        <div className="h-40 overflow-hidden">
+                          <img src={puzzle.image} alt={puzzle.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            puzzle.difficulty === 'easy' 
+                              ? 'bg-green-900/50 text-green-300' 
+                              : puzzle.difficulty === 'medium' 
+                                ? 'bg-yellow-900/50 text-yellow-300' 
+                                : 'bg-red-900/50 text-red-300'
+                          }`}>
+                            {getArabicDifficulty(puzzle.difficulty)}
+                          </span>
+                          <h3 className="text-lg font-bold text-white text-right">{puzzle.title}</h3>
+                        </div>
+                        <p className="text-white/70 text-sm line-clamp-2 text-right mb-3">{puzzle.question}</p>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-subject-${subject}-primary bg-subject-${subject}-primary/20 text-xs px-2 py-1 rounded-full`}>
+                            {puzzle.points} نقطة
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-white/70 hover:text-white"
+                          >
+                            حل اللغز
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-white/70">
+                  {difficultyFilter ? 
+                    `لا توجد ألغاز من مستوى ${difficultyFilter} لمادة ${subject} حالياً` : 
+                    `لا توجد ألغاز متاحة لمادة ${subject} حالياً`}
+                </div>
+              )}
             </div>
 
             {/* Admin Panel - only shown if admin is logged in */}
@@ -227,6 +331,7 @@ const SubjectPuzzlesComponent = () => {
               <SubjectPuzzleAdmin
                 subject={subject}
                 onSuccess={() => {
+                  fetchPuzzles();
                   toast({
                     title: "تم تحديث الألغاز",
                     description: "تم تحديث قائمة الألغاز بنجاح"

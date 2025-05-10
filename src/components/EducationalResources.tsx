@@ -18,18 +18,18 @@ const EducationalResources = () => {
           مصادر تعليمية
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4 md:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
           {/* الألغاز التعليمية */}
           <Link to="/subject-puzzles">
-            <Card className="h-64 overflow-hidden relative hover:border-yellow-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-yellow-500/20 to-amber-700/30 border-yellow-500/20 rounded-xl">
+            <Card className="h-48 overflow-hidden relative hover:border-yellow-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-yellow-500/20 to-amber-700/30 border-yellow-500/20 rounded-xl">
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
                 <div className="flex flex-col items-center">
-                  <FileText className="w-12 h-12 text-yellow-400 mb-3" />
-                  <h3 className="text-2xl font-bold text-white mb-2">الألغاز التعليمية</h3>
-                  <p className="text-white/80 text-sm max-w-md">حل الألغاز التعليمية وتحدي نفسك في مختلف المواد العلمية</p>
+                  <FileText className="w-10 h-10 text-yellow-400 mb-2" />
+                  <h3 className="text-xl font-bold text-white mb-1">الألغاز التعليمية</h3>
+                  <p className="text-white/80 text-xs max-w-md">حل الألغاز التعليمية وتحدي نفسك</p>
                 </div>
               </CardContent>
             </Card>
@@ -37,15 +37,15 @@ const EducationalResources = () => {
           
           {/* Visual Library */}
           <Link to="/visual-library">
-            <Card className="h-64 overflow-hidden relative hover:border-pink-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-pink-500/20 to-pink-700/30 border-pink-500/20 rounded-xl">
+            <Card className="h-48 overflow-hidden relative hover:border-pink-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-pink-500/20 to-pink-700/30 border-pink-500/20 rounded-xl">
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
                 <div className="flex flex-col items-center">
-                  <Image className="w-12 h-12 text-pink-400 mb-3" />
-                  <h3 className="text-2xl font-bold text-white mb-2">المكتبة المرئية</h3>
-                  <p className="text-white/80 text-sm max-w-md">استكشف مجموعة من الصور والرسومات التعليمية لتعزيز فهمك للمفاهيم العلمية</p>
+                  <Image className="w-10 h-10 text-pink-400 mb-2" />
+                  <h3 className="text-xl font-bold text-white mb-1">المكتبة المرئية</h3>
+                  <p className="text-white/80 text-xs max-w-md">استكشف مجموعة من الصور التعليمية</p>
                 </div>
               </CardContent>
             </Card>
@@ -53,15 +53,15 @@ const EducationalResources = () => {
           
           {/* Scientific Journal */}
           <Link to="/scientific-journal">
-            <Card className="h-64 overflow-hidden relative hover:border-indigo-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-indigo-500/20 to-indigo-700/30 border-indigo-500/20 rounded-xl">
+            <Card className="h-48 overflow-hidden relative hover:border-indigo-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-indigo-500/20 to-indigo-700/30 border-indigo-500/20 rounded-xl">
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
                 <div className="flex flex-col items-center">
-                  <FileText className="w-12 h-12 text-indigo-400 mb-3" />
-                  <h3 className="text-2xl font-bold text-white mb-2">المجلة العلمية</h3>
-                  <p className="text-white/80 text-sm max-w-md">اطلع على أحدث المقالات والأبحاث العلمية في مختلف المجالات</p>
+                  <FileText className="w-10 h-10 text-indigo-400 mb-2" />
+                  <h3 className="text-xl font-bold text-white mb-1">المجلة العلمية</h3>
+                  <p className="text-white/80 text-xs max-w-md">اطلع على أحدث المقالات والأبحاث العلمية</p>
                 </div>
               </CardContent>
             </Card>
@@ -69,15 +69,15 @@ const EducationalResources = () => {
           
           {/* Study Organization */}
           <Link to="/study-organization">
-            <Card className="h-64 overflow-hidden relative hover:border-emerald-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-emerald-500/20 to-emerald-700/30 border-emerald-500/20 rounded-xl">
+            <Card className="h-48 overflow-hidden relative hover:border-emerald-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-emerald-500/20 to-emerald-700/30 border-emerald-500/20 rounded-xl">
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
                 <div className="flex flex-col items-center">
-                  <Book className="w-12 h-12 text-emerald-400 mb-3" />
-                  <h3 className="text-2xl font-bold text-white mb-2">تنظيم الدراسة</h3>
-                  <p className="text-white/80 text-sm max-w-md">أدوات ونصائح لتنظيم وقتك وتحسين كفاءة دراستك</p>
+                  <Book className="w-10 h-10 text-emerald-400 mb-2" />
+                  <h3 className="text-xl font-bold text-white mb-1">تنظيم الدراسة</h3>
+                  <p className="text-white/80 text-xs max-w-md">أدوات ونصائح لتنظيم وقتك</p>
                 </div>
               </CardContent>
             </Card>
@@ -85,15 +85,15 @@ const EducationalResources = () => {
           
           {/* Chat Rooms */}
           <Link to="/chat-rooms">
-            <Card className="h-64 overflow-hidden relative hover:border-sky-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-sky-500/20 to-sky-700/30 border-sky-500/20 rounded-xl">
+            <Card className="h-48 overflow-hidden relative hover:border-sky-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-sky-500/20 to-sky-700/30 border-sky-500/20 rounded-xl">
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
                 <div className="flex flex-col items-center">
-                  <MessageSquare className="w-12 h-12 text-sky-400 mb-3" />
-                  <h3 className="text-2xl font-bold text-white mb-2">غرف المحادثة</h3>
-                  <p className="text-white/80 text-sm max-w-md">تواصل مع زملائك وناقش المواضيع العلمية في بيئة تعليمية تفاعلية</p>
+                  <MessageSquare className="w-10 h-10 text-sky-400 mb-2" />
+                  <h3 className="text-xl font-bold text-white mb-1">غرف المحادثة</h3>
+                  <p className="text-white/80 text-xs max-w-md">تواصل مع زملائك وناقش المواضيع العلمية</p>
                 </div>
               </CardContent>
             </Card>

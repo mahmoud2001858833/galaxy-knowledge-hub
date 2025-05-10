@@ -66,7 +66,7 @@ const EducationalPlatforms = () => {
             <Card className="h-64 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-500/20 to-indigo-700/30 border-purple-500/20 rounded-xl">
               <div className="absolute inset-0">
                 <img 
-                  src="https://www.aljazeera.net/wp-content/uploads/2019/10/35e547a0-ab6a-4fe4-a8a2-c3ba6bed10e2.jpeg?resize=686%2C513" 
+                  src="https://static6.depositphotos.com/1004338/648/v/450/depositphotos_6489591-stock-illustration-mathematics-background.jpg" 
                   alt="الرياضيات" 
                   className="w-full h-full object-cover opacity-70"
                 />
