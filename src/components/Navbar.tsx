@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -46,17 +47,18 @@ const Navbar = () => {
                 className="h-8 w-8 object-contain"
               />
             </div>
-            <span className="text-xl font-bold ml-2 text-white">في فلك المعرفة</span>
+            <span className="text-xl font-bold mr-2 text-white">في فلك المعرفة</span>
           </Link>
         </div>
         
-        <div className="hidden md:flex items-center space-x-1 rtl:space-x-reverse">
+        <div className="hidden md:flex items-center space-x-4 rtl:space-x-reverse">
           <Link to="/" className={`nav-link ${isActive('/')}`}>الرئيسية</Link>
           <Link to="/physics" className={`nav-link ${isActive('/physics')}`}>الفيزياء</Link>
           <Link to="/chemistry" className={`nav-link ${isActive('/chemistry')}`}>الكيمياء</Link>
           <Link to="/biology" className={`nav-link ${isActive('/biology')}`}>الأحياء</Link>
           <Link to="/mathematics" className={`nav-link ${isActive('/mathematics')}`}>الرياضيات</Link>
           <Link to="/chat-rooms" className={`nav-link ${isActive('/chat-rooms')}`}>المحادثات</Link>
+          <Link to="/subject-puzzles" className={`nav-link ${isActive('/subject-puzzles')}`}>الألغاز</Link>
           {user ? (
             <Button onClick={handleLogout} size="sm" variant="outline" className="mr-2">تسجيل الخروج</Button>
           ) : (
@@ -64,6 +66,14 @@ const Navbar = () => {
               <Button size="sm" variant="outline">تسجيل الدخول</Button>
             </Link>
           )}
+          
+          <Link 
+            to="/profile"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            title="الملف الشخصي"
+          >
+            <User className="h-5 w-5 text-white" />
+          </Link>
         </div>
         
         {/* Mobile logo */}
@@ -76,7 +86,7 @@ const Navbar = () => {
                 className="h-7 w-7 object-contain"
               />
             </div>
-            <span className="text-lg font-bold ml-2 text-white">في فلك المعرفة</span>
+            <span className="text-lg font-bold mr-2 text-white">في فلك المعرفة</span>
           </Link>
         </div>
         
@@ -88,7 +98,7 @@ const Navbar = () => {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+            <SheetContent side="right" className="w-[250px] sm:w-[300px]">
               <div className="flex flex-col space-y-4 mt-8">
                 <Link to="/" className={`nav-link ${isActive('/')}`}>الرئيسية</Link>
                 <Link to="/physics" className={`nav-link ${isActive('/physics')}`}>الفيزياء</Link>
@@ -96,6 +106,8 @@ const Navbar = () => {
                 <Link to="/biology" className={`nav-link ${isActive('/biology')}`}>الأحياء</Link>
                 <Link to="/mathematics" className={`nav-link ${isActive('/mathematics')}`}>الرياضيات</Link>
                 <Link to="/chat-rooms" className={`nav-link ${isActive('/chat-rooms')}`}>المحادثات</Link>
+                <Link to="/subject-puzzles" className={`nav-link ${isActive('/subject-puzzles')}`}>الألغاز</Link>
+                <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>الملف الشخصي</Link>
                 {user ? (
                   <Button onClick={handleLogout} variant="outline" className="w-full">تسجيل الخروج</Button>
                 ) : (
@@ -106,17 +118,6 @@ const Navbar = () => {
               </div>
             </SheetContent>
           </Sheet>
-        </div>
-        
-        {/* User profile link */}
-        <div className="flex items-center space-x-4">
-          <Link 
-            to="/profile"
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-            title="الملف الشخصي"
-          >
-            <User className="h-5 w-5 text-white" />
-          </Link>
         </div>
       </div>
     </nav>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,7 +137,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
       
       // Insert into database with returning data to confirm insertion
       const { data, error } = await supabase
-        .from('subject_puzzles' as any)
+        .from('subject_puzzles')
         .insert([
           {
             title: newPuzzle.title,
@@ -262,7 +263,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
             className={`text-subject-${subject}-primary border-subject-${subject}-primary/30 hover:bg-subject-${subject}-primary/10`}
             onClick={addOption}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 ml-1" />
             إضافة خيار
           </Button>
           <label className="text-white">خيارات الإجابة</label>

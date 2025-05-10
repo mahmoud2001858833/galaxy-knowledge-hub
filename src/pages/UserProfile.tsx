@@ -79,9 +79,28 @@ const UserProfile = () => {
         .eq('id', user.id)
         .single();
       
-      if (profileError) throw profileError;
-      
-      if (profileData) {
+      if (profileError) {
+        // If profile doesn't exist, try to create one
+        if (profileError.code === 'PGRST116') {
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              { 
+                id: user.id, 
+                username: user.email?.split('@')[0] || `user_${user.id.substring(0, 8)}`,
+                score: 0,
+                solved_puzzles: 0
+              }
+            ])
+            .select()
+            .single();
+          
+          if (createError) throw createError;
+          setProfile(newProfile as UserProfile);
+        } else {
+          throw profileError;
+        }
+      } else if (profileData) {
         setProfile(profileData as UserProfile);
       }
       
@@ -109,23 +128,27 @@ const UserProfile = () => {
         setJournals(journalsData as UploadedJournal[]);
       }
       
-      // For demonstration, we'll just mock the solved puzzles data since we don't have a table for it yet
-      setPuzzles([
-        {
-          id: '1',
-          title: 'قانون نيوتن الأول',
-          subject: 'physics',
-          difficulty: 'متوسط',
-          solved_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          title: 'الجدول الدوري',
-          subject: 'chemistry',
-          difficulty: 'سهل',
-          solved_at: new Date().toISOString()
-        }
-      ]);
+      // For demonstration, we'll use the subject puzzles table to show solved puzzles
+      // In a real implementation, we'd have a separate table tracking solved puzzles per user
+      const { data: puzzlesData, error: puzzlesError } = await supabase
+        .from('subject_puzzles')
+        .select('*')
+        .eq('created_by', user.id)
+        .limit(5);
+      
+      if (puzzlesError) throw puzzlesError;
+      
+      if (puzzlesData) {
+        const formattedPuzzles = puzzlesData.map(puzzle => ({
+          id: puzzle.id,
+          title: puzzle.title,
+          subject: puzzle.subject,
+          difficulty: puzzle.difficulty === 'easy' ? 'سهل' : puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب',
+          solved_at: puzzle.created_at
+        }));
+        
+        setPuzzles(formattedPuzzles);
+      }
       
     } catch (error: any) {
       console.error('Error fetching user data:', error);
@@ -347,7 +370,13 @@ const UserProfile = () => {
           </>
         ) : (
           <div className="text-center py-20 text-white/70">
-            لم يتم العثور على الملف الشخصي. يرجى تسجيل الدخول.
+            <h2 className="text-2xl mb-4">لم يتم العثور على الملف الشخصي</h2>
+            <p>يرجى تسجيل الدخول لعرض الملف الشخصي الخاص بك.</p>
+            <div className="mt-6">
+              <a href="/auth" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white transition-colors">
+                تسجيل الدخول
+              </a>
+            </div>
           </div>
         )}
       </main>

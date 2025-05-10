@@ -22,7 +22,12 @@ const EducationalPlatforms = () => {
           {/* منصة الفيزياء */}
           <Link to="/physics">
             <Card className="h-64 overflow-hidden relative hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-blue-500/20 to-purple-700/30 border-blue-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
+              <div className="absolute inset-0">
+                <img 
+                  src="https://modo3.com/thumbs/fit630x300/11168/1630299222/%D8%AA%D8%B9%D8%B1%D9%8A%D9%81_%D8%B9%D9%84%D9%85_%D8%A7%D9%84%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1.jpg" 
+                  alt="الفيزياء" 
+                  className="w-full h-full object-cover opacity-70"
+                />
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
@@ -38,7 +43,12 @@ const EducationalPlatforms = () => {
           {/* منصة الكيمياء */}
           <Link to="/chemistry">
             <Card className="h-64 overflow-hidden relative hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-cyan-500/20 to-blue-700/30 border-cyan-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
+              <div className="absolute inset-0">
+                <img 
+                  src="https://doctor-asmaa-shalapy.com/wp-content/uploads/2024/08/%D8%A7%D9%84%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1-%D8%A7%D9%84%D8%B9%D8%B6%D9%88%D9%8A%D8%A9.webp" 
+                  alt="الكيمياء" 
+                  className="w-full h-full object-cover opacity-70"
+                />
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
@@ -54,7 +64,12 @@ const EducationalPlatforms = () => {
           {/* منصة الرياضيات */}
           <Link to="/mathematics">
             <Card className="h-64 overflow-hidden relative hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-500/20 to-indigo-700/30 border-purple-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
+              <div className="absolute inset-0">
+                <img 
+                  src="https://www.aljazeera.net/wp-content/uploads/2019/10/35e547a0-ab6a-4fe4-a8a2-c3ba6bed10e2.jpeg?resize=686%2C513" 
+                  alt="الرياضيات" 
+                  className="w-full h-full object-cover opacity-70"
+                />
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
@@ -70,7 +85,12 @@ const EducationalPlatforms = () => {
           {/* منصة الأحياء */}
           <Link to="/biology">
             <Card className="h-64 overflow-hidden relative hover:border-green-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-green-500/20 to-teal-700/30 border-green-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
+              <div className="absolute inset-0">
+                <img 
+                  src="https://mittrarabia.com/wp-content/uploads/2023/09/shutterstock_1595924371-445x250.jpeg" 
+                  alt="الأحياء" 
+                  className="w-full h-full object-cover opacity-70"
+                />
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
               </div>
               <CardContent className="flex items-center justify-center h-full text-center p-6 relative z-10">
