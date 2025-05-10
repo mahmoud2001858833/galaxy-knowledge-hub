@@ -1,46 +1,92 @@
-
 import React from 'react';
-import './App.css';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
 import Index from './pages/Index';
-import Auth from './pages/Auth';
+import NotFound from './pages/NotFound';
 import Physics from './pages/Physics';
 import Chemistry from './pages/Chemistry';
-import Biology from './pages/Biology';
 import Mathematics from './pages/Mathematics';
-import MathPuzzles from './pages/MathPuzzles';
-import NotFound from './pages/NotFound';
-import ChatRooms from './pages/ChatRooms';
-import StudyOrganization from './pages/StudyOrganization';
-import VisualLibrary from './pages/VisualLibrary';
-import ScientificJournal from './pages/ScientificJournal';
-import UploadImagePage from './pages/UploadImagePage';
-import UploadJournalPage from './pages/UploadJournalPage';
+import Biology from './pages/Biology';
 import SubjectPuzzles from './pages/SubjectPuzzles';
-import { Toaster } from "@/components/ui/toaster";
+import VisualLibrary from './pages/VisualLibrary';
+import UploadImagePage from './pages/UploadImagePage';
+import ScientificJournal from './pages/ScientificJournal';
+import UploadJournalPage from './pages/UploadJournalPage';
+import StudyOrganization from './pages/StudyOrganization';
+import ChatRooms from './pages/ChatRooms';
+import Auth from './pages/Auth';
+import MathPuzzles from './pages/MathPuzzles';
+import UserProfile from './pages/UserProfile';
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Index />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: '/physics',
+    element: <Physics />,
+  },
+  {
+    path: '/chemistry',
+    element: <Chemistry />,
+  },
+  {
+    path: '/mathematics',
+    element: <Mathematics />,
+  },
+  {
+    path: '/biology',
+    element: <Biology />,
+  },
+  {
+    path: '/subject-puzzles',
+    element: <SubjectPuzzles />,
+  },
+  {
+    path: '/visual-library',
+    element: <VisualLibrary />,
+  },
+  {
+    path: '/upload-image',
+    element: <UploadImagePage />,
+  },
+  {
+    path: '/scientific-journal',
+    element: <ScientificJournal />,
+  },
+  {
+    path: '/upload-journal',
+    element: <UploadJournalPage />,
+  },
+  {
+    path: '/study-organization',
+    element: <StudyOrganization />,
+  },
+  {
+    path: '/chat-rooms',
+    element: <ChatRooms />,
+  },
+  {
+    path: '/auth',
+    element: <Auth />,
+  },
+  {
+    path: '/math-puzzles',
+    element: <MathPuzzles />,
+  },
+  {
+    path: '/profile',
+    element: <UserProfile />,
+  }
+]);
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/physics" element={<Physics />} />
-        <Route path="/chemistry" element={<Chemistry />} />
-        <Route path="/biology" element={<Biology />} />
-        <Route path="/mathematics" element={<Mathematics />} />
-        <Route path="/math-puzzles" element={<MathPuzzles />} />
-        <Route path="/chat-rooms" element={<ChatRooms />} />
-        <Route path="/study-organization" element={<StudyOrganization />} />
-        <Route path="/visual-library" element={<VisualLibrary />} />
-        <Route path="/scientific-journal" element={<ScientificJournal />} />
-        <Route path="/upload-image" element={<UploadImagePage />} />
-        <Route path="/upload-journal" element={<UploadJournalPage />} />
-        <Route path="/subject-puzzles" element={<SubjectPuzzles />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </BrowserRouter>
+    <RouterProvider router={router} />
   );
 }
 

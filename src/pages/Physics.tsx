@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Microscope, Atom, FlaskConical, Magnet } from 'lucide-react';
 import PhysicsScientists from '@/components/physics/PhysicsScientists';
-import PhysicsPuzzles from '@/components/physics/PhysicsPuzzles';
 import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
 
 const Physics = () => {
@@ -29,8 +28,6 @@ const Physics = () => {
   
   const renderSelectedComponent = () => {
     switch(activeComponent) {
-      case 'puzzles':
-        return <PhysicsPuzzles />;
       case 'assistant':
         return <PhysicsAIAssistant />;
       case 'scientists':
@@ -176,33 +173,11 @@ const Physics = () => {
             منصة الفيزياء
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف عالم الفيزياء من خلال ألغاز تفاعلية، مساعد ذكي، وموسوعة علمية
+            استكشف عالم الفيزياء من خلال مساعد ذكي، وموسوعة علمية
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ scale: 1.03 }}
-            className="col-span-1"
-            onClick={() => setActiveComponent('puzzles')}
-          >
-            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'puzzles' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
-              <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Atom className="h-16 w-16 text-subject-physics-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-purple">ألغاز الفيزياء</h3>
-                <p className="text-white/70 mb-4">اختبر معرفتك بالفيزياء من خلال تحديات متنوعة</p>
-                <Button 
-                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
-                >
-                  استكشف الألغاز
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

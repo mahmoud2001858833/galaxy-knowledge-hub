@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from 'lucide-react';
 
 const Navbar = () => {
   const location = useLocation();
@@ -106,6 +106,17 @@ const Navbar = () => {
               </div>
             </SheetContent>
           </Sheet>
+        </div>
+        
+        {/* User profile link */}
+        <div className="flex items-center space-x-4">
+          <Link 
+            to="/profile"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            title="الملف الشخصي"
+          >
+            <User className="h-5 w-5 text-white" />
+          </Link>
         </div>
       </div>
     </nav>
