@@ -101,7 +101,8 @@ const ChatRooms = () => {
         } as any,
         (payload) => {
           // Use the correct property accessor with type checking
-          const chatId = payload.new && typeof payload.new === 'object' ? payload.new.chat_id : null;
+          const newPayload = payload.new as Record<string, any> | null;
+          const chatId = newPayload && typeof newPayload === 'object' ? newPayload.chat_id : null;
           
           if (chatId) {
             // Check if user is part of this group chat
@@ -196,18 +197,19 @@ const ChatRooms = () => {
       // البحث عن المستخدم بواسطة البريد الإلكتروني
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, username')
-        .ilike('username', contactEmail);
+        .select('id, username');
         
       if (userError) throw userError;
       
-      if (!userData || userData.length === 0) {
+      // Filter the data to find the user with matching username
+      const foundUser = userData ? userData.find(user => user.username === contactEmail) : null;
+      
+      if (!foundUser) {
         setErrorMessage('لم يتم العثور على مستخدم بهذا الاسم');
         return;
       }
       
-      // Safely access the user data
-      const contactUser = userData[0];
+      const contactUser = foundUser;
       
       if (!contactUser || !contactUser.id) {
         setErrorMessage('بيانات المستخدم غير صالحة');

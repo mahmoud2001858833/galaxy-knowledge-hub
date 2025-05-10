@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface LeaderboardSidebarProps {
   subject: string;
+}
+
+interface SubjectLeaderboardItem extends UserProfile {
+  subject_solved_count: number;
 }
 
 const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
@@ -39,27 +42,90 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           setLeaderboard(data as UserProfile[]);
         }
       } else {
-        // Fetch subject-specific leaderboard
-        // First get the users who have solved puzzles in this subject
+        // Fetch subject-specific leaderboard using direct query
+        // Instead of using the RPC function, we'll use a direct query
         const { data: solvedData, error: solvedError } = await supabase
-          .rpc('get_subject_leaderboard', { subject_name: subject })
+          .from('user_solved_puzzles')
+          .select('user_id, count(*)')
+          .eq('subject', subject)
+          .group('user_id')
+          .order('count', { ascending: false })
           .limit(10);
 
         if (solvedError) {
-          // Fall back to raw SQL query approach
+          console.error('Error fetching subject leaderboard:', solvedError);
+          
+          // Fall back to raw query approach
           const { data: rawData, error: rawError } = await supabase
             .from('user_solved_puzzles')
-            .select('user_id, count(*)')
-            .eq('subject', subject)
-            .order('count', { ascending: false })
-            .limit(10);
+            .select('user_id')
+            .eq('subject', subject);
             
           if (rawError) throw rawError;
           
           if (rawData && rawData.length > 0) {
-            // Now get the profiles for these users
-            const userIds = rawData.map(item => item.user_id);
+            // Count occurrences manually since we can't use group
+            const userCounts: Record<string, number> = {};
             
+            rawData.forEach(item => {
+              const userId = item.user_id;
+              if (userId) {
+                if (!userCounts[userId]) {
+                  userCounts[userId] = 0;
+                }
+                userCounts[userId]++;
+              }
+            });
+            
+            // Convert to array for sorting
+            const countArray = Object.entries(userCounts).map(([userId, count]) => ({
+              user_id: userId,
+              count
+            }));
+            
+            // Sort by count descending
+            countArray.sort((a, b) => b.count - a.count);
+            
+            // Limit to 10
+            const top10 = countArray.slice(0, 10);
+            
+            // Now get the profiles for these users
+            if (top10.length > 0) {
+              const userIds = top10.map(item => item.user_id);
+              
+              const { data: profiles, error: profilesError } = await supabase
+                .from('profiles')
+                .select('*')
+                .in('id', userIds);
+                
+              if (profilesError) throw profilesError;
+              
+              if (profiles) {
+                // Merge the profiles with the solved count
+                const leaderboardData = profiles.map(profile => {
+                  const countItem = top10.find(item => item.user_id === profile.id);
+                  return {
+                    ...profile,
+                    subject_solved_count: countItem ? countItem.count : 0
+                  };
+                });
+                
+                // Sort by subject-specific solved count
+                leaderboardData.sort((a, b) => (b as SubjectLeaderboardItem).subject_solved_count - (a as SubjectLeaderboardItem).subject_solved_count);
+                
+                setLeaderboard(leaderboardData as any);
+              }
+            } else {
+              setLeaderboard([]);
+            }
+          } else {
+            setLeaderboard([]);
+          }
+        } else if (solvedData) {
+          // Get user profiles for the solved data
+          const userIds = solvedData.map(item => item.user_id);
+          
+          if (userIds.length > 0) {
             const { data: profiles, error: profilesError } = await supabase
               .from('profiles')
               .select('*')
@@ -70,7 +136,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             if (profiles) {
               // Merge the profiles with the solved count
               const leaderboardData = profiles.map(profile => {
-                const solvedItem = rawData.find(item => item.user_id === profile.id);
+                const solvedItem = solvedData.find(item => item.user_id === profile.id);
                 return {
                   ...profile,
                   subject_solved_count: solvedItem ? parseInt(solvedItem.count as any) : 0
@@ -78,15 +144,13 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
               });
               
               // Sort by subject-specific solved count
-              leaderboardData.sort((a, b) => b.subject_solved_count - a.subject_solved_count);
+              leaderboardData.sort((a, b) => (b as SubjectLeaderboardItem).subject_solved_count - (a as SubjectLeaderboardItem).subject_solved_count);
               
               setLeaderboard(leaderboardData as any);
             }
           } else {
             setLeaderboard([]);
           }
-        } else if (solvedData) {
-          setLeaderboard(solvedData as any);
         }
       }
     } catch (error: any) {
