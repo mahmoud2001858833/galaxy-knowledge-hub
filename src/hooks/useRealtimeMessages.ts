@@ -31,78 +31,95 @@ export const useRealtimeMessages = ({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // تحميل الرسائل
+  const fetchMessages = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let query = supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (roomId) {
+        // رسائل المحادثات الجماعية
+        query = query.eq('room_id', roomId);
+      } else if (receiverId) {
+        // رسائل المحادثات الخاصة (حيث المستخدم إما مرسل أو مستقبل)
+        query = query.or(`and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId})`);
+      } else {
+        setLoading(false);
+        return; // لم يتم توفير معرف الغرفة أو معرف المستقبل
+      }
+      
+      const { data, error: fetchError } = await query;
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+      
+      // جلب أسماء المستخدمين لكل رسالة
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(msg => msg.sender_id))];
+        const { data: usersData, error: usersError } = await supabase
+          .from('users_profiles')
+          .select('id, username')
+          .in('id', userIds);
+          
+        if (usersError) {
+          console.error('خطأ في تحميل معلومات المستخدمين:', usersError);
+        }
+        
+        const usersMap = (usersData || []).reduce((acc, user) => {
+          acc[user.id] = user.username;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        const messagesWithUsernames = data.map(msg => ({
+          ...msg,
+          username: usersMap[msg.sender_id] || 'مستخدم'
+        }));
+        
+        setMessages(messagesWithUsernames);
+      } else {
+        setMessages([]);
+      }
+    } catch (err: any) {
+      console.error('Error fetching messages:', err);
+      setError(err.message || 'حدث خطأ أثناء تحميل الرسائل');
+      toast({
+        title: "خطأ",
+        description: "لم نتمكن من تحميل الرسائل",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, roomId, receiverId, toast]);
+
   // تحميل الرسائل الأولية
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        let query = supabase
-          .from('messages')
-          .select('*')
-          .order('created_at', { ascending: true });
-        
-        if (roomId) {
-          // رسائل المحادثات الجماعية
-          query = query.eq('room_id', roomId);
-        } else if (receiverId) {
-          // رسائل المحادثات الخاصة (حيث المستخدم إما مرسل أو مستقبل)
-          query = query.or(`and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId})`);
-        } else {
-          setLoading(false);
-          return; // لم يتم توفير معرف الغرفة أو معرف المستقبل
-        }
-        
-        const { data, error: fetchError } = await query;
-        
-        if (fetchError) {
-          throw fetchError;
-        }
-        
-        // جلب أسماء المستخدمين لكل رسالة
-        if (data && data.length > 0) {
-          const userIds = [...new Set(data.map(msg => msg.sender_id))];
-          const { data: usersData, error: usersError } = await supabase
-            .from('users_profiles')
-            .select('id, username')
-            .in('id', userIds);
-            
-          if (usersError) {
-            console.error('خطأ في تحميل معلومات المستخدمين:', usersError);
-          }
-          
-          const usersMap = (usersData || []).reduce((acc, user) => {
-            acc[user.id] = user.username;
-            return acc;
-          }, {} as Record<string, string>);
-          
-          const messagesWithUsernames = data.map(msg => ({
-            ...msg,
-            username: usersMap[msg.sender_id] || 'مستخدم'
-          }));
-          
-          setMessages(messagesWithUsernames);
-        } else {
-          setMessages([]);
-        }
-      } catch (err: any) {
-        console.error('Error fetching messages:', err);
-        setError(err.message || 'حدث خطأ أثناء تحميل الرسائل');
-        toast({
-          title: "خطأ",
-          description: "لم نتمكن من تحميل الرسائل",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     if (userId && (roomId || receiverId)) {
       fetchMessages();
     }
-  }, [userId, roomId, receiverId, toast]);
+  }, [userId, roomId, receiverId, fetchMessages]);
+  
+  // الاستماع لحدث تحديث الرسائل
+  useEffect(() => {
+    const handleRefreshMessages = () => {
+      console.log("تم استلام حدث تحديث الرسائل في useRealtimeMessages");
+      if (userId && (roomId || receiverId)) {
+        fetchMessages();
+      }
+    };
+    
+    document.addEventListener('refresh-messages', handleRefreshMessages);
+    
+    return () => {
+      document.removeEventListener('refresh-messages', handleRefreshMessages);
+    };
+  }, [userId, roomId, receiverId, fetchMessages]);
   
   // تشغيل صوت الإشعار
   const playNotificationSound = useCallback(() => {
@@ -194,6 +211,10 @@ export const useRealtimeMessages = ({
             });
           }
           
+          // تشغيل حدث تحديث الرسائل ليتم تحديث الواجهة على جميع الأجهزة
+          const refreshEvent = new CustomEvent('refresh-messages');
+          document.dispatchEvent(refreshEvent);
+          
           // تنفيذ callback إذا تم توفيره
           if (onNewMessage) {
             onNewMessage(messageWithUsername);
@@ -255,6 +276,11 @@ export const useRealtimeMessages = ({
       if (error) throw error;
       
       console.log('تم إرسال الرسالة بنجاح:', data);
+      
+      // تشغيل حدث تحديث الرسائل بعد إرسال الرسالة
+      const refreshEvent = new CustomEvent('refresh-messages');
+      document.dispatchEvent(refreshEvent);
+      
       return true;
     } catch (err: any) {
       console.error('خطأ في إرسال الرسالة:', err);

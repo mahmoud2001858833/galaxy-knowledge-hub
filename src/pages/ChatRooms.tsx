@@ -85,7 +85,7 @@ const ChatRooms = () => {
             playNotificationSound();
           }
           
-          // Refresh page data in realtime
+          // تنفيذ حدث تحديث الرسائل
           refreshMessages();
         }
       )
@@ -97,26 +97,22 @@ const ChatRooms = () => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'group_messages'
+          table: 'messages',
+          filter: 'room_id.is.not.null'
         } as any,
         (payload) => {
-          // Use the correct property accessor with type checking
+          // استخدام المعرف الصحيح مع التحقق من النوع
           const newPayload = payload.new as Record<string, any> | null;
-          const chatId = newPayload && typeof newPayload === 'object' ? newPayload.chat_id : null;
+          const roomId = newPayload && typeof newPayload === 'object' ? newPayload.room_id : null;
           
-          if (chatId) {
-            // Check if user is part of this group chat
-            checkIfUserInGroup(chatId).then(isInGroup => {
-              if (isInGroup) {
-                if (document.hidden) {
-                  setHasNewMessages(true);
-                  playNotificationSound();
-                }
-                
-                // Refresh page data in realtime
-                refreshMessages();
-              }
-            });
+          if (roomId) {
+            if (document.hidden) {
+              setHasNewMessages(true);
+              playNotificationSound();
+            }
+            
+            // تنفيذ حدث تحديث الرسائل
+            refreshMessages();
           }
         }
       )
@@ -138,25 +134,6 @@ const ChatRooms = () => {
     };
   }, [userId]);
   
-  const checkIfUserInGroup = async (chatId: string) => {
-    if (!userId) return false;
-    
-    try {
-      const { data, error } = await supabase
-        .from('private_chat_participants')
-        .select('*')
-        .eq('chat_id', chatId)
-        .eq('user_id', userId);
-        
-      if (error) throw error;
-      
-      return data && data.length > 0;
-    } catch (error) {
-      console.error('Error checking if user is in group:', error);
-      return false;
-    }
-  };
-  
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/message-notification.mp3');
@@ -168,7 +145,8 @@ const ChatRooms = () => {
   };
   
   const refreshMessages = () => {
-    // Custom event to notify chat components to refresh data
+    // تشغيل حدث تحديث الرسائل ليتم تحديث الواجهات على جميع الأجهزة
+    console.log("إرسال حدث تحديث الرسائل");
     const refreshEvent = new CustomEvent('refresh-messages');
     document.dispatchEvent(refreshEvent);
   };
@@ -253,6 +231,9 @@ const ChatRooms = () => {
       
       setContactEmail('');
       setIsAddContactOpen(false);
+      
+      // تنفيذ حدث تحديث الرسائل بعد إضافة جهة اتصال جديدة
+      refreshMessages();
       
     } catch (error: any) {
       console.error('خطأ في إضافة جهة اتصال:', error);

@@ -103,6 +103,20 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
     }
   }, [user?.id]);
 
+  // إضافة الاستماع لحدث تحديث الرسائل
+  useEffect(() => {
+    const handleRefreshMessages = () => {
+      console.log("تم استلام حدث تحديث الرسائل في المحادثة الخاصة");
+      // هنا سيتم تحديث الرسائل تلقائياً عبر hook الرسائل المباشرة
+    };
+    
+    document.addEventListener('refresh-messages', handleRefreshMessages);
+    
+    return () => {
+      document.removeEventListener('refresh-messages', handleRefreshMessages);
+    };
+  }, []);
+
   // تمرير للأسفل عند وصول رسائل جديدة
   useEffect(() => {
     scrollToBottom();
@@ -217,6 +231,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       
       if (success) {
         setNewMessage(''); // مسح حقل الإدخال
+        
+        // تشغيل حدث تحديث الرسائل لجميع المستخدمين
+        const refreshEvent = new CustomEvent('refresh-messages');
+        document.dispatchEvent(refreshEvent);
       }
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);

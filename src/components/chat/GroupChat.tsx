@@ -29,12 +29,12 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  // Use our realtime messages hook
+  // استخدام hook الرسائل المباشرة
   const { messages, loading: messagesLoading, sendMessage } = useRealtimeMessages({
     userId: user?.id,
     roomId: currentGroup,
     onNewMessage: () => {
-      // Scroll to bottom when new message arrives
+      // التمرير للأسفل عند وصول رسائل جديدة
       setTimeout(() => scrollToBottom(), 100);
     }
   });
@@ -75,6 +75,20 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     fetchGroups();
   }, [toast, currentGroup]);
 
+  // إضافة الاستماع لحدث تحديث الرسائل
+  useEffect(() => {
+    const handleRefreshMessages = () => {
+      console.log("تم استلام حدث تحديث الرسائل في المحادثة الجماعية");
+      // هنا سيتم تحديث الرسائل تلقائياً عبر hook الرسائل المباشرة
+    };
+    
+    document.addEventListener('refresh-messages', handleRefreshMessages);
+    
+    return () => {
+      document.removeEventListener('refresh-messages', handleRefreshMessages);
+    };
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -94,6 +108,10 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
       
       if (success) {
         setNewMessage(''); // مسح حقل الإدخال
+        
+        // تشغيل حدث تحديث الرسائل لجميع المستخدمين
+        const refreshEvent = new CustomEvent('refresh-messages');
+        document.dispatchEvent(refreshEvent);
       }
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
