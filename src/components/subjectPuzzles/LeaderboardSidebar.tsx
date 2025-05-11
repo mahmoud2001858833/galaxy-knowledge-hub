@@ -43,93 +43,51 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           setLeaderboard(data as UserProfile[]);
         }
       } else {
-        // Fetch subject-specific leaderboard using a different approach
-        // Use a SQL query to count user_solved_puzzles by user_id for the specific subject
+        // Fetch subject-specific leaderboard without using RPC
+        // Instead fetch directly from user_solved_puzzles table and count manually
         const { data: solvedData, error: solvedError } = await supabase
-          .rpc(
-            'get_subject_leaderboard',
-            { subject_name: subject }
-          );
-
+          .from('user_solved_puzzles')
+          .select('user_id, puzzle_id')
+          .eq('subject', subject);
+            
         if (solvedError) {
           console.error('Error fetching subject leaderboard:', solvedError);
+          setLeaderboard([]);
+          return;
+        }
+        
+        if (solvedData && solvedData.length > 0) {
+          // Count occurrences manually since we can't use group
+          const userCounts: Record<string, number> = {};
           
-          // Fall back to raw query approach
-          const { data: rawData, error: rawError } = await supabase
-            .from('user_solved_puzzles')
-            .select('user_id, puzzle_id')
-            .eq('subject', subject);
+          solvedData.forEach(item => {
+            if (!item || typeof item !== 'object') return;
             
-          if (rawError) throw rawError;
-          
-          if (rawData && rawData.length > 0) {
-            // Count occurrences manually since we can't use group
-            const userCounts: Record<string, number> = {};
-            
-            rawData.forEach(item => {
-              if (!item || typeof item !== 'object') return;
-              
-              const userId = 'user_id' in item ? item.user_id : null;
-              if (userId) {
-                if (!userCounts[userId]) {
-                  userCounts[userId] = 0;
-                }
-                userCounts[userId]++;
+            const userId = 'user_id' in item ? item.user_id : null;
+            if (userId) {
+              if (!userCounts[userId]) {
+                userCounts[userId] = 0;
               }
-            });
-            
-            // Convert to array for sorting
-            const countArray = Object.entries(userCounts).map(([userId, count]) => ({
-              user_id: userId,
-              count
-            }));
-            
-            // Sort by count descending
-            countArray.sort((a, b) => b.count - a.count);
-            
-            // Limit to 10
-            const top10 = countArray.slice(0, 10);
-            
-            // Now get the profiles for these users
-            if (top10.length > 0) {
-              const userIds = top10.map(item => item.user_id);
-              
-              const { data: profiles, error: profilesError } = await supabase
-                .from('profiles')
-                .select('*')
-                .in('id', userIds);
-                
-              if (profilesError) throw profilesError;
-              
-              if (profiles) {
-                // Merge the profiles with the solved count
-                const leaderboardData = profiles.map(profile => {
-                  const countItem = top10.find(item => item.user_id === profile.id);
-                  return {
-                    ...profile,
-                    subject_solved_count: countItem ? countItem.count : 0
-                  };
-                });
-                
-                // Sort by subject-specific solved count
-                leaderboardData.sort((a, b) => (b as SubjectLeaderboardItem).subject_solved_count - (a as SubjectLeaderboardItem).subject_solved_count);
-                
-                setLeaderboard(leaderboardData as any);
-              }
-            } else {
-              setLeaderboard([]);
+              userCounts[userId]++;
             }
-          } else {
-            setLeaderboard([]);
-          }
-        } else if (solvedData) {
-          // Get user profiles for the solved data
-          const userIds = solvedData.map(item => {
-            if (!item || typeof item !== 'object') return null;
-            return 'user_id' in item ? item.user_id : null;
-          }).filter(Boolean) as string[];
+          });
           
-          if (userIds.length > 0) {
+          // Convert to array for sorting
+          const countArray = Object.entries(userCounts).map(([userId, count]) => ({
+            user_id: userId,
+            count
+          }));
+          
+          // Sort by count descending
+          countArray.sort((a, b) => b.count - a.count);
+          
+          // Limit to 10
+          const top10 = countArray.slice(0, 10);
+          
+          // Now get the profiles for these users
+          if (top10.length > 0) {
+            const userIds = top10.map(item => item.user_id);
+            
             const { data: profiles, error: profilesError } = await supabase
               .from('profiles')
               .select('*')
@@ -140,29 +98,26 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             if (profiles) {
               // Merge the profiles with the solved count
               const leaderboardData = profiles.map(profile => {
-                const solvedItem = solvedData.find(item => {
-                  if (!item || typeof item !== 'object') return false;
-                  return 'user_id' in item && item.user_id === profile.id;
-                });
-                
-                const count = solvedItem && typeof solvedItem === 'object' && 'count' in solvedItem 
-                  ? (typeof solvedItem.count === 'string' ? parseInt(solvedItem.count) : solvedItem.count) 
-                  : 0;
-                
+                const countItem = top10.find(item => item.user_id === profile.id);
                 return {
                   ...profile,
-                  subject_solved_count: count
+                  subject_solved_count: countItem ? countItem.count : 0
                 };
               });
               
               // Sort by subject-specific solved count
-              leaderboardData.sort((a, b) => (b as SubjectLeaderboardItem).subject_solved_count - (a as SubjectLeaderboardItem).subject_solved_count);
+              leaderboardData.sort((a, b) => 
+                (b as SubjectLeaderboardItem).subject_solved_count - 
+                (a as SubjectLeaderboardItem).subject_solved_count
+              );
               
-              setLeaderboard(leaderboardData as any);
+              setLeaderboard(leaderboardData as UserProfile[]);
             }
           } else {
             setLeaderboard([]);
           }
+        } else {
+          setLeaderboard([]);
         }
       }
     } catch (error: any) {
