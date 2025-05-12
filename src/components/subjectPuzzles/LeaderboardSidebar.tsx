@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -289,7 +290,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                 `لا يوجد متصدرون في ${subject === 'physics' ? 'الفيزياء' : 
                  subject === 'chemistry' ? 'الكيمياء' : 
                  subject === 'biology' ? 'الأحياء' : 
-                 subject === 'mathematics' ? 'الرياضيات' : 'المادة'} ح��ليًا`}
+                 subject === 'mathematics' ? 'الرياضيات' : 'المادة'} حاليًا`}
             </div>
           )}
           

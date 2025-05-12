@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,12 +37,15 @@ type UploadedJournal = {
   created_at: string;
 };
 
+// Update SolvedPuzzle type to include title and difficulty properties
 type SolvedPuzzle = {
   id: string;
   user_id: string;
   puzzle_id: string;
   subject: string;
   solved_at: string;
+  title?: string;
+  difficulty?: string;
 };
 
 const UserProfile = () => {
@@ -152,7 +156,7 @@ const UserProfile = () => {
       
       if (puzzlesData && puzzlesData.length > 0) {
         // For each solved puzzle, get the puzzle details from subject_puzzles table
-        const formattedPuzzles = [];
+        const formattedPuzzles: SolvedPuzzle[] = [];
         
         for (const puzzleEntry of puzzlesData) {
           const { data: puzzleDetails } = await supabase
@@ -165,11 +169,20 @@ const UserProfile = () => {
           if (puzzleDetails) {
             formattedPuzzles.push({
               id: puzzleEntry.id,
-              title: puzzleDetails.title,
+              user_id: puzzleEntry.user_id,
+              puzzle_id: puzzleEntry.puzzle_id,
               subject: puzzleEntry.subject,
+              solved_at: puzzleEntry.solved_at,
+              title: puzzleDetails.title,
               difficulty: puzzleDetails.difficulty === 'easy' ? 'سهل' : 
-                           puzzleDetails.difficulty === 'medium' ? 'متوسط' : 'صعب',
-              solved_at: puzzleEntry.solved_at
+                           puzzleDetails.difficulty === 'medium' ? 'متوسط' : 'صعب'
+            });
+          } else {
+            // If puzzle details are not found, still add the base puzzle entry
+            formattedPuzzles.push({
+              ...puzzleEntry,
+              title: 'لغز غير معروف',
+              difficulty: 'غير محدد'
             });
           }
         }
@@ -184,13 +197,15 @@ const UserProfile = () => {
           .limit(5);
         
         if (!createdError && createdPuzzles && createdPuzzles.length > 0) {
-          const formattedPuzzles = createdPuzzles.map(puzzle => ({
+          const formattedPuzzles: SolvedPuzzle[] = createdPuzzles.map(puzzle => ({
             id: puzzle.id,
-            title: puzzle.title,
+            user_id: user.id,
+            puzzle_id: puzzle.id,
             subject: puzzle.subject,
+            solved_at: puzzle.created_at,
+            title: puzzle.title,
             difficulty: puzzle.difficulty === 'easy' ? 'سهل' : 
-                        puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب',
-            solved_at: puzzle.created_at
+                        puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب'
           }));
           
           setPuzzles(formattedPuzzles);
@@ -332,11 +347,13 @@ const UserProfile = () => {
                                 <span className={`px-2 py-1 rounded text-xs mr-2 ${getSubjectColor(puzzle.subject)}`}>
                                   {getSubjectName(puzzle.subject)}
                                 </span>
+                                {puzzle.difficulty && (
                                 <span className={`px-2 py-1 rounded text-xs ${getDifficultyColor(puzzle.difficulty)}`}>
                                   {puzzle.difficulty}
                                 </span>
+                                )}
                               </div>
-                              <h3 className="text-lg font-medium text-white mb-1">{puzzle.title}</h3>
+                              <h3 className="text-lg font-medium text-white mb-1">{puzzle.title || "لغز غير معروف"}</h3>
                               <p className="text-xs text-white/50">
                                 تم الحل في {new Date(puzzle.solved_at).toLocaleDateString('ar-SA')}
                               </p>

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw, User } from 'lucide-react';
+import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw as RefreshCwIcon, User as UserIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -541,7 +542,7 @@ const AdminPanel = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-4 space-x-reverse">
                           <div className="h-10 w-10 rounded-full bg-blue-600/30 flex items-center justify-center">
-                            <User className="h-5 w-5 text-blue-400" />
+                            <UserIcon className="h-5 w-5 text-blue-400" />
                           </div>
                           <div>
                             <p className="text-white font-medium">{user.username}</p>
@@ -604,7 +605,7 @@ const AdminPanel = () => {
           }}
           className="bg-blue-600 hover:bg-blue-700 ml-auto flex items-center gap-1"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCwIcon className="h-4 w-4" />
           <span>تحديث البيانات</span>
         </Button>
       </CardFooter>
