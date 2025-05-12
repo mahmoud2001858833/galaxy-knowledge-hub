@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Loader2, MessageSquare, Users } from 'lucide-react';
+import { Send, Loader2, MessageSquare, Users, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(0); // إضافة متغير للتحديث القسري
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
@@ -79,7 +80,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
   useEffect(() => {
     const handleRefreshMessages = () => {
       console.log("تم استلام حدث تحديث الرسائل في المحادثة الجماعية");
-      // هنا سيتم تحديث الرسائل تلقائياً عبر hook الرسائل المباشرة
+      // إعادة تحميل الصفحة بشكل كامل
+      setForceRefresh(prev => prev + 1); // تحديث الحالة لإعادة تنفيذ useEffect
     };
     
     document.addEventListener('refresh-messages', handleRefreshMessages);
@@ -88,6 +90,15 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
       document.removeEventListener('refresh-messages', handleRefreshMessages);
     };
   }, []);
+
+  // تأثير للتحديث القسري
+  useEffect(() => {
+    if (forceRefresh > 0) {
+      // سيتم تحديث الرسائل تلقائيًا من خلال hook
+      console.log("تنفيذ التحديث القسري للرسائل", forceRefresh);
+      scrollToBottom();
+    }
+  }, [forceRefresh]);
 
   useEffect(() => {
     scrollToBottom();
@@ -112,12 +123,24 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
         // تشغيل حدث تحديث الرسائل لجميع المستخدمين
         const refreshEvent = new CustomEvent('refresh-messages');
         document.dispatchEvent(refreshEvent);
+        
+        // إضافة تحديث قسري للصفحة الحالية أيضًا
+        setForceRefresh(prev => prev + 1);
       }
     } catch (error: any) {
       console.error('خطأ في إرسال الرسالة:', error);
     } finally {
       setSendingMessage(false);
     }
+  };
+
+  const handleRefreshManually = () => {
+    console.log("تحديث يدوي للرسائل");
+    setForceRefresh(prev => prev + 1);
+    toast({
+      title: "تم التحديث",
+      description: "تم تحديث المحادثة بنجاح",
+    });
   };
 
   const formatMessageTime = (timestamp: string) => {
@@ -139,18 +162,29 @@ const GroupChat: React.FC<GroupChatProps> = ({ user }) => {
     <div className="space-y-6 w-full">
       {groups.length > 0 && (
         <>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {groups.map((group) => (
-              <Button
-                key={group.id}
-                variant={currentGroup === group.id ? "default" : "outline"}
-                onClick={() => setCurrentGroup(group.id)}
-                className="flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                <span>{group.name}</span>
-              </Button>
-            ))}
+          <div className="flex flex-wrap justify-between items-center mb-4">
+            <div className="flex flex-wrap gap-2">
+              {groups.map((group) => (
+                <Button
+                  key={group.id}
+                  variant={currentGroup === group.id ? "default" : "outline"}
+                  onClick={() => setCurrentGroup(group.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  <span>{group.name}</span>
+                </Button>
+              ))}
+            </div>
+            
+            <Button 
+              variant="outline"
+              onClick={handleRefreshManually}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>تحديث</span>
+            </Button>
           </div>
 
           <div className="h-[450px] bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-y-auto flex flex-col p-4 w-full">

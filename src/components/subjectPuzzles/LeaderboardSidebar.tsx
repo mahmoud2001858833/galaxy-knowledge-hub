@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Award, User, CircleDot, Trophy, Medal, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from './SubjectPuzzlesComponent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -107,11 +107,11 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
               
               // Sort by subject-specific solved count
               leaderboardData.sort((a, b) => 
-                (b as SubjectLeaderboardItem).subject_solved_count - 
-                (a as SubjectLeaderboardItem).subject_solved_count
+                ((b as SubjectLeaderboardItem).subject_solved_count || 0) - 
+                ((a as SubjectLeaderboardItem).subject_solved_count || 0)
               );
               
-              setLeaderboard(leaderboardData as UserProfile[]);
+              setLeaderboard(leaderboardData as unknown as UserProfile[]);
             }
           } else {
             setLeaderboard([]);
@@ -267,12 +267,12 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                     <div className="flex items-center gap-2 text-xs text-white/70">
                       {leaderboardType === 'global' ? (
                         <>
-                          <span>{user.score} نقطة</span>
+                          <span>{user.score || 0} نقطة</span>
                           <span className="mx-1">•</span>
                           <span>{user.solved_puzzles || 0} لغز</span>
                         </>
                       ) : (
-                        <span>{(user as any).subject_solved_count} لغز في {subject === 'physics' ? 'الفيزياء' : 
+                        <span>{(user as unknown as SubjectLeaderboardItem).subject_solved_count || 0} لغز في {subject === 'physics' ? 'الفيزياء' : 
                          subject === 'chemistry' ? 'الكيمياء' : 
                          subject === 'biology' ? 'الأحياء' : 
                          subject === 'mathematics' ? 'الرياضيات' : 'المادة'}</span>

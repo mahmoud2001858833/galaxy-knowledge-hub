@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import AdminPanel from '@/components/profile/AdminPanel';
 
 type UserProfile = {
   id: string;
@@ -50,6 +51,7 @@ const UserProfile = () => {
   const [journals, setJournals] = useState<UploadedJournal[]>([]);
   const [puzzles, setPuzzles] = useState<SolvedPuzzle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -70,6 +72,11 @@ const UserProfile = () => {
           variant: "destructive"
         });
         return;
+      }
+      
+      // Check if admin
+      if (user.email === 'jowmahmoud6@gmail.com') {
+        setIsAdmin(true);
       }
       
       // Fetch user profile
@@ -128,26 +135,49 @@ const UserProfile = () => {
         setJournals(journalsData as UploadedJournal[]);
       }
       
-      // For demonstration, we'll use the subject puzzles table to show solved puzzles
-      // In a real implementation, we'd have a separate table tracking solved puzzles per user
+      // Fetch solved puzzles
       const { data: puzzlesData, error: puzzlesError } = await supabase
-        .from('subject_puzzles')
-        .select('*')
-        .eq('created_by', user.id)
-        .limit(5);
+        .from('user_solved_puzzles')
+        .select('*, subject_puzzle:puzzle_id(title, subject, difficulty)')
+        .eq('user_id', user.id)
+        .order('solved_at', { ascending: false })
+        .limit(10);
       
       if (puzzlesError) throw puzzlesError;
       
-      if (puzzlesData) {
-        const formattedPuzzles = puzzlesData.map(puzzle => ({
-          id: puzzle.id,
-          title: puzzle.title,
-          subject: puzzle.subject,
-          difficulty: puzzle.difficulty === 'easy' ? 'سهل' : puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب',
-          solved_at: puzzle.created_at
-        }));
+      if (puzzlesData && puzzlesData.length > 0) {
+        const formattedPuzzles = puzzlesData
+          .filter(item => item.subject_puzzle) // Filter out any null relations
+          .map(item => ({
+            id: item.id,
+            title: item.subject_puzzle.title,
+            subject: item.subject,
+            difficulty: item.subject_puzzle.difficulty === 'easy' ? 'سهل' : 
+                        item.subject_puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب',
+            solved_at: item.solved_at
+          }));
         
         setPuzzles(formattedPuzzles);
+      } else {
+        // For demonstration, if no solved puzzles, show created puzzles
+        const { data: createdPuzzles, error: createdError } = await supabase
+          .from('subject_puzzles')
+          .select('*')
+          .eq('created_by', user.id)
+          .limit(5);
+        
+        if (!createdError && createdPuzzles && createdPuzzles.length > 0) {
+          const formattedPuzzles = createdPuzzles.map(puzzle => ({
+            id: puzzle.id,
+            title: puzzle.title,
+            subject: puzzle.subject,
+            difficulty: puzzle.difficulty === 'easy' ? 'سهل' : 
+                        puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب',
+            solved_at: puzzle.created_at
+          }));
+          
+          setPuzzles(formattedPuzzles);
+        }
       }
       
     } catch (error: any) {
@@ -247,7 +277,18 @@ const UserProfile = () => {
                   <span>{profile.score || 0} نقطة</span>
                 </div>
               </div>
+              {isAdmin && (
+                <div className="mt-2 inline-block bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-1 rounded-full text-white text-sm font-medium">
+                  مشرف
+                </div>
+              )}
             </motion.div>
+            
+            {isAdmin && (
+              <div className="mb-8">
+                <AdminPanel />
+              </div>
+            )}
             
             <Card className="bg-white/5 backdrop-blur-sm border-white/10">
               <CardContent className="p-6">

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ChatLayout from '@/components/chat/ChatLayout';
-import { Bell, UserPlus, Users } from 'lucide-react';
+import { Bell, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { 
   Dialog,
@@ -26,6 +26,7 @@ const ChatRooms = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [forceRefresh, setForceRefresh] = useState(0); // إضافة متغير للتحديث القسري
 
   useEffect(() => {
     const checkUser = async () => {
@@ -87,6 +88,11 @@ const ChatRooms = () => {
           
           // تنفيذ حدث تحديث الرسائل
           refreshMessages();
+          
+          // إضافة إعادة تحميل تلقائية للصفحة
+          if (!document.hidden) {
+            setForceRefresh(prev => prev + 1);
+          }
         }
       )
       .subscribe();
@@ -109,6 +115,9 @@ const ChatRooms = () => {
             if (document.hidden) {
               setHasNewMessages(true);
               playNotificationSound();
+            } else {
+              // إعادة تحميل تلقائية للصفحة عند استلام رسالة جديدة
+              setForceRefresh(prev => prev + 1);
             }
             
             // تنفيذ حدث تحديث الرسائل
@@ -122,6 +131,8 @@ const ChatRooms = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setHasNewMessages(false);
+        // تحديث الصفحة تلقائيًا عند العودة إليها
+        setForceRefresh(prev => prev + 1);
       }
     };
     
@@ -133,6 +144,14 @@ const ChatRooms = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [userId]);
+
+  // تأثير للتحديث القسري
+  useEffect(() => {
+    if (forceRefresh > 0) {
+      console.log("تنفيذ التحديث القسري للصفحة", forceRefresh);
+      refreshMessages();
+    }
+  }, [forceRefresh]);
   
   const playNotificationSound = () => {
     try {
@@ -149,6 +168,15 @@ const ChatRooms = () => {
     console.log("إرسال حدث تحديث الرسائل");
     const refreshEvent = new CustomEvent('refresh-messages');
     document.dispatchEvent(refreshEvent);
+  };
+  
+  const handleRefreshManually = () => {
+    console.log("تحديث يدوي للمحادثات");
+    setForceRefresh(prev => prev + 1);
+    toast({
+      title: "تم التحديث",
+      description: "تم تحديث المحادثات بنجاح",
+    });
   };
   
   // تغيير عنوان الصفحة عندما تكون هناك رسائل جديدة
@@ -242,10 +270,23 @@ const ChatRooms = () => {
       setIsAddingContact(false);
     }
   };
-  
+
   return (
     <>
       <div className="relative">
+        <div className="flex justify-between items-center mb-6">
+          <Button 
+            variant="outline" 
+            onClick={handleRefreshManually}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>تحديث المحادثات</span>
+          </Button>
+          
+          <h1 className="text-2xl font-bold text-white">غرف المحادثة</h1>
+        </div>
+        
         <ChatLayout />
         
         {/* زر إضافة جهة اتصال */}

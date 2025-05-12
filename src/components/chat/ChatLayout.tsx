@@ -1,125 +1,94 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Users, UserPlus, Loader2, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import GroupChat from './GroupChat';
 import PrivateChat from './PrivateChat';
-import Navbar from '@/components/Navbar';
-import StarField from '@/components/StarField';
-import Footer from '@/components/Footer';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
 
 const ChatLayout = () => {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('group');
-  const navigate = useNavigate();
+  const [forceRefresh, setForceRefresh] = useState(0); // إضافة متغير للتحديث القسري
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          toast({
-            title: "يجب تسجيل الدخول",
-            description: "يرجى تسجيل الدخول للوصول إلى غرف المحادثة",
-            variant: "destructive",
-          });
-          navigate('/auth');
-          return;
-        }
+    checkUser();
+    
+    // الاستماع للتحديثات
+    const handleRefreshMessages = () => {
+      console.log("تم استلام حدث تحديث الرسائل في تخطيط المحادثة");
+      // إعادة تحميل الصفحة تلقائيًا 
+      setForceRefresh(prev => prev + 1);
+    };
+    
+    document.addEventListener('refresh-messages', handleRefreshMessages);
+    
+    return () => {
+      document.removeEventListener('refresh-messages', handleRefreshMessages);
+    };
+  }, []);
+  
+  // إعادة تحميل عند التحديث القسري
+  useEffect(() => {
+    if (forceRefresh > 0) {
+      console.log("تنفيذ التحديث القسري للتخطيط", forceRefresh);
+      checkUser();
+    }
+  }, [forceRefresh]);
 
+  const checkUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
         setUser(session.user);
-        setLoading(false);
-      } catch (error) {
-        console.error('خطأ في التحقق من المستخدم:', error);
+      } else {
+        // توجيه المستخدم إلى صفحة تسجيل الدخول
         toast({
-          title: "حدث خطأ",
-          description: "يرجى المحاولة مرة أخرى لاحقاً",
+          title: "يجب تسجيل الدخول",
+          description: "يرجى تسجيل الدخول لاستخدام المحادثات",
           variant: "destructive",
         });
-        navigate('/auth');
       }
-    };
-
-    checkUser();
-  }, [navigate, toast]);
-
-  const handleChangeTab = (value: string) => {
-    setActiveTab(value);
+    } catch (error) {
+      console.error('خطأ في التحقق من المستخدم:', error);
+    }
   };
 
-  if (loading) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-cyan-900/40 to-cyan-950" dir="rtl">
-        <StarField />
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-16 w-16 text-cyan-400 animate-spin" />
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="bg-white/5 p-6 rounded-xl text-center max-w-md">
+          <h3 className="text-xl font-bold text-white mb-2">يجب تسجيل الدخول</h3>
+          <p className="text-white/70 mb-4">
+            يرجى تسجيل الدخول للوصول إلى غرف المحادثة
+          </p>
+          <a 
+            href="/auth"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md inline-block transition-colors"
+          >
+            تسجيل الدخول / إنشاء حساب
+          </a>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-cyan-900/40 to-cyan-950" dir="rtl">
-      <StarField />
-      <Navbar />
-
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-6xl mx-auto"
-        >
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-white to-cyan-500 mb-8 text-center">
-            المحادثات
-          </h1>
-
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-xl">
-            <Tabs value={activeTab} onValueChange={handleChangeTab} className="w-full">
-              <TabsList className="grid grid-cols-2 mb-8">
-                <TabsTrigger value="group" className="flex items-center gap-2 py-3">
-                  <Users className="h-5 w-5" />
-                  <span>المحادثات الجماعية</span>
-                </TabsTrigger>
-                <TabsTrigger value="private" className="flex items-center gap-2 py-3 relative">
-                  <MessageSquare className="h-5 w-5" />
-                  <span>المحادثات الخاصة</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <TabsContent value="group" className="animate-fade-in">
-                    <GroupChat user={user} />
-                  </TabsContent>
-
-                  <TabsContent value="private" className="animate-fade-in">
-                    <PrivateChat user={user} />
-                  </TabsContent>
-                </motion.div>
-              </AnimatePresence>
-            </Tabs>
-          </div>
-        </motion.div>
-      </main>
-      <Footer />
+    <div className="w-full">
+      <Tabs defaultValue="group" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 mb-8">
+          <TabsTrigger value="group" className="text-right">المحادثات الجماعية</TabsTrigger>
+          <TabsTrigger value="private" className="text-right">المحادثات الخاصة</TabsTrigger>
+        </TabsList>
+        <TabsContent value="group" className="space-y-4">
+          <GroupChat user={user} key={`group-${forceRefresh}`} />
+        </TabsContent>
+        <TabsContent value="private" className="space-y-4">
+          <PrivateChat user={user} key={`private-${forceRefresh}`} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

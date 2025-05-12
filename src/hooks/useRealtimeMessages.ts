@@ -137,7 +137,6 @@ export const useRealtimeMessages = ({
     if (!userId) return;
     
     // إصلاح مشكلة الاشتراك في الوقت الفعلي باستخدام اسم قناة ثابت
-    // بدون استخدام Date.now() الذي يتسبب في إنشاء اشتراكات جديدة في كل مرة
     let channelName = '';
     let filterObject = {};
     
