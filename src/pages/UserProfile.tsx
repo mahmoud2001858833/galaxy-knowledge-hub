@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,9 +38,9 @@ type UploadedJournal = {
 
 type SolvedPuzzle = {
   id: string;
-  title: string;
+  user_id: string;
+  puzzle_id: string;
   subject: string;
-  difficulty: string;
   solved_at: string;
 };
 
@@ -135,10 +134,16 @@ const UserProfile = () => {
         setJournals(journalsData as UploadedJournal[]);
       }
       
-      // Fetch solved puzzles
+      // Fetch solved puzzles with a direct join instead of a foreign key reference
       const { data: puzzlesData, error: puzzlesError } = await supabase
         .from('user_solved_puzzles')
-        .select('*, subject_puzzle:puzzle_id(title, subject, difficulty)')
+        .select(`
+          id,
+          user_id,
+          puzzle_id,
+          subject,
+          solved_at
+        `)
         .eq('user_id', user.id)
         .order('solved_at', { ascending: false })
         .limit(10);
@@ -146,16 +151,28 @@ const UserProfile = () => {
       if (puzzlesError) throw puzzlesError;
       
       if (puzzlesData && puzzlesData.length > 0) {
-        const formattedPuzzles = puzzlesData
-          .filter(item => item.subject_puzzle) // Filter out any null relations
-          .map(item => ({
-            id: item.id,
-            title: item.subject_puzzle.title,
-            subject: item.subject,
-            difficulty: item.subject_puzzle.difficulty === 'easy' ? 'سهل' : 
-                        item.subject_puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب',
-            solved_at: item.solved_at
-          }));
+        // For each solved puzzle, get the puzzle details from subject_puzzles table
+        const formattedPuzzles = [];
+        
+        for (const puzzleEntry of puzzlesData) {
+          const { data: puzzleDetails } = await supabase
+            .from('subject_puzzles')
+            .select('title, subject, difficulty')
+            .eq('id', puzzleEntry.puzzle_id)
+            .single();
+            
+          // Only add puzzles where we could find details
+          if (puzzleDetails) {
+            formattedPuzzles.push({
+              id: puzzleEntry.id,
+              title: puzzleDetails.title,
+              subject: puzzleEntry.subject,
+              difficulty: puzzleDetails.difficulty === 'easy' ? 'سهل' : 
+                           puzzleDetails.difficulty === 'medium' ? 'متوسط' : 'صعب',
+              solved_at: puzzleEntry.solved_at
+            });
+          }
+        }
         
         setPuzzles(formattedPuzzles);
       } else {

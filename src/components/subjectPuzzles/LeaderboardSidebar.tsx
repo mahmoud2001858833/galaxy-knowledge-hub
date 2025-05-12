@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +19,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'subject'>('global');
+  const { toast } = useToast(); // Fix: adding toast from useToast hook
 
   useEffect(() => {
     fetchLeaderboard();
@@ -289,7 +289,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                 `لا يوجد متصدرون في ${subject === 'physics' ? 'الفيزياء' : 
                  subject === 'chemistry' ? 'الكيمياء' : 
                  subject === 'biology' ? 'الأحياء' : 
-                 subject === 'mathematics' ? 'الرياضيات' : 'المادة'} حاليًا`}
+                 subject === 'mathematics' ? 'الرياضيات' : 'المادة'} ح��ليًا`}
             </div>
           )}
           

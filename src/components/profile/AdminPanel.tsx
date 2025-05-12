@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy } from 'lucide-react';
+import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw, User } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -209,24 +208,24 @@ const AdminPanel = () => {
     if (!deleteTarget) return;
     
     try {
-      let table = '';
+      let tableName = '';
       let refreshFunction;
       
       switch (deleteTarget.type) {
         case 'message':
-          table = 'messages';
+          tableName = 'messages';
           refreshFunction = fetchMessages;
           break;
         case 'image':
-          table = 'educational_images';
+          tableName = 'educational_images';
           refreshFunction = fetchImages;
           break;
         case 'puzzle':
-          table = 'subject_puzzles';
+          tableName = 'subject_puzzles';
           refreshFunction = fetchPuzzles;
           break;
         case 'journal':
-          table = 'scientific_journals';
+          tableName = 'scientific_journals';
           refreshFunction = fetchJournals;
           break;
         default:
@@ -234,7 +233,7 @@ const AdminPanel = () => {
       }
       
       const { error } = await supabase
-        .from(table)
+        .from(tableName)
         .delete()
         .eq('id', deleteTarget.id);
         
@@ -393,7 +392,7 @@ const AdminPanel = () => {
                         <div className="flex-1">
                           <p className="text-white font-medium">{image.title}</p>
                           <p className="text-xs text-white/50">
-                            {image.creator?.username || "مستخدم"}،
+                            {image.creator?.username || "مستخدم"}，
                             {new Date(image.created_at).toLocaleDateString('ar-SA')}
                           </p>
                           <p className="text-xs mt-1 bg-blue-500/20 text-blue-400 inline-block px-2 py-0.5 rounded">
@@ -493,7 +492,7 @@ const AdminPanel = () => {
                         <div className="flex-1">
                           <p className="text-white font-medium">{journal.title}</p>
                           <p className="text-xs text-white/50 mb-1">
-                            {journal.creator?.username || "مستخدم"}،
+                            {journal.creator?.username || "مستخدم"}，
                             {new Date(journal.created_at).toLocaleDateString('ar-SA')}
                           </p>
                           <p className="text-xs bg-blue-500/20 text-blue-400 inline-block px-2 py-0.5 rounded">

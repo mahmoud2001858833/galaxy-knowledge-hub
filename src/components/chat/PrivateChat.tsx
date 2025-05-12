@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, MessageSquare, User, RefreshCw } from 'lucide-react';
@@ -53,23 +52,58 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
       try {
         setLoading(true);
         
-        // جلب جهات الاتصال مع معلومات المستخدم
-        const { data, error } = await supabase
+        // جلب جهات الاتصال من جدول الاتصال
+        const { data: contactsData, error: contactsError } = await supabase
           .from('contacts')
-          .select('*, contactUser:contact_id(id, username, avatar_url)')
+          .select('*')
           .eq('user_id', user.id);
           
-        if (error) {
-          console.error('خطأ في تحميل جهات الاتصال:', error);
-          throw error;
+        if (contactsError) {
+          console.error('خطأ في تحميل جهات الاتصال:', contactsError);
+          throw contactsError;
         }
         
-        setContacts(data || []);
-        
-        // تعيين جهة الاتصال الافتراضية
-        if (data && data.length > 0 && !currentContact) {
-          setCurrentContact(data[0].contact_id);
+        // إذا وجدنا اتصالات، نقوم بجلب معلومات المستخدمين لكل اتصال
+        if (contactsData && contactsData.length > 0) {
+          const contactsWithUsers: Contact[] = [];
+          
+          // لكل اتصال، نجلب معلومات المستخدم المرتبط به
+          for (const contact of contactsData) {
+            const { data: userData, error: userError } = await supabase
+              .from('users_profiles')
+              .select('id, username, avatar_url')
+              .eq('id', contact.contact_id)
+              .single();
+              
+            if (userError) {
+              console.error('خطأ في تحميل معلومات المستخدم:', userError);
+              // نضيف الاتصال بدون معلومات المستخدم
+              contactsWithUsers.push({
+                ...contact,
+                contactUser: { 
+                  id: contact.contact_id,
+                  username: 'مستخدم غير معروف'
+                }
+              });
+            } else {
+              // نضيف الاتصال مع معلومات المستخدم
+              contactsWithUsers.push({
+                ...contact,
+                contactUser: userData
+              });
+            }
+          }
+          
+          setContacts(contactsWithUsers);
+          
+          // تعيين جهة الاتصال الافتراضية
+          if (contactsWithUsers.length > 0 && !currentContact) {
+            setCurrentContact(contactsWithUsers[0].contact_id);
+          }
+        } else {
+          setContacts([]);
         }
+        
       } catch (error) {
         console.error('خطأ في تحميل جهات الاتصال:', error);
         toast({
