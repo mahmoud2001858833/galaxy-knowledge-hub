@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw as RefreshCwIcon, User as UserIcon } from 'lucide-react';
+import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw, User } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -209,7 +209,7 @@ const AdminPanel = () => {
     if (!deleteTarget) return;
     
     try {
-      let tableName = '';
+      let tableName: 'messages' | 'educational_images' | 'subject_puzzles' | 'scientific_journals';
       let refreshFunction;
       
       switch (deleteTarget.type) {
