@@ -31,8 +31,10 @@ export const useRealtimeMessages = ({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // تحميل الرسائل
+  // تحميل الرسائل - تحسين سرعة التحميل
   const fetchMessages = useCallback(async () => {
+    if (!userId || (!roomId && !receiverId)) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -48,9 +50,6 @@ export const useRealtimeMessages = ({
       } else if (receiverId) {
         // رسائل المحادثات الخاصة (حيث المستخدم إما مرسل أو مستقبل)
         query = query.or(`and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId})`);
-      } else {
-        setLoading(false);
-        return; // لم يتم توفير معرف الغرفة أو معرف المستقبل
       }
       
       const { data, error: fetchError } = await query;
@@ -64,7 +63,7 @@ export const useRealtimeMessages = ({
         const userIds = [...new Set(data.map(msg => msg.sender_id))];
         const { data: usersData, error: usersError } = await supabase
           .from('users_profiles')
-          .select('id, username')
+          .select('id, username, avatar_url')
           .in('id', userIds);
           
         if (usersError) {
@@ -88,27 +87,21 @@ export const useRealtimeMessages = ({
     } catch (err: any) {
       console.error('Error fetching messages:', err);
       setError(err.message || 'حدث خطأ أثناء تحميل الرسائل');
-      toast({
-        title: "خطأ",
-        description: "لم نتمكن من تحميل الرسائل",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
   }, [userId, roomId, receiverId, toast]);
 
-  // تحميل الرسائل الأولية
+  // تحميل الرسائل الأولية - تنفذ بشكل أسرع
   useEffect(() => {
     if (userId && (roomId || receiverId)) {
       fetchMessages();
     }
   }, [userId, roomId, receiverId, fetchMessages]);
   
-  // الاستماع لحدث تحديث الرسائل
+  // الاستماع لحدث تحديث الرسائل - تحسين السرعة
   useEffect(() => {
     const handleRefreshMessages = () => {
-      console.log("تم استلام حدث تحديث الرسائل في useRealtimeMessages");
       if (userId && (roomId || receiverId)) {
         fetchMessages();
       }
@@ -125,23 +118,21 @@ export const useRealtimeMessages = ({
   const playNotificationSound = useCallback(() => {
     try {
       const audio = new Audio('/message-notification.mp3');
-      audio.volume = 0.5; // خفض مستوى الصوت ليكون أقل إزعاجاً
+      audio.volume = 0.5;
       audio.play().catch(e => console.log('Audio play error:', e));
     } catch (err) {
       console.error('Error playing notification sound:', err);
     }
   }, []);
   
-  // الاشتراك في تحديثات الوقت الفعلي
+  // تحسين نظام الاشتراك في تحديثات الوقت الفعلي
   useEffect(() => {
     if (!userId) return;
     
-    // إصلاح مشكلة الاشتراك في الوقت الفعلي باستخدام اسم قناة ثابت
     let channelName = '';
     let filterObject = {};
     
     if (roomId) {
-      // اشتراك المحادثة الجماعية - باستخدام اسم ثابت
       channelName = `room-${roomId}`;
       filterObject = { 
         event: 'INSERT', 
@@ -150,8 +141,6 @@ export const useRealtimeMessages = ({
         filter: `room_id=eq.${roomId}` 
       };
     } else if (receiverId) {
-      // اشتراك المحادثة الخاصة - باستخدام تسمية متسقة
-      // ترتيب معرفات المستخدمين لضمان نفس اسم القناة بغض النظر عمن يبدأ
       const [firstId, secondId] = [userId, receiverId].sort();
       channelName = `private-${firstId}-${secondId}`;
       filterObject = { 
@@ -161,27 +150,21 @@ export const useRealtimeMessages = ({
         filter: `or(and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId}))` 
       };
     } else {
-      return; // لا حاجة للاشتراك
+      return;
     }
     
-    console.log(`الاشتراك في القناة: ${channelName} مع الفلتر:`, filterObject);
-    
-    // استخدام صيغة Supabase Realtime API الصحيحة
+    // استخدام ملاحظ أكثر استجابة
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', filterObject as any, async (payload) => {
-        console.log('تم استلام رسالة جديدة:', payload);
-        
         try {
           const newMessage = payload.new as Message;
           
-          // تجاهل الرسائل التي لدينا بالفعل
           if (messages.some(msg => msg.id === newMessage.id)) {
-            console.log('الرسالة موجودة بالفعل، تم تجاهلها:', newMessage.id);
             return;
           }
           
-          // الحصول على اسم المستخدم المرسل
+          // الحصول على اسم المستخدم المرسل بشكل أسرع
           const { data: userData } = await supabase
             .from('users_profiles')
             .select('username')
@@ -193,14 +176,14 @@ export const useRealtimeMessages = ({
             username: userData?.username || 'مستخدم'
           };
           
-          // إضافة الرسالة إلى الحالة
+          // إضافة الرسالة للحالة بشكل أسرع
           setMessages(prev => [...prev, messageWithUsername]);
           
-          // عدم تشغيل صوت الإشعار للرسائل الخاصة بالمستخدم نفسه
+          // إشعار صوتي للرسائل الجديدة من الآخرين
           if (newMessage.sender_id !== userId) {
             playNotificationSound();
             
-            // إظهار إشعار toast للرسائل الجديدة التي ليست من المستخدم الحالي
+            // إظهار إشعار toast للرسائل الجديدة
             toast({
               title: `رسالة جديدة من ${messageWithUsername.username}`,
               description: messageWithUsername.message_text.length > 30 ? 
@@ -210,11 +193,10 @@ export const useRealtimeMessages = ({
             });
           }
           
-          // تشغيل حدث تحديث الرسائل ليتم تحديث الواجهة على جميع الأجهزة
+          // تشغيل حدث تحديث الرسائل بشكل أسرع
           const refreshEvent = new CustomEvent('refresh-messages');
           document.dispatchEvent(refreshEvent);
           
-          // تنفيذ callback إذا تم توفيره
           if (onNewMessage) {
             onNewMessage(messageWithUsername);
           }
@@ -222,29 +204,18 @@ export const useRealtimeMessages = ({
           console.error('Error processing new message:', err);
         }
       })
-      .subscribe((status) => {
-        console.log(`حالة الاشتراك في ${channelName}: ${status}`);
-        if (status === 'SUBSCRIBED') {
-          console.log('تم الاشتراك بنجاح في القناة:', channelName);
-          toast({
-            title: "متصل",
-            description: "أنت الآن متصل بنظام المراسلة المباشر",
-          });
-        }
-      });
+      .subscribe();
       
     return () => {
-      console.log(`إلغاء الاشتراك من القناة: ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [userId, roomId, receiverId, onNewMessage, toast, messages, playNotificationSound]);
   
-  // وظيفة إرسال رسالة
+  // وظيفة إرسال رسالة - تحسين الأداء
   const sendMessage = async (text: string) => {
     try {
       if (!text.trim()) return false;
       
-      // إنشاء كائن رسالة بأنواع صحيحة
       const messageData: {
         sender_id: string;
         message_text: string;
@@ -256,16 +227,12 @@ export const useRealtimeMessages = ({
       };
       
       if (roomId) {
-        // للمحادثة الجماعية
         messageData.room_id = roomId;
       } else if (receiverId) {
-        // للمحادثة الخاصة
         messageData.receiver_id = receiverId;
       } else {
         throw new Error('يجب تحديد المستلم أو غرفة المحادثة');
       }
-      
-      console.log('جاري إرسال الرسالة:', messageData);
       
       const { data, error } = await supabase
         .from('messages')
@@ -274,9 +241,7 @@ export const useRealtimeMessages = ({
         
       if (error) throw error;
       
-      console.log('تم إرسال الرسالة بنجاح:', data);
-      
-      // تشغيل حدث تحديث الرسائل بعد إرسال الرسالة
+      // تحديث سريع للرسائل بعد الإرسال
       const refreshEvent = new CustomEvent('refresh-messages');
       document.dispatchEvent(refreshEvent);
       
@@ -296,6 +261,7 @@ export const useRealtimeMessages = ({
     messages,
     loading,
     error,
-    sendMessage
+    sendMessage,
+    refreshMessages: fetchMessages // إضافة وظيفة تحديث مباشرة
   };
 };

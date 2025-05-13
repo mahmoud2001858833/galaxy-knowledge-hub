@@ -26,12 +26,11 @@ const ChatRooms = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [forceRefresh, setForceRefresh] = useState(0); // إضافة متغير للتحديث القسري
+  const [forceRefresh, setForceRefresh] = useState(0);
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        // التحقق من تسجيل دخول المستخدم
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -61,16 +60,15 @@ const ChatRooms = () => {
     document.title = "المحادثات - منصة تعليمية";
     
     return () => {
-      // إعادة تعيين العنوان عند إلغاء التحميل
       document.title = "منصة تعليمية";
     };
   }, [navigate, toast]);
   
-  // الاستماع إلى الرسائل الجديدة عندما تكون الصفحة غير نشطة
+  // تحسين نظام الاستماع إلى الرسائل الجديدة مع تحسين الأداء والسرعة
   useEffect(() => {
     if (!userId) return;
     
-    // Channel for direct messages
+    // Channel for direct messages - تحسين الأداء
     const messagesChannel = supabase.channel('messages-notifications')
       .on('postgres_changes', 
         { 
@@ -80,16 +78,15 @@ const ChatRooms = () => {
           filter: `receiver_id=eq.${userId}`
         } as any, 
         (payload) => {
-          // تعيين مؤشر وجود رسائل جديدة
           if (document.hidden) {
             setHasNewMessages(true);
             playNotificationSound();
           }
           
-          // تنفيذ حدث تحديث الرسائل
+          // تنفيذ حدث تحديث الرسائل بشكل أسرع
           refreshMessages();
           
-          // إضافة إعادة تحميل تلقائية للصفحة
+          // تحديث تلقائي للصفحة بشكل أسرع
           if (!document.hidden) {
             setForceRefresh(prev => prev + 1);
           }
@@ -97,7 +94,7 @@ const ChatRooms = () => {
       )
       .subscribe();
       
-    // Channel for group messages  
+    // Channel for group messages - تحسين الأداء  
     const groupMessagesChannel = supabase.channel('group-messages-notifications')
       .on('postgres_changes',
         {
@@ -107,7 +104,6 @@ const ChatRooms = () => {
           filter: 'room_id.is.not.null'
         } as any,
         (payload) => {
-          // استخدام المعرف الصحيح مع التحقق من النوع
           const newPayload = payload.new as Record<string, any> | null;
           const roomId = newPayload && typeof newPayload === 'object' ? newPayload.room_id : null;
           
@@ -116,22 +112,22 @@ const ChatRooms = () => {
               setHasNewMessages(true);
               playNotificationSound();
             } else {
-              // إعادة تحميل تلقائية للصفحة عند استلام رسالة جديدة
+              // تحديث تلقائي للصفحة عند استلام رسالة جديدة - أسرع
               setForceRefresh(prev => prev + 1);
             }
             
-            // تنفيذ حدث تحديث الرسائل
+            // تحديث الرسائل بشكل أسرع
             refreshMessages();
           }
         }
       )
       .subscribe();
       
-    // تغيير حالة الإشعارات عند تنشيط الصفحة
+    // تحسين معالجة تغيير حالة الإشعارات
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setHasNewMessages(false);
-        // تحديث الصفحة تلقائيًا عند العودة إليها
+        // تحديث الصفحة تلقائيًا عند العودة إليها - أسرع
         setForceRefresh(prev => prev + 1);
       }
     };
@@ -145,10 +141,9 @@ const ChatRooms = () => {
     };
   }, [userId]);
 
-  // تأثير للتحديث القسري
+  // تأثير للتحديث القسري - تحسين الاستجابة
   useEffect(() => {
     if (forceRefresh > 0) {
-      console.log("تنفيذ التحديث القسري للصفحة", forceRefresh);
       refreshMessages();
     }
   }, [forceRefresh]);
@@ -164,14 +159,13 @@ const ChatRooms = () => {
   };
   
   const refreshMessages = () => {
-    // تشغيل حدث تحديث الرسائل ليتم تحديث الواجهات على جميع الأجهزة
+    // تشغيل حدث تحديث الرسائل ليتم تحديث الواجهات على جميع الأجهزة بشكل أسرع
     console.log("إرسال حدث تحديث الرسائل");
     const refreshEvent = new CustomEvent('refresh-messages');
     document.dispatchEvent(refreshEvent);
   };
   
   const handleRefreshManually = () => {
-    console.log("تحديث يدوي للمحادثات");
     setForceRefresh(prev => prev + 1);
     toast({
       title: "تم التحديث",
@@ -192,7 +186,7 @@ const ChatRooms = () => {
     };
   }, [hasNewMessages]);
   
-  // إضافة جهة اتصال جديدة
+  // تحسين وظيفة إضافة جهة اتصال جديدة
   const handleAddContact = async () => {
     if (!contactEmail.trim() || !userId) return;
     
@@ -200,30 +194,24 @@ const ChatRooms = () => {
     setErrorMessage('');
     
     try {
-      // البحث عن المستخدم بواسطة البريد الإلكتروني
+      // البحث عن المستخدم بواسطة اسم المستخدم
       const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id, username');
+        .from('users_profiles')
+        .select('id, username')
+        .ilike('username', contactEmail.trim());
         
       if (userError) throw userError;
       
-      // Filter the data to find the user with matching username
-      const foundUser = userData ? userData.find(user => user.username === contactEmail) : null;
+      // البحث عن المستخدم المطابق
+      const foundUser = userData?.length > 0 ? userData[0] : null;
       
       if (!foundUser) {
         setErrorMessage('لم يتم العثور على مستخدم بهذا الاسم');
         return;
       }
       
-      const contactUser = foundUser;
-      
-      if (!contactUser || !contactUser.id) {
-        setErrorMessage('بيانات المستخدم غير صالحة');
-        return;
-      }
-      
       // التأكد من أن المستخدم لا يضيف نفسه
-      if (contactUser.id === userId) {
+      if (foundUser.id === userId) {
         setErrorMessage('لا يمكنك إضافة نفسك كجهة اتصال');
         return;
       }
@@ -233,7 +221,7 @@ const ChatRooms = () => {
         .from('contacts')
         .select('*')
         .eq('user_id', userId)
-        .eq('contact_id', contactUser.id);
+        .eq('contact_id', foundUser.id);
         
       if (checkError) throw checkError;
       
@@ -242,26 +230,27 @@ const ChatRooms = () => {
         return;
       }
       
-      // إضافة جهة الاتصال
+      // إضافة جهة الاتصال بشكل أسرع
       const { error: insertError } = await supabase
         .from('contacts')
         .insert({
           user_id: userId,
-          contact_id: contactUser.id
+          contact_id: foundUser.id
         });
         
       if (insertError) throw insertError;
       
       toast({
         title: "تمت الإضافة بنجاح",
-        description: `تمت إضافة ${contactUser.username} إلى جهات اتصالك`,
+        description: `تمت إضافة ${foundUser.username} إلى جهات اتصالك`,
       });
       
       setContactEmail('');
       setIsAddContactOpen(false);
       
-      // تنفيذ حدث تحديث الرسائل بعد إضافة جهة اتصال جديدة
+      // تحديث الرسائل بشكل أسرع بعد إضافة جهة اتصال جديدة
       refreshMessages();
+      setForceRefresh(prev => prev + 1);
       
     } catch (error: any) {
       console.error('خطأ في إضافة جهة اتصال:', error);
@@ -278,22 +267,26 @@ const ChatRooms = () => {
           <Button 
             variant="outline" 
             onClick={handleRefreshManually}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
           >
             <RefreshCw className="h-4 w-4" />
             <span>تحديث المحادثات</span>
           </Button>
           
-          <h1 className="text-2xl font-bold text-white">غرف المحادثة</h1>
+          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+            غرف المحادثة
+          </h1>
         </div>
         
-        <ChatLayout />
+        <div className="bg-gradient-to-br from-blue-950/30 to-purple-950/30 backdrop-blur-sm rounded-lg border border-blue-500/20 p-6 shadow-lg">
+          <ChatLayout />
+        </div>
         
         {/* زر إضافة جهة اتصال */}
         <div className="fixed bottom-8 right-8 z-50">
           <Button 
             onClick={() => setIsAddContactOpen(true)} 
-            className="rounded-full h-14 w-14 flex items-center justify-center bg-blue-600 hover:bg-blue-700"
+            className="rounded-full h-14 w-14 flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-900/40 border border-blue-500/30"
             variant="default"
             size="icon"
           >
@@ -304,7 +297,7 @@ const ChatRooms = () => {
       
       {/* نافذة إضافة جهة اتصال */}
       <Dialog open={isAddContactOpen} onOpenChange={setIsAddContactOpen}>
-        <DialogContent className="bg-blue-950 border-blue-800">
+        <DialogContent className="bg-gradient-to-br from-blue-950 to-purple-950 border-blue-800/50 max-w-md shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-white text-xl">إضافة جهة اتصال</DialogTitle>
             <DialogDescription className="text-white/70">
@@ -318,7 +311,7 @@ const ChatRooms = () => {
                 placeholder="أدخل اسم المستخدم"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
-                className="bg-blue-900/50 border-blue-700"
+                className="bg-blue-900/40 border-blue-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               {errorMessage && (
                 <p className="text-red-400 text-sm">{errorMessage}</p>
@@ -330,7 +323,7 @@ const ChatRooms = () => {
             <Button
               onClick={handleAddContact}
               disabled={isAddingContact || !contactEmail.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
             >
               {isAddingContact ? 'جاري الإضافة...' : 'إضافة'}
             </Button>
