@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, FilterX, Filter, Sun, Moon } from 'lucide-react';
+import { Search, FilterX, Filter, Sun, Moon, Info, Atom } from 'lucide-react';
 import { 
   Popover, 
   PopoverContent, 
@@ -40,8 +40,10 @@ const SmartPeriodicTable = () => {
     let result = [...periodicElements];
     
     if (searchTerm) {
-      const element = getElementByName(searchTerm);
-      result = element ? [element] : [];
+      result = periodicElements.filter(element => 
+        element.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        element.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     } else if (filterType) {
       result = getElementsByType(filterType);
     }
@@ -71,7 +73,8 @@ const SmartPeriodicTable = () => {
     <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-950/40' : 'bg-blue-50/80'} backdrop-blur-lg border ${isDarkMode ? 'border-cyan-500/20' : 'border-cyan-300/30'} shadow-xl transition-colors duration-300`}>
       <div className="flex flex-col space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-blue-900'}`}>
+          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-blue-900'} flex items-center`}>
+            <Atom className="mr-2 h-6 w-6 text-cyan-400" />
             الجدول الدوري الذكي
           </h2>
           
@@ -114,7 +117,56 @@ const SmartPeriodicTable = () => {
                       </Button>
                     ))}
                   </TabsContent>
-                  {/* يمكن إضافة محتوى لباقي التبويبات هنا */}
+                  <TabsContent value="state" className="p-4 space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start mb-1"
+                      onClick={() => {
+                        setFilteredElements(getElementsByState('solid'));
+                        setFilterType(null);
+                      }}
+                    >
+                      <div className="w-3 h-3 rounded-full bg-amber-400 mr-2"></div>
+                      صلب
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start mb-1"
+                      onClick={() => {
+                        setFilteredElements(getElementsByState('liquid'));
+                        setFilterType(null);
+                      }}
+                    >
+                      <div className="w-3 h-3 rounded-full bg-blue-400 mr-2"></div>
+                      سائل
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start mb-1"
+                      onClick={() => {
+                        setFilteredElements(getElementsByState('gas'));
+                        setFilterType(null);
+                      }}
+                    >
+                      <div className="w-3 h-3 rounded-full bg-purple-400 mr-2"></div>
+                      غاز
+                    </Button>
+                  </TabsContent>
+                  <TabsContent value="group" className="p-4 space-y-2 max-h-60 overflow-auto">
+                    {[...Array(18)].map((_, i) => (
+                      <Button
+                        key={`group-${i+1}`}
+                        variant="outline"
+                        className="w-full justify-start mb-1"
+                        onClick={() => {
+                          setFilteredElements(getElementsByGroup(i+1));
+                          setFilterType(null);
+                        }}
+                      >
+                        المجموعة {i+1}
+                      </Button>
+                    ))}
+                  </TabsContent>
                 </Tabs>
               </PopoverContent>
             </Popover>
@@ -141,7 +193,7 @@ const SmartPeriodicTable = () => {
           {elementGroups.map((group) => (
             <div 
               key={group.type} 
-              className="flex items-center text-sm" 
+              className="flex items-center text-sm cursor-pointer px-2 py-1 rounded-full hover:bg-blue-900/30 transition-colors" 
               onClick={() => setFilterType(group.type as ElementType)}
             >
               <div className={`w-3 h-3 rounded-full ${group.color} ml-1`}></div>
@@ -152,11 +204,11 @@ const SmartPeriodicTable = () => {
           ))}
         </div>
         
-        <div className="overflow-auto p-2" ref={tableRef}>
+        <div className="overflow-auto p-2 rounded-lg border border-cyan-500/20 bg-blue-950/20 backdrop-blur-sm" ref={tableRef}>
           <div className="grid grid-cols-18 gap-1 min-w-[1000px]">
             {/* يتم إنشاء شبكة الجدول الدوري هنا - 18 عمود × 7 صفوف */}
             {Array.from({ length: 7 }).map((_, periodIndex) => (
-              <React.Fragment key={`period-${periodIndex}`}>
+              <React.Fragment key={`period-${periodIndex + 1}`}>
                 {Array.from({ length: 18 }).map((_, groupIndex) => {
                   // البحث عن عنصر في هذه الموقع (إذا وجد)
                   const element = periodicElements.find(
@@ -169,10 +221,9 @@ const SmartPeriodicTable = () => {
                   }
                   
                   // إظهار العنصر فقط إذا كان مطابقاً للفلتر أو لم يتم تحديد فلتر
-                  const isVisible = !filterType || element.type === filterType;
-                  const isSearchMatch = !searchTerm || element.name.includes(searchTerm) || element.symbol.includes(searchTerm);
+                  const isVisible = filteredElements.some(e => e.symbol === element.symbol);
                   
-                  if (!isVisible || !isSearchMatch) {
+                  if (!isVisible) {
                     return <div key={`hidden-${element.symbol}`} className="aspect-square"></div>;
                   }
                   
@@ -200,10 +251,15 @@ const SmartPeriodicTable = () => {
                       
                       {/* Tooltip عند تمرير المؤشر */}
                       {hoverElement?.symbol === element.symbol && (
-                        <div className={`absolute z-10 p-2 rounded-md min-w-[120px] text-xs -top-12 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-blue-900/95 text-white' : 'bg-white/95 text-blue-900'} border ${isDarkMode ? 'border-cyan-500/30' : 'border-blue-200'} shadow-lg`}>
+                        <motion.div 
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`absolute z-10 p-2 rounded-md min-w-[120px] text-xs -top-14 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-blue-900/95 text-white' : 'bg-white/95 text-blue-900'} border ${isDarkMode ? 'border-cyan-500/30' : 'border-blue-200'} shadow-lg`}
+                        >
                           <div className="font-bold">{element.name}</div>
                           <div>{element.symbol} - {element.atomic_number}</div>
-                        </div>
+                          <div className="text-[10px] opacity-80">انقر للتفاصيل</div>
+                        </motion.div>
                       )}
                     </motion.div>
                   );
@@ -227,6 +283,9 @@ const SmartPeriodicTable = () => {
               <motion.div
                 className={`relative max-w-md w-full rounded-xl overflow-hidden ${isDarkMode ? 'bg-blue-900/90' : 'bg-white/90'} backdrop-blur-xl shadow-2xl border ${isDarkMode ? 'border-cyan-500/30' : 'border-blue-200/70'}`}
                 onClick={(e) => e.stopPropagation()}
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.95 }}
               >
                 <div className={`p-6 ${getElementColor(selectedElement.type)}`}>
                   <div className="flex justify-between items-start">
@@ -237,7 +296,7 @@ const SmartPeriodicTable = () => {
                         {elementGroups.find(g => g.type === selectedElement.type)?.name}
                       </div>
                     </div>
-                    <div className="text-5xl font-bold text-white/90">{selectedElement.symbol}</div>
+                    <div className="text-5xl font-bold text-white/90 bg-white/10 w-16 h-16 flex items-center justify-center rounded-lg backdrop-blur-sm">{selectedElement.symbol}</div>
                   </div>
                 </div>
                 
@@ -266,20 +325,32 @@ const SmartPeriodicTable = () => {
                     <p>{selectedElement.usage}</p>
                   </div>
                   
-                  <div className="mt-6 flex justify-end">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0, transition: { delay: 0.3 } }}
+                    className="mt-6 flex justify-end"
+                  >
                     <Button 
                       variant="outline" 
                       onClick={() => setSelectedElement(null)}
-                      className={isDarkMode ? 'border-cyan-500/30 hover:bg-blue-800/50' : 'border-blue-200 hover:bg-blue-50'}
+                      className={`${isDarkMode ? 'border-cyan-500/30 hover:bg-blue-800/50' : 'border-blue-200 hover:bg-blue-50'} px-6`}
                     >
                       إغلاق
                     </Button>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* عنصر للمعلومات حول الجدول الدوري */}
+        <div className={`mt-4 p-4 rounded-lg border ${isDarkMode ? 'border-cyan-500/20 bg-blue-900/30' : 'border-blue-200 bg-white/50'} flex items-start gap-3`}>
+          <Info className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isDarkMode ? 'text-cyan-400' : 'text-blue-600'}`} />
+          <p className={`text-sm ${isDarkMode ? 'text-white/80' : 'text-blue-900/80'}`}>
+            يمثل الجدول الدوري للعناصر الكيميائية ترتيبًا منهجيًا للعناصر وفقًا لخصائصها الكيميائية والفيزيائية. يمكنك البحث عن العناصر أو تصفيتها حسب نوعها أو حالتها. انقر على أي عنصر للحصول على معلومات إضافية.
+          </p>
+        </div>
       </div>
     </div>
   );
