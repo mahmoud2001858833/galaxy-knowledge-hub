@@ -4,21 +4,23 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Award, User, CircleDot, Trophy, Medal, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface LeaderboardSidebarProps {
   subject: string;
 }
 
+// Update UserProfile interface to make avatar_url optional
 export interface UserProfile {
   id: string;
   username: string;
-  avatar_url: string | null;
-  score: number;
-  solved_puzzles: number;
+  avatar_url?: string | null;
+  score: number | null;
+  solved_puzzles: number | null;
 }
 
+// Update SubjectLeaderboardItem to extend from UserProfile
 interface SubjectLeaderboardItem extends UserProfile {
   subject_solved_count: number;
 }
@@ -48,7 +50,13 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
         if (error) throw error;
 
         if (data) {
-          setLeaderboard(data as UserProfile[]);
+          // Add avatar_url field if missing
+          const profilesWithAvatar = data.map(profile => ({
+            ...profile,
+            avatar_url: null // Default value for avatar_url
+          })) as UserProfile[];
+          
+          setLeaderboard(profilesWithAvatar);
         }
       } else {
         // Fetch subject-specific leaderboard
@@ -103,22 +111,22 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             if (profilesError) throw profilesError;
             
             if (profiles) {
-              // Merge the profiles with the solved count
+              // Merge the profiles with the solved count and ensure avatar_url exists
               const leaderboardData = profiles.map(profile => {
                 const countItem = top10.find(item => item.user_id === profile.id);
                 return {
                   ...profile,
+                  avatar_url: null, // Default value for avatar_url
                   subject_solved_count: countItem ? countItem.count : 0
-                };
+                } as SubjectLeaderboardItem;
               });
               
               // Sort by subject-specific solved count
               leaderboardData.sort((a, b) => 
-                ((b as SubjectLeaderboardItem).subject_solved_count || 0) - 
-                ((a as SubjectLeaderboardItem).subject_solved_count || 0)
+                (b.subject_solved_count || 0) - (a.subject_solved_count || 0)
               );
               
-              setLeaderboard(leaderboardData as unknown as UserProfile[]);
+              setLeaderboard(leaderboardData);
             }
           } else {
             setLeaderboard([]);
