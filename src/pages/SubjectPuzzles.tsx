@@ -12,6 +12,7 @@ const SubjectPuzzles = () => {
         transition={{ duration: 0.5 }}
         className="w-full"
       >
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">الألغاز التعليمية</h1>
         <SubjectPuzzlesComponent />
       </motion.div>
     </div>

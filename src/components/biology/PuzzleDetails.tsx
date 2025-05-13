@@ -5,8 +5,9 @@ import { Puzzle } from './types/puzzleTypes';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, X } from 'lucide-react';
+import { Check, X, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PuzzleDetailsProps {
   selectedPuzzle: Puzzle | null;
@@ -15,9 +16,40 @@ interface PuzzleDetailsProps {
 const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
   const [userAnswer, setUserAnswer] = useState('');
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [hasSolved, setHasSolved] = useState<boolean>(false);
+  const [retryPenalty, setRetryPenalty] = useState<boolean>(false);
   const { toast } = useToast();
 
-  const checkAnswer = () => {
+  // Check if user has already solved this puzzle
+  React.useEffect(() => {
+    if (!selectedPuzzle) return;
+    
+    const checkSolvedStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return;
+        
+        const { data, error } = await supabase
+          .from('user_solved_puzzles')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('puzzle_id', selectedPuzzle.id)
+          .maybeSingle();
+          
+        if (!error && data) {
+          setHasSolved(true);
+          setRetryPenalty(true);
+        }
+      } catch (error) {
+        console.error('Error checking solved status:', error);
+      }
+    };
+    
+    checkSolvedStatus();
+  }, [selectedPuzzle]);
+
+  const checkAnswer = async () => {
     if (!selectedPuzzle) return;
     
     const normalizedUserAnswer = userAnswer.trim().toLowerCase();
@@ -27,16 +59,101 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
     const isAnswerCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
     setIsCorrect(isAnswerCorrect);
     
-    if (isAnswerCorrect) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        if (isAnswerCorrect) {
+          if (!hasSolved) {
+            // User solved correctly for the first time
+            // Save to solved puzzles and update score
+            const puzzlePoints = selectedPuzzle.points || 10;
+            
+            const { error: insertError } = await supabase
+              .from('user_solved_puzzles')
+              .insert({
+                user_id: user.id,
+                puzzle_id: selectedPuzzle.id,
+                subject: selectedPuzzle.subject || 'biology'
+              });
+              
+            if (insertError) throw insertError;
+            
+            // Update user score
+            const { error: scoreError } = await supabase.rpc('adjust_user_score', {
+              user_id: user.id,
+              points_adjustment: puzzlePoints
+            });
+            
+            if (scoreError) throw scoreError;
+            
+            // Update solved puzzles counter
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ 
+                solved_puzzles: supabase.rpc('increment', { inc: 1 }) 
+              })
+              .eq('id', user.id);
+              
+            if (updateError) throw updateError;
+            
+            toast({
+              title: "إجابة صحيحة! 🎉",
+              description: `أحسنت! لقد حصلت على ${puzzlePoints} نقطة.`,
+              variant: "default"
+            });
+            
+            setHasSolved(true);
+          } else {
+            toast({
+              title: "إجابة صحيحة! 🎉",
+              description: "لقد سبق لك حل هذا اللغز من قبل.",
+              variant: "default"
+            });
+          }
+        } else {
+          // Wrong answer
+          if (retryPenalty) {
+            // Apply penalty for retry
+            const { error: penaltyError } = await supabase.rpc('adjust_user_score', {
+              user_id: user.id,
+              points_adjustment: -2 // خصم نقطتين للمحاولة الخاطئة
+            });
+            
+            if (penaltyError) throw penaltyError;
+            
+            toast({
+              title: "إجابة خاطئة",
+              description: "تم خصم نقطتين لأنك قد حللت هذا اللغز من قبل.",
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "إجابة خاطئة",
+              description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
+              variant: "destructive"
+            });
+          }
+        }
+      } else {
+        if (isAnswerCorrect) {
+          toast({
+            title: "إجابة صحيحة! 🎉",
+            description: "أحسنت! قم بتسجيل الدخول للحصول على النقاط.",
+          });
+        } else {
+          toast({
+            title: "إجابة خاطئة",
+            description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating puzzle status:', error);
       toast({
-        title: "إجابة صحيحة! 🎉",
-        description: "أحسنت! لقد أجبت بشكل صحيح على اللغز.",
-        variant: "default"
-      });
-    } else {
-      toast({
-        title: "إجابة خاطئة",
-        description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
+        title: "خطأ في النظام",
+        description: "حدث خطأ في معالجة إجابتك. يرجى المحاولة مرة أخرى.",
         variant: "destructive"
       });
     }
@@ -63,6 +180,28 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
         <p className="text-white/90 mb-6">{puzzleDescription}</p>
         
         <div className="space-y-4">
+          {hasSolved && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-green-500/20 p-3 rounded-lg border border-green-500/30 flex items-center gap-2"
+            >
+              <Check className="w-5 h-5 text-green-400" />
+              <span className="text-green-300">لقد سبق لك حل هذا اللغز</span>
+            </motion.div>
+          )}
+          
+          {retryPenalty && !hasSolved && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-yellow-500/20 p-3 rounded-lg border border-yellow-500/30 flex items-center gap-2"
+            >
+              <AlertTriangle className="w-5 h-5 text-yellow-400" />
+              <span className="text-yellow-300">ستفقد نقطتين إذا كانت إجابتك خاطئة</span>
+            </motion.div>
+          )}
+          
           {selectedPuzzle.hint && (
             <div className="bg-white/5 p-3 rounded-lg border border-white/10">
               <h4 className="font-medium text-yellow-400 mb-1">تلميح:</h4>

@@ -20,7 +20,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'subject'>('global');
-  const { toast } = useToast(); // Fix: adding toast from useToast hook
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchLeaderboard();
@@ -44,8 +44,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           setLeaderboard(data as UserProfile[]);
         }
       } else {
-        // Fetch subject-specific leaderboard without using RPC
-        // Instead fetch directly from user_solved_puzzles table and count manually
+        // Fetch subject-specific leaderboard
         const { data: solvedData, error: solvedError } = await supabase
           .from('user_solved_puzzles')
           .select('user_id, puzzle_id')
@@ -273,10 +272,13 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                           <span>{user.solved_puzzles || 0} لغز</span>
                         </>
                       ) : (
-                        <span>{(user as unknown as SubjectLeaderboardItem).subject_solved_count || 0} لغز في {subject === 'physics' ? 'الفيزياء' : 
-                         subject === 'chemistry' ? 'الكيمياء' : 
-                         subject === 'biology' ? 'الأحياء' : 
-                         subject === 'mathematics' ? 'الرياضيات' : 'المادة'}</span>
+                        <span>
+                          {(user as unknown as SubjectLeaderboardItem).subject_solved_count || 0} لغز في 
+                          {subject === 'physics' ? ' الفيزياء' : 
+                           subject === 'chemistry' ? ' الكيمياء' : 
+                           subject === 'biology' ? ' الأحياء' : 
+                           subject === 'mathematics' ? ' الرياضيات' : ' المادة'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -287,10 +289,13 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
             <div className="text-center py-10 text-white/70">
               {leaderboardType === 'global' ? 
                 'لا يوجد متصدرون حاليًا' : 
-                `لا يوجد متصدرون في ${subject === 'physics' ? 'الفيزياء' : 
-                 subject === 'chemistry' ? 'الكيمياء' : 
-                 subject === 'biology' ? 'الأحياء' : 
-                 subject === 'mathematics' ? 'الرياضيات' : 'المادة'} حاليًا`}
+                `لا يوجد متصدرون في ${
+                  subject === 'physics' ? 'الفيزياء' : 
+                  subject === 'chemistry' ? 'الكيمياء' : 
+                  subject === 'biology' ? 'الأحياء' : 
+                  subject === 'mathematics' ? 'الرياضيات' : 'المادة'
+                } حاليًا`
+              }
             </div>
           )}
           
