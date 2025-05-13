@@ -13,10 +13,20 @@ interface UserChatProfileProps {
   profile: any;
 }
 
+interface SolvedPuzzle {
+  id: string;
+  puzzle_id: string;
+  user_id: string;
+  solved_at: string;
+  subject: string;
+  puzzle_title?: string;
+  points?: number;
+}
+
 const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
   const [loading, setLoading] = useState(false);
   const [messagesCount, setMessagesCount] = useState(0);
-  const [solvedPuzzles, setSolvedPuzzles] = useState([]);
+  const [solvedPuzzles, setSolvedPuzzles] = useState<SolvedPuzzle[]>([]);
   const [joinDate, setJoinDate] = useState<string | null>(null);
   
   useEffect(() => {
@@ -41,7 +51,7 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
       
       // جلب الألغاز المحلولة
       const { data: puzzlesData, error: puzzlesError } = await supabase
-        .from('solved_puzzles')
+        .from('user_solved_puzzles')
         .select('*')
         .eq('user_id', user.id)
         .limit(5);
@@ -164,7 +174,7 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
                 <span>آخر الإنجازات</span>
               </h3>
               <div className="space-y-2">
-                {solvedPuzzles.slice(0, 3).map((puzzle: any, index) => (
+                {solvedPuzzles.slice(0, 3).map((puzzle: SolvedPuzzle, index) => (
                   <motion.div
                     key={puzzle.id}
                     initial={{ opacity: 0 }}
