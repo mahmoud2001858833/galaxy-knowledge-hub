@@ -542,7 +542,7 @@ const AdminPanel = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-4 space-x-reverse">
                           <div className="h-10 w-10 rounded-full bg-blue-600/30 flex items-center justify-center">
-                            <UserIcon className="h-5 w-5 text-blue-400" />
+                            <User className="h-5 w-5 text-blue-400" />
                           </div>
                           <div>
                             <p className="text-white font-medium">{user.username}</p>
@@ -605,7 +605,7 @@ const AdminPanel = () => {
           }}
           className="bg-blue-600 hover:bg-blue-700 ml-auto flex items-center gap-1"
         >
-          <RefreshCwIcon className="h-4 w-4" />
+          <RefreshCw className="h-4 w-4" />
           <span>تحديث البيانات</span>
         </Button>
       </CardFooter>
