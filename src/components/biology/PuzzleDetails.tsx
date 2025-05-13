@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Puzzle } from './types/puzzleTypes';
@@ -87,11 +86,11 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
             
             if (scoreError) throw scoreError;
             
-            // Update solved puzzles counter
+            // Update solved puzzles counter - FIX HERE
             const { error: updateError } = await supabase
               .from('profiles')
               .update({ 
-                solved_puzzles: supabase.rpc('increment', { inc: 1 }) 
+                solved_puzzles: supabase.rpc('increment') 
               })
               .eq('id', user.id);
               

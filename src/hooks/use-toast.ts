@@ -85,7 +85,7 @@ export const reducer = (state: State, action: Action): State => {
             onOpenChange: (open) => {
               if (!open) dispatch({
                 type: "DISMISS_TOAST",
-                toastId: action.toast.id,
+                toastId: genId(), // Fixed: Using genId() instead of action.toast.id
               })
             },
           },
@@ -174,7 +174,6 @@ function toast(props: Toast) {
     type: "ADD_TOAST",
     toast: {
       ...props,
-      id,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
