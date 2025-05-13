@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { Send, User, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ const GroupChat = ({ user }) => {
   const [profiles, setProfiles] = useState<{ [key: string]: any }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [isMessageSending, setIsMessageSending] = useState(false);
 
   // Use realtime subscription for messages
   useRealtimeMessages({
@@ -127,8 +128,9 @@ const GroupChat = ({ user }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!message.trim() || !user || !activeRoom) return;
+    if (!message.trim() || !user || !activeRoom || isMessageSending) return;
 
+    setIsMessageSending(true);
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -142,8 +144,23 @@ const GroupChat = ({ user }) => {
 
       if (error) throw error;
 
+      // Clear the input
       setMessage('');
+      
+      // Fetch updated messages instead of refreshing the whole page
       fetchMessages(activeRoom);
+      
+      // Add the new message to the UI immediately for a more responsive feel
+      const newMessage = {
+        id: Date.now().toString(), // Temporary ID
+        sender_id: user.id,
+        room_id: activeRoom,
+        message_text: message.trim(),
+        created_at: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
+      
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -151,7 +168,61 @@ const GroupChat = ({ user }) => {
         description: "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
+    } finally {
+      setIsMessageSending(false);
     }
+  };
+
+  // Render message with improved styling
+  const renderMessage = (msg) => {
+    const isCurrentUser = msg.sender_id === user?.id;
+    const senderProfile = profiles[msg.sender_id];
+    
+    return (
+      <motion.div
+        key={msg.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
+      >
+        {!isCurrentUser && (
+          <Avatar className="h-8 w-8 ml-2 mt-1">
+            {senderProfile?.avatar_url ? (
+              <AvatarImage src={senderProfile.avatar_url} />
+            ) : (
+              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800">
+                {senderProfile?.username?.[0] || ''}
+              </AvatarFallback>
+            )}
+          </Avatar>
+        )}
+        
+        <div 
+          className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}
+        >
+          {!isCurrentUser && (
+            <span className="text-xs text-white/70 mb-1 mr-1">
+              {senderProfile?.username || 'مستخدم'}
+            </span>
+          )}
+          <div
+            className={`max-w-[80%] px-4 py-2 rounded-lg shadow-md ${
+              isCurrentUser
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-none'
+                : 'bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-bl-none'
+            }`}
+          >
+            {msg.message_text}
+          </div>
+          <span className="text-xs text-white/40 mt-1 mx-1">
+            {new Date(msg.created_at).toLocaleTimeString('ar-SA', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
+      </motion.div>
+    );
   };
 
   return (
@@ -163,95 +234,51 @@ const GroupChat = ({ user }) => {
         </CardTitle>
       </CardHeader>
 
-      <div className="grid grid-cols-12 h-[calc(100%-64px)]">
-        {/* Group chat content - Takes full width now */}
-        <div className="col-span-12 flex flex-col h-full overflow-hidden">
-          {activeRoom ? (
-            <>
-              {/* Messages area */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
-                  {messages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-white/50">لا توجد رسائل بعد</p>
-                    </div>
-                  ) : (
-                    messages.map((msg) => {
-                      const isCurrentUser = msg.sender_id === user?.id;
-                      const senderProfile = profiles[msg.sender_id];
-
-                      return (
-                        <div
-                          key={msg.id}
-                          className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                        >
-                          {!isCurrentUser && (
-                            <Avatar className="h-8 w-8 ml-2 mt-1">
-                              {senderProfile?.avatar_url ? (
-                                <AvatarImage src={senderProfile.avatar_url} />
-                              ) : (
-                                <AvatarFallback className="bg-blue-700/50">
-                                  {senderProfile?.username?.[0] || ''}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                          )}
-                          
-                          <div 
-                            className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}
-                          >
-                            {!isCurrentUser && (
-                              <span className="text-xs text-white/60 mb-1">
-                                {senderProfile?.username || 'مستخدم'}
-                              </span>
-                            )}
-                            <div
-                              className={`max-w-[80%] px-4 py-2 rounded-lg ${
-                                isCurrentUser
-                                  ? 'bg-blue-600 text-white rounded-br-none'
-                                  : 'bg-gray-700/50 text-white rounded-bl-none'
-                              }`}
-                            >
-                              {msg.message_text}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* Message input */}
-              <div className="p-4 border-t border-white/10 bg-white/5">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <Input
-                    placeholder="اكتب رسالة..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="bg-white/10 border-white/20 text-white"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={!message.trim()}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </form>
+      <div className="flex-1 overflow-hidden">
+        {activeRoom ? (
+          <>
+            {/* Messages area */}
+            <ScrollArea className="h-[calc(100%-64px)]">
+              <div className="p-4 space-y-1">
+                {messages.length === 0 ? (
+                  <div className="h-full flex items-center justify-center p-10">
+                    <p className="text-white/50">لا توجد رسائل بعد</p>
+                  </div>
+                ) : (
+                  messages.map(renderMessage)
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            </>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <Users className="h-16 w-16 text-blue-500/70 mx-auto" />
-                <h3 className="text-xl font-medium text-white">اختر غرفة محادثة</h3>
-                <p className="text-white/50">اختر غرفة محادثة جماعية للمشاركة</p>
-              </div>
+            </ScrollArea>
+
+            {/* Message input */}
+            <div className="p-4 border-t border-white/10 bg-white/5">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input
+                  placeholder="اكتب رسالة..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white"
+                />
+                <Button
+                  type="submit"
+                  disabled={!message.trim() || isMessageSending}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </form>
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <Users className="h-16 w-16 text-blue-500/70 mx-auto" />
+              <h3 className="text-xl font-medium text-white">اختر غرفة محادثة</h3>
+              <p className="text-white/50">اختر غرفة محادثة جماعية للمشاركة</p>
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );

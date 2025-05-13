@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -5,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Send, BookOpen } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Message = {
   id: number;
@@ -15,29 +17,17 @@ type Message = {
 };
 
 const ChemistryAssistant = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      role: 'assistant',
-      content: 'مرحباً! أنا مساعدك الكيميائي، كيف يمكنني مساعدتك اليوم؟ يمكنني مساعدتك في المعادلات الكيميائية، الجدول الدوري، التفاعلات الكيميائية والمزيد!'
-    }
-  ]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  const [lastQuestion, setLastQuestion] = useState('');
+  const [response, setResponse] = useState('');
   
   const handleSend = async () => {
     if (!input.trim()) return;
     
-    const userMessage: Message = {
-      id: messages.length + 1,
-      role: 'user',
-      content: input
-    };
-    
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsTyping(true);
+    setIsLoading(true);
+    setLastQuestion(input);
     
     try {
       // Call Gemini API via Supabase Edge Function for AI response
@@ -53,27 +43,18 @@ const ChemistryAssistant = () => {
 
       const aiResponse = data?.result || "عذراً، لم أتمكن من الحصول على إجابة الآن. حاول مرة أخرى لاحقاً.";
       
-      const assistantMessage: Message = {
-        id: messages.length + 2,
-        role: 'assistant',
-        content: aiResponse
-      };
-      
-      setMessages((prev) => [...prev, assistantMessage]);
+      setResponse(aiResponse);
     } catch (error: any) {
       console.error("Error calling AI assistant:", error);
-      toast.error("حدث خطأ أثناء الاتصال بالمساعد الذكي");
+      toast({
+        title: "حدث خطأ",
+        description: "لم نتمكن من معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً.",
+        variant: "destructive"
+      });
       
-      // Fallback response
-      const fallbackMessage: Message = {
-        id: messages.length + 2,
-        role: 'assistant',
-        content: "عذراً، حدث خطأ في الاتصال بالمساعد الذكي. يرجى المحاولة مرة أخرى."
-      };
-      
-      setMessages((prev) => [...prev, fallbackMessage]);
+      setResponse("عذراً، حدث خطأ في الاتصال بالمساعد الذكي. يرجى المحاولة مرة أخرى.");
     } finally {
-      setIsTyping(false);
+      setIsLoading(false);
     }
   };
   
@@ -105,61 +86,68 @@ const ChemistryAssistant = () => {
         </TabsList>
         
         <TabsContent value="chat" className="flex-1 flex flex-col space-y-4 mt-2 data-[state=inactive]:hidden">
-          <div className="flex-1 overflow-auto p-4 rounded-md bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20">
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mb-4 ${
-                  message.role === 'user' ? 'text-left' : 'text-right'
-                }`}
-              >
-                <div
-                  className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
-                    message.role === 'user'
-                      ? 'bg-cyan-600 text-white shadow-md'
-                      : 'bg-blue-900/80 text-cyan-50 border border-cyan-500/30'
-                  }`}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+            {/* قسم السؤال - Question Section */}
+            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white text-lg">إكتب سؤالك</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="اكتب سؤالك هنا في مجال الكيمياء..."
+                  className="resize-none flex-1 bg-blue-950/30 border-cyan-900/30 focus:border-cyan-500 min-h-[200px]"
+                />
+                
+                <Button
+                  onClick={handleSend}
+                  type="submit"
+                  className="mt-4 bg-cyan-600 hover:bg-cyan-700 shadow-glow-sm shadow-cyan-500/20 w-full"
+                  disabled={isLoading || !input.trim()}
                 >
-                  {message.content}
-                </div>
-              </motion.div>
-            ))}
-            {isTyping && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-right"
-              >
-                <div className="inline-block rounded-lg px-4 py-2 bg-blue-900/80 text-cyan-50 border border-cyan-500/30">
-                  <span className="inline-block">
-                    <span className="typing-dot animate-pulse">.</span>
-                    <span className="typing-dot animate-pulse delay-150">.</span>
-                    <span className="typing-dot animate-pulse delay-300">.</span>
-                  </span>
-                </div>
-              </motion.div>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2 space-x-reverse">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="اكتب سؤالك هنا..."
-              className="resize-none bg-blue-950/30 border-cyan-900/30 focus:border-cyan-500"
-              rows={1}
-            />
-            <Button
-              onClick={handleSend}
-              type="submit"
-              size="icon"
-              className="bg-cyan-600 hover:bg-cyan-700 shadow-glow-sm shadow-cyan-500/20"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+                  {isLoading ? 'جاري معالجة السؤال...' : 'إرسال السؤال'}
+                  <Send className="h-4 w-4 mr-2" />
+                </Button>
+              </CardContent>
+            </Card>
+            
+            {/* قسم الإجابة - Answer Section */}
+            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white text-lg">الإجابة</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-pulse flex flex-col items-center">
+                      <div className="h-12 w-12 rounded-full bg-cyan-600/30 mb-4 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-full bg-cyan-500/40 animate-ping"></div>
+                      </div>
+                      <p className="text-cyan-400">جاري التفكير...</p>
+                    </div>
+                  </div>
+                ) : response ? (
+                  <div className="overflow-auto h-full">
+                    {lastQuestion && (
+                      <div className="mb-4 p-3 bg-blue-900/40 rounded-lg">
+                        <p className="text-sm text-white/70 mb-1">سؤالك:</p>
+                        <p className="text-white">{lastQuestion}</p>
+                      </div>
+                    )}
+                    <div 
+                      className="prose prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-white/50">
+                    اكتب سؤالك في الجانب الآخر للحصول على إجابة
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
         
