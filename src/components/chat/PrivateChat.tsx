@@ -332,38 +332,41 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
   
   return (
     <div className="space-y-6 w-full">
-      {/* تحسين تصميم واجهة المستخدم */}
+      {/* تحسين تصميم واجهة المستخدم - شريط جهات الاتصال بجانب المحادثة */}
       <div className="flex flex-wrap justify-between items-center mb-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex items-center gap-2 p-1 px-2 bg-blue-900/30 backdrop-blur-sm rounded-lg border border-blue-500/20">
-            {contacts.map((contact) => (
-              <Button
-                key={contact.id}
-                variant={currentContact === contact.contact_id ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setCurrentContact(contact.contact_id)}
-                className={`flex items-center gap-2 ${currentContact === contact.contact_id ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-blue-800/50'}`}
-              >
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="bg-blue-700 text-xs">
-                    {contact.contactUser?.username?.[0] || 'م'}
-                  </AvatarFallback>
-                </Avatar>
-                <span>{contact.contactUser?.username || 'مستخدم'}</span>
-              </Button>
-            ))}
-            
-            {/* زر البحث عن جهات اتصال جديدة */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSearchContactOpen(true)}
-              className="bg-green-600/20 hover:bg-green-600/40 border border-green-500/30 text-white"
-            >
-              <Search className="h-4 w-4 ml-1" />
-              <span>بحث عن جهات اتصال</span>
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 p-2 bg-blue-900/30 backdrop-blur-sm rounded-lg border border-blue-500/20">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSearchContactOpen(true)}
+            className="bg-green-600 hover:bg-green-700 border-none text-white mr-2"
+          >
+            <UserPlus className="h-4 w-4 mr-1" />
+            <span>إضافة جهة اتصال</span>
+          </Button>
+          
+          {contacts.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {contacts.map((contact) => (
+                <Button
+                  key={contact.id}
+                  variant={currentContact === contact.contact_id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setCurrentContact(contact.contact_id)}
+                  className={`flex items-center gap-2 ${currentContact === contact.contact_id ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-blue-800/50'}`}
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="bg-blue-700 text-xs">
+                      {contact.contactUser?.username?.[0] || 'م'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{contact.contactUser?.username || 'مستخدم'}</span>
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <span className="text-white/70 text-sm px-2">لا توجد جهات اتصال</span>
+          )}
         </div>
         
         <Button 
@@ -480,7 +483,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
         </div>
       )}
       
-      {/* مربع حوار البحث عن جهات اتصال */}
+      {/* مربع حوار البحث عن جهات اتصال - تحسين التصميم */}
       <Dialog open={isSearchContactOpen} onOpenChange={setIsSearchContactOpen}>
         <DialogContent className="bg-gradient-to-br from-blue-950 to-blue-900/90 border-blue-800/50 max-w-md">
           <DialogHeader>

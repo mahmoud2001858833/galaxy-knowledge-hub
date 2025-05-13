@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import PrivateChat from './PrivateChat';
 import { User, Users, Search, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
+import UserChatProfile from './UserChatProfile';
 
 const ChatLayout = () => {
   const [user, setUser] = useState<any>(null);
@@ -216,102 +216,11 @@ const ChatLayout = () => {
   return (
     <div className="w-full relative">      
       <div className="flex mt-4">
-        {/* قائمة جهات الاتصال الثابتة */}
-        <div className="hidden md:block w-64 ml-8 flex-shrink-0">
-          <Card className="bg-white/5 backdrop-blur-sm border-white/10 sticky top-4">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">جهات الاتصال</h3>
-                <Users className="text-blue-400 h-5 w-5" />
-              </div>
-              
-              {/* مربع البحث */}
-              <div className="relative mb-4">
-                <div className="flex gap-2">
-                  <Input 
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                    placeholder="ابحث عن مستخدمين..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className="bg-blue-900/30 border-blue-500/30" 
-                    onClick={handleSearch}
-                    disabled={isSearching}
-                  >
-                    <Search className="h-4 w-4 text-blue-400" />
-                  </Button>
-                </div>
-              </div>
-              
-              {/* نتائج البحث */}
-              {searchResults.length > 0 && (
-                <div className="mb-4 border-b border-white/10 pb-4">
-                  <h4 className="text-sm text-white/70 mb-2">نتائج البحث</h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {searchResults.map((result) => (
-                      <div key={result.id} className="flex items-center justify-between bg-white/5 p-2 rounded-lg">
-                        <div className="flex items-center">
-                          <Avatar className="h-8 w-8 mr-2">
-                            {result.avatar_url ? (
-                              <AvatarImage src={result.avatar_url} />
-                            ) : (
-                              <AvatarFallback className="bg-blue-900/50">{result.username[0]}</AvatarFallback>
-                            )}
-                          </Avatar>
-                          <span className="text-white text-sm">{result.username}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
-                          onClick={() => addContact(result.id)}
-                        >
-                          إضافة
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* قائمة جهات الاتصال */}
-              {contacts.length > 0 ? (
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {contacts.map((contact) => (
-                    <div 
-                      key={contact.id} 
-                      className="flex items-center p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                      onClick={() => {
-                        // المنطق الخاص بفتح محادثة خاصة مع جهة الاتصال
-                      }}
-                    >
-                      <Avatar className="h-10 w-10 mr-3">
-                        {contact.avatar_url ? (
-                          <AvatarImage src={contact.avatar_url} />
-                        ) : (
-                          <AvatarFallback className="bg-blue-900/50">{contact.username[0]}</AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div>
-                        <p className="text-white font-medium">{contact.username}</p>
-                        <p className="text-white/50 text-xs">اضغط للمحادثة</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4 text-white/50">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>لا توجد جهات اتصال</p>
-                  <p className="text-xs mt-1">ابحث عن مستخدمين جدد للإضافة</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Show profile information in a separate section */}
+        <div className="hidden md:block w-64 ml-8">
+          {user && userProfile && (
+            <UserChatProfile user={user} profile={userProfile} />
+          )}
         </div>
         
         {/* محتوى المحادثات */}
@@ -338,19 +247,6 @@ const ChatLayout = () => {
               <PrivateChat user={user} key={`private-${forceRefresh}`} />
             </TabsContent>
           </Tabs>
-        </div>
-
-        {/* البحث عن جهات اتصال (للشاشات الصغيرة) */}
-        <div className="fixed bottom-8 right-8 md:hidden">
-          <Button 
-            size="icon" 
-            className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg"
-            onClick={() => {
-              // منطق فتح قائمة البحث في الشاشات الصغيرة
-            }}
-          >
-            <Search className="h-6 w-6" />
-          </Button>
         </div>
       </div>
     </div>
