@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, BookOpen } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -22,6 +22,14 @@ const ChemistryAssistant = () => {
   const [activeTab, setActiveTab] = useState('chat');
   const [lastQuestion, setLastQuestion] = useState('');
   const [response, setResponse] = useState('');
+  const responseRef = useRef<HTMLDivElement>(null);
+  
+  // التمرير التلقائي إلى منطقة الإجابة عند ظهور الرد
+  useEffect(() => {
+    if (response && responseRef.current) {
+      responseRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [response]);
   
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -44,6 +52,10 @@ const ChemistryAssistant = () => {
       const aiResponse = data?.result || "عذراً، لم أتمكن من الحصول على إجابة الآن. حاول مرة أخرى لاحقاً.";
       
       setResponse(aiResponse);
+      toast({
+        title: "تم استلام الإجابة",
+        description: "تم استلام الرد من المساعد الذكي بنجاح",
+      });
     } catch (error: any) {
       console.error("Error calling AI assistant:", error);
       toast({
@@ -66,7 +78,7 @@ const ChemistryAssistant = () => {
   };
   
   return (
-    <div className="h-[600px] flex flex-col">
+    <div className="flex flex-col h-[600px]">
       <motion.h2 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -85,8 +97,8 @@ const ChemistryAssistant = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="chat" className="flex-1 flex flex-col space-y-4 mt-2 data-[state=inactive]:hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+        <TabsContent value="chat" className="flex-1 flex flex-col space-y-4 mt-2 data-[state=inactive]:hidden overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
             {/* قسم السؤال - Question Section */}
             <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col">
               <CardHeader className="pb-2">
@@ -114,11 +126,14 @@ const ChemistryAssistant = () => {
             </Card>
             
             {/* قسم الإجابة - Answer Section */}
-            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col">
+            <Card 
+              className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col"
+              ref={responseRef}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-white text-lg">الإجابة</CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
+              <CardContent className="flex-1 flex flex-col overflow-auto">
                 {isLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-pulse flex flex-col items-center">
@@ -129,7 +144,12 @@ const ChemistryAssistant = () => {
                     </div>
                   </div>
                 ) : response ? (
-                  <div className="overflow-auto h-full">
+                  <motion.div 
+                    className="overflow-auto h-full"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
                     {lastQuestion && (
                       <div className="mb-4 p-3 bg-blue-900/40 rounded-lg">
                         <p className="text-sm text-white/70 mb-1">سؤالك:</p>
@@ -140,7 +160,7 @@ const ChemistryAssistant = () => {
                       className="prose prose-invert max-w-none"
                       dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
                     />
-                  </div>
+                  </motion.div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-white/50">
                     اكتب سؤالك في الجانب الآخر للحصول على إجابة
@@ -149,6 +169,22 @@ const ChemistryAssistant = () => {
               </CardContent>
             </Card>
           </div>
+          
+          {/* نافذة منبثقة لعرض الإجابة في حالة وجود إجابة مع تصميم للشاشات الصغيرة */}
+          {response && (
+            <div className="lg:hidden bg-cyan-600/10 border border-cyan-500/30 p-4 rounded-lg shadow-lg mt-4">
+              <h3 className="text-cyan-400 font-bold mb-2">الإجابة المختصرة</h3>
+              <div className="max-h-40 overflow-auto text-white/90">
+                {response.substring(0, 150)}... 
+                <button 
+                  className="text-cyan-400 hover:text-cyan-300 block mt-2"
+                  onClick={() => responseRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  عرض الإجابة الكاملة
+                </button>
+              </div>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="references" className="flex-1 overflow-auto space-y-4 data-[state=inactive]:hidden">
