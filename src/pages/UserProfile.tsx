@@ -4,7 +4,9 @@ import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, CircleCheck, FileImage, FileText, Award } from 'lucide-react';
+import { User, CircleCheck, FileImage, FileText, Award, Clock, Trophy, Book, MessageSquare } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -37,7 +39,6 @@ type UploadedJournal = {
   created_at: string;
 };
 
-// Update SolvedPuzzle type to include title and difficulty properties
 type SolvedPuzzle = {
   id: string;
   user_id: string;
@@ -46,6 +47,13 @@ type SolvedPuzzle = {
   solved_at: string;
   title?: string;
   difficulty?: string;
+  points?: number;
+};
+
+type Contact = {
+  id: string;
+  username: string;
+  avatar_url?: string | null;
 };
 
 const UserProfile = () => {
@@ -53,13 +61,62 @@ const UserProfile = () => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [journals, setJournals] = useState<UploadedJournal[]>([]);
   const [puzzles, setPuzzles] = useState<SolvedPuzzle[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [usageTime, setUsageTime] = useState(0);
+  const [level, setLevel] = useState({ level: 0, progress: 0, nextLevel: 60 });
   const { toast } = useToast();
   
   useEffect(() => {
     fetchUserData();
+    document.title = "الملف الشخصي - منصة في فلك المعرفة";
+    
+    return () => {
+      document.title = "منصة في فلك المعرفة";
+    };
   }, []);
+
+  useEffect(() => {
+    if (profile) {
+      // Get usage time from localStorage or initialize it
+      const storedTime = localStorage.getItem(`user_${profile.id}_usage_time`) || "0";
+      const initialTime = parseInt(storedTime, 10);
+      setUsageTime(initialTime);
+      
+      // Calculate level - 1 level per 60 minutes (1 hour)
+      const calculatedLevel = Math.floor(initialTime / 60);
+      const remainingMinutes = initialTime % 60;
+      
+      setLevel({
+        level: calculatedLevel,
+        progress: remainingMinutes,
+        nextLevel: 60
+      });
+      
+      // Start tracking usage time
+      const timer = setInterval(() => {
+        setUsageTime(prevTime => {
+          const newTime = prevTime + 1/60; // Add 1 second converted to minutes
+          localStorage.setItem(`user_${profile.id}_usage_time`, newTime.toString());
+          
+          // Update level calculation
+          const newLevel = Math.floor(newTime / 60);
+          const newRemaining = newTime % 60;
+          
+          setLevel({
+            level: newLevel,
+            progress: newRemaining,
+            nextLevel: 60
+          });
+          
+          return newTime;
+        });
+      }, 1000); // Update every second
+      
+      return () => clearInterval(timer);
+    }
+  }, [profile]);
   
   const fetchUserData = async () => {
     try {
@@ -138,77 +195,67 @@ const UserProfile = () => {
         setJournals(journalsData as UploadedJournal[]);
       }
       
-      // Fetch solved puzzles with a direct join instead of a foreign key reference
+      // Fetch solved puzzles with additional details
       const { data: puzzlesData, error: puzzlesError } = await supabase
         .from('user_solved_puzzles')
-        .select(`
-          id,
-          user_id,
-          puzzle_id,
-          subject,
-          solved_at
-        `)
+        .select('*')
         .eq('user_id', user.id)
-        .order('solved_at', { ascending: false })
-        .limit(10);
+        .order('solved_at', { ascending: false });
       
       if (puzzlesError) throw puzzlesError;
       
       if (puzzlesData && puzzlesData.length > 0) {
-        // For each solved puzzle, get the puzzle details from subject_puzzles table
-        const formattedPuzzles: SolvedPuzzle[] = [];
-        
-        for (const puzzleEntry of puzzlesData) {
-          const { data: puzzleDetails } = await supabase
-            .from('subject_puzzles')
-            .select('title, subject, difficulty')
-            .eq('id', puzzleEntry.puzzle_id)
-            .single();
-            
-          // Only add puzzles where we could find details
-          if (puzzleDetails) {
-            formattedPuzzles.push({
-              id: puzzleEntry.id,
-              user_id: puzzleEntry.user_id,
-              puzzle_id: puzzleEntry.puzzle_id,
-              subject: puzzleEntry.subject,
-              solved_at: puzzleEntry.solved_at,
-              title: puzzleDetails.title,
-              difficulty: puzzleDetails.difficulty === 'easy' ? 'سهل' : 
-                           puzzleDetails.difficulty === 'medium' ? 'متوسط' : 'صعب'
-            });
-          } else {
-            // If puzzle details are not found, still add the base puzzle entry
-            formattedPuzzles.push({
-              ...puzzleEntry,
-              title: 'لغز غير معروف',
-              difficulty: 'غير محدد'
-            });
-          }
-        }
-        
-        setPuzzles(formattedPuzzles);
-      } else {
-        // For demonstration, if no solved puzzles, show created puzzles
-        const { data: createdPuzzles, error: createdError } = await supabase
-          .from('subject_puzzles')
-          .select('*')
-          .eq('created_by', user.id)
-          .limit(5);
-        
-        if (!createdError && createdPuzzles && createdPuzzles.length > 0) {
-          const formattedPuzzles: SolvedPuzzle[] = createdPuzzles.map(puzzle => ({
-            id: puzzle.id,
-            user_id: user.id,
-            puzzle_id: puzzle.id,
-            subject: puzzle.subject,
-            solved_at: puzzle.created_at,
-            title: puzzle.title,
-            difficulty: puzzle.difficulty === 'easy' ? 'سهل' : 
-                        puzzle.difficulty === 'medium' ? 'متوسط' : 'صعب'
-          }));
+        // Enhanced puzzle data with details
+        const enhancedPuzzles = await Promise.all(puzzlesData.map(async (puzzle) => {
+          // Try to get puzzle details based on subject
+          let puzzleDetails: any = null;
           
-          setPuzzles(formattedPuzzles);
+          try {
+            const { data: details } = await supabase
+              .from('subject_puzzles')
+              .select('title, difficulty, points')
+              .eq('id', puzzle.puzzle_id)
+              .single();
+              
+            if (details) {
+              puzzleDetails = details;
+            }
+          } catch (e) {
+            console.log('Could not fetch puzzle details for', puzzle.puzzle_id);
+          }
+          
+          return {
+            ...puzzle,
+            title: puzzleDetails?.title || 'لغز',
+            difficulty: puzzleDetails?.difficulty === 'easy' ? 'سهل' : 
+                       puzzleDetails?.difficulty === 'medium' ? 'متوسط' : 'صعب',
+            points: puzzleDetails?.points || 0
+          };
+        }));
+        
+        setPuzzles(enhancedPuzzles);
+      }
+      
+      // Fetch contacts
+      const { data: contactsData, error: contactsError } = await supabase
+        .from('contacts')
+        .select('contact_id')
+        .eq('user_id', user.id);
+        
+      if (contactsError) throw contactsError;
+      
+      if (contactsData && contactsData.length > 0) {
+        const contactIds = contactsData.map(c => c.contact_id);
+        
+        const { data: contactProfiles, error: contactProfilesError } = await supabase
+          .from('users_profiles')
+          .select('id, username, avatar_url')
+          .in('id', contactIds);
+          
+        if (contactProfilesError) throw contactProfilesError;
+        
+        if (contactProfiles) {
+          setContacts(contactProfiles as Contact[]);
         }
       }
       
@@ -267,6 +314,9 @@ const UserProfile = () => {
     }
   };
   
+  // Calculate progress percentage for the progress bar
+  const progressPercentage = (level.progress / level.nextLevel) * 100;
+  
   return (
     <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
       <StarField starCount={100} speed={0.1} />
@@ -293,13 +343,31 @@ const UserProfile = () => {
                     <User className="w-16 h-16 text-white/70" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-1 rounded-full">
-                  <Award className="w-5 h-5" />
+                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-full">
+                  <Award className="w-6 h-6" />
                 </div>
               </div>
               
               <h1 className="text-3xl font-bold text-white mt-4">{profile.username}</h1>
-              <div className="flex items-center justify-center space-x-4 mt-2 text-white/70">
+              
+              <div className="flex flex-col items-center justify-center mt-2">
+                <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 border-none text-lg mb-2">
+                  المستوى {level.level}
+                </Badge>
+                
+                <div className="w-80 max-w-full space-y-1">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-white/70">التقدم للمستوى التالي</span>
+                    <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} دقيقة</span>
+                  </div>
+                  <Progress 
+                    value={progressPercentage} 
+                    className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center space-x-4 mt-4 text-white/70">
                 <div className="flex items-center">
                   <CircleCheck className="w-4 h-4 ml-1 text-green-400" />
                   <span>{profile.solved_puzzles || 0} ألغاز محلولة</span>
@@ -308,7 +376,12 @@ const UserProfile = () => {
                   <Award className="w-4 h-4 ml-1 text-yellow-400" />
                   <span>{profile.score || 0} نقطة</span>
                 </div>
+                <div className="flex items-center mr-4">
+                  <Clock className="w-4 h-4 ml-1 text-blue-400" />
+                  <span>{Math.floor(usageTime / 60)} ساعة و {Math.round(usageTime % 60)} دقيقة</span>
+                </div>
               </div>
+              
               {isAdmin && (
                 <div className="mt-2 inline-block bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-1 rounded-full text-white text-sm font-medium">
                   مشرف
@@ -325,15 +398,22 @@ const UserProfile = () => {
             <Card className="bg-white/5 backdrop-blur-sm border-white/10">
               <CardContent className="p-6">
                 <Tabs defaultValue="puzzles">
-                  <TabsList className="grid grid-cols-3 mb-6">
-                    <TabsTrigger value="puzzles">
-                      الألغاز المحلولة
+                  <TabsList className="grid grid-cols-4 mb-6">
+                    <TabsTrigger value="puzzles" className="flex items-center gap-1">
+                      <Trophy className="h-4 w-4" />
+                      <span>الألغاز المحلولة</span>
                     </TabsTrigger>
-                    <TabsTrigger value="images">
-                      الصور المرفوعة
+                    <TabsTrigger value="images" className="flex items-center gap-1">
+                      <FileImage className="h-4 w-4" />
+                      <span>الصور المرفوعة</span>
                     </TabsTrigger>
-                    <TabsTrigger value="journals">
-                      المجلات المرفوعة
+                    <TabsTrigger value="journals" className="flex items-center gap-1">
+                      <Book className="h-4 w-4" />
+                      <span>المجلات المرفوعة</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="contacts" className="flex items-center gap-1">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>جهات الاتصال</span>
                     </TabsTrigger>
                   </TabsList>
                   
@@ -343,20 +423,25 @@ const UserProfile = () => {
                         {puzzles.map((puzzle) => (
                           <Card key={puzzle.id} className="bg-white/5 border-white/10 hover:border-white/30 transition-all">
                             <CardContent className="p-4">
-                              <div className="flex items-center mb-2">
-                                <span className={`px-2 py-1 rounded text-xs mr-2 ${getSubjectColor(puzzle.subject)}`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`px-2 py-1 rounded text-xs ${getSubjectColor(puzzle.subject)}`}>
                                   {getSubjectName(puzzle.subject)}
                                 </span>
                                 {puzzle.difficulty && (
-                                <span className={`px-2 py-1 rounded text-xs ${getDifficultyColor(puzzle.difficulty)}`}>
-                                  {puzzle.difficulty}
-                                </span>
+                                  <span className={`px-2 py-1 rounded text-xs ${getDifficultyColor(puzzle.difficulty)}`}>
+                                    {puzzle.difficulty}
+                                  </span>
                                 )}
                               </div>
-                              <h3 className="text-lg font-medium text-white mb-1">{puzzle.title || "لغز غير معروف"}</h3>
-                              <p className="text-xs text-white/50">
-                                تم الحل في {new Date(puzzle.solved_at).toLocaleDateString('ar-SA')}
-                              </p>
+                              <h3 className="text-lg font-medium text-white mb-1">{puzzle.title || "لغز"}</h3>
+                              <div className="flex justify-between items-center">
+                                <p className="text-xs text-white/50">
+                                  حل في {new Date(puzzle.solved_at).toLocaleDateString('ar-SA')}
+                                </p>
+                                <Badge variant="outline" className="bg-blue-900/30 text-blue-300">
+                                  {puzzle.points} نقطة
+                                </Badge>
+                              </div>
                             </CardContent>
                           </Card>
                         ))}
@@ -436,6 +521,33 @@ const UserProfile = () => {
                     ) : (
                       <div className="text-center py-10 text-white/70">
                         لم تقم برفع أي مجلات علمية بعد
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="contacts" className="mt-0">
+                    {contacts.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {contacts.map((contact) => (
+                          <Card key={contact.id} className="bg-white/5 border-white/10 hover:border-white/30 transition-all">
+                            <CardContent className="p-4 flex flex-col items-center text-center">
+                              <Avatar className="h-16 w-16 mb-3 border-2 border-blue-500/20">
+                                {contact.avatar_url ? (
+                                  <AvatarImage src={contact.avatar_url} alt={contact.username} />
+                                ) : (
+                                  <AvatarFallback className="bg-blue-700/50">
+                                    {contact.username[0]}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <h3 className="text-lg font-medium text-white">{contact.username}</h3>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-white/70">
+                        ليس لديك جهات اتصال بعد
                       </div>
                     )}
                   </TabsContent>

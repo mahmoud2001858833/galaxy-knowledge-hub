@@ -1,562 +1,478 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Send, Loader2, MessageSquare, User, RefreshCw, Search, UserPlus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { formatDistanceToNow } from 'date-fns';
-import { arSA } from 'date-fns/locale';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  User,
+  Send,
+  Search,
+  UserPlus,
+  X,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-interface PrivateChatProps {
-  user: any;
-}
-
-interface Contact {
-  id: string;
-  user_id: string;
-  contact_id: string;
-  created_at: string;
-  contactUser?: {
-    id: string;
-    username: string;
-    avatar_url?: string;
-  };
-}
-
-const PrivateChat: React.FC<PrivateChatProps> = ({ user }) => {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [currentContact, setCurrentContact] = useState<string | null>(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [forceRefresh, setForceRefresh] = useState(0);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-  
-  // جديد: مربع حوار البحث عن جهات اتصال
-  const [isSearchContactOpen, setIsSearchContactOpen] = useState(false);
+const PrivateChat = ({ user }) => {
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Record<string, any>>({});
+  const [isContactSearchOpen, setIsContactSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [addingContactId, setAddingContactId] = useState<string | null>(null);
-  
-  // استخدام hook الرسائل المباشرة المحسّنة
-  const { messages, loading: messagesLoading, sendMessage, refreshMessages } = useRealtimeMessages({
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  // Subscribe to new messages
+  useRealtimeMessages({
     userId: user?.id,
-    receiverId: currentContact,
     onNewMessage: () => {
-      // التمرير للأسفل عند وصول رسائل جديدة
-      setTimeout(() => scrollToBottom(), 50);
+      if (selectedContact) {
+        fetchMessages(selectedContact.id);
+      }
     }
   });
 
-  // تحميل جهات الاتصال
   useEffect(() => {
-    const fetchContacts = async () => {
-      if (!user?.id) return;
-      
-      try {
-        setLoading(true);
-        
-        const { data: contactsData, error: contactsError } = await supabase
-          .from('contacts')
-          .select('*')
-          .eq('user_id', user.id);
-          
-        if (contactsError) {
-          console.error('خطأ في تحميل جهات الاتصال:', contactsError);
-          throw contactsError;
-        }
-        
-        if (contactsData && contactsData.length > 0) {
-          const contactsWithUsers: Contact[] = [];
-          
-          for (const contact of contactsData) {
-            const { data: userData, error: userError } = await supabase
-              .from('users_profiles')
-              .select('id, username, avatar_url')
-              .eq('id', contact.contact_id)
-              .single();
-              
-            if (userError) {
-              console.error('خطأ في تحميل معلومات المستخدم:', userError);
-              contactsWithUsers.push({
-                ...contact,
-                contactUser: { 
-                  id: contact.contact_id,
-                  username: 'مستخدم غير معروف'
-                }
-              });
-            } else {
-              contactsWithUsers.push({
-                ...contact,
-                contactUser: userData
-              });
-            }
-          }
-          
-          setContacts(contactsWithUsers);
-          
-          if (contactsWithUsers.length > 0 && !currentContact) {
-            setCurrentContact(contactsWithUsers[0].contact_id);
-          }
-        } else {
-          setContacts([]);
-        }
-        
-      } catch (error) {
-        console.error('خطأ في تحميل جهات الاتصال:', error);
-        toast({
-          title: "خطأ",
-          description: "لم نتمكن من تحميل جهات الاتصال",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user?.id) {
+    if (user) {
       fetchContacts();
     }
-  }, [toast, user?.id, currentContact]);
+  }, [user]);
 
-  // تحسين الاستماع لحدث تحديث الرسائل
+  useEffect(() => {
+    if (selectedContact) {
+      fetchMessages(selectedContact.id);
+    }
+  }, [selectedContact]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Listen for refresh events
   useEffect(() => {
     const handleRefreshMessages = () => {
-      if (user?.id && currentContact) {
-        refreshMessages();
+      if (user && selectedContact) {
+        fetchMessages(selectedContact.id);
       }
-      scrollToBottom();
+      fetchContacts();
     };
-    
+
     document.addEventListener('refresh-messages', handleRefreshMessages);
-    
+
     return () => {
       document.removeEventListener('refresh-messages', handleRefreshMessages);
     };
-  }, [user?.id, currentContact, refreshMessages]);
-
-  // تأثير للتحديث القسري - تحسين الاستجابة
-  useEffect(() => {
-    if (forceRefresh > 0 && user?.id && currentContact) {
-      refreshMessages();
-      scrollToBottom();
-    }
-  }, [forceRefresh, user?.id, currentContact, refreshMessages]);
-
-  // تمرير للأسفل عند تحميل الرسائل أو تغيير جهة الاتصال
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, currentContact]);
+  }, [user, selectedContact]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newMessage.trim() || !currentContact) return;
-    
+  const fetchContacts = async () => {
+    if (!user) return;
+
     try {
-      setSendingMessage(true);
-      const success = await sendMessage(newMessage);
-      
-      if (success) {
-        setNewMessage('');
+      const { data: contactsData, error: contactsError } = await supabase
+        .from('contacts')
+        .select('contact_id')
+        .eq('user_id', user.id);
+
+      if (contactsError) throw contactsError;
+
+      if (contactsData) {
+        const contactIds = contactsData.map(contact => contact.contact_id);
         
-        // تحسين تحديث الرسائل بعد الإرسال
-        refreshMessages();
-        setTimeout(() => scrollToBottom(), 50);
+        // Fetch user profiles for these contacts
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('users_profiles')
+          .select('id, username, avatar_url')
+          .in('id', contactIds);
+
+        if (profilesError) throw profilesError;
         
-        // تشغيل حدث تحديث الرسائل لجميع المستخدمين
-        const refreshEvent = new CustomEvent('refresh-messages');
-        document.dispatchEvent(refreshEvent);
-        
-        // إضافة تحديث قسري للصفحة الحالية أيضًا
-        setForceRefresh(prev => prev + 1);
+        if (profilesData) {
+          // Create a map of profiles for easy access
+          const profilesMap: Record<string, any> = {};
+          profilesData.forEach(profile => {
+            profilesMap[profile.id] = profile;
+          });
+          
+          setAllProfiles(profilesMap);
+          setContacts(profilesData);
+        }
       }
-    } catch (error: any) {
-      console.error('خطأ في إرسال الرسالة:', error);
-    } finally {
-      setSendingMessage(false);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      toast({
+        title: "خطأ في تحميل جهات الاتصال",
+        description: "حدث خطأ أثناء تحميل جهات الاتصال، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleRefreshManually = () => {
-    refreshMessages();
-    setForceRefresh(prev => prev + 1);
-    toast({
-      title: "تم التحديث",
-      description: "تم تحديث المحادثة بنجاح",
-    });
-  };
+  const fetchMessages = async (contactId: string) => {
+    if (!user || !contactId) return;
 
-  const formatMessageTime = (timestamp: string) => {
-    return formatDistanceToNow(new Date(timestamp), { 
-      locale: arSA, 
-      addSuffix: true 
-    });
-  };
-  
-  const getCurrentContactName = () => {
-    const contact = contacts.find(c => c.contact_id === currentContact);
-    return contact?.contactUser?.username || 'مستخدم';
-  };
-
-  // جديد: البحث عن المستخدمين
-  const handleSearchUsers = async () => {
-    if (!searchQuery.trim()) return;
-    
     try {
-      setIsSearching(true);
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast({
+        title: "خطأ في تحميل الرسائل",
+        description: "حدث خطأ أثناء تحميل الرسائل، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!message.trim() || !user || !selectedContact) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([
+          {
+            sender_id: user.id,
+            receiver_id: selectedContact.id,
+            message_text: message.trim()
+          }
+        ]);
+
+      if (error) throw error;
       
-      // البحث في جدول الملفات الشخصية باستخدام ilike للبحث الجزئي
+      setMessage('');
+      // This will stay on the same chat after refresh
+      setTimeout(() => fetchMessages(selectedContact.id), 100);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "خطأ في إرسال الرسالة",
+        description: "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSearchUsers = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
       const { data, error } = await supabase
         .from('users_profiles')
         .select('id, username, avatar_url')
         .ilike('username', `%${searchQuery}%`)
-        .neq('id', user.id); // استبعاد المستخدم الحالي
-        
+        .neq('id', user.id);
+
       if (error) throw error;
-      
-      // استبعاد جهات الاتصال الحالية
-      const currentContactIds = contacts.map(contact => contact.contact_id);
-      const filteredResults = data?.filter(user => !currentContactIds.includes(user.id)) || [];
-      
-      setSearchResults(filteredResults);
+      setSearchResults(data || []);
     } catch (error) {
-      console.error('خطأ في البحث:', error);
+      console.error('Error searching users:', error);
       toast({
         title: "خطأ في البحث",
         description: "حدث خطأ أثناء البحث عن المستخدمين",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSearching(false);
     }
   };
-  
-  // جديد: إضافة جهة اتصال من نتائج البحث
-  const handleAddContact = async (contactId: string) => {
+
+  const addContact = async (contactId) => {
     try {
-      setAddingContactId(contactId);
-      
-      // التحقق من وجود جهة الاتصال مسبقاً
+      // Check if contact already exists
       const { data: existingContact, error: checkError } = await supabase
         .from('contacts')
         .select('*')
         .eq('user_id', user.id)
         .eq('contact_id', contactId);
-        
+
       if (checkError) throw checkError;
-      
+
       if (existingContact && existingContact.length > 0) {
         toast({
-          title: "تنبيه",
-          description: "جهة الاتصال موجودة مسبقاً",
-          variant: "default",
+          title: "جهة الاتصال موجودة بالفعل",
+          description: "لقد أضفت هذا المستخدم بالفعل إلى جهات اتصالك",
+          variant: "default"
         });
         return;
       }
-      
-      // إضافة جهة اتصال جديدة
-      const { error: insertError } = await supabase
+
+      // Add contact
+      const { error } = await supabase
         .from('contacts')
-        .insert({
-          user_id: user.id,
-          contact_id: contactId
-        });
-        
-      if (insertError) throw insertError;
-      
-      // تحديث قائمة جهات الاتصال
-      const { data: userData } = await supabase
-        .from('users_profiles')
-        .select('id, username, avatar_url')
-        .eq('id', contactId)
-        .single();
-        
-      if (userData) {
-        const newContact = {
-          id: `${user.id}-${contactId}`,
-          user_id: user.id,
-          contact_id: contactId,
-          created_at: new Date().toISOString(),
-          contactUser: userData
-        };
-        
-        setContacts(prev => [...prev, newContact]);
-        
-        // تعيين جهة الاتصال الجديدة كنشطة
-        setCurrentContact(contactId);
-      }
-      
+        .insert([{ user_id: user.id, contact_id: contactId }]);
+
+      if (error) throw error;
+
       toast({
-        title: "تمت الإضافة",
-        description: "تمت إضافة جهة الاتصال بنجاح",
-        variant: "default",
+        title: "تمت إضافة جهة الاتصال",
+        description: "تمت إضافة المستخدم إلى جهات اتصالك بنجاح",
       });
-      
-      // إغلاق نافذة البحث
-      setIsSearchContactOpen(false);
+
+      // Refresh contacts
+      fetchContacts();
+      setIsContactSearchOpen(false);
       setSearchQuery('');
-      setSearchResults([]);
-      
     } catch (error) {
-      console.error('خطأ في إضافة جهة اتصال:', error);
+      console.error('Error adding contact:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إضافة جهة الاتصال",
-        variant: "destructive",
+        title: "خطأ في إضافة جهة الاتصال",
+        description: "حدث خطأ أثناء إضافة جهة الاتصال، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
       });
-    } finally {
-      setAddingContactId(null);
     }
   };
 
-  if (loading && contacts.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 text-white animate-spin" />
-      </div>
-    );
-  }
-  
   return (
-    <div className="space-y-6 w-full">
-      {/* تحسين تصميم واجهة المستخدم - شريط جهات الاتصال بجانب المحادثة */}
-      <div className="flex flex-wrap justify-between items-center mb-4">
-        <div className="flex items-center gap-2 p-2 bg-blue-900/30 backdrop-blur-sm rounded-lg border border-blue-500/20">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsSearchContactOpen(true)}
-            className="bg-green-600 hover:bg-green-700 border-none text-white mr-2"
-          >
-            <UserPlus className="h-4 w-4 mr-1" />
-            <span>إضافة جهة اتصال</span>
-          </Button>
+    <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden">
+      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-white/5">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setIsContactSearchOpen(true)}
+              className="text-white hover:bg-white/10"
+            >
+              <UserPlus className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="text-white hover:bg-white/10 mr-2"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          </div>
           
-          {contacts.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {contacts.map((contact) => (
-                <Button
-                  key={contact.id}
-                  variant={currentContact === contact.contact_id ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setCurrentContact(contact.contact_id)}
-                  className={`flex items-center gap-2 ${currentContact === contact.contact_id ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-blue-800/50'}`}
-                >
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="bg-blue-700 text-xs">
-                      {contact.contactUser?.username?.[0] || 'م'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{contact.contactUser?.username || 'مستخدم'}</span>
-                </Button>
-              ))}
-            </div>
+          {selectedContact ? (
+            <CardTitle className="text-white flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                {selectedContact.avatar_url ? (
+                  <AvatarImage src={selectedContact.avatar_url} />
+                ) : (
+                  <AvatarFallback className="bg-blue-700">
+                    {selectedContact.username[0]}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <span>{selectedContact.username}</span>
+            </CardTitle>
           ) : (
-            <span className="text-white/70 text-sm px-2">لا توجد جهات اتصال</span>
+            <CardTitle className="text-white">المحادثة الخاصة</CardTitle>
+          )}
+          
+          <div className="w-16"></div> {/* Empty space for alignment */}
+        </div>
+      </CardHeader>
+
+      <div className="grid grid-cols-4 h-[calc(100%-64px)]">
+        {/* Contacts sidebar */}
+        <div className="col-span-1 border-l border-white/10 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto">
+            <ScrollArea className="h-full">
+              <div className="p-2 space-y-1">
+                {contacts.map((contact) => (
+                  <motion.button
+                    key={contact.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedContact(contact)}
+                    className={`w-full flex items-center p-2 rounded-md transition-all ${
+                      selectedContact?.id === contact.id
+                        ? 'bg-blue-600/20 border border-blue-500/30'
+                        : 'hover:bg-white/5 border border-transparent'
+                    }`}
+                  >
+                    <Avatar className="h-10 w-10 ml-2">
+                      {contact.avatar_url ? (
+                        <AvatarImage src={contact.avatar_url} />
+                      ) : (
+                        <AvatarFallback className="bg-blue-700/50">
+                          {contact.username[0]}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="truncate text-right">
+                      <div className="font-medium text-white">{contact.username}</div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+
+        {/* Chat content */}
+        <div className="col-span-3 flex flex-col h-full overflow-hidden">
+          {selectedContact ? (
+            <>
+              {/* Messages area */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4 min-h-full">
+                  {messages.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-white/50">ابدأ المحادثة الآن</p>
+                    </div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${
+                          msg.sender_id === user?.id ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[80%] px-4 py-2 rounded-lg ${
+                            msg.sender_id === user?.id
+                              ? 'bg-blue-600 text-white rounded-br-none'
+                              : 'bg-gray-700/50 text-white rounded-bl-none'
+                          }`}
+                        >
+                          {msg.message_text}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {/* Message input */}
+              <div className="p-4 border-t border-white/10 bg-white/5">
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <Input
+                    placeholder="اكتب رسالة..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!message.trim()}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <User className="h-16 w-16 text-blue-500/70 mx-auto" />
+                <h3 className="text-xl font-medium text-white">اختر جهة اتصال</h3>
+                <p className="text-white/50">اختر جهة اتصال من القائمة لبدء المحادثة</p>
+              </div>
+            </div>
           )}
         </div>
-        
-        <Button 
-          variant="outline"
-          onClick={handleRefreshManually}
-          className="flex items-center gap-1 bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
-          size="sm"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>تحديث</span>
-        </Button>
       </div>
 
-      {contacts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 space-y-4">
-          <div className="p-8 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 text-center shadow-lg">
-            <User className="h-12 w-12 mx-auto text-blue-400 mb-4" />
-            <h3 className="text-white text-lg mb-2">لا توجد جهات اتصال</h3>
-            <p className="text-white/70 mb-6">لم تقم بإضافة أي جهة اتصال بعد.</p>
-            <Button
-              onClick={() => setIsSearchContactOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Search className="h-4 w-4 ml-2" />
-              البحث عن جهات اتصال
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="h-[450px] bg-gradient-to-br from-blue-950/50 to-purple-900/20 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-y-auto flex flex-col p-4 w-full shadow-lg">
-          <div className="flex justify-between items-center border-b border-blue-500/20 pb-2 mb-4">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-blue-700">
-                  {getCurrentContactName()[0] || 'م'}
-                </AvatarFallback>
-              </Avatar>
-              <h3 className="text-white font-medium">{getCurrentContactName()}</h3>
-            </div>
-            <Badge variant="outline" className="bg-blue-900/50 border-blue-500/30 text-blue-300 text-xs">
-              متصل
-            </Badge>
-          </div>
-          
-          <div className="flex-1 space-y-4 overflow-y-auto px-2">
-            {messages.length === 0 && !messagesLoading ? (
-              <div className="flex flex-col items-center justify-center h-full text-white/70">
-                <MessageSquare className="h-12 w-12 mb-2 text-cyan-400/60" />
-                <p>لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p>
-              </div>
-            ) : messagesLoading ? (
-              <div className="flex justify-center items-center h-full">
-                <Loader2 className="h-8 w-8 text-white animate-spin" />
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(index * 0.05, 0.3), duration: 0.3 }}
-                  className={`flex ${message.sender_id === user.id ? 'justify-start flex-row-reverse' : 'justify-start'} gap-2`}
-                >
-                  <div className="flex-shrink-0">
-                    <Avatar>
-                      <AvatarFallback className={message.sender_id === user.id ? 'bg-blue-700' : 'bg-purple-700'}>
-                        {message.username?.[0] || "م"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className={`max-w-[70%] ${
-                    message.sender_id === user.id 
-                      ? 'bg-gradient-to-r from-blue-600/40 to-blue-500/30 border-blue-500/30' 
-                      : 'bg-gradient-to-r from-purple-600/30 to-purple-500/20 border-purple-500/30'
-                    } border rounded-lg p-3 shadow-md`}
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className={`text-xs text-white/70 ${message.sender_id === user.id ? 'order-2' : 'order-1'}`}>
-                        {formatMessageTime(message.created_at)}
-                      </span>
-                      <span className={`font-semibold text-sm ${
-                        message.sender_id === user.id ? 'text-blue-300 order-1' : 'text-purple-300 order-2'
-                      }`}>
-                        {message.sender_id === user.id ? 'أنت' : message.username}
-                      </span>
-                    </div>
-                    <p className="text-white whitespace-pre-wrap break-words text-right">{message.message_text}</p>
-                  </div>
-                </motion.div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
-            <Button 
-              type="submit" 
-              disabled={sendingMessage || !newMessage.trim() || !currentContact} 
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-blue-500/30 shadow-md">
-              {sendingMessage ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="اكتب رسالتك هنا..."
-              className="flex-1 bg-blue-900/30 border-blue-500/30 text-white placeholder:text-white/50 text-right focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-              disabled={sendingMessage || !currentContact}
-            />
-          </form>
-        </div>
-      )}
-      
-      {/* مربع حوار البحث عن جهات اتصال - تحسين التصميم */}
-      <Dialog open={isSearchContactOpen} onOpenChange={setIsSearchContactOpen}>
-        <DialogContent className="bg-gradient-to-br from-blue-950 to-blue-900/90 border-blue-800/50 max-w-md">
+      {/* Contact search dialog */}
+      <Dialog open={isContactSearchOpen} onOpenChange={setIsContactSearchOpen}>
+        <DialogContent className="bg-gradient-to-br from-blue-950 to-purple-950 border-blue-800/50 max-w-md shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl">البحث عن جهات اتصال</DialogTitle>
+            <DialogTitle className="text-white text-xl">إضافة جهة اتصال</DialogTitle>
             <DialogDescription className="text-white/70">
-              ابحث عن مستخدمين جدد عن طريق اسم المستخدم
+              ابحث عن مستخدم بالاسم وأضفه إلى جهات اتصالك
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleSearchUsers} 
-                disabled={isSearching || !searchQuery.trim()}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </Button>
-              <Input
-                placeholder="اكتب اسم المستخدم للبحث"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-blue-900/50 border-blue-700"
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
-              />
-            </div>
-            
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {searchResults.length === 0 && searchQuery && !isSearching ? (
-                <p className="text-white/70 text-center py-4">لم يتم العثور على نتائج</p>
-              ) : searchResults.map(user => (
-                <div 
-                  key={user.id} 
-                  className="flex items-center justify-between p-2 rounded-lg bg-blue-900/30 border border-blue-800/50"
-                >
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddContact(user.id)}
-                    disabled={addingContactId === user.id}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {addingContactId === user.id ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <UserPlus className="h-3 w-3" />
-                    )}
-                  </Button>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-white">{user.username}</span>
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="bg-blue-700 text-xs">
-                        {user.username[0] || 'م'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="flex gap-2 mb-4">
+            <Input
+              placeholder="ابحث عن مستخدم..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-blue-900/40 border-blue-700 text-white"
+            />
+            <Button 
+              onClick={handleSearchUsers} 
+              disabled={isSearching || !searchQuery.trim()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
           </div>
-          
+
+          <ScrollArea className="max-h-[300px] overflow-auto">
+            {searchResults.length > 0 ? (
+              <div className="space-y-2">
+                {searchResults.map((result) => (
+                  <div key={result.id} className="flex items-center justify-between bg-blue-900/30 p-3 rounded-lg">
+                    <div className="flex items-center">
+                      <Avatar className="h-8 w-8 ml-2">
+                        {result.avatar_url ? (
+                          <AvatarImage src={result.avatar_url} />
+                        ) : (
+                          <AvatarFallback className="bg-blue-700/50">
+                            {result.username[0]}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <span className="text-white">{result.username}</span>
+                    </div>
+                    <Button
+                      onClick={() => addContact(result.id)}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : searchQuery && !isSearching ? (
+              <div className="text-center py-4 text-white/70">
+                لم يتم العثور على أي نتائج
+              </div>
+            ) : null}
+          </ScrollArea>
+
           <DialogFooter>
             <Button
-              variant="outline" 
-              onClick={() => setIsSearchContactOpen(false)}
-              className="border-blue-500/30 hover:bg-blue-900/50"
+              variant="outline"
+              onClick={() => setIsContactSearchOpen(false)}
+              className="border-blue-500/30 text-white hover:bg-blue-800/30"
             >
-              إغلاق
+              <X className="h-4 w-4 ml-1" />
+              <span>إغلاق</span>
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 };
 

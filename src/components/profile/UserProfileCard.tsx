@@ -1,10 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Award, Trophy, CircleCheck } from 'lucide-react';
+import { User, Award, Trophy, CircleCheck, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 interface UserProfileCardProps {
   user: {
@@ -18,6 +21,51 @@ interface UserProfileCardProps {
 }
 
 const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
+  const [usageTime, setUsageTime] = useState(0);
+  const [level, setLevel] = useState({ level: 0, progress: 0, nextLevel: 60 });
+  
+  // Calculate level based on usage time (minutes)
+  useEffect(() => {
+    if (user) {
+      // Get usage time from localStorage or initialize it
+      const storedTime = localStorage.getItem(`user_${user.id}_usage_time`) || "0";
+      const initialTime = parseInt(storedTime, 10);
+      setUsageTime(initialTime);
+      
+      // Calculate level - 1 level per 60 minutes (1 hour)
+      const calculatedLevel = Math.floor(initialTime / 60);
+      const remainingMinutes = initialTime % 60;
+      
+      setLevel({
+        level: calculatedLevel,
+        progress: remainingMinutes,
+        nextLevel: 60
+      });
+      
+      // Start tracking usage time
+      const timer = setInterval(() => {
+        setUsageTime(prevTime => {
+          const newTime = prevTime + 1/60; // Add 1 second converted to minutes
+          localStorage.setItem(`user_${user.id}_usage_time`, newTime.toString());
+          
+          // Update level calculation
+          const newLevel = Math.floor(newTime / 60);
+          const newRemaining = newTime % 60;
+          
+          setLevel({
+            level: newLevel,
+            progress: newRemaining,
+            nextLevel: 60
+          });
+          
+          return newTime;
+        });
+      }, 1000); // Update every second
+      
+      return () => clearInterval(timer);
+    }
+  }, [user]);
+
   if (!user) {
     return (
       <Card className="bg-white/5 backdrop-blur-sm border-white/10">
@@ -36,6 +84,9 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
       </Card>
     );
   }
+
+  // Calculate progress percentage for the progress bar
+  const progressPercentage = (level.progress / level.nextLevel) * 100;
 
   return (
     <Card className="bg-white/5 backdrop-blur-sm border-white/10 text-right">
@@ -66,14 +117,36 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
 
           <div className="flex-1">
             <h3 className="font-bold text-white text-lg">{user.username}</h3>
-            <div className="flex items-center gap-4 mt-1 text-sm text-white/70">
-              <div className="flex items-center">
-                <Trophy className="h-3 w-3 text-yellow-400 ml-1" />
-                <span>{user.score || 0} نقطة</span>
+            
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center gap-4 text-sm text-white/70">
+                <div className="flex items-center">
+                  <Trophy className="h-3 w-3 text-yellow-400 ml-1" />
+                  <span>{user.score || 0} نقطة</span>
+                </div>
+                <div className="flex items-center">
+                  <CircleCheck className="h-3 w-3 text-green-400 ml-1" />
+                  <span>{user.solved_puzzles || 0} لغز</span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <CircleCheck className="h-3 w-3 text-green-400 ml-1" />
-                <span>{user.solved_puzzles || 0} لغز</span>
+              
+              <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 border-none">
+                المستوى {level.level}
+              </Badge>
+              
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-white/70">التقدم للمستوى التالي</span>
+                  <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} دقيقة</span>
+                </div>
+                <Progress 
+                  value={progressPercentage} 
+                  className="h-1 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
+                />
+                <div className="flex items-center text-xs text-white/50">
+                  <Clock className="h-3 w-3 ml-1" />
+                  <span>وقت الاستخدام: {Math.floor(usageTime / 60)} ساعة و {Math.round(usageTime % 60)} دقيقة</span>
+                </div>
               </div>
             </div>
           </div>
