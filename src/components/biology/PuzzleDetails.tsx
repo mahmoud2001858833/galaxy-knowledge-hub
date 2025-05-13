@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Puzzle } from './types/puzzleTypes';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Check, X, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PuzzleDetailsProps {
@@ -86,12 +87,20 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
             
             if (scoreError) throw scoreError;
             
-            // Update solved puzzles counter - FIX HERE
+            // Update solved puzzles counter - Manual increment
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('solved_puzzles')
+              .eq('id', user.id)
+              .single();
+              
+            if (profileError) throw profileError;
+            
+            const currentSolvedCount = profileData?.solved_puzzles || 0;
+            
             const { error: updateError } = await supabase
               .from('profiles')
-              .update({ 
-                solved_puzzles: supabase.rpc('increment') 
-              })
+              .update({ solved_puzzles: currentSolvedCount + 1 })
               .eq('id', user.id);
               
             if (updateError) throw updateError;
