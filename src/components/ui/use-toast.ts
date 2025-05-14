@@ -1,6 +1,9 @@
 
-// Re-export from sonner to use the toast library directly
-export { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
+
+// Create properly typed re-export
+export const toast = sonnerToast;
+
 export const useToast = () => {
-  return { toast };
+  return { toast: sonnerToast };
 };
