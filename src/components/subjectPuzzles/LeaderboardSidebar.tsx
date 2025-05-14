@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -137,10 +136,9 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
       }
     } catch (error: any) {
       console.error('Error fetching leaderboard:', error);
-      toast({
+      toast.error({
         title: "خطأ في تحميل قائمة المتصدرين",
-        description: error.message,
-        variant: "destructive"
+        description: error.message
       });
     } finally {
       setIsLoading(false);

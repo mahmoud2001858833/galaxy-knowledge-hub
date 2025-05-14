@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -106,10 +105,9 @@ const GroupChat = ({ user }) => {
       }
     } catch (error) {
       console.error('Error fetching rooms:', error);
-      toast({
+      toast.error({
         title: "خطأ في تحميل الغرف",
-        description: "حدث خطأ أثناء تحميل غرف المحادثة، يرجى المحاولة مرة أخرى",
-        variant: "destructive",
+        description: "حدث خطأ أثناء تحميل غرف المحادثة، يرجى المحاولة مرة أخرى"
       });
     }
   };
@@ -131,10 +129,9 @@ const GroupChat = ({ user }) => {
       await fetchUserProfiles(userIds);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      toast({
+      toast.error({
         title: "خطأ في تحميل الرسائل",
-        description: "حدث خطأ أثناء تحميل الرسائل، يرجى المحاولة مرة أخرى",
-        variant: "destructive",
+        description: "حدث خطأ أثناء تحميل الرسائل، يرجى المحاولة مرة أخرى"
       });
     }
   };
@@ -197,10 +194,9 @@ const GroupChat = ({ user }) => {
       
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
+      toast.error({
         title: "خطأ في إرسال الرسالة",
-        description: "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة مرة أخرى",
-        variant: "destructive",
+        description: "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة مرة أخرى"
       });
     } finally {
       setIsMessageSending(false);

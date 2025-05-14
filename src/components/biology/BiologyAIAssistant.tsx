@@ -34,10 +34,9 @@ const BiologyAIAssistant = () => {
   
   const onSubmit = async (data: FormValues) => {
     if (!data.question.trim()) {
-      toast({
+      toast.error({
         title: "لا يمكن إرسال سؤال فارغ",
-        description: "يرجى كتابة سؤالك قبل الإرسال",
-        variant: "destructive"
+        description: "يرجى كتابة سؤالك قبل الإرسال"
       });
       return;
     }
@@ -59,10 +58,9 @@ const BiologyAIAssistant = () => {
       setShowExampleQuestions(false);
     } catch (error: any) {
       console.error('Error calling AI assistant:', error);
-      toast({
+      toast.error({
         title: "حدث خطأ",
-        description: "لم نتمكن من معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً.",
-        variant: "destructive"
+        description: "لم نتمكن من معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً."
       });
     } finally {
       setIsLoading(false);

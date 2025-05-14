@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Puzzle } from './types/puzzleTypes';
@@ -105,18 +104,16 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
               
             if (updateError) throw updateError;
             
-            toast({
+            toast.success({
               title: "إجابة صحيحة! 🎉",
-              description: `أحسنت! لقد حصلت على ${puzzlePoints} نقطة.`,
-              variant: "default"
+              description: `أحسنت! لقد حصلت على ${puzzlePoints} نقطة.`
             });
             
             setHasSolved(true);
           } else {
-            toast({
+            toast.success({
               title: "إجابة صحيحة! 🎉",
-              description: "لقد سبق لك حل هذا اللغز من قبل.",
-              variant: "default"
+              description: "لقد سبق لك حل هذا اللغز من قبل."
             });
           }
         } else {
@@ -130,39 +127,35 @@ const PuzzleDetails: React.FC<PuzzleDetailsProps> = ({ selectedPuzzle }) => {
             
             if (penaltyError) throw penaltyError;
             
-            toast({
+            toast.error({
               title: "إجابة خاطئة",
-              description: "تم خصم نقطتين لأنك قد حللت هذا اللغز من قبل.",
-              variant: "destructive"
+              description: "تم خصم نقطتين لأنك قد حللت هذا اللغز من قبل."
             });
           } else {
-            toast({
+            toast.error({
               title: "إجابة خاطئة",
-              description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
-              variant: "destructive"
+              description: "حاول مرة أخرى أو استخدم التلميح للمساعدة."
             });
           }
         }
       } else {
         if (isAnswerCorrect) {
-          toast({
+          toast.success({
             title: "إجابة صحيحة! 🎉",
-            description: "أحسنت! قم بتسجيل الدخول للحصول على النقاط.",
+            description: "أحسنت! قم بتسجيل الدخول للحصول على النقاط."
           });
         } else {
-          toast({
+          toast.error({
             title: "إجابة خاطئة",
-            description: "حاول مرة أخرى أو استخدم التلميح للمساعدة.",
-            variant: "destructive"
+            description: "حاول مرة أخرى أو استخدم التلميح للمساعدة."
           });
         }
       }
     } catch (error) {
       console.error('Error updating puzzle status:', error);
-      toast({
+      toast.error({
         title: "خطأ في النظام",
-        description: "حدث خطأ في معالجة إجابتك. يرجى المحاولة مرة أخرى.",
-        variant: "destructive"
+        description: "حدث خطأ في معالجة إجابتك. يرجى المحاولة مرة أخرى."
       });
     }
   };
