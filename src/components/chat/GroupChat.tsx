@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { Send, User, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -22,8 +23,9 @@ const GroupChat = ({ user }) => {
   const { toast } = useToast();
   const [isMessageSending, setIsMessageSending] = useState(false);
   const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const [lastMessageTimestamp, setLastMessageTimestamp] = useState<number>(Date.now());
 
-  // Use realtime subscription for messages with immediate refresh
+  // استخدام اشتراك في الوقت الفعلي مع تحديث فوري
   useRealtimeMessages({
     userId: user?.id,
     onNewMessage: () => {
@@ -37,7 +39,7 @@ const GroupChat = ({ user }) => {
     },
   });
   
-  // الاستماع لحدث تحديث المحادثة الجماعية من المستخدمين الآخرين
+  // تحسين الاستماع لحدث تحديث المحادثة الجماعية من المستخدمين الآخرين
   useEffect(() => {
     const handleGroupMessageRefresh = () => {
       if (activeRoom) {
@@ -52,16 +54,54 @@ const GroupChat = ({ user }) => {
     };
   }, [activeRoom]);
   
-  // إضافة مستمع لتحديث المحادثة كل 5 ثوانٍ لضمان عدم فقدان الرسائل
+  // إضافة مستمع لتحديث المحادثة بشكل أكثر فورية
   useEffect(() => {
     if (!activeRoom) return;
     
-    const intervalId = setInterval(() => {
-      fetchMessages(activeRoom);
-    }, 5000);
-    
-    return () => clearInterval(intervalId);
-  }, [activeRoom]);
+    // استخدام Supabase Realtime للاستماع مباشرة للتغييرات
+    const channel = supabase
+      .channel(`room-messages-${activeRoom}`)
+      .on('postgres_changes', 
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `room_id=eq.${activeRoom}`
+        } as any,
+        (payload) => {
+          // تحديث المحادثة فوراً عند استلام رسالة جديدة
+          fetchMessages(activeRoom);
+          
+          // تحديث لجميع المستخدمين
+          const refreshEvent = new Event('group-message-refresh');
+          document.dispatchEvent(refreshEvent);
+          
+          // التمرير للأسفل عند استلام رسالة جديدة
+          if (isAutoScroll) {
+            scrollToBottom();
+          }
+          
+          // تشغيل صوت للإشعار
+          playNotificationSound();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeRoom, isAutoScroll]);
+
+  // صوت الإشعارات
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/message-notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(e => console.log('Audio play error:', e));
+    } catch (err) {
+      console.error('Error playing notification sound:', err);
+    }
+  };
 
   useEffect(() => {
     fetchRooms();
@@ -105,7 +145,7 @@ const GroupChat = ({ user }) => {
       }
     } catch (error) {
       console.error('Error fetching rooms:', error);
-      toast.error({
+      toast({
         title: "خطأ في تحميل الغرف",
         description: "حدث خطأ أثناء تحميل غرف المحادثة، يرجى المحاولة مرة أخرى"
       });
@@ -127,9 +167,12 @@ const GroupChat = ({ user }) => {
       // Collect all unique user IDs
       const userIds = [...new Set((data || []).map(msg => msg.sender_id))];
       await fetchUserProfiles(userIds);
+      
+      // تحديث وقت آخر تحديث للرسائل
+      setLastMessageTimestamp(Date.now());
     } catch (error) {
       console.error('Error fetching messages:', error);
-      toast.error({
+      toast({
         title: "خطأ في تحميل الرسائل",
         description: "حدث خطأ أثناء تحميل الرسائل، يرجى المحاولة مرة أخرى"
       });
@@ -185,16 +228,16 @@ const GroupChat = ({ user }) => {
       // تأكيد من التمرير لأسفل بعد إرسال الرسالة
       setIsAutoScroll(true);
       
-      // إعادة تحميل الرسائل فوراً
+      // تحديث الرسائل فوراً
       fetchMessages(activeRoom);
       
-      // بث حدث لتحديث جميع المتصفحات المفتوحة
+      // بث حدث للتحديث الفوري لجميع المستخدمين
       const refreshEvent = new Event('group-message-refresh');
       document.dispatchEvent(refreshEvent);
       
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error({
+      toast({
         title: "خطأ في إرسال الرسالة",
         description: "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة مرة أخرى"
       });
@@ -262,6 +305,16 @@ const GroupChat = ({ user }) => {
           <Users className="h-5 w-5 text-blue-400" />
           {roomName || "المحادثة الجماعية"}
         </CardTitle>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => fetchMessages(activeRoom || '')}
+          className="bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
+          title="تحديث الرسائل"
+        >
+          <span className="ml-1">تحديث</span>
+          <span className="animate-spin-slow">🔄</span>
+        </Button>
       </CardHeader>
 
       <div className="flex-1 overflow-hidden">
@@ -318,7 +371,11 @@ const GroupChat = ({ user }) => {
                   disabled={!message.trim() || isMessageSending}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                 >
-                  <Send className="h-5 w-5" />
+                  {isMessageSending ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-white" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
                 </Button>
               </form>
             </div>

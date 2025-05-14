@@ -135,9 +135,9 @@ const ChemistryAssistant = () => {
         </TabsList>
         
         <TabsContent value="chat" className="flex-1 flex flex-col space-y-4 mt-2 data-[state=inactive]:hidden overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
+          <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden">
             {/* قسم السؤال - Question Section */}
-            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col" id="question-section">
+            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col lg:w-1/2" id="question-section">
               <CardHeader className="pb-2">
                 <CardTitle className="text-white text-lg">إكتب سؤالك</CardTitle>
               </CardHeader>
@@ -165,7 +165,7 @@ const ChemistryAssistant = () => {
             
             {/* قسم الإجابة - Answer Section */}
             <Card 
-              className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col"
+              className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col lg:w-1/2"
               ref={responseRef}
               id="answer-section"
             >
@@ -208,22 +208,6 @@ const ChemistryAssistant = () => {
               </CardContent>
             </Card>
           </div>
-          
-          {/* نافذة منبثقة لعرض الإجابة في حالة وجود إجابة مع تصميم للشاشات الصغيرة */}
-          {response && (
-            <div className="lg:hidden bg-cyan-600/10 border border-cyan-500/30 p-4 rounded-lg shadow-lg mt-4">
-              <h3 className="text-cyan-400 font-bold mb-2">الإجابة المختصرة</h3>
-              <div className="max-h-40 overflow-auto text-white/90">
-                {response.substring(0, 150)}... 
-                <button 
-                  className="text-cyan-400 hover:text-cyan-300 block mt-2"
-                  onClick={scrollToAnswer}
-                >
-                  عرض الإجابة الكاملة
-                </button>
-              </div>
-            </div>
-          )}
         </TabsContent>
         
         <TabsContent value="references" className="flex-1 overflow-auto space-y-4 data-[state=inactive]:hidden">
