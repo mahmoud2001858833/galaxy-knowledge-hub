@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
-import { Send, User, Users } from 'lucide-react';
+import { Send, User, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const GroupChat = ({ user }) => {
@@ -19,18 +19,50 @@ const GroupChat = ({ user }) => {
   const [rooms, setRooms] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<{ [key: string]: any }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStartRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isMessageSending, setIsMessageSending] = useState(false);
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
 
-  // Use realtime subscription for messages
+  // Use realtime subscription for messages with immediate refresh
   useRealtimeMessages({
     userId: user?.id,
     onNewMessage: () => {
       if (activeRoom) {
         fetchMessages(activeRoom);
+        
+        // بث حدث ليتم تحديث جميع المتصفحات
+        const refreshEvent = new Event('group-message-refresh');
+        document.dispatchEvent(refreshEvent);
       }
     },
   });
+  
+  // الاستماع لحدث تحديث المحادثة الجماعية من المستخدمين الآخرين
+  useEffect(() => {
+    const handleGroupMessageRefresh = () => {
+      if (activeRoom) {
+        fetchMessages(activeRoom);
+      }
+    };
+    
+    document.addEventListener('group-message-refresh', handleGroupMessageRefresh);
+    
+    return () => {
+      document.removeEventListener('group-message-refresh', handleGroupMessageRefresh);
+    };
+  }, [activeRoom]);
+  
+  // إضافة مستمع لتحديث المحادثة كل 5 ثوانٍ لضمان عدم فقدان الرسائل
+  useEffect(() => {
+    if (!activeRoom) return;
+    
+    const intervalId = setInterval(() => {
+      fetchMessages(activeRoom);
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [activeRoom]);
 
   useEffect(() => {
     fetchRooms();
@@ -43,11 +75,17 @@ const GroupChat = ({ user }) => {
   }, [activeRoom]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (isAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, isAutoScroll]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  const scrollToTop = () => {
+    messagesStartRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchRooms = async () => {
@@ -147,19 +185,15 @@ const GroupChat = ({ user }) => {
       // Clear the input
       setMessage('');
       
-      // Fetch updated messages instead of refreshing the whole page
+      // تأكيد من التمرير لأسفل بعد إرسال الرسالة
+      setIsAutoScroll(true);
+      
+      // إعادة تحميل الرسائل فوراً
       fetchMessages(activeRoom);
       
-      // Add the new message to the UI immediately for a more responsive feel
-      const newMessage = {
-        id: Date.now().toString(), // Temporary ID
-        sender_id: user.id,
-        room_id: activeRoom,
-        message_text: message.trim(),
-        created_at: new Date().toISOString()
-      };
-      
-      setMessages(prev => [...prev, newMessage]);
+      // بث حدث لتحديث جميع المتصفحات المفتوحة
+      const refreshEvent = new Event('group-message-refresh');
+      document.dispatchEvent(refreshEvent);
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -226,7 +260,7 @@ const GroupChat = ({ user }) => {
   };
 
   return (
-    <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden">
+    <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden relative">
       <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-white/5">
         <CardTitle className="text-white flex items-center gap-2">
           <Users className="h-5 w-5 text-blue-400" />
@@ -237,9 +271,32 @@ const GroupChat = ({ user }) => {
       <div className="flex-1 overflow-hidden">
         {activeRoom ? (
           <>
+            {/* أزرار التنقل للرسائل */}
+            <div className="fixed left-4 bottom-24 z-50 flex flex-col gap-2">
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
+                onClick={scrollToTop}
+                title="التنقل لأول الرسائل"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
+                onClick={scrollToBottom}
+                title="التنقل لآخر الرسائل"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+            </div>
+
             {/* Messages area */}
             <ScrollArea className="h-[calc(100%-64px)]">
               <div className="p-4 space-y-1">
+                <div ref={messagesStartRef} />
                 {messages.length === 0 ? (
                   <div className="h-full flex items-center justify-center p-10">
                     <p className="text-white/50">لا توجد رسائل بعد</p>

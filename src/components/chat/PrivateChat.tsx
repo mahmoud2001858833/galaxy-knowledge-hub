@@ -15,6 +15,8 @@ import {
   UserPlus,
   X,
   Plus,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import {
   Dialog,
@@ -38,7 +40,9 @@ const PrivateChat = ({ user }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isMessageSending, setIsMessageSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStartRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
 
   // Subscribe to new messages
   useRealtimeMessages({
@@ -63,8 +67,10 @@ const PrivateChat = ({ user }) => {
   }, [selectedContact]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (isAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, isAutoScroll]);
 
   // Listen for refresh events
   useEffect(() => {
@@ -84,6 +90,10 @@ const PrivateChat = ({ user }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  const scrollToTop = () => {
+    messagesStartRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchContacts = async () => {
@@ -175,6 +185,9 @@ const PrivateChat = ({ user }) => {
       
       // Clear input but maintain the same chat
       setMessage('');
+      
+      // تأكيد من التمرير لأسفل بعد إرسال الرسالة
+      setIsAutoScroll(true);
       
       // Add the new message to UI immediately for better UX
       const newMessage = {
@@ -310,7 +323,7 @@ const PrivateChat = ({ user }) => {
   };
 
   return (
-    <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden">
+    <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden relative">
       <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-white/5">
         <div className="flex items-center justify-between w-full">
           <Button 
@@ -400,12 +413,43 @@ const PrivateChat = ({ user }) => {
         </div>
 
         {/* Chat content */}
-        <div className="col-span-3 flex flex-col h-full overflow-hidden">
+        <div className="col-span-3 flex flex-col h-full overflow-hidden relative">
           {selectedContact ? (
             <>
+              {/* أزرار التنقل للرسائل */}
+              <div className="fixed left-4 bottom-24 z-50 flex flex-col gap-2">
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
+                  onClick={scrollToTop}
+                  title="التنقل لأول الرسائل"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
+                  onClick={scrollToBottom}
+                  title="التنقل لآخر الرسائل"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              </div>
+
               {/* Messages area */}
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea 
+                className="flex-1 p-4" 
+                onScroll={(e) => {
+                  // أوقف التمرير التلقائي إلى الأسفل إذا مرر المستخدم لأعلى يدوياً
+                  const target = e.currentTarget;
+                  const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+                  setIsAutoScroll(isScrolledNearBottom);
+                }}
+              >
                 <div className="space-y-1 min-h-full">
+                  <div ref={messagesStartRef} />
                   {messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center py-10">
                       <div className="text-center">

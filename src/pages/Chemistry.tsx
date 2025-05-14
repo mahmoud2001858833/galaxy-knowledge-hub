@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,11 +6,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, FlaskConical, User, HelpCircle, Table2 } from "lucide-react";
+import { Calculator, FlaskConical, User, HelpCircle } from "lucide-react";
 import ChemistryAssistant from '@/components/chemistry/ChemistryAssistant';
 import ChemistryCalculations from '@/components/chemistry/ChemistryCalculations';
 import ChemistryScientists from '@/components/chemistry/ChemistryScientists';
-import SmartPeriodicTable from '@/components/chemistry/SmartPeriodicTable';
 
 const Chemistry = () => {
   const [selectedTab, setSelectedTab] = useState("");
@@ -62,12 +60,6 @@ const Chemistry = () => {
       icon: <HelpCircle className="w-12 h-12 text-cyan-400" />,
       color: "from-cyan-400/20 to-blue-600/30",
       tab: "assistant"
-    },
-    {
-      title: "الجدول الدوري الذكي",
-      icon: <Table2 className="w-12 h-12 text-cyan-400" />,
-      color: "from-cyan-500/20 to-blue-400/30",
-      tab: "periodic-table"
     }
   ];
   
@@ -213,7 +205,7 @@ const Chemistry = () => {
                   <p className="text-xl text-white/80">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
                   {optionCards.map((card, index) => (
                     <motion.div
                       key={index}
@@ -267,7 +259,6 @@ const Chemistry = () => {
                   {selectedTab === "calculations" && <ChemistryCalculations />}
                   {selectedTab === "scientists" && <ChemistryScientists />}
                   {selectedTab === "assistant" && <ChemistryAssistant />}
-                  {selectedTab === "periodic-table" && <SmartPeriodicTable />}
                 </motion.div>
               </div>
             )}

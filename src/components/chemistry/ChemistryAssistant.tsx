@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, BookOpen } from "lucide-react";
+import { Send, BookOpen, ArrowUp, ArrowDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ const ChemistryAssistant = () => {
   const [lastQuestion, setLastQuestion] = useState('');
   const [response, setResponse] = useState('');
   const responseRef = useRef<HTMLDivElement>(null);
+  const questionInputRef = useRef<HTMLTextAreaElement>(null);
   
   // التمرير التلقائي إلى منطقة الإجابة عند ظهور الرد
   useEffect(() => {
@@ -30,6 +31,20 @@ const ChemistryAssistant = () => {
       responseRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [response]);
+  
+  // وظيفة للتنقل إلى أعلى منطقة الأسئلة
+  const scrollToQuestion = () => {
+    if (questionInputRef.current) {
+      questionInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  
+  // وظيفة للتنقل إلى منطقة الإجابة
+  const scrollToAnswer = () => {
+    if (responseRef.current) {
+      responseRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
   
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -56,6 +71,9 @@ const ChemistryAssistant = () => {
         title: "تم استلام الإجابة",
         description: "تم استلام الرد من المساعد الذكي بنجاح",
       });
+      
+      // التمرير التلقائي إلى الإجابة
+      setTimeout(scrollToAnswer, 300);
     } catch (error: any) {
       console.error("Error calling AI assistant:", error);
       toast({
@@ -78,7 +96,7 @@ const ChemistryAssistant = () => {
   };
   
   return (
-    <div className="flex flex-col h-[600px]">
+    <div className="flex flex-col h-[600px] relative">
       <motion.h2 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -86,6 +104,25 @@ const ChemistryAssistant = () => {
       >
         المساعد الكيميائي الذكي
       </motion.h2>
+      
+      {/* أزرار التنقل الثابتة */}
+      <div className="fixed bottom-24 left-6 z-20 flex flex-col space-y-2">
+        <Button 
+          onClick={scrollToQuestion} 
+          size="icon" 
+          className="rounded-full bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-500/20"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+        <Button 
+          onClick={scrollToAnswer}
+          size="icon"
+          className="rounded-full bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-500/20"
+          disabled={!response}
+        >
+          <ArrowDown className="h-5 w-5" />
+        </Button>
+      </div>
       
       <Tabs defaultValue="chat" className="flex-1 flex flex-col" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4 self-center bg-blue-900/30">
@@ -100,12 +137,13 @@ const ChemistryAssistant = () => {
         <TabsContent value="chat" className="flex-1 flex flex-col space-y-4 mt-2 data-[state=inactive]:hidden overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
             {/* قسم السؤال - Question Section */}
-            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col">
+            <Card className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col" id="question-section">
               <CardHeader className="pb-2">
                 <CardTitle className="text-white text-lg">إكتب سؤالك</CardTitle>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col">
                 <Textarea
+                  ref={questionInputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -129,6 +167,7 @@ const ChemistryAssistant = () => {
             <Card 
               className="bg-blue-950/50 border border-cyan-500/30 shadow-glow-sm shadow-cyan-500/20 flex flex-col"
               ref={responseRef}
+              id="answer-section"
             >
               <CardHeader className="pb-2">
                 <CardTitle className="text-white text-lg">الإجابة</CardTitle>
@@ -178,7 +217,7 @@ const ChemistryAssistant = () => {
                 {response.substring(0, 150)}... 
                 <button 
                   className="text-cyan-400 hover:text-cyan-300 block mt-2"
-                  onClick={() => responseRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={scrollToAnswer}
                 >
                   عرض الإجابة الكاملة
                 </button>

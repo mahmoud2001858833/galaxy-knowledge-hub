@@ -1,3 +1,6 @@
 
-// Re-export from the hooks implementation to avoid circular dependencies
-export { useToast, toast } from "@/hooks/use-toast";
+// Re-export from sonner to use the toast library directly
+export { toast } from "sonner";
+export const useToast = () => {
+  return { toast };
+};
