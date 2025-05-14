@@ -99,20 +99,88 @@ export const useRealtimeMessages = ({
     }
   }, [userId, roomId, receiverId, fetchMessages]);
   
-  // الاستماع لحدث تحديث الرسائل - تحسين السرعة
+  // تحسين نظام الاستماع للتحديثات وتسريع استجابة المحادثات
   useEffect(() => {
+    // تحديث الرسائل عند التغيير
     const handleRefreshMessages = () => {
       if (userId && (roomId || receiverId)) {
+        console.log("تحديث الرسائل من حدث مخصص");
         fetchMessages();
       }
     };
     
+    // إضافة مستمع لحدث التحديث المخصص
     document.addEventListener('refresh-messages', handleRefreshMessages);
     
-    return () => {
-      document.removeEventListener('refresh-messages', handleRefreshMessages);
+    // إنشاء قناة مباشرة للاشتراك في التغييرات
+    let channel;
+    if (userId) {
+      if (roomId) {
+        // الاستماع لرسائل غرفة محددة
+        channel = supabase.channel(`room-${roomId}`)
+          .on('postgres_changes', 
+            { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'messages',
+              filter: `room_id=eq.${roomId}`
+            } as any, 
+            (payload) => {
+              console.log('تم استلام رسالة جديدة في الغرفة:', payload);
+              fetchMessages();
+              playNotificationSound();
+              
+              // بث حدث عام لتحديث جميع المستخدمين
+              const refreshEvent = new CustomEvent('global-chat-update');
+              document.dispatchEvent(refreshEvent);
+              
+              if (onNewMessage && payload.new) {
+                onNewMessage(payload.new as Message);
+              }
+            }
+          )
+          .subscribe();
+      } else if (receiverId) {
+        // الاستماع للرسائل الخاصة
+        const [firstId, secondId] = [userId, receiverId].sort();
+        channel = supabase.channel(`private-${firstId}-${secondId}`)
+          .on('postgres_changes', 
+            { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'messages',
+              filter: `or(and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId}))`
+            } as any, 
+            (payload) => {
+              console.log('تم استلام رسالة خاصة جديدة:', payload);
+              fetchMessages();
+              playNotificationSound();
+              
+              if (onNewMessage && payload.new) {
+                onNewMessage(payload.new as Message);
+              }
+            }
+          )
+          .subscribe();
+      }
+    }
+    
+    // تحسين الاستماع للتحديثات العالمية
+    const handleGlobalUpdate = () => {
+      console.log('تم استلام تحديث عام للمحادثة');
+      fetchMessages();
     };
-  }, [userId, roomId, receiverId, fetchMessages]);
+    
+    document.addEventListener('global-chat-update', handleGlobalUpdate);
+    
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      document.removeEventListener('refresh-messages', handleRefreshMessages);
+      document.removeEventListener('global-chat-update', handleGlobalUpdate);
+    };
+  }, [userId, roomId, receiverId, fetchMessages, onNewMessage]);
   
   // تشغيل صوت الإشعار
   const playNotificationSound = useCallback(() => {
@@ -125,93 +193,7 @@ export const useRealtimeMessages = ({
     }
   }, []);
   
-  // تحسين نظام الاشتراك في تحديثات الوقت الفعلي
-  useEffect(() => {
-    if (!userId) return;
-    
-    let channelName = '';
-    let filterObject = {};
-    
-    if (roomId) {
-      channelName = `room-${roomId}`;
-      filterObject = { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages', 
-        filter: `room_id=eq.${roomId}` 
-      };
-    } else if (receiverId) {
-      const [firstId, secondId] = [userId, receiverId].sort();
-      channelName = `private-${firstId}-${secondId}`;
-      filterObject = { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages',
-        filter: `or(and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId}))` 
-      };
-    } else {
-      return;
-    }
-    
-    // استخدام ملاحظ أكثر استجابة
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', filterObject as any, async (payload) => {
-        try {
-          const newMessage = payload.new as Message;
-          
-          if (messages.some(msg => msg.id === newMessage.id)) {
-            return;
-          }
-          
-          // الحصول على اسم المستخدم المرسل بشكل أسرع
-          const { data: userData } = await supabase
-            .from('users_profiles')
-            .select('username')
-            .eq('id', newMessage.sender_id)
-            .single();
-          
-          const messageWithUsername = {
-            ...newMessage,
-            username: userData?.username || 'مستخدم'
-          };
-          
-          // إضافة الرسالة للحالة بشكل أسرع
-          setMessages(prev => [...prev, messageWithUsername]);
-          
-          // إشعار صوتي للرسائل الجديدة من الآخرين
-          if (newMessage.sender_id !== userId) {
-            playNotificationSound();
-            
-            // إظهار إشعار toast للرسائل الجديدة
-            toast({
-              title: `رسالة جديدة من ${messageWithUsername.username}`,
-              description: messageWithUsername.message_text.length > 30 ? 
-                `${messageWithUsername.message_text.substring(0, 30)}...` :
-                messageWithUsername.message_text,
-              variant: "default",
-            });
-          }
-          
-          // تشغيل حدث تحديث الرسائل بشكل أسرع
-          const refreshEvent = new CustomEvent('refresh-messages');
-          document.dispatchEvent(refreshEvent);
-          
-          if (onNewMessage) {
-            onNewMessage(messageWithUsername);
-          }
-        } catch (err) {
-          console.error('Error processing new message:', err);
-        }
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, roomId, receiverId, onNewMessage, toast, messages, playNotificationSound]);
-  
-  // وظيفة إرسال رسالة - تحسين الأداء
+  // وظيفة إرسال رسالة - تحسين الأداء وإضافة تحديث مباشر
   const sendMessage = async (text: string) => {
     try {
       if (!text.trim()) return false;
@@ -242,8 +224,15 @@ export const useRealtimeMessages = ({
       if (error) throw error;
       
       // تحديث سريع للرسائل بعد الإرسال
+      fetchMessages();
+      
+      // بث حدث تحديث الرسائل - تحسين السرعة
       const refreshEvent = new CustomEvent('refresh-messages');
       document.dispatchEvent(refreshEvent);
+      
+      // بث حدث عام لتحديث جميع المستخدمين
+      const globalEvent = new CustomEvent('global-chat-update');
+      document.dispatchEvent(globalEvent);
       
       return true;
     } catch (err: any) {

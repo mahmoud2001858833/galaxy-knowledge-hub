@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import ChatLayout from '@/components/chat/ChatLayout';
 import { Bell, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -32,9 +33,10 @@ const ChatRooms = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          toast.error({
+          toast({
             title: "يجب تسجيل الدخول",
             description: "يرجى تسجيل الدخول للوصول إلى غرف المحادثة",
+            variant: "destructive"
           });
           navigate('/auth');
           return;
@@ -43,9 +45,10 @@ const ChatRooms = () => {
         setUserId(session.user.id);
       } catch (error) {
         console.error('خطأ في التحقق من المستخدم:', error);
-        toast.error({
+        toast({
           title: "حدث خطأ",
           description: "يرجى المحاولة مرة أخرى",
+          variant: "destructive"
         });
       }
     };
@@ -60,11 +63,11 @@ const ChatRooms = () => {
     };
   }, [navigate]);
   
-  // تحسين نظام الاستماع إلى الرسائل الجديدة مع تحسين الأداء والسرعة
+  // تحسين نظام الاستماع إلى الرسائل الجديدة
   useEffect(() => {
     if (!userId) return;
     
-    // Channel for direct messages - تحسين الأداء
+    // تحسين قناة الاستماع للرسائل الخاصة
     const messagesChannel = supabase.channel('messages-notifications')
       .on('postgres_changes', 
         { 
@@ -79,18 +82,17 @@ const ChatRooms = () => {
             playNotificationSound();
           }
           
-          // تنفيذ حدث تحديث الرسائل بشكل أسرع
-          refreshMessages();
+          // بث حدث تحديث عام
+          const globalEvent = new CustomEvent('global-chat-update');
+          document.dispatchEvent(globalEvent);
           
-          // تحديث تلقائي للصفحة بشكل أسرع
-          if (!document.hidden) {
-            setForceRefresh(prev => prev + 1);
-          }
+          // تحديث الواجهة
+          setForceRefresh(prev => prev + 1);
         }
       )
       .subscribe();
       
-    // Channel for group messages - تحسين الأداء  
+    // تحسين قناة الاستماع لرسائل المجموعات
     const groupMessagesChannel = supabase.channel('group-messages-notifications')
       .on('postgres_changes',
         {
@@ -108,12 +110,13 @@ const ChatRooms = () => {
               setHasNewMessages(true);
               playNotificationSound();
             } else {
-              // تحديث تلقائي للصفحة عند استلام رسالة جديدة - أسرع
+              // تحديث تلقائي
               setForceRefresh(prev => prev + 1);
+              
+              // بث حدث تحديث عام
+              const globalEvent = new CustomEvent('global-chat-update');
+              document.dispatchEvent(globalEvent);
             }
-            
-            // تحديث الرسائل بشكل أسرع
-            refreshMessages();
           }
         }
       )
@@ -123,21 +126,33 @@ const ChatRooms = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setHasNewMessages(false);
-        // تحديث الصفحة تلقائيًا عند العودة إليها - أسرع
+        // تحديث عند العودة للصفحة
         setForceRefresh(prev => prev + 1);
+        
+        // بث حدث تحديث عام
+        const globalEvent = new CustomEvent('global-chat-update');
+        document.dispatchEvent(globalEvent);
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // الاستماع لحدث التحديث العام
+    const handleGlobalUpdate = () => {
+      refreshMessages();
+    };
+    
+    document.addEventListener('global-chat-update', handleGlobalUpdate);
     
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(groupMessagesChannel);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('global-chat-update', handleGlobalUpdate);
     };
   }, [userId]);
 
-  // تأثير للتحديث القسري - تحسين الاستجابة
+  // تأثير للتحديث القسري
   useEffect(() => {
     if (forceRefresh > 0) {
       refreshMessages();
@@ -155,7 +170,6 @@ const ChatRooms = () => {
   };
   
   const refreshMessages = () => {
-    // تشغيل حدث تحديث الرسائل ليتم تحديث الواجهات على جميع الأجهزة بشكل أسرع
     console.log("إرسال حدث تحديث الرسائل");
     const refreshEvent = new CustomEvent('refresh-messages');
     document.dispatchEvent(refreshEvent);
@@ -163,7 +177,12 @@ const ChatRooms = () => {
   
   const handleRefreshManually = () => {
     setForceRefresh(prev => prev + 1);
-    toast.success({
+    
+    // بث حدث تحديث عام
+    const globalEvent = new CustomEvent('global-chat-update');
+    document.dispatchEvent(globalEvent);
+    
+    toast({
       title: "تم التحديث",
       description: "تم تحديث المحادثات بنجاح",
     });
@@ -226,7 +245,7 @@ const ChatRooms = () => {
         return;
       }
       
-      // إضافة جهة الاتصال بشكل أسرع
+      // إضافة جهة الاتصال
       const { error: insertError } = await supabase
         .from('contacts')
         .insert({
@@ -236,7 +255,7 @@ const ChatRooms = () => {
         
       if (insertError) throw insertError;
       
-      toast.success({
+      toast({
         title: "تمت الإضافة بنجاح",
         description: `تمت إضافة ${foundUser.username} إلى جهات اتصالك`,
       });
@@ -244,7 +263,7 @@ const ChatRooms = () => {
       setContactEmail('');
       setIsAddContactOpen(false);
       
-      // تحديث الرسائل بشكل أسرع بعد إضافة جهة اتصال جديدة
+      // تحديث المحادثات
       refreshMessages();
       setForceRefresh(prev => prev + 1);
       

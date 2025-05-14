@@ -2,13 +2,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send, BookOpen, ArrowUp, ArrowDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Send, BookOpen, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Message = {
   id: number;
@@ -106,7 +106,7 @@ const ChemistryAssistant = () => {
       </motion.h2>
       
       {/* أزرار التنقل الثابتة */}
-      <div className="fixed bottom-24 left-6 z-20 flex flex-col space-y-2">
+      <div className="fixed bottom-24 right-6 z-20 flex flex-col space-y-2">
         <Button 
           onClick={scrollToQuestion} 
           size="icon" 
@@ -157,8 +157,15 @@ const ChemistryAssistant = () => {
                   className="mt-4 bg-cyan-600 hover:bg-cyan-700 shadow-glow-sm shadow-cyan-500/20 w-full"
                   disabled={isLoading || !input.trim()}
                 >
-                  {isLoading ? 'جاري معالجة السؤال...' : 'إرسال السؤال'}
-                  <Send className="h-4 w-4 mr-2" />
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> جاري معالجة السؤال...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      إرسال السؤال <Send className="h-4 w-4 mr-2" />
+                    </span>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -170,9 +177,22 @@ const ChemistryAssistant = () => {
               id="answer-section"
             >
               <CardHeader className="pb-2">
-                <CardTitle className="text-white text-lg">الإجابة</CardTitle>
+                <CardTitle className="text-white text-lg flex justify-between items-center">
+                  <span>الإجابة</span>
+                  {response && (
+                    <Button
+                      onClick={scrollToAnswer}
+                      size="sm"
+                      variant="ghost"
+                      className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30"
+                      title="التمرير إلى أسفل"
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  )}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col overflow-auto">
+              <CardContent className="flex-1 relative">
                 {isLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-pulse flex flex-col items-center">
@@ -183,23 +203,26 @@ const ChemistryAssistant = () => {
                     </div>
                   </div>
                 ) : response ? (
-                  <motion.div 
-                    className="overflow-auto h-full"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {lastQuestion && (
-                      <div className="mb-4 p-3 bg-blue-900/40 rounded-lg">
-                        <p className="text-sm text-white/70 mb-1">سؤالك:</p>
-                        <p className="text-white">{lastQuestion}</p>
-                      </div>
-                    )}
-                    <div 
-                      className="prose prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
-                    />
-                  </motion.div>
+                  <div className="h-full relative">
+                    <ScrollArea className="h-[350px] overflow-y-auto pr-4">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        {lastQuestion && (
+                          <div className="mb-4 p-3 bg-blue-900/40 rounded-lg">
+                            <p className="text-sm text-white/70 mb-1">سؤالك:</p>
+                            <p className="text-white">{lastQuestion}</p>
+                          </div>
+                        )}
+                        <div 
+                          className="prose prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
+                        />
+                      </motion.div>
+                    </ScrollArea>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-white/50">
                     اكتب سؤالك في الجانب الآخر للحصول على إجابة

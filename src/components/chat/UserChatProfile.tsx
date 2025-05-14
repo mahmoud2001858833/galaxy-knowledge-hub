@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Trophy, MessageSquare, Clock, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserChatProfileProps {
@@ -93,8 +94,9 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="h-full"
     >
-      <Card className="bg-gradient-to-br from-blue-950/50 to-purple-900/20 backdrop-blur-sm border border-blue-500/20 shadow-lg overflow-hidden">
+      <Card className="bg-gradient-to-br from-blue-950/50 to-purple-900/20 backdrop-blur-sm border border-blue-500/20 shadow-lg overflow-hidden h-full flex flex-col">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-white text-lg">الملف الشخصي</CardTitle>
@@ -107,88 +109,90 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-6">
-          <div className="flex flex-col items-center text-center">
-            <Avatar className="h-20 w-20 mb-3 border-2 border-blue-500/30">
-              {profile?.avatar_url ? (
-                <AvatarImage src={profile.avatar_url} alt={profile.username} />
-              ) : (
-                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800 text-xl">
-                  {profile?.username?.[0] || user?.email?.[0] || 'م'}
-                </AvatarFallback>
-              )}
-            </Avatar>
-            
-            <h3 className="text-white text-xl font-bold mb-1">
-              {profile?.username || 'المستخدم'}
-            </h3>
-            
-            <p className="text-white/50 text-sm">
-              {user?.email || ''}
-            </p>
-            
-            <div className="mt-3 flex flex-wrap justify-center gap-2">
-              <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 border-none">
-                النقاط: {userScore}
-              </Badge>
+        <CardContent className="space-y-4 flex-1 overflow-hidden">
+          <ScrollArea className="h-[calc(100%-2rem)] pr-4">
+            <div className="flex flex-col items-center text-center pb-4">
+              <Avatar className="h-20 w-20 mb-3 border-2 border-blue-500/30">
+                {profile?.avatar_url ? (
+                  <AvatarImage src={profile.avatar_url} alt={profile.username} />
+                ) : (
+                  <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800 text-xl">
+                    {profile?.username?.[0] || user?.email?.[0] || 'م'}
+                  </AvatarFallback>
+                )}
+              </Avatar>
               
-              {joinDate && (
-                <Badge variant="outline" className="bg-purple-900/20 border-purple-500/30 text-purple-300 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>الانضمام: {joinDate}</span>
-                </Badge>
-              )}
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-white/70">التقدم للمستوى التالي</span>
-              <span className="text-blue-300">{levelInfo.progress}/{levelInfo.nextLevel}</span>
-            </div>
-            <Progress value={progressPercentage} className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-blue-900/30 rounded-lg p-3 border border-blue-800/30 text-center">
-              <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-400" />
-              <h4 className="text-white font-medium text-sm">الرسائل</h4>
-              <p className="text-2xl font-bold text-blue-300">
-                {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : messagesCount}
-              </p>
-            </div>
-            
-            <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-800/30 text-center">
-              <Trophy className="h-5 w-5 mx-auto mb-1 text-purple-400" />
-              <h4 className="text-white font-medium text-sm">الألغاز المحلولة</h4>
-              <p className="text-2xl font-bold text-purple-300">
-                {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : solvedPuzzles.length}
-              </p>
-            </div>
-          </div>
-          
-          {solvedPuzzles.length > 0 && (
-            <div>
-              <h3 className="text-white/80 text-sm font-medium mb-2 flex items-center gap-1">
-                <Trophy className="h-4 w-4 text-yellow-500" />
-                <span>آخر الإنجازات</span>
+              <h3 className="text-white text-xl font-bold mb-1">
+                {profile?.username || 'المستخدم'}
               </h3>
-              <div className="space-y-2">
-                {solvedPuzzles.slice(0, 3).map((puzzle: SolvedPuzzle, index) => (
-                  <motion.div
-                    key={puzzle.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-blue-900/20 p-2 rounded-md border border-blue-800/30 text-sm flex justify-between"
-                  >
-                    <span className="text-white/90 truncate max-w-[70%]">{puzzle.puzzle_title || `لغز ${index + 1}`}</span>
-                    <span className="text-blue-300">{puzzle.points || 0} نقطة</span>
-                  </motion.div>
-                ))}
+              
+              <p className="text-white/50 text-sm">
+                {user?.email || ''}
+              </p>
+              
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 border-none">
+                  النقاط: {userScore}
+                </Badge>
+                
+                {joinDate && (
+                  <Badge variant="outline" className="bg-purple-900/20 border-purple-500/30 text-purple-300 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>الانضمام: {joinDate}</span>
+                  </Badge>
+                )}
               </div>
             </div>
-          )}
+            
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-white/70">التقدم للمستوى التالي</span>
+                <span className="text-blue-300">{levelInfo.progress}/{levelInfo.nextLevel}</span>
+              </div>
+              <Progress value={progressPercentage} className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-blue-900/30 rounded-lg p-3 border border-blue-800/30 text-center">
+                <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-400" />
+                <h4 className="text-white font-medium text-sm">الرسائل</h4>
+                <p className="text-2xl font-bold text-blue-300">
+                  {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : messagesCount}
+                </p>
+              </div>
+              
+              <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-800/30 text-center">
+                <Trophy className="h-5 w-5 mx-auto mb-1 text-purple-400" />
+                <h4 className="text-white font-medium text-sm">الألغاز المحلولة</h4>
+                <p className="text-2xl font-bold text-purple-300">
+                  {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : solvedPuzzles.length}
+                </p>
+              </div>
+            </div>
+            
+            {solvedPuzzles.length > 0 && (
+              <div>
+                <h3 className="text-white/80 text-sm font-medium mb-2 flex items-center gap-1">
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  <span>آخر الإنجازات</span>
+                </h3>
+                <div className="space-y-2">
+                  {solvedPuzzles.slice(0, 3).map((puzzle: SolvedPuzzle, index) => (
+                    <motion.div
+                      key={puzzle.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-blue-900/20 p-2 rounded-md border border-blue-800/30 text-sm flex justify-between"
+                    >
+                      <span className="text-white/90 truncate max-w-[70%]">{puzzle.puzzle_title || `لغز ${index + 1}`}</span>
+                      <span className="text-blue-300">{puzzle.points || 0} نقطة</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
         </CardContent>
       </Card>
     </motion.div>

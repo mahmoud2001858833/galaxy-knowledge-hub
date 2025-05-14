@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
-import { Send, User, Users, ArrowUp, ArrowDown } from 'lucide-react';
+import { Send, User, Users, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const GroupChat = ({ user }) => {
@@ -25,42 +25,44 @@ const GroupChat = ({ user }) => {
   const [isAutoScroll, setIsAutoScroll] = useState(true);
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState<number>(Date.now());
 
-  // استخدام اشتراك في الوقت الفعلي مع تحديث فوري
-  useRealtimeMessages({
+  // تحسين استخدام اشتراك الوقت الفعلي
+  const { refreshMessages } = useRealtimeMessages({
     userId: user?.id,
-    onNewMessage: () => {
-      if (activeRoom) {
-        fetchMessages(activeRoom);
-        
-        // بث حدث ليتم تحديث جميع المتصفحات
-        const refreshEvent = new Event('group-message-refresh');
-        document.dispatchEvent(refreshEvent);
+    roomId: activeRoom,
+    onNewMessage: (newMsg) => {
+      console.log('تم استلام رسالة جديدة:', newMsg);
+      fetchMessages(activeRoom);
+      if (isAutoScroll) {
+        setTimeout(scrollToBottom, 100);
       }
+      playNotificationSound();
     },
   });
   
-  // تحسين الاستماع لحدث تحديث المحادثة الجماعية من المستخدمين الآخرين
+  // تحسين الاستماع لحدث تحديث المحادثة الجماعية بشكل عام
   useEffect(() => {
-    const handleGroupMessageRefresh = () => {
+    const handleGlobalChatUpdate = () => {
       if (activeRoom) {
+        console.log('تحديث المحادثة الجماعية من الحدث العام');
         fetchMessages(activeRoom);
       }
     };
     
-    document.addEventListener('group-message-refresh', handleGroupMessageRefresh);
+    document.addEventListener('global-chat-update', handleGlobalChatUpdate);
+    document.addEventListener('refresh-messages', handleGlobalChatUpdate);
     
     return () => {
-      document.removeEventListener('group-message-refresh', handleGroupMessageRefresh);
+      document.removeEventListener('global-chat-update', handleGlobalChatUpdate);
+      document.removeEventListener('refresh-messages', handleGlobalChatUpdate);
     };
   }, [activeRoom]);
   
-  // إضافة مستمع لتحديث المحادثة بشكل أكثر فورية
+  // إضافة اشتراك فوري للقناة لتلقي التحديثات في الوقت الحقيقي
   useEffect(() => {
     if (!activeRoom) return;
     
-    // استخدام Supabase Realtime للاستماع مباشرة للتغييرات
     const channel = supabase
-      .channel(`room-messages-${activeRoom}`)
+      .channel(`realtime-room-${activeRoom}`)
       .on('postgres_changes', 
         {
           event: 'INSERT',
@@ -69,20 +71,24 @@ const GroupChat = ({ user }) => {
           filter: `room_id=eq.${activeRoom}`
         } as any,
         (payload) => {
-          // تحديث المحادثة فوراً عند استلام رسالة جديدة
+          console.log('تم استلام رسالة جديدة في الوقت الحقيقي:', payload);
+          
+          // تحديث فوري للمحادثة
           fetchMessages(activeRoom);
           
-          // تحديث لجميع المستخدمين
-          const refreshEvent = new Event('group-message-refresh');
-          document.dispatchEvent(refreshEvent);
-          
-          // التمرير للأسفل عند استلام رسالة جديدة
+          // التمرير للأسفل تلقائياً
           if (isAutoScroll) {
-            scrollToBottom();
+            setTimeout(() => {
+              scrollToBottom();
+            }, 100);
           }
           
-          // تشغيل صوت للإشعار
+          // إشعار صوتي
           playNotificationSound();
+          
+          // نشر حدث عام للتحديث
+          const event = new CustomEvent('global-chat-update');
+          document.dispatchEvent(event);
         }
       )
       .subscribe();
@@ -153,6 +159,8 @@ const GroupChat = ({ user }) => {
   };
 
   const fetchMessages = async (roomId: string) => {
+    if (!roomId) return;
+    
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -231,8 +239,8 @@ const GroupChat = ({ user }) => {
       // تحديث الرسائل فوراً
       fetchMessages(activeRoom);
       
-      // بث حدث للتحديث الفوري لجميع المستخدمين
-      const refreshEvent = new Event('group-message-refresh');
+      // نشر حدث للتحديث الفوري - يسرع عملية التحديث لجميع المستخدمين
+      const refreshEvent = new CustomEvent('global-chat-update');
       document.dispatchEvent(refreshEvent);
       
     } catch (error) {
@@ -243,6 +251,17 @@ const GroupChat = ({ user }) => {
       });
     } finally {
       setIsMessageSending(false);
+    }
+  };
+
+  // تحديث المحادثة يدوياً
+  const handleRefreshChat = () => {
+    if (activeRoom) {
+      fetchMessages(activeRoom);
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث المحادثة بنجاح",
+      });
     }
   };
 
@@ -308,12 +327,12 @@ const GroupChat = ({ user }) => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => fetchMessages(activeRoom || '')}
+          onClick={handleRefreshChat}
           className="bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
-          title="تحديث الرسائل"
+          title="تحديث المحادثة"
         >
-          <span className="ml-1">تحديث</span>
-          <span className="animate-spin-slow">🔄</span>
+          <RefreshCw className="h-4 w-4 mr-1" />
+          <span>تحديث</span>
         </Button>
       </CardHeader>
 
