@@ -1,6 +1,6 @@
 
 import { toast as sonnerToast } from "sonner";
-import type { ToastT, ToastToDismiss } from "sonner";
+import type { Toast as ToastT } from "sonner";
 
 type ToastOptions = {
   title: string;
