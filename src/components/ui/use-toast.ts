@@ -1,6 +1,6 @@
 
 import { toast as sonnerToast } from "sonner";
-import type { ToastProps } from "sonner";
+import type { ToasterProps } from "sonner";
 
 type ToastOptions = {
   title: string;
