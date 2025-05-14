@@ -1,23 +1,39 @@
 
 import { toast as sonnerToast } from "sonner";
+import type { ToastT, ToastToDismiss } from "sonner";
+
+type ToastOptions = {
+  title: string;
+  description?: string;
+  variant?: string;
+};
 
 // Create properly typed re-export with the right interface for our app
-export const toast = {
-  ...sonnerToast,
+const toast = {
   // Add custom methods that match our existing usage pattern
-  error: (options: { title: string; description?: string }) => 
+  error: (options: ToastOptions) => 
     sonnerToast.error(options.title, { description: options.description }),
-  success: (options: { title: string; description?: string }) => 
+  success: (options: ToastOptions) => 
     sonnerToast.success(options.title, { description: options.description }),
-  warning: (options: { title: string; description?: string }) => 
+  warning: (options: ToastOptions) => 
     sonnerToast.warning(options.title, { description: options.description }),
-  info: (options: { title: string; description?: string }) => 
+  info: (options: ToastOptions) => 
     sonnerToast.info(options.title, { description: options.description }),
   // Support our original toast object format
-  default: (options: { title: string; description?: string; variant?: string }) => 
+  default: (options: ToastOptions) => 
     sonnerToast(options.title, { description: options.description })
 };
 
+// Add the default callable function
+const customToast = (options: ToastOptions) => {
+  return sonnerToast(options.title, { description: options.description });
+};
+
+// Merge all properties
+const mergedToast = Object.assign(customToast, toast);
+
+export { mergedToast as toast };
+
 export const useToast = () => {
-  return { toast };
+  return { toast: mergedToast };
 };

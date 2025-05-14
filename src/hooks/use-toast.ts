@@ -1,6 +1,7 @@
 
 import * as React from "react";
 import { type ToastActionElement, type ToastProps } from "@/components/ui/toast";
+import { toast } from "@/components/ui/use-toast";
 
 const TOAST_LIMIT = 20;
 const TOAST_REMOVE_DELAY = 1000 * 60 * 60;
@@ -133,39 +134,6 @@ function dispatch(action: Action) {
 }
 
 interface Toast extends Omit<ToasterToast, "id"> {}
-
-function toast({ ...props }: Toast) {
-  const id = genId();
-
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: actionTypes.UPDATE_TOAST,
-      toast: { ...props, id },
-    });
-  const dismiss = () =>
-    dispatch({
-      type: actionTypes.DISMISS_TOAST,
-      toastId: id,
-    });
-
-  dispatch({
-    type: actionTypes.ADD_TOAST,
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss();
-      },
-    },
-  });
-
-  return {
-    id: id,
-    dismiss,
-    update,
-  };
-}
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);

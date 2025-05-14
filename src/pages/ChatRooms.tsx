@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import ChatLayout from '@/components/chat/ChatLayout';
 import { Bell, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +18,6 @@ import { Button } from '@/components/ui/button';
 
 const ChatRooms = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
@@ -34,10 +32,9 @@ const ChatRooms = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          toast({
+          toast.error({
             title: "يجب تسجيل الدخول",
             description: "يرجى تسجيل الدخول للوصول إلى غرف المحادثة",
-            variant: "destructive",
           });
           navigate('/auth');
           return;
@@ -46,10 +43,9 @@ const ChatRooms = () => {
         setUserId(session.user.id);
       } catch (error) {
         console.error('خطأ في التحقق من المستخدم:', error);
-        toast({
+        toast.error({
           title: "حدث خطأ",
           description: "يرجى المحاولة مرة أخرى",
-          variant: "destructive",
         });
       }
     };
@@ -62,7 +58,7 @@ const ChatRooms = () => {
     return () => {
       document.title = "منصة تعليمية";
     };
-  }, [navigate, toast]);
+  }, [navigate]);
   
   // تحسين نظام الاستماع إلى الرسائل الجديدة مع تحسين الأداء والسرعة
   useEffect(() => {
@@ -167,7 +163,7 @@ const ChatRooms = () => {
   
   const handleRefreshManually = () => {
     setForceRefresh(prev => prev + 1);
-    toast({
+    toast.success({
       title: "تم التحديث",
       description: "تم تحديث المحادثات بنجاح",
     });
@@ -240,7 +236,7 @@ const ChatRooms = () => {
         
       if (insertError) throw insertError;
       
-      toast({
+      toast.success({
         title: "تمت الإضافة بنجاح",
         description: `تمت إضافة ${foundUser.username} إلى جهات اتصالك`,
       });

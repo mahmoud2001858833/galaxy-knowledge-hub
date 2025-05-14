@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import {
   User,
@@ -41,7 +40,6 @@ const PrivateChat = ({ user }) => {
   const [isMessageSending, setIsMessageSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesStartRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
   const [isAutoScroll, setIsAutoScroll] = useState(true);
 
   // Subscribe to new messages
@@ -131,10 +129,9 @@ const PrivateChat = ({ user }) => {
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);
-      toast({
+      toast.error({
         title: "خطأ في تحميل جهات الاتصال",
         description: "حدث خطأ أثناء تحميل جهات الاتصال، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
       });
     }
   };
@@ -153,10 +150,9 @@ const PrivateChat = ({ user }) => {
       setMessages(data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      toast({
+      toast.error({
         title: "خطأ في تحميل الرسائل",
         description: "حدث خطأ أثناء تحميل الرسائل، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
       });
     }
   };
@@ -206,10 +202,9 @@ const PrivateChat = ({ user }) => {
       }, 300);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
+      toast.error({
         title: "خطأ في إرسال الرسالة",
         description: "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
       });
     } finally {
       setIsMessageSending(false);
@@ -234,10 +229,9 @@ const PrivateChat = ({ user }) => {
       setSearchResults(data || []);
     } catch (error) {
       console.error('Error searching users:', error);
-      toast({
+      toast.error({
         title: "خطأ في البحث",
         description: "حدث خطأ أثناء البحث عن المستخدمين",
-        variant: "destructive"
       });
     } finally {
       setIsSearching(false);
@@ -256,10 +250,9 @@ const PrivateChat = ({ user }) => {
       if (checkError) throw checkError;
 
       if (existingContact && existingContact.length > 0) {
-        toast({
+        toast.warning({
           title: "جهة الاتصال موجودة بالفعل",
           description: "لقد أضفت هذا المستخدم بالفعل إلى جهات اتصالك",
-          variant: "default"
         });
         return;
       }
@@ -271,7 +264,7 @@ const PrivateChat = ({ user }) => {
 
       if (error) throw error;
 
-      toast({
+      toast.success({
         title: "تمت إضافة جهة الاتصال",
         description: "تمت إضافة المستخدم إلى جهات اتصالك بنجاح",
       });
@@ -282,10 +275,9 @@ const PrivateChat = ({ user }) => {
       setSearchQuery('');
     } catch (error) {
       console.error('Error adding contact:', error);
-      toast({
+      toast.error({
         title: "خطأ في إضافة جهة الاتصال",
         description: "حدث خطأ أثناء إضافة جهة الاتصال، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
       });
     }
   };
