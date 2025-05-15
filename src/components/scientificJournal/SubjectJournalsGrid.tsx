@@ -78,6 +78,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
     if (!journalToDelete) return;
 
     try {
+      // Delete the journal from the database permanently
       const { error } = await supabase
         .from('scientific_journals')
         .delete()

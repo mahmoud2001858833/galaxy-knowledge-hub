@@ -73,6 +73,7 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
     if (!imageToDelete) return;
 
     try {
+      // Delete the image from the database permanently
       const { error } = await supabase
         .from('educational_images')
         .delete()
@@ -228,6 +229,7 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
         </div>
       )}
 
+      {/* Image details dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         {selectedImage && (
           <DialogContent className="max-w-4xl">
@@ -250,6 +252,7 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
         )}
       </Dialog>
       
+      {/* Delete confirmation dialog */}
       <Dialog open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

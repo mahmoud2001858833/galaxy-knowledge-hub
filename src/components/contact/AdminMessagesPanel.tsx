@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Trash } from "lucide-react";
 
 interface Message {
   id: string;
@@ -26,6 +27,8 @@ const AdminMessagesPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -95,6 +98,34 @@ const AdminMessagesPanel = () => {
       });
     }
     setPassword("");
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageToDelete);
+      
+      if (error) throw error;
+      
+      setMessages(messages.filter(msg => msg.id !== messageToDelete));
+      toast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف الرسالة بنجاح",
+      });
+      setMessageToDelete(null);
+      setDeleteConfirmationOpen(false);
+    } catch (error: any) {
+      console.error("خطأ في حذف الرسالة:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء محاولة حذف الرسالة",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -192,12 +223,25 @@ const AdminMessagesPanel = () => {
             <Card key={message.id} className="bg-white/5 backdrop-blur-sm">
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">
+                  <CardTitle className="text-lg flex-1 text-right">
                     {message.parsed_message?.subject || "بدون موضوع"}
                   </CardTitle>
-                  <span className="text-xs text-white/60">
-                    {formatDate(message.created_at)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/60">
+                      {formatDate(message.created_at)}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-red-400 hover:text-red-500 hover:bg-red-500/10"
+                      onClick={() => {
+                        setMessageToDelete(message.id);
+                        setDeleteConfirmationOpen(true);
+                      }}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -221,6 +265,33 @@ const AdminMessagesPanel = () => {
           <p className="text-xl text-white/60">لا توجد رسائل حتى الآن</p>
         </div>
       )}
+
+      <Dialog open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">تأكيد الحذف</DialogTitle>
+            <DialogDescription className="text-right">
+              هل أنت متأكد من رغبتك في حذف هذه الرسالة؟ هذا الإجراء لا يمكن التراجع عنه.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmationOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteMessage}
+            >
+              حذف الرسالة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
