@@ -1,76 +1,81 @@
 
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { AlertTriangle } from 'lucide-react';
 
-interface SubjectPuzzleDeleteModalProps {
+interface DeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   puzzleId: string | null;
-  onDelete?: () => void;
+  onDelete: () => void;
 }
 
-const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: SubjectPuzzleDeleteModalProps) => {
+const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: DeleteModalProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
-
+  
   const handleDelete = async () => {
     if (!puzzleId) return;
     
-    setIsDeleting(true);
     try {
-      // Use a raw SQL query instead of from() to avoid TypeScript errors
-      // This is a workaround until the types are updated
+      setIsDeleting(true);
+      
+      // Delete the puzzle
       const { error } = await supabase
-        .from('subject_puzzles' as any)
+        .from('subject_puzzles')
         .delete()
         .eq('id', puzzleId);
-
+        
       if (error) throw error;
       
+      // Also delete any user solved puzzles records for this puzzle
+      const { error: solvedError } = await supabase
+        .from('user_solved_puzzles')
+        .delete()
+        .eq('puzzle_id', puzzleId);
+        
+      if (solvedError) console.error('Error deleting solved puzzles records:', solvedError);
+      
       toast.success('تم حذف اللغز بنجاح');
+      onDelete();
       onClose();
-      if (onDelete) onDelete();
     } catch (error: any) {
       console.error('Error deleting puzzle:', error);
-      toast.error('حدث خطأ أثناء حذف اللغز');
+      toast.error(`فشل في حذف اللغز: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
   };
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-space-cosmic-black border-white/20 text-white sm:max-w-md">
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-white text-xl">تأكيد الحذف</DialogTitle>
-          <DialogDescription className="text-white/70">
-            هل أنت متأكد من حذف هذا اللغز؟ هذا الإجراء لا يمكن التراجع عنه.
-          </DialogDescription>
+      <DialogContent className="bg-gray-900 border-white/20 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-white text-center">تأكيد حذف اللغز</DialogTitle>
         </DialogHeader>
-        <DialogFooter className="flex flex-row justify-center gap-2 sm:justify-center">
-          <Button 
-            variant="outline" 
+        
+        <div className="py-4 flex items-center gap-3 text-center">
+          <AlertTriangle className="text-yellow-500 h-6 w-6" />
+          <p>هل أنت متأكد من رغبتك في حذف هذا اللغز؟ هذه العملية لا يمكن التراجع عنها.</p>
+        </div>
+        
+        <DialogFooter className="flex flex-row justify-between sm:justify-between gap-2">
+          <Button
+            variant="ghost"
             onClick={onClose}
-            className="border-white/20 text-white hover:bg-white/10"
+            className="flex-1"
           >
             إلغاء
           </Button>
-          <Button 
+          <Button
             variant="destructive"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="bg-red-500 hover:bg-red-600"
+            className="flex-1"
           >
-            {isDeleting ? 'جاري الحذف...' : 'حذف'}
+            {isDeleting ? 'جاري الحذف...' : 'حذف اللغز'}
           </Button>
         </DialogFooter>
       </DialogContent>
