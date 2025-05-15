@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,6 @@ import {
   Settings,
   UserCircle 
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   DropdownMenu,
@@ -82,7 +80,7 @@ const Navbar = () => {
     });
     navigate('/');
   };
-
+  
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
