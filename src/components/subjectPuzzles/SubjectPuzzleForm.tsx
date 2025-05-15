@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { PuzzlePiece } from 'lucide-react';
+import { Puzzle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Define form schema with Zod
@@ -168,7 +168,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className={`p-2 rounded-full bg-subject-${subject}-primary/20`}>
-              <PuzzlePiece className={`h-5 w-5 text-subject-${subject}-primary`} />
+              <Puzzle className={`h-5 w-5 text-subject-${subject}-primary`} />
             </div>
             <h2 className="text-xl font-bold text-white">إضافة لغز جديد</h2>
           </div>
