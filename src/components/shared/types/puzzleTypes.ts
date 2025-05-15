@@ -1,54 +1,39 @@
 
-// Define common types to be used across puzzle components
 export interface Puzzle {
   id: string;
   title: string;
   question: string;
   options: string[];
+  difficulty: 'easy' | 'medium' | 'hard' | string;
   correct_answer: string;
-  difficulty: string;
   points: number;
-  image?: string | null;
-  created_at: string;
-  created_by?: string | null;
-  admin_password?: string;
-  
-  // Additional properties that may not exist in the database
-  // but are used in the components
+  image?: string;
+  created_at?: string;
+  created_by?: string;
   subject?: string;
-  hint?: string;
-  description?: string;
-  answer?: string;
 }
 
 export interface PuzzleFormValues {
   title: string;
-  description?: string;
-  hint?: string;
   question: string;
   options: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
   correct_answer: string;
-  difficulty: string;
   points: number;
-  image?: string | null;
-  answer?: string;
+  image?: string;
+  subject?: string;
 }
 
-// This interface strictly reflects the database structure
 export interface DatabasePuzzle {
   id: string;
   title: string;
   question: string;
-  correct_answer: string;
-  difficulty: string;
-  admin_password: string;
-  image?: string | null;
   options: string[];
+  difficulty: string;
+  correct_answer: string;
   points: number;
+  image?: string;
   created_at: string;
-  created_by?: string | null;
-  
-  // These fields might not exist in all tables
-  hint?: string;
+  created_by?: string;
   subject?: string;
 }

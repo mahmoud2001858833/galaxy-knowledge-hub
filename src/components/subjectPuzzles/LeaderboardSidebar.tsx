@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Award, User, CircleDot, Trophy, Medal, Crown } from 'lucide-react';
+import { User, Medal, Trophy, CircleDot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast, useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,14 +12,13 @@ interface LeaderboardSidebarProps {
   subject: string;
 }
 
-// Update UserProfile interface to match the actual profiles table structure
+// Update UserProfile interface to match both profiles and users_profiles tables
 export interface UserProfile {
   id: string;
   username: string;
   score: number | null;
   solved_puzzles: number | null;
   created_at: string;
-  // Add avatar_url as optional since it's from users_profiles, not profiles
   avatar_url?: string | null;
 }
 
@@ -27,120 +27,65 @@ interface SubjectLeaderboardItem extends UserProfile {
   subject_solved_count: number;
 }
 
-const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
+const LeaderboardSidebar: React.FC<LeaderboardSidebarProps> = ({ subject }) => {
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [leaderboardType, setLeaderboardType] = useState<'global' | 'subject'>('global');
+  const [subjectLeaderboard, setSubjectLeaderboard] = useState<SubjectLeaderboardItem[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('overall');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [subject, leaderboardType]);
+  // Get color scheme based on subject
+  const colors = {
+    primary: subject === 'physics' ? 'bg-subject-physics-primary' : 
+             subject === 'chemistry' ? 'bg-subject-chemistry-primary' : 
+             subject === 'biology' ? 'bg-subject-biology-primary' : 
+             'bg-subject-mathematics-primary',
+    secondary: subject === 'physics' ? 'text-subject-physics-primary' : 
+               subject === 'chemistry' ? 'text-subject-chemistry-primary' : 
+               subject === 'biology' ? 'text-subject-biology-primary' : 
+               'text-subject-mathematics-primary'
+  };
 
+  // Fetch overall leaderboard data
   const fetchLeaderboard = async () => {
     try {
       setIsLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('score', { ascending: false })
+        .limit(10);
       
-      if (leaderboardType === 'global') {
-        // Fetch global leaderboard across all subjects, sorted by score (highest first)
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('score', { ascending: false })
-          .limit(10);
+      if (error) throw error;
 
-        if (error) throw error;
-
-        if (data) {
-          // Map profiles to UserProfile and set avatar_url to null if not present
-          const profilesWithAvatar = data.map(profile => ({
-            ...profile,
-            avatar_url: null // Default to null since profiles table doesn't have avatar_url
-          })) as UserProfile[];
-          
-          setLeaderboard(profilesWithAvatar);
-        }
-      } else {
-        // Fetch subject-specific leaderboard
-        const { data: solvedData, error: solvedError } = await supabase
-          .from('user_solved_puzzles')
-          .select('user_id, puzzle_id')
-          .eq('subject', subject);
+      if (data) {
+        // Fetch user avatar URLs from users_profiles if available
+        const enhancedProfiles = await Promise.all(data.map(async (profile) => {
+          try {
+            const { data: userProfile } = await supabase
+              .from('users_profiles')
+              .select('avatar_url')
+              .eq('id', profile.id)
+              .single();
             
-        if (solvedError) {
-          console.error('Error fetching subject leaderboard:', solvedError);
-          setLeaderboard([]);
-          return;
-        }
-        
-        if (solvedData && solvedData.length > 0) {
-          // Count occurrences manually since we can't use group
-          const userCounts: Record<string, number> = {};
-          
-          solvedData.forEach(item => {
-            if (!item || typeof item !== 'object') return;
-            
-            const userId = 'user_id' in item ? item.user_id : null;
-            if (userId) {
-              if (!userCounts[userId]) {
-                userCounts[userId] = 0;
-              }
-              userCounts[userId]++;
-            }
-          });
-          
-          // Convert to array for sorting
-          const countArray = Object.entries(userCounts).map(([userId, count]) => ({
-            user_id: userId,
-            count
-          }));
-          
-          // Sort by count descending
-          countArray.sort((a, b) => b.count - a.count);
-          
-          // Limit to 10
-          const top10 = countArray.slice(0, 10);
-          
-          // Now get the profiles for these users
-          if (top10.length > 0) {
-            const userIds = top10.map(item => item.user_id);
-            
-            const { data: profiles, error: profilesError } = await supabase
-              .from('profiles')
-              .select('*')
-              .in('id', userIds);
-              
-            if (profilesError) throw profilesError;
-            
-            if (profiles) {
-              // Merge the profiles with the solved count and ensure avatar_url exists
-              const leaderboardData = profiles.map(profile => {
-                const countItem = top10.find(item => item.user_id === profile.id);
-                return {
-                  ...profile,
-                  avatar_url: null, // Default to null since profiles table doesn't have avatar_url
-                  subject_solved_count: countItem ? countItem.count : 0
-                } as SubjectLeaderboardItem;
-              });
-              
-              // Sort by subject-specific solved count
-              leaderboardData.sort((a, b) => 
-                (b.subject_solved_count || 0) - (a.subject_solved_count || 0)
-              );
-              
-              setLeaderboard(leaderboardData);
-            }
-          } else {
-            setLeaderboard([]);
+            return {
+              ...profile,
+              avatar_url: userProfile?.avatar_url || null
+            };
+          } catch (err) {
+            return {
+              ...profile,
+              avatar_url: null
+            };
           }
-        } else {
-          setLeaderboard([]);
-        }
+        }));
+        
+        setLeaderboard(enhancedProfiles as UserProfile[]);
       }
     } catch (error: any) {
       console.error('Error fetching leaderboard:', error);
       toast({
-        title: "خطأ في تحميل قائمة المتصدرين",
+        title: "خطأ في تحميل البيانات",
         description: error.message,
         variant: "destructive"
       });
@@ -149,115 +94,178 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
     }
   };
 
-  const getSubjectColor = () => {
-    switch (subject) {
-      case 'physics':
-        return {
-          primary: 'bg-subject-physics-primary',
-          text: 'text-subject-physics-primary',
-          glow: 'shadow-glow-purple',
-          border: 'border-subject-physics-primary/30'
-        };
-      case 'chemistry':
-        return {
-          primary: 'bg-subject-chemistry-primary',
-          text: 'text-subject-chemistry-primary',
-          glow: 'shadow-glow-blue',
-          border: 'border-subject-chemistry-primary/30'
-        };
-      case 'biology':
-        return {
-          primary: 'bg-subject-biology-primary',
-          text: 'text-subject-biology-primary',
-          glow: 'shadow-glow-green',
-          border: 'border-subject-biology-primary/30'
-        };
-      case 'mathematics':
-        return {
-          primary: 'bg-subject-mathematics-primary',
-          text: 'text-subject-mathematics-primary',
-          glow: 'shadow-glow-orange',
-          border: 'border-subject-mathematics-primary/30'
-        };
-      default:
-        return {
-          primary: 'bg-blue-600',
-          text: 'text-blue-500',
-          glow: 'shadow-glow-blue',
-          border: 'border-blue-500/30'
-        };
-    }
-  };
-
-  const getMedalIcon = (index: number) => {
-    switch (index) {
-      case 0:
-        return <Crown className="h-6 w-6 text-yellow-400" />;
-      case 1:
-        return <Medal className="h-6 w-6 text-gray-400" />;
-      case 2:
-        return <Medal className="h-6 w-6 text-amber-600" />;
-      default:
-        return <Trophy className="h-5 w-5 text-white/60" />;
-    }
-  };
-
-  const colors = getSubjectColor();
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="lg:w-1/4"
-    >
-      <Card className={`bg-white/5 backdrop-blur-sm ${colors.border} sticky top-4`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">المتصدرون</h3>
-            <Award className={`h-6 w-6 ${colors.text}`} />
-          </div>
+  // Fetch subject-specific leaderboard data
+  const fetchSubjectLeaderboard = async () => {
+    try {
+      setIsLoading(true);
+      
+      // First get users who solved puzzles in this subject
+      const { data: solvedData, error: solvedError } = await supabase
+        .from('user_solved_puzzles')
+        .select('user_id, count(*)')
+        .eq('subject', subject)
+        .group('user_id')
+        .order('count', { ascending: false })
+        .limit(10);
+      
+      if (solvedError) throw solvedError;
+      
+      if (solvedData && solvedData.length > 0) {
+        // Get user IDs who solved puzzles in this subject
+        const userIds = solvedData.map(item => item.user_id);
+        
+        // Then get profiles for these users
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        
+        if (profilesError) throw profilesError;
+        
+        if (profilesData) {
+          // Combine profiles with subject-specific count
+          const top10 = solvedData;
           
-          <div className="mb-4">
-            <Tabs 
-              defaultValue="global" 
-              value={leaderboardType} 
-              onValueChange={(value) => setLeaderboardType(value as 'global' | 'subject')}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-2 mb-2">
-                <TabsTrigger value="global" className={`data-[state=active]:${colors.primary}`}>
-                  عام
-                </TabsTrigger>
-                <TabsTrigger value="subject" className={`data-[state=active]:${colors.primary}`}>
-                  {subject === 'physics' ? 'الفيزياء' : 
-                   subject === 'chemistry' ? 'الكيمياء' : 
-                   subject === 'biology' ? 'الأحياء' : 
-                   subject === 'mathematics' ? 'الرياضيات' : 'المادة'}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          // Fetch user avatar URLs and combine data
+          const enhancedProfiles = await Promise.all(profilesData.map(async (profile) => {
+            try {
+              const { data: userProfile } = await supabase
+                .from('users_profiles')
+                .select('avatar_url')
+                .eq('id', profile.id)
+                .single();
+              
+              const countItem = top10.find(item => item.user_id === profile.id);
+              return {
+                ...profile,
+                avatar_url: userProfile?.avatar_url || null,
+                subject_solved_count: countItem ? parseInt(countItem.count) : 0
+              } as SubjectLeaderboardItem;
+            } catch (err) {
+              const countItem = top10.find(item => item.user_id === profile.id);
+              return {
+                ...profile,
+                avatar_url: null,
+                subject_solved_count: countItem ? parseInt(countItem.count) : 0
+              } as SubjectLeaderboardItem;
+            }
+          }));
+          
+          // Sort by subject-specific count
+          const sortedLeaderboard = enhancedProfiles.sort((a, b) => 
+            b.subject_solved_count - a.subject_solved_count
+          );
+          
+          setSubjectLeaderboard(sortedLeaderboard);
+        }
+      } else {
+        setSubjectLeaderboard([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching subject leaderboard:', error);
+      toast({
+        title: "خطأ في تحميل البيانات",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-          {isLoading ? (
-            <div className="flex flex-col space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-white/10 h-16 animate-pulse rounded-lg"></div>
+  useEffect(() => {
+    fetchLeaderboard();
+    fetchSubjectLeaderboard();
+    
+    // Set up real-time subscription for leaderboard updates
+    const channel = supabase
+      .channel('leaderboard_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'profiles' 
+        }, 
+        () => {
+          fetchLeaderboard();
+        }
+      )
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'user_solved_puzzles' 
+        }, 
+        () => {
+          fetchSubjectLeaderboard();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [subject]);
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+        <CardContent className="p-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-white/10 rounded w-1/3 mx-auto"></div>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-white/10"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-white/10 rounded"></div>
+                    <div className="h-3 bg-white/10 rounded w-2/3 mt-2"></div>
+                  </div>
+                </div>
               ))}
             </div>
-          ) : leaderboard.length > 0 ? (
-            <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-              {leaderboard.map((user, index) => (
-                <motion.li
-                  key={user.id}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+      <CardContent className="p-4">
+        <h3 className="text-xl font-bold text-white mb-4 text-center">قائمة المتصدرين</h3>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger 
+              value="overall" 
+              className={`text-white data-[state=active]:${colors.primary}`}
+            >
+              الترتيب العام
+            </TabsTrigger>
+            <TabsTrigger 
+              value="subject" 
+              className={`text-white data-[state=active]:${colors.primary}`}
+            >
+              في {subject === 'physics' ? 'الفيزياء' : 
+                  subject === 'chemistry' ? 'الكيمياء' : 
+                  subject === 'biology' ? 'الأحياء' : 
+                  'الرياضيات'}
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overall" className="mt-0 space-y-2">
+            {leaderboard.length > 0 ? (
+              leaderboard.map((user, index) => (
+                <motion.div 
+                  key={user.id} 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`flex items-center p-3 rounded-lg ${
-                    index < 3 ? `${colors.primary}/20 ${colors.border}` : 'bg-white/5'
-                  }`}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  className="flex items-center space-x-2 space-x-reverse py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                 >
-                  <div className="mr-2 flex items-center justify-center">
-                    {getMedalIcon(index)}
+                  <div className="text-white/80 text-lg font-medium ml-2 min-w-[20px] text-center">
+                    {index + 1}
                   </div>
                   
                   <div className="relative mx-2">
@@ -274,51 +282,96 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                     )}
                   </div>
                   
-                  <div className="flex-1 mr-2">
-                    <p className="font-medium text-white">{user.username}</p>
-                    <div className="flex items-center gap-2 text-xs text-white/70">
-                      {leaderboardType === 'global' ? (
-                        <>
-                          <span>{user.score || 0} نقطة</span>
-                          <span className="mx-1">•</span>
-                          <span>{user.solved_puzzles || 0} لغز</span>
-                        </>
-                      ) : (
-                        <span>
-                          {(user as unknown as SubjectLeaderboardItem).subject_solved_count || 0} لغز في 
-                          {subject === 'physics' ? ' الفيزياء' : 
-                           subject === 'chemistry' ? ' الكيمياء' : 
-                           subject === 'biology' ? ' الأحياء' : 
-                           subject === 'mathematics' ? ' الرياضيات' : ' المادة'}
-                        </span>
-                      )}
+                  <div className="flex-1">
+                    <div className="font-medium text-white">{user.username}</div>
+                    <div className="text-sm text-white/70">{user.solved_puzzles || 0} لغز محلول</div>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 ml-2">
+                    <Trophy className="h-4 w-4 text-yellow-400" />
+                    <span className={`${colors.secondary} font-bold`}>{user.score || 0}</span>
+                  </div>
+                  
+                  {index < 3 && (
+                    <div className={`mr-2 ${
+                      index === 0 ? 'text-yellow-400' : 
+                      index === 1 ? 'text-gray-300' : 
+                      'text-amber-600'
+                    }`}>
+                      <Medal className="h-5 w-5" />
+                    </div>
+                  )}
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-white/60">
+                لا توجد بيانات متاحة حاليًا
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="subject" className="mt-0 space-y-2">
+            {subjectLeaderboard.length > 0 ? (
+              subjectLeaderboard.map((user, index) => (
+                <motion.div 
+                  key={user.id} 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  className="flex items-center space-x-2 space-x-reverse py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <div className="text-white/80 text-lg font-medium ml-2 min-w-[20px] text-center">
+                    {index + 1}
+                  </div>
+                  
+                  <div className="relative mx-2">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.avatar_url || ''} />
+                      <AvatarFallback className="bg-white/10">
+                        <User className="h-6 w-6 text-white/60" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {index < 3 && (
+                      <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${colors.primary} flex items-center justify-center`}>
+                        <CircleDot className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="font-medium text-white">{user.username}</div>
+                    <div className="flex items-center">
+                      <span className="text-sm text-white/70">{user.subject_solved_count} لغز محلول</span>
+                      <span className="mx-1 text-white/40">•</span>
+                      <span className="text-sm text-white/50">{user.solved_puzzles || 0} إجمالي</span>
                     </div>
                   </div>
-                </motion.li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-center py-10 text-white/70">
-              {leaderboardType === 'global' ? 
-                'لا يوجد متصدرون حاليًا' : 
-                `لا يوجد متصدرون في ${
-                  subject === 'physics' ? 'الفيزياء' : 
-                  subject === 'chemistry' ? 'الكيمياء' : 
-                  subject === 'biology' ? 'الأحياء' : 
-                  subject === 'mathematics' ? 'الرياضيات' : 'المادة'
-                } حاليًا`
-              }
-            </div>
-          )}
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-white/60">
-              سجل دخولك وحل الألغاز لتظهر في قائمة المتصدرين
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+                  
+                  <div className="flex items-center gap-1 ml-2">
+                    <Trophy className="h-4 w-4 text-yellow-400" />
+                    <span className={`${colors.secondary} font-bold`}>{user.score || 0}</span>
+                  </div>
+                  
+                  {index < 3 && (
+                    <div className={`mr-2 ${
+                      index === 0 ? 'text-yellow-400' : 
+                      index === 1 ? 'text-gray-300' : 
+                      'text-amber-600'
+                    }`}>
+                      <Medal className="h-5 w-5" />
+                    </div>
+                  )}
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-white/60">
+                لا توجد بيانات متاحة لهذا الموضوع
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
