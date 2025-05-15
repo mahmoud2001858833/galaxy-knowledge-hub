@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,18 +5,21 @@ import { Award, User, CircleDot, Trophy, Medal, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast, useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface LeaderboardSidebarProps {
   subject: string;
 }
 
-// Update UserProfile interface to make avatar_url optional
+// Update UserProfile interface to match the actual profiles table structure
 export interface UserProfile {
   id: string;
   username: string;
-  avatar_url?: string | null;
   score: number | null;
   solved_puzzles: number | null;
+  created_at: string;
+  // Add avatar_url as optional since it's from users_profiles, not profiles
+  avatar_url?: string | null;
 }
 
 // Update SubjectLeaderboardItem to extend from UserProfile
@@ -50,10 +52,10 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
         if (error) throw error;
 
         if (data) {
-          // Add avatar_url field if missing
+          // Map profiles to UserProfile and set avatar_url to null if not present
           const profilesWithAvatar = data.map(profile => ({
             ...profile,
-            avatar_url: profile.avatar_url || null // Use existing avatar_url or set to null
+            avatar_url: null // Default to null since profiles table doesn't have avatar_url
           })) as UserProfile[];
           
           setLeaderboard(profilesWithAvatar);
@@ -116,7 +118,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                 const countItem = top10.find(item => item.user_id === profile.id);
                 return {
                   ...profile,
-                  avatar_url: profile.avatar_url || null, // Use existing avatar_url or set to null
+                  avatar_url: null, // Default to null since profiles table doesn't have avatar_url
                   subject_solved_count: countItem ? countItem.count : 0
                 } as SubjectLeaderboardItem;
               });
@@ -259,17 +261,12 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                   </div>
                   
                   <div className="relative mx-2">
-                    {user.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt={user.username}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.avatar_url || ''} />
+                      <AvatarFallback className="bg-white/10">
                         <User className="h-6 w-6 text-white/60" />
-                      </div>
-                    )}
+                      </AvatarFallback>
+                    </Avatar>
                     {index < 3 && (
                       <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${colors.primary} flex items-center justify-center`}>
                         <CircleDot className="h-3 w-3 text-white" />
