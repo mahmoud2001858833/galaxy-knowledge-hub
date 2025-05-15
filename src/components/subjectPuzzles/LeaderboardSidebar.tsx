@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,6 +49,7 @@ const LeaderboardSidebar: React.FC<LeaderboardSidebarProps> = ({ subject }) => {
   const fetchLeaderboard = async () => {
     try {
       setIsLoading(true);
+      // Get top users by score
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -80,7 +80,12 @@ const LeaderboardSidebar: React.FC<LeaderboardSidebarProps> = ({ subject }) => {
           }
         }));
         
-        setLeaderboard(enhancedProfiles as UserProfile[]);
+        // Make sure to sort by score again after fetching avatar URLs
+        const sortedLeaderboard = enhancedProfiles.sort((a, b) => 
+          (b.score || 0) - (a.score || 0)
+        );
+        
+        setLeaderboard(sortedLeaderboard as UserProfile[]);
       }
     } catch (error: any) {
       console.error('Error fetching leaderboard:', error);
@@ -248,7 +253,7 @@ const LeaderboardSidebar: React.FC<LeaderboardSidebarProps> = ({ subject }) => {
             >
               في {subject === 'physics' ? 'الفيزياء' : 
                   subject === 'chemistry' ? 'الكيمياء' : 
-                  subject === 'biology' ? 'الأحياء' : 
+                  subject === 'biology' ? 'ال��حياء' : 
                   'الرياضيات'}
             </TabsTrigger>
           </TabsList>

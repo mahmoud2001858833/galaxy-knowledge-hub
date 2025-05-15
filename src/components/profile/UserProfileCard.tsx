@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserProfileCardProps {
   user: {
@@ -24,6 +25,7 @@ interface UserProfileCardProps {
 const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
   const [usageTime, setUsageTime] = useState(0);
   const [level, setLevel] = useState({ level: 0, progress: 0, nextLevel: 60 });
+  const { toast } = useToast();
   
   // Calculate level based on usage time (minutes)
   useEffect(() => {
@@ -66,6 +68,16 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
       return () => clearInterval(timer);
     }
   }, [user]);
+
+  const handleProfileClick = () => {
+    if (!user) {
+      toast({
+        title: "غير مسجل الدخول",
+        description: "يرجى تسجيل الدخول لعرض الملف الشخصي",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (!user) {
     return (
@@ -155,7 +167,7 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
       </CardContent>
 
       <CardFooter className="border-t border-white/10 pt-3 pb-3 bg-white/5">
-        <Link to="/profile" className="w-full">
+        <Link to="/profile" className="w-full" onClick={handleProfileClick}>
           <Button className="w-full bg-blue-600 hover:bg-blue-700">
             الملف الشخصي
           </Button>

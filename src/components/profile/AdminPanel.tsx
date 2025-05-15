@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw, User } from 'lucide-react';
+import { Trash, Settings, Edit, Users, MessageSquare, FileImage, Trophy, RefreshCw, User, Book } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -318,7 +317,7 @@ const AdminPanel = () => {
               <span>الألغاز</span>
             </TabsTrigger>
             <TabsTrigger value="journals" className="flex items-center gap-1">
-              <FileImage className="h-4 w-4" />
+              <Book className="h-4 w-4" />
               <span>المجلات</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1">
