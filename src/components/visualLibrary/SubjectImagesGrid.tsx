@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Trash } from "lucide-react";
+import { Image, Trash, X } from "lucide-react";
 import AdminControl from './AdminControl';
 
 interface SubjectImagesGridProps {
@@ -112,6 +112,11 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
         title: "تم إيقاف وضع المشرف",
         description: "تم إيقاف وضع المشرف بنجاح",
       });
+    } else {
+      toast({
+        title: "تم تفعيل وضع المشرف",
+        description: "يمكنك الآن إدارة الصور",
+      });
     }
   };
 
@@ -148,44 +153,80 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
 
   return (
     <>
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-medium text-white">
+          {isAdminMode ? 'وضع المشرف: يمكنك حذف الصور' : ''}
+        </h2>
         <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {images.map((image) => (
-          <Card 
-            key={image.id} 
-            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative"
-            onClick={() => setSelectedImage(image)}
-          >
-            <div className="h-48 w-full overflow-hidden">
-              <img 
-                src={image.image_url} 
-                alt={image.title} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <CardContent className="p-4">
-              <h3 className="font-bold text-lg mb-1">{image.title}</h3>
-              {image.description && (
-                <p className="text-sm text-gray-200 line-clamp-2">{image.description}</p>
+      {isAdminMode ? (
+        <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 mb-6">
+          <h3 className="text-xl font-bold mb-4">قائمة الصور</h3>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-right py-2 px-4">العنوان</th>
+                <th className="text-right py-2 px-4">الوصف</th>
+                <th className="text-right py-2 px-4 w-24">الإجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {images.map(image => (
+                <tr key={image.id} className="border-b border-white/10 hover:bg-white/5">
+                  <td className="py-2 px-4">{image.title}</td>
+                  <td className="py-2 px-4">{image.description || 'لا يوجد وصف'}</td>
+                  <td className="py-2 px-4">
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={(e) => openDeleteConfirmation(e, image.id)}
+                      className="w-full"
+                    >
+                      <Trash className="w-4 h-4 mr-1" /> حذف
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {images.map((image) => (
+            <Card 
+              key={image.id} 
+              className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative"
+              onClick={() => setSelectedImage(image)}
+            >
+              <div className="h-48 w-full overflow-hidden">
+                <img 
+                  src={image.image_url} 
+                  alt={image.title} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardContent className="p-4">
+                <h3 className="font-bold text-lg mb-1">{image.title}</h3>
+                {image.description && (
+                  <p className="text-sm text-gray-200 line-clamp-2">{image.description}</p>
+                )}
+              </CardContent>
+              
+              {isAdminMode && (
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="absolute top-2 left-2 bg-red-600 hover:bg-red-700"
+                  onClick={(e) => openDeleteConfirmation(e, image.id)}
+                >
+                  <Trash className="w-4 h-4" />
+                </Button>
               )}
-            </CardContent>
-            
-            {isAdminMode && (
-              <Button 
-                variant="destructive" 
-                size="icon" 
-                className="absolute top-2 left-2 bg-red-600 hover:bg-red-700"
-                onClick={(e) => openDeleteConfirmation(e, image.id)}
-              >
-                <Trash className="w-4 h-4" />
-              </Button>
-            )}
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         {selectedImage && (
