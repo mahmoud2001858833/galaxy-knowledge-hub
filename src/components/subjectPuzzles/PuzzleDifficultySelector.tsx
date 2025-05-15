@@ -32,7 +32,7 @@ const PuzzleDifficultySelector: React.FC<PuzzleDifficultySelectorProps> = ({
         اختر مستوى الصعوبة
       </h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {difficulties.map((difficulty) => (
           <PuzzleDifficultyLevel
             key={difficulty.key}

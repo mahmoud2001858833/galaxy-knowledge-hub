@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +23,7 @@ const puzzleFormSchema = z.object({
   difficulty: z.string().min(1, { message: 'يرجى تحديد مستوى الصعوبة' }),
   points: z.number().min(1, { message: 'يجب أن تكون النقاط أكبر من 0' }),
   image: z.string().optional(),
+  subject: z.string().min(1, { message: 'يرجى اختيار المادة' }),
 });
 
 type PuzzleFormValues = z.infer<typeof puzzleFormSchema>;
@@ -31,7 +33,7 @@ interface SubjectPuzzleFormProps {
   onSuccess: () => void;
 }
 
-const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
+const SubjectPuzzleForm = ({ subject: defaultSubject, onSuccess }: SubjectPuzzleFormProps) => {
   const [options, setOptions] = useState<string[]>(['', '']); // Initialize with two empty options
   const [currentOption, setCurrentOption] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +49,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
       difficulty: '',
       points: 10,
       image: '',
+      subject: defaultSubject !== 'all' ? defaultSubject : '',
     },
   });
   
@@ -93,7 +96,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
         difficulty: data.difficulty,
         points: data.points,
         image: data.image || null,
-        subject: subject,
+        subject: data.subject,
         admin_password: 'mahmoud', // Default admin password as required by the schema
         created_by: userId || null  // Set created_by explicitly
       };
@@ -157,8 +160,8 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
     }
   };
 
-  const getSubjectStyles = () => {
-    switch (subject) {
+  const getSubjectStyles = (subjectValue: string) => {
+    switch (subjectValue) {
       case "physics":
         return {
           bg: "bg-gradient-to-r from-subject-physics-primary/20 to-subject-physics-secondary/10",
@@ -197,7 +200,7 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
     }
   };
 
-  const subjectStyles = getSubjectStyles();
+  const subjectStyles = getSubjectStyles(form.watch("subject") || defaultSubject);
 
   return (
     <motion.div
@@ -261,6 +264,37 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
+                      name="subject"
+                      render={({ field }) => (
+                        <FormItem className="text-right">
+                          <FormLabel className="text-white text-lg mb-2">المادة</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger 
+                                className="bg-white/10 backdrop-blur-md border-white/20 text-white transition-colors focus:bg-white/15"
+                              >
+                                <SelectValue placeholder="اختر المادة" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent 
+                              className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white max-h-60 overflow-y-auto z-50"
+                              position="popper"
+                              align="end"
+                              sideOffset={5}
+                            >
+                              <SelectItem value="physics" className="text-subject-physics-primary hover:bg-subject-physics-primary/20 focus:bg-subject-physics-primary/30">الفيزياء</SelectItem>
+                              <SelectItem value="chemistry" className="text-subject-chemistry-primary hover:bg-subject-chemistry-primary/20 focus:bg-subject-chemistry-primary/30">الكيمياء</SelectItem>
+                              <SelectItem value="biology" className="text-subject-biology-primary hover:bg-subject-biology-primary/20 focus:bg-subject-biology-primary/30">الأحياء</SelectItem>
+                              <SelectItem value="mathematics" className="text-subject-mathematics-primary hover:bg-subject-mathematics-primary/20 focus:bg-subject-mathematics-primary/30">الرياضيات</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="text-red-400" />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
                       name="difficulty"
                       render={({ field }) => (
                         <FormItem className="text-right">
@@ -271,7 +305,12 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                                 <SelectValue placeholder="اختر مستوى الصعوبة" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white">
+                            <SelectContent 
+                              className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white z-50"
+                              position="popper"
+                              align="end"
+                              sideOffset={5}
+                            >
                               <SelectItem value="easy" className="text-green-400 hover:bg-green-900/20 focus:bg-green-900/30">سهل</SelectItem>
                               <SelectItem value="medium" className="text-yellow-400 hover:bg-yellow-900/20 focus:bg-yellow-900/30">متوسط</SelectItem>
                               <SelectItem value="hard" className="text-red-400 hover:bg-red-900/20 focus:bg-red-900/30">صعب</SelectItem>
@@ -281,27 +320,27 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                         </FormItem>
                       )}
                     />
-                    
-                    <FormField
-                      control={form.control}
-                      name="points"
-                      render={({ field }) => (
-                        <FormItem className="text-right">
-                          <FormLabel className="text-white text-lg mb-2">النقاط</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
-                              placeholder="أدخل عدد النقاط"
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage className="text-red-400" />
-                        </FormItem>
-                      )}
-                    />
                   </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="points"
+                    render={({ field }) => (
+                      <FormItem className="text-right">
+                        <FormLabel className="text-white text-lg mb-2">النقاط</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
+                            placeholder="أدخل عدد النقاط"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-400" />
+                      </FormItem>
+                    )}
+                  />
                   
                   <FormField
                     control={form.control}
@@ -400,7 +439,12 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                               <SelectValue placeholder="اختر الإجابة الصحيحة" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white">
+                          <SelectContent 
+                            className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white z-50"
+                            position="popper"
+                            align="end"
+                            sideOffset={5}
+                          >
                             {options.map((option, index) => (
                               option.trim() !== '' && (
                                 <SelectItem key={index} value={option} className="hover:bg-green-900/20 focus:bg-green-900/30">
