@@ -78,7 +78,55 @@ export default {
                     'physics-primary': '#9b87f5', // مزيج من الأزرق والبنفسجي
                     'physics-secondary': '#7E69AB', // بنفسجي متوسط
                     'biology-primary': '#10B981', // أخضر
-                    'biology-secondary': '#059669'  // أخضر داكن
+                    'biology-secondary': '#059669',  // أخضر داكن
+                },
+                physics: {
+                    '50': '#F5F3FF',
+                    '100': '#EDE9FE',
+                    '200': '#DDD6FE',
+                    '300': '#C4B5FD',
+                    '400': '#A78BFA',
+                    '500': '#8B5CF6',
+                    '600': '#7C3AED',
+                    '700': '#6D28D9',
+                    '800': '#5B21B6',
+                    '900': '#4C1D95',
+                },
+                chemistry: {
+                    '50': '#ECFDF5',
+                    '100': '#D1FAE5',
+                    '200': '#A7F3D0',
+                    '300': '#6EE7B7',
+                    '400': '#34D399',
+                    '500': '#10B981',
+                    '600': '#059669',
+                    '700': '#047857',
+                    '800': '#065F46',
+                    '900': '#064E3B',
+                },
+                biology: {
+                    '50': '#F0FDF4',
+                    '100': '#DCFCE7',
+                    '200': '#BBF7D0',
+                    '300': '#86EFAC',
+                    '400': '#4ADE80',
+                    '500': '#22C55E',
+                    '600': '#16A34A',
+                    '700': '#15803D',
+                    '800': '#166534',
+                    '900': '#14532D',
+                },
+                mathematics: {
+                    '50': '#FFFBEB',
+                    '100': '#FEF3C7',
+                    '200': '#FDE68A',
+                    '300': '#FCD34D',
+                    '400': '#FBBF24',
+                    '500': '#F59E0B',
+                    '600': '#D97706',
+                    '700': '#B45309',
+                    '800': '#92400E',
+                    '900': '#78350F',
                 }
 			},
 			borderRadius: {
@@ -110,7 +158,11 @@ export default {
 				'startwinkle': {
 					'0%, 100%': { opacity: '0.2' },
 					'50%': { opacity: '1' }
-				}
+				},
+                'gradient-flow': {
+                    '0%, 100%': { backgroundPosition: '0% 50%' },
+                    '50%': { backgroundPosition: '100% 50%' },
+                }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -118,11 +170,19 @@ export default {
 				'float': 'float 3s ease-in-out infinite',
 				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
 				'spin-slow': 'spin-slow 15s linear infinite',
-				'startwinkle': 'startwinkle 4s ease-in-out infinite'
+				'startwinkle': 'startwinkle 4s ease-in-out infinite',
+                'gradient-flow': 'gradient-flow 5s ease infinite'
 			},
 			backgroundImage: {
 				'space-gradient': 'linear-gradient(to bottom right, #1A1F2C, #2D1B4E)',
-			}
+                'cosmic-gradient': 'radial-gradient(circle at top right, rgba(124, 58, 237, 0.3), transparent 70%), radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.3), transparent 70%), #0c0a20',
+			},
+            boxShadow: {
+                'neon-blue': '0 0 15px rgba(56, 189, 248, 0.5)',
+                'neon-purple': '0 0 15px rgba(124, 58, 237, 0.5)',
+                'neon-green': '0 0 15px rgba(34, 197, 94, 0.5)',
+                'neon-amber': '0 0 15px rgba(245, 158, 11, 0.5)',
+            }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

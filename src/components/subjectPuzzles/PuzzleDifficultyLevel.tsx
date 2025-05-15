@@ -23,43 +23,43 @@ const PuzzleDifficultyLevel = ({
     switch (subject) {
       case 'physics':
         return {
-          primary: 'bg-subject-physics-primary',
-          secondary: 'bg-subject-physics-secondary',
-          border: 'border-subject-physics-primary',
-          text: 'text-subject-physics-primary',
-          glow: 'shadow-glow-purple'
+          primary: 'bg-physics-600',
+          secondary: 'bg-physics-700',
+          border: 'border-physics-500/50',
+          text: 'text-physics-400',
+          glow: 'shadow-neon-purple'
         };
       case 'chemistry':
         return {
-          primary: 'bg-subject-chemistry-primary',
-          secondary: 'bg-subject-chemistry-secondary',
-          border: 'border-subject-chemistry-primary',
-          text: 'text-subject-chemistry-primary',
-          glow: 'shadow-glow-blue'
+          primary: 'bg-chemistry-600',
+          secondary: 'bg-chemistry-700',
+          border: 'border-chemistry-500/50',
+          text: 'text-chemistry-400',
+          glow: 'shadow-neon-green'
         };
       case 'biology':
         return {
-          primary: 'bg-subject-biology-primary',
-          secondary: 'bg-subject-biology-secondary',
-          border: 'border-subject-biology-primary',
-          text: 'text-subject-biology-primary',
-          glow: 'shadow-glow-green'
+          primary: 'bg-biology-600',
+          secondary: 'bg-biology-700',
+          border: 'border-biology-500/50',
+          text: 'text-biology-400',
+          glow: 'shadow-neon-green'
         };
       case 'mathematics':
         return {
-          primary: 'bg-subject-mathematics-primary',
-          secondary: 'bg-subject-mathematics-secondary',
-          border: 'border-subject-mathematics-primary',
-          text: 'text-subject-mathematics-primary',
-          glow: 'shadow-glow-orange'
+          primary: 'bg-mathematics-600',
+          secondary: 'bg-mathematics-700',
+          border: 'border-mathematics-500/50',
+          text: 'text-mathematics-400',
+          glow: 'shadow-neon-amber'
         };
       default:
         return {
           primary: 'bg-blue-600',
           secondary: 'bg-blue-700',
-          border: 'border-blue-500',
-          text: 'text-blue-500',
-          glow: 'shadow-glow-blue'
+          border: 'border-blue-500/50',
+          text: 'text-blue-400',
+          glow: 'shadow-neon-blue'
         };
     }
   };
@@ -103,28 +103,31 @@ const PuzzleDifficultyLevel = ({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
+      className="h-full"
     >
       <Card 
-        className={`cursor-pointer h-full transition-all duration-300 ${difficultyColors.bg} ${
+        className={`cursor-pointer h-full transition-all duration-300 backdrop-blur-md ${difficultyColors.bg} ${
           isSelected 
-            ? `${difficultyColors.selectedBg} ${difficultyColors.border} ${colors.glow}` 
-            : 'border-white/10 hover:border-white/30'
+            ? `${difficultyColors.selectedBg} border-2 ${difficultyColors.border} ${colors.glow}` 
+            : 'border border-white/10 hover:border-white/30'
         }`}
       >
-        <CardContent className="flex flex-col items-center justify-center p-6 h-full">
-          <div className={`p-3 rounded-full ${difficultyColors.bg} ${difficultyColors.text} mb-4`}>
+        <CardContent className="flex flex-col items-center justify-center p-8 h-full">
+          <div className={`p-6 rounded-full ${difficultyColors.bg} ${difficultyColors.text} mb-6 ${isSelected ? colors.glow : ''}`}>
             {icon}
           </div>
-          <h3 className={`text-xl font-bold mb-2 ${difficultyColors.text}`}>
+          <h3 className={`text-2xl font-bold mb-4 ${difficultyColors.text}`}>
             {difficulty}
           </h3>
-          <div className={`w-full h-1 mt-2 rounded-full ${difficultyColors.bg}`}>
-            <div 
+          <div className={`w-full h-2 mt-4 rounded-full ${difficultyColors.bg}`}>
+            <motion.div 
               className={`h-full rounded-full ${colors.primary}`} 
-              style={{ width: difficulty === 'سهل' ? '33%' : difficulty === 'متوسط' ? '66%' : '100%' }} 
+              initial={{ width: 0 }}
+              animate={{ width: difficulty === 'سهل' ? '33%' : difficulty === 'متوسط' ? '66%' : '100%' }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             />
           </div>
         </CardContent>
