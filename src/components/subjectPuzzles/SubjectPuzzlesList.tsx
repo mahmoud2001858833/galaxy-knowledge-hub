@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,10 +25,17 @@ type PuzzleType = {
 
 interface SubjectPuzzlesListProps {
   subject: string;
-  difficulty: string;
+  difficulty?: string;
+  refreshTrigger?: number; // Make this prop optional
+  onRefresh?: () => void; // Make this prop optional
 }
 
-const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({ subject, difficulty }) => {
+const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({ 
+  subject, 
+  difficulty = 'all', // Provide default value
+  refreshTrigger = 0, // Provide default value
+  onRefresh 
+}) => {
   const [puzzles, setPuzzles] = useState<PuzzleType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPuzzle, setSelectedPuzzle] = useState<PuzzleType | null>(null);
@@ -48,7 +54,7 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({ subject, diffic
     if (storedAnsweredPuzzles) {
       setAnsweredPuzzles(JSON.parse(storedAnsweredPuzzles));
     }
-  }, [subject, difficulty]);
+  }, [subject, difficulty, refreshTrigger]); // Added refreshTrigger as a dependency
 
   const fetchUserData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
