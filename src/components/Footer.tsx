@@ -49,7 +49,7 @@ const Footer: React.FC = () => {
             <h3 className="text-xl font-bold text-white mb-4 text-right">تواصل معنا</h3>
             <ul className="space-y-2 text-right">
               <li>
-                <a href="mailto:info@galaxy-knowledge.com" className="text-white/70 hover:text-white transition-colors">
+                <a href="mailto:jowmahmoud6@gmail.com" className="text-white/70 hover:text-white transition-colors">
                   البريد الإلكتروني
                 </a>
               </li>

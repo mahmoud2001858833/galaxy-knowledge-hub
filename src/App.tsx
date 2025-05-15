@@ -20,6 +20,7 @@ import ChatRooms from './pages/ChatRooms';
 import Auth from './pages/Auth';
 import MathPuzzles from './pages/MathPuzzles';
 import UserProfile from './pages/UserProfile';
+import Contact from './pages/Contact';
 
 const router = createBrowserRouter([
   {
@@ -82,6 +83,10 @@ const router = createBrowserRouter([
   {
     path: '/profile',
     element: <UserProfile />,
+  },
+  {
+    path: '/contact',
+    element: <Contact />,
   }
 ]);
 

@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { EducationalImage, SubjectType } from '@/components/shared/types/educationalContentTypes';
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Image } from "lucide-react";
+import { Image, Trash } from "lucide-react";
+import AdminControl from './AdminControl';
 
 interface SubjectImagesGridProps {
   subject: SubjectType;
@@ -16,43 +18,46 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
   const [images, setImages] = useState<EducationalImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<EducationalImage | null>(null);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchImages = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('educational_images')
-          .select('*')
-          .eq('subject', subject)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        // Type cast the data to ensure it matches the EducationalImage interface
-        const typedData = data?.map(item => ({
-          ...item,
-          subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics'
-        })) || [];
-
-        setImages(typedData as EducationalImage[]);
-      } catch (error: any) {
-        console.error('Error fetching images:', error);
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء تحميل الصور",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchImages();
-  }, [subject, toast]);
+  }, [subject]);
+
+  const fetchImages = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('educational_images')
+        .select('*')
+        .eq('subject', subject)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Type cast the data to ensure it matches the EducationalImage interface
+      const typedData = data?.map(item => ({
+        ...item,
+        subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics'
+      })) || [];
+
+      setImages(typedData as EducationalImage[]);
+    } catch (error: any) {
+      console.error('Error fetching images:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل الصور",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getSubjectTitle = (subject: SubjectType): string => {
     switch (subject) {
@@ -61,6 +66,52 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
       case 'biology': return 'الأحياء';
       case 'mathematics': return 'الرياضيات';
       default: return '';
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!imageToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('educational_images')
+        .delete()
+        .eq('id', imageToDelete);
+      
+      if (error) throw error;
+
+      toast({
+        title: "تم بنجاح",
+        description: "تم حذف الصورة بنجاح",
+      });
+
+      // تحديث القائمة بعد الحذف
+      setImages(images.filter(img => img.id !== imageToDelete));
+      setDeleteConfirmationOpen(false);
+      setImageToDelete(null);
+    } catch (error) {
+      console.error('خطأ في حذف الصورة:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء محاولة حذف الصورة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openDeleteConfirmation = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    e.stopPropagation(); // منع فتح الصورة عند النقر على زر الحذف
+    setImageToDelete(id);
+    setDeleteConfirmationOpen(true);
+  };
+
+  const toggleAdminMode = () => {
+    setIsAdminMode(!isAdminMode);
+    if (isAdminMode) {
+      toast({
+        title: "تم إيقاف وضع المشرف",
+        description: "تم إيقاف وضع المشرف بنجاح",
+      });
     }
   };
 
@@ -83,6 +134,9 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
   if (images.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex justify-end w-full mb-6">
+          <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
+        </div>
         <Image className="w-16 h-16 text-blue-300 mb-4 opacity-50" />
         <h3 className="text-xl font-medium text-blue-200 mb-2">لا توجد صور بعد</h3>
         <p className="text-blue-300">
@@ -94,11 +148,15 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
 
   return (
     <>
+      <div className="flex justify-end mb-6">
+        <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {images.map((image) => (
           <Card 
             key={image.id} 
-            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative"
             onClick={() => setSelectedImage(image)}
           >
             <div className="h-48 w-full overflow-hidden">
@@ -114,6 +172,17 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
                 <p className="text-sm text-gray-200 line-clamp-2">{image.description}</p>
               )}
             </CardContent>
+            
+            {isAdminMode && (
+              <Button 
+                variant="destructive" 
+                size="icon" 
+                className="absolute top-2 left-2 bg-red-600 hover:bg-red-700"
+                onClick={(e) => openDeleteConfirmation(e, image.id)}
+              >
+                <Trash className="w-4 h-4" />
+              </Button>
+            )}
           </Card>
         ))}
       </div>
@@ -138,6 +207,34 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
             </div>
           </DialogContent>
         )}
+      </Dialog>
+      
+      <Dialog open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">تأكيد الحذف</DialogTitle>
+            <DialogDescription className="text-right">
+              هل أنت متأكد من رغبتك في حذف هذه الصورة؟ هذا الإجراء لا يمكن التراجع عنه.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmationOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteImage}
+            >
+              حذف الصورة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </>
   );

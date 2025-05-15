@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, User } from "lucide-react";
+import { FileText, User, Trash } from "lucide-react";
+import AdminControl from '@/components/visualLibrary/AdminControl';
 
 interface SubjectJournalsGridProps {
   subject: SubjectType;
@@ -17,45 +18,48 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
   const [journals, setJournals] = useState<ScientificJournal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJournal, setSelectedJournal] = useState<ScientificJournal | null>(null);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [journalToDelete, setJournalToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchJournals = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('scientific_journals')
-          .select('*')
-          .eq('subject', subject)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        // Type cast the data to ensure it matches the ScientificJournal interface
-        const typedData = data?.map(item => ({
-          ...item,
-          subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics',
-          // Since 'author' might not exist in the database schema, we handle it explicitly
-          author: null // Default to null since our interface declares it as nullable
-        })) || [];
-
-        setJournals(typedData as ScientificJournal[]);
-      } catch (error: any) {
-        console.error('Error fetching journals:', error);
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء تحميل المجلات العلمية",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchJournals();
-  }, [subject, toast]);
+  }, [subject]);
+
+  const fetchJournals = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('scientific_journals')
+        .select('*')
+        .eq('subject', subject)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Type cast the data to ensure it matches the ScientificJournal interface
+      const typedData = data?.map(item => ({
+        ...item,
+        subject: item.subject as 'physics' | 'chemistry' | 'biology' | 'mathematics',
+        // Since 'author' might not exist in the database schema, we handle it explicitly
+        author: null // Default to null since our interface declares it as nullable
+      })) || [];
+
+      setJournals(typedData as ScientificJournal[]);
+    } catch (error: any) {
+      console.error('Error fetching journals:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل المجلات العلمية",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getSubjectTitle = (subject: SubjectType): string => {
     switch (subject) {
@@ -82,6 +86,52 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
     window.open(journal.pdf_url, '_blank');
   };
 
+  const toggleAdminMode = () => {
+    setIsAdminMode(!isAdminMode);
+    if (isAdminMode) {
+      toast({
+        title: "تم إيقاف وضع المشرف",
+        description: "تم إيقاف وضع المشرف بنجاح",
+      });
+    }
+  };
+
+  const openDeleteConfirmation = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    e.stopPropagation(); // منع فتح المجلة عند النقر على زر الحذف
+    setJournalToDelete(id);
+    setDeleteConfirmationOpen(true);
+  };
+
+  const handleDeleteJournal = async () => {
+    if (!journalToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('scientific_journals')
+        .delete()
+        .eq('id', journalToDelete);
+      
+      if (error) throw error;
+
+      toast({
+        title: "تم بنجاح",
+        description: "تم حذف المجلة بنجاح",
+      });
+
+      // تحديث القائمة بعد الحذف
+      setJournals(journals.filter(journal => journal.id !== journalToDelete));
+      setDeleteConfirmationOpen(false);
+      setJournalToDelete(null);
+    } catch (error) {
+      console.error('خطأ في حذف المجلة:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء محاولة حذف المجلة",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -101,6 +151,9 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
   if (journals.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex justify-end w-full mb-6">
+          <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
+        </div>
         <FileText className="w-16 h-16 text-purple-300 mb-4 opacity-50" />
         <h3 className="text-xl font-medium text-purple-200 mb-2">لا توجد مجلات بعد</h3>
         <p className="text-purple-300">
@@ -112,11 +165,15 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
 
   return (
     <>
+      <div className="flex justify-end mb-6">
+        <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {journals.map((journal) => (
           <Card 
             key={journal.id} 
-            className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${getSubjectColor(subject)}`}
+            className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${getSubjectColor(subject)} relative`}
             onClick={() => setSelectedJournal(journal)}
           >
             <div className="h-48 w-full overflow-hidden">
@@ -138,6 +195,17 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
                 <p className="text-sm text-gray-200 line-clamp-2">{journal.description}</p>
               )}
             </CardContent>
+            
+            {isAdminMode && (
+              <Button 
+                variant="destructive" 
+                size="icon" 
+                className="absolute top-2 left-2 bg-red-600 hover:bg-red-700"
+                onClick={(e) => openDeleteConfirmation(e, journal.id)}
+              >
+                <Trash className="w-4 h-4" />
+              </Button>
+            )}
           </Card>
         ))}
       </div>
@@ -174,6 +242,34 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
             </DialogFooter>
           </DialogContent>
         )}
+      </Dialog>
+
+      <Dialog open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">تأكيد الحذف</DialogTitle>
+            <DialogDescription className="text-right">
+              هل أنت متأكد من رغبتك في حذف هذه المجلة؟ هذا الإجراء لا يمكن التراجع عنه.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmationOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteJournal}
+            >
+              حذف المجلة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </>
   );
