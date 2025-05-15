@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -137,14 +138,14 @@ const LeaderboardSidebar: React.FC<LeaderboardSidebarProps> = ({ subject }) => {
               return {
                 ...profile,
                 avatar_url: userProfile?.avatar_url || null,
-                subject_solved_count: countItem ? parseInt(countItem.count) : 0
+                subject_solved_count: countItem ? parseInt(String(countItem.count)) : 0
               } as SubjectLeaderboardItem;
             } catch (err) {
               const countItem = top10.find(item => item.user_id === profile.id);
               return {
                 ...profile,
                 avatar_url: null,
-                subject_solved_count: countItem ? parseInt(countItem.count) : 0
+                subject_solved_count: countItem ? parseInt(String(countItem.count)) : 0
               } as SubjectLeaderboardItem;
             }
           }));
