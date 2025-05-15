@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -147,50 +146,96 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy':
-        return 'bg-green-900/30 text-green-400 border-green-500/30';
-      case 'medium':
-        return 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30';
-      case 'hard':
-        return 'bg-red-900/30 text-red-400 border-red-500/30';
+      case "easy":
+        return 'bg-gradient-to-r from-green-900/30 to-green-700/30 text-green-400 border-green-500/30';
+      case "medium":
+        return 'bg-gradient-to-r from-yellow-900/30 to-yellow-700/30 text-yellow-400 border-yellow-500/30';
+      case "hard":
+        return 'bg-gradient-to-r from-red-900/30 to-red-700/30 text-red-400 border-red-500/30';
       default:
-        return 'bg-white/10 text-white border-white/20';
+        return 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/20';
     }
   };
+
+  const getSubjectStyles = () => {
+    switch (subject) {
+      case "physics":
+        return {
+          bg: "bg-gradient-to-r from-subject-physics-primary/20 to-subject-physics-secondary/10",
+          border: "border-subject-physics-primary/30",
+          text: "text-subject-physics-primary",
+          hoverBg: "hover:bg-subject-physics-primary/20"
+        };
+      case "chemistry":
+        return {
+          bg: "bg-gradient-to-r from-subject-chemistry-primary/20 to-subject-chemistry-secondary/10",
+          border: "border-subject-chemistry-primary/30",
+          text: "text-subject-chemistry-primary",
+          hoverBg: "hover:bg-subject-chemistry-primary/20"
+        };
+      case "biology":
+        return {
+          bg: "bg-gradient-to-r from-subject-biology-primary/20 to-subject-biology-secondary/10",
+          border: "border-subject-biology-primary/30",
+          text: "text-subject-biology-primary",
+          hoverBg: "hover:bg-subject-biology-primary/20"
+        };
+      case "mathematics":
+        return {
+          bg: "bg-gradient-to-r from-subject-mathematics-primary/20 to-subject-mathematics-secondary/10",
+          border: "border-subject-mathematics-primary/30",
+          text: "text-subject-mathematics-primary",
+          hoverBg: "hover:bg-subject-mathematics-primary/20"
+        };
+      default:
+        return {
+          bg: "bg-gradient-to-r from-blue-900/20 to-purple-900/10",
+          border: "border-blue-500/30",
+          text: "text-blue-400",
+          hoverBg: "hover:bg-blue-500/20"
+        };
+    }
+  };
+
+  const subjectStyles = getSubjectStyles();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="relative z-10"
     >
-      <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className={`p-2 rounded-full bg-subject-${subject}-primary/20`}>
-              <Puzzle className={`h-5 w-5 text-subject-${subject}-primary`} />
+      <Card className={`backdrop-blur-lg border-2 ${subjectStyles.border} shadow-lg shadow-black/30 overflow-hidden`}>
+        <div className="absolute inset-0 opacity-20 mix-blend-overlay">
+          <div className={`h-full w-full ${subjectStyles.bg}`}></div>
+        </div>
+        <CardContent className="p-6 relative z-10">
+          <div className="flex items-center justify-between mb-8">
+            <div className={`p-3 rounded-full ${subjectStyles.bg} border border-white/10 shadow-inner`}>
+              <Puzzle className={`h-7 w-7 ${subjectStyles.text}`} />
             </div>
-            <h2 className="text-xl font-bold text-white">إضافة لغز جديد</h2>
+            <h2 className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-white to-white/70">إضافة لغز جديد</h2>
           </div>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
                       <FormItem className="text-right">
-                        <FormLabel className="text-white">عنوان اللغز</FormLabel>
+                        <FormLabel className="text-white text-lg mb-2">عنوان اللغز</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="أدخل عنوان اللغز"
-                            className="bg-white/10 border-white/20 text-white"
+                            className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
@@ -200,15 +245,15 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                     name="question"
                     render={({ field }) => (
                       <FormItem className="text-right">
-                        <FormLabel className="text-white">السؤال</FormLabel>
+                        <FormLabel className="text-white text-lg mb-2">السؤال</FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="أدخل سؤال اللغز"
-                            className="bg-white/10 border-white/20 text-white min-h-24"
+                            className="bg-white/10 backdrop-blur-md border-white/20 text-white min-h-32 focus:border-white/40 hover:border-white/30 transition-colors"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
@@ -219,20 +264,20 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                       name="difficulty"
                       render={({ field }) => (
                         <FormItem className="text-right">
-                          <FormLabel className="text-white">مستوى الصعوبة</FormLabel>
+                          <FormLabel className="text-white text-lg mb-2">مستوى الصعوبة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className={`bg-white/10 border-white/20 text-white ${getDifficultyColor(field.value)}`}>
+                              <SelectTrigger className={`bg-white/10 backdrop-blur-md border-white/20 text-white transition-all ${getDifficultyColor(field.value)}`}>
                                 <SelectValue placeholder="اختر مستوى الصعوبة" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-gray-900 border-white/20 text-white">
-                              <SelectItem value="easy" className="text-green-400">سهل</SelectItem>
-                              <SelectItem value="medium" className="text-yellow-400">متوسط</SelectItem>
-                              <SelectItem value="hard" className="text-red-400">صعب</SelectItem>
+                            <SelectContent className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white">
+                              <SelectItem value="easy" className="text-green-400 hover:bg-green-900/20 focus:bg-green-900/30">سهل</SelectItem>
+                              <SelectItem value="medium" className="text-yellow-400 hover:bg-yellow-900/20 focus:bg-yellow-900/30">متوسط</SelectItem>
+                              <SelectItem value="hard" className="text-red-400 hover:bg-red-900/20 focus:bg-red-900/30">صعب</SelectItem>
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage className="text-red-400" />
                         </FormItem>
                       )}
                     />
@@ -242,17 +287,17 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                       name="points"
                       render={({ field }) => (
                         <FormItem className="text-right">
-                          <FormLabel className="text-white">النقاط</FormLabel>
+                          <FormLabel className="text-white text-lg mb-2">النقاط</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
-                              className="bg-white/10 border-white/20 text-white"
+                              className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
                               placeholder="أدخل عدد النقاط"
                               {...field}
                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-400" />
                         </FormItem>
                       )}
                     />
@@ -263,11 +308,11 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                     name="image"
                     render={({ field }) => (
                       <FormItem className="text-right">
-                        <FormLabel className="text-white">رابط الصورة (اختياري)</FormLabel>
+                        <FormLabel className="text-white text-lg mb-2">رابط الصورة (اختياري)</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="أدخل رابط الصورة (اختياري)"
-                            className="bg-white/10 border-white/20 text-white"
+                            className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
                             {...field}
                             onChange={(e) => {
                               field.onChange(e);
@@ -275,14 +320,14 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                             }}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                         {imagePreview && (
-                          <div className="mt-2 border border-white/20 rounded-md p-2">
+                          <div className="mt-3 border border-white/20 rounded-md p-2 bg-black/30 backdrop-blur-sm">
                             <p className="text-xs text-white/60 mb-2">معاينة الصورة:</p>
                             <img 
                               src={imagePreview} 
                               alt="معاينة"
-                              className="max-h-40 object-contain mx-auto rounded-md"
+                              className="max-h-48 object-contain mx-auto rounded-md"
                               onError={() => setImagePreview(null)}
                             />
                           </div>
@@ -294,15 +339,15 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                 
                 <div className="space-y-6">
                   <div className="space-y-4 text-right">
-                    <FormLabel className="text-white">الخيارات</FormLabel>
-                    <div className="space-y-2">
+                    <FormLabel className="text-white text-lg mb-2">الخيارات</FormLabel>
+                    <div className="space-y-3">
                       {options.map((option, index) => (
-                        <div key={index} className="flex items-center gap-2">
+                        <div key={index} className="flex items-center gap-2 backdrop-blur-sm rounded-md bg-white/5 p-1 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all">
                           <Button 
                             type="button"
                             variant="ghost" 
                             size="icon" 
-                            className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded-full h-8 w-8"
                             onClick={() => removeOption(index)}
                           >
                             ×
@@ -316,30 +361,30 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                               form.setValue('options', updatedOptions.filter(opt => opt.trim() !== ''));
                             }}
                             placeholder={`الخيار ${index + 1}`}
-                            className="bg-white/10 border-white/20 text-white"
+                            className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
                           />
                         </div>
                       ))}
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-4">
                       <Input
                         value={currentOption}
                         onChange={(e) => setCurrentOption(e.target.value)}
                         placeholder="أضف خيار جديد"
-                        className="bg-white/10 border-white/20 text-white"
+                        className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
                       />
                       <Button 
                         type="button"
                         onClick={addOption}
-                        className={`bg-subject-${subject}-primary hover:bg-subject-${subject}-primary/80`}
+                        className={`${subjectStyles.bg} ${subjectStyles.text} ${subjectStyles.border} ${subjectStyles.hoverBg}`}
                       >
                         إضافة
                       </Button>
                     </div>
                     {form.formState.errors.options && (
-                      <p className="text-red-500 text-sm">{form.formState.errors.options.message}</p>
+                      <p className="text-red-400 text-sm">{form.formState.errors.options.message}</p>
                     )}
                   </div>
                   
@@ -348,32 +393,32 @@ const SubjectPuzzleForm = ({ subject, onSuccess }: SubjectPuzzleFormProps) => {
                     name="correct_answer"
                     render={({ field }) => (
                       <FormItem className="text-right">
-                        <FormLabel className="text-white">الإجابة الصحيحة</FormLabel>
+                        <FormLabel className="text-white text-lg mb-2">الإجابة الصحيحة</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                            <SelectTrigger className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-green-900/10 focus:bg-green-900/20 hover:border-green-500/30 transition-all">
                               <SelectValue placeholder="اختر الإجابة الصحيحة" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className="bg-gray-900 border-white/20 text-white">
+                          <SelectContent className="bg-gray-900/95 backdrop-blur-xl border-white/20 text-white">
                             {options.map((option, index) => (
                               option.trim() !== '' && (
-                                <SelectItem key={index} value={option}>
+                                <SelectItem key={index} value={option} className="hover:bg-green-900/20 focus:bg-green-900/30">
                                   {option}
                                 </SelectItem>
                               )
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
                   
-                  <div className="pt-4">
+                  <div className="pt-8">
                     <Button 
                       type="submit" 
-                      className={`w-full bg-subject-${subject}-primary hover:bg-subject-${subject}-primary/80`}
+                      className={`w-full text-lg py-6 font-bold ${subjectStyles.bg} ${subjectStyles.text} ${subjectStyles.border} ${subjectStyles.hoverBg} shadow-lg transition-all`}
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? 'جاري الإضافة...' : 'إضافة اللغز'}
