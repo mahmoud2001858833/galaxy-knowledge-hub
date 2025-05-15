@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -102,9 +101,8 @@ const LeaderboardSidebar: React.FC<LeaderboardSidebarProps> = ({ subject }) => {
       // First get users who solved puzzles in this subject
       const { data: solvedData, error: solvedError } = await supabase
         .from('user_solved_puzzles')
-        .select('user_id, count(*)')
+        .select('user_id, count')
         .eq('subject', subject)
-        .group('user_id')
         .order('count', { ascending: false })
         .limit(10);
       
