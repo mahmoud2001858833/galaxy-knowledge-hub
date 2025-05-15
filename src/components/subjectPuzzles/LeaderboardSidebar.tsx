@@ -40,7 +40,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
       setIsLoading(true);
       
       if (leaderboardType === 'global') {
-        // Fetch global leaderboard across all subjects
+        // Fetch global leaderboard across all subjects, sorted by score (highest first)
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -53,7 +53,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
           // Add avatar_url field if missing
           const profilesWithAvatar = data.map(profile => ({
             ...profile,
-            avatar_url: null // Default value for avatar_url
+            avatar_url: profile.avatar_url || null // Use existing avatar_url or set to null
           })) as UserProfile[];
           
           setLeaderboard(profilesWithAvatar);
@@ -116,7 +116,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
                 const countItem = top10.find(item => item.user_id === profile.id);
                 return {
                   ...profile,
-                  avatar_url: null, // Default value for avatar_url
+                  avatar_url: profile.avatar_url || null, // Use existing avatar_url or set to null
                   subject_solved_count: countItem ? countItem.count : 0
                 } as SubjectLeaderboardItem;
               });
@@ -137,9 +137,10 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
       }
     } catch (error: any) {
       console.error('Error fetching leaderboard:', error);
-      toast.error({
+      toast({
         title: "خطأ في تحميل قائمة المتصدرين",
-        description: error.message
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
@@ -242,7 +243,7 @@ const LeaderboardSidebar = ({ subject }: LeaderboardSidebarProps) => {
               ))}
             </div>
           ) : leaderboard.length > 0 ? (
-            <ul className="space-y-2">
+            <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
               {leaderboard.map((user, index) => (
                 <motion.li
                   key={user.id}

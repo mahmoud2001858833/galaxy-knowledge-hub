@@ -24,7 +24,7 @@ serve(async (req) => {
 
     if (useGemini) {
       // Use Gemini API with the provided API key
-      const GEMINI_API_KEY = 'AIzaSyCgmItFoI3NRT6Sxos0I8DXFN5IOUp8XpE';
+      const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || 'AIzaSyD4rUuEExFqobyo5Vju3Mu348TQ-5tDgSw';
       
       // Prepare the prompt based on the subject with enhanced instructions
       let fullPrompt = prompt;
@@ -102,9 +102,9 @@ serve(async (req) => {
       if (subject === 'physics') {
         API_KEY = Deno.env.get('PHYSICS_API_KEY') || 'AIzaSyCrbnTAA8tPj52LzXQOgQpv7EFxcflzODs';
       } 
-      // If subject is biology, use the biology-specific API key
+      // If subject is biology, use the biology-specific API key with our new key
       else if (subject === 'biology') {
-        API_KEY = Deno.env.get('BIOLOGY_API_KEY') || 'AIzaSyAtdFTqQjqBEjepbCxo7bIF4Cfsu7JzDjs';
+        API_KEY = Deno.env.get('BIOLOGY_API_KEY') || 'AIzaSyD4rUuEExFqobyo5Vju3Mu348TQ-5tDgSw';
       } 
       // Default API key for other subjects (currently used for math and chemistry)
       else {
@@ -139,7 +139,49 @@ serve(async (req) => {
         }
       }
 
-      // Use Gemini API - with enhanced model and configuration
+      // For biology specifically, try to use gemini-2.0-flash model
+      if (subject === 'biology') {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: fullPrompt,
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                topP: 0.8,
+                topK: 40,
+                maxOutputTokens: 2048,
+              },
+            }),
+          }
+        );
+
+        const data = await response.json();
+        
+        if (!data.error) {
+          const result = data.candidates?.[0]?.content?.parts?.[0]?.text || 'لا يوجد رد من المساعد الذكي';
+          
+          return new Response(
+            JSON.stringify({ result }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        // If there's an error, fall back to the standard approach below
+      }
+
+      // Use Gemini API for other subjects - with enhanced model and configuration
       const response = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
         {

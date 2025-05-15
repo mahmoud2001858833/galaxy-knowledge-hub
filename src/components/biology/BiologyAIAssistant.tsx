@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ const BiologyAIAssistant = () => {
   const [response, setResponse] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showExampleQuestions, setShowExampleQuestions] = useState(true);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const { toast } = useToast();
   
   const exampleQuestions = [
@@ -45,18 +46,56 @@ const BiologyAIAssistant = () => {
     try {
       setIsLoading(true);
       setResponse('');
+
+      // Use direct Gemini API call with the provided API key
+      const GEMINI_API_KEY = 'AIzaSyD4rUuEExFqobyo5Vju3Mu348TQ-5tDgSw';
+      const prompt = `كمساعد للأحياء متخصص ومتقدم، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة ومفصلة مع الأخذ في الاعتبار أن المستخدم قد يكون طالباً في المدرسة أو الجامعة. استخدم أمثلة وشروحات بسيطة مع توضيح العمليات الحيوية والتكوينات والوظائف بطريقة مبسطة. اشرح العلاقات بين مختلف الأنظمة البيولوجية وكيف تعمل معاً. قدم معلومات دقيقة وحديثة في مجال الأحياء. السؤال هو: ${data.question}`;
       
-      const { data: responseData, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          prompt: data.question,
-          subject: 'biology'
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              topP: 0.8,
+              topK: 40,
+              maxOutputTokens: 2048,
+            },
+          }),
         }
-      });
+      );
       
-      if (error) throw error;
+      const data_response = await response.json();
       
-      setResponse(responseData.result);
+      if (data_response.error) {
+        throw new Error(data_response.error.message || 'حدث خطأ في الاتصال بالمساعد الذكي');
+      }
+      
+      const result = data_response.candidates?.[0]?.content?.parts?.[0]?.text || 'لا يوجد رد من المساعد الذكي';
+      setResponse(result);
       setShowExampleQuestions(false);
+      
+      // Check if response is long enough to need scroll indicator
+      setTimeout(() => {
+        const responseElement = document.getElementById('biology-ai-response');
+        if (responseElement) {
+          setShowScrollIndicator(responseElement.scrollHeight > responseElement.clientHeight);
+        }
+      }, 100);
+      
     } catch (error: any) {
       console.error('Error calling AI assistant:', error);
       toast({
@@ -66,6 +105,13 @@ const BiologyAIAssistant = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const scrollToBottom = () => {
+    const responseElement = document.getElementById('biology-ai-response');
+    if (responseElement) {
+      responseElement.scrollTop = responseElement.scrollHeight;
     }
   };
   
@@ -125,8 +171,8 @@ const BiologyAIAssistant = () => {
         
         {/* قسم الإجابة - جزء عرض الإجابة */}
         <div className="flex-1">
-          <Card className="bg-white/5 border-subject-biology-primary/30 h-full">
-            <div className="p-5 h-full flex flex-col">
+          <Card className="bg-white/5 border-subject-biology-primary/30 h-full relative">
+            <div className="p-5 h-[50vh] flex flex-col">
               <h3 className="text-xl font-semibold mb-4 text-subject-biology-primary">الإجابة:</h3>
               
               {isLoading ? (
@@ -137,10 +183,22 @@ const BiologyAIAssistant = () => {
                   </div>
                 </div>
               ) : response ? (
-                <div 
-                  className="prose prose-invert max-w-none overflow-auto flex-1"
-                  dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
-                />
+                <div className="relative flex-1 overflow-hidden">
+                  <div 
+                    id="biology-ai-response"
+                    className="prose prose-invert max-w-none overflow-y-auto h-full pr-2 pb-8"
+                    dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
+                  />
+                  
+                  {showScrollIndicator && (
+                    <Button
+                      onClick={scrollToBottom}
+                      className="absolute bottom-0 left-1/2 transform -translate-x-1/2 rounded-full w-8 h-8 p-0 bg-subject-biology-primary/70 hover:bg-subject-biology-primary"
+                    >
+                      <ChevronDown className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-center text-white/50 flex-1">
                   اكتب سؤالك للحصول على إجابة
