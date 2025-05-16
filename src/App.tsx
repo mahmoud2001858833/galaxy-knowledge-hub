@@ -21,6 +21,7 @@ import Auth from './pages/Auth';
 import MathPuzzles from './pages/MathPuzzles';
 import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
+import PuzzleDetails from './pages/PuzzleDetails';
 
 const router = createBrowserRouter([
   {
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
   {
     path: '/subject-puzzles',
     element: <SubjectPuzzles />,
+  },
+  {
+    path: '/puzzle/:puzzleId',
+    element: <PuzzleDetails />,
   },
   {
     path: '/visual-library',

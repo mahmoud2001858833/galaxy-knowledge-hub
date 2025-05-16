@@ -1,17 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Puzzle, Trophy, Clock, ArrowLeft, X, CheckCircle2, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserSolvedPuzzles } from '@/hooks/useUserSolvedPuzzles';
 import SubjectPuzzleDeleteModal from './SubjectPuzzleDeleteModal';
+import { Link, useNavigate } from 'react-router-dom';
 
 type PuzzleType = {
   id: string;
@@ -40,17 +39,16 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
 }) => {
   const [puzzles, setPuzzles] = useState<PuzzleType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPuzzle, setSelectedPuzzle] = useState<PuzzleType | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string>('');
-  const [showDialog, setShowDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [score, setScore] = useState<number>(0);
-  const { solvedPuzzles, markAsSolved, checkIfSolved, loading, error } = useUserSolvedPuzzles();
+  const { solvedPuzzles, checkIfSolved, loading, error } = useUserSolvedPuzzles();
   
   // Add state for delete modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [puzzleToDelete, setPuzzleToDelete] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPuzzles();
@@ -106,48 +104,14 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
   };
 
   const handlePuzzleClick = (puzzle: PuzzleType) => {
-    setSelectedPuzzle(puzzle);
-    setSelectedOption('');
-    setShowDialog(true);
+    // Navigate to puzzle details page instead of opening dialog
+    navigate(`/puzzle/${puzzle.id}`);
   };
 
   const handleDeleteClick = (e: React.MouseEvent, puzzleId: string) => {
     e.stopPropagation(); // Prevent opening the puzzle dialog
     setPuzzleToDelete(puzzleId);
     setDeleteModalOpen(true);
-  };
-
-  const handleCheckAnswer = async () => {
-    if (!selectedPuzzle || !selectedOption) return;
-    
-    const isCorrect = selectedOption === selectedPuzzle.correct_answer;
-    const puzzleId = selectedPuzzle.id;
-    
-    // Check if puzzle has already been answered using the hook
-    if (checkIfSolved(puzzleId)) {
-      toast.info('لقد أجبت على هذا اللغز من قبل', {
-        icon: <Clock className="h-5 w-5 text-blue-400" />
-      });
-      return;
-    }
-    
-    if (isCorrect) {
-      // Mark puzzle as solved using the hook
-      await markAsSolved(puzzleId, selectedPuzzle.subject);
-      
-      toast.success(`إجابة صحيحة! ${user ? `+${selectedPuzzle.points} نقطة` : ''}`, {
-        icon: <CheckCircle2 className="h-5 w-5 text-green-400" />
-      });
-      
-      // Close dialog after a short delay
-      setTimeout(() => {
-        setShowDialog(false);
-      }, 1500);
-    } else {
-      toast.error('إجابة خاطئة، حاول مرة أخرى', {
-        icon: <X className="h-5 w-5 text-red-400" />
-      });
-    }
   };
 
   const getDifficultyProps = (difficulty: string) => {
@@ -358,13 +322,15 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
                     </p>
                     
                     <div className="flex justify-end">
-                      <Button 
-                        size="sm" 
-                        className={`text-white rounded-full px-4 bg-gradient-to-r from-subject-${subject}-primary to-subject-${subject}-secondary hover:opacity-90 group-hover:scale-105 transition-all`}
-                      >
-                        <span>حل اللغز</span>
-                        <ArrowLeft className="h-4 w-4 ms-1" />
-                      </Button>
+                      <Link to={`/puzzle/${puzzle.id}`}>
+                        <Button 
+                          size="sm" 
+                          className={`text-white rounded-full px-4 bg-gradient-to-r from-subject-${subject}-primary to-subject-${subject}-secondary hover:opacity-90 group-hover:scale-105 transition-all`}
+                        >
+                          <span>حل اللغز</span>
+                          <ArrowLeft className="h-4 w-4 ms-1" />
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -373,87 +339,6 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
           })}
         </div>
       )}
-
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="bg-gray-950/95 backdrop-blur-xl border-white/10 sm:max-w-xl text-right">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-white text-right flex justify-between items-center">
-              <div className={`p-2 rounded-full ${getDifficultyProps(selectedPuzzle?.difficulty || 'easy').bgColor}`}>
-                <span className="text-lg">
-                  {selectedPuzzle?.subject && subjectIcons[selectedPuzzle.subject as keyof typeof subjectIcons]}
-                </span>
-              </div>
-              <div>{selectedPuzzle?.title}</div>
-            </DialogTitle>
-            
-            <div className="flex items-center justify-between mt-2">
-              <Badge 
-                variant="outline" 
-                className={`${getSubjectTextColor(selectedPuzzle?.subject || '')} border-0 bg-white/5 flex items-center gap-1 px-3`}
-              >
-                <span>{selectedPuzzle?.points || 0}</span>
-                <Trophy className="h-3 w-3" />
-              </Badge>
-              
-              <Badge className={`${getDifficultyProps(selectedPuzzle?.difficulty || 'easy').bgColor} ${getDifficultyProps(selectedPuzzle?.difficulty || 'easy').color}`}>
-                {getDifficultyProps(selectedPuzzle?.difficulty || 'easy').label}
-              </Badge>
-            </div>
-          </DialogHeader>
-          
-          <div className="py-2">
-            <p className="text-white text-lg mb-4">
-              {selectedPuzzle?.question}
-            </p>
-            
-            {selectedPuzzle?.image && (
-              <div className="mb-6 flex justify-center">
-                <img 
-                  src={selectedPuzzle.image} 
-                  alt={selectedPuzzle.title}
-                  className="rounded-lg max-h-60 object-contain border border-white/10"
-                />
-              </div>
-            )}
-            
-            <RadioGroup 
-              value={selectedOption} 
-              onValueChange={setSelectedOption}
-              className="space-y-3"
-            >
-              {selectedPuzzle?.options.map((option, index) => (
-                <Label
-                  key={index}
-                  htmlFor={`option-${index}`}
-                  className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                    selectedOption === option
-                      ? `bg-subject-${selectedPuzzle.subject}-primary/20 border-subject-${selectedPuzzle.subject}-primary/50 shadow`
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <RadioGroupItem 
-                    id={`option-${index}`} 
-                    value={option} 
-                    className={`text-subject-${selectedPuzzle.subject}-primary`} 
-                  />
-                  <span className="ms-3 text-white">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-          
-          <DialogFooter className="sm:justify-start">
-            <Button 
-              type="button"
-              onClick={handleCheckAnswer}
-              disabled={!selectedOption}
-              className={`w-full text-white bg-gradient-to-r from-subject-${selectedPuzzle?.subject || 'physics'}-primary to-subject-${selectedPuzzle?.subject || 'physics'}-secondary disabled:opacity-50`}
-            >
-              تحقق من الإجابة
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       {/* Delete confirmation modal */}
       <SubjectPuzzleDeleteModal
