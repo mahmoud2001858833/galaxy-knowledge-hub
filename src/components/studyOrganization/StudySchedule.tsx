@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ar } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 interface StudyEvent {
   id: string;
@@ -25,6 +26,9 @@ interface StudyEvent {
   notes: string;
   user_id?: string | null;
 }
+
+// Define the shape of the database study event
+type DbStudyEvent = Database['public']['Tables']['study_events']['Row'];
 
 const subjects = [
   { value: "physics", label: "الفيزياء" },
@@ -107,10 +111,16 @@ const StudySchedule = () => {
         if (error) throw error;
         
         if (data) {
-          // تحويل التواريخ من سلاسل نصية إلى كائنات Date
-          const eventsWithDates = data.map(event => ({
-            ...event,
-            date: new Date(event.date)
+          // تحويل البيانات من السيرفر إلى الهيكل المستخدم في التطبيق
+          const eventsWithDates: StudyEvent[] = data.map(event => ({
+            id: event.id,
+            title: event.title,
+            subject: event.subject,
+            date: new Date(event.date),
+            startTime: event.start_time,
+            endTime: event.end_time,
+            notes: event.notes || '',
+            user_id: event.user_id
           }));
           setEvents(eventsWithDates);
         }
@@ -196,7 +206,7 @@ const StudySchedule = () => {
           .insert({
             title: newEvent.title,
             subject: newEvent.subject,
-            date: newEvent.date instanceof Date ? newEvent.date.toISOString() : newEvent.date,
+            date: newEvent.date instanceof Date ? newEvent.date.toISOString().split('T')[0] : newEvent.date,
             start_time: newEvent.startTime,
             end_time: newEvent.endTime,
             notes: newEvent.notes,

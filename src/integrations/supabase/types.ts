@@ -395,6 +395,42 @@ export type Database = {
         }
         Relationships: []
       }
+      study_events: {
+        Row: {
+          created_at: string | null
+          date: string
+          end_time: string
+          id: string
+          notes: string | null
+          start_time: string
+          subject: string
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          start_time: string
+          subject: string
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          subject?: string
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subject_puzzles: {
         Row: {
           admin_password: string
