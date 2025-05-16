@@ -98,7 +98,7 @@ const SubjectPuzzles = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0c0a20] via-[#1c1248] to-[#0c0a20]">
+    <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-[#0c0a20] via-[#1c1248] to-[#0c0a20]">
       {/* Animated background */}
       <div className="fixed inset-0 overflow-hidden z-0">
         {renderAnimatedElements()}

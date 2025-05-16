@@ -13,15 +13,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from '@/hooks/use-toast';
 import { ar } from 'date-fns/locale';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StudyEvent {
   id: string;
   title: string;
   subject: string;
-  date: Date | string; // إما تاريخ أو سلسلة نصية
+  date: Date | string;
   startTime: string;
   endTime: string;
   notes: string;
+  user_id?: string | null;
 }
 
 const subjects = [
@@ -31,6 +33,8 @@ const subjects = [
   { value: "mathematics", label: "الرياضيات" },
   { value: "other", label: "أخرى" }
 ];
+
+const LOCAL_STORAGE_KEY = 'studyEvents';
 
 const StudySchedule = () => {
   const [events, setEvents] = useState<StudyEvent[]>([]);
@@ -42,46 +46,38 @@ const StudySchedule = () => {
   const [notes, setNotes] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDateEvents, setSelectedDateEvents] = useState<StudyEvent[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(null);
   
   const { toast } = useToast();
 
-  // تحميل الأحداث من التخزين المحلي عند التحميل
+  // تحقق من حالة تسجيل الدخول
   useEffect(() => {
-    const savedEvents = localStorage.getItem('studyEvents');
-    if (savedEvents) {
-      try {
-        const parsedEvents = JSON.parse(savedEvents).map((event: any) => ({
-          ...event,
-          // تحويل سلسلة التاريخ إلى كائن Date
-          date: new Date(event.date)
-        }));
-        setEvents(parsedEvents);
-      } catch (error) {
-        console.error("خطأ في تحميل جدول الدراسة:", error);
-        toast({
-          title: "خطأ",
-          description: "لم نتمكن من تحميل جدول الدراسة المخزن",
-          variant: "destructive",
-        });
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setIsLoggedIn(true);
+        setUserId(session.user.id);
+      } else {
+        setIsLoggedIn(false);
+        setUserId(null);
       }
-    }
-  }, [toast]);
+    };
 
-  // حفظ الأحداث في التخزين المحلي عند تغييرها
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // تحميل الأحداث عند بدء التشغيل
   useEffect(() => {
-    if (events.length > 0) {
-      try {
-        // تحويل كائنات Date إلى سلاسل نصية قبل التخزين
-        const eventsToStore = events.map(event => ({
-          ...event,
-          date: event.date instanceof Date ? event.date.toISOString() : event.date
-        }));
-        localStorage.setItem('studyEvents', JSON.stringify(eventsToStore));
-      } catch (error) {
-        console.error("خطأ في حفظ جدول الدراسة:", error);
-      }
-    }
-  }, [events]);
+    loadEvents();
+  }, [isLoggedIn, userId]);
 
   // تحديث الأحداث المعروضة عند تغيير التاريخ المحدد
   useEffect(() => {
@@ -99,7 +95,79 @@ const StudySchedule = () => {
     }
   }, [date, events]);
 
-  const handleAddEvent = () => {
+  const loadEvents = async () => {
+    if (isLoggedIn && userId) {
+      // إذا كان المستخدم مسجل الدخول، قم بتحميل الأحداث من Supabase
+      try {
+        const { data, error } = await supabase
+          .from('study_events')
+          .select('*')
+          .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        if (data) {
+          // تحويل التواريخ من سلاسل نصية إلى كائنات Date
+          const eventsWithDates = data.map(event => ({
+            ...event,
+            date: new Date(event.date)
+          }));
+          setEvents(eventsWithDates);
+        }
+      } catch (error) {
+        console.error("خطأ في تحميل جدول الدراسة من قاعدة البيانات:", error);
+        toast({
+          title: "خطأ",
+          description: "لم نتمكن من تحميل جدول الدراسة الخاص بك",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // إذا لم يكن المستخدم مسجل الدخول، قم بتحميل الأحداث من التخزين المحلي
+      try {
+        const savedEvents = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedEvents) {
+          const parsedEvents = JSON.parse(savedEvents).map((event: any) => ({
+            ...event,
+            date: new Date(event.date)
+          }));
+          setEvents(parsedEvents);
+        }
+      } catch (error) {
+        console.error("خطأ في تحميل جدول الدراسة من التخزين المحلي:", error);
+        toast({
+          title: "خطأ",
+          description: "لم نتمكن من تحميل جدول الدراسة المخزن",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const saveEvents = async (updatedEvents: StudyEvent[]) => {
+    if (isLoggedIn && userId) {
+      // حفظ الأحداث في Supabase إذا كان المستخدم مسجل الدخول
+      // لا نحتاج لفعل شيء هنا لأن كل عملية إضافة/حذف ستقوم بالتحديث المباشر
+    } else {
+      // حفظ الأحداث في التخزين المحلي إذا لم يكن المستخدم مسجل الدخول
+      try {
+        const eventsToStore = updatedEvents.map(event => ({
+          ...event,
+          date: event.date instanceof Date ? event.date.toISOString() : event.date
+        }));
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(eventsToStore));
+      } catch (error) {
+        console.error("خطأ في حفظ جدول الدراسة في التخزين المحلي:", error);
+        toast({
+          title: "خطأ",
+          description: "لم نتمكن من حفظ جدول الدراسة",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleAddEvent = async () => {
     if (!date || !title || !subject || !startTime || !endTime) {
       toast({
         title: "معلومات ناقصة",
@@ -116,10 +184,52 @@ const StudySchedule = () => {
       date,
       startTime,
       endTime,
-      notes
+      notes,
+      user_id: userId
     };
 
-    setEvents([...events, newEvent]);
+    if (isLoggedIn && userId) {
+      // إضافة الحدث إلى Supabase
+      try {
+        const { data, error } = await supabase
+          .from('study_events')
+          .insert({
+            title: newEvent.title,
+            subject: newEvent.subject,
+            date: newEvent.date instanceof Date ? newEvent.date.toISOString() : newEvent.date,
+            start_time: newEvent.startTime,
+            end_time: newEvent.endTime,
+            notes: newEvent.notes,
+            user_id: userId
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          // تحديث الحدث الجديد بالمعرف من قاعدة البيانات
+          newEvent.id = data.id;
+        }
+      } catch (error) {
+        console.error("خطأ في إضافة حدث جديد إلى قاعدة البيانات:", error);
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء حفظ الحدث. يرجى المحاولة مرة أخرى.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const updatedEvents = [...events, newEvent];
+    setEvents(updatedEvents);
+    
+    // حفظ في التخزين المحلي إذا لم يكن المستخدم مسجل الدخول
+    if (!isLoggedIn) {
+      saveEvents(updatedEvents);
+    }
+    
     resetForm();
     setIsDialogOpen(false);
 
@@ -129,8 +239,35 @@ const StudySchedule = () => {
     });
   };
 
-  const handleDeleteEvent = (id: string) => {
-    setEvents(events.filter(event => event.id !== id));
+  const handleDeleteEvent = async (id: string) => {
+    if (isLoggedIn && userId) {
+      // حذف الحدث من Supabase
+      try {
+        const { error } = await supabase
+          .from('study_events')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("خطأ في حذف الحدث من قاعدة البيانات:", error);
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء حذف الحدث. يرجى المحاولة مرة أخرى.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const updatedEvents = events.filter(event => event.id !== id);
+    setEvents(updatedEvents);
+    
+    // حفظ في التخزين المحلي إذا لم يكن المستخدم مسجل الدخول
+    if (!isLoggedIn) {
+      saveEvents(updatedEvents);
+    }
     
     toast({
       title: "تم الحذف",
@@ -207,7 +344,7 @@ const StudySchedule = () => {
                     إضافة حدث جديد
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-green-950 border-green-800 text-white" dir="rtl">
+                <DialogContent className="bg-green-950 border-green-800 text-white max-h-[90vh] overflow-y-auto" dir="rtl">
                   <DialogHeader>
                     <DialogTitle>إضافة حدث دراسي جديد</DialogTitle>
                     <DialogDescription>
@@ -233,7 +370,7 @@ const StudySchedule = () => {
                         <SelectTrigger className="bg-green-900/50 border-green-700">
                           <SelectValue placeholder="اختر المادة" />
                         </SelectTrigger>
-                        <SelectContent className="bg-green-900 border-green-700">
+                        <SelectContent className="bg-green-900 border-green-700 max-h-60 overflow-y-auto">
                           {subjects.map((subject) => (
                             <SelectItem key={subject.value} value={subject.value}>
                               {subject.label}
@@ -255,7 +392,7 @@ const StudySchedule = () => {
                             {date ? formatDate(date) : "اختر تاريخاً"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 bg-green-900 border-green-700" align="start">
+                        <PopoverContent className="w-auto p-0 bg-green-900 border-green-700 max-h-80 overflow-y-auto" align="start">
                           <Calendar
                             mode="single"
                             selected={date}
@@ -384,6 +521,14 @@ const StudySchedule = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {!isLoggedIn && (
+        <div className="mt-4 p-4 rounded-md bg-yellow-900/20 border border-yellow-800/30">
+          <p className="text-yellow-300 text-sm text-center">
+            سيتم حفظ جدول الدراسة محلياً على هذا الجهاز. قم بتسجيل الدخول لحفظ الجدول عبر جميع أجهزتك!
+          </p>
+        </div>
+      )}
     </div>
   );
 };
