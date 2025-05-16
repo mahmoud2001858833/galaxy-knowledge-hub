@@ -8,8 +8,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Puzzle, Trophy, Clock, ArrowLeft, X, CheckCircle2 } from 'lucide-react';
+import { Puzzle, Trophy, Clock, ArrowLeft, X, CheckCircle2, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUserSolvedPuzzles } from '@/hooks/useUserSolvedPuzzles';
+import SubjectPuzzleDeleteModal from './SubjectPuzzleDeleteModal';
 
 type PuzzleType = {
   id: string;
@@ -40,26 +42,30 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPuzzle, setSelectedPuzzle] = useState<PuzzleType | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>('');
-  const [answeredPuzzles, setAnsweredPuzzles] = useState<string[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [score, setScore] = useState<number>(0);
+  const { solvedPuzzles, markAsSolved, checkIfSolved, loading, error } = useUserSolvedPuzzles();
+  
+  // Add state for delete modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [puzzleToDelete, setPuzzleToDelete] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchPuzzles();
     fetchUserData();
     
-    // Check local storage for answered puzzles
-    const storedAnsweredPuzzles = localStorage.getItem('answeredPuzzles');
-    if (storedAnsweredPuzzles) {
-      setAnsweredPuzzles(JSON.parse(storedAnsweredPuzzles));
-    }
+    // Local storage is now handled by useUserSolvedPuzzles hook
   }, [subject, difficulty, refreshTrigger]); // Added refreshTrigger as a dependency
 
   const fetchUserData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setUser(session.user);
+      
+      // Check if user is admin (email is jowmahmoud6@gmail.com)
+      setIsAdmin(session.user.email === 'jowmahmoud6@gmail.com');
       
       // Fetch user score
       const { data: profileData } = await supabase
@@ -105,14 +111,20 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
     setShowDialog(true);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, puzzleId: string) => {
+    e.stopPropagation(); // Prevent opening the puzzle dialog
+    setPuzzleToDelete(puzzleId);
+    setDeleteModalOpen(true);
+  };
+
   const handleCheckAnswer = async () => {
     if (!selectedPuzzle || !selectedOption) return;
     
     const isCorrect = selectedOption === selectedPuzzle.correct_answer;
     const puzzleId = selectedPuzzle.id;
     
-    // Check if puzzle has already been answered
-    if (answeredPuzzles.includes(puzzleId)) {
+    // Check if puzzle has already been answered using the hook
+    if (checkIfSolved(puzzleId)) {
       toast.info('لقد أجبت على هذا اللغز من قبل', {
         icon: <Clock className="h-5 w-5 text-blue-400" />
       });
@@ -120,36 +132,8 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
     }
     
     if (isCorrect) {
-      // Add to answered puzzles
-      const updatedAnsweredPuzzles = [...answeredPuzzles, puzzleId];
-      setAnsweredPuzzles(updatedAnsweredPuzzles);
-      localStorage.setItem('answeredPuzzles', JSON.stringify(updatedAnsweredPuzzles));
-      
-      // Update score if user is logged in
-      if (user) {
-        try {
-          // Update using RPC function
-          const { error } = await supabase.rpc('adjust_user_score', {
-            user_id: user.id,
-            points_adjustment: selectedPuzzle.points
-          });
-          
-          if (!error) {
-            setScore(prevScore => prevScore + selectedPuzzle.points);
-          }
-          
-          // Update solved puzzles count
-          await supabase
-            .from('profiles')
-            .update({
-              solved_puzzles: (answeredPuzzles.length + 1)
-            })
-            .eq('id', user.id);
-            
-        } catch (error) {
-          console.error('Error updating score:', error);
-        }
-      }
+      // Mark puzzle as solved using the hook
+      await markAsSolved(puzzleId, selectedPuzzle.subject);
       
       toast.success(`إجابة صحيحة! ${user ? `+${selectedPuzzle.points} نقطة` : ''}`, {
         icon: <CheckCircle2 className="h-5 w-5 text-green-400" />
@@ -281,7 +265,7 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {puzzles.map((puzzle) => {
             const difficultyProps = getDifficultyProps(puzzle.difficulty);
-            const isAnswered = answeredPuzzles.includes(puzzle.id);
+            const isAnswered = checkIfSolved(puzzle.id);
             
             return (
               <motion.div
@@ -315,6 +299,20 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
                           </Badge>
                         </div>
                       )}
+                      
+                      {/* Admin delete button */}
+                      {isAdmin && (
+                        <div className="absolute top-2 right-2 z-20">
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="w-7 h-7 rounded-full"
+                            onClick={(e) => handleDeleteClick(e, puzzle.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                   <CardContent className={`p-5 ${!puzzle.image ? 'pt-2' : ''}`}>
@@ -324,19 +322,31 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
                         <Trophy className="h-3 w-3" />
                       </Badge>
                       
-                      {!puzzle.image && (
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1">
+                        {!puzzle.image && (
                           <Badge className={`bg-gradient-to-r ${difficultyProps.gradient} text-white shadow`}>
                             {difficultyProps.label}
                           </Badge>
-                          {isAnswered && (
-                            <Badge className="bg-green-600 text-white shadow-md flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>تم الحل</span>
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        {isAnswered && !puzzle.image && (
+                          <Badge className="bg-green-600 text-white shadow-md flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>تم الحل</span>
+                          </Badge>
+                        )}
+                        
+                        {/* Admin delete button for puzzles without images */}
+                        {isAdmin && !puzzle.image && (
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="w-6 h-6 rounded-full"
+                            onClick={(e) => handleDeleteClick(e, puzzle.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     
                     <h3 className="text-xl font-bold text-white text-right mb-2 line-clamp-1">
@@ -444,6 +454,17 @@ const SubjectPuzzlesList: React.FC<SubjectPuzzlesListProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete confirmation modal */}
+      <SubjectPuzzleDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        puzzleId={puzzleToDelete}
+        onDelete={() => {
+          fetchPuzzles();
+          if (onRefresh) onRefresh();
+        }}
+      />
     </>
   );
 };

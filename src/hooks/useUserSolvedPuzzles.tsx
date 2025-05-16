@@ -24,7 +24,17 @@ export function useUserSolvedPuzzles(): UseSolvedPuzzlesResult {
         setUserId(session.user.id);
         fetchSolvedPuzzles(session.user.id);
       } else {
-        setLoading(false);
+        // If no logged-in user, try to get from localStorage
+        try {
+          const storedPuzzles = localStorage.getItem('solvedPuzzles');
+          if (storedPuzzles) {
+            setSolvedPuzzles(JSON.parse(storedPuzzles));
+          }
+        } catch (e) {
+          console.error('Error reading from localStorage:', e);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
@@ -74,26 +84,31 @@ export function useUserSolvedPuzzles(): UseSolvedPuzzlesResult {
   }
 
   async function markAsSolved(puzzleId: string, subject: string) {
-    if (!userId) return;
-    
     try {
       // Check if already solved to avoid duplicates
       if (solvedPuzzles.includes(puzzleId)) return;
       
-      const { error } = await supabase
-        .from('user_solved_puzzles')
-        .insert({
-          user_id: userId,
-          puzzle_id: puzzleId,
-          subject: subject
-        });
+      if (userId) {
+        // User is logged in, save to database
+        const { error } = await supabase
+          .from('user_solved_puzzles')
+          .insert({
+            user_id: userId,
+            puzzle_id: puzzleId,
+            subject: subject
+          });
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
+      } else {
+        // User is not logged in, save to localStorage
+        const newSolvedPuzzles = [...solvedPuzzles, puzzleId];
+        localStorage.setItem('solvedPuzzles', JSON.stringify(newSolvedPuzzles));
       }
 
       // Update local state
-      setSolvedPuzzles([...solvedPuzzles, puzzleId]);
+      setSolvedPuzzles((prev) => [...prev, puzzleId]);
     } catch (err: any) {
       setError(err);
       console.error('Error marking puzzle as solved:', err.message);

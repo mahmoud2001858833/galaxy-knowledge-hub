@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import StarField from '@/components/StarField';
 import { supabase } from '@/integrations/supabase/client';
+import { FcGoogle } from 'react-icons/fc'; // We'll add this dependency later
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -106,6 +107,28 @@ const Auth = () => {
         variant: "destructive",
       });
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      setAuthError(error.error_description || error.message || 'خطأ في تسجيل الدخول بواسطة غوغل');
+      toast({
+        title: "خطأ في تسجيل الدخول",
+        description: error.error_description || error.message,
+        variant: "destructive",
+      });
       setLoading(false);
     }
   };
@@ -230,8 +253,29 @@ const Auth = () => {
               </div>
             </form>
             
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/20"></span>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-900/50 text-white/70">أو</span>
+              </div>
+            </div>
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full border-white/20 bg-white hover:bg-white/90 text-gray-800 font-medium flex items-center justify-center gap-2"
+            >
+              <FcGoogle className="text-xl" />
+              تسجيل الدخول باستخدام جوجل
+            </Button>
+            
             <div className="mt-6 text-center">
               <button
+                type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-space-neon-blue hover:text-space-bright-blue text-sm"
               >
