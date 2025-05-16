@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ArrowLeft, Trophy, Clock, CheckCircle2, X } from 'lucide-react';
+import { ArrowLeft, Trophy, Clock, CheckCircle2, X, AlertTriangle } from 'lucide-react';
 import { useUserSolvedPuzzles } from '@/hooks/useUserSolvedPuzzles';
 
 type PuzzleType = {
@@ -27,6 +27,9 @@ const PuzzleDetails = () => {
   const [puzzle, setPuzzle] = useState<PuzzleType | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [hasAnswered, setHasAnswered] = useState(false);
   const { solvedPuzzles, markAsSolved, checkIfSolved } = useUserSolvedPuzzles();
   const [user, setUser] = useState<any>(null);
 
@@ -47,6 +50,10 @@ const PuzzleDetails = () => {
         
         if (data) {
           setPuzzle(data as PuzzleType);
+          // Check if puzzle has been solved before
+          if (checkIfSolved(data.id)) {
+            setHasAnswered(true);
+          }
         }
       } catch (error) {
         console.error('Error fetching puzzle:', error);
@@ -65,23 +72,28 @@ const PuzzleDetails = () => {
     const isCorrect = selectedOption === puzzle.correct_answer;
     
     // Check if puzzle has already been solved
-    if (checkIfSolved(puzzle.id)) {
+    const alreadySolved = checkIfSolved(puzzle.id);
+    
+    setIsCorrect(isCorrect);
+    setShowAnswer(true);
+    setHasAnswered(true);
+    
+    if (!alreadySolved) {
+      if (isCorrect) {
+        // Mark puzzle as solved
+        await markAsSolved(puzzle.id, puzzle.subject);
+        
+        toast.success(`إجابة صحيحة! ${user ? `+${puzzle.points} نقطة` : ''}`, {
+          icon: <CheckCircle2 className="h-5 w-5 text-green-400" />
+        });
+      } else {
+        toast.error('إجابة خاطئة', {
+          icon: <X className="h-5 w-5 text-red-400" />
+        });
+      }
+    } else {
       toast.info('لقد أجبت على هذا اللغز من قبل', {
         icon: <Clock className="h-5 w-5 text-blue-400" />
-      });
-      return;
-    }
-    
-    if (isCorrect) {
-      // Mark puzzle as solved
-      await markAsSolved(puzzle.id, puzzle.subject);
-      
-      toast.success(`إجابة صحيحة! ${user ? `+${puzzle.points} نقطة` : ''}`, {
-        icon: <CheckCircle2 className="h-5 w-5 text-green-400" />
-      });
-    } else {
-      toast.error('إجابة خاطئة، حاول مرة أخرى', {
-        icon: <X className="h-5 w-5 text-red-400" />
       });
     }
   };
@@ -269,6 +281,7 @@ const PuzzleDetails = () => {
                 value={selectedOption} 
                 onValueChange={setSelectedOption}
                 className="space-y-3"
+                disabled={hasAnswered}
               >
                 {puzzle.options.map((option, index) => (
                   <Label
@@ -277,27 +290,99 @@ const PuzzleDetails = () => {
                     className={`flex items-center p-4 rounded-lg border cursor-pointer transition-all text-right ${
                       selectedOption === option
                         ? `bg-subject-${puzzle.subject}-primary/20 border-subject-${puzzle.subject}-primary/50 shadow`
+                        : showAnswer && option === puzzle.correct_answer
+                        ? 'bg-green-500/20 border-green-500/50'
+                        : showAnswer && selectedOption === option && isCorrect === false
+                        ? 'bg-red-500/20 border-red-500/50'
                         : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
+                    } ${hasAnswered ? 'opacity-70' : ''}`}
                   >
                     <RadioGroupItem 
                       id={`option-${index}`} 
                       value={option} 
-                      className={`text-subject-${puzzle.subject}-primary`} 
+                      className={`${
+                        showAnswer && option === puzzle.correct_answer
+                        ? 'text-green-500' 
+                        : `text-subject-${puzzle.subject}-primary`
+                      }`} 
+                      disabled={hasAnswered}
                     />
-                    <span className="mr-3 text-white">{option}</span>
+                    <span className={`mr-3 ${
+                      showAnswer && option === puzzle.correct_answer 
+                      ? 'text-green-300 font-bold' 
+                      : showAnswer && selectedOption === option && isCorrect === false
+                      ? 'text-red-300'
+                      : 'text-white'
+                    }`}>
+                      {option}
+                      {showAnswer && option === puzzle.correct_answer && (
+                        <span className="inline-block mr-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-400 inline" />
+                          <span className="mr-1 text-green-400 text-sm">(الإجابة الصحيحة)</span>
+                        </span>
+                      )}
+                    </span>
                   </Label>
                 ))}
               </RadioGroup>
             </div>
             
+            {showAnswer && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-4 rounded-lg mb-6 ${
+                  isCorrect 
+                    ? 'bg-green-900/20 border border-green-500/30' 
+                    : 'bg-red-900/20 border border-red-500/30'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {isCorrect ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5" />
+                  ) : (
+                    <X className="h-5 w-5 text-red-400 mt-0.5" />
+                  )}
+                  <div>
+                    <h3 className={`font-bold mb-1 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                      {isCorrect ? 'إجابة صحيحة!' : 'إجابة خاطئة!'}
+                    </h3>
+                    <p className="text-white/80 text-sm">
+                      {isCorrect 
+                        ? user 
+                          ? `لقد حصلت على ${puzzle.points} نقطة` 
+                          : 'قم بتسجيل الدخول للحصول على النقاط'
+                        : `الإجابة الصحيحة هي: ${puzzle.correct_answer}`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            
+            {hasAnswered && !showAnswer && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 rounded-lg mb-6 bg-blue-900/20 border border-blue-500/30"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-blue-400 mt-0.5" />
+                  <div>
+                    <h3 className="font-bold mb-1 text-blue-400">لقد سبق لك الإجابة على هذا اللغز!</h3>
+                    <p className="text-white/80 text-sm">لا يمكن إعادة حل اللغز مرة أخرى</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            
             <div className="flex justify-center">
               <Button 
                 onClick={handleCheckAnswer}
-                disabled={!selectedOption}
-                className={`w-full md:w-auto px-8 py-2 text-white bg-gradient-to-r from-subject-${puzzle.subject}-primary to-subject-${puzzle.subject}-secondary disabled:opacity-50`}
+                disabled={!selectedOption || hasAnswered}
+                className={`w-full md:w-auto px-8 py-2 text-white bg-gradient-to-r from-subject-${puzzle.subject}-primary to-subject-${puzzle.subject}-secondary disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                تحقق من الإجابة
+                {hasAnswered ? 'تم الإجابة مسبقًا' : 'تحقق من الإجابة'}
               </Button>
             </div>
           </motion.div>
