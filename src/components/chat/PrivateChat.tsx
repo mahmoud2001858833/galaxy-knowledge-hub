@@ -24,7 +24,7 @@ import {
   Clock,
   Menu,
   ListCollapse,
-  ListExpand
+  ListEnd
 } from 'lucide-react';
 import {
   Dialog,
@@ -673,8 +673,8 @@ const PrivateChat = ({ user }) => {
               </Button>
             </div>
             
-            <ScrollArea className="flex-1 h-full py-2 px-2" viewportRef={contactsAreaRef}>
-              <div className="space-y-1">
+            <ScrollArea className="flex-1 h-full py-2 px-2">
+              <div ref={contactsAreaRef} className="space-y-1">
                 {contacts.length > 0 ? (
                   <>
                     {getVisibleContacts().map((contact) => (
@@ -702,7 +702,7 @@ const PrivateChat = ({ user }) => {
                             </>
                           ) : (
                             <>
-                              <ListExpand className="h-3.5 w-3.5" />
+                              <ListEnd className="h-3.5 w-3.5" />
                               <span>عرض المزيد ({contacts.length - 5})</span>
                             </>
                           )}
