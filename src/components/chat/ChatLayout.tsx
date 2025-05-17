@@ -104,20 +104,20 @@ const ChatLayout = () => {
         onValueChange={handleTabChange} 
         className="w-full h-full flex flex-col"
       >
-        <div className="flex justify-center mb-4">
-          <TabsList className="bg-blue-900/30 border border-blue-800/30 p-1">
+        <div className="flex justify-center mb-6">
+          <TabsList className="bg-blue-900/30 border border-blue-800/30 p-2 gap-2 w-full max-w-md">
             <TabsTrigger 
               value="private" 
-              className="data-[state=active]:bg-gradient-to-r from-blue-600 to-blue-700 data-[state=active]:text-white flex items-center gap-1"
+              className="data-[state=active]:bg-gradient-to-r from-blue-600 to-blue-700 data-[state=active]:text-white flex items-center gap-2 py-3 px-4 text-base flex-1"
             >
-              <MessageSquareMore className="h-4 w-4" />
+              <MessageSquareMore className="h-5 w-5" />
               <span>المحادثات الخاصة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="group" 
-              className="data-[state=active]:bg-gradient-to-r from-blue-600 to-blue-700 data-[state=active]:text-white flex items-center gap-1"
+              className="data-[state=active]:bg-gradient-to-r from-blue-600 to-blue-700 data-[state=active]:text-white flex items-center gap-2 py-3 px-4 text-base flex-1"
             >
-              <Users className="h-4 w-4" />
+              <Users className="h-5 w-5" />
               <span>المحادثات الجماعية</span>
             </TabsTrigger>
           </TabsList>
