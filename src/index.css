@@ -8,6 +8,8 @@
   --space-bright-blue: #1e88e5;
   --space-neon-blue: #3db2ff;
   --space-vivid-purple: #9c27b0;
+  --messenger-blue: #0084FF;
+  --messenger-light-blue: #00B2FF;
 }
 
 @layer base {
@@ -104,6 +106,27 @@
   .text-gradient-gold {
     @apply text-gradient from-amber-300 to-yellow-300;
   }
+  
+  /* Messenger style additions */
+  .bg-messenger-blue {
+    background-color: var(--messenger-blue);
+  }
+  
+  .bg-messenger-light-blue {
+    background-color: var(--messenger-light-blue);
+  }
+  
+  .messenger-gradient {
+    background-image: linear-gradient(135deg, var(--messenger-light-blue) 0%, var(--messenger-blue) 100%);
+  }
+  
+  .message-bubble-sent {
+    @apply bg-messenger-blue text-white rounded-2xl rounded-tr-none px-4 py-2 max-w-[75%];
+  }
+  
+  .message-bubble-received {
+    @apply bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[75%];
+  }
 }
 
 /* تحسينات إضافية لإلغاء الهوامش */
@@ -166,4 +189,3 @@ html, body, #root {
   margin: 2px 4px !important;
   transition: all 0.2s ease !important;
 }
-
