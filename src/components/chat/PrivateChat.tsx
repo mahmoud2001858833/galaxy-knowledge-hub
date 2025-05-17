@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
@@ -14,7 +13,7 @@ import WelcomeScreen from './WelcomeScreen';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, UserPlus } from 'lucide-react';
+import { MessageSquare, UserPlus, Users } from 'lucide-react';
 
 const PrivateChat = ({ user }) => {
   const [selectedContact, setSelectedContact] = useState<any>(null);
