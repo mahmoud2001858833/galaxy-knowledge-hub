@@ -49,7 +49,7 @@
 }
 
 @layer utilities {
-  .text-glow-cyan {
+  .text-glow-blue {
     animation: glow 2s ease-in-out infinite;
   }
   
@@ -101,6 +101,39 @@
   .grid-cols-18 {
     grid-template-columns: repeat(18, minmax(0, 1fr));
   }
+  
+  /* تنسيقات خاصة بالمحادثات على طراز ماسنجر */
+  .messenger-gradient {
+    background-image: linear-gradient(135deg, #00B2FF 0%, #006AFF 100%);
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* تصميم فقاعات الدردشة */
+  .bubble-sent {
+    background: linear-gradient(135deg, #00B2FF 0%, #006AFF 100%);
+    border-radius: 18px;
+    border-bottom-right-radius: 4px;
+  }
+  
+  .bubble-received {
+    background-color: #f1f1f1;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+  }
 }
 
 /* تأثير الزجاج للكروت */
@@ -133,4 +166,11 @@
   border-radius: inherit;
   animation: pulse-ring 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
   box-shadow: 0 0 0 rgba(56, 189, 248, 0.4);
+}
+
+/* تحديثات خاصة بتصميم ماسنجر */
+.text-gradient-blue {
+  background: linear-gradient(135deg, #33C3F0 0%, #1EAEDB 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

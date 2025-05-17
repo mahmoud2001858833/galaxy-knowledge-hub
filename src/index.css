@@ -127,6 +127,19 @@
   .message-bubble-received {
     @apply bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[75%];
   }
+  
+  /* New Messenger specific styles */
+  .chat-container {
+    @apply bg-gradient-to-br from-blue-950 to-purple-950 rounded-lg shadow-lg;
+  }
+  
+  .message-time {
+    @apply text-xs text-white/40 mt-1;
+  }
+  
+  .contact-card {
+    @apply bg-gradient-to-br from-blue-900/20 to-purple-900/20 hover:from-blue-900/30 hover:to-purple-900/30 border border-blue-500/20 hover:border-blue-500/40 rounded-lg overflow-hidden shadow transition-all cursor-pointer;
+  }
 }
 
 /* تحسينات إضافية لإلغاء الهوامش */
@@ -188,4 +201,17 @@ html, body, #root {
   border-radius: 4px !important;
   margin: 2px 4px !important;
   transition: all 0.2s ease !important;
+}
+
+/* تعديلات تصميم المحادثات */
+.chat-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+.message-read {
+  @apply text-blue-500;
+}
+
+.message-unread {
+  @apply text-gray-400;
 }

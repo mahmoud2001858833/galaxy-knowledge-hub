@@ -15,7 +15,8 @@ interface ContactsGridProps {
 const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: ContactsGridProps) => {
   return (
     <div className="h-full flex flex-col p-6">
-      <div className="flex justify-between items-center mb-6">
+      {/* شريط العنوان */}
+      <div className="flex justify-between items-center mb-6 sticky top-0 z-10">
         <Button 
           variant="outline" 
           onClick={onBack}
@@ -35,14 +36,18 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto pb-4">
+      {/* شبكة جهات الاتصال */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto pb-4 fade-in">
         {contacts.length > 0 ? (
           contacts.map(contact => (
             <motion.div
               key={contact.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 hover:from-blue-900/30 hover:to-purple-900/30 border border-blue-500/20 hover:border-blue-500/40 rounded-lg overflow-hidden shadow cursor-pointer transition-all"
+              className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 hover:from-blue-900/30 hover:to-purple-900/30 border border-blue-500/20 hover:border-blue-500/40 rounded-lg overflow-hidden shadow-lg cursor-pointer transition-all"
               onClick={() => onSelectContact(contact)}
             >
               <div className="p-4 flex items-center">
@@ -51,15 +56,17 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
                     {contact.avatar_url ? (
                       <AvatarImage src={contact.avatar_url} />
                     ) : (
-                      <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800 text-lg">
-                        {contact.username[0]}
+                      <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800 text-lg">
+                        {contact.username ? contact.username[0].toUpperCase() : '?'}
                       </AvatarFallback>
                     )}
                   </Avatar>
                   
-                  {/* مؤشر حالة الاتصال */}
+                  {/* مؤشر حالة الاتصال مع تأثير نبض للمتصلين */}
                   <div className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-slate-900 ${
-                    contact.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                    contact.isOnline 
+                      ? 'bg-green-500 animate-pulse' 
+                      : 'bg-gray-400'
                   }`} />
                 </div>
                 
@@ -80,7 +87,7 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
             <p className="text-blue-300/80 mb-6 text-center">لم تقم بإضافة أي جهات اتصال بعد</p>
             <Button 
               onClick={onAddContact}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
             >
               <UserPlus className="h-4 w-4 ml-2" />
               <span>إضافة جهة اتصال</span>
