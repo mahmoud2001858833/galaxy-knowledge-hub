@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import {
   Plus,
   ArrowUp,
   ArrowDown,
+  MessageSquare
 } from 'lucide-react';
 import {
   Dialog,
@@ -41,6 +43,7 @@ const PrivateChat = ({ user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesStartRef = useRef<HTMLDivElement>(null);
   const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const [isContactsVisible, setIsContactsVisible] = useState(true);
 
   // Subscribe to new messages
   useRealtimeMessages({
@@ -314,187 +317,207 @@ const PrivateChat = ({ user }) => {
     );
   };
 
+  // Toggle contacts visibility for mobile
+  const toggleContacts = () => {
+    setIsContactsVisible(prev => !prev);
+  };
+
   return (
-    <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden relative">
-      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-white/5">
-        <div className="flex items-center justify-between w-full">
+    <div className="flex h-full">
+      {/* Contacts sidebar - now completely separate */}
+      <div className={`w-80 bg-white/5 backdrop-blur-sm border-l border-white/10 overflow-hidden flex flex-col h-full transition-all duration-300 ${isContactsVisible ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
+        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+          <h3 className="text-lg font-medium text-white">جهات الاتصال</h3>
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => setIsContactSearchOpen(true)}
             className="text-white hover:bg-white/10"
+            title="إضافة جهة اتصال"
           >
             <UserPlus className="h-5 w-5" />
           </Button>
-          
-          {selectedContact ? (
-            <CardTitle className="text-white flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                {selectedContact.avatar_url ? (
-                  <AvatarImage src={selectedContact.avatar_url} />
-                ) : (
-                  <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
-                    {selectedContact.username[0]}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              <span>{selectedContact.username}</span>
-            </CardTitle>
-          ) : (
-            <CardTitle className="text-white">المحادثة الخاصة</CardTitle>
-          )}
-          
-          <div className="w-10"></div> {/* Empty space for alignment */}
         </div>
-      </CardHeader>
-
-      <div className="grid grid-cols-4 h-[calc(100%-64px)]">
-        {/* Contacts sidebar */}
-        <div className="col-span-1 border-l border-white/10 overflow-hidden flex flex-col">
-          <div className="p-2 flex justify-between items-center bg-white/5">
-            <span className="text-sm font-medium text-white/80 mr-2">جهات الاتصال</span>
+        <ScrollArea className="flex-1 h-full">
+          <div className="p-2 space-y-1">
+            {contacts.length > 0 ? (
+              contacts.map((contact) => (
+                <motion.button
+                  key={contact.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setSelectedContact(contact);
+                    // On mobile, auto-hide contacts after selection
+                    if (window.innerWidth < 768) {
+                      setIsContactsVisible(false);
+                    }
+                  }}
+                  className={`w-full flex items-center p-3 rounded-md transition-all ${
+                    selectedContact?.id === contact.id
+                      ? 'bg-gradient-to-r from-blue-900/40 to-blue-800/40 border border-blue-500/30'
+                      : 'hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <Avatar className="h-10 w-10 ml-3">
+                    {contact.avatar_url ? (
+                      <AvatarImage src={contact.avatar_url} />
+                    ) : (
+                      <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
+                        {contact.username[0]}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="truncate text-right">
+                    <div className="font-medium text-white text-sm">{contact.username}</div>
+                  </div>
+                </motion.button>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                <User className="h-12 w-12 text-blue-500/40 mb-3" />
+                <p className="text-white/50">لا توجد جهات اتصال</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsContactSearchOpen(true)}
+                  className="mt-4 text-xs border-blue-500/30 hover:bg-blue-800/30"
+                >
+                  <Plus className="h-3 w-3 ml-1" />
+                  إضافة جهة اتصال
+                </Button>
+              </div>
+            )}
           </div>
-          <div className="flex-1 overflow-auto">
-            <ScrollArea className="h-full">
-              <div className="p-2 space-y-1">
-                {contacts.length > 0 ? (
-                  contacts.map((contact) => (
-                    <motion.button
-                      key={contact.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedContact(contact)}
-                      className={`w-full flex items-center p-2 rounded-md transition-all ${
-                        selectedContact?.id === contact.id
-                          ? 'bg-gradient-to-r from-blue-900/40 to-blue-800/40 border border-blue-500/30'
-                          : 'hover:bg-white/5 border border-transparent'
-                      }`}
-                    >
-                      <Avatar className="h-8 w-8 ml-2">
-                        {contact.avatar_url ? (
-                          <AvatarImage src={contact.avatar_url} />
-                        ) : (
-                          <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
-                            {contact.username[0]}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="truncate text-right">
-                        <div className="font-medium text-white text-sm">{contact.username}</div>
-                      </div>
-                    </motion.button>
-                  ))
+        </ScrollArea>
+      </div>
+
+      {/* Chat content - now separate from contacts */}
+      <Card className="flex-1 bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden relative">
+        <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-white/5">
+          <div className="flex items-center justify-between w-full">
+            {/* Toggle contacts button for mobile */}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={toggleContacts}
+              className="text-white hover:bg-white/10 md:hidden"
+              title="عرض/إخفاء جهات الاتصال"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+            
+            {selectedContact ? (
+              <CardTitle className="text-white flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  {selectedContact.avatar_url ? (
+                    <AvatarImage src={selectedContact.avatar_url} />
+                  ) : (
+                    <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
+                      {selectedContact.username[0]}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <span>{selectedContact.username}</span>
+              </CardTitle>
+            ) : (
+              <CardTitle className="text-white">المحادثة الخاصة</CardTitle>
+            )}
+            
+            <div className="w-10"></div> {/* Empty space for alignment */}
+          </div>
+        </CardHeader>
+
+        {selectedContact ? (
+          <>
+            {/* أزرار التنقل للرسائل */}
+            <div className="fixed left-4 bottom-24 z-50 flex flex-col gap-2">
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
+                onClick={scrollToTop}
+                title="التنقل لأول الرسائل"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
+                onClick={scrollToBottom}
+                title="التنقل لآخر الرسائل"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Messages area - optimized for large number of messages */}
+            <ScrollArea 
+              className="flex-1 p-4" 
+              onScroll={(e) => {
+                // أوقف التمرير التلقائي إلى الأسفل إذا مرر المستخدم لأعلى يدوياً
+                const target = e.currentTarget;
+                const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+                setIsAutoScroll(isScrolledNearBottom);
+              }}
+            >
+              <div className="space-y-1 min-h-full">
+                <div ref={messagesStartRef} />
+                {messages.length === 0 ? (
+                  <div className="h-full flex items-center justify-center py-10">
+                    <div className="text-center">
+                      <MessageSquare className="h-12 w-12 text-blue-500/40 mx-auto mb-2" />
+                      <p className="text-white/50">ابدأ المحادثة مع {selectedContact.username}</p>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-6 px-2 text-center">
-                    <User className="h-10 w-10 text-blue-500/40 mb-2" />
-                    <p className="text-white/50 text-sm">لا توجد جهات اتصال</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setIsContactSearchOpen(true)}
-                      className="mt-3 text-xs border-blue-500/30 hover:bg-blue-800/30"
-                    >
-                      <Plus className="h-3 w-3 ml-1" />
-                      إضافة جهة اتصال
-                    </Button>
+                  <div className="pb-2">
+                    {messages.map(renderMessage)}
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-          </div>
-        </div>
 
-        {/* Chat content */}
-        <div className="col-span-3 flex flex-col h-full overflow-hidden relative">
-          {selectedContact ? (
-            <>
-              {/* أزرار التنقل للرسائل */}
-              <div className="fixed left-4 bottom-24 z-50 flex flex-col gap-2">
-                <Button 
-                  size="icon" 
-                  variant="outline" 
-                  className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
-                  onClick={scrollToTop}
-                  title="التنقل لأول الرسائل"
+            {/* Message input */}
+            <div className="p-4 border-t border-white/10 bg-white/5">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input
+                  placeholder="اكتب رسالة..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white"
+                />
+                <Button
+                  type="submit"
+                  disabled={!message.trim() || isMessageSending}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                 >
-                  <ArrowUp className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 </Button>
-                <Button 
-                  size="icon" 
-                  variant="outline" 
-                  className="rounded-full bg-blue-900/40 border-blue-500/30 hover:bg-blue-800/50"
-                  onClick={scrollToBottom}
-                  title="التنقل لآخر الرسائل"
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Messages area */}
-              <ScrollArea 
-                className="flex-1 p-4" 
-                onScroll={(e) => {
-                  // أوقف التمرير التلقائي إلى الأسفل إذا مرر المستخدم لأعلى يدوياً
-                  const target = e.currentTarget;
-                  const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
-                  setIsAutoScroll(isScrolledNearBottom);
-                }}
-              >
-                <div className="space-y-1 min-h-full">
-                  <div ref={messagesStartRef} />
-                  {messages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center py-10">
-                      <div className="text-center">
-                        <User className="h-12 w-12 text-blue-500/40 mx-auto mb-2" />
-                        <p className="text-white/50">ابدأ المحادثة مع {selectedContact.username}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    messages.map(renderMessage)
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* Message input */}
-              <div className="p-4 border-t border-white/10 bg-white/5">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <Input
-                    placeholder="اكتب رسالة..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="bg-white/10 border-white/20 text-white"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={!message.trim() || isMessageSending}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </form>
-              </div>
-            </>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <User className="h-16 w-16 text-blue-500/70 mx-auto" />
-                <h3 className="text-xl font-medium text-white">اختر جهة اتصال</h3>
-                <p className="text-white/50">اختر جهة اتصال من القائمة لبدء المحادثة</p>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsContactSearchOpen(true)}
-                  className="mt-4 border-blue-500/30 hover:bg-blue-800/30"
-                >
-                  <UserPlus className="h-4 w-4 ml-2" />
-                  إضافة جهة اتصال جديدة
-                </Button>
-              </div>
+              </form>
             </div>
-          )}
-        </div>
-      </div>
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <User className="h-16 w-16 text-blue-500/70 mx-auto" />
+              <h3 className="text-xl font-medium text-white">اختر جهة اتصال</h3>
+              <p className="text-white/50">اختر جهة اتصال من القائمة لبدء المحادثة</p>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setIsContactSearchOpen(true)}
+                className="mt-4 border-blue-500/30 hover:bg-blue-800/30"
+              >
+                <UserPlus className="h-4 w-4 ml-2" />
+                إضافة جهة اتصال جديدة
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Contact search dialog */}
       <Dialog open={isContactSearchOpen} onOpenChange={setIsContactSearchOpen}>
@@ -568,7 +591,7 @@ const PrivateChat = ({ user }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 };
 
