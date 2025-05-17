@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
+import { Separator } from '@/components/ui/separator';
 import {
   User,
   Send,
@@ -21,7 +22,9 @@ import {
   ChevronDown,
   Mail,
   Clock,
-  Menu
+  Menu,
+  ListCollapse,
+  ListExpand
 } from 'lucide-react';
 import {
   Dialog,
@@ -58,6 +61,7 @@ const PrivateChat = ({ user }) => {
   const [isContactsVisible, setIsContactsVisible] = useState(true);
   const [sortOrder, setSortOrder] = useState<'name' | 'activity'>('activity');
   const [isMobile, setIsMobile] = useState(false);
+  const [showAllContacts, setShowAllContacts] = useState(false);
 
   // Check if device is mobile
   useEffect(() => {
@@ -381,6 +385,14 @@ const PrivateChat = ({ user }) => {
     }
   };
 
+  // Get visible contacts (limited or all)
+  const getVisibleContacts = () => {
+    if (showAllContacts || contacts.length <= 5) {
+      return contacts;
+    }
+    return contacts.slice(0, 5);
+  };
+
   // Message rendering - Facebook Messenger style
   const renderMessage = (msg) => {
     const isCurrentUser = msg.sender_id === user?.id;
@@ -504,7 +516,7 @@ const PrivateChat = ({ user }) => {
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="h-8 w-8 text-white hover:bg-blue-800/50"
+                  className="h-8 w-8 text-white hover:bg-blue-800"
                 >
                   {sortOrder === 'name' ? <Mail className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                 </Button>
@@ -614,9 +626,9 @@ const PrivateChat = ({ user }) => {
       {/* Mobile contacts sheet */}
       {isMobile && renderMobileContacts()}
       
-      {/* Desktop contacts sidebar */}
+      {/* Desktop contacts sidebar - Fixed position */}
       {!isMobile && (
-        <div className="w-80 bg-gradient-to-b from-blue-950/90 to-purple-950/90 backdrop-blur-md border-l border-white/10 flex flex-col h-full">
+        <div className="w-80 bg-gradient-to-b from-blue-950/90 to-purple-950/90 backdrop-blur-md border-l border-white/10 flex flex-col h-full sticky top-0 max-h-[calc(100vh-64px)] overflow-hidden">
           <div className="p-4 border-b border-white/10 flex justify-between items-center">
             <h3 className="text-lg font-medium text-white">جهات الاتصال</h3>
             <DropdownMenu>
@@ -648,7 +660,7 @@ const PrivateChat = ({ user }) => {
             </DropdownMenu>
           </div>
           
-          <div className="flex-1 flex flex-col relative">
+          <div className="flex-1 flex flex-col relative overflow-hidden">
             {/* Navigation arrows for contacts */}
             <div className="absolute left-1/2 top-1 -translate-x-1/2 z-10">
               <Button 
@@ -661,17 +673,43 @@ const PrivateChat = ({ user }) => {
               </Button>
             </div>
             
-            <div className="flex-1 overflow-hidden py-2 px-2" ref={contactsAreaRef}>
+            <ScrollArea className="flex-1 h-full py-2 px-2" viewportRef={contactsAreaRef}>
               <div className="space-y-1">
                 {contacts.length > 0 ? (
-                  contacts.map((contact) => (
-                    <ContactCard
-                      key={contact.id}
-                      contact={contact}
-                      isSelected={selectedContact?.id === contact.id}
-                      onClick={() => setSelectedContact(contact)}
-                    />
-                  ))
+                  <>
+                    {getVisibleContacts().map((contact) => (
+                      <ContactCard
+                        key={contact.id}
+                        contact={contact}
+                        isSelected={selectedContact?.id === contact.id}
+                        onClick={() => setSelectedContact(contact)}
+                      />
+                    ))}
+                    
+                    {/* Show more/less button when contacts > 5 */}
+                    {contacts.length > 5 && (
+                      <div className="flex justify-center mt-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setShowAllContacts(!showAllContacts)}
+                          className="w-full text-xs text-white/70 hover:text-white hover:bg-blue-800/30 flex items-center justify-center gap-1"
+                        >
+                          {showAllContacts ? (
+                            <>
+                              <ListCollapse className="h-3.5 w-3.5" /> 
+                              <span>عرض أقل</span>
+                            </>
+                          ) : (
+                            <>
+                              <ListExpand className="h-3.5 w-3.5" />
+                              <span>عرض المزيد ({contacts.length - 5})</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                     <User className="h-12 w-12 text-blue-500/40 mb-3" />
@@ -688,7 +726,7 @@ const PrivateChat = ({ user }) => {
                   </div>
                 )}
               </div>
-            </div>
+            </ScrollArea>
             
             <div className="absolute left-1/2 bottom-1 -translate-x-1/2 z-10">
               <Button 
@@ -715,6 +753,9 @@ const PrivateChat = ({ user }) => {
           </div>
         </div>
       )}
+
+      {/* Vertical separator between contacts and chat */}
+      {!isMobile && <Separator orientation="vertical" className="h-full bg-blue-500/20" />}
 
       {/* Chat content */}
       <div className="flex-1 bg-gradient-to-br from-blue-950/60 to-purple-950/60 backdrop-blur-md flex flex-col overflow-hidden relative">

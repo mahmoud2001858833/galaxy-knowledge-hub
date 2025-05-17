@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -276,7 +277,7 @@ const ChatRooms = () => {
 
   return (
     <>
-      <div className="relative">
+      <div className="relative h-[calc(100vh-64px)] overflow-hidden">
         <div className="flex justify-between items-center mb-6">
           <Button 
             variant="outline" 
@@ -292,7 +293,7 @@ const ChatRooms = () => {
           </h1>
         </div>
         
-        <div className="bg-gradient-to-br from-blue-950/30 to-purple-950/30 backdrop-blur-sm rounded-lg border border-blue-500/20 p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-blue-950/30 to-purple-950/30 backdrop-blur-sm rounded-lg border border-blue-500/20 p-0 shadow-lg h-[calc(100vh-130px)] overflow-hidden">
           <ChatLayout />
         </div>
         
