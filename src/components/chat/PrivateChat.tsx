@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -550,8 +549,9 @@ const PrivateChat = ({ user }) => {
                     isSelected={selectedContact?.id === contact.id}
                     onClick={() => {
                       setSelectedContact(contact);
-                      // Close the sheet
-                      document.querySelector('[data-state="open"] button[data-radix-collection-item]')?.click();
+                      // Close the sheet - Fixed TypeScript error
+                      const sheetCloseButton = document.querySelector('[data-state="open"] button[data-radix-collection-item]') as HTMLButtonElement | null;
+                      if (sheetCloseButton) sheetCloseButton.click();
                     }}
                   />
                 ))
@@ -564,8 +564,9 @@ const PrivateChat = ({ user }) => {
                     size="sm" 
                     onClick={() => {
                       setIsContactSearchOpen(true);
-                      // Close the sheet
-                      document.querySelector('[data-state="open"] button[data-radix-collection-item]')?.click();
+                      // Close the sheet - Fixed TypeScript error
+                      const sheetCloseButton = document.querySelector('[data-state="open"] button[data-radix-collection-item]') as HTMLButtonElement | null;
+                      if (sheetCloseButton) sheetCloseButton.click();
                     }}
                     className="mt-4 text-xs border-blue-500/30 hover:bg-blue-800/30"
                   >
@@ -594,8 +595,9 @@ const PrivateChat = ({ user }) => {
               className="w-full border-blue-500/30 hover:bg-blue-900/30"
               onClick={() => {
                 setIsContactSearchOpen(true);
-                // Close the sheet
-                document.querySelector('[data-state="open"] button[data-radix-collection-item]')?.click();
+                // Close the sheet - Fixed TypeScript error
+                const sheetCloseButton = document.querySelector('[data-state="open"] button[data-radix-collection-item]') as HTMLButtonElement | null;
+                if (sheetCloseButton) sheetCloseButton.click();
               }}
             >
               <UserPlus className="h-4 w-4 ml-2" />
