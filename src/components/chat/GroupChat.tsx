@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import { Send, User, Users, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ChatMessage from './ChatMessage';
+
 const GroupChat = ({
   user
 }) => {
@@ -22,17 +25,12 @@ const GroupChat = ({
   }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesStartRef = useRef<HTMLDivElement>(null);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [isMessageSending, setIsMessageSending] = useState(false);
   const [isAutoScroll, setIsAutoScroll] = useState(true);
-  const [lastMessageTimestamp, setLastMessageTimestamp] = useState<number>(Date.now());
 
   // تحسين استخدام اشتراك الوقت الفعلي
-  const {
-    refreshMessages
-  } = useRealtimeMessages({
+  const { refreshMessages } = useRealtimeMessages({
     userId: user?.id,
     roomId: activeRoom,
     onNewMessage: newMsg => {
@@ -104,29 +102,35 @@ const GroupChat = ({
       console.error('Error playing notification sound:', err);
     }
   };
+
   useEffect(() => {
     fetchRooms();
   }, []);
+
   useEffect(() => {
     if (activeRoom) {
       fetchMessages(activeRoom);
     }
   }, [activeRoom]);
+
   useEffect(() => {
     if (isAutoScroll) {
       scrollToBottom();
     }
   }, [messages, isAutoScroll]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
   };
+
   const scrollToTop = () => {
     messagesStartRef.current?.scrollIntoView({
       behavior: 'smooth'
     });
   };
+
   const fetchRooms = async () => {
     try {
       const {
@@ -151,6 +155,7 @@ const GroupChat = ({
       });
     }
   };
+
   const fetchMessages = async (roomId: string) => {
     if (!roomId) return;
     try {
@@ -166,9 +171,6 @@ const GroupChat = ({
       // Collect all unique user IDs
       const userIds = [...new Set((data || []).map(msg => msg.sender_id))];
       await fetchUserProfiles(userIds);
-
-      // تحديث وقت آخر تحديث للرسائل
-      setLastMessageTimestamp(Date.now());
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({
@@ -177,6 +179,7 @@ const GroupChat = ({
       });
     }
   };
+
   const fetchUserProfiles = async (userIds: string[]) => {
     if (userIds.length === 0) return;
     try {
@@ -199,6 +202,7 @@ const GroupChat = ({
       console.error('Error fetching user profiles:', error);
     }
   };
+
   const handleSendMessage = async e => {
     e.preventDefault();
     if (!message.trim() || !user || !activeRoom || isMessageSending) return;
@@ -248,87 +252,110 @@ const GroupChat = ({
     }
   };
 
-  // Render message with improved styling
-  const renderMessage = msg => {
-    const isCurrentUser = msg.sender_id === user?.id;
-    const senderProfile = profiles[msg.sender_id];
-    return <motion.div key={msg.id} initial={{
-      opacity: 0,
-      y: 10
-    }} animate={{
-      opacity: 1,
-      y: 0
-    }} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
-        {!isCurrentUser && <Avatar className="h-8 w-8 ml-2 mt-1">
-            {senderProfile?.avatar_url ? <AvatarImage src={senderProfile.avatar_url} /> : <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800">
-                {senderProfile?.username?.[0] || ''}
-              </AvatarFallback>}
-          </Avatar>}
-        
-        <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-          {!isCurrentUser && <span className="text-xs text-white/70 mb-1 mr-1">
-              {senderProfile?.username || 'مستخدم'}
-            </span>}
-          <div className={`max-w-[80%] px-4 py-2 rounded-lg shadow-md ${isCurrentUser ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-none' : 'bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-bl-none'}`}>
-            {msg.message_text}
-          </div>
-          <span className="text-xs text-white/40 mt-1 mx-1">
-            {new Date(msg.created_at).toLocaleTimeString('ar-SA', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
-          </span>
-        </div>
-      </motion.div>;
-  };
-  return <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 flex flex-col overflow-hidden relative">
-      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-white/5">
+  return (
+    <Card className="h-full bg-gradient-to-br from-purple-900/20 to-purple-900/10 backdrop-blur-sm border-purple-500/20 flex flex-col overflow-hidden relative">
+      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-purple-900/20">
         <CardTitle className="text-white flex items-center gap-2">
-          <Users className="h-5 w-5 text-blue-400" />
+          <Users className="h-5 w-5 text-purple-400" />
           {roomName || "المحادثة الجماعية"}
         </CardTitle>
-        <Button variant="outline" size="sm" onClick={handleRefreshChat} className="bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50" title="تحديث المحادثة">
-          <RefreshCw className="h-4 w-4 mr-1" />
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefreshChat}
+          className="bg-purple-900/30 border-purple-500/30 hover:bg-purple-800/50" 
+          title="تحديث المحادثة"
+        >
+          <RefreshCw className="h-4 w-4 ml-2" />
           <span>تحديث</span>
         </Button>
       </CardHeader>
 
       <div className="flex-1 overflow-hidden">
-        {activeRoom ? <>
-            {/* أزرار التنقل للرسائل */}
+        {activeRoom ? (
+          <>
+            {/* Navigation buttons */}
             <div className="fixed left-4 bottom-24 z-50 flex flex-col gap-2">
-              
-              
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={scrollToTop}
+                className="rounded-full bg-purple-900/50 border-purple-500/30 hover:bg-purple-800/70 h-10 w-10"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={scrollToBottom}
+                className="rounded-full bg-purple-900/50 border-purple-500/30 hover:bg-purple-800/70 h-10 w-10"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* Messages area */}
-            <ScrollArea className="h-[calc(100%-64px)]">
+            <ScrollArea className="h-[calc(100%-130px)]">
               <div className="p-4 space-y-1">
                 <div ref={messagesStartRef} />
-                {messages.length === 0 ? <div className="h-full flex items-center justify-center p-10">
-                    <p className="text-white/50">لا توجد رسائل بعد</p>
-                  </div> : messages.map(renderMessage)}
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center p-10">
+                    <p className="text-white/50">لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p>
+                  </div>
+                ) : (
+                  messages.map(message => {
+                    const isCurrentUser = message.sender_id === user?.id;
+                    const contact = isCurrentUser ? user : profiles[message.sender_id];
+                    return (
+                      <ChatMessage 
+                        key={message.id} 
+                        message={message} 
+                        isCurrentUser={isCurrentUser}
+                        contact={contact}
+                        user={user}
+                      />
+                    );
+                  })
+                )}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
             {/* Message input */}
-            <div className="p-4 border-t border-white/10 bg-white/5">
+            <div className="p-4 border-t border-white/10 bg-purple-900/20">
               <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input placeholder="اكتب رسالة..." value={message} onChange={e => setMessage(e.target.value)} className="bg-white/10 border-white/20 text-white" />
-                <Button type="submit" disabled={!message.trim() || isMessageSending} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                  {isMessageSending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-white" /> : <Send className="h-5 w-5" />}
+                <Input 
+                  placeholder="اكتب رسالة..." 
+                  value={message} 
+                  onChange={e => setMessage(e.target.value)} 
+                  className="bg-white/10 border-white/20 text-white"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={!message.trim() || isMessageSending}
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                >
+                  {isMessageSending ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-white" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
                 </Button>
               </form>
             </div>
-          </> : <div className="h-full flex items-center justify-center">
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-2">
-              <Users className="h-16 w-16 text-blue-500/70 mx-auto" />
+              <Users className="h-16 w-16 text-purple-500/70 mx-auto" />
               <h3 className="text-xl font-medium text-white">اختر غرفة محادثة</h3>
               <p className="text-white/50">اختر غرفة محادثة جماعية للمشاركة</p>
             </div>
-          </div>}
+          </div>
+        )}
       </div>
-    </Card>;
+    </Card>
+  );
 };
+
 export default GroupChat;

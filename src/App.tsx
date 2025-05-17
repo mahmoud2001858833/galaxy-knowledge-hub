@@ -1,9 +1,14 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
+  Navigate,
+  useNavigate,
+  useLocation,
 } from "react-router-dom";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import Physics from './pages/Physics';
@@ -23,75 +28,137 @@ import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
 
+// Authentication guard component
+const AuthGuard = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session && location.pathname !== '/auth') {
+          toast({
+            title: "يرجى تسجيل الدخول",
+            description: "يجب عليك تسجيل الدخول للوصول إلى هذا المحتوى",
+          });
+          navigate('/auth', { state: { from: location.pathname } });
+        } else {
+          setIsAuthenticated(!!session);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      
+      if (!session && location.pathname !== '/auth') {
+        navigate('/auth', { state: { from: location.pathname } });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, location.pathname]);
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-blue-950">
+        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Allow access to auth page even when not authenticated
+  if (location.pathname === '/auth') {
+    return children;
+  }
+
+  // For any other page, require authentication
+  return isAuthenticated ? children : null;
+};
+
+// Create routes with authentication guard
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Index />,
+    element: <AuthGuard><Index /></AuthGuard>,
     errorElement: <NotFound />,
-  },
-  {
-    path: '/physics',
-    element: <Physics />,
-  },
-  {
-    path: '/chemistry',
-    element: <Chemistry />,
-  },
-  {
-    path: '/mathematics',
-    element: <Mathematics />,
-  },
-  {
-    path: '/biology',
-    element: <Biology />,
-  },
-  {
-    path: '/subject-puzzles',
-    element: <SubjectPuzzles />,
-  },
-  {
-    path: '/puzzle/:puzzleId',
-    element: <PuzzleDetails />,
-  },
-  {
-    path: '/visual-library',
-    element: <VisualLibrary />,
-  },
-  {
-    path: '/upload-image',
-    element: <UploadImagePage />,
-  },
-  {
-    path: '/scientific-journal',
-    element: <ScientificJournal />,
-  },
-  {
-    path: '/upload-journal',
-    element: <UploadJournalPage />,
-  },
-  {
-    path: '/study-organization',
-    element: <StudyOrganization />,
-  },
-  {
-    path: '/chat-rooms',
-    element: <ChatRooms />,
   },
   {
     path: '/auth',
     element: <Auth />,
   },
   {
+    path: '/physics',
+    element: <AuthGuard><Physics /></AuthGuard>,
+  },
+  {
+    path: '/chemistry',
+    element: <AuthGuard><Chemistry /></AuthGuard>,
+  },
+  {
+    path: '/mathematics',
+    element: <AuthGuard><Mathematics /></AuthGuard>,
+  },
+  {
+    path: '/biology',
+    element: <AuthGuard><Biology /></AuthGuard>,
+  },
+  {
+    path: '/subject-puzzles',
+    element: <AuthGuard><SubjectPuzzles /></AuthGuard>,
+  },
+  {
+    path: '/puzzle/:puzzleId',
+    element: <AuthGuard><PuzzleDetails /></AuthGuard>,
+  },
+  {
+    path: '/visual-library',
+    element: <AuthGuard><VisualLibrary /></AuthGuard>,
+  },
+  {
+    path: '/upload-image',
+    element: <AuthGuard><UploadImagePage /></AuthGuard>,
+  },
+  {
+    path: '/scientific-journal',
+    element: <AuthGuard><ScientificJournal /></AuthGuard>,
+  },
+  {
+    path: '/upload-journal',
+    element: <AuthGuard><UploadJournalPage /></AuthGuard>,
+  },
+  {
+    path: '/study-organization',
+    element: <AuthGuard><StudyOrganization /></AuthGuard>,
+  },
+  {
+    path: '/chat-rooms',
+    element: <AuthGuard><ChatRooms /></AuthGuard>,
+  },
+  {
     path: '/math-puzzles',
-    element: <MathPuzzles />,
+    element: <AuthGuard><MathPuzzles /></AuthGuard>,
   },
   {
     path: '/profile',
-    element: <UserProfile />,
+    element: <AuthGuard><UserProfile /></AuthGuard>,
   },
   {
     path: '/contact',
-    element: <Contact />,
+    element: <AuthGuard><Contact /></AuthGuard>,
   }
 ]);
 

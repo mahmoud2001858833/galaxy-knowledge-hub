@@ -34,7 +34,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
             <AvatarImage src={contact.avatar_url} />
           ) : (
             <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800">
-              {contact?.username?.[0] || '?'}
+              {contact?.username?.[0] || '؟'}
             </AvatarFallback>
           )}
         </Avatar>
@@ -42,6 +42,11 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
       
       {/* محتوى الرسالة */}
       <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+        {!isCurrentUser && (
+          <span className="text-xs text-white/70 mb-1 mr-1">
+            {contact?.username || 'مستخدم'}
+          </span>
+        )}
         <div
           className={`px-4 py-2.5 rounded-2xl shadow-lg max-w-[75%] ${
             isCurrentUser
@@ -63,7 +68,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
             <AvatarImage src={user.avatar_url} />
           ) : (
             <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
-              {user?.username?.[0] || '?'}
+              {user?.username?.[0] || '؟'}
             </AvatarFallback>
           )}
         </Avatar>

@@ -2,68 +2,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Footer: React.FC = () => {
+const Footer = () => {
   return (
-    <footer className="relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-sm py-8 px-6 md:px-12">
-      <div className="container mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4 text-right">فلك المعرفة</h3>
-            <p className="text-white/70 text-right">
-              منصة تعليمية تفاعلية تجمع بين المعرفة العلمية والتكنولوجيا الحديثة بتصميم فضائي مميز
+    <footer className="bg-blue-950/30 backdrop-filter backdrop-blur-lg border-t border-blue-800/20 mt-auto">
+      <div className="container mx-auto py-6 px-4">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex flex-col items-center md:items-end mb-4 md:mb-0">
+            <p className="text-white/60 text-center md:text-right">
+              منصة تفاعلية للتعلم الذكي
+            </p>
+            <p className="text-white/60 text-center md:text-right mt-1">
+              تم إنشاء المنصة بواسطة محمود جوارنة
             </p>
           </div>
           
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4 text-right">روابط سريعة</h3>
-            <ul className="space-y-2 text-right">
-              <li>
-                <Link to="/" className="text-white/70 hover:text-white transition-colors">
-                  الصفحة الرئيسية
-                </Link>
-              </li>
-              <li>
-                <Link to="/mathematics" className="text-white/70 hover:text-white transition-colors">
-                  منصة الرياضيات
-                </Link>
-              </li>
-              <li>
-                <Link to="/chemistry" className="text-white/70 hover:text-white transition-colors">
-                  منصة الكيمياء
-                </Link>
-              </li>
-              <li>
-                <Link to="/physics" className="text-white/70 hover:text-white transition-colors">
-                  منصة الفيزياء
-                </Link>
-              </li>
-              <li>
-                <Link to="/biology" className="text-white/70 hover:text-white transition-colors">
-                  منصة الأحياء
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4 text-right">تواصل معنا</h3>
-            <ul className="space-y-2 text-right">
-              <li>
-                <a href="mailto:jowmahmoud6@gmail.com" className="text-white/70 hover:text-white transition-colors">
-                  البريد الإلكتروني
-                </a>
-              </li>
-              <li>
-                <Link to="/contact" className="text-white/70 hover:text-white transition-colors">
-                  نموذج التواصل
-                </Link>
-              </li>
-            </ul>
+          <div className="flex space-x-4 space-x-reverse">
+            <Link to="/contact" className="text-blue-400 hover:text-blue-300 text-sm">
+              تواصل معنا
+            </Link>
+            <span className="text-white/30">•</span>
+            <Link to="/chat-rooms" className="text-blue-400 hover:text-blue-300 text-sm">
+              المحادثات
+            </Link>
+            <span className="text-white/30">•</span>
+            <Link to="/" className="text-blue-400 hover:text-blue-300 text-sm">
+              الرئيسية
+            </Link>
           </div>
         </div>
         
-        <div className="mt-8 pt-4 border-t border-white/10 text-center text-white/50">
-          <p>&copy; {new Date().getFullYear()} فلك المعرفة - جميع الحقوق محفوظة</p>
+        <div className="mt-6 pt-4 border-t border-blue-900/50 text-center">
+          <p className="text-white/40 text-xs">
+            © {new Date().getFullYear()} فلك المعرفة. جميع الحقوق محفوظة.
+          </p>
         </div>
       </div>
     </footer>

@@ -7,12 +7,15 @@ import { useToast } from '@/hooks/use-toast';
 import GroupChat from './GroupChat';
 import PrivateChat from './PrivateChat';
 import UserChatProfile from './UserChatProfile';
-import { MessageSquareMore, Users } from 'lucide-react';
+import { MessageSquare, Users } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const ChatLayout = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('private');
+  const [activeTab, setActiveTab] = useState('');
+  const [showChatSelector, setShowChatSelector] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,6 +84,13 @@ const ChatLayout = () => {
 
   const handleTabChange = (value) => {
     setActiveTab(value);
+    setShowChatSelector(false);
+  };
+
+  // Reset to selector view
+  const handleBackToSelector = () => {
+    setActiveTab('');
+    setShowChatSelector(true);
   };
 
   // Listen for refresh events
@@ -98,61 +108,100 @@ const ChatLayout = () => {
 
   return (
     <div className="rounded-lg overflow-hidden h-[calc(100vh-240px)] min-h-[500px] flex flex-col">
-      <Tabs 
-        defaultValue="private" 
-        value={activeTab}
-        onValueChange={handleTabChange} 
-        className="w-full h-full flex flex-col"
-      >
-        <div className="flex justify-center mb-6">
-          <TabsList className="bg-blue-900/30 border border-blue-800/30 p-2 gap-2 w-full max-w-md">
-            <TabsTrigger 
-              value="private" 
-              className="data-[state=active]:bg-gradient-to-r from-blue-600 to-blue-700 data-[state=active]:text-white flex items-center gap-2 py-3 px-4 text-base flex-1"
+      {showChatSelector ? (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="flex flex-col h-full"
+        >
+          <h2 className="text-2xl font-bold text-center text-white mb-8">اختر نوع المحادثة</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 p-6">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="cursor-pointer"
+              onClick={() => handleTabChange('private')}
             >
-              <MessageSquareMore className="h-5 w-5" />
-              <span>المحادثات الخاصة</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="group" 
-              className="data-[state=active]:bg-gradient-to-r from-blue-600 to-blue-700 data-[state=active]:text-white flex items-center gap-2 py-3 px-4 text-base flex-1"
-            >
-              <Users className="h-5 w-5" />
-              <span>المحادثات الجماعية</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
-        
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={activeTab}
-            initial={{ opacity: 0, x: activeTab === 'private' ? -20 : 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: activeTab === 'private' ? 20 : -20 }}
-            transition={{ duration: 0.3 }}
-            className="flex-1 overflow-hidden"
-          >
-            <TabsContent value="private" className="m-0 h-full">
-              <div className="grid grid-cols-1 lg:grid-cols-4 h-full gap-4">
-                <div className="lg:col-span-3 h-full">
-                  <PrivateChat user={user} />
-                </div>
-                <div className="hidden lg:block">
-                  <UserChatProfile user={user} profile={profile} />
-                </div>
-              </div>
-            </TabsContent>
+              <Card className="h-full bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/30 hover:from-blue-800/50 hover:to-blue-700/40 hover:border-blue-500/50 transition-all duration-300">
+                <CardContent className="p-10 flex flex-col items-center justify-center h-full">
+                  <div className="h-24 w-24 rounded-full bg-blue-900/50 flex items-center justify-center mb-6">
+                    <MessageSquare className="h-12 w-12 text-blue-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">المحادثات الخاصة</h3>
+                  <p className="text-blue-300/90 text-center">تواصل مع أصدقائك وزملائك بشكل خاص</p>
+                </CardContent>
+              </Card>
+            </motion.div>
             
-            <TabsContent value="group" className="m-0 h-full">
-              <div className="grid grid-cols-1 lg:grid-cols-4 h-full gap-4">
-                <div className="lg:col-span-4 h-full">
-                  <GroupChat user={user} />
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="cursor-pointer"
+              onClick={() => handleTabChange('group')}
+            >
+              <Card className="h-full bg-gradient-to-br from-purple-900/40 to-purple-800/30 border-purple-500/30 hover:from-purple-800/50 hover:to-purple-700/40 hover:border-purple-500/50 transition-all duration-300">
+                <CardContent className="p-10 flex flex-col items-center justify-center h-full">
+                  <div className="h-24 w-24 rounded-full bg-purple-900/50 flex items-center justify-center mb-6">
+                    <Users className="h-12 w-12 text-purple-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">المحادثات الجماعية</h3>
+                  <p className="text-purple-300/90 text-center">شارك في محادثات جماعية مع العديد من المستخدمين</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </motion.div>
+      ) : (
+        <Tabs 
+          value={activeTab}
+          className="w-full h-full flex flex-col"
+        >
+          <div className="flex justify-between items-center mb-6 px-4">
+            <Button 
+              variant="outline" 
+              onClick={handleBackToSelector}
+              className="bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
+            >
+              <span>العودة للقائمة الرئيسية</span>
+            </Button>
+            
+            <h2 className="text-xl font-bold text-white">
+              {activeTab === 'private' ? 'المحادثات الخاصة' : 'المحادثات الجماعية'}
+            </h2>
+          </div>
+          
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeTab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 overflow-hidden"
+            >
+              <TabsContent value="private" className="m-0 h-full">
+                <div className="grid grid-cols-1 lg:grid-cols-4 h-full gap-4">
+                  <div className="lg:col-span-3 h-full">
+                    <PrivateChat user={user} />
+                  </div>
+                  <div className="hidden lg:block">
+                    <UserChatProfile user={user} profile={profile} />
+                  </div>
                 </div>
-              </div>
-            </TabsContent>
-          </motion.div>
-        </AnimatePresence>
-      </Tabs>
+              </TabsContent>
+              
+              <TabsContent value="group" className="m-0 h-full">
+                <div className="grid grid-cols-1 lg:grid-cols-4 h-full gap-4">
+                  <div className="lg:col-span-4 h-full">
+                    <GroupChat user={user} />
+                  </div>
+                </div>
+              </TabsContent>
+            </motion.div>
+          </AnimatePresence>
+        </Tabs>
+      )}
     </div>
   );
 };

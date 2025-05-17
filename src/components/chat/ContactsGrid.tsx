@@ -57,7 +57,7 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
                       <AvatarImage src={contact.avatar_url} />
                     ) : (
                       <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800 text-lg">
-                        {contact.username ? contact.username[0].toUpperCase() : '?'}
+                        {contact.username ? contact.username[0].toUpperCase() : '؟'}
                       </AvatarFallback>
                     )}
                   </Avatar>
