@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Check } from 'lucide-react';
 
 interface ChatMessageProps {
   message: any;
@@ -34,11 +35,11 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
       exit="exit"
       variants={messageVariants}
       transition={{ duration: 0.3 }}
-      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-3`}
+      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
     >
       {/* Sender avatar (only for received messages) */}
       {!isCurrentUser && (
-        <Avatar className="h-8 w-8 mr-2 mt-1 flex-shrink-0">
+        <Avatar className="h-10 w-10 mr-2 mt-1 flex-shrink-0 border-2 border-slate-700/40 shadow-lg">
           {contact?.avatar_url ? (
             <AvatarImage src={contact.avatar_url} alt={contact?.username || 'مستخدم'} />
           ) : (
@@ -50,34 +51,42 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
       )}
       
       {/* Message content */}
-      <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
         {!isCurrentUser && (
-          <span className="text-xs text-white/70 mb-1 mr-1">
+          <span className="text-sm text-white/70 mb-1 mr-1 font-medium">
             {contact?.username || 'مستخدم'}
           </span>
         )}
         <div
-          className={`px-4 py-2.5 rounded-2xl shadow-lg max-w-[75%] ${
+          className={`px-5 py-3.5 rounded-2xl shadow-lg ${
             isCurrentUser
               ? 'rounded-br-none bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 dark:text-white text-black rounded-bl-none'
+              : 'bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-bl-none'
           } break-words`}
         >
           {message.message_text}
         </div>
-        <span className="text-xs text-white/50 mt-1 mx-1 dir-rtl">
-          {formatMessageTime(message.created_at)}
-        </span>
+        <div className="flex items-center mt-1 mx-1 gap-1">
+          <span className="text-xs text-white/50 dir-rtl">
+            {formatMessageTime(message.created_at)}
+          </span>
+          {isCurrentUser && (
+            <div className="flex items-center">
+              <Check className="h-3 w-3 text-blue-400" />
+              <Check className="h-3 w-3 text-blue-400 -ml-1.5" />
+            </div>
+          )}
+        </div>
       </div>
       
       {/* User avatar (only for sent messages) */}
       {isCurrentUser && (
-        <Avatar className="h-8 w-8 ml-2 mt-1 flex-shrink-0">
+        <Avatar className="h-10 w-10 ml-2 mt-1 flex-shrink-0 border-2 border-slate-700/40 shadow-lg">
           {user?.avatar_url ? (
             <AvatarImage src={user.avatar_url} alt={user?.username || 'أنت'} />
           ) : (
             <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
-              {user?.username ? user.username[0].toUpperCase() : '؟'}
+              {user?.username ? user.username[0].toUpperCase() : 'أنت'}
             </AvatarFallback>
           )}
         </Avatar>

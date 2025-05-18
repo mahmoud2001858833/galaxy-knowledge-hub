@@ -72,8 +72,8 @@
   
   /* إضافات جديدة لتحسين الخلفيات */
   .bg-cosmic {
-    background: radial-gradient(circle at top right, rgba(101, 78, 163, 0.2), transparent 80%),
-                radial-gradient(circle at bottom left, rgba(83, 138, 214, 0.2), transparent 80%),
+    background: radial-gradient(circle at top right, rgba(101, 78, 163, 0.3), transparent 80%),
+                radial-gradient(circle at bottom left, rgba(83, 138, 214, 0.3), transparent 80%),
                 #0c0a20;
   }
   
@@ -125,12 +125,12 @@
   }
   
   .message-bubble-received {
-    @apply bg-gray-700 text-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[75%] shadow-md break-words;
+    @apply bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[75%] shadow-md break-words;
   }
   
   /* New Messenger specific styles */
   .chat-container {
-    @apply bg-gradient-to-br from-blue-950 to-purple-950 rounded-lg shadow-lg;
+    @apply bg-gradient-to-br from-blue-950 to-purple-950 rounded-lg shadow-xl border border-blue-500/30;
   }
   
   .message-time {
@@ -138,7 +138,7 @@
   }
   
   .contact-card {
-    @apply bg-gradient-to-br from-blue-900/20 to-purple-900/20 hover:from-blue-900/30 hover:to-purple-900/30 border border-blue-500/20 hover:border-blue-500/40 rounded-lg overflow-hidden shadow transition-all cursor-pointer;
+    @apply bg-gradient-to-br from-blue-900/30 to-purple-900/30 hover:from-blue-900/40 hover:to-purple-900/40 border border-blue-500/30 hover:border-blue-500/50 rounded-lg overflow-hidden shadow-lg transition-all cursor-pointer;
   }
   
   /* دعم الاتجاه RTL */
@@ -148,11 +148,54 @@
   
   /* تحسين مظهر الأزرار */
   .btn-blue {
-    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md text-white px-4 py-2 rounded-md transition-colors;
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg text-white px-4 py-2 rounded-md transition-colors;
   }
   
   .btn-purple {
-    @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-md text-white px-4 py-2 rounded-md transition-colors;
+    @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg text-white px-4 py-2 rounded-md transition-colors;
+  }
+  
+  /* تأثيرات فقاعات الرسائل الجديدة */
+  .message-bubble {
+    @apply rounded-2xl px-5 py-3 shadow-lg break-words transition-all duration-300;
+  }
+  
+  .message-bubble-sent {
+    @apply message-bubble bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-none;
+  }
+  
+  .message-bubble-received {
+    @apply message-bubble bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-bl-none;
+  }
+  
+  /* تحسينات لواجهة المستخدم */
+  .chat-header {
+    @apply p-4 flex items-center justify-between border-b border-blue-500/30 bg-blue-900/50 backdrop-blur-md;
+  }
+  
+  .chat-footer {
+    @apply p-4 border-t border-blue-500/30 bg-blue-900/50 backdrop-blur-md;
+  }
+  
+  .chat-messages-area {
+    @apply flex-1 overflow-y-auto p-4 bg-gradient-to-br from-blue-950/80 to-purple-950/80;
+  }
+  
+  /* تأثيرات الظل */
+  .shadow-glow-sm {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  }
+  
+  .shadow-glow-md {
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+  }
+  
+  .shadow-glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  }
+  
+  .shadow-glow-purple {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
   }
 }
 
@@ -232,11 +275,11 @@ html, body, #root {
 
 /* إضافة تأثيرات الظل للبطاقات */
 .shadow-glow-sm {
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
 }
 
 .shadow-glow-md {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.3);
 }
 
 .shadow-glow-blue {
@@ -254,4 +297,48 @@ html, body, #root {
 
 .text-glow-purple {
   text-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
+}
+
+/* تحسينات إضافية للواجهة */
+.floating-button {
+  @apply fixed bottom-6 right-6 h-14 w-14 rounded-full flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-glow-blue text-white transition-all;
+}
+
+.floating-button:hover {
+  @apply shadow-glow-md transform scale-105;
+}
+
+.card-header {
+  @apply p-5 border-b border-blue-500/30 bg-blue-900/40 backdrop-blur-md;
+}
+
+.card-footer {
+  @apply p-5 border-t border-blue-500/30 bg-blue-900/40 backdrop-blur-md;
+}
+
+/* تأثير الظهور التدريجي */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* تحسين واجهة المستخدم للأجهزة المحمولة */
+@media (max-width: 768px) {
+  .card-header, .card-footer {
+    @apply p-3;
+  }
+  
+  .floating-button {
+    @apply bottom-4 right-4 h-12 w-12;
+  }
 }
