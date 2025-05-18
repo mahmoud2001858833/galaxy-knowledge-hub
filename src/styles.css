@@ -2,17 +2,29 @@
 /* Add this to your global CSS file */
 @keyframes glow {
   0% {
-    text-shadow: 0 0 5px rgba(56, 189, 248, 0.5), 0 0 10px rgba(56, 189, 248, 0.3);
+    text-shadow: 0 0 5px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3);
   }
   50% {
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 0 15px rgba(56, 189, 248, 0.5);
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.8), 0 0 15px rgba(99, 102, 241, 0.5);
   }
   100% {
-    text-shadow: 0 0 5px rgba(56, 189, 248, 0.5), 0 0 10px rgba(56, 189, 248, 0.3);
+    text-shadow: 0 0 5px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3);
   }
 }
 
-@keyframes glow-purple {
+@keyframes glow-emerald {
+  0% {
+    text-shadow: 0 0 5px rgba(16, 185, 129, 0.5), 0 0 10px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.8), 0 0 15px rgba(16, 185, 129, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(16, 185, 129, 0.5), 0 0 10px rgba(16, 185, 129, 0.3);
+  }
+}
+
+@keyframes glow-violet {
   0% {
     text-shadow: 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
   }
@@ -21,18 +33,6 @@
   }
   100% {
     text-shadow: 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
-  }
-}
-
-@keyframes glow-green {
-  0% {
-    text-shadow: 0 0 5px rgba(52, 211, 153, 0.5), 0 0 10px rgba(52, 211, 153, 0.3);
-  }
-  50% {
-    text-shadow: 0 0 10px rgba(52, 211, 153, 0.8), 0 0 15px rgba(52, 211, 153, 0.5);
-  }
-  100% {
-    text-shadow: 0 0 5px rgba(52, 211, 153, 0.5), 0 0 10px rgba(52, 211, 153, 0.3);
   }
 }
 
@@ -49,32 +49,32 @@
 }
 
 @layer utilities {
-  .text-glow-blue {
+  .text-glow-indigo {
     animation: glow 2s ease-in-out infinite;
   }
   
-  .text-glow-purple {
-    animation: glow-purple 2s ease-in-out infinite;
+  .text-glow-emerald {
+    animation: glow-emerald 2s ease-in-out infinite;
   }
   
-  .text-glow-green {
-    animation: glow-green 2s ease-in-out infinite;
+  .text-glow-violet {
+    animation: glow-violet 2s ease-in-out infinite;
   }
   
   .shadow-glow-sm {
-    box-shadow: 0 0 15px -3px rgba(56, 189, 248, 0.3);
+    box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.3);
   }
   
   .shadow-glow-md {
-    box-shadow: 0 0 20px -3px rgba(56, 189, 248, 0.4);
+    box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.4);
   }
   
-  .shadow-glow-purple {
-    box-shadow: 0 0 15px -3px rgba(139, 92, 246, 0.3);
+  .shadow-glow-indigo {
+    box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.3);
   }
   
-  .shadow-glow-green {
-    box-shadow: 0 0 15px -3px rgba(52, 211, 153, 0.3);
+  .shadow-glow-emerald {
+    box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.3);
   }
   
   .animate-float {
@@ -104,7 +104,7 @@
   
   /* تنسيقات خاصة بالمحادثات على طراز ماسنجر */
   .messenger-gradient {
-    background-image: linear-gradient(135deg, #00B2FF 0%, #006AFF 100%);
+    background-image: linear-gradient(135deg, #10B981 0%, #6366F1 100%);
   }
   
   .fade-in {
@@ -124,13 +124,13 @@
   
   /* تصميم فقاعات الدردشة */
   .bubble-sent {
-    background: linear-gradient(135deg, #00B2FF 0%, #006AFF 100%);
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
     border-radius: 18px;
     border-bottom-right-radius: 4px;
   }
   
   .bubble-received {
-    background-color: #f1f1f1;
+    background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
     border-radius: 18px;
     border-bottom-left-radius: 4px;
   }
@@ -140,7 +140,7 @@
 .glass-card {
   background: rgba(13, 25, 42, 0.7);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
@@ -165,12 +165,41 @@
   left: 0;
   border-radius: inherit;
   animation: pulse-ring 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
-  box-shadow: 0 0 0 rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 0 rgba(99, 102, 241, 0.4);
 }
 
 /* تحديثات خاصة بتصميم ماسنجر */
-.text-gradient-blue {
-  background: linear-gradient(135deg, #33C3F0 0%, #1EAEDB 100%);
+.text-gradient-indigo {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* تحسينات إضافية للألوان */
+.bg-gradient-radial {
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.3), rgba(79, 70, 229, 0.1), transparent);
+}
+
+/* تأثيرات للأزرار */
+.btn-glow {
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+  transform: translateY(-2px);
+}
+
+/* تدرجات لونية جميلة */
+.bg-gradient-emerald {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+.bg-gradient-indigo {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+}
+
+.bg-gradient-violet {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
 }

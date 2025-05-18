@@ -129,11 +129,11 @@ const ChatLayout = () => {
           initial="hidden"
           animate="show"
           variants={containerVariants}
-          className="flex flex-col h-full bg-gradient-to-br from-blue-950/40 to-purple-950/40 backdrop-blur-lg p-6 rounded-lg border border-blue-500/20"
+          className="flex flex-col h-full bg-gradient-to-br from-indigo-950/40 to-violet-950/40 backdrop-blur-lg p-6 rounded-lg border border-indigo-500/20"
         >
           <motion.h2 
             variants={itemVariants}
-            className="text-2xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-400 mb-8"
+            className="text-2xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-indigo-400 mb-8"
           >
             اختر نوع المحادثة
           </motion.h2>
@@ -146,13 +146,13 @@ const ChatLayout = () => {
               className="cursor-pointer"
               onClick={() => handleTabChange('private')}
             >
-              <Card className="h-full bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/30 hover:from-blue-800/50 hover:to-blue-700/40 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
+              <Card className="h-full bg-gradient-to-br from-indigo-900/40 to-indigo-800/30 border-indigo-500/30 hover:from-indigo-800/50 hover:to-indigo-700/40 hover:border-indigo-500/50 transition-all duration-300 shadow-lg">
                 <CardContent className="p-10 flex flex-col items-center justify-center h-full">
-                  <div className="h-24 w-24 rounded-full bg-blue-900/50 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                    <MessageSquare className="h-12 w-12 text-blue-400" />
+                  <div className="h-24 w-24 rounded-full bg-indigo-900/50 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+                    <MessageSquare className="h-12 w-12 text-indigo-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">المحادثات الخاصة</h3>
-                  <p className="text-blue-300/90 text-center">تواصل مع أصدقائك وزملائك بشكل خاص ومباشر</p>
+                  <p className="text-indigo-300/90 text-center">تواصل مع أصدقائك وزملائك بشكل خاص ومباشر</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -164,13 +164,13 @@ const ChatLayout = () => {
               className="cursor-pointer"
               onClick={() => handleTabChange('group')}
             >
-              <Card className="h-full bg-gradient-to-br from-purple-900/40 to-purple-800/30 border-purple-500/30 hover:from-purple-800/50 hover:to-purple-700/40 hover:border-purple-500/50 transition-all duration-300 shadow-lg">
+              <Card className="h-full bg-gradient-to-br from-emerald-900/40 to-emerald-800/30 border-emerald-500/30 hover:from-emerald-800/50 hover:to-emerald-700/40 hover:border-emerald-500/50 transition-all duration-300 shadow-lg">
                 <CardContent className="p-10 flex flex-col items-center justify-center h-full">
-                  <div className="h-24 w-24 rounded-full bg-purple-900/50 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                    <Users className="h-12 w-12 text-purple-400" />
+                  <div className="h-24 w-24 rounded-full bg-emerald-900/50 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+                    <Users className="h-12 w-12 text-emerald-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">المحادثات الجماعية</h3>
-                  <p className="text-purple-300/90 text-center">شارك في محادثات جماعية مع العديد من المستخدمين</p>
+                  <p className="text-emerald-300/90 text-center">شارك في محادثات جماعية مع العديد من المستخدمين</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -181,16 +181,16 @@ const ChatLayout = () => {
           value={activeTab}
           className="w-full h-full flex flex-col"
         >
-          <div className="flex justify-between items-center mb-4 px-4 pt-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-t-lg border-b border-blue-500/20 pb-4">
+          <div className="flex justify-between items-center mb-4 px-4 pt-4 bg-gradient-to-r from-indigo-900/30 to-violet-900/30 rounded-t-lg border-b border-indigo-500/20 pb-4">
             <Button 
               variant="outline" 
               onClick={handleBackToSelector}
-              className="bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
+              className="bg-indigo-900/30 border-indigo-500/30 hover:bg-indigo-800/50"
             >
               <span>العودة للقائمة الرئيسية</span>
             </Button>
             
-            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">
+            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-indigo-300">
               {activeTab === 'private' ? 'المحادثات الخاصة' : 'المحادثات الجماعية'}
             </h2>
           </div>

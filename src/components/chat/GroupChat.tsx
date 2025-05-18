@@ -253,17 +253,17 @@ const GroupChat = ({
   };
 
   return (
-    <Card className="h-full bg-gradient-to-br from-purple-900/20 to-purple-900/10 backdrop-blur-sm border-purple-500/20 flex flex-col overflow-hidden relative">
-      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-purple-900/20">
+    <Card className="h-full bg-gradient-to-br from-emerald-900/20 to-emerald-900/10 backdrop-blur-sm border-emerald-500/20 flex flex-col overflow-hidden relative">
+      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-emerald-900/20">
         <CardTitle className="text-white flex items-center gap-2">
-          <Users className="h-5 w-5 text-purple-400" />
+          <Users className="h-5 w-5 text-emerald-400" />
           {roomName || "المحادثة الجماعية"}
         </CardTitle>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handleRefreshChat}
-          className="bg-purple-900/30 border-purple-500/30 hover:bg-purple-800/50" 
+          className="bg-emerald-900/30 border-emerald-500/30 hover:bg-emerald-800/50" 
           title="تحديث المحادثة"
         >
           <RefreshCw className="h-4 w-4 ml-2" />
@@ -280,7 +280,7 @@ const GroupChat = ({
                 variant="outline" 
                 size="icon" 
                 onClick={scrollToTop}
-                className="rounded-full bg-purple-900/50 border-purple-500/30 hover:bg-purple-800/70 h-10 w-10"
+                className="rounded-full bg-emerald-900/50 border-emerald-500/30 hover:bg-emerald-800/70 h-10 w-10"
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>
@@ -288,7 +288,7 @@ const GroupChat = ({
                 variant="outline" 
                 size="icon" 
                 onClick={scrollToBottom}
-                className="rounded-full bg-purple-900/50 border-purple-500/30 hover:bg-purple-800/70 h-10 w-10"
+                className="rounded-full bg-emerald-900/50 border-emerald-500/30 hover:bg-emerald-800/70 h-10 w-10"
               >
                 <ArrowDown className="h-4 w-4" />
               </Button>
@@ -322,7 +322,7 @@ const GroupChat = ({
             </ScrollArea>
 
             {/* Message input */}
-            <div className="p-4 border-t border-white/10 bg-purple-900/20">
+            <div className="p-4 border-t border-white/10 bg-emerald-900/20">
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <Input 
                   placeholder="اكتب رسالة..." 
@@ -333,7 +333,7 @@ const GroupChat = ({
                 <Button 
                   type="submit" 
                   disabled={!message.trim() || isMessageSending}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
                 >
                   {isMessageSending ? (
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-white" />
@@ -347,7 +347,7 @@ const GroupChat = ({
         ) : (
           <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-2">
-              <Users className="h-16 w-16 text-purple-500/70 mx-auto" />
+              <Users className="h-16 w-16 text-emerald-500/70 mx-auto" />
               <h3 className="text-xl font-medium text-white">اختر غرفة محادثة</h3>
               <p className="text-white/50">اختر غرفة محادثة جماعية للمشاركة</p>
             </div>

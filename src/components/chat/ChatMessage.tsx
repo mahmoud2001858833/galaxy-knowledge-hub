@@ -43,7 +43,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
           {contact?.avatar_url ? (
             <AvatarImage src={contact.avatar_url} alt={contact?.username || 'مستخدم'} />
           ) : (
-            <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800">
+            <AvatarFallback className="bg-gradient-to-r from-indigo-600 to-violet-800">
               {contact?.username ? contact.username[0].toUpperCase() : '؟'}
             </AvatarFallback>
           )}
@@ -60,7 +60,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
         <div
           className={`px-5 py-3.5 rounded-2xl shadow-lg ${
             isCurrentUser
-              ? 'rounded-br-none bg-gradient-to-r from-blue-600 to-blue-700 text-white'
+              ? 'rounded-br-none bg-gradient-to-r from-emerald-600 to-emerald-700 text-white'
               : 'bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-bl-none'
           } break-words`}
         >
@@ -72,8 +72,8 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
           </span>
           {isCurrentUser && (
             <div className="flex items-center">
-              <Check className="h-3 w-3 text-blue-400" />
-              <Check className="h-3 w-3 text-blue-400 -ml-1.5" />
+              <Check className="h-3 w-3 text-emerald-400" />
+              <Check className="h-3 w-3 text-emerald-400 -ml-1.5" />
             </div>
           )}
         </div>
@@ -85,7 +85,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
           {user?.avatar_url ? (
             <AvatarImage src={user.avatar_url} alt={user?.username || 'أنت'} />
           ) : (
-            <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800">
+            <AvatarFallback className="bg-gradient-to-r from-emerald-600 to-emerald-800">
               {user?.username ? user.username[0].toUpperCase() : 'أنت'}
             </AvatarFallback>
           )}
