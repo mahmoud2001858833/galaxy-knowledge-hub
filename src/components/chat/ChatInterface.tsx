@@ -40,37 +40,37 @@ const ChatInterface = ({
   user
 }: ChatInterfaceProps) => {
   return (
-    <div className="flex-1 bg-gradient-to-br from-indigo-950/60 to-violet-950/60 backdrop-blur-md flex flex-col overflow-hidden relative border border-indigo-500/20 rounded-lg shadow-lg">
+    <div className="flex-1 bg-gradient-to-br from-slate-950/90 to-purple-950/90 backdrop-blur-md flex flex-col overflow-hidden relative border border-purple-500/20 rounded-lg shadow-lg">
       {/* رأس المحادثة */}
-      <div className="p-3 border-b border-white/10 bg-indigo-900/40 flex items-center justify-between shadow-md backdrop-blur-md">
+      <div className="p-3 border-b border-white/10 bg-purple-900/40 flex items-center justify-between shadow-md backdrop-blur-md">
         <div className="flex items-center">
-          <Avatar className="h-10 w-10 mr-3 border-2 border-indigo-500/30">
+          <Avatar className="h-10 w-10 mr-3 border-2 border-purple-500/30">
             {selectedContact.avatar_url ? (
               <AvatarImage src={selectedContact.avatar_url} />
             ) : (
-              <AvatarFallback className="bg-gradient-to-r from-indigo-600 to-indigo-800">
+              <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800">
                 {selectedContact.username ? selectedContact.username[0].toUpperCase() : '?'}
               </AvatarFallback>
             )}
             {selectedContact.isOnline && (
-              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-indigo-900 animate-pulse" />
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-teal-500 border-2 border-purple-900 animate-pulse" />
             )}
           </Avatar>
           <div>
             <h3 className="font-medium text-white">{selectedContact.username}</h3>
-            <p className="text-xs text-emerald-300">{selectedContact.isOnline ? 'متصل الآن' : 'غير متصل'}</p>
+            <p className="text-xs text-teal-300">{selectedContact.isOnline ? 'متصل الآن' : 'غير متصل'}</p>
           </div>
         </div>
         
         {/* أزرار المكالمة والفيديو والمعلومات */}
         <div className="flex space-x-2">
-          <Button variant="ghost" size="icon" className="rounded-full bg-indigo-900/20 hover:bg-indigo-800/40 text-indigo-300" title="مكالمة صوتية">
+          <Button variant="ghost" size="icon" className="rounded-full bg-purple-900/20 hover:bg-purple-800/40 text-purple-300" title="مكالمة صوتية">
             <Phone className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full bg-indigo-900/20 hover:bg-indigo-800/40 text-indigo-300" title="مكالمة فيديو">
+          <Button variant="ghost" size="icon" className="rounded-full bg-purple-900/20 hover:bg-purple-800/40 text-purple-300" title="مكالمة فيديو">
             <Video className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full bg-indigo-900/20 hover:bg-indigo-800/40 text-indigo-300" title="معلومات">
+          <Button variant="ghost" size="icon" className="rounded-full bg-purple-900/20 hover:bg-purple-800/40 text-purple-300" title="معلومات">
             <Info className="h-4 w-4" />
           </Button>
         </div>
@@ -86,7 +86,7 @@ const ChatInterface = ({
           <Button 
             size="icon" 
             variant="outline" 
-            className="rounded-full bg-indigo-900/40 border-indigo-500/30 hover:bg-indigo-800/50 h-8 w-8 shadow-md"
+            className="rounded-full bg-purple-900/40 border-purple-500/30 hover:bg-purple-800/50 h-8 w-8 shadow-md"
             onClick={scrollToTop}
             title="التنقل لأول الرسائل"
           >
@@ -95,7 +95,7 @@ const ChatInterface = ({
           <Button 
             size="icon" 
             variant="outline" 
-            className="rounded-full bg-indigo-900/40 border-indigo-500/30 hover:bg-indigo-800/50 h-8 w-8 shadow-md"
+            className="rounded-full bg-purple-900/40 border-purple-500/30 hover:bg-purple-800/50 h-8 w-8 shadow-md"
             onClick={scrollToBottom}
             title="التنقل لآخر الرسائل"
           >
@@ -106,7 +106,7 @@ const ChatInterface = ({
 
       {/* منطقة الرسائل */}
       <ScrollArea 
-        className="flex-1 px-4 py-6 overflow-y-auto bg-[url('/chat-pattern.png')] bg-repeat bg-opacity-5" 
+        className="flex-1 px-4 py-6 overflow-y-auto chat-background" 
         onScroll={(e) => {
           const target = e.currentTarget;
           const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
@@ -121,10 +121,10 @@ const ChatInterface = ({
               animate={{ opacity: 1, y: 0 }}
               className="h-full flex items-center justify-center py-20"
             >
-              <div className="text-center bg-indigo-900/20 backdrop-blur-sm p-8 rounded-xl border border-indigo-500/20">
-                <MessageSquare className="h-16 w-16 text-indigo-500/40 mx-auto mb-4" />
+              <div className="text-center bg-purple-900/20 backdrop-blur-sm p-8 rounded-xl border border-purple-500/20">
+                <MessageSquare className="h-16 w-16 text-purple-500/40 mx-auto mb-4" />
                 <p className="text-white/80 text-lg mb-2">ابدأ المحادثة مع {selectedContact.username}</p>
-                <p className="text-indigo-300/60 text-sm">أرسل رسالة للبدء في التواصل</p>
+                <p className="text-purple-300/60 text-sm">أرسل رسالة للبدء في التواصل</p>
               </div>
             </motion.div>
           ) : (
@@ -145,13 +145,13 @@ const ChatInterface = ({
       </ScrollArea>
 
       {/* إدخال الرسائل */}
-      <div className="p-3 border-t border-white/10 bg-indigo-900/40 backdrop-blur-md">
+      <div className="p-3 border-t border-white/10 bg-purple-900/40 backdrop-blur-md">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <Input
             placeholder="اكتب رسالة..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="flex-1 bg-indigo-800/20 border-indigo-700/30 text-white rounded-full px-4 py-6 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="flex-1 bg-purple-800/20 border-purple-700/30 text-white rounded-full px-4 py-6 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -163,7 +163,7 @@ const ChatInterface = ({
             type="submit"
             size="icon"
             disabled={!message.trim() || isMessageSending}
-            className="bg-emerald-600 hover:bg-emerald-700 rounded-full h-12 w-12 flex items-center justify-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-teal-600 hover:bg-teal-700 rounded-full h-12 w-12 flex items-center justify-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="h-5 w-5" />
           </Button>

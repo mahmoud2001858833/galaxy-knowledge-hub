@@ -16,8 +16,8 @@ const ContactCard = ({ contact, isSelected, onClick }: ContactCardProps) => (
     onClick={onClick}
     className={`w-full flex items-center p-3 rounded-lg transition-all ${
       isSelected
-        ? 'bg-indigo-600/20 border border-indigo-500/40'
-        : 'hover:bg-indigo-900/20 border border-transparent'
+        ? 'bg-purple-600/30 border border-purple-500/40'
+        : 'hover:bg-purple-900/20 border border-transparent'
     }`}
   >
     <div className="relative">
@@ -25,13 +25,13 @@ const ContactCard = ({ contact, isSelected, onClick }: ContactCardProps) => (
         {contact.avatar_url ? (
           <AvatarImage src={contact.avatar_url} />
         ) : (
-          <AvatarFallback className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-lg">
+          <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800 text-lg">
             {contact.username[0]}
           </AvatarFallback>
         )}
       </Avatar>
       
-      {/* Online status indicator */}
+      {/* مؤشر حالة الاتصال */}
       <div className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-slate-900 ${
         contact.isOnline ? 'bg-emerald-500' : 'bg-gray-400'
       }`} />

@@ -37,7 +37,7 @@ const ContactSearchDialog = ({
 }: ContactSearchDialogProps) => {
   return (
     <Dialog open={isContactSearchOpen} onOpenChange={setIsContactSearchOpen}>
-      <DialogContent className="bg-gradient-to-br from-indigo-950 to-violet-950 border-indigo-800/50 max-w-md shadow-xl">
+      <DialogContent className="bg-gradient-to-br from-purple-950 to-slate-950 border-purple-800/50 max-w-md shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-white text-xl">إضافة جهة اتصال</DialogTitle>
           <DialogDescription className="text-white/70">
@@ -50,7 +50,7 @@ const ContactSearchDialog = ({
             placeholder="ابحث عن مستخدم..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-indigo-900/40 border-indigo-700 text-white"
+            className="bg-purple-900/40 border-purple-700 text-white"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSearchUsers();
@@ -60,7 +60,7 @@ const ContactSearchDialog = ({
           <Button 
             onClick={handleSearchUsers} 
             disabled={isSearching || !searchQuery.trim()}
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-purple-600 hover:bg-purple-700"
           >
             <Search className="h-4 w-4" />
           </Button>
@@ -70,13 +70,13 @@ const ContactSearchDialog = ({
           {searchResults.length > 0 ? (
             <div className="space-y-2">
               {searchResults.map((result) => (
-                <div key={result.id} className="flex items-center justify-between bg-indigo-900/30 p-3 rounded-lg">
+                <div key={result.id} className="flex items-center justify-between bg-purple-900/30 p-3 rounded-lg">
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8 ml-2">
                       {result.avatar_url ? (
                         <AvatarImage src={result.avatar_url} />
                       ) : (
-                        <AvatarFallback className="bg-gradient-to-r from-indigo-600 to-indigo-800">
+                        <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800">
                           {result.username[0]}
                         </AvatarFallback>
                       )}
@@ -86,7 +86,7 @@ const ContactSearchDialog = ({
                   <Button
                     onClick={() => addContact(result.id)}
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-teal-600 hover:bg-teal-700"
                   >
                     <UserPlus className="h-4 w-4" />
                   </Button>
@@ -104,7 +104,7 @@ const ContactSearchDialog = ({
           <Button
             variant="outline"
             onClick={() => setIsContactSearchOpen(false)}
-            className="border-indigo-500/30 text-white hover:bg-indigo-800/30"
+            className="border-purple-500/30 text-white hover:bg-purple-800/30"
           >
             <X className="h-4 w-4 ml-1" />
             <span>إغلاق</span>
