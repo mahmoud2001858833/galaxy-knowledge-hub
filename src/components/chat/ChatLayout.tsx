@@ -106,43 +106,67 @@ const ChatLayout = () => {
     };
   }, []);
 
+  // Animated selector containers for better visual appeal
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { 
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="rounded-lg overflow-hidden h-[calc(100vh-240px)] min-h-[500px] flex flex-col">
+    <div className="rounded-lg overflow-hidden h-[calc(100vh-220px)] min-h-[550px] flex flex-col">
       {showChatSelector ? (
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="flex flex-col h-full"
+          initial="hidden"
+          animate="show"
+          variants={containerVariants}
+          className="flex flex-col h-full bg-gradient-to-br from-blue-950/40 to-purple-950/40 backdrop-blur-lg p-6 rounded-lg border border-blue-500/20"
         >
-          <h2 className="text-2xl font-bold text-center text-white mb-8">اختر نوع المحادثة</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 p-6">
+          <motion.h2 
+            variants={itemVariants}
+            className="text-2xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-400 mb-8"
+          >
+            اختر نوع المحادثة
+          </motion.h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              variants={itemVariants}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               className="cursor-pointer"
               onClick={() => handleTabChange('private')}
             >
-              <Card className="h-full bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/30 hover:from-blue-800/50 hover:to-blue-700/40 hover:border-blue-500/50 transition-all duration-300">
+              <Card className="h-full bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/30 hover:from-blue-800/50 hover:to-blue-700/40 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
                 <CardContent className="p-10 flex flex-col items-center justify-center h-full">
-                  <div className="h-24 w-24 rounded-full bg-blue-900/50 flex items-center justify-center mb-6">
+                  <div className="h-24 w-24 rounded-full bg-blue-900/50 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                     <MessageSquare className="h-12 w-12 text-blue-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">المحادثات الخاصة</h3>
-                  <p className="text-blue-300/90 text-center">تواصل مع أصدقائك وزملائك بشكل خاص</p>
+                  <p className="text-blue-300/90 text-center">تواصل مع أصدقائك وزملائك بشكل خاص ومباشر</p>
                 </CardContent>
               </Card>
             </motion.div>
             
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              variants={itemVariants}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               className="cursor-pointer"
               onClick={() => handleTabChange('group')}
             >
-              <Card className="h-full bg-gradient-to-br from-purple-900/40 to-purple-800/30 border-purple-500/30 hover:from-purple-800/50 hover:to-purple-700/40 hover:border-purple-500/50 transition-all duration-300">
+              <Card className="h-full bg-gradient-to-br from-purple-900/40 to-purple-800/30 border-purple-500/30 hover:from-purple-800/50 hover:to-purple-700/40 hover:border-purple-500/50 transition-all duration-300 shadow-lg">
                 <CardContent className="p-10 flex flex-col items-center justify-center h-full">
-                  <div className="h-24 w-24 rounded-full bg-purple-900/50 flex items-center justify-center mb-6">
+                  <div className="h-24 w-24 rounded-full bg-purple-900/50 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
                     <Users className="h-12 w-12 text-purple-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">المحادثات الجماعية</h3>
@@ -157,7 +181,7 @@ const ChatLayout = () => {
           value={activeTab}
           className="w-full h-full flex flex-col"
         >
-          <div className="flex justify-between items-center mb-6 px-4">
+          <div className="flex justify-between items-center mb-4 px-4 pt-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-t-lg border-b border-blue-500/20 pb-4">
             <Button 
               variant="outline" 
               onClick={handleBackToSelector}
@@ -166,7 +190,7 @@ const ChatLayout = () => {
               <span>العودة للقائمة الرئيسية</span>
             </Button>
             
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">
               {activeTab === 'private' ? 'المحادثات الخاصة' : 'المحادثات الجماعية'}
             </h2>
           </div>
@@ -192,8 +216,8 @@ const ChatLayout = () => {
               </TabsContent>
               
               <TabsContent value="group" className="m-0 h-full">
-                <div className="grid grid-cols-1 lg:grid-cols-4 h-full gap-4">
-                  <div className="lg:col-span-4 h-full">
+                <div className="grid grid-cols-1 h-full">
+                  <div className="h-full">
                     <GroupChat user={user} />
                   </div>
                 </div>

@@ -13,8 +13,28 @@ interface ContactsGridProps {
 }
 
 const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: ContactsGridProps) => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="h-full flex flex-col p-6">
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="h-full flex flex-col p-6"
+    >
       {/* شريط العنوان */}
       <div className="flex justify-between items-center mb-6 sticky top-0 z-10">
         <Button 
@@ -25,7 +45,7 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
           <MessageSquare className="h-4 w-4 ml-2" />
           <span>العودة للمحادثات</span>
         </Button>
-        <h2 className="text-xl font-bold text-white">جهات الاتصال</h2>
+        <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">جهات الاتصال</h2>
         <Button 
           variant="outline"
           onClick={onAddContact}
@@ -42,10 +62,8 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
           contacts.map(contact => (
             <motion.div
               key={contact.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}
+              variants={itemVariants}
+              whileHover={{ scale: 1.02, boxShadow: "0 0 15px rgba(59, 130, 246, 0.3)" }}
               whileTap={{ scale: 0.98 }}
               className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 hover:from-blue-900/30 hover:to-purple-900/30 border border-blue-500/20 hover:border-blue-500/40 rounded-lg overflow-hidden shadow-lg cursor-pointer transition-all"
               onClick={() => onSelectContact(contact)}
@@ -81,7 +99,10 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
             </motion.div>
           ))
         ) : (
-          <div className="col-span-full flex flex-col items-center justify-center bg-blue-900/20 rounded-lg p-10">
+          <motion.div 
+            variants={itemVariants}
+            className="col-span-full flex flex-col items-center justify-center bg-blue-900/20 rounded-lg p-10"
+          >
             <Users className="h-16 w-16 text-blue-500/40 mb-4" />
             <p className="text-white text-lg mb-2">لا توجد جهات اتصال</p>
             <p className="text-blue-300/80 mb-6 text-center">لم تقم بإضافة أي جهات اتصال بعد</p>
@@ -92,10 +113,10 @@ const ContactsGrid = ({ contacts, onSelectContact, onAddContact, onBack }: Conta
               <UserPlus className="h-4 w-4 ml-2" />
               <span>إضافة جهة اتصال</span>
             </Button>
-          </div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

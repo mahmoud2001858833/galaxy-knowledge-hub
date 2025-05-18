@@ -43,13 +43,13 @@ const WelcomeScreen = ({ setIsContactSearchOpen, lastContact, setSelectedContact
             {/* معلومات المحادثة */}
             <motion.div className="flex flex-col" variants={itemVariants}>
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gradient-blue mb-3 text-glow-blue">المحادثات الخاصة</h2>
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300 mb-3">المحادثات الخاصة</h2>
                 <p className="text-blue-300 mb-4">تواصل مع جهات اتصالك بسهولة عبر محادثات خاصة وآمنة</p>
               </div>
               
               {lastContact && (
                 <motion.div 
-                  className="bg-blue-900/30 backdrop-blur-sm rounded-lg p-5 mb-4 border border-blue-500/20 shadow-glow-sm"
+                  className="bg-blue-900/30 backdrop-blur-sm rounded-lg p-5 mb-4 border border-blue-500/20 shadow-xl"
                   variants={itemVariants}
                 >
                   <h3 className="text-lg font-semibold text-white mb-3">آخر جهة اتصال</h3>
@@ -59,7 +59,7 @@ const WelcomeScreen = ({ setIsContactSearchOpen, lastContact, setSelectedContact
                         <AvatarImage src={lastContact.avatar_url} />
                       ) : (
                         <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800 text-lg">
-                          {lastContact.username ? lastContact.username[0].toUpperCase() : '?'}
+                          {lastContact.username ? lastContact.username[0].toUpperCase() : '؟'}
                         </AvatarFallback>
                       )}
                       {lastContact.isOnline && (

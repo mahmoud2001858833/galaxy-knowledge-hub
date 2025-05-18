@@ -28,7 +28,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-cyan-800/50 rounded-full hover:bg-cyan-700/60;
+    @apply bg-blue-900/60 rounded-full hover:bg-blue-800/70;
   }
 }
 
@@ -121,11 +121,11 @@
   }
   
   .message-bubble-sent {
-    @apply bg-messenger-blue text-white rounded-2xl rounded-tr-none px-4 py-2 max-w-[75%];
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl rounded-tr-none px-4 py-2 max-w-[75%] shadow-md break-words;
   }
   
   .message-bubble-received {
-    @apply bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[75%];
+    @apply bg-gray-700 text-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[75%] shadow-md break-words;
   }
   
   /* New Messenger specific styles */
@@ -134,11 +134,25 @@
   }
   
   .message-time {
-    @apply text-xs text-white/40 mt-1;
+    @apply text-xs text-white/40 mt-1 dir-rtl;
   }
   
   .contact-card {
     @apply bg-gradient-to-br from-blue-900/20 to-purple-900/20 hover:from-blue-900/30 hover:to-purple-900/30 border border-blue-500/20 hover:border-blue-500/40 rounded-lg overflow-hidden shadow transition-all cursor-pointer;
+  }
+  
+  /* دعم الاتجاه RTL */
+  .dir-rtl {
+    direction: rtl;
+  }
+  
+  /* تحسين مظهر الأزرار */
+  .btn-blue {
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md text-white px-4 py-2 rounded-md transition-colors;
+  }
+  
+  .btn-purple {
+    @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-md text-white px-4 py-2 rounded-md transition-colors;
   }
 }
 
@@ -214,4 +228,30 @@ html, body, #root {
 
 .message-unread {
   @apply text-gray-400;
+}
+
+/* إضافة تأثيرات الظل للبطاقات */
+.shadow-glow-sm {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.shadow-glow-md {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.shadow-glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+}
+
+.shadow-glow-purple {
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+}
+
+/* تأثير توهج للنص */
+.text-glow-blue {
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
 }
