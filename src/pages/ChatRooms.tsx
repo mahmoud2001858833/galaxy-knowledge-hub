@@ -307,8 +307,8 @@ const ChatRooms = () => {
 
   return (
     <>
-      <div className="relative h-[calc(100vh-64px)] overflow-hidden">
-        <div className="flex justify-between items-center mb-6">
+      <div className="relative w-full h-full min-h-[100vh] flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center mb-4 px-4 py-2">
           <Button 
             variant="outline" 
             onClick={handleRefreshManually}
@@ -324,9 +324,9 @@ const ChatRooms = () => {
         </div>
         
         {/* واجهة المحادثة الرئيسية مع مربع الترحيب */}
-        <div className="bg-gradient-to-br from-blue-950/30 to-purple-950/30 backdrop-blur-sm rounded-lg border border-blue-500/20 p-0 shadow-lg h-[calc(100vh-130px)] overflow-hidden">
+        <div className="bg-gradient-to-br from-blue-950/30 to-purple-950/30 backdrop-blur-sm rounded-lg border border-blue-500/20 p-0 shadow-lg flex-grow w-full overflow-hidden">
           {/* منطقة عرض المحادثة */}
-          <div className="h-full overflow-hidden" id="chat-layout">
+          <div className="h-full w-full overflow-hidden" id="chat-layout">
             <ChatLayout />
           </div>
         </div>

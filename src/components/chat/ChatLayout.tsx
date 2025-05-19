@@ -140,13 +140,13 @@ const ChatLayout = () => {
   };
 
   return (
-    <div className="rounded-lg overflow-hidden h-[calc(100vh-220px)] min-h-[550px] flex flex-col">
+    <div className="w-full h-full min-h-[100%] flex flex-col overflow-hidden">
       {showChatSelector ? (
         <motion.div 
           initial="hidden"
           animate="show"
           variants={containerVariants}
-          className="flex flex-col h-full bg-gradient-to-br from-indigo-950/40 to-violet-950/40 backdrop-blur-lg p-6 rounded-lg border border-indigo-500/20"
+          className="flex flex-col w-full h-full bg-gradient-to-br from-indigo-950/40 to-violet-950/40 backdrop-blur-lg p-6 rounded-lg border border-indigo-500/20"
         >
           <motion.h2 
             variants={itemVariants}
@@ -219,10 +219,10 @@ const ChatLayout = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 overflow-hidden"
+              className="flex-1 overflow-hidden w-full"
             >
-              <TabsContent value="private" className="m-0 h-full">
-                <div className="grid grid-cols-1 lg:grid-cols-4 h-full gap-4">
+              <TabsContent value="private" className="m-0 h-full w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-4 h-full w-full gap-4">
                   <div className="lg:col-span-3 h-full">
                     <PrivateChat user={user} />
                   </div>
@@ -232,9 +232,9 @@ const ChatLayout = () => {
                 </div>
               </TabsContent>
               
-              <TabsContent value="group" className="m-0 h-full">
-                <div className="grid grid-cols-1 h-full">
-                  <div className="h-full">
+              <TabsContent value="group" className="m-0 h-full w-full">
+                <div className="grid grid-cols-1 h-full w-full">
+                  <div className="h-full w-full">
                     <GroupChat user={user} />
                   </div>
                 </div>
