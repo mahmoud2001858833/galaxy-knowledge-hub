@@ -106,6 +106,23 @@ const ChatLayout = () => {
     };
   }, []);
 
+  // Listen for select contact events
+  useEffect(() => {
+    const handleSelectContact = (event: any) => {
+      if (event.detail && event.detail.contactId) {
+        // Switch to private chat tab and pass selected contact
+        setActiveTab('private');
+        setShowChatSelector(false);
+      }
+    };
+    
+    document.addEventListener('select-contact', handleSelectContact);
+    
+    return () => {
+      document.removeEventListener('select-contact', handleSelectContact);
+    };
+  }, []);
+
   // Animated selector containers for better visual appeal
   const containerVariants = {
     hidden: { opacity: 0 },

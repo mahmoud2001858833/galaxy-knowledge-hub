@@ -9,10 +9,15 @@ interface WelcomeScreenProps {
   setIsContactSearchOpen: (isOpen: boolean) => void;
   lastContact: any;
   setSelectedContact: (contact: any) => void;
-  setShowContactsList?: (show: boolean) => void;
+  setShowContactsList: (show: boolean) => void;
 }
 
-const WelcomeScreen = ({ setIsContactSearchOpen, lastContact, setSelectedContact, setShowContactsList }: WelcomeScreenProps) => {
+const WelcomeScreen = ({ 
+  setIsContactSearchOpen, 
+  lastContact, 
+  setSelectedContact, 
+  setShowContactsList 
+}: WelcomeScreenProps) => {
   // تأثيرات الحركة للعناصر
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -45,7 +50,7 @@ const WelcomeScreen = ({ setIsContactSearchOpen, lastContact, setSelectedContact
             className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-purple-300 text-center mb-8"
             variants={itemVariants}
           >
-            مرحبًا بك في غرف المحادثة
+            مرحبًا بك في المحادثات الخاصة
           </motion.h1>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -96,7 +101,7 @@ const WelcomeScreen = ({ setIsContactSearchOpen, lastContact, setSelectedContact
                   whileHover={{ scale: 1.03, boxShadow: "0 0 25px rgba(147, 51, 234, 0.3)" }}
                   whileTap={{ scale: 0.98 }}
                   className="bg-purple-900/30 hover:bg-purple-800/40 transition-all rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer border border-purple-500/30 hover:border-purple-500/50 shadow-md"
-                  onClick={() => setShowContactsList?.(true)}
+                  onClick={() => setShowContactsList(true)}
                   variants={itemVariants}
                 >
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-800/80 to-purple-700/50 flex items-center justify-center mb-5 shadow-glow-purple">

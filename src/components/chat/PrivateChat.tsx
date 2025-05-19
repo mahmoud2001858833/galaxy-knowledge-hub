@@ -12,10 +12,6 @@ import ChatInterface from './ChatInterface';
 import ContactSearchDialog from './ContactSearchDialog';
 import WelcomeScreen from './WelcomeScreen';
 import ContactsGrid from './ContactsGrid';
-import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, UserPlus, Users } from 'lucide-react';
 
 const PrivateChat = ({ user }) => {
   const [selectedContact, setSelectedContact] = useState<any>(null);
@@ -66,6 +62,25 @@ const PrivateChat = ({ user }) => {
     
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
+
+  // Listen for select contact events from parent
+  useEffect(() => {
+    const handleSelectContact = (event: any) => {
+      if (event.detail && event.detail.contactId) {
+        const contact = contacts.find(c => c.id === event.detail.contactId);
+        if (contact) {
+          setSelectedContact(contact);
+          setShowContactsList(false);
+        }
+      }
+    };
+    
+    document.addEventListener('select-contact', handleSelectContact);
+    
+    return () => {
+      document.removeEventListener('select-contact', handleSelectContact);
+    };
+  }, [contacts]);
 
   // Subscribe to new messages
   useRealtimeMessages({
