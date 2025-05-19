@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +21,7 @@ import { motion } from 'framer-motion';
 
 const ChatRooms = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
