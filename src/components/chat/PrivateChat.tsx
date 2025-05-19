@@ -128,7 +128,7 @@ const PrivateChat = ({ user }) => {
     }
   };
 
-  // Get the last contacted person for welcome screen
+  // Get the last contact for welcome screen
   const getLastContact = () => {
     if (contacts.length === 0) return null;
     return contacts[0]; // Already sorted by activity
