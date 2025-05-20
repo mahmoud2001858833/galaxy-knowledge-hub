@@ -173,7 +173,8 @@ const PrivateChat = ({ user }) => {
     e.preventDefault();
     if (!message.trim() || isMessageSending) return;
     
-    sendMessage();
+    // Fix: Call sendMessage with the required message parameter
+    sendMessage(message);
     setIsAutoScroll(true);
     
     // نضمن التمرير لأسفل بعد إرسال الرسالة
