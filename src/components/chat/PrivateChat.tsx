@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
@@ -168,12 +167,11 @@ const PrivateChat = ({ user }) => {
     setShowContactsList(false);
   };
 
-  // تحسين إرسال الرسائل
+  // تحسين إرسال الرسائل - Fixed to pass message text to sendMessage
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isMessageSending) return;
     
-    // Fix: Call sendMessage with the required message parameter
     sendMessage(message);
     setIsAutoScroll(true);
     

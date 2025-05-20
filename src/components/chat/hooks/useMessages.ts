@@ -31,11 +31,9 @@ export const useMessages = (userId: string | null, selectedContact: any | null) 
     }
   };
 
-  // Send message
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!message.trim() || !userId || !selectedContact || isMessageSending) return;
+  // Send message - updated to accept messageText parameter
+  const sendMessage = async (messageText: string) => {
+    if (!messageText.trim() || !userId || !selectedContact || isMessageSending) return;
 
     setIsMessageSending(true);
     try {
@@ -48,7 +46,7 @@ export const useMessages = (userId: string | null, selectedContact: any | null) 
           {
             sender_id: userId,
             receiver_id: currentContact.id,
-            message_text: message.trim()
+            message_text: messageText.trim()
           }
         ]);
 
@@ -62,7 +60,7 @@ export const useMessages = (userId: string | null, selectedContact: any | null) 
         id: Date.now().toString(),
         sender_id: userId,
         receiver_id: currentContact.id,
-        message_text: message.trim(),
+        message_text: messageText.trim(),
         created_at: new Date().toISOString()
       };
       
