@@ -49,7 +49,7 @@ const ChatRooms = () => {
 
         setUserId(session.user.id);
         
-        // فتح جهات الاتصال بعد التحقق من المستخدم
+        // Fetch contacts after user verification
         fetchContacts(session.user.id);
       } catch (error) {
         console.error('خطأ في التحقق من المستخدم:', error);
@@ -63,7 +63,7 @@ const ChatRooms = () => {
 
     checkUser();
     
-    // تعيين عنوان الصفحة
+    // Set page title
     document.title = "المحادثات - منصة تعليمية";
     
     return () => {
@@ -71,11 +71,11 @@ const ChatRooms = () => {
     };
   }, [navigate]);
   
-  // تحسين نظام الاستماع إلى الرسائل الجديدة
+  // Improve real-time message notification system
   useEffect(() => {
     if (!userId) return;
     
-    // تحسين قناة الاستماع للرسائل الخاصة
+    // Improve channel for private messages
     const messagesChannel = supabase.channel('messages-notifications')
       .on('postgres_changes', 
         { 
@@ -90,24 +90,24 @@ const ChatRooms = () => {
             playNotificationSound();
           }
           
-          // بث حدث تحديث عام
+          // Broadcast general update event
           const globalEvent = new CustomEvent('global-chat-update');
           document.dispatchEvent(globalEvent);
           
-          // تحديث الواجهة
+          // Update UI
           setForceRefresh(prev => prev + 1);
         }
       )
       .subscribe();
     
-    // تحسين معالجة تغيير حالة الإشعارات
+    // Improve handling of notification visibility changes
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setHasNewMessages(false);
-        // تحديث عند العودة للصفحة
+        // Update when returning to the page
         setForceRefresh(prev => prev + 1);
         
-        // بث حدث تحديث عام
+        // Broadcast general update event
         const globalEvent = new CustomEvent('global-chat-update');
         document.dispatchEvent(globalEvent);
       }
@@ -115,7 +115,7 @@ const ChatRooms = () => {
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // الاستماع لحدث التحديث العام
+    // Listen for general update events
     const handleGlobalUpdate = () => {
       refreshMessages();
     };
@@ -129,7 +129,7 @@ const ChatRooms = () => {
     };
   }, [userId]);
 
-  // تأثير للتحديث القسري
+  // Effect for forced refresh
   useEffect(() => {
     if (forceRefresh > 0) {
       refreshMessages();
@@ -141,9 +141,9 @@ const ChatRooms = () => {
     try {
       const audio = new Audio('/message-notification.mp3');
       audio.volume = 0.5;
-      audio.play().catch(err => console.error('خطأ في تشغيل الصوت:', err));
+      audio.play().catch(err => console.error('Error playing sound:', err));
     } catch (error) {
-      console.error('خطأ في تشغيل صوت الإشعار:', error);
+      console.error('Error playing notification sound:', error);
     }
   };
   
@@ -155,7 +155,7 @@ const ChatRooms = () => {
   const handleRefreshManually = () => {
     setForceRefresh(prev => prev + 1);
     
-    // بث حدث تحديث عام
+    // Broadcast general update event
     const globalEvent = new CustomEvent('global-chat-update');
     document.dispatchEvent(globalEvent);
     
@@ -165,7 +165,7 @@ const ChatRooms = () => {
     });
   };
   
-  // تغيير عنوان الصفحة عندما تكون هناك رسائل جديدة
+  // Improve page title when there are new messages
   useEffect(() => {
     if (hasNewMessages) {
       document.title = "🔔 رسالة جديدة - منصة تعليمية";
@@ -178,7 +178,7 @@ const ChatRooms = () => {
     };
   }, [hasNewMessages]);
   
-  // تحسين وظيفة إضافة جهة اتصال جديدة
+  // Improve add contact functionality
   const handleAddContact = async () => {
     if (!contactEmail.trim() || !userId) return;
     
@@ -186,7 +186,7 @@ const ChatRooms = () => {
     setErrorMessage('');
     
     try {
-      // البحث عن المستخدم بواسطة اسم المستخدم
+      // Search user by username
       const { data: userData, error: userError } = await supabase
         .from('users_profiles')
         .select('id, username')
@@ -194,7 +194,7 @@ const ChatRooms = () => {
         
       if (userError) throw userError;
       
-      // البحث عن المستخدم المطابق
+      // Find matching user
       const foundUser = userData?.length > 0 ? userData[0] : null;
       
       if (!foundUser) {
@@ -202,13 +202,13 @@ const ChatRooms = () => {
         return;
       }
       
-      // التأكد من أن المستخدم لا يضيف نفسه
+      // Ensure user is not adding themselves
       if (foundUser.id === userId) {
         setErrorMessage('لا يمكنك إضافة نفسك كجهة اتصال');
         return;
       }
       
-      // التحقق من أن جهة الاتصال غير موجودة مسبقًا
+      // Check if contact already exists
       const { data: existingContact, error: checkError } = await supabase
         .from('contacts')
         .select('*')
@@ -222,7 +222,7 @@ const ChatRooms = () => {
         return;
       }
       
-      // إضافة جهة الاتصال
+      // Add contact
       const { error: insertError } = await supabase
         .from('contacts')
         .insert({
@@ -240,20 +240,20 @@ const ChatRooms = () => {
       setContactEmail('');
       setIsAddContactOpen(false);
       
-      // تحديث المحادثات وقائمة جهات الاتصال
+      // Update messages and contacts list
       refreshMessages();
       fetchContacts(userId);
       setForceRefresh(prev => prev + 1);
       
     } catch (error: any) {
-      console.error('خطأ في إضافة جهة اتصال:', error);
+      console.error('Error adding contact:', error);
       setErrorMessage('حدث خطأ أثناء إضافة جهة الاتصال');
     } finally {
       setIsAddingContact(false);
     }
   };
   
-  // جلب جهات الاتصال
+  // Fetch contacts
   const fetchContacts = async (userId: string | null) => {
     if (!userId) return;
     
@@ -268,7 +268,7 @@ const ChatRooms = () => {
       if (contactsData && contactsData.length > 0) {
         const contactIds = contactsData.map(contact => contact.contact_id);
         
-        // جلب معلومات الملفات الشخصية
+        // Fetch user profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from('users_profiles')
           .select('id, username, avatar_url')
@@ -279,10 +279,10 @@ const ChatRooms = () => {
         if (profilesData) {
           const enhancedProfiles = profilesData.map(profile => ({
             ...profile,
-            isOnline: Math.random() > 0.5 // محاكاة حالة الاتصال
+            isOnline: Math.random() > 0.5 // Simulate online status
           }));
           
-          // ترتيب الاتصالات بحسب الاسم
+          // Sort contacts by name
           setContacts(enhancedProfiles.sort((a, b) => a.username.localeCompare(b.username)));
         }
       } else {
@@ -293,12 +293,12 @@ const ChatRooms = () => {
     }
   };
 
-  // بدء محادثة مع جهة اتصال
+  // Start conversation with a contact
   const startConversation = (contact: any) => {
-    // إغلاق قائمة جهات الاتصال
+    // Close contacts list
     setShowContactsList(false);
     
-    // تحديث الشاشة لتظهر المحادثة المحددة
+    // Update screen to show the selected conversation
     const customEvent = new CustomEvent('select-contact', {
       detail: { contactId: contact.id }
     });
@@ -306,33 +306,30 @@ const ChatRooms = () => {
   };
 
   return (
-    <>
-      <div className="relative w-full h-full min-h-[100vh] flex flex-col overflow-hidden">
-        <div className="flex justify-between items-center mb-4 px-4 py-2">
-          <Button 
-            variant="outline" 
-            onClick={handleRefreshManually}
-            className="flex items-center gap-1 bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>تحديث المحادثات</span>
-          </Button>
-          
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-            غرف المحادثة
-          </h1>
-        </div>
+    <div className="fixed top-0 left-0 w-screen h-screen flex flex-col bg-gradient-to-br from-blue-950 to-purple-950 z-50 p-0 m-0 overflow-hidden">
+      <div className="flex justify-between items-center mb-2 px-4 py-2 bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-b border-blue-500/20">
+        <Button 
+          variant="outline" 
+          onClick={handleRefreshManually}
+          className="flex items-center gap-1 bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
+        >
+          <RefreshCw className="h-4 w-4" />
+          <span>تحديث المحادثات</span>
+        </Button>
         
-        {/* واجهة المحادثة الرئيسية مع مربع الترحيب */}
-        <div className="bg-gradient-to-br from-blue-950/30 to-purple-950/30 backdrop-blur-sm rounded-lg border border-blue-500/20 p-0 shadow-lg flex-grow w-full overflow-hidden">
-          {/* منطقة عرض المحادثة */}
-          <div className="h-full w-full overflow-hidden" id="chat-layout">
-            <ChatLayout />
-          </div>
+        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+          غرف المحادثة
+        </h1>
+      </div>
+      
+      {/* Main chat interface with full screen */}
+      <div className="flex-grow w-full overflow-hidden p-1">
+        <div className="h-full w-full overflow-hidden" id="chat-layout">
+          <ChatLayout />
         </div>
       </div>
       
-      {/* نافذة إضافة جهة اتصال */}
+      {/* Add contact dialog */}
       <Dialog open={isAddContactOpen} onOpenChange={setIsAddContactOpen}>
         <DialogContent className="bg-gradient-to-br from-blue-950 to-purple-950 border-blue-800/50 max-w-md shadow-xl">
           <DialogHeader>
@@ -367,7 +364,7 @@ const ChatRooms = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

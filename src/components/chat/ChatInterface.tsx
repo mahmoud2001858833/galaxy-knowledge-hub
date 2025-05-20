@@ -41,7 +41,7 @@ const ChatInterface = ({
 }: ChatInterfaceProps) => {
   return (
     <div className="flex-1 h-full w-full bg-gradient-to-br from-slate-950/90 to-purple-950/90 backdrop-blur-md flex flex-col overflow-hidden relative border border-purple-500/20 rounded-lg shadow-lg">
-      {/* رأس المحادثة */}
+      {/* Chat header */}
       <div className="p-3 border-b border-white/10 bg-purple-900/40 flex items-center justify-between shadow-md backdrop-blur-md">
         <div className="flex items-center">
           <Avatar className="h-10 w-10 mr-3 border-2 border-purple-500/30">
@@ -62,7 +62,7 @@ const ChatInterface = ({
           </div>
         </div>
         
-        {/* أزرار المكالمة والفيديو والمعلومات */}
+        {/* Call buttons */}
         <div className="flex space-x-2">
           <Button variant="ghost" size="icon" className="rounded-full bg-purple-900/20 hover:bg-purple-800/40 text-purple-300" title="مكالمة صوتية">
             <Phone className="h-4 w-4" />
@@ -76,7 +76,7 @@ const ChatInterface = ({
         </div>
       </div>
 
-      {/* أزرار التنقل في الرسائل */}
+      {/* Navigation buttons */}
       {messages.length > 5 && (
         <motion.div 
           initial={{ opacity: 0, scale: 0.8 }}
@@ -104,47 +104,49 @@ const ChatInterface = ({
         </motion.div>
       )}
 
-      {/* منطقة الرسائل */}
-      <ScrollArea 
-        className="flex-1 px-4 py-6 overflow-y-auto chat-background max-h-[calc(100%-110px)]" 
-        onScroll={(e) => {
-          const target = e.currentTarget;
-          const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
-          setIsAutoScroll(isScrolledNearBottom);
-        }}
-      >
-        <div className="space-y-2 min-h-full">
-          <div ref={messagesStartRef} />
-          {messages.length === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="h-full flex items-center justify-center py-20"
-            >
-              <div className="text-center bg-purple-900/20 backdrop-blur-sm p-8 rounded-xl border border-purple-500/20">
-                <MessageSquare className="h-16 w-16 text-purple-500/40 mx-auto mb-4" />
-                <p className="text-white/80 text-lg mb-2">ابدأ المحادثة مع {selectedContact.username}</p>
-                <p className="text-purple-300/60 text-sm">أرسل رسالة للبدء في التواصل</p>
-              </div>
-            </motion.div>
-          ) : (
-            <AnimatePresence initial={false}>
-              {messages.map(message => (
-                <ChatMessage 
-                  key={message.id}
-                  message={message}
-                  isCurrentUser={message.sender_id === user?.id}
-                  contact={selectedContact}
-                  user={user}
-                />
-              ))}
-            </AnimatePresence>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
+      {/* Messages area with improved scrolling */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea 
+          className="h-full px-4 py-6 overflow-y-auto chat-background" 
+          onScroll={(e) => {
+            const target = e.currentTarget;
+            const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+            setIsAutoScroll(isScrolledNearBottom);
+          }}
+        >
+          <div className="space-y-2 min-h-full pb-2">
+            <div ref={messagesStartRef} />
+            {messages.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="h-full flex items-center justify-center py-20"
+              >
+                <div className="text-center bg-purple-900/20 backdrop-blur-sm p-8 rounded-xl border border-purple-500/20">
+                  <MessageSquare className="h-16 w-16 text-purple-500/40 mx-auto mb-4" />
+                  <p className="text-white/80 text-lg mb-2">ابدأ المحادثة مع {selectedContact.username}</p>
+                  <p className="text-purple-300/60 text-sm">أرسل رسالة للبدء في التواصل</p>
+                </div>
+              </motion.div>
+            ) : (
+              <AnimatePresence initial={false}>
+                {messages.map(message => (
+                  <ChatMessage 
+                    key={message.id}
+                    message={message}
+                    isCurrentUser={message.sender_id === user?.id}
+                    contact={selectedContact}
+                    user={user}
+                  />
+                ))}
+              </AnimatePresence>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      </div>
 
-      {/* إدخال الرسائل */}
+      {/* Message input */}
       <div className="p-3 border-t border-white/10 bg-purple-900/40 backdrop-blur-md">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <Input

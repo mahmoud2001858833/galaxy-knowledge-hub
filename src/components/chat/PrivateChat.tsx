@@ -207,7 +207,7 @@ const PrivateChat = ({ user }) => {
       {/* Vertical separator between contacts and chat */}
       {!isMobile && selectedContact && <Separator orientation="vertical" className="h-full bg-blue-500/20" />}
 
-      {/* Chat content */}
+      {/* Chat content with improved full-height layout */}
       {selectedContact ? (
         <div className="flex-1 h-full overflow-hidden">
           <ChatInterface 
