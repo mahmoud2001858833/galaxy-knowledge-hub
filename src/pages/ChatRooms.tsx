@@ -306,8 +306,8 @@ const ChatRooms = () => {
   };
 
   return (
-    <div className="fixed top-0 left-0 w-screen h-screen flex flex-col bg-gradient-to-br from-blue-950 to-purple-950 z-50 p-0 m-0 overflow-hidden">
-      <div className="flex justify-between items-center mb-2 px-4 py-2 bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-b border-blue-500/20">
+    <div className="fixed inset-0 w-full h-full flex flex-col bg-gradient-to-br from-blue-950 to-purple-950 z-50 overflow-hidden">
+      <div className="flex justify-between items-center px-4 py-3 bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-b border-blue-500/20">
         <Button 
           variant="outline" 
           onClick={handleRefreshManually}
@@ -323,7 +323,7 @@ const ChatRooms = () => {
       </div>
       
       {/* Main chat interface with full screen */}
-      <div className="flex-grow w-full overflow-hidden p-1">
+      <div className="flex-grow w-full overflow-hidden">
         <div className="h-full w-full overflow-hidden" id="chat-layout">
           <ChatLayout />
         </div>

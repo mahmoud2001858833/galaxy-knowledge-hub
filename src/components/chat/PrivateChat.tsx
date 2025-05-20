@@ -88,14 +88,19 @@ const PrivateChat = ({ user }) => {
     onNewMessage: () => {
       if (selectedContact) {
         fetchMessages();
+        
+        // تحسين التمرير التلقائي بعد استلام رسائل جديدة
+        if (isAutoScroll) {
+          setTimeout(scrollToBottom, 100);
+        }
       }
     }
   });
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
-    if (isAutoScroll) {
-      scrollToBottom();
+    if (isAutoScroll && messages.length > 0) {
+      setTimeout(scrollToBottom, 100);
     }
   }, [messages, isAutoScroll]);
 
@@ -113,15 +118,19 @@ const PrivateChat = ({ user }) => {
     return () => {
       document.removeEventListener('refresh-messages', handleRefreshMessages);
     };
-  }, [user, selectedContact]);
+  }, [user, selectedContact, fetchMessages, fetchContacts]);
 
   // Scroll functions
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
   
   const scrollToTop = () => {
-    messagesStartRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesStartRef.current) {
+      messagesStartRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   // Contact navigation functions
@@ -159,6 +168,18 @@ const PrivateChat = ({ user }) => {
     setShowContactsList(false);
   };
 
+  // تحسين إرسال الرسائل
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || isMessageSending) return;
+    
+    sendMessage();
+    setIsAutoScroll(true);
+    
+    // نضمن التمرير لأسفل بعد إرسال الرسالة
+    setTimeout(scrollToBottom, 100);
+  };
+
   if (showContactsList) {
     return (
       <ContactsGrid
@@ -171,7 +192,7 @@ const PrivateChat = ({ user }) => {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-indigo-950/30 to-purple-950/30">
       {/* Mobile contacts list */}
       {isMobile && (
         <MobileContactsList 
@@ -215,7 +236,7 @@ const PrivateChat = ({ user }) => {
             messages={messages}
             message={message}
             setMessage={setMessage}
-            handleSendMessage={sendMessage}
+            handleSendMessage={handleSendMessage}
             isMessageSending={isMessageSending}
             messagesEndRef={messagesEndRef}
             messagesStartRef={messagesStartRef}

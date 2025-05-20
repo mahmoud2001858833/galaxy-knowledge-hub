@@ -39,8 +39,8 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
     >
       {/* Sender avatar (only for received messages) */}
       {!isCurrentUser && (
-        <div className="flex-shrink-0">
-          <Avatar className="h-10 w-10 mr-2 mt-1 border-2 border-purple-700/40 shadow-lg">
+        <div className="flex-shrink-0 mr-2">
+          <Avatar className="h-10 w-10 border-2 border-purple-700/40 shadow-lg">
             {contact?.avatar_url ? (
               <AvatarImage src={contact.avatar_url} alt={contact?.username || 'مستخدم'} />
             ) : (
@@ -55,7 +55,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
       {/* Message content */}
       <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
         {!isCurrentUser && (
-          <span className="text-sm text-white/70 mb-1 mr-1 font-medium">
+          <span className="text-sm text-white/70 mb-1 font-medium">
             {contact?.username || 'مستخدم'}
           </span>
         )}
@@ -69,7 +69,7 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
           {message.message_text}
         </div>
         <div className="flex items-center mt-1 mx-1 gap-1">
-          <span className="text-xs text-white/50 dir-rtl">
+          <span className="text-xs text-white/50">
             {formatMessageTime(message.created_at)}
           </span>
           {isCurrentUser && (
@@ -83,8 +83,8 @@ const ChatMessage = ({ message, isCurrentUser, contact, user }: ChatMessageProps
       
       {/* Current user avatar (only for sent messages) */}
       {isCurrentUser && (
-        <div className="flex-shrink-0">
-          <Avatar className="h-10 w-10 ml-2 mt-1 border-2 border-teal-700/40 shadow-lg">
+        <div className="flex-shrink-0 ml-2">
+          <Avatar className="h-10 w-10 border-2 border-teal-700/40 shadow-lg">
             {user?.avatar_url ? (
               <AvatarImage src={user.avatar_url} alt={user?.username || 'أنت'} />
             ) : (

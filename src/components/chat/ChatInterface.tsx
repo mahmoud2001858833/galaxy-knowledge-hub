@@ -1,9 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MessageSquare, ArrowUp, ArrowDown, Send, Phone, Video, Info } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ChatMessage from './ChatMessage';
@@ -39,25 +38,33 @@ const ChatInterface = ({
   setIsAutoScroll,
   user
 }: ChatInterfaceProps) => {
+  
+  // المساعدة في التمرير التلقائي عند تحميل المكون
+  useEffect(() => {
+    if (isAutoScroll && messages.length > 0) {
+      scrollToBottom();
+    }
+  }, []);
+
   return (
-    <div className="flex-1 h-full w-full bg-gradient-to-br from-slate-950/90 to-purple-950/90 backdrop-blur-md flex flex-col overflow-hidden relative border border-purple-500/20 rounded-lg shadow-lg">
+    <div className="flex-1 h-full w-full bg-gradient-to-br from-slate-950 to-purple-950/90 flex flex-col overflow-hidden relative rounded-lg shadow-lg">
       {/* Chat header */}
       <div className="p-3 border-b border-white/10 bg-purple-900/40 flex items-center justify-between shadow-md backdrop-blur-md">
         <div className="flex items-center">
-          <Avatar className="h-10 w-10 mr-3 border-2 border-purple-500/30">
+          <div className="h-10 w-10 mr-3 rounded-full bg-gradient-to-r from-purple-600 to-purple-800 flex items-center justify-center border-2 border-purple-500/30">
             {selectedContact.avatar_url ? (
-              <AvatarImage src={selectedContact.avatar_url} />
+              <img src={selectedContact.avatar_url} alt={selectedContact.username} className="h-full w-full rounded-full object-cover" />
             ) : (
-              <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800">
+              <span className="text-white font-bold">
                 {selectedContact.username ? selectedContact.username[0].toUpperCase() : '?'}
-              </AvatarFallback>
+              </span>
             )}
             {selectedContact.isOnline && (
               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-teal-500 border-2 border-purple-900 animate-pulse" />
             )}
-          </Avatar>
+          </div>
           <div>
-            <h3 className="font-medium text-white">{selectedContact.username}</h3>
+            <h3 className="font-medium text-white text-lg">{selectedContact.username}</h3>
             <p className="text-xs text-teal-300">{selectedContact.isOnline ? 'متصل الآن' : 'غير متصل'}</p>
           </div>
         </div>
@@ -105,9 +112,9 @@ const ChatInterface = ({
       )}
 
       {/* Messages area with improved scrolling */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         <ScrollArea 
-          className="h-full px-4 py-6 overflow-y-auto chat-background" 
+          className="h-full px-4 py-6 overflow-y-auto bg-[linear-gradient(rgba(30,10,60,0.4),rgba(20,10,40,0.6))]" 
           onScroll={(e) => {
             const target = e.currentTarget;
             const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
@@ -165,9 +172,13 @@ const ChatInterface = ({
             type="submit"
             size="icon"
             disabled={!message.trim() || isMessageSending}
-            className="bg-teal-600 hover:bg-teal-700 rounded-full h-12 w-12 flex items-center justify-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 rounded-full h-12 w-12 flex items-center justify-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send className="h-5 w-5" />
+            {isMessageSending ? (
+              <div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
           </Button>
         </form>
       </div>
