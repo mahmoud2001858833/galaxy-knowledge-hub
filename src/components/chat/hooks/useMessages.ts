@@ -31,7 +31,7 @@ export const useMessages = (userId: string | null, selectedContact: any | null) 
     }
   };
 
-  // Send message - updated to accept messageText parameter
+  // Send message function
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim() || !userId || !selectedContact || isMessageSending) return;
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
@@ -88,7 +89,6 @@ const PrivateChat = ({ user }) => {
       if (selectedContact) {
         fetchMessages();
         
-        // تحسين التمرير التلقائي بعد استلام رسائل جديدة
         if (isAutoScroll) {
           setTimeout(scrollToBottom, 100);
         }
@@ -167,7 +167,7 @@ const PrivateChat = ({ user }) => {
     setShowContactsList(false);
   };
 
-  // تحسين إرسال الرسائل - Fixed to pass message text to sendMessage
+  // Fixed send message function
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isMessageSending) return;
@@ -175,7 +175,7 @@ const PrivateChat = ({ user }) => {
     sendMessage(message);
     setIsAutoScroll(true);
     
-    // نضمن التمرير لأسفل بعد إرسال الرسالة
+    // Ensure scroll to bottom after sending message
     setTimeout(scrollToBottom, 100);
   };
 

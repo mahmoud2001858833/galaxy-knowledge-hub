@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ChatLayout from '@/components/chat/ChatLayout';
-import { Bell, UserPlus, Users, RefreshCw, MessageSquare } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { UserPlus } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -15,9 +15,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { motion } from 'framer-motion';
 
 const ChatRooms = () => {
   const navigate = useNavigate();
@@ -28,9 +25,6 @@ const ChatRooms = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [forceRefresh, setForceRefresh] = useState(0);
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [showContactsList, setShowContactsList] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -48,9 +42,6 @@ const ChatRooms = () => {
         }
 
         setUserId(session.user.id);
-        
-        // Fetch contacts after user verification
-        fetchContacts(session.user.id);
       } catch (error) {
         console.error('خطأ في التحقق من المستخدم:', error);
         toast({
@@ -93,9 +84,6 @@ const ChatRooms = () => {
           // Broadcast general update event
           const globalEvent = new CustomEvent('global-chat-update');
           document.dispatchEvent(globalEvent);
-          
-          // Update UI
-          setForceRefresh(prev => prev + 1);
         }
       )
       .subscribe();
@@ -104,8 +92,6 @@ const ChatRooms = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setHasNewMessages(false);
-        // Update when returning to the page
-        setForceRefresh(prev => prev + 1);
         
         // Broadcast general update event
         const globalEvent = new CustomEvent('global-chat-update');
@@ -129,13 +115,18 @@ const ChatRooms = () => {
     };
   }, [userId]);
 
-  // Effect for forced refresh
+  // Effect for new message title
   useEffect(() => {
-    if (forceRefresh > 0) {
-      refreshMessages();
-      fetchContacts(userId);
+    if (hasNewMessages) {
+      document.title = "🔔 رسالة جديدة - منصة تعليمية";
+    } else {
+      document.title = "المحادثات - منصة تعليمية";
     }
-  }, [forceRefresh]);
+    
+    return () => {
+      document.title = "منصة تعليمية";
+    };
+  }, [hasNewMessages]);
   
   const playNotificationSound = () => {
     try {
@@ -152,33 +143,7 @@ const ChatRooms = () => {
     document.dispatchEvent(refreshEvent);
   };
   
-  const handleRefreshManually = () => {
-    setForceRefresh(prev => prev + 1);
-    
-    // Broadcast general update event
-    const globalEvent = new CustomEvent('global-chat-update');
-    document.dispatchEvent(globalEvent);
-    
-    toast({
-      title: "تم التحديث",
-      description: "تم تحديث المحادثات بنجاح",
-    });
-  };
-  
-  // Improve page title when there are new messages
-  useEffect(() => {
-    if (hasNewMessages) {
-      document.title = "🔔 رسالة جديدة - منصة تعليمية";
-    } else {
-      document.title = "المحادثات - منصة تعليمية";
-    }
-    
-    return () => {
-      document.title = "منصة تعليمية";
-    };
-  }, [hasNewMessages]);
-  
-  // Improve add contact functionality
+  // Add contact functionality
   const handleAddContact = async () => {
     if (!contactEmail.trim() || !userId) return;
     
@@ -239,11 +204,7 @@ const ChatRooms = () => {
       
       setContactEmail('');
       setIsAddContactOpen(false);
-      
-      // Update messages and contacts list
       refreshMessages();
-      fetchContacts(userId);
-      setForceRefresh(prev => prev + 1);
       
     } catch (error: any) {
       console.error('Error adding contact:', error);
@@ -252,82 +213,22 @@ const ChatRooms = () => {
       setIsAddingContact(false);
     }
   };
-  
-  // Fetch contacts
-  const fetchContacts = async (userId: string | null) => {
-    if (!userId) return;
-    
-    try {
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('contact_id, created_at')
-        .eq('user_id', userId);
-
-      if (contactsError) throw contactsError;
-
-      if (contactsData && contactsData.length > 0) {
-        const contactIds = contactsData.map(contact => contact.contact_id);
-        
-        // Fetch user profiles
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('users_profiles')
-          .select('id, username, avatar_url')
-          .in('id', contactIds);
-
-        if (profilesError) throw profilesError;
-        
-        if (profilesData) {
-          const enhancedProfiles = profilesData.map(profile => ({
-            ...profile,
-            isOnline: Math.random() > 0.5 // Simulate online status
-          }));
-          
-          // Sort contacts by name
-          setContacts(enhancedProfiles.sort((a, b) => a.username.localeCompare(b.username)));
-        }
-      } else {
-        setContacts([]);
-      }
-    } catch (error) {
-      console.error('Error fetching contacts:', error);
-    }
-  };
-
-  // Start conversation with a contact
-  const startConversation = (contact: any) => {
-    // Close contacts list
-    setShowContactsList(false);
-    
-    // Update screen to show the selected conversation
-    const customEvent = new CustomEvent('select-contact', {
-      detail: { contactId: contact.id }
-    });
-    document.dispatchEvent(customEvent);
-  };
 
   return (
-    <div className="fixed inset-0 w-full h-full flex flex-col bg-gradient-to-br from-blue-950 to-purple-950 z-50 overflow-hidden">
-      <div className="flex justify-between items-center px-4 py-3 bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-b border-blue-500/20">
-        <Button 
-          variant="outline" 
-          onClick={handleRefreshManually}
-          className="flex items-center gap-1 bg-blue-900/30 border-blue-500/30 hover:bg-blue-800/50"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>تحديث المحادثات</span>
-        </Button>
-        
-        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-          غرف المحادثة
-        </h1>
+    <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-950 to-purple-950 z-50 overflow-hidden">
+      {/* Full height chat interface */}
+      <div className="w-full h-full overflow-hidden">
+        <ChatLayout />
       </div>
       
-      {/* Main chat interface with full screen */}
-      <div className="flex-grow w-full overflow-hidden">
-        <div className="h-full w-full overflow-hidden" id="chat-layout">
-          <ChatLayout />
-        </div>
-      </div>
+      {/* Floating action button to add contact */}
+      <Button 
+        onClick={() => setIsAddContactOpen(true)}
+        className="fixed right-4 bottom-4 rounded-full w-14 h-14 shadow-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+        size="icon"
+      >
+        <UserPlus className="h-6 w-6" />
+      </Button>
       
       {/* Add contact dialog */}
       <Dialog open={isAddContactOpen} onOpenChange={setIsAddContactOpen}>

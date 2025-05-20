@@ -140,13 +140,13 @@ const ChatLayout = () => {
   };
 
   return (
-    <div className="w-full h-full min-h-[100%] flex flex-col overflow-hidden">
+    <div className="w-full h-full min-h-screen flex flex-col overflow-hidden">
       {showChatSelector ? (
         <motion.div 
           initial="hidden"
           animate="show"
           variants={containerVariants}
-          className="flex flex-col w-full h-full bg-gradient-to-br from-indigo-950/40 to-violet-950/40 backdrop-blur-lg p-6 rounded-lg border border-indigo-500/20"
+          className="flex flex-col w-full h-full flex-1 bg-gradient-to-br from-indigo-950/40 to-violet-950/40 backdrop-blur-lg p-6 rounded-lg border border-indigo-500/20"
         >
           <motion.h2 
             variants={itemVariants}
@@ -202,7 +202,7 @@ const ChatLayout = () => {
             <Button 
               variant="outline" 
               onClick={handleBackToSelector}
-              className="bg-indigo-900/30 border-indigo-500/30 hover:bg-indigo-800/50"
+              className="bg-indigo-900/30 border-indigo-500/30 hover:bg-indigo-800/50 transition-all duration-300"
             >
               <span>العودة للقائمة الرئيسية</span>
             </Button>
@@ -222,21 +222,14 @@ const ChatLayout = () => {
               className="flex-1 overflow-hidden w-full"
             >
               <TabsContent value="private" className="m-0 h-full w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-4 h-full w-full gap-4">
-                  <div className="lg:col-span-3 h-full">
-                    <PrivateChat user={user} />
-                  </div>
-                  <div className="hidden lg:block">
-                    <UserChatProfile user={user} profile={profile} />
-                  </div>
+                <div className="h-full w-full">
+                  <PrivateChat user={user} />
                 </div>
               </TabsContent>
               
               <TabsContent value="group" className="m-0 h-full w-full">
-                <div className="grid grid-cols-1 h-full w-full">
-                  <div className="h-full w-full">
-                    <GroupChat user={user} />
-                  </div>
+                <div className="h-full w-full">
+                  <GroupChat user={user} />
                 </div>
               </TabsContent>
             </motion.div>
