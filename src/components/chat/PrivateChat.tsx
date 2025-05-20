@@ -171,7 +171,7 @@ const PrivateChat = ({ user }) => {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full overflow-hidden">
       {/* Mobile contacts list */}
       {isMobile && (
         <MobileContactsList 
@@ -209,21 +209,23 @@ const PrivateChat = ({ user }) => {
 
       {/* Chat content */}
       {selectedContact ? (
-        <ChatInterface 
-          selectedContact={selectedContact}
-          messages={messages}
-          message={message}
-          setMessage={setMessage}
-          handleSendMessage={sendMessage}
-          isMessageSending={isMessageSending}
-          messagesEndRef={messagesEndRef}
-          messagesStartRef={messagesStartRef}
-          scrollToBottom={scrollToBottom}
-          scrollToTop={scrollToTop}
-          isAutoScroll={isAutoScroll}
-          setIsAutoScroll={setIsAutoScroll}
-          user={user}
-        />
+        <div className="flex-1 h-full overflow-hidden">
+          <ChatInterface 
+            selectedContact={selectedContact}
+            messages={messages}
+            message={message}
+            setMessage={setMessage}
+            handleSendMessage={sendMessage}
+            isMessageSending={isMessageSending}
+            messagesEndRef={messagesEndRef}
+            messagesStartRef={messagesStartRef}
+            scrollToBottom={scrollToBottom}
+            scrollToTop={scrollToTop}
+            isAutoScroll={isAutoScroll}
+            setIsAutoScroll={setIsAutoScroll}
+            user={user}
+          />
+        </div>
       ) : (
         <WelcomeScreen 
           setIsContactSearchOpen={setIsContactSearchOpen}

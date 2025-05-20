@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -9,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -131,7 +133,9 @@ const Navbar = () => {
 
               <NavigationMenuItem>
                 <Link to="/profile">
-                  
+                  <NavigationMenuLink className={cn("group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-white/10 data-[state=open]:bg-white/10 text-white", isActive('/profile') && "bg-white/10")}>
+                    الملف الشخصي
+                  </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
@@ -157,7 +161,10 @@ const Navbar = () => {
                 <DropdownMenuSeparator className="bg-white/10" />
                 
                 <Link to="/profile">
-                  
+                  <DropdownMenuItem className="flex items-center cursor-pointer text-white">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </DropdownMenuItem>
                 </Link>
                 
                 <DropdownMenuItem className="flex items-center cursor-pointer text-white" onClick={handleLogout}>

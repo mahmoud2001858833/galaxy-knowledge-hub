@@ -40,7 +40,7 @@ const ChatInterface = ({
   user
 }: ChatInterfaceProps) => {
   return (
-    <div className="flex-1 bg-gradient-to-br from-slate-950/90 to-purple-950/90 backdrop-blur-md flex flex-col overflow-hidden relative border border-purple-500/20 rounded-lg shadow-lg">
+    <div className="flex-1 h-full w-full bg-gradient-to-br from-slate-950/90 to-purple-950/90 backdrop-blur-md flex flex-col overflow-hidden relative border border-purple-500/20 rounded-lg shadow-lg">
       {/* رأس المحادثة */}
       <div className="p-3 border-b border-white/10 bg-purple-900/40 flex items-center justify-between shadow-md backdrop-blur-md">
         <div className="flex items-center">
@@ -106,7 +106,7 @@ const ChatInterface = ({
 
       {/* منطقة الرسائل */}
       <ScrollArea 
-        className="flex-1 px-4 py-6 overflow-y-auto chat-background" 
+        className="flex-1 px-4 py-6 overflow-y-auto chat-background max-h-[calc(100%-110px)]" 
         onScroll={(e) => {
           const target = e.currentTarget;
           const isScrolledNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
