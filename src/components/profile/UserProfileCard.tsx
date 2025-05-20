@@ -69,16 +69,6 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
     }
   }, [user]);
 
-  const handleProfileClick = () => {
-    if (!user) {
-      toast({
-        title: "غير مسجل الدخول",
-        description: "يرجى تسجيل الدخول لعرض الملف الشخصي",
-        variant: "destructive"
-      });
-    }
-  };
-
   if (!user) {
     return (
       <Card className="bg-white/5 backdrop-blur-sm border-white/10">
@@ -86,9 +76,9 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
           <div className="mb-4 mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
             <User className="h-8 w-8 text-blue-500" />
           </div>
-          <CardTitle className="text-white mb-3">غير مسجل الدخول</CardTitle>
+          <CardTitle className="text-white mb-3">زائر</CardTitle>
           <CardDescription className="text-white/70 mb-6">
-            يرجى تسجيل الدخول لعرض الملف الشخصي
+            يمكنك تسجيل الدخول للاستفادة من كافة مميزات المنصة
           </CardDescription>
           <Link to="/auth">
             <Button className="bg-blue-600 hover:bg-blue-700">تسجيل الدخول</Button>
@@ -167,7 +157,7 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
       </CardContent>
 
       <CardFooter className="border-t border-white/10 pt-3 pb-3 bg-white/5">
-        <Link to="/profile" className="w-full" onClick={handleProfileClick}>
+        <Link to="/profile" className="w-full">
           <Button className="w-full bg-blue-600 hover:bg-blue-700">
             الملف الشخصي
           </Button>

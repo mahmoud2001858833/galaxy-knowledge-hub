@@ -31,9 +31,18 @@ export const useMessages = (userId: string | null, selectedContact: any | null) 
     }
   };
 
-  // Send message function
+  // Send message function - now checks if user is logged in
   const sendMessage = async (messageText: string) => {
-    if (!messageText.trim() || !userId || !selectedContact || isMessageSending) return;
+    if (!messageText.trim() || !userId || !selectedContact || isMessageSending) {
+      if (!userId) {
+        toast({
+          title: "يجب تسجيل الدخول",
+          description: "يرجى تسجيل الدخول لإرسال الرسائل",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
 
     setIsMessageSending(true);
     try {
@@ -79,7 +88,7 @@ export const useMessages = (userId: string | null, selectedContact: any | null) 
 
   // Effect to fetch messages when selectedContact changes
   useEffect(() => {
-    if (selectedContact) {
+    if (selectedContact && userId) {
       fetchMessages();
     }
   }, [selectedContact, userId]);

@@ -28,7 +28,7 @@ import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
 
-// Authentication guard component
+// Authentication guard component - now doesn't force redirect
 const AuthGuard = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,16 +40,7 @@ const AuthGuard = ({ children }) => {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session && location.pathname !== '/auth') {
-          toast({
-            title: "يرجى تسجيل الدخول",
-            description: "يجب عليك تسجيل الدخول للوصول إلى هذا المحتوى",
-          });
-          navigate('/auth', { state: { from: location.pathname } });
-        } else {
-          setIsAuthenticated(!!session);
-        }
+        setIsAuthenticated(!!session);
       } catch (error) {
         console.error('Auth check error:', error);
       } finally {
@@ -61,16 +52,12 @@ const AuthGuard = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
-      
-      if (!session && location.pathname !== '/auth') {
-        navigate('/auth', { state: { from: location.pathname } });
-      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -80,16 +67,10 @@ const AuthGuard = ({ children }) => {
     );
   }
 
-  // Allow access to auth page even when not authenticated
-  if (location.pathname === '/auth') {
-    return children;
-  }
-
-  // For any other page, require authentication
-  return isAuthenticated ? children : null;
+  return children;
 };
 
-// Create routes with authentication guard
+// Create routes without forced authentication
 const router = createBrowserRouter([
   {
     path: '/',
