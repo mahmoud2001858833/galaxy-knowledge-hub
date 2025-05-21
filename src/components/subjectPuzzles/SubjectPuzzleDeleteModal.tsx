@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle } from 'lucide-react';
-import { useLanguage } from '@/i18n/LanguageContext';
 
 interface DeleteModalProps {
   isOpen: boolean;
@@ -16,7 +15,6 @@ interface DeleteModalProps {
 
 const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: DeleteModalProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const { t, dir } = useLanguage();
   
   const handleDelete = async () => {
     if (!puzzleId) return;
@@ -40,12 +38,12 @@ const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: Delet
         
       if (solvedError) console.error('Error deleting solved puzzles records:', solvedError);
       
-      toast.success(t.admin.deleted);
+      toast.success("تم الحذف بنجاح");
       onDelete();
       onClose();
     } catch (error: any) {
       console.error('Error deleting puzzle:', error);
-      toast.error(`${t.admin.error}: ${error.message}`);
+      toast.error(`خطأ: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
@@ -53,16 +51,16 @@ const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: Delet
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border-white/20 text-white" dir={dir}>
+      <DialogContent className="bg-gray-900 border-white/20 text-white" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white text-center">
-            {t.puzzles.confirmDelete}
+            حذف اللغز
           </DialogTitle>
         </DialogHeader>
         
         <div className="py-4 flex items-center gap-3 text-center">
           <AlertTriangle className="text-yellow-500 h-6 w-6" />
-          <p>{t.puzzles.confirmDelete}</p>
+          <p>هل أنت متأكد من رغبتك في حذف هذا اللغز؟ هذه العملية لا يمكن التراجع عنها.</p>
         </div>
         
         <DialogFooter className="flex flex-row justify-between sm:justify-between gap-2">
@@ -71,7 +69,7 @@ const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: Delet
             onClick={onClose}
             className="flex-1"
           >
-            {t.common.cancel}
+            إلغاء
           </Button>
           <Button
             variant="destructive"
@@ -79,7 +77,7 @@ const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: Delet
             disabled={isDeleting}
             className="flex-1"
           >
-            {isDeleting ? t.common.loading : t.puzzles.deletePuzzle}
+            {isDeleting ? "جاري الحذف..." : "حذف اللغز"}
           </Button>
         </DialogFooter>
       </DialogContent>

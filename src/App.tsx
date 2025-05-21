@@ -27,7 +27,6 @@ import MathPuzzles from './pages/MathPuzzles';
 import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
-import { LanguageProvider } from './i18n/LanguageContext';
 
 // Authentication guard component - now doesn't force redirect
 const AuthGuard = ({ children }) => {
@@ -71,76 +70,76 @@ const AuthGuard = ({ children }) => {
   return children;
 };
 
-// Create the router with LanguageProvider inside each route element to ensure it wraps all components
+// Create routes without forced authentication
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <AuthGuard><LanguageProvider><Index /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><Index /></AuthGuard>,
     errorElement: <NotFound />,
   },
   {
     path: '/auth',
-    element: <LanguageProvider><Auth /></LanguageProvider>,
+    element: <Auth />,
   },
   {
     path: '/physics',
-    element: <AuthGuard><LanguageProvider><Physics /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><Physics /></AuthGuard>,
   },
   {
     path: '/chemistry',
-    element: <AuthGuard><LanguageProvider><Chemistry /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><Chemistry /></AuthGuard>,
   },
   {
     path: '/mathematics',
-    element: <AuthGuard><LanguageProvider><Mathematics /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><Mathematics /></AuthGuard>,
   },
   {
     path: '/biology',
-    element: <AuthGuard><LanguageProvider><Biology /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><Biology /></AuthGuard>,
   },
   {
     path: '/subject-puzzles',
-    element: <AuthGuard><LanguageProvider><SubjectPuzzles /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><SubjectPuzzles /></AuthGuard>,
   },
   {
     path: '/puzzle/:puzzleId',
-    element: <AuthGuard><LanguageProvider><PuzzleDetails /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><PuzzleDetails /></AuthGuard>,
   },
   {
     path: '/visual-library',
-    element: <AuthGuard><LanguageProvider><VisualLibrary /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><VisualLibrary /></AuthGuard>,
   },
   {
     path: '/upload-image',
-    element: <AuthGuard><LanguageProvider><UploadImagePage /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><UploadImagePage /></AuthGuard>,
   },
   {
     path: '/scientific-journal',
-    element: <AuthGuard><LanguageProvider><ScientificJournal /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><ScientificJournal /></AuthGuard>,
   },
   {
     path: '/upload-journal',
-    element: <AuthGuard><LanguageProvider><UploadJournalPage /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><UploadJournalPage /></AuthGuard>,
   },
   {
     path: '/study-organization',
-    element: <AuthGuard><LanguageProvider><StudyOrganization /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><StudyOrganization /></AuthGuard>,
   },
   {
     path: '/chat-rooms',
-    element: <AuthGuard><LanguageProvider><ChatRooms /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><ChatRooms /></AuthGuard>,
   },
   {
     path: '/math-puzzles',
-    element: <AuthGuard><LanguageProvider><MathPuzzles /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><MathPuzzles /></AuthGuard>,
   },
   {
     path: '/profile',
-    element: <AuthGuard><LanguageProvider><UserProfile /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><UserProfile /></AuthGuard>,
   },
   {
     path: '/contact',
-    element: <AuthGuard><LanguageProvider><Contact /></LanguageProvider></AuthGuard>,
+    element: <AuthGuard><Contact /></AuthGuard>,
   }
 ]);
 
