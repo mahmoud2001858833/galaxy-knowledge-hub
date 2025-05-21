@@ -27,6 +27,7 @@ import MathPuzzles from './pages/MathPuzzles';
 import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
+import { LanguageProvider } from './i18n/LanguageContext';
 
 // Authentication guard component - now doesn't force redirect
 const AuthGuard = ({ children }) => {
@@ -144,7 +145,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <LanguageProvider>
+      <RouterProvider router={router} />
+    </LanguageProvider>
+  );
 }
 
 export default App;

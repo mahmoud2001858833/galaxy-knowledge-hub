@@ -6,10 +6,13 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EducationalResources from '@/components/EducationalResources';
 import EducationalPlatforms from '@/components/EducationalPlatforms';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const Index = () => {
+  const { t, dir } = useLanguage();
+  
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
+    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950`} dir={dir}>
       <StarField />
       <Navbar />
       
@@ -50,7 +53,7 @@ const Index = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-60"></div>
               <img 
                 src="https://i.postimg.cc/mr48sKY6/image.png" 
-                alt="فلك المعرفة" 
+                alt={t.home.title} 
                 className="w-36 h-36 md:w-40 md:h-40 object-contain object-center filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" 
               />
             </div>
@@ -62,7 +65,7 @@ const Index = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.7 }}
           >
-            فلك المعرفة
+            {t.home.title}
           </motion.h1>
           
           <motion.p 
@@ -71,7 +74,7 @@ const Index = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.7, duration: 0.7 }}
           >
-            منصة تفاعلية للتعلم الذكي في مجالات العلوم الأساسية
+            {t.home.subtitle}
           </motion.p>
         </motion.div>
         
