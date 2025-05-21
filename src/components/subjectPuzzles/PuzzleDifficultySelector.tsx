@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Zap, Brain } from 'lucide-react';
 import PuzzleDifficultyLevel from './PuzzleDifficultyLevel';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface PuzzleDifficultySelectorProps {
   subject: string;
@@ -15,6 +16,8 @@ const PuzzleDifficultySelector: React.FC<PuzzleDifficultySelectorProps> = ({
   selectedDifficulty, 
   onSelectDifficulty 
 }) => {
+  const { t, dir } = useLanguage();
+  
   const difficulties = [
     { key: 'easy', name: 'سهل', icon: <Trophy className="h-5 w-5" /> },
     { key: 'medium', name: 'متوسط', icon: <Zap className="h-5 w-5" /> },
@@ -27,10 +30,10 @@ const PuzzleDifficultySelector: React.FC<PuzzleDifficultySelectorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
       className="w-full"
-      dir="rtl"
+      dir={dir}
     >
       <h3 className="text-xl font-bold text-white text-right mb-4">
-        المستوى
+        {t.puzzles.difficulty}
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
