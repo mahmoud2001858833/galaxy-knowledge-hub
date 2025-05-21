@@ -41,12 +41,17 @@ const SubjectPuzzleDeleteModal = ({ isOpen, onClose, puzzleId, onDelete }: Delet
         
       if (solvedError) console.error('Error deleting solved puzzles records:', solvedError);
       
-      toast.success(t.admin.deleted);
+      toast({
+        title: t.admin.deleted
+      });
       onDelete();
       onClose();
     } catch (error: any) {
       console.error('Error deleting puzzle:', error);
-      toast.error(`${t.admin.error}: ${error.message}`);
+      toast({
+        title: `${t.admin.error}: ${error.message}`,
+        variant: 'destructive'
+      });
     } finally {
       setIsDeleting(false);
     }
