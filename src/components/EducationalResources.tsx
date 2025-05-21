@@ -1,106 +1,93 @@
 
 import React from 'react';
-import { Book, FileText, Image, MessageSquare } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent } from "@/components/ui/card";
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { BookOpen, BookIcon, CalendarDays } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
+  const navigate = useNavigate();
+  const { t, dir } = useLanguage();
+  
+  const resources = [
+    {
+      title: t.resources.visualLearning,
+      icon: <BookOpen className="h-6 w-6 text-blue-400" />,
+      description: t.resources.explorationTools,
+      link: '/visual-library'
+    },
+    {
+      title: t.resources.scientificJournals,
+      icon: <BookIcon className="h-6 w-6 text-blue-400" />,
+      description: t.resources.explorationTools,
+      link: '/scientific-journal'
+    },
+    {
+      title: t.resources.studyOrganizer,
+      icon: <CalendarDays className="h-6 w-6 text-blue-400" />,
+      description: t.resources.explorationTools,
+      link: '/study-organization'
+    }
+  ];
+
   return (
-    <motion.div 
-      className="w-full py-8"
+    <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.7 }}
+      transition={{ delay: 1.5, duration: 0.7 }}
+      className="py-12 w-full max-w-6xl mx-auto"
+      dir={dir}
     >
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-blue-500">
-          مصادر تعليمية
+      <div className={`mb-10 text-center`}>
+        <h2 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-blue-500">
+          {t.resources.title}
         </h2>
-        
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
-          {/* الألغاز التعليمية */}
-          <Link to="/subject-puzzles">
-            <Card className="h-28 md:h-32 overflow-hidden relative hover:border-yellow-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-yellow-500/20 to-amber-700/30 border-yellow-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
-              </div>
-              <CardContent className="flex items-center justify-center h-full text-center p-3 relative z-10">
-                <div className="flex flex-col items-center">
-                  <FileText className="w-6 h-6 text-yellow-400 mb-1" />
-                  <h3 className="text-sm md:text-base font-bold text-white mb-0.5">الألغاز التعليمية</h3>
-                  <p className="text-white/80 text-xs hidden md:block">حل الألغاز وتحدي نفسك</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-          
-          {/* Visual Library */}
-          <Link to="/visual-library">
-            <Card className="h-28 md:h-32 overflow-hidden relative hover:border-pink-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-pink-500/20 to-pink-700/30 border-pink-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
-              </div>
-              <CardContent className="flex items-center justify-center h-full text-center p-3 relative z-10">
-                <div className="flex flex-col items-center">
-                  <Image className="w-6 h-6 text-pink-400 mb-1" />
-                  <h3 className="text-sm md:text-base font-bold text-white mb-0.5">المكتبة المرئية</h3>
-                  <p className="text-white/80 text-xs hidden md:block">استكشف الصور التعليمية</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-          
-          {/* Scientific Journal */}
-          <Link to="/scientific-journal">
-            <Card className="h-28 md:h-32 overflow-hidden relative hover:border-indigo-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-indigo-500/20 to-indigo-700/30 border-indigo-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
-              </div>
-              <CardContent className="flex items-center justify-center h-full text-center p-3 relative z-10">
-                <div className="flex flex-col items-center">
-                  <FileText className="w-6 h-6 text-indigo-400 mb-1" />
-                  <h3 className="text-sm md:text-base font-bold text-white mb-0.5">المجلة العلمية</h3>
-                  <p className="text-white/80 text-xs hidden md:block">اطلع على أحدث المقالات</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-          
-          {/* Study Organization */}
-          <Link to="/study-organization">
-            <Card className="h-28 md:h-32 overflow-hidden relative hover:border-emerald-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-emerald-500/20 to-emerald-700/30 border-emerald-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
-              </div>
-              <CardContent className="flex items-center justify-center h-full text-center p-3 relative z-10">
-                <div className="flex flex-col items-center">
-                  <Book className="w-6 h-6 text-emerald-400 mb-1" />
-                  <h3 className="text-sm md:text-base font-bold text-white mb-0.5">تنظيم الدراسة</h3>
-                  <p className="text-white/80 text-xs hidden md:block">أدوات ونصائح لتنظيم وقتك</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-          
-          {/* Chat Rooms */}
-          <Link to="/chat-rooms">
-            <Card className="h-28 md:h-32 overflow-hidden relative hover:border-sky-400/50 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-sky-500/20 to-sky-700/30 border-sky-500/20 rounded-xl">
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/60" />
-              </div>
-              <CardContent className="flex items-center justify-center h-full text-center p-3 relative z-10">
-                <div className="flex flex-col items-center">
-                  <MessageSquare className="w-6 h-6 text-sky-400 mb-1" />
-                  <h3 className="text-sm md:text-base font-bold text-white mb-0.5">غرف المحادثة</h3>
-                  <p className="text-white/80 text-xs hidden md:block">تواصل مع زملائك</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+        <div className="w-16 h-1 bg-blue-500/50 mx-auto mt-4"></div>
       </div>
-    </motion.div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {resources.map((resource, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.6 + index * 0.1, duration: 0.5 }}
+            onClick={() => navigate(resource.link)}
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-b from-blue-900/30 to-blue-950/60 p-5 backdrop-blur-sm cursor-pointer border border-blue-500/20 hover:border-blue-500/40 transition-all"
+          >
+            {/* Background Glow Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 via-blue-400/5 to-blue-600/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            <div className={`flex ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'} items-center mb-4`}>
+              <div className="p-2 rounded-full bg-blue-900/50 flex-shrink-0">
+                {resource.icon}
+              </div>
+              <h3 className={`${dir === 'rtl' ? 'mr-3' : 'ml-3'} text-xl font-semibold text-white group-hover:text-blue-300 transition-colors`}>
+                {resource.title}
+              </h3>
+            </div>
+            
+            <p className="text-white/70 mb-4 text-sm">
+              {resource.description}
+            </p>
+            
+            <div className={`flex ${dir === 'rtl' ? 'justify-start' : 'justify-end'}`}>
+              <span className="text-blue-400 text-sm group-hover:text-blue-300 transition-colors flex items-center">
+                {t.resources.viewMore} 
+                {dir === 'rtl' ? 
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 mr-1`} viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg> : 
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ml-1`} viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                }
+              </span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.section>
   );
 };
 

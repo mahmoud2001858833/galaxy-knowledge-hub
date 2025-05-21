@@ -40,7 +40,21 @@ export const en = {
     scientists: "Scientists",
     assistant: "AI Assistant",
     calculations: "Calculations",
-    visualizer: "Visualizer"
+    visualizer: "Visualizer",
+    // New subject-related translations
+    subjectTitle: {
+      physics: "Physics",
+      chemistry: "Chemistry",
+      biology: "Biology",
+      mathematics: "Mathematics"
+    },
+    // Difficulty levels
+    difficulty: {
+      easy: "Easy",
+      medium: "Medium",
+      hard: "Hard",
+      all: "All"
+    }
   },
   // Chats
   chat: {
@@ -49,6 +63,63 @@ export const en = {
     loginToChat: "Please log in to send messages",
     search: "Search",
     newMessage: "New message"
+  },
+  // Puzzles
+  puzzles: {
+    title: "Educational Puzzles",
+    subtitle: "Challenge yourself with various scientific puzzles across different subjects and difficulty levels",
+    addPuzzle: "Add New Puzzle",
+    managePuzzles: "Manage Puzzles",
+    puzzleTitle: "Puzzle Title",
+    question: "Question",
+    options: "Options",
+    correctAnswer: "Correct Answer",
+    difficulty: "Difficulty",
+    points: "Points",
+    imageUrl: "Image URL (optional)",
+    submitPuzzle: "Submit Puzzle",
+    editPuzzle: "Edit Puzzle",
+    deletePuzzle: "Delete Puzzle",
+    confirmDelete: "Are you sure you want to delete this puzzle? This action cannot be undone.",
+    category: "Category",
+    checkAnswer: "Check Answer",
+    selectAnswer: "Select an answer",
+    correctAnswerMessage: "Correct answer! Well done.",
+    incorrectAnswerMessage: "Incorrect answer. Try again.",
+    backToPuzzles: "Back to puzzles",
+    noPuzzlesFound: "No puzzles found for this level",
+    loginToSave: "Sign in to save your progress!",
+    hintLabel: "Hint",
+    solvedPuzzle: "Solved",
+    pointsEarned: "points earned",
+    retryPenalty: "Penalty for retrying",
+    solvedBefore: "You've already solved this puzzle",
+    loading: "Loading puzzles...",
+    adminPanel: "Admin Panel",
+    enterPassword: "Enter admin password",
+    confirm: "Confirm",
+    cancel: "Cancel",
+    addOption: "Add Option",
+    chooseOption: "Choose Option"
+  },
+  // Admin
+  admin: {
+    panel: "Admin Panel",
+    password: "Password",
+    enterPassword: "Enter admin password",
+    login: "Login",
+    wrongPassword: "Incorrect password",
+    successLogin: "Successfully logged in as admin",
+    addNew: "Add New",
+    manage: "Manage",
+    success: "Success!",
+    newAdded: "New item added successfully",
+    updated: "Item updated successfully",
+    deleted: "Item deleted successfully",
+    error: "Error",
+    fillRequiredFields: "Please fill all required fields",
+    requiredOption: "At least 2 options are required",
+    correctAnswerRequired: "Correct answer must be one of the options"
   },
   // Common
   common: {
@@ -61,6 +132,31 @@ export const en = {
     delete: "Delete",
     create: "Create",
     view: "View",
-    welcome: "Welcome to Knowledge Galaxy"
+    welcome: "Welcome to Knowledge Galaxy",
+    add: "Add",
+    update: "Update",
+    submit: "Submit",
+    confirm: "Confirm"
+  },
+  // Educational resources
+  resources: {
+    title: "Educational Resources",
+    explorationTools: "Learning Exploration Tools",
+    visualLearning: "Visual Learning Library",
+    scientificJournals: "Scientific Journals",
+    studyOrganizer: "Study Organizer",
+    viewMore: "View More",
+    experiments: "Interactive Experiments",
+    calculators: "Scientific Calculators",
+    visualizer: "3D Models & Visualizations"
+  },
+  // Educational platforms
+  platforms: {
+    title: "Educational Platforms",
+    physics: "Physics Hub",
+    chemistry: "Chemistry Lab",
+    biology: "Biology World",
+    mathematics: "Mathematics Arena",
+    explore: "Explore"
   }
 };

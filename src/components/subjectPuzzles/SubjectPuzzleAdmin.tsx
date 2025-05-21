@@ -8,6 +8,7 @@ import SubjectPuzzleForm from './SubjectPuzzleForm';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface SubjectPuzzleAdminProps {
   subject: string;
@@ -16,6 +17,7 @@ interface SubjectPuzzleAdminProps {
 }
 
 const SubjectPuzzleAdmin = ({ subject, onSuccess, onPuzzleAdded }: SubjectPuzzleAdminProps) => {
+  const { t, dir } = useLanguage();
   const [activeTab, setActiveTab] = useState<string>("add");
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   
@@ -34,7 +36,7 @@ const SubjectPuzzleAdmin = ({ subject, onSuccess, onPuzzleAdded }: SubjectPuzzle
       await onPuzzleAdded();
     }
     
-    toast.success("تم إضافة اللغز بنجاح!");
+    toast.success(t.admin.newAdded);
   };
 
   // Listen for Supabase realtime events
@@ -73,12 +75,15 @@ const SubjectPuzzleAdmin = ({ subject, onSuccess, onPuzzleAdded }: SubjectPuzzle
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      dir={dir}
     >
       <div className="flex items-center justify-between">
         <div className={`bg-subject-${subject}-primary/30 p-2 rounded-full`}>
           <PlusCircle className={`text-subject-${subject}-primary h-6 w-6`} />
         </div>
-        <h3 className="text-2xl font-bold text-white text-right">لوحة إدارة الألغاز</h3>
+        <h3 className={`text-2xl font-bold text-white ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+          {t.admin.panel}
+        </h3>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -87,13 +92,13 @@ const SubjectPuzzleAdmin = ({ subject, onSuccess, onPuzzleAdded }: SubjectPuzzle
             value="add" 
             className={`text-white data-[state=active]:bg-subject-${subject}-primary`}
           >
-            إضافة لغز جديد
+            {t.puzzles.addPuzzle}
           </TabsTrigger>
           <TabsTrigger 
             value="manage" 
             className={`text-white data-[state=active]:bg-subject-${subject}-primary`}
           >
-            إدارة الألغاز
+            {t.puzzles.managePuzzles}
           </TabsTrigger>
         </TabsList>
         

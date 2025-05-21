@@ -4,8 +4,10 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import SubjectPuzzlesComponent from '@/components/subjectPuzzles/SubjectPuzzlesComponent';
 import SubjectPuzzleAdmin from '@/components/subjectPuzzles/SubjectPuzzleAdmin';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const SubjectPuzzles = () => {
+  const { t, dir } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -98,7 +100,7 @@ const SubjectPuzzles = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-[#0c0a20] via-[#1c1248] to-[#0c0a20]">
+    <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-[#0c0a20] via-[#1c1248] to-[#0c0a20]" dir={dir}>
       {/* Animated background */}
       <div className="fixed inset-0 overflow-hidden z-0">
         {renderAnimatedElements()}
@@ -132,11 +134,11 @@ const SubjectPuzzles = () => {
             </motion.div>
             
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white">
-              الألغاز التعليمية
+              {t.puzzles.title}
             </h1>
             
             <p className="text-lg text-white/80 max-w-xl mb-4">
-              تحدى نفسك بمجموعة متنوعة من الألغاز العلمية في مختلف المواد وبمستويات صعوبة متدرجة
+              {t.puzzles.subtitle}
             </p>
             
             <div className="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>

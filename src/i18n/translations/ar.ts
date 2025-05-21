@@ -40,7 +40,21 @@ export const ar = {
     scientists: "العلماء",
     assistant: "المساعد الذكي",
     calculations: "الحسابات",
-    visualizer: "المخططات"
+    visualizer: "المخططات",
+    // ترجمات جديدة متعلقة بالمواد
+    subjectTitle: {
+      physics: "الفيزياء",
+      chemistry: "الكيمياء",
+      biology: "الأحياء",
+      mathematics: "الرياضيات"
+    },
+    // مستويات الصعوبة
+    difficulty: {
+      easy: "سهل",
+      medium: "متوسط",
+      hard: "صعب",
+      all: "الكل"
+    }
   },
   // المحادثات
   chat: {
@@ -49,6 +63,63 @@ export const ar = {
     loginToChat: "يرجى تسجيل الدخول لإرسال الرسائل",
     search: "بحث",
     newMessage: "رسالة جديدة"
+  },
+  // الألغاز
+  puzzles: {
+    title: "الألغاز التعليمية",
+    subtitle: "تحدى نفسك بمجموعة متنوعة من الألغاز العلمية في مختلف المواد وبمستويات صعوبة متدرجة",
+    addPuzzle: "إضافة لغز جديد",
+    managePuzzles: "إدارة الألغاز",
+    puzzleTitle: "عنوان اللغز",
+    question: "السؤال",
+    options: "الخيارات",
+    correctAnswer: "الإجابة الصحيحة",
+    difficulty: "المستوى",
+    points: "النقاط",
+    imageUrl: "رابط الصورة (اختياري)",
+    submitPuzzle: "إضافة اللغز",
+    editPuzzle: "تعديل اللغز",
+    deletePuzzle: "حذف اللغز",
+    confirmDelete: "هل أنت متأكد من رغبتك في حذف هذا اللغز؟ هذه العملية لا يمكن التراجع عنها.",
+    category: "التصنيف",
+    checkAnswer: "تحقق من الإجابة",
+    selectAnswer: "اختر إجابة",
+    correctAnswerMessage: "إجابة صحيحة! أحسنت.",
+    incorrectAnswerMessage: "إجابة خاطئة. حاول مرة أخرى.",
+    backToPuzzles: "العودة إلى الألغاز",
+    noPuzzlesFound: "لا توجد ألغاز متاحة بهذا المستوى حالياً",
+    loginToSave: "قم بتسجيل الدخول للاحتفاظ بتقدمك والنقاط التي تحصل عليها!",
+    hintLabel: "تلميح",
+    solvedPuzzle: "تم الحل",
+    pointsEarned: "نقطة",
+    retryPenalty: "خصم للمحاولة الخاطئة",
+    solvedBefore: "لقد قمت بحل هذا اللغز من قبل",
+    loading: "جاري تحميل الألغاز...",
+    adminPanel: "لوحة المشرف",
+    enterPassword: "أدخل كلمة مرور المشرف",
+    confirm: "تأكيد",
+    cancel: "إلغاء",
+    addOption: "إضافة خيار",
+    chooseOption: "اختر خياراً"
+  },
+  // المشرف
+  admin: {
+    panel: "لوحة المشرف",
+    password: "كلمة المرور",
+    enterPassword: "أدخل كلمة مرور المشرف",
+    login: "تسجيل الدخول",
+    wrongPassword: "كلمة المرور غير صحيحة",
+    successLogin: "تم تسجيل الدخول بنجاح كمشرف",
+    addNew: "إضافة جديد",
+    manage: "إدارة",
+    success: "تم بنجاح!",
+    newAdded: "تمت إضافة العنصر الجديد بنجاح",
+    updated: "تم تحديث العنصر بنجاح",
+    deleted: "تم حذف العنصر بنجاح",
+    error: "خطأ",
+    fillRequiredFields: "يرجى ملء جميع الحقول المطلوبة",
+    requiredOption: "يرجى إضافة خيارين على الأقل",
+    correctAnswerRequired: "الإجابة الصحيحة يجب أن تكون ضمن الخيارات"
   },
   // عام
   common: {
@@ -61,6 +132,31 @@ export const ar = {
     delete: "حذف",
     create: "إنشاء",
     view: "عرض",
-    welcome: "مرحباً بك في فلك المعرفة"
+    welcome: "مرحباً بك في فلك المعرفة",
+    add: "إضافة",
+    update: "تحديث",
+    submit: "إرسال",
+    confirm: "تأكيد"
+  },
+  // المصادر التعليمية
+  resources: {
+    title: "المصادر التعليمية",
+    explorationTools: "أدوات اكتشاف التعلم",
+    visualLearning: "مكتبة التعلم المرئي",
+    scientificJournals: "المجلات العلمية",
+    studyOrganizer: "منظم الدراسة",
+    viewMore: "عرض المزيد",
+    experiments: "تجارب تفاعلية",
+    calculators: "حاسبات علمية",
+    visualizer: "نماذج ثلاثية الأبعاد وتصورات"
+  },
+  // منصات تعليمية
+  platforms: {
+    title: "المنصات التعليمية",
+    physics: "مركز الفيزياء",
+    chemistry: "مختبر الكيمياء",
+    biology: "عالم الأحياء",
+    mathematics: "ساحة الرياضيات",
+    explore: "استكشاف"
   }
 };
