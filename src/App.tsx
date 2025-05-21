@@ -71,85 +71,81 @@ const AuthGuard = ({ children }) => {
   return children;
 };
 
-// Create routes without forced authentication
+// Create the router with LanguageProvider inside each route element to ensure it wraps all components
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <AuthGuard><Index /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><Index /></LanguageProvider></AuthGuard>,
     errorElement: <NotFound />,
   },
   {
     path: '/auth',
-    element: <Auth />,
+    element: <LanguageProvider><Auth /></LanguageProvider>,
   },
   {
     path: '/physics',
-    element: <AuthGuard><Physics /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><Physics /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/chemistry',
-    element: <AuthGuard><Chemistry /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><Chemistry /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/mathematics',
-    element: <AuthGuard><Mathematics /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><Mathematics /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/biology',
-    element: <AuthGuard><Biology /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><Biology /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/subject-puzzles',
-    element: <AuthGuard><SubjectPuzzles /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><SubjectPuzzles /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/puzzle/:puzzleId',
-    element: <AuthGuard><PuzzleDetails /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><PuzzleDetails /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/visual-library',
-    element: <AuthGuard><VisualLibrary /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><VisualLibrary /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/upload-image',
-    element: <AuthGuard><UploadImagePage /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><UploadImagePage /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/scientific-journal',
-    element: <AuthGuard><ScientificJournal /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><ScientificJournal /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/upload-journal',
-    element: <AuthGuard><UploadJournalPage /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><UploadJournalPage /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/study-organization',
-    element: <AuthGuard><StudyOrganization /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><StudyOrganization /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/chat-rooms',
-    element: <AuthGuard><ChatRooms /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><ChatRooms /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/math-puzzles',
-    element: <AuthGuard><MathPuzzles /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><MathPuzzles /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/profile',
-    element: <AuthGuard><UserProfile /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><UserProfile /></LanguageProvider></AuthGuard>,
   },
   {
     path: '/contact',
-    element: <AuthGuard><Contact /></AuthGuard>,
+    element: <AuthGuard><LanguageProvider><Contact /></LanguageProvider></AuthGuard>,
   }
 ]);
 
 function App() {
-  return (
-    <LanguageProvider>
-      <RouterProvider router={router} />
-    </LanguageProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
