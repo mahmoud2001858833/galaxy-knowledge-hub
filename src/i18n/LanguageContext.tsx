@@ -38,11 +38,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLanguage(prevLang => (prevLang === 'ar' ? 'en' : 'ar'));
   };
 
-  const value = {
+  const value: LanguageContextType = {
     language,
     toggleLanguage,
     t: translations[language],
-    dir: language === 'ar' ? 'rtl' : 'ltr'
+    dir: language === 'ar' ? 'rtl' : 'ltr' as 'rtl' | 'ltr'
   };
 
   return (
