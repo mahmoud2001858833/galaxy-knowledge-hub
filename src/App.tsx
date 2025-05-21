@@ -140,6 +140,10 @@ const router = createBrowserRouter([
   {
     path: '/contact',
     element: <AuthGuard><Contact /></AuthGuard>,
+  },
+  {
+    path: '*',
+    element: <NotFound />,
   }
 ]);
 
