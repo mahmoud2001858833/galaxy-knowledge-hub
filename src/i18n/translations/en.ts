@@ -1,4 +1,3 @@
-
 export const en = {
   // Navbar
   nav: {
@@ -148,7 +147,9 @@ export const en = {
     viewMore: "View More",
     experiments: "Interactive Experiments",
     calculators: "Scientific Calculators",
-    visualizer: "3D Models & Visualizations"
+    visualizer: "3D Models & Visualizations",
+    educationalPuzzles: "Educational Puzzles",
+    chatRooms: "Chat Rooms"
   },
   // Educational platforms
   platforms: {

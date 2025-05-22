@@ -1,4 +1,3 @@
-
 export const ar = {
   // النافبار
   nav: {
@@ -148,7 +147,9 @@ export const ar = {
     viewMore: "عرض المزيد",
     experiments: "تجارب تفاعلية",
     calculators: "حاسبات علمية",
-    visualizer: "نماذج ثلاثية الأبعاد وتصورات"
+    visualizer: "نماذج ثلاثية الأبعاد وتصورات",
+    educationalPuzzles: "الألغاز التعليمية",
+    chatRooms: "غرف المحادثة"
   },
   // منصات تعليمية
   platforms: {
