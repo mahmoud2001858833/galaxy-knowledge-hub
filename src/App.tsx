@@ -28,7 +28,7 @@ import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
 
-// Authentication guard component - now doesn't force redirect
+// Authentication guard component that redirects to login if not authenticated
 const AuthGuard = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,6 +41,16 @@ const AuthGuard = ({ children }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setIsAuthenticated(!!session);
+        if (!session) {
+          // If not authenticated, show a toast and redirect to login
+          toast({
+            title: "تسجيل دخول مطلوب",
+            description: "يرجى تسجيل الدخول للوصول إلى هذه الصفحة",
+            variant: "destructive",
+          });
+          // Redirect to auth page with return URL
+          navigate(`/auth?returnUrl=${encodeURIComponent(location.pathname)}`, { replace: true });
+        }
       } catch (error) {
         console.error('Auth check error:', error);
       } finally {
@@ -57,7 +67,7 @@ const AuthGuard = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate, location.pathname, toast]);
 
   if (isLoading) {
     return (
@@ -67,19 +77,24 @@ const AuthGuard = ({ children }) => {
     );
   }
 
+  return isAuthenticated ? children : null;
+};
+
+// Separate component that doesn't require authentication
+const PublicRoute = ({ children }) => {
   return children;
 };
 
-// Create routes without forced authentication
+// Create routes with proper authentication guards
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <AuthGuard><Index /></AuthGuard>,
+    element: <PublicRoute><Index /></PublicRoute>,
     errorElement: <NotFound />,
   },
   {
     path: '/auth',
-    element: <Auth />,
+    element: <PublicRoute><Auth /></PublicRoute>,
   },
   {
     path: '/physics',
