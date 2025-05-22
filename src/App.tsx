@@ -27,6 +27,7 @@ import MathPuzzles from './pages/MathPuzzles';
 import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
+import EducationalVideos from './pages/EducationalVideos';
 
 // Authentication guard component that redirects to login if not authenticated
 const AuthGuard = ({ children }) => {
@@ -155,6 +156,10 @@ const router = createBrowserRouter([
   {
     path: '/contact',
     element: <AuthGuard><Contact /></AuthGuard>,
+  },
+  {
+    path: '/educational-videos',
+    element: <AuthGuard><EducationalVideos /></AuthGuard>,
   },
   {
     path: '*',

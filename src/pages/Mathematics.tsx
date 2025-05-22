@@ -1,326 +1,148 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import StarField from '@/components/StarField';
+import { useNavigate } from 'react-router-dom';
+import { Calculator, ChartLine, User, Puzzle, Video } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import Calculator from '@/components/mathematics/Calculator';
-import MathAIAssistant from '@/components/mathematics/MathAIAssistant';
+import StarField from '@/components/StarField';
 import GraphVisualizer from '@/components/mathematics/GraphVisualizer';
+import Calculator3D from '@/components/mathematics/Calculator';
 import MathematiciansGallery from '@/components/mathematics/MathematiciansGallery';
-import { Button } from '@/components/ui/button';
-import { ArrowDown, Brain, Calculator as CalculatorIcon } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import MathPuzzles from '@/components/mathematics/MathPuzzles';
+import MathematicsVideos from '@/components/shared/videos/MathematicsVideos';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Mathematics = () => {
-  const [showIntro, setShowIntro] = useState(true);
-  const [showContent, setShowContent] = useState(false);
+  const { t } = useLanguage();
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
-  // Handle start experience button click
-  const handleStartExperience = () => {
-    setShowIntro(false);
-    setTimeout(() => {
-      setShowContent(true);
-      // Scroll to content section
-      document.getElementById('math-content')?.scrollIntoView({
-        behavior: 'smooth'
-      });
-    }, 500);
-  };
-
-  // Handle card selection
-  const handleCardSelect = (component: string) => {
-    setSelectedComponent(component);
-    setTimeout(() => {
-      document.getElementById('selected-component')?.scrollIntoView({
-        behavior: 'smooth'
-      });
-    }, 100);
-  };
-
-  // Back to cards
-  const handleBackToCards = () => {
-    setSelectedComponent(null);
-    setTimeout(() => {
-      document.getElementById('math-content')?.scrollIntoView({
-        behavior: 'smooth'
-      });
-    }, 100);
+  // Component map for easier rendering
+  const components: Record<string, React.ReactNode> = {
+    calculator: <Calculator3D />,
+    visualizer: <GraphVisualizer />,
+    mathematicians: <MathematiciansGallery />,
+    puzzles: <MathPuzzles />,
+    videos: <MathematicsVideos />
   };
   
-  // Floating math symbols with animation and updated positioning
-  const mathSymbols = [
-    { symbol: "π", top: "15%", left: "8%", size: "text-4xl", animationDelay: "0s", rotate: 0 },
-    { symbol: "∑", top: "25%", left: "92%", size: "text-5xl", animationDelay: "0.5s", rotate: 15 },
-    { symbol: "√", top: "70%", left: "5%", size: "text-5xl", animationDelay: "1s", rotate: -10 },
-    { symbol: "∫", top: "80%", left: "93%", size: "text-4xl", animationDelay: "1.5s", rotate: 5 },
-    { symbol: "≠", top: "40%", left: "7%", size: "text-3xl", animationDelay: "2s", rotate: -5 },
-    { symbol: "∞", top: "50%", left: "95%", size: "text-5xl", animationDelay: "2.5s", rotate: 0 },
-    { symbol: "θ", top: "30%", left: "15%", size: "text-4xl", animationDelay: "1.8s", rotate: 10 },
-    { symbol: "λ", top: "60%", left: "88%", size: "text-4xl", animationDelay: "2.3s", rotate: -8 },
-    { symbol: "Δ", top: "20%", left: "80%", size: "text-5xl", animationDelay: "1.2s", rotate: 12 },
-    { symbol: "∂", top: "75%", left: "20%", size: "text-4xl", animationDelay: "0.8s", rotate: -15 },
-    { symbol: "∇", top: "45%", left: "85%", size: "text-3xl", animationDelay: "1.6s", rotate: 8 }
+  // Card data
+  const cards = [
+    {
+      title: 'الحاسبة الرياضية',
+      icon: <Calculator className="w-12 h-12 text-purple-400" />,
+      description: 'حاسبة متقدمة للعمليات الرياضية المختلفة',
+      key: 'calculator'
+    },
+    {
+      title: 'معرض الرسوم البيانية',
+      icon: <ChartLine className="w-12 h-12 text-purple-400" />,
+      description: 'عرض الدوال الرياضية برسوم بيانية تفاعلية',
+      key: 'visualizer'
+    },
+    {
+      title: 'أعلام الرياضيات',
+      icon: <User className="w-12 h-12 text-purple-400" />,
+      description: 'تعرف على أشهر علماء الرياضيات وإنجازاتهم',
+      key: 'mathematicians'
+    },
+    {
+      title: 'ألغاز رياضية',
+      icon: <Puzzle className="w-12 h-12 text-purple-400" />,
+      description: 'تحديات وألغاز رياضية متنوعة لاختبار مهاراتك',
+      key: 'puzzles'
+    },
+    {
+      title: 'فيديوهات تعليمية',
+      icon: <Video className="w-12 h-12 text-purple-400" />,
+      description: 'دروس فيديو مرئية لمختلف المفاهيم الرياضية',
+      key: 'videos'
+    }
   ];
-
-  // Graph visualization animation data
-  const graphPoints = [
-    { x: 10, y: 50 },
-    { x: 20, y: 30 },
-    { x: 30, y: 70 },
-    { x: 40, y: 20 },
-    { x: 50, y: 60 },
-    { x: 60, y: 40 },
-    { x: 70, y: 80 },
-    { x: 80, y: 10 },
-    { x: 90, y: 50 }
-  ];
+  
+  // Handle card click
+  const handleCardClick = (key: string) => {
+    setSelectedComponent(key);
+  };
   
   return (
-    <div className="min-h-screen flex flex-col text-right" dir="rtl">
-      <StarField />
-      
-      {/* Floating Math Symbols with enhanced animation */}
-      {mathSymbols.map((symbol, index) => (
-        <motion.div 
-          key={index}
-          className={`absolute text-subject-math-primary/30 ${symbol.size} pointer-events-none`}
-          style={{ top: symbol.top, left: symbol.left }}
-          initial={{ opacity: 0, scale: 0, rotate: symbol.rotate }}
-          animate={{ 
-            opacity: [0.2, 0.6, 0.2], 
-            scale: [0.8, 1.2, 0.8],
-            rotate: [symbol.rotate, symbol.rotate + 5, symbol.rotate]
-          }}
-          transition={{ 
-            delay: parseFloat(symbol.animationDelay), 
-            duration: 5, 
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          {symbol.symbol}
-        </motion.div>
-      ))}
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-purple-900/40 to-blue-950 bg-fixed" dir="rtl">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <StarField starCount={300} />
+      </div>
       
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-12">
-        {showIntro && (
-          <motion.div 
-            className="min-h-[80vh] flex flex-col items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-          >
-            <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-subject-math-primary via-white to-subject-math-secondary"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-            >
-              عالم الرياضيات
-            </motion.h1>
-
-            <motion.div
-              className="mb-16 relative w-full max-w-2xl h-80"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1.5 }}
-            >
-              {/* Interactive Graph Visualization */}
-              <svg 
-                className="w-full h-full" 
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-              >
-                <motion.path
-                  d={`M ${graphPoints.map(point => `${point.x},${point.y}`).join(' L ')}`}
-                  stroke="rgba(139, 92, 246, 0.8)"
-                  strokeWidth="0.8"
-                  fill="none"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 3, ease: "easeInOut" }}
-                />
-                
-                {graphPoints.map((point, i) => (
-                  <motion.circle
-                    key={i}
-                    cx={point.x}
-                    cy={point.y}
-                    r="1.5"
-                    fill="#8b5cf6"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.1, duration: 0.5 }}
-                  />
-                ))}
-              </svg>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.5, duration: 0.8 }}
-            >
-              <Button 
-                onClick={handleStartExperience}
-                className="text-xl bg-subject-math-primary hover:bg-subject-math-secondary text-white px-8 py-6 rounded-full flex items-center gap-3 transform transition-all hover:scale-110"
-              >
-                ابدأ التجربة
-                <motion.div
-                  animate={{ y: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <ArrowDown className="h-6 w-6" />
-                </motion.div>
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
+      <main className="flex-1 container mx-auto px-4 py-12 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-6xl font-bold text-glow-purple mb-4">
+            عالم الرياضيات
+          </h1>
+          <p className="text-xl text-white/80 max-w-2xl mx-auto">
+            استكشف جمال وقوة الرياضيات من خلال أدوات تفاعلية وألغاز ممتعة
+          </p>
+        </motion.div>
         
-        {showContent && (
-          <motion.div 
-            id="math-content"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="min-h-[80vh]"
-          >
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+          {cards.map((card, index) => (
+            <motion.div
+              key={index}
+              className={`glass-card overflow-hidden relative cursor-pointer group transition-all duration-300 hover:-translate-y-1 border ${selectedComponent === card.key ? 'border-purple-400 shadow-glow-purple' : 'border-purple-500/20'}`}
+              onClick={() => handleCardClick(card.key)}
+              whileHover={{ scale: 1.02 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-12"
+              transition={{ delay: index * 0.1, duration: 0.5 }}
             >
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-subject-math-primary via-white to-subject-math-secondary">
-                منصة الرياضيات
-              </h1>
-              <p className="text-xl text-white/80 max-w-2xl mx-auto">
-                استكشف عالم الرياضيات من خلال أدوات تفاعلية، مساعد ذكي، وتمثيل بياني
-              </p>
-            </motion.div>
-
-            {!selectedComponent ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
-                {/* AI Assistant Card */}
-                <CategoryCard 
-                  title="المساعد الذكي"
-                  description="اطرح أسئلة متعلقة بالرياضيات واحصل على إجابات فورية من المساعد الذكي"
-                  bgColor="from-subject-math-primary/80 to-subject-math-primary/30"
-                  iconColor="bg-subject-math-primary/20 text-white"
-                  icon={<Brain className="h-6 w-6" />}
-                  onClick={() => handleCardSelect('assistant')}
-                />
-                
-                {/* Calculator Card */}
-                <CategoryCard 
-                  title="الآلة الحاسبة"
-                  description="أداة حاسبة متقدمة لإجراء العمليات الحسابية والمعادلات الرياضية"
-                  bgColor="from-subject-math-primary/80 to-subject-math-primary/30"
-                  iconColor="bg-white/20 text-white"
-                  icon={<CalculatorIcon className="h-6 w-6" />}
-                  onClick={() => handleCardSelect('calculator')}
-                />
-
-                {/* Graph Visualization Card */}
-                <CategoryCard 
-                  title="التمثيل البياني"
-                  description="رسم وتحليل الدوال والمعادلات الرياضية بيانيًا بطريقة تفاعلية"
-                  bgColor="from-subject-math-secondary/80 to-subject-math-secondary/30"
-                  iconColor="bg-white/20 text-white"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                      <path d="M3 3v18h18"></path>
-                      <path d="m19 9-5 5-4-4-3 3"></path>
-                    </svg>
-                  }
-                  onClick={() => handleCardSelect('graph')}
-                />
-
-                {/* Mathematicians Gallery Card */}
-                <CategoryCard 
-                  title="علماء الرياضيات"
-                  description="تعرف على أهم علماء الرياضيات عبر التاريخ وإسهاماتهم العلمية"
-                  bgColor="from-subject-math-primary/80 to-subject-math-primary/30"
-                  iconColor="bg-white/20 text-white"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="9" cy="7" r="4"></circle>
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                  }
-                  onClick={() => handleCardSelect('mathematicians')}
-                />
+              <div className="p-6 flex flex-col items-center text-center h-full">
+                <div className="mb-4 p-3 rounded-full bg-purple-900/30 backdrop-blur-sm">
+                  {card.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{card.title}</h3>
+                <p className="text-sm text-white/70 mb-4">{card.description}</p>
+                <div className="mt-auto">
+                  <span className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-full">
+                    استكشف
+                  </span>
+                </div>
               </div>
-            ) : (
-              <motion.div
-                id="selected-component"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                key={selectedComponent}
+            </motion.div>
+          ))}
+        </div>
+        
+        {selectedComponent && (
+          <motion.div
+            key={selectedComponent}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-glow-sm shadow-purple-500/10"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-purple-300">
+                {cards.find(card => card.key === selectedComponent)?.title}
+              </h2>
+              <button
+                onClick={() => setSelectedComponent(null)}
+                className="text-white/70 hover:text-white"
               >
-                <button 
-                  onClick={handleBackToCards}
-                  className="text-subject-math-primary hover:text-subject-math-secondary mb-6 text-right flex items-center gap-2"
-                >
-                  العودة إلى الخيارات
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="m9 18 6-6-6-6"></path>
-                  </svg>
-                </button>
-
-                {selectedComponent === 'assistant' && <MathAIAssistant />}
-                {selectedComponent === 'calculator' && <Calculator />}
-                {selectedComponent === 'graph' && <GraphVisualizer />}
-                {selectedComponent === 'mathematicians' && <MathematiciansGallery />}
-              </motion.div>
-            )}
+                &times; إغلاق
+              </button>
+            </div>
+            {components[selectedComponent]}
           </motion.div>
         )}
       </main>
       
       <Footer />
     </div>
-  );
-};
-
-// Reusable Category Card Component
-interface CategoryCardProps {
-  title: string;
-  description: string;
-  bgColor: string;
-  iconColor: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}
-
-const CategoryCard: React.FC<CategoryCardProps> = ({ 
-  title, 
-  description, 
-  bgColor, 
-  iconColor, 
-  icon, 
-  onClick 
-}) => {
-  return (
-    <motion.div
-      className={cn("bg-gradient-to-br", bgColor, "p-6 rounded-2xl border border-white/10 hover:border-white/30 cursor-pointer transition-all hover:shadow-lg hover:shadow-subject-math-primary/20 h-full")}
-      whileHover={{ y: -5, scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300 }}
-      onClick={onClick}
-    >
-      <div className={cn("h-12 w-12 rounded-full flex items-center justify-center mb-4", iconColor)}>
-        {icon}
-      </div>
-      <h3 className="text-2xl font-bold text-white mb-2 text-right">{title}</h3>
-      <p className="text-white/70 text-right">{description}</p>
-    </motion.div>
   );
 };
 

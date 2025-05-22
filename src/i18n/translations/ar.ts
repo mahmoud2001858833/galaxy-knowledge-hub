@@ -1,3 +1,4 @@
+
 export const ar = {
   // النافبار
   nav: {
@@ -40,6 +41,7 @@ export const ar = {
     assistant: "المساعد الذكي",
     calculations: "الحسابات",
     visualizer: "المخططات",
+    educationalVideos: "الفيديوهات التعليمية",
     // ترجمات جديدة متعلقة بالمواد
     subjectTitle: {
       physics: "الفيزياء",
@@ -149,7 +151,9 @@ export const ar = {
     calculators: "حاسبات علمية",
     visualizer: "نماذج ثلاثية الأبعاد وتصورات",
     educationalPuzzles: "الألغاز التعليمية",
-    chatRooms: "غرف المحادثة"
+    chatRooms: "غرف المحادثة",
+    educationalVideos: "الفيديوهات التعليمية",
+    educationalVideosDescription: "شاهد مجموعة متنوعة من الفيديوهات التعليمية في مختلف المواد العلمية"
   },
   // منصات تعليمية
   platforms: {

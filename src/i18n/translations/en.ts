@@ -1,3 +1,4 @@
+
 export const en = {
   // Navbar
   nav: {
@@ -40,6 +41,7 @@ export const en = {
     assistant: "AI Assistant",
     calculations: "Calculations",
     visualizer: "Visualizer",
+    educationalVideos: "Educational Videos",
     // New subject-related translations
     subjectTitle: {
       physics: "Physics",
@@ -149,7 +151,9 @@ export const en = {
     calculators: "Scientific Calculators",
     visualizer: "3D Models & Visualizations",
     educationalPuzzles: "Educational Puzzles",
-    chatRooms: "Chat Rooms"
+    chatRooms: "Chat Rooms",
+    educationalVideos: "Educational Videos",
+    educationalVideosDescription: "Watch a variety of educational videos across different scientific subjects"
   },
   // Educational platforms
   platforms: {
