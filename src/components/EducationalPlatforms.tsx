@@ -12,7 +12,7 @@ const EducationalPlatforms = () => {
     {
       title: t.platforms.physics,
       icon: "🔭",
-      image: "https://images.unsplash.com/photo-1636466497217-26a42372b406?q=80&w=1974&auto=format&fit=crop",
+      image: "https://www.chemixlab.com/wp-content/uploads/2024/01/Thomsons-Model-of-an-Atom-Atomic-Model-History-Limitations-Example.jpg",
       color: "from-blue-600/20 to-cyan-600/20",
       borderColor: "border-blue-500/30",
       hoverBorderColor: "hover:border-blue-500/50",
@@ -21,7 +21,7 @@ const EducationalPlatforms = () => {
     {
       title: t.platforms.chemistry,
       icon: "🧪",
-      image: "https://images.unsplash.com/photo-1616461046183-f01088b2169d?q=80&w=2070&auto=format&fit=crop",
+      image: "https://www.ra2ed.com/UserFiles/cq5dam.lcover.jpeg",
       color: "from-purple-600/20 to-pink-600/20",
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
@@ -30,7 +30,7 @@ const EducationalPlatforms = () => {
     {
       title: t.platforms.biology,
       icon: "🧬",
-      image: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=1974&auto=format&fit=crop",
+      image: "https://th.bing.com/th/id/OIP.GmUR4ZRzF9gWiCj7wukbuwAAAA?cb=iwc2&rs=1&pid=ImgDetMain",
       color: "from-green-600/20 to-emerald-600/20",
       borderColor: "border-green-500/30",
       hoverBorderColor: "hover:border-green-500/50",
@@ -39,7 +39,7 @@ const EducationalPlatforms = () => {
     {
       title: t.platforms.mathematics,
       icon: "🔢",
-      image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2070&auto=format&fit=crop",
+      image: "https://digital-brilliance.online/wp-content/uploads/2024/05/7bb1a96e-fbeb-4aac-8ce9-dde1e408f1a0.webp",
       color: "from-yellow-600/20 to-orange-600/20",
       borderColor: "border-yellow-500/30",
       hoverBorderColor: "hover:border-yellow-500/50",

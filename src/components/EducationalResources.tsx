@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, MessageSquare } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
@@ -11,10 +11,10 @@ const EducationalResources = () => {
   
   const resources = [
     {
-      title: t.resources.visualLearning,
-      icon: <BookOpen className="h-6 w-6 text-blue-400" />,
+      title: t.resources.studyOrganizer,
+      icon: <CalendarDays className="h-6 w-6 text-blue-400" />,
       description: t.resources.explorationTools,
-      link: '/visual-library'
+      link: '/study-organization'
     },
     {
       title: t.resources.scientificJournals,
@@ -23,10 +23,22 @@ const EducationalResources = () => {
       link: '/scientific-journal'
     },
     {
-      title: t.resources.studyOrganizer,
-      icon: <CalendarDays className="h-6 w-6 text-blue-400" />,
+      title: t.resources.visualLearning,
+      icon: <BookOpen className="h-6 w-6 text-blue-400" />,
       description: t.resources.explorationTools,
-      link: '/study-organization'
+      link: '/visual-library'
+    },
+    {
+      title: t.resources.educationalPuzzles,
+      icon: <Puzzle className="h-6 w-6 text-blue-400" />,
+      description: t.resources.explorationTools,
+      link: '/subject-puzzles'
+    },
+    {
+      title: t.resources.chatRooms,
+      icon: <MessageSquare className="h-6 w-6 text-blue-400" />,
+      description: t.resources.explorationTools,
+      link: '/chat-rooms'
     }
   ];
 
@@ -45,7 +57,7 @@ const EducationalResources = () => {
         <div className="w-16 h-1 bg-blue-500/50 mx-auto mt-4"></div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {resources.map((resource, index) => (
           <motion.div
             key={index}
@@ -53,7 +65,7 @@ const EducationalResources = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.6 + index * 0.1, duration: 0.5 }}
             onClick={() => navigate(resource.link)}
-            className="group relative overflow-hidden rounded-xl bg-gradient-to-b from-blue-900/30 to-blue-950/60 p-5 backdrop-blur-sm cursor-pointer border border-blue-500/20 hover:border-blue-500/40 transition-all"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-b from-blue-900/30 to-blue-950/60 p-5 backdrop-blur-sm cursor-pointer border border-blue-500/20 hover:border-blue-500/40 transition-all h-full"
           >
             {/* Background Glow Effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 via-blue-400/5 to-blue-600/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
