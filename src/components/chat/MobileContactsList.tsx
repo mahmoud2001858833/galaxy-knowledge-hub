@@ -5,6 +5,7 @@ import { Menu, Clock, Mail, UserPlus, ChevronUp, ChevronDown, User, Plus } from 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ContactCard from './ContactCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileContactsListProps {
   contacts: any[];
@@ -31,29 +32,31 @@ const MobileContactsList = ({
   scrollContactsUp,
   scrollContactsDown
 }: MobileContactsListProps) => {
+  const isMobile = useIsMobile();
+
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button 
           variant="ghost" 
-          size="icon"
-          className="md:hidden fixed top-5 left-5 z-50 rounded-full bg-blue-600/90 shadow-lg hover:bg-blue-700"
+          size={isMobile ? "sm" : "icon"}
+          className={`md:hidden fixed top-5 left-5 z-50 rounded-full bg-blue-600/90 shadow-lg hover:bg-blue-700 ${isMobile ? 'p-2' : ''}`}
         >
-          <Menu className="h-5 w-5" />
+          <Menu className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="bg-gradient-to-b from-blue-950/95 to-blue-900/95 border-slate-700 p-0 w-[280px]">
+      <SheetContent side="right" className={`bg-gradient-to-b from-blue-950/95 to-blue-900/95 border-slate-700 p-0 ${isMobile ? 'w-[90vw] max-w-[320px]' : 'w-[280px]'}`}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-white">جهات الاتصال</h3>
+          <div className={`${isMobile ? 'p-3' : 'p-4'} border-b border-slate-700/50 flex justify-between items-center`}>
+            <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-white`}>جهات الاتصال</h3>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  size="icon"
-                  className="h-8 w-8 text-white hover:bg-blue-800"
+                  size={isMobile ? "sm" : "icon"}
+                  className={`${isMobile ? 'h-7 w-7' : 'h-8 w-8'} text-white hover:bg-blue-800`}
                 >
-                  {sortOrder === 'name' ? <Mail className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                  {sortOrder === 'name' ? <Mail className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} /> : <Clock className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gradient-to-br from-blue-950/90 to-purple-950/90 border-blue-800/50">
@@ -81,13 +84,13 @@ const MobileContactsList = ({
                 size="icon" 
                 variant="ghost" 
                 onClick={scrollContactsUp}
-                className="h-6 w-6 rounded-full bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50"
+                className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} rounded-full bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50`}
               >
-                <ChevronUp className="h-4 w-4" />
+                <ChevronUp className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
               </Button>
             </div>
             
-            <div className="flex-1 overflow-hidden p-2 space-y-1" ref={contactsAreaRef}>
+            <div className={`flex-1 overflow-hidden ${isMobile ? 'p-1 space-y-1' : 'p-2 space-y-1'}`} ref={contactsAreaRef}>
               {contacts.length > 0 ? (
                 contacts.map((contact) => (
                   <ContactCard
@@ -103,9 +106,9 @@ const MobileContactsList = ({
                   />
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-10">
-                  <User className="h-12 w-12 text-blue-500/40 mb-3" />
-                  <p className="text-white/50">لا توجد جهات اتصال</p>
+                <div className={`flex flex-col items-center justify-center ${isMobile ? 'py-8' : 'py-10'}`}>
+                  <User className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} text-blue-500/40 mb-3`} />
+                  <p className={`text-white/50 ${isMobile ? 'text-sm' : ''}`}>لا توجد جهات اتصال</p>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -115,9 +118,9 @@ const MobileContactsList = ({
                       const sheetCloseButton = document.querySelector('[data-state="open"] button[data-radix-collection-item]') as HTMLButtonElement | null;
                       if (sheetCloseButton) sheetCloseButton.click();
                     }}
-                    className="mt-4 text-xs border-blue-500/30 hover:bg-blue-800/30"
+                    className={`mt-4 ${isMobile ? 'text-xs' : 'text-xs'} border-blue-500/30 hover:bg-blue-800/30`}
                   >
-                    <Plus className="h-3 w-3 ml-1" />
+                    <Plus className={`${isMobile ? 'h-3 w-3 ml-1' : 'h-3 w-3 ml-1'}`} />
                     إضافة جهة اتصال
                   </Button>
                 </div>
@@ -129,17 +132,18 @@ const MobileContactsList = ({
                 size="icon" 
                 variant="ghost" 
                 onClick={scrollContactsDown}
-                className="h-6 w-6 rounded-full bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50"
+                className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} rounded-full bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50`}
               >
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
               </Button>
             </div>
           </div>
           
-          <div className="p-4 border-t border-slate-700/50">
+          <div className={`${isMobile ? 'p-3' : 'p-4'} border-t border-slate-700/50`}>
             <Button 
               variant="outline" 
               className="w-full border-blue-500/30 hover:bg-blue-900/30"
+              size={isMobile ? "sm" : "default"}
               onClick={() => {
                 setIsContactSearchOpen(true);
                 // Close the sheet
@@ -147,8 +151,8 @@ const MobileContactsList = ({
                 if (sheetCloseButton) sheetCloseButton.click();
               }}
             >
-              <UserPlus className="h-4 w-4 ml-2" />
-              <span>إضافة جهة اتصال</span>
+              <UserPlus className={`${isMobile ? 'h-3 w-3 ml-1' : 'h-4 w-4 ml-2'}`} />
+              <span className={`${isMobile ? 'text-sm' : ''}`}>إضافة جهة اتصال</span>
             </Button>
           </div>
         </div>

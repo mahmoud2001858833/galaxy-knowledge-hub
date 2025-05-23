@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, ChartLine, User, Puzzle, Video } from "lucide-react";
+import { Calculator, ChartLine, User, Brain } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -10,8 +10,7 @@ import StarField from '@/components/StarField';
 import GraphVisualizer from '@/components/mathematics/GraphVisualizer';
 import Calculator3D from '@/components/mathematics/Calculator';
 import MathematiciansGallery from '@/components/mathematics/MathematiciansGallery';
-import MathPuzzles from '@/components/mathematics/MathPuzzles';
-import MathematicsVideos from '@/components/shared/videos/MathematicsVideos';
+import MathAIAssistant from '@/components/mathematics/MathAIAssistant';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,8 +25,7 @@ const Mathematics = () => {
     calculator: <Calculator3D />,
     visualizer: <GraphVisualizer />,
     mathematicians: <MathematiciansGallery />,
-    puzzles: <MathPuzzles />,
-    videos: <MathematicsVideos />
+    aiAssistant: <MathAIAssistant />
   };
   
   // Card data
@@ -51,16 +49,10 @@ const Mathematics = () => {
       key: 'mathematicians'
     },
     {
-      title: 'ألغاز رياضية',
-      icon: <Puzzle className="w-12 h-12 text-purple-400" />,
-      description: 'تحديات وألغاز رياضية متنوعة لاختبار مهاراتك',
-      key: 'puzzles'
-    },
-    {
-      title: 'فيديوهات تعليمية',
-      icon: <Video className="w-12 h-12 text-purple-400" />,
-      description: 'دروس فيديو مرئية لمختلف المفاهيم الرياضية',
-      key: 'videos'
+      title: 'المساعد الذكي للرياضيات',
+      icon: <Brain className="w-12 h-12 text-purple-400" />,
+      description: 'مساعد ذكي لحل المسائل الرياضية والإجابة على الأسئلة',
+      key: 'aiAssistant'
     }
   ];
   
@@ -87,11 +79,11 @@ const Mathematics = () => {
             عالم الرياضيات
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف جمال وقوة الرياضيات من خلال أدوات تفاعلية وألغاز ممتعة
+            استكشف جمال وقوة الرياضيات من خلال أدوات تفاعلية ومساعد ذكي
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {cards.map((card, index) => (
             <motion.div
               key={index}
