@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContactCardProps {
   contact: any;
@@ -9,45 +10,60 @@ interface ContactCardProps {
   onClick: () => void;
 }
 
-const ContactCard = ({ contact, isSelected, onClick }: ContactCardProps) => (
-  <motion.button
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    onClick={onClick}
-    className={`w-full flex items-center p-3 rounded-lg transition-all ${
-      isSelected
-        ? 'bg-purple-600/30 border border-purple-500/40'
-        : 'hover:bg-purple-900/20 border border-transparent'
-    }`}
-  >
-    <div className="relative">
-      <Avatar className="h-12 w-12 ml-3 border-2 border-slate-700/40">
-        {contact.avatar_url ? (
-          <AvatarImage src={contact.avatar_url} />
-        ) : (
-          <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800 text-lg">
-            {contact.username[0]}
-          </AvatarFallback>
-        )}
-      </Avatar>
-      
-      {/* مؤشر حالة الاتصال */}
-      <div className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-slate-900 ${
-        contact.isOnline ? 'bg-emerald-500' : 'bg-gray-400'
-      }`} />
-    </div>
-    
-    <div className="truncate text-right flex flex-col flex-1">
-      <div className="font-medium text-white text-sm">{contact.username}</div>
-      <div className="text-xs text-white/50 truncate max-w-[180px]">
-        {new Date(contact.lastActivity).toLocaleDateString('ar-SA', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })}
+const ContactCard = ({ contact, isSelected, onClick }: ContactCardProps) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`w-full flex items-center ${isMobile ? 'p-4' : 'p-3'} rounded-xl transition-all ${
+        isSelected
+          ? 'bg-gradient-to-r from-purple-600/40 to-indigo-600/40 border-2 border-purple-500/60 shadow-lg'
+          : 'hover:bg-gradient-to-r hover:from-purple-900/30 hover:to-indigo-900/30 border-2 border-transparent hover:border-purple-500/30'
+      } backdrop-blur-sm`}
+    >
+      <div className="relative">
+        <Avatar className={`${isMobile ? 'h-14 w-14 ml-4' : 'h-12 w-12 ml-3'} border-2 border-slate-700/40 shadow-lg`}>
+          {contact.avatar_url ? (
+            <AvatarImage src={contact.avatar_url} />
+          ) : (
+            <AvatarFallback className="bg-gradient-to-r from-purple-600 to-purple-800 text-lg font-bold">
+              {contact.username[0]}
+            </AvatarFallback>
+          )}
+        </Avatar>
+        
+        {/* Enhanced online status indicator */}
+        <div className={`absolute -bottom-1 -right-1 ${isMobile ? 'h-4 w-4' : 'h-3.5 w-3.5'} rounded-full border-2 border-slate-900 ${
+          contact.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'
+        } shadow-lg`} />
       </div>
-    </div>
-  </motion.button>
-);
+      
+      <div className="truncate text-right flex flex-col flex-1 min-w-0">
+        <div className={`font-bold text-white ${isMobile ? 'text-lg' : 'text-sm'} truncate`}>
+          {contact.username}
+        </div>
+        <div className={`${isMobile ? 'text-sm' : 'text-xs'} text-white/60 truncate max-w-full mt-1`}>
+          {contact.isOnline ? (
+            <span className="text-teal-400 font-medium">متصل الآن</span>
+          ) : (
+            new Date(contact.lastActivity).toLocaleDateString('ar-SA', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
+          )}
+        </div>
+      </div>
+      
+      {/* Visual indicator for selected state */}
+      {isSelected && (
+        <div className="w-2 h-8 bg-gradient-to-b from-teal-400 to-cyan-500 rounded-full ml-2 shadow-lg"></div>
+      )}
+    </motion.button>
+  );
+};
 
 export default ContactCard;

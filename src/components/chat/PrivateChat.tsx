@@ -51,10 +51,11 @@ const PrivateChat = ({ user }) => {
     isSearching
   } = useSearch(user?.id);
 
-  // Check if device is mobile
+  // Enhanced mobile detection
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
     };
     
     checkIfMobile();
@@ -119,7 +120,7 @@ const PrivateChat = ({ user }) => {
     };
   }, [user, selectedContact, fetchMessages, fetchContacts]);
 
-  // Scroll functions
+  // Enhanced scroll functions
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -132,11 +133,11 @@ const PrivateChat = ({ user }) => {
     }
   };
 
-  // Contact navigation functions
+  // Enhanced contact navigation functions
   const scrollContactsUp = () => {
     if (contactsAreaRef.current) {
       contactsAreaRef.current.scrollBy({
-        top: -200,
+        top: isMobile ? -300 : -200,
         behavior: 'smooth'
       });
     }
@@ -145,19 +146,17 @@ const PrivateChat = ({ user }) => {
   const scrollContactsDown = () => {
     if (contactsAreaRef.current) {
       contactsAreaRef.current.scrollBy({
-        top: 200,
+        top: isMobile ? 300 : 200,
         behavior: 'smooth'
       });
     }
   };
 
-  // Get the last contact for welcome screen
   const getLastContact = () => {
     if (contacts.length === 0) return null;
-    return contacts[0]; // Already sorted by activity
+    return contacts[0];
   };
 
-  // Handlers for the contacts grid
   const handleSelectContact = (contact) => {
     setSelectedContact(contact);
     setShowContactsList(false);
@@ -167,7 +166,7 @@ const PrivateChat = ({ user }) => {
     setShowContactsList(false);
   };
 
-  // Fixed send message function
+  // Enhanced send message function for mobile
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isMessageSending) return;
@@ -175,7 +174,6 @@ const PrivateChat = ({ user }) => {
     sendMessage(message);
     setIsAutoScroll(true);
     
-    // Ensure scroll to bottom after sending message
     setTimeout(scrollToBottom, 100);
   };
 
@@ -191,8 +189,8 @@ const PrivateChat = ({ user }) => {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-indigo-950/30 to-purple-950/30">
-      {/* Mobile contacts list */}
+    <div className={`flex h-full w-full overflow-hidden ${isMobile ? 'bg-gradient-to-br from-slate-950 to-purple-950' : 'bg-gradient-to-br from-indigo-950/30 to-purple-950/30'}`}>
+      {/* Enhanced mobile contacts list */}
       {isMobile && (
         <MobileContactsList 
           contacts={contacts}
@@ -224,10 +222,9 @@ const PrivateChat = ({ user }) => {
         />
       )}
 
-      {/* Vertical separator between contacts and chat */}
       {!isMobile && selectedContact && <Separator orientation="vertical" className="h-full bg-blue-500/20" />}
 
-      {/* Chat content with improved full-height layout */}
+      {/* Enhanced chat content for mobile */}
       {selectedContact ? (
         <div className="flex-1 h-full overflow-hidden">
           <ChatInterface 
