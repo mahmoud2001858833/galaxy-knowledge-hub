@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Canvas, FabricObject, Point } from 'fabric';
+import { Canvas, Line, Circle } from 'fabric';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
 
@@ -11,9 +11,15 @@ interface InteractiveCanvasProps {
   height?: number;
 }
 
+interface ExtendedCanvas extends Canvas {
+  isDragging?: boolean;
+  lastPosX?: number;
+  lastPosY?: number;
+}
+
 const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: InteractiveCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [fabricCanvas, setFabricCanvas] = useState<Canvas | null>(null);
+  const [fabricCanvas, setFabricCanvas] = useState<ExtendedCanvas | null>(null);
   const [zoom, setZoom] = useState(1);
   const [panMode, setPanMode] = useState(false);
 
@@ -24,7 +30,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
       width,
       height,
       backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    });
+    }) as ExtendedCanvas;
 
     setFabricCanvas(canvas);
 
@@ -56,7 +62,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
     // Draw grid
     const gridSpacing = 20;
     for (let i = 0; i <= width; i += gridSpacing) {
-      fabricCanvas.add(new fabric.Line([i, 0, i, height], {
+      fabricCanvas.add(new Line([i, 0, i, height], {
         stroke: 'rgba(255, 255, 255, 0.1)',
         strokeWidth: 1,
         selectable: false,
@@ -64,7 +70,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
       }));
     }
     for (let i = 0; i <= height; i += gridSpacing) {
-      fabricCanvas.add(new fabric.Line([0, i, width, i], {
+      fabricCanvas.add(new Line([0, i, width, i], {
         stroke: 'rgba(255, 255, 255, 0.1)',
         strokeWidth: 1,
         selectable: false,
@@ -77,7 +83,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
     const centerY = padding + (yMax - 0) * yScale;
 
     if (centerX >= padding && centerX <= width - padding) {
-      fabricCanvas.add(new fabric.Line([centerX, padding, centerX, height - padding], {
+      fabricCanvas.add(new Line([centerX, padding, centerX, height - padding], {
         stroke: 'rgba(255, 255, 255, 0.3)',
         strokeWidth: 2,
         selectable: false,
@@ -86,7 +92,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
     }
 
     if (centerY >= padding && centerY <= height - padding) {
-      fabricCanvas.add(new fabric.Line([padding, centerY, width - padding, centerY], {
+      fabricCanvas.add(new Line([padding, centerY, width - padding, centerY], {
         stroke: 'rgba(255, 255, 255, 0.3)',
         strokeWidth: 2,
         selectable: false,
@@ -95,16 +101,14 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
     }
 
     // Draw equation 1
-    const points1: Point[] = data.map(d => 
-      new Point(
-        padding + (d.x - xMin) * xScale,
-        padding + (yMax - d.y1) * yScale
-      )
-    ).filter(p => !isNaN(p.x) && !isNaN(p.y));
+    const points1 = data.map(d => ({
+      x: padding + (d.x - xMin) * xScale,
+      y: padding + (yMax - d.y1) * yScale
+    })).filter(p => !isNaN(p.x) && !isNaN(p.y));
 
     if (points1.length > 1) {
       for (let i = 0; i < points1.length - 1; i++) {
-        fabricCanvas.add(new fabric.Line([points1[i].x, points1[i].y, points1[i + 1].x, points1[i + 1].y], {
+        fabricCanvas.add(new Line([points1[i].x, points1[i].y, points1[i + 1].x, points1[i + 1].y], {
           stroke: '#33C3F0',
           strokeWidth: 3,
           selectable: false,
@@ -115,16 +119,14 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
 
     // Draw equation 2 if exists
     if (data[0]?.y2 !== undefined) {
-      const points2: Point[] = data.map(d => 
-        new Point(
-          padding + (d.x - xMin) * xScale,
-          padding + (yMax - (d.y2 || 0)) * yScale
-        )
-      ).filter(p => !isNaN(p.x) && !isNaN(p.y));
+      const points2 = data.map(d => ({
+        x: padding + (d.x - xMin) * xScale,
+        y: padding + (yMax - (d.y2 || 0)) * yScale
+      })).filter(p => !isNaN(p.x) && !isNaN(p.y));
 
       if (points2.length > 1) {
         for (let i = 0; i < points2.length - 1; i++) {
-          fabricCanvas.add(new fabric.Line([points2[i].x, points2[i].y, points2[i + 1].x, points2[i + 1].y], {
+          fabricCanvas.add(new Line([points2[i].x, points2[i].y, points2[i + 1].x, points2[i + 1].y], {
             stroke: '#9b87f5',
             strokeWidth: 3,
             selectable: false,
@@ -140,7 +142,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
       const canvasY = padding + (yMax - y) * yScale;
       
       if (canvasX >= 0 && canvasX <= width && canvasY >= 0 && canvasY <= height) {
-        fabricCanvas.add(new fabric.Circle({
+        fabricCanvas.add(new Circle({
           left: canvasX - 6,
           top: canvasY - 6,
           radius: 6,
@@ -211,7 +213,7 @@ const InteractiveCanvas = ({ data, intersections, width = 600, height = 400 }: I
     const handleMouseMove = (e: any) => {
       if (!fabricCanvas.isDragging || !panMode) return;
       const vpt = fabricCanvas.viewportTransform;
-      if (vpt) {
+      if (vpt && fabricCanvas.lastPosX && fabricCanvas.lastPosY) {
         vpt[4] += e.e.clientX - fabricCanvas.lastPosX;
         vpt[5] += e.e.clientY - fabricCanvas.lastPosY;
         fabricCanvas.requestRenderAll();

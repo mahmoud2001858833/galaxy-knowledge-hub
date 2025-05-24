@@ -10,7 +10,7 @@ import MathKeyboard from './MathKeyboard';
 import AnalysisTools from './AnalysisTools';
 import InteractiveCanvas from './InteractiveCanvas';
 import { MathEngine } from './MathEngine';
-import { Function, PlusCircle, Trash2 } from 'lucide-react';
+import { Calculator, PlusCircle, Trash2 } from 'lucide-react';
 
 const GraphVisualizer: React.FC = () => {
   const [equation1, setEquation1] = useState('x^2');
@@ -91,7 +91,7 @@ const GraphVisualizer: React.FC = () => {
               <Card className="bg-blue-900/30 border-purple-500/30">
                 <CardHeader>
                   <CardTitle className="text-white text-right flex items-center">
-                    <Function className="ml-2" />
+                    <Calculator className="ml-2" />
                     الرسم البياني التفاعلي
                   </CardTitle>
                 </CardHeader>
