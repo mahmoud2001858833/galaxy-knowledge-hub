@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, GraduationCap, FlaskConical } from "lucide-react";
 import { useLanguage } from '@/i18n/LanguageContext';
 import GradeTenChemistry from './GradeTenChemistry';
+import GradeNineChemistry from './GradeNineChemistry';
 
 const ChemistryGrades = () => {
   const { t, dir } = useLanguage();
@@ -16,29 +17,42 @@ const ChemistryGrades = () => {
       title: 'الصف التاسع',
       icon: <BookOpen className="w-8 h-8 text-green-400" />,
       color: 'from-green-500/20 to-emerald-500/30',
-      borderColor: 'border-green-500/30 hover:border-green-500/60'
+      borderColor: 'border-green-500/30 hover:border-green-500/60',
+      units: 2,
+      lessons: 4,
+      videos: 20
     },
     {
       id: 'grade-10',
       title: 'الصف العاشر',
       icon: <FlaskConical className="w-8 h-8 text-blue-400" />,
       color: 'from-blue-500/20 to-cyan-500/30',
-      borderColor: 'border-blue-500/30 hover:border-blue-500/60'
+      borderColor: 'border-blue-500/30 hover:border-blue-500/60',
+      units: 5,
+      lessons: 10,
+      videos: 50
     },
     {
       id: 'grade-11',
       title: 'الأول ثانوي',
       icon: <GraduationCap className="w-8 h-8 text-purple-400" />,
       color: 'from-purple-500/20 to-violet-500/30',
-      borderColor: 'border-purple-500/30 hover:border-purple-500/60'
+      borderColor: 'border-purple-500/30 hover:border-purple-500/60',
+      units: 0,
+      lessons: 0,
+      videos: 0
     }
   ];
+
+  if (selectedGrade === 'grade-9') {
+    return <GradeNineChemistry onBack={() => setSelectedGrade(null)} />;
+  }
 
   if (selectedGrade === 'grade-10') {
     return <GradeTenChemistry onBack={() => setSelectedGrade(null)} />;
   }
 
-  if (selectedGrade) {
+  if (selectedGrade === 'grade-11') {
     return (
       <div className="space-y-6">
         <Button
@@ -74,14 +88,23 @@ const ChemistryGrades = () => {
             className={`cursor-pointer overflow-hidden bg-gradient-to-br ${grade.color} ${grade.borderColor} transition-all duration-300 hover:-translate-y-1 shadow-lg`}
             onClick={() => setSelectedGrade(grade.id)}
           >
-            <CardContent className="flex flex-col items-center justify-center h-48 text-center p-6">
+            <CardContent className="flex flex-col items-center justify-center h-64 text-center p-6">
               <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm">
                 {grade.icon}
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">{grade.title}</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">{grade.title}</h3>
+              
+              {grade.videos > 0 && (
+                <div className="space-y-1 text-white/70 text-sm mb-4">
+                  <div>{grade.units} وحدات</div>
+                  <div>{grade.lessons} دروس</div>
+                  <div>{grade.videos} فيديو</div>
+                </div>
+              )}
+              
               <div className="mt-auto">
                 <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
-                  استكشف المحتوى
+                  {grade.videos > 0 ? 'استكشف المحتوى' : 'قريباً'}
                 </span>
               </div>
             </CardContent>
