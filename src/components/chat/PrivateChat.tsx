@@ -171,39 +171,43 @@ const PrivateChat = ({ user }) => {
     e.preventDefault();
     if (!message.trim() || isMessageSending) return;
     
+    // Prevent accidental contact search opening
+    if (message.trim().startsWith('@')) {
+      setMessage(message);
+      return;
+    }
+    
     sendMessage(message);
     setIsAutoScroll(true);
     
     setTimeout(scrollToBottom, 100);
   };
 
-  if (showContactsList) {
+  if (showContactsList && isMobile) {
     return (
-      <ContactsGrid
-        contacts={contacts}
-        onSelectContact={handleSelectContact}
-        onAddContact={() => setIsContactSearchOpen(true)}
-        onBack={handleBackToChat}
-      />
+      <div className="h-full">
+        <ContactsGrid
+          contacts={contacts}
+          onSelectContact={handleSelectContact}
+          onAddContact={() => setIsContactSearchOpen(true)}
+          onBack={handleBackToChat}
+        />
+      </div>
     );
   }
 
   return (
     <div className={`flex h-full w-full overflow-hidden ${isMobile ? 'bg-gradient-to-br from-slate-950 to-purple-950' : 'bg-gradient-to-br from-indigo-950/30 to-purple-950/30'}`}>
       {/* Enhanced mobile contacts list */}
-      {isMobile && (
-        <MobileContactsList 
-          contacts={contacts}
-          selectedContact={selectedContact}
-          setSelectedContact={setSelectedContact}
-          setIsContactSearchOpen={setIsContactSearchOpen}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-          toggleSortOrder={toggleSortOrder}
-          contactsAreaRef={contactsAreaRef}
-          scrollContactsUp={scrollContactsUp}
-          scrollContactsDown={scrollContactsDown}
-        />
+      {isMobile && selectedContact && (
+        <div className="absolute top-4 right-4 z-10">
+          <button
+            onClick={() => setShowContactsList(true)}
+            className="bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            👥
+          </button>
+        </div>
       )}
       
       {/* Desktop contacts sidebar */}
@@ -224,9 +228,9 @@ const PrivateChat = ({ user }) => {
 
       {!isMobile && selectedContact && <Separator orientation="vertical" className="h-full bg-blue-500/20" />}
 
-      {/* Enhanced chat content for mobile */}
+      {/* Enhanced chat content */}
       {selectedContact ? (
-        <div className="flex-1 h-full overflow-hidden">
+        <div className="flex-1 h-full overflow-hidden flex flex-col">
           <ChatInterface 
             selectedContact={selectedContact}
             messages={messages}

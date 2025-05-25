@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Play, BookOpen, ArrowRight } from "lucide-react";
 import { useLanguage } from '@/i18n/LanguageContext';
+import VideoPlayer from '../../VideoPlayer';
 
 interface MetalsActivityUnitProps {
   onBack: () => void;
@@ -12,6 +12,7 @@ interface MetalsActivityUnitProps {
 
 const MetalsActivityUnit = ({ onBack }: MetalsActivityUnitProps) => {
   const { t, dir } = useLanguage();
+  const [selectedVideo, setSelectedVideo] = useState<{title: string, url: string} | null>(null);
 
   const lessons = [
     {
@@ -73,9 +74,19 @@ const MetalsActivityUnit = ({ onBack }: MetalsActivityUnitProps) => {
     }
   ];
 
-  const openVideo = (url: string) => {
-    window.open(url, '_blank');
+  const openVideo = (title: string, url: string) => {
+    setSelectedVideo({ title, url });
   };
+
+  if (selectedVideo) {
+    return (
+      <VideoPlayer
+        videoUrl={selectedVideo.url}
+        title={selectedVideo.title}
+        onBack={() => setSelectedVideo(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -119,7 +130,7 @@ const MetalsActivityUnit = ({ onBack }: MetalsActivityUnitProps) => {
                       <Card 
                         key={videoIndex}
                         className="bg-blue-900/20 border-orange-500/20 cursor-pointer hover:bg-blue-900/30 transition-all duration-300"
-                        onClick={() => openVideo(video.url)}
+                        onClick={() => openVideo(video.title, video.url)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center gap-4">

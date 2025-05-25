@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   createBrowserRouter,
@@ -14,6 +13,10 @@ import NotFound from './pages/NotFound';
 import Physics from './pages/Physics';
 import Chemistry from './pages/Chemistry';
 import Mathematics from './pages/Mathematics';
+import CalculatorPage from './pages/CalculatorPage';
+import GraphVisualizerPage from './pages/GraphVisualizerPage';
+import MathematiciansPage from './pages/MathematiciansPage';
+import MathAIAssistantPage from './pages/MathAIAssistantPage';
 import Biology from './pages/Biology';
 import SubjectPuzzles from './pages/SubjectPuzzles';
 import VisualLibrary from './pages/VisualLibrary';
@@ -108,6 +111,22 @@ const router = createBrowserRouter([
   {
     path: '/mathematics',
     element: <AuthGuard><Mathematics /></AuthGuard>,
+  },
+  {
+    path: '/mathematics/calculator',
+    element: <AuthGuard><CalculatorPage /></AuthGuard>,
+  },
+  {
+    path: '/mathematics/graph-visualizer',
+    element: <AuthGuard><GraphVisualizerPage /></AuthGuard>,
+  },
+  {
+    path: '/mathematics/mathematicians',
+    element: <AuthGuard><MathematiciansPage /></AuthGuard>,
+  },
+  {
+    path: '/mathematics/ai-assistant',
+    element: <AuthGuard><MathAIAssistantPage /></AuthGuard>,
   },
   {
     path: '/biology',

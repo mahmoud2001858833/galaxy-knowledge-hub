@@ -1,64 +1,48 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Calculator, ChartLine, User, Brain } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
-import GraphVisualizer from '@/components/mathematics/GraphVisualizer';
-import Calculator3D from '@/components/mathematics/Calculator';
-import MathematiciansGallery from '@/components/mathematics/MathematiciansGallery';
-import MathAIAssistant from '@/components/mathematics/MathAIAssistant';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { useToast } from '@/hooks/use-toast';
 
 const Mathematics = () => {
   const { t } = useLanguage();
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Component map for easier rendering
-  const components: Record<string, React.ReactNode> = {
-    calculator: <Calculator3D />,
-    visualizer: <GraphVisualizer />,
-    mathematicians: <MathematiciansGallery />,
-    aiAssistant: <MathAIAssistant />
-  };
-  
-  // Card data
+  // Card data with navigation paths
   const cards = [
     {
       title: 'الحاسبة الرياضية',
       icon: <Calculator className="w-12 h-12 text-purple-400" />,
       description: 'حاسبة متقدمة للعمليات الرياضية المختلفة',
-      key: 'calculator'
+      path: '/mathematics/calculator'
     },
     {
       title: 'معرض الرسوم البيانية',
       icon: <ChartLine className="w-12 h-12 text-purple-400" />,
       description: 'عرض الدوال الرياضية برسوم بيانية تفاعلية',
-      key: 'visualizer'
+      path: '/mathematics/graph-visualizer'
     },
     {
       title: 'أعلام الرياضيات',
       icon: <User className="w-12 h-12 text-purple-400" />,
       description: 'تعرف على أشهر علماء الرياضيات وإنجازاتهم',
-      key: 'mathematicians'
+      path: '/mathematics/mathematicians'
     },
     {
       title: 'المساعد الذكي للرياضيات',
       icon: <Brain className="w-12 h-12 text-purple-400" />,
       description: 'مساعد ذكي لحل المسائل الرياضية والإجابة على الأسئلة',
-      key: 'aiAssistant'
+      path: '/mathematics/ai-assistant'
     }
   ];
   
-  // Handle card click
-  const handleCardClick = (key: string) => {
-    setSelectedComponent(key);
+  // Handle card click to navigate
+  const handleCardClick = (path: string) => {
+    navigate(path);
   };
   
   return (
@@ -83,12 +67,12 @@ const Mathematics = () => {
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {cards.map((card, index) => (
             <motion.div
               key={index}
-              className={`glass-card overflow-hidden relative cursor-pointer group transition-all duration-300 hover:-translate-y-1 border ${selectedComponent === card.key ? 'border-purple-400 shadow-glow-purple' : 'border-purple-500/20'}`}
-              onClick={() => handleCardClick(card.key)}
+              className="glass-card overflow-hidden relative cursor-pointer group transition-all duration-300 hover:-translate-y-1 border border-purple-500/20 hover:border-purple-400 hover:shadow-glow-purple"
+              onClick={() => handleCardClick(card.path)}
               whileHover={{ scale: 1.02 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -109,28 +93,6 @@ const Mathematics = () => {
             </motion.div>
           ))}
         </div>
-        
-        {selectedComponent && (
-          <motion.div
-            key={selectedComponent}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-glow-sm shadow-purple-500/10"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-purple-300">
-                {cards.find(card => card.key === selectedComponent)?.title}
-              </h2>
-              <button
-                onClick={() => setSelectedComponent(null)}
-                className="text-white/70 hover:text-white"
-              >
-                &times; إغلاق
-              </button>
-            </div>
-            {components[selectedComponent]}
-          </motion.div>
-        )}
       </main>
       
       <Footer />
