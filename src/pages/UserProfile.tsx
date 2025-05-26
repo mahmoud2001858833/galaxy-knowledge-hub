@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, CircleCheck, FileImage, FileText, Award, Clock, Trophy, Book, MessageSquare } from 'lucide-react';
+import { User, CircleCheck, FileImage, FileText, Award, Clock, Trophy, Book, MessageSquare, Video, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import StarField from '@/components/StarField';
@@ -19,6 +20,7 @@ type UserProfile = {
   avatar_url?: string | null;
   score: number;
   solved_puzzles: number;
+  usage_time: number;
 };
 
 type UploadedImage = {
@@ -49,10 +51,13 @@ type SolvedPuzzle = {
   points?: number;
 };
 
-type Contact = {
+type WatchedVideo = {
   id: string;
-  username: string;
-  avatar_url?: string | null;
+  video_title: string;
+  video_url: string;
+  subject: string;
+  watched_at: string;
+  duration_watched: number;
 };
 
 const UserProfile = () => {
@@ -60,11 +65,10 @@ const UserProfile = () => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [journals, setJournals] = useState<UploadedJournal[]>([]);
   const [puzzles, setPuzzles] = useState<SolvedPuzzle[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [watchedVideos, setWatchedVideos] = useState<WatchedVideo[]>([]);
+  const [messagesCount, setMessagesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [usageTime, setUsageTime] = useState(0);
-  const [level, setLevel] = useState({ level: 0, progress: 0, nextLevel: 60 });
   const { toast } = useToast();
   
   useEffect(() => {
@@ -75,47 +79,6 @@ const UserProfile = () => {
       document.title = "منصة في فلك المعرفة";
     };
   }, []);
-
-  useEffect(() => {
-    if (profile) {
-      // Get usage time from localStorage or initialize it
-      const storedTime = localStorage.getItem(`user_${profile.id}_usage_time`) || "0";
-      const initialTime = parseInt(storedTime, 10);
-      setUsageTime(initialTime);
-      
-      // Calculate level - 1 level per 60 minutes (1 hour)
-      const calculatedLevel = Math.floor(initialTime / 60);
-      const remainingMinutes = initialTime % 60;
-      
-      setLevel({
-        level: calculatedLevel,
-        progress: remainingMinutes,
-        nextLevel: 60
-      });
-      
-      // Start tracking usage time
-      const timer = setInterval(() => {
-        setUsageTime(prevTime => {
-          const newTime = prevTime + 1/60; // Add 1 second converted to minutes
-          localStorage.setItem(`user_${profile.id}_usage_time`, newTime.toString());
-          
-          // Update level calculation
-          const newLevel = Math.floor(newTime / 60);
-          const newRemaining = newTime % 60;
-          
-          setLevel({
-            level: newLevel,
-            progress: newRemaining,
-            nextLevel: 60
-          });
-          
-          return newTime;
-        });
-      }, 1000); // Update every second
-      
-      return () => clearInterval(timer);
-    }
-  }, [profile]);
   
   const fetchUserData = async () => {
     try {
@@ -146,8 +109,8 @@ const UserProfile = () => {
         .single();
       
       if (profileError) {
-        // If profile doesn't exist, try to create one
         if (profileError.code === 'PGRST116') {
+          // Create profile if doesn't exist
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert([
@@ -155,7 +118,8 @@ const UserProfile = () => {
                 id: user.id, 
                 username: user.email?.split('@')[0] || `user_${user.id.substring(0, 8)}`,
                 score: 0,
-                solved_puzzles: 0
+                solved_puzzles: 0,
+                usage_time: 0
               }
             ])
             .select()
@@ -171,42 +135,34 @@ const UserProfile = () => {
       }
       
       // Fetch uploaded images
-      const { data: imagesData, error: imagesError } = await supabase
+      const { data: imagesData } = await supabase
         .from('educational_images')
         .select('*')
         .eq('created_by', user.id);
-      
-      if (imagesError) throw imagesError;
       
       if (imagesData) {
         setImages(imagesData as UploadedImage[]);
       }
       
       // Fetch uploaded journals
-      const { data: journalsData, error: journalsError } = await supabase
+      const { data: journalsData } = await supabase
         .from('scientific_journals')
         .select('*')
         .eq('created_by', user.id);
-      
-      if (journalsError) throw journalsError;
       
       if (journalsData) {
         setJournals(journalsData as UploadedJournal[]);
       }
       
-      // Fetch solved puzzles with additional details
-      const { data: puzzlesData, error: puzzlesError } = await supabase
+      // Fetch solved puzzles
+      const { data: puzzlesData } = await supabase
         .from('user_solved_puzzles')
         .select('*')
         .eq('user_id', user.id)
         .order('solved_at', { ascending: false });
       
-      if (puzzlesError) throw puzzlesError;
-      
       if (puzzlesData && puzzlesData.length > 0) {
-        // Enhanced puzzle data with details
         const enhancedPuzzles = await Promise.all(puzzlesData.map(async (puzzle) => {
-          // Try to get puzzle details based on subject
           let puzzleDetails: any = null;
           
           try {
@@ -234,29 +190,25 @@ const UserProfile = () => {
         
         setPuzzles(enhancedPuzzles);
       }
+
+      // Fetch watched videos
+      const { data: videosData } = await supabase
+        .from('watched_videos')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('watched_at', { ascending: false });
       
-      // Fetch contacts
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('contact_id')
-        .eq('user_id', user.id);
-        
-      if (contactsError) throw contactsError;
-      
-      if (contactsData && contactsData.length > 0) {
-        const contactIds = contactsData.map(c => c.contact_id);
-        
-        const { data: contactProfiles, error: contactProfilesError } = await supabase
-          .from('users_profiles')
-          .select('id, username, avatar_url')
-          .in('id', contactIds);
-          
-        if (contactProfilesError) throw contactProfilesError;
-        
-        if (contactProfiles) {
-          setContacts(contactProfiles as Contact[]);
-        }
+      if (videosData) {
+        setWatchedVideos(videosData as WatchedVideo[]);
       }
+
+      // Fetch messages count
+      const { count: messageCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact' })
+        .eq('sender_id', user.id);
+        
+      setMessagesCount(messageCount || 0);
       
     } catch (error: any) {
       console.error('Error fetching user data:', error);
@@ -288,13 +240,13 @@ const UserProfile = () => {
   const getSubjectColor = (subject: string) => {
     switch (subject) {
       case 'physics':
-        return 'text-subject-physics-primary';
+        return 'text-blue-400';
       case 'chemistry':
-        return 'text-subject-chemistry-primary';
+        return 'text-green-400';
       case 'biology':
-        return 'text-subject-biology-primary';
+        return 'text-purple-400';
       case 'mathematics':
-        return 'text-subject-mathematics-primary';
+        return 'text-orange-400';
       default:
         return 'text-blue-500';
     }
@@ -312,8 +264,17 @@ const UserProfile = () => {
         return 'bg-blue-500/20 text-blue-400';
     }
   };
-  
-  // Calculate progress percentage for the progress bar
+
+  const calculateLevel = (usageTime: number) => {
+    if (usageTime < 30) return { level: 0, progress: usageTime, nextLevel: 30, title: 'مبتدئ' };
+    if (usageTime < 60) return { level: 1, progress: usageTime - 30, nextLevel: 30, title: 'متعلم' };
+    if (usageTime < 120) return { level: 2, progress: usageTime - 60, nextLevel: 60, title: 'نشط' };
+    if (usageTime < 240) return { level: 3, progress: usageTime - 120, nextLevel: 120, title: 'متقدم' };
+    if (usageTime < 480) return { level: 4, progress: usageTime - 240, nextLevel: 240, title: 'خبير' };
+    return { level: 5, progress: 100, nextLevel: 100, title: 'أسطورة' };
+  };
+
+  const level = profile ? calculateLevel(profile.usage_time || 0) : { level: 0, progress: 0, nextLevel: 30, title: 'مبتدئ' };
   const progressPercentage = (level.progress / level.nextLevel) * 100;
   
   return (
@@ -331,7 +292,7 @@ const UserProfile = () => {
         ) : profile ? (
           <>
             <motion.div 
-              className="text-center mb-12"
+              className="text-center mb-8"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
             >
@@ -351,34 +312,21 @@ const UserProfile = () => {
               
               <div className="flex flex-col items-center justify-center mt-2">
                 <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 border-none text-lg mb-2">
-                  المستوى {level.level}
+                  المستوى {level.level} - {level.title}
                 </Badge>
                 
-                <div className="w-80 max-w-full space-y-1">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-white/70">التقدم للمستوى التالي</span>
-                    <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} دقيقة</span>
+                {level.level > 0 && (
+                  <div className="w-80 max-w-full space-y-1">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-white/70">التقدم للمستوى التالي</span>
+                      <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} دقيقة</span>
+                    </div>
+                    <Progress 
+                      value={progressPercentage} 
+                      className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
+                    />
                   </div>
-                  <Progress 
-                    value={progressPercentage} 
-                    className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
-                  />
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center space-x-4 mt-4 text-white/70">
-                <div className="flex items-center">
-                  <CircleCheck className="w-4 h-4 ml-1 text-green-400" />
-                  <span>{profile.solved_puzzles || 0} ألغاز محلولة</span>
-                </div>
-                <div className="flex items-center mr-4">
-                  <Award className="w-4 h-4 ml-1 text-yellow-400" />
-                  <span>{profile.score || 0} نقطة</span>
-                </div>
-                <div className="flex items-center mr-4">
-                  <Clock className="w-4 h-4 ml-1 text-blue-400" />
-                  <span>{Math.floor(usageTime / 60)} ساعة و {Math.round(usageTime % 60)} دقيقة</span>
-                </div>
+                )}
               </div>
               
               {isAdmin && (
@@ -386,6 +334,45 @@ const UserProfile = () => {
                   مشرف
                 </div>
               )}
+            </motion.div>
+
+            {/* Stats Grid */}
+            <motion.div 
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                <CardContent className="p-4 text-center">
+                  <Award className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                  <p className="text-2xl font-bold text-white">{profile.score || 0}</p>
+                  <p className="text-sm text-white/70">النقاط</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                <CardContent className="p-4 text-center">
+                  <Trophy className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                  <p className="text-2xl font-bold text-white">{puzzles.length}</p>
+                  <p className="text-sm text-white/70">ألغاز محلولة</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                <CardContent className="p-4 text-center">
+                  <Video className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                  <p className="text-2xl font-bold text-white">{watchedVideos.length}</p>
+                  <p className="text-sm text-white/70">فيديوهات مشاهدة</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                <CardContent className="p-4 text-center">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-blue-400" />
+                  <p className="text-2xl font-bold text-white">{messagesCount}</p>
+                  <p className="text-sm text-white/70">رسائل مرسلة</p>
+                </CardContent>
+              </Card>
             </motion.div>
             
             {isAdmin && (
@@ -397,22 +384,26 @@ const UserProfile = () => {
             <Card className="bg-white/5 backdrop-blur-sm border-white/10">
               <CardContent className="p-6">
                 <Tabs defaultValue="puzzles">
-                  <TabsList className="grid grid-cols-4 mb-6">
+                  <TabsList className="grid grid-cols-5 mb-6">
                     <TabsTrigger value="puzzles" className="flex items-center gap-1">
                       <Trophy className="h-4 w-4" />
-                      <span>الألغاز المحلولة</span>
+                      <span>الألغاز</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="videos" className="flex items-center gap-1">
+                      <Video className="h-4 w-4" />
+                      <span>الفيديوهات</span>
                     </TabsTrigger>
                     <TabsTrigger value="images" className="flex items-center gap-1">
                       <FileImage className="h-4 w-4" />
-                      <span>الصور المرفوعة</span>
+                      <span>الصور</span>
                     </TabsTrigger>
                     <TabsTrigger value="journals" className="flex items-center gap-1">
                       <Book className="h-4 w-4" />
-                      <span>المجلات المرفوعة</span>
+                      <span>المجلات</span>
                     </TabsTrigger>
-                    <TabsTrigger value="contacts" className="flex items-center gap-1">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>جهات الاتصال</span>
+                    <TabsTrigger value="stats" className="flex items-center gap-1">
+                      <Star className="h-4 w-4" />
+                      <span>الإحصائيات</span>
                     </TabsTrigger>
                   </TabsList>
                   
@@ -448,6 +439,38 @@ const UserProfile = () => {
                     ) : (
                       <div className="text-center py-10 text-white/70">
                         لم تقم بحل أي لغز بعد
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="videos" className="mt-0">
+                    {watchedVideos.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {watchedVideos.map((video) => (
+                          <Card key={video.id} className="bg-white/5 border-white/10 hover:border-white/30 transition-all">
+                            <CardContent className="p-4">
+                              <div className="flex items-center mb-2">
+                                <Video className="w-4 h-4 ml-2 text-purple-400" />
+                                <span className={`px-2 py-1 rounded text-xs ${getSubjectColor(video.subject)}`}>
+                                  {getSubjectName(video.subject)}
+                                </span>
+                              </div>
+                              <h3 className="text-lg font-medium text-white mb-1">{video.video_title}</h3>
+                              <div className="flex justify-between items-center">
+                                <p className="text-xs text-white/50">
+                                  شوهد في {new Date(video.watched_at).toLocaleDateString('ar-SA')}
+                                </p>
+                                <span className="text-xs text-purple-300">
+                                  {Math.floor(video.duration_watched / 60)} دقيقة
+                                </span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-white/70">
+                        لم تشاهد أي فيديوهات بعد
                       </div>
                     )}
                   </TabsContent>
@@ -523,32 +546,50 @@ const UserProfile = () => {
                       </div>
                     )}
                   </TabsContent>
-                  
-                  <TabsContent value="contacts" className="mt-0">
-                    {contacts.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {contacts.map((contact) => (
-                          <Card key={contact.id} className="bg-white/5 border-white/10 hover:border-white/30 transition-all">
-                            <CardContent className="p-4 flex flex-col items-center text-center">
-                              <Avatar className="h-16 w-16 mb-3 border-2 border-blue-500/20">
-                                {contact.avatar_url ? (
-                                  <AvatarImage src={contact.avatar_url} alt={contact.username} />
-                                ) : (
-                                  <AvatarFallback className="bg-blue-700/50">
-                                    {contact.username[0]}
-                                  </AvatarFallback>
-                                )}
-                              </Avatar>
-                              <h3 className="text-lg font-medium text-white">{contact.username}</h3>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-10 text-white/70">
-                        ليس لديك جهات اتصال بعد
-                      </div>
-                    )}
+
+                  <TabsContent value="stats" className="mt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="bg-white/5 border-white/10">
+                        <CardHeader>
+                          <CardTitle className="text-white text-center">وقت الاستخدام</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-center">
+                            <Clock className="w-12 h-12 mx-auto mb-4 text-blue-400" />
+                            <p className="text-3xl font-bold text-white mb-2">
+                              {Math.floor((profile.usage_time || 0) / 60)} ساعة {Math.round((profile.usage_time || 0) % 60)} دقيقة
+                            </p>
+                            <p className="text-white/70">إجمالي وقت الاستخدام</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-white/5 border-white/10">
+                        <CardHeader>
+                          <CardTitle className="text-white text-center">توزيع النشاطات</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-white/70">الألغاز المحلولة</span>
+                              <Badge className="bg-green-500/20 text-green-300">{puzzles.length}</Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-white/70">الفيديوهات المشاهدة</span>
+                              <Badge className="bg-purple-500/20 text-purple-300">{watchedVideos.length}</Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-white/70">الصور المرفوعة</span>
+                              <Badge className="bg-blue-500/20 text-blue-300">{images.length}</Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-white/70">المجلات المرفوعة</span>
+                              <Badge className="bg-orange-500/20 text-orange-300">{journals.length}</Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </TabsContent>
                 </Tabs>
               </CardContent>

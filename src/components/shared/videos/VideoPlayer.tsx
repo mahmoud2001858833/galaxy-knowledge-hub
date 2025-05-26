@@ -1,17 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Maximize2, Minimize2, Play, Pause } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
 
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   onBack: () => void;
+  subject?: string;
 }
 
-const VideoPlayer = ({ videoUrl, title, onBack }: VideoPlayerProps) => {
+const VideoPlayer = ({ videoUrl, title, onBack, subject = 'general' }: VideoPlayerProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [watchStartTime, setWatchStartTime] = useState<number>(Date.now());
 
   // Extract YouTube video ID from URL
   const getYouTubeId = (url: string) => {
@@ -27,12 +30,51 @@ const VideoPlayer = ({ videoUrl, title, onBack }: VideoPlayerProps) => {
     setIsFullscreen(!isFullscreen);
   };
 
+  // Track video watch time
+  useEffect(() => {
+    setWatchStartTime(Date.now());
+
+    return () => {
+      // Save watch time when component unmounts
+      saveWatchTime();
+    };
+  }, []);
+
+  const saveWatchTime = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const watchDuration = Math.floor((Date.now() - watchStartTime) / 1000); // in seconds
+      
+      // Only save if watched for more than 10 seconds
+      if (watchDuration > 10) {
+        await supabase
+          .from('watched_videos')
+          .insert({
+            user_id: user.id,
+            video_title: title,
+            video_url: videoUrl,
+            subject: subject,
+            duration_watched: watchDuration
+          });
+
+        console.log(`Video watch time saved: ${watchDuration} seconds`);
+      }
+    } catch (error) {
+      console.error('Error saving watch time:', error);
+    }
+  };
+
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
       <div className="space-y-4 p-4">
         <div className="flex items-center justify-between">
           <Button
-            onClick={onBack}
+            onClick={() => {
+              saveWatchTime();
+              onBack();
+            }}
             variant="ghost"
             className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30"
           >

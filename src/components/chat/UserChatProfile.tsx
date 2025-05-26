@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Trophy, MessageSquare, Clock, Loader2 } from 'lucide-react';
+import { User, Trophy, MessageSquare, Clock, Loader2, Video } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
   const [loading, setLoading] = useState(false);
   const [messagesCount, setMessagesCount] = useState(0);
   const [solvedPuzzles, setSolvedPuzzles] = useState<SolvedPuzzle[]>([]);
+  const [watchedVideosCount, setWatchedVideosCount] = useState(0);
   const [joinDate, setJoinDate] = useState<string | null>(null);
   
   useEffect(() => {
@@ -60,6 +61,16 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
       if (!puzzlesError) {
         setSolvedPuzzles(puzzlesData || []);
       }
+
+      // جلب عدد الفيديوهات المشاهدة
+      const { count: videosCount, error: videosError } = await supabase
+        .from('watched_videos')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id);
+        
+      if (!videosError) {
+        setWatchedVideosCount(videosCount || 0);
+      }
       
       // حساب تاريخ الانضمام
       if (user?.created_at) {
@@ -76,18 +87,19 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
     }
   };
   
-  const getLevel = (score: number) => {
-    if (score < 100) return { level: 1, progress: score, nextLevel: 100 };
-    if (score < 300) return { level: 2, progress: score - 100, nextLevel: 200 };
-    if (score < 600) return { level: 3, progress: score - 300, nextLevel: 300 };
-    if (score < 1000) return { level: 4, progress: score - 600, nextLevel: 400 };
-    if (score < 1500) return { level: 5, progress: score - 1000, nextLevel: 500 };
-    return { level: 6, progress: 100, nextLevel: 100 };
+  const calculateLevel = (usageTime: number) => {
+    if (usageTime < 30) return { level: 0, progress: usageTime, nextLevel: 30, title: 'مبتدئ' };
+    if (usageTime < 60) return { level: 1, progress: usageTime - 30, nextLevel: 30, title: 'متعلم' };
+    if (usageTime < 120) return { level: 2, progress: usageTime - 60, nextLevel: 60, title: 'نشط' };
+    if (usageTime < 240) return { level: 3, progress: usageTime - 120, nextLevel: 120, title: 'متقدم' };
+    if (usageTime < 480) return { level: 4, progress: usageTime - 240, nextLevel: 240, title: 'خبير' };
+    return { level: 5, progress: 100, nextLevel: 100, title: 'أسطورة' };
   };
   
   const userScore = profile?.score || 0;
-  const levelInfo = getLevel(userScore);
-  const progressPercentage = (levelInfo.progress / levelInfo.nextLevel) * 100;
+  const usageTime = profile?.usage_time || 0;
+  const levelInfo = calculateLevel(usageTime);
+  const progressPercentage = levelInfo.level > 0 ? (levelInfo.progress / levelInfo.nextLevel) * 100 : 0;
   
   return (
     <motion.div
@@ -101,7 +113,7 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
           <div className="flex justify-between items-start">
             <CardTitle className="text-white text-lg">الملف الشخصي</CardTitle>
             <Badge variant="outline" className="bg-blue-900/50 border-blue-500/30 text-blue-300">
-              المستوى {levelInfo.level}
+              المستوى {levelInfo.level} - {levelInfo.title}
             </Badge>
           </div>
           <CardDescription className="text-white/70">
@@ -144,13 +156,15 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
               </div>
             </div>
             
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-white/70">التقدم للمستوى التالي</span>
-                <span className="text-blue-300">{levelInfo.progress}/{levelInfo.nextLevel}</span>
+            {levelInfo.level > 0 && (
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-white/70">التقدم للمستوى التالي</span>
+                  <span className="text-blue-300">{Math.round(levelInfo.progress)}/{levelInfo.nextLevel} دقيقة</span>
+                </div>
+                <Progress value={progressPercentage} className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" />
               </div>
-              <Progress value={progressPercentage} className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" />
-            </div>
+            )}
             
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-blue-900/30 rounded-lg p-3 border border-blue-800/30 text-center">
@@ -166,6 +180,16 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
                 <h4 className="text-white font-medium text-sm">الألغاز المحلولة</h4>
                 <p className="text-2xl font-bold text-purple-300">
                   {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : solvedPuzzles.length}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 mb-4">
+              <div className="bg-green-900/30 rounded-lg p-3 border border-green-800/30 text-center">
+                <Video className="h-5 w-5 mx-auto mb-1 text-green-400" />
+                <h4 className="text-white font-medium text-sm">الفيديوهات المشاهدة</h4>
+                <p className="text-2xl font-bold text-green-300">
+                  {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : watchedVideosCount}
                 </p>
               </div>
             </div>

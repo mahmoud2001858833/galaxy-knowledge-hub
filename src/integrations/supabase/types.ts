@@ -295,24 +295,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           id: string
           score: number | null
           solved_puzzles: number | null
+          usage_time: number | null
           username: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           id: string
           score?: number | null
           solved_puzzles?: number | null
+          usage_time?: number | null
           username: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           score?: number | null
           solved_puzzles?: number | null
+          usage_time?: number | null
           username?: string
         }
         Relationships: []
@@ -527,6 +533,36 @@ export type Database = {
         }
         Relationships: []
       }
+      watched_videos: {
+        Row: {
+          duration_watched: number | null
+          id: string
+          subject: string
+          user_id: string
+          video_title: string
+          video_url: string
+          watched_at: string
+        }
+        Insert: {
+          duration_watched?: number | null
+          id?: string
+          subject: string
+          user_id: string
+          video_title: string
+          video_url: string
+          watched_at?: string
+        }
+        Update: {
+          duration_watched?: number | null
+          id?: string
+          subject?: string
+          user_id?: string
+          video_title?: string
+          video_url?: string
+          watched_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -535,6 +571,10 @@ export type Database = {
       adjust_user_score: {
         Args: { user_id: string; points_adjustment: number }
         Returns: undefined
+      }
+      calculate_user_level: {
+        Args: { usage_minutes: number }
+        Returns: number
       }
     }
     Enums: {

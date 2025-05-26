@@ -8,7 +8,6 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/i18n/LanguageContext';
 
@@ -19,49 +18,46 @@ interface UserProfileCardProps {
     avatar_url?: string;
     score: number;
     solved_puzzles: number;
+    usage_time?: number;
   } | null;
   isAdmin?: boolean;
 }
 
 const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
   const [usageTime, setUsageTime] = useState(0);
-  const [level, setLevel] = useState({ level: 0, progress: 0, nextLevel: 60 });
+  const [level, setLevel] = useState({ level: 0, progress: 0, nextLevel: 30, title: 'مبتدئ' });
   const { toast } = useToast();
   const { t, dir } = useLanguage();
   
   // Calculate level based on usage time (minutes)
+  const calculateLevel = (time: number) => {
+    if (time < 30) return { level: 0, progress: time, nextLevel: 30, title: 'مبتدئ' };
+    if (time < 60) return { level: 1, progress: time - 30, nextLevel: 30, title: 'متعلم' };
+    if (time < 120) return { level: 2, progress: time - 60, nextLevel: 60, title: 'نشط' };
+    if (time < 240) return { level: 3, progress: time - 120, nextLevel: 120, title: 'متقدم' };
+    if (time < 480) return { level: 4, progress: time - 240, nextLevel: 240, title: 'خبير' };
+    return { level: 5, progress: 100, nextLevel: 100, title: 'أسطورة' };
+  };
+  
   useEffect(() => {
     if (user) {
-      // Get usage time from localStorage or initialize it
-      const storedTime = localStorage.getItem(`user_${user.id}_usage_time`) || "0";
-      const initialTime = parseInt(storedTime, 10);
+      // Initialize with user's stored usage time or 0
+      const initialTime = user.usage_time || 0;
       setUsageTime(initialTime);
-      
-      // Calculate level - 1 level per 60 minutes (1 hour)
-      const calculatedLevel = Math.floor(initialTime / 60);
-      const remainingMinutes = initialTime % 60;
-      
-      setLevel({
-        level: calculatedLevel,
-        progress: remainingMinutes,
-        nextLevel: 60
-      });
+      setLevel(calculateLevel(initialTime));
       
       // Start tracking usage time
       const timer = setInterval(() => {
         setUsageTime(prevTime => {
           const newTime = prevTime + 1/60; // Add 1 second converted to minutes
-          localStorage.setItem(`user_${user.id}_usage_time`, newTime.toString());
           
           // Update level calculation
-          const newLevel = Math.floor(newTime / 60);
-          const newRemaining = newTime % 60;
+          setLevel(calculateLevel(newTime));
           
-          setLevel({
-            level: newLevel,
-            progress: newRemaining,
-            nextLevel: 60
-          });
+          // Update database every 5 minutes
+          if (Math.floor(newTime) % 5 === 0 && Math.floor(newTime) !== Math.floor(prevTime)) {
+            updateUsageTimeInDB(newTime);
+          }
           
           return newTime;
         });
@@ -70,6 +66,19 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
       return () => clearInterval(timer);
     }
   }, [user]);
+
+  const updateUsageTimeInDB = async (time: number) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('profiles')
+        .update({ usage_time: Math.floor(time) })
+        .eq('id', user.id);
+    } catch (error) {
+      console.error('Error updating usage time:', error);
+    }
+  };
 
   if (!user) {
     return (
@@ -91,7 +100,7 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
   }
 
   // Calculate progress percentage for the progress bar
-  const progressPercentage = (level.progress / level.nextLevel) * 100;
+  const progressPercentage = level.level > 0 ? (level.progress / level.nextLevel) * 100 : 0;
 
   return (
     <Card className="bg-white/5 backdrop-blur-sm border-white/10 text-right">
@@ -136,22 +145,25 @@ const UserProfileCard = ({ user, isAdmin = false }: UserProfileCardProps) => {
               </div>
               
               <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 border-none">
-                {t.profile.level} {level.level}
+                {t.profile.level} {level.level} - {level.title}
               </Badge>
               
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-white/70">{t.profile.progress}</span>
-                  <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} {t.profile.minutes}</span>
+              {level.level > 0 && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/70">{t.profile.progress}</span>
+                    <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} {t.profile.minutes}</span>
+                  </div>
+                  <Progress 
+                    value={progressPercentage} 
+                    className="h-1 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
+                  />
                 </div>
-                <Progress 
-                  value={progressPercentage} 
-                  className="h-1 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
-                />
-                <div className="flex items-center text-xs text-white/50">
-                  <Clock className="h-3 w-3 ml-1" />
-                  <span>{t.profile.usageTime}: {Math.floor(usageTime / 60)} {t.profile.hours} {Math.round(usageTime % 60)} {t.profile.minutes}</span>
-                </div>
+              )}
+              
+              <div className="flex items-center text-xs text-white/50">
+                <Clock className="h-3 w-3 ml-1" />
+                <span>{t.profile.usageTime}: {Math.floor(usageTime / 60)} {t.profile.hours} {Math.round(usageTime % 60)} {t.profile.minutes}</span>
               </div>
             </div>
           </div>
