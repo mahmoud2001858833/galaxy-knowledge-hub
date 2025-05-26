@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Trophy, MessageSquare, Clock, Loader2, Video } from 'lucide-react';
+import { User, Trophy, MessageSquare, Clock, Loader2, Video, AlertCircle, RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserChatProfileProps {
@@ -26,6 +28,7 @@ interface SolvedPuzzle {
 
 const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [messagesCount, setMessagesCount] = useState(0);
   const [solvedPuzzles, setSolvedPuzzles] = useState<SolvedPuzzle[]>([]);
   const [watchedVideosCount, setWatchedVideosCount] = useState(0);
@@ -40,6 +43,7 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
   const fetchUserStats = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // جلب عدد الرسائل
       const { count: messageCount, error: messagesError } = await supabase
@@ -47,7 +51,9 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
         .select('*', { count: 'exact' })
         .eq('sender_id', user.id);
         
-      if (!messagesError) {
+      if (messagesError) {
+        console.error('Error fetching messages:', messagesError);
+      } else {
         setMessagesCount(messageCount || 0);
       }
       
@@ -58,7 +64,9 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
         .eq('user_id', user.id)
         .limit(5);
         
-      if (!puzzlesError) {
+      if (puzzlesError) {
+        console.error('Error fetching puzzles:', puzzlesError);
+      } else {
         setSolvedPuzzles(puzzlesData || []);
       }
 
@@ -68,7 +76,9 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
         .select('*', { count: 'exact' })
         .eq('user_id', user.id);
         
-      if (!videosError) {
+      if (videosError) {
+        console.error('Error fetching videos:', videosError);
+      } else {
         setWatchedVideosCount(videosCount || 0);
       }
       
@@ -80,11 +90,16 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
         const createdAt = new Date(profile.created_at);
         setJoinDate(createdAt.toLocaleDateString('ar-SA'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في جلب إحصائيات المستخدم:', error);
+      setError('فشل في تحميل بيانات المستخدم');
     } finally {
       setLoading(false);
     }
+  };
+  
+  const retryFetch = () => {
+    fetchUserStats();
   };
   
   const calculateLevel = (usageTime: number) => {
@@ -166,55 +181,76 @@ const UserChatProfile: React.FC<UserChatProfileProps> = ({ user, profile }) => {
               </div>
             )}
             
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-blue-900/30 rounded-lg p-3 border border-blue-800/30 text-center">
-                <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-400" />
-                <h4 className="text-white font-medium text-sm">الرسائل</h4>
-                <p className="text-2xl font-bold text-blue-300">
-                  {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : messagesCount}
-                </p>
+            {error ? (
+              <div className="mb-4">
+                <Alert className="bg-red-900/30 border-red-500/50">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-white">
+                    {error}
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={retryFetch}
+                  className="mt-2 w-full bg-blue-600 hover:bg-blue-700"
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 ml-2" />
+                  إعادة المحاولة
+                </Button>
               </div>
-              
-              <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-800/30 text-center">
-                <Trophy className="h-5 w-5 mx-auto mb-1 text-purple-400" />
-                <h4 className="text-white font-medium text-sm">الألغاز المحلولة</h4>
-                <p className="text-2xl font-bold text-purple-300">
-                  {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : solvedPuzzles.length}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 mb-4">
-              <div className="bg-green-900/30 rounded-lg p-3 border border-green-800/30 text-center">
-                <Video className="h-5 w-5 mx-auto mb-1 text-green-400" />
-                <h4 className="text-white font-medium text-sm">الفيديوهات المشاهدة</h4>
-                <p className="text-2xl font-bold text-green-300">
-                  {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : watchedVideosCount}
-                </p>
-              </div>
-            </div>
-            
-            {solvedPuzzles.length > 0 && (
-              <div>
-                <h3 className="text-white/80 text-sm font-medium mb-2 flex items-center gap-1">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
-                  <span>آخر الإنجازات</span>
-                </h3>
-                <div className="space-y-2">
-                  {solvedPuzzles.slice(0, 3).map((puzzle: SolvedPuzzle, index) => (
-                    <motion.div
-                      key={puzzle.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-blue-900/20 p-2 rounded-md border border-blue-800/30 text-sm flex justify-between"
-                    >
-                      <span className="text-white/90 truncate max-w-[70%]">{puzzle.puzzle_title || `لغز ${index + 1}`}</span>
-                      <span className="text-blue-300">{puzzle.points || 0} نقطة</span>
-                    </motion.div>
-                  ))}
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-blue-900/30 rounded-lg p-3 border border-blue-800/30 text-center">
+                    <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-400" />
+                    <h4 className="text-white font-medium text-sm">الرسائل</h4>
+                    <p className="text-2xl font-bold text-blue-300">
+                      {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : messagesCount}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-800/30 text-center">
+                    <Trophy className="h-5 w-5 mx-auto mb-1 text-purple-400" />
+                    <h4 className="text-white font-medium text-sm">الألغاز المحلولة</h4>
+                    <p className="text-2xl font-bold text-purple-300">
+                      {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : solvedPuzzles.length}
+                    </p>
+                  </div>
                 </div>
-              </div>
+
+                <div className="grid grid-cols-1 gap-3 mb-4">
+                  <div className="bg-green-900/30 rounded-lg p-3 border border-green-800/30 text-center">
+                    <Video className="h-5 w-5 mx-auto mb-1 text-green-400" />
+                    <h4 className="text-white font-medium text-sm">الفيديوهات المشاهدة</h4>
+                    <p className="text-2xl font-bold text-green-300">
+                      {loading ? <Loader2 className="h-5 w-5 mx-auto animate-spin" /> : watchedVideosCount}
+                    </p>
+                  </div>
+                </div>
+                
+                {solvedPuzzles.length > 0 && (
+                  <div>
+                    <h3 className="text-white/80 text-sm font-medium mb-2 flex items-center gap-1">
+                      <Trophy className="h-4 w-4 text-yellow-500" />
+                      <span>آخر الإنجازات</span>
+                    </h3>
+                    <div className="space-y-2">
+                      {solvedPuzzles.slice(0, 3).map((puzzle: SolvedPuzzle, index) => (
+                        <motion.div
+                          key={puzzle.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="bg-blue-900/20 p-2 rounded-md border border-blue-800/30 text-sm flex justify-between"
+                        >
+                          <span className="text-white/90 truncate max-w-[70%]">{puzzle.puzzle_title || `لغز ${index + 1}`}</span>
+                          <span className="text-blue-300">{puzzle.points || 0} نقطة</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </ScrollArea>
         </CardContent>

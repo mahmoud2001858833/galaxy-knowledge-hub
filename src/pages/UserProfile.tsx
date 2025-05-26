@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, CircleCheck, FileImage, FileText, Award, Clock, Trophy, Book, MessageSquare, Video, Star } from 'lucide-react';
+import { User, CircleCheck, FileImage, FileText, Award, Clock, Trophy, Book, MessageSquare, Video, Star, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -68,7 +69,9 @@ const UserProfile = () => {
   const [watchedVideos, setWatchedVideos] = useState<WatchedVideo[]>([]);
   const [messagesCount, setMessagesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -80,85 +83,148 @@ const UserProfile = () => {
     };
   }, []);
   
+  const createProfile = async (user: any) => {
+    try {
+      console.log('Creating new profile for user:', user.id);
+      
+      const username = user.email?.split('@')[0] || `user_${user.id.substring(0, 8)}`;
+      
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert([
+          { 
+            id: user.id, 
+            username: username,
+            score: 0,
+            solved_puzzles: 0,
+            usage_time: 0,
+            avatar_url: null
+          }
+        ])
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('Error creating profile:', createError);
+        throw createError;
+      }
+      
+      console.log('Profile created successfully:', newProfile);
+      return newProfile;
+    } catch (error: any) {
+      console.error('Failed to create profile:', error);
+      throw error;
+    }
+  };
+  
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      console.log('Fetching user data...');
       
       // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Auth error:', userError);
+        throw new Error('خطأ في المصادقة');
+      }
       
       if (!user) {
-        toast({
-          title: "غير مسجل الدخول",
-          description: "يرجى تسجيل الدخول لعرض الملف الشخصي",
-          variant: "destructive"
-        });
+        setError('يرجى تسجيل الدخول لعرض الملف الشخصي');
         return;
       }
+      
+      console.log('Current user:', user.id, user.email);
+      setCurrentUser(user);
       
       // Check if admin
       if (user.email === 'jowmahmoud6@gmail.com') {
         setIsAdmin(true);
       }
       
-      // Fetch user profile
+      // Fetch user profile with better error handling
+      console.log('Fetching profile for user:', user.id);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (profileError) {
-        if (profileError.code === 'PGRST116') {
-          // Create profile if doesn't exist
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([
-              { 
-                id: user.id, 
-                username: user.email?.split('@')[0] || `user_${user.id.substring(0, 8)}`,
-                score: 0,
-                solved_puzzles: 0,
-                usage_time: 0
-              }
-            ])
-            .select()
-            .single();
-          
-          if (createError) throw createError;
-          setProfile(newProfile as UserProfile);
-        } else {
-          throw profileError;
-        }
-      } else if (profileData) {
+        console.error('Profile fetch error:', profileError);
+        throw new Error('خطأ في جلب بيانات الملف الشخصي');
+      }
+      
+      if (!profileData) {
+        console.log('No profile found, creating new one...');
+        const newProfile = await createProfile(user);
+        setProfile(newProfile as UserProfile);
+      } else {
+        console.log('Profile found:', profileData);
         setProfile(profileData as UserProfile);
       }
       
-      // Fetch uploaded images
+      // Fetch other data in parallel
+      await Promise.allSettled([
+        fetchImages(user.id),
+        fetchJournals(user.id),
+        fetchSolvedPuzzles(user.id),
+        fetchWatchedVideos(user.id),
+        fetchMessagesCount(user.id)
+      ]);
+      
+    } catch (error: any) {
+      console.error('Error in fetchUserData:', error);
+      setError(error.message || 'حدث خطأ في تحميل البيانات');
+      toast({
+        title: "خطأ في تحميل البيانات",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchImages = async (userId: string) => {
+    try {
       const { data: imagesData } = await supabase
         .from('educational_images')
         .select('*')
-        .eq('created_by', user.id);
+        .eq('created_by', userId);
       
       if (imagesData) {
         setImages(imagesData as UploadedImage[]);
       }
-      
-      // Fetch uploaded journals
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    }
+  };
+
+  const fetchJournals = async (userId: string) => {
+    try {
       const { data: journalsData } = await supabase
         .from('scientific_journals')
         .select('*')
-        .eq('created_by', user.id);
+        .eq('created_by', userId);
       
       if (journalsData) {
         setJournals(journalsData as UploadedJournal[]);
       }
-      
-      // Fetch solved puzzles
+    } catch (error) {
+      console.error('Error fetching journals:', error);
+    }
+  };
+
+  const fetchSolvedPuzzles = async (userId: string) => {
+    try {
       const { data: puzzlesData } = await supabase
         .from('user_solved_puzzles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('solved_at', { ascending: false });
       
       if (puzzlesData && puzzlesData.length > 0) {
@@ -190,36 +256,42 @@ const UserProfile = () => {
         
         setPuzzles(enhancedPuzzles);
       }
+    } catch (error) {
+      console.error('Error fetching puzzles:', error);
+    }
+  };
 
-      // Fetch watched videos
+  const fetchWatchedVideos = async (userId: string) => {
+    try {
       const { data: videosData } = await supabase
         .from('watched_videos')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('watched_at', { ascending: false });
       
       if (videosData) {
         setWatchedVideos(videosData as WatchedVideo[]);
       }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    }
+  };
 
-      // Fetch messages count
+  const fetchMessagesCount = async (userId: string) => {
+    try {
       const { count: messageCount } = await supabase
         .from('messages')
         .select('*', { count: 'exact' })
-        .eq('sender_id', user.id);
+        .eq('sender_id', userId);
         
       setMessagesCount(messageCount || 0);
-      
-    } catch (error: any) {
-      console.error('Error fetching user data:', error);
-      toast({
-        title: "خطأ في تحميل البيانات",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching messages count:', error);
     }
+  };
+  
+  const retryFetch = () => {
+    fetchUserData();
   };
   
   const getSubjectName = (subject: string) => {
@@ -284,10 +356,33 @@ const UserProfile = () => {
       
       <main className="flex-1 container mx-auto px-4 py-12">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <div className="w-20 h-20 rounded-full bg-white/10 animate-pulse mb-4"></div>
-            <div className="h-8 w-40 bg-white/10 animate-pulse rounded mb-2"></div>
-            <div className="h-4 w-60 bg-white/10 animate-pulse rounded"></div>
+          <div className="flex flex-col items-center justify-center h-96">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
+            <div className="text-white text-lg">جاري تحميل الملف الشخصي...</div>
+            <div className="text-white/60 text-sm mt-2">يرجى الانتظار قليلاً</div>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-96">
+            <Alert className="bg-red-900/30 border-red-500/50 max-w-md">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-white">
+                {error}
+              </AlertDescription>
+            </Alert>
+            <Button 
+              onClick={retryFetch}
+              className="mt-4 bg-blue-600 hover:bg-blue-700"
+            >
+              <RefreshCw className="w-4 h-4 ml-2" />
+              إعادة المحاولة
+            </Button>
+            {!currentUser && (
+              <div className="mt-6">
+                <a href="/auth" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white transition-colors">
+                  تسجيل الدخول
+                </a>
+              </div>
+            )}
           </div>
         ) : profile ? (
           <>
@@ -595,17 +690,7 @@ const UserProfile = () => {
               </CardContent>
             </Card>
           </>
-        ) : (
-          <div className="text-center py-20 text-white/70">
-            <h2 className="text-2xl mb-4">لم يتم العثور على الملف الشخصي</h2>
-            <p>يرجى تسجيل الدخول لعرض الملف الشخصي الخاص بك.</p>
-            <div className="mt-6">
-              <a href="/auth" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white transition-colors">
-                تسجيل الدخول
-              </a>
-            </div>
-          </div>
-        )}
+        ) : null}
       </main>
       
       <Footer />
