@@ -6,10 +6,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, FlaskConical, User, HelpCircle } from "lucide-react";
+import { Calculator, FlaskConical, User, HelpCircle, Atom } from "lucide-react";
 import ChemistryAssistant from '@/components/chemistry/ChemistryAssistant';
 import ChemistryCalculations from '@/components/chemistry/ChemistryCalculations';
 import ChemistryScientists from '@/components/chemistry/ChemistryScientists';
+import EnhancedPeriodicTable from '@/components/chemistry/EnhancedPeriodicTable';
 
 const Chemistry = () => {
   const [selectedTab, setSelectedTab] = useState("");
@@ -43,6 +44,12 @@ const Chemistry = () => {
   ];
   
   const optionCards = [
+    {
+      title: "الجدول الدوري التفاعلي",
+      icon: <Atom className="w-12 h-12 text-cyan-400" />,
+      color: "from-cyan-500/20 to-blue-500/30",
+      tab: "periodic-table"
+    },
     {
       title: "الحسابات الكيميائية",
       icon: <Calculator className="w-12 h-12 text-cyan-400" />,
@@ -256,6 +263,7 @@ const Chemistry = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-cyan-500/30 p-6 shadow-glow-sm shadow-cyan-500/10"
                 >
+                  {selectedTab === "periodic-table" && <EnhancedPeriodicTable />}
                   {selectedTab === "calculations" && <ChemistryCalculations />}
                   {selectedTab === "scientists" && <ChemistryScientists />}
                   {selectedTab === "assistant" && <ChemistryAssistant />}
