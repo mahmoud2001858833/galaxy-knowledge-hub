@@ -1,138 +1,381 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Search, Calendar, MapPin, Award, Microscope } from 'lucide-react';
 
-interface Scientist {
-  id: number;
+interface BiologyScientist {
+  id: string;
   name: string;
-  birthYear: string;
-  deathYear: string;
-  contribution: string;
+  nameArabic: string;
+  period: string;
+  country: string;
+  field: string;
+  achievements: string[];
   description: string;
-  imageUrl: string;
+  image: string;
+  famousFor: string;
+  nobelPrize?: boolean;
 }
 
 const BiologyScientists = () => {
-  const scientists: Scientist[] = [
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedScientist, setSelectedScientist] = useState<BiologyScientist | null>(null);
+
+  const scientists: BiologyScientist[] = [
     {
-      id: 1,
-      name: "تشارلز داروين",
-      birthYear: "1809",
-      deathYear: "1882",
-      contribution: "نظرية التطور",
-      description: "عالم طبيعة إنجليزي، اشتهر بنظرية التطور عن طريق الانتقاء الطبيعي، التي أصبحت الركيزة الأساسية لعلم الأحياء الحديث.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'darwin',
+      name: 'Charles Darwin',
+      nameArabic: 'تشارلز داروين',
+      period: '1809-1882 م',
+      country: 'إنجلترا',
+      field: 'نظرية التطور',
+      achievements: ['نظرية التطور', 'الانتخاب الطبيعي', 'أصل الأنواع'],
+      description: 'عالم طبيعة إنجليزي، وضع نظرية التطور بالانتخاب الطبيعي التي غيرت فهمنا لتطور الحياة على الأرض.',
+      image: '🦎',
+      famousFor: 'نظرية التطور والانتخاب الطبيعي'
     },
     {
-      id: 2,
-      name: "لويس باستور",
-      birthYear: "1822",
-      deathYear: "1895",
-      contribution: "علم الأحياء الدقيقة واللقاحات",
-      description: "عالم فرنسي قدم إسهامات كبيرة في مجال الكيمياء والأحياء المجهرية. اشتهر باكتشافاته في مجال اللقاحات والبسترة ومبدأ التخمر.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'mendel',
+      name: 'Gregor Mendel',
+      nameArabic: 'جريجور مندل',
+      period: '1822-1884 م',
+      country: 'النمسا',
+      field: 'علم الوراثة',
+      achievements: ['قوانين مندل في الوراثة', 'أبو علم الوراثة', 'تجارب نبات البازلاء'],
+      description: 'راهب وعالم نبات نمساوي، يُعتبر مؤسس علم الوراثة الحديث من خلال تجاربه على نبات البازلاء.',
+      image: '🌱',
+      famousFor: 'أبو علم الوراثة وقوانين الوراثة'
     },
     {
-      id: 3,
-      name: "جريجور مندل",
-      birthYear: "1822",
-      deathYear: "1884",
-      contribution: "علم الوراثة",
-      description: "راهب وعالم نمساوي، يُعتبر مؤسس علم الوراثة الحديث. اكتشف القوانين الأساسية للوراثة من خلال تجاربه على نبات البازلاء.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'pasteur',
+      name: 'Louis Pasteur',
+      nameArabic: 'لويس باستور',
+      period: '1822-1895 م',
+      country: 'فرنسا',
+      field: 'علم الأحياء الدقيقة',
+      achievements: ['نظرية الجراثيم', 'البسترة', 'لقاح داء الكلب'],
+      description: 'عالم أحياء دقيقة فرنسي، أسس علم الأحياء الدقيقة الحديث ووضع نظرية الجراثيم للأمراض.',
+      image: '🦠',
+      famousFor: 'نظرية الجراثيم والبسترة'
     },
     {
-      id: 4,
-      name: "روبرت كوخ",
-      birthYear: "1843",
-      deathYear: "1910",
-      contribution: "بكتريولوجيا وعلم الأمراض المعدية",
-      description: "طبيب ألماني، أسس علم البكتيريا وطور طرق المختبرات الحديثة. اكتشف بكتيريا السل والجمرة الخبيثة والكوليرا.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'watson-crick',
+      name: 'Watson & Crick',
+      nameArabic: 'واتسون وكريك',
+      period: '1953 م',
+      country: 'إنجلترا/أمريكا',
+      field: 'البيولوجيا الجزيئية',
+      achievements: ['بنية الحمض النووي DNA', 'النموذج الحلزوني المزدوج', 'الشيفرة الوراثية'],
+      description: 'عالما أحياء جزيئية، اكتشفا البنية الحلزونية المزدوجة للحمض النووي DNA.',
+      image: '🧬',
+      famousFor: 'اكتشاف بنية الحمض النووي DNA',
+      nobelPrize: true
     },
     {
-      id: 5,
-      name: "روزاليند فرانكلين",
-      birthYear: "1920",
-      deathYear: "1958",
-      contribution: "بنية الحمض النووي DNA",
-      description: "عالمة بريطانية ساهمت بشكل كبير في فهم بنية الحمض النووي DNA من خلال أشعة X للانعراج البلوري.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'linnaeus',
+      name: 'Carl Linnaeus',
+      nameArabic: 'كارل لينيوس',
+      period: '1707-1778 م',
+      country: 'السويد',
+      field: 'التصنيف الحيوي',
+      achievements: ['نظام التسمية الثنائية', 'تصنيف الكائنات الحية', 'علم التصنيف الحديث'],
+      description: 'عالم نبات سويدي، وضع نظام التسمية الثنائية للكائنات الحية وأسس علم التصنيف الحديث.',
+      image: '🌿',
+      famousFor: 'نظام التسمية الثنائية وتصنيف الكائنات'
     },
     {
-      id: 6,
-      name: "جيمس واتسون",
-      birthYear: "1928",
-      deathYear: "حي",
-      contribution: "تركيب الحمض النووي DNA",
-      description: "عالم أمريكي معروف باكتشافه مع فرانسيس كريك للبنية الحلزونية المزدوجة للحمض النووي DNA، ما أحدث ثورة في علم الأحياء الجزيئي.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'fleming',
+      name: 'Alexander Fleming',
+      nameArabic: 'ألكسندر فليمنغ',
+      period: '1881-1955 م',
+      country: 'اسكتلندا',
+      field: 'علم المضادات الحيوية',
+      achievements: ['اكتشاف البنسلين', 'المضادات الحيوية', 'إنقاذ ملايين الأرواح'],
+      description: 'عالم أحياء اسكتلندي، اكتشف البنسلين أول مضاد حيوي في التاريخ، مما أحدث ثورة في الطب.',
+      image: '💊',
+      famousFor: 'اكتشاف البنسلين والمضادات الحيوية',
+      nobelPrize: true
     },
     {
-      id: 7,
-      name: "جين جوديل",
-      birthYear: "1934",
-      deathYear: "حية",
-      contribution: "دراسات الشمبانزي وعلم الرئيسيات",
-      description: "عالمة بريطانية متخصصة في دراسة سلوك الشمبانزي. قدمت إسهامات كبيرة في فهم سلوك الرئيسيات والحفاظ على الحياة البرية.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'ibn-sina',
+      name: 'Ibn Sina (Avicenna)',
+      nameArabic: 'ابن سينا (أبو علي الحسين)',
+      period: '980-1037 م',
+      country: 'أوزبكستان/إيران',
+      field: 'الطب وعلم النبات',
+      achievements: ['القانون في الطب', 'علم الأدوية', 'التشريح والفسيولوجيا'],
+      description: 'طبيب وفيلسوف عربي، ألف "القانون في الطب" الذي ظل مرجعاً طبياً في أوروبا لقرون.',
+      image: '📜',
+      famousFor: 'أبو الطب الحديث ومؤلف القانون في الطب'
     },
     {
-      id: 8,
-      name: "ألكسندر فلمنج",
-      birthYear: "1881",
-      deathYear: "1955",
-      contribution: "اكتشاف البنسلين",
-      description: "طبيب وعالم أحياء دقيقة اسكتلندي، اشتهر باكتشافه للبنسلين، وهو أول مضاد حيوي في العالم، مما أنقذ ملايين الأرواح.",
-      imageUrl: "https://images.for9a.com/thumb/max-800-auto-100-webp/ol/blog/2019/05/27/638x400-71538985491phpKctLgx.jpeg"
+      id: 'harvey',
+      name: 'William Harvey',
+      nameArabic: 'ويليام هارفي',
+      period: '1578-1657 م',
+      country: 'إنجلترا',
+      field: 'علم وظائف الأعضاء',
+      achievements: ['اكتشاف الدورة الدموية', 'وظائف القلب', 'علم وظائف الأعضاء'],
+      description: 'طبيب إنجليزي، اكتشف الدورة الدموية ووظائف القلب، مما أحدث ثورة في فهم جسم الإنسان.',
+      image: '❤️',
+      famousFor: 'اكتشاف الدورة الدموية ووظائف القلب'
+    },
+    {
+      id: 'leeuwenhoek',
+      name: 'Antonie van Leeuwenhoek',
+      nameArabic: 'أنطونيو فان ليفينهوك',
+      period: '1632-1723 م',
+      country: 'هولندا',
+      field: 'علم الأحياء الدقيقة',
+      achievements: ['أول من رأى البكتيريا', 'تطوير المجهر', 'اكتشاف الخلايا الحية'],
+      description: 'عالم هولندي، أول من راقب ووصف البكتيريا والكائنات الدقيقة باستخدام مجاهره المحسنة.',
+      image: '🔬',
+      famousFor: 'أول من رأى البكتيريا واكتشف عالم الميكروبات'
+    },
+    {
+      id: 'lamarck',
+      name: 'Jean-Baptiste Lamarck',
+      nameArabic: 'جان بابتيست لامارك',
+      period: '1744-1829 م',
+      country: 'فرنسا',
+      field: 'نظرية التطور',
+      achievements: ['نظرية وراثة الصفات المكتسبة', 'تصنيف اللافقاريات', 'مصطلح "بيولوجيا"'],
+      description: 'عالم طبيعة فرنسي، وضع أول نظرية متماسكة للتطور وصاغ مصطلح "بيولوجيا".',
+      image: '🔄',
+      famousFor: 'نظرية وراثة الصفات المكتسبة ومصطلح البيولوجيا'
+    },
+    {
+      id: 'wallace',
+      name: 'Alfred Russel Wallace',
+      nameArabic: 'ألفريد راسل والاس',
+      period: '1823-1913 م',
+      country: 'ويلز',
+      field: 'نظرية التطور',
+      achievements: ['الانتخاب الطبيعي المشترك مع داروين', 'علم الجغرافيا الحيوية', 'خط والاس'],
+      description: 'عالم طبيعة ويلزي، طور نظرية الانتخاب الطبيعي بشكل مستقل عن داروين وأسس علم الجغرافيا الحيوية.',
+      image: '🗺️',
+      famousFor: 'الانتخاب الطبيعي وعلم الجغرافيا الحيوية'
+    },
+    {
+      id: 'mcclintock',
+      name: 'Barbara McClintock',
+      nameArabic: 'باربرا مكلينتوك',
+      period: '1902-1992 م',
+      country: 'الولايات المتحدة',
+      field: 'علم الوراثة الخلوية',
+      achievements: ['الجينات القافزة', 'التنظيم الجيني', 'علم الوراثة الخلوية'],
+      description: 'عالمة وراثة أمريكية، اكتشفت الجينات القافزة والتنظيم الجيني، حاصلة على نوبل.',
+      image: '🧪',
+      famousFor: 'اكتشاف الجينات القافزة والتنظيم الجيني',
+      nobelPrize: true
+    },
+    {
+      id: 'morgan',
+      name: 'Thomas Hunt Morgan',
+      nameArabic: 'توماس هانت مورغان',
+      period: '1866-1945 م',
+      country: 'الولايات المتحدة',
+      field: 'علم الوراثة',
+      achievements: ['نظرية الكروموسومات', 'تجارب ذبابة الفاكهة', 'الخرائط الجينية'],
+      description: 'عالم وراثة أمريكي، أثبت أن الجينات موجودة في الكروموسومات من خلال تجاربه على ذبابة الفاكهة.',
+      image: '🪰',
+      famousFor: 'نظرية الكروموسومات وتجارب ذبابة الفاكهة',
+      nobelPrize: true
+    },
+    {
+      id: 'schleiden-schwann',
+      name: 'Schleiden & Schwann',
+      nameArabic: 'شلايدن وشوان',
+      period: '1838-1839 م',
+      country: 'ألمانيا',
+      field: 'نظرية الخلية',
+      achievements: ['نظرية الخلية', 'الخلية وحدة الحياة', 'علم الأنسجة'],
+      description: 'عالما نبات وحيوان ألمانيان، وضعا نظرية الخلية التي تنص على أن الخلية هي وحدة الحياة الأساسية.',
+      image: '🔬',
+      famousFor: 'نظرية الخلية كوحدة أساسية للحياة'
+    },
+    {
+      id: 'goodall',
+      name: 'Jane Goodall',
+      nameArabic: 'جين غودال',
+      period: '1934-حتى الآن',
+      country: 'إنجلترا',
+      field: 'علم سلوك الحيوان',
+      achievements: ['دراسة الشمبانزي', 'علم سلوك الحيوان', 'حماية البيئة'],
+      description: 'عالمة سلوك حيوان إنجليزية، ثورت فهمنا للشمبانزي وسلوك الرئيسيات من خلال دراساتها الميدانية.',
+      image: '🐵',
+      famousFor: 'دراسة الشمبانزي وعلم سلوك الحيوان'
     }
   ];
-  
+
+  const filteredScientists = useMemo(() => {
+    return scientists.filter(scientist =>
+      scientist.nameArabic.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scientist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scientist.field.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scientist.country.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+
   return (
     <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-glow-green mb-2">علماء الأحياء</h2>
-        <p className="text-white/70">تعرف على أبرز العلماء الذين غيروا وجه علم الأحياء عبر التاريخ</p>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-glow-green mb-4">أعلام علم الأحياء عبر التاريخ</h2>
+        <p className="text-white/70 max-w-2xl mx-auto">
+          تعرف على أشهر علماء الأحياء الذين كشفوا أسرار الحياة والكائنات الحية
+        </p>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {scientists.map((scientist, index) => (
-          <motion.div 
+
+      {/* شريط البحث */}
+      <div className="relative max-w-md mx-auto mb-8">
+        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400 w-5 h-5" />
+        <Input
+          type="text"
+          placeholder="ابحث عن عالم أحياء..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pr-10 bg-green-900/20 border-green-500/30 text-white placeholder-green-300/50 focus:border-green-400"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredScientists.map((scientist, index) => (
+          <motion.div
             key={scientist.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-            className="col-span-1"
+            whileHover={{ scale: 1.03 }}
+            onClick={() => setSelectedScientist(scientist)}
           >
-            <Card className="h-full overflow-hidden glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70 z-10"></div>
-                <img 
-                  src={scientist.imageUrl} 
-                  alt={scientist.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <CardContent className="p-4 relative">
-                <div className="absolute -top-10 right-4 bg-subject-biology-primary text-white text-sm py-1 px-3 rounded-full z-20">
-                  {scientist.birthYear} - {scientist.deathYear}
+            <Card className="cursor-pointer h-full bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-500/30 hover:border-green-400/60 transition-all duration-300 hover:shadow-glow-sm shadow-green-500/10">
+              <CardContent className="p-6 flex flex-col h-full">
+                <div className="text-center mb-4">
+                  <div className="text-6xl mb-3 relative">
+                    {scientist.image}
+                    {scientist.nobelPrize && (
+                      <div className="absolute -top-2 -right-2 text-yellow-400 text-xl">🏆</div>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-1">{scientist.nameArabic}</h3>
+                  <p className="text-green-300 text-sm">{scientist.name}</p>
                 </div>
-                <h3 className="text-xl font-bold mb-1 text-subject-biology-primary">
-                  {scientist.name}
-                </h3>
-                <p className="text-white/80 text-sm mb-3">
-                  {scientist.contribution}
-                </p>
-                <p className="text-white/70 text-sm">
-                  {scientist.description}
-                </p>
+                
+                <div className="space-y-3 flex-grow">
+                  <div className="flex items-center gap-2 text-white/70 text-sm">
+                    <Calendar className="w-4 h-4 text-green-400" />
+                    <span>{scientist.period}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-white/70 text-sm">
+                    <MapPin className="w-4 h-4 text-green-400" />
+                    <span>{scientist.country}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-white/70 text-sm">
+                    <Microscope className="w-4 h-4 text-green-400" />
+                    <span>{scientist.field}</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-green-500/20">
+                  <p className="text-green-300 text-sm font-medium">اشتهر بـ:</p>
+                  <p className="text-white/80 text-sm">{scientist.famousFor}</p>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
+
+      {filteredScientists.length === 0 && (
+        <div className="text-center py-12">
+          <Search className="w-16 h-16 text-green-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">لم يتم العثور على نتائج</h3>
+          <p className="text-white/70">جرب البحث بكلمات مفتاحية أخرى</p>
+        </div>
+      )}
+
+      {/* نافذة التفاصيل */}
+      {selectedScientist && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedScientist(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-gradient-to-br from-green-900/95 to-emerald-900/90 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-green-500/30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="text-8xl mb-4 relative">
+                {selectedScientist.image}
+                {selectedScientist.nobelPrize && (
+                  <div className="absolute -top-4 -right-4 text-yellow-400 text-3xl">🏆</div>
+                )}
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">{selectedScientist.nameArabic}</h2>
+              <p className="text-green-300 text-lg">{selectedScientist.name}</p>
+              {selectedScientist.nobelPrize && (
+                <p className="text-yellow-400 text-sm mt-2">🏆 حائز على جائزة نوبل</p>
+              )}
+            </div>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-green-800/30 rounded-lg p-4 text-center">
+                  <Calendar className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                  <p className="text-white/80 text-sm font-medium">الفترة الزمنية</p>
+                  <p className="text-white">{selectedScientist.period}</p>
+                </div>
+                
+                <div className="bg-green-800/30 rounded-lg p-4 text-center">
+                  <MapPin className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                  <p className="text-white/80 text-sm font-medium">البلد</p>
+                  <p className="text-white">{selectedScientist.country}</p>
+                </div>
+                
+                <div className="bg-green-800/30 rounded-lg p-4 text-center">
+                  <Microscope className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                  <p className="text-white/80 text-sm font-medium">التخصص</p>
+                  <p className="text-white">{selectedScientist.field}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-bold text-green-300 mb-3">نبذة عن العالم</h3>
+                <p className="text-white/90 leading-relaxed">{selectedScientist.description}</p>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-bold text-green-300 mb-3">أهم الإنجازات</h3>
+                <ul className="space-y-2">
+                  {selectedScientist.achievements.map((achievement, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
+                      <span className="text-white/90">{achievement}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => setSelectedScientist(null)}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };

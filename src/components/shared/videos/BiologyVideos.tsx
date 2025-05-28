@@ -2,104 +2,104 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play } from "lucide-react";
+import { BookOpen, GraduationCap, Microscope } from "lucide-react";
 import { useLanguage } from '@/i18n/LanguageContext';
-
-interface VideoData {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl: string;
-  videoUrl: string;
-}
+import GradeElevenBiology from './biology/GradeElevenBiology';
 
 const BiologyVideos = () => {
   const { t, dir } = useLanguage();
-  const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
 
-  // Biology educational videos data
-  const videos: VideoData[] = [
+  const grades = [
     {
-      id: 'bio-1',
-      title: 'علم الخلية',
-      description: 'استكشاف بنية الخلية ووظائفها',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=500',
-      videoUrl: 'https://www.youtube.com/embed/7ODP6Ptozh4'
+      id: 'grade-11',
+      title: 'الأول ثانوي',
+      icon: <GraduationCap className="w-8 h-8 text-green-400" />,
+      color: 'from-green-500/20 to-emerald-500/30',
+      borderColor: 'border-green-500/30 hover:border-green-500/60',
+      units: 2,
+      lessons: 7,
+      videos: 34
     },
     {
-      id: 'bio-2',
-      title: 'علم الوراثة',
-      description: 'أساسيات علم الوراثة والجينات',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1635321593217-40050ad13c74?q=80&w=500',
-      videoUrl: 'https://www.youtube.com/embed/siM5nhWV4dY'
-    },
-    {
-      id: 'bio-3',
-      title: 'علم وظائف الأعضاء',
-      description: 'كيف تعمل أجهزة الجسم المختلفة',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?q=80&w=500',
-      videoUrl: 'https://www.youtube.com/embed/cQI_YvWTZlM'
-    },
-    {
-      id: 'bio-4',
-      title: 'التنوع البيولوجي',
-      description: 'استكشاف التنوع البيولوجي والتصنيف',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=500',
-      videoUrl: 'https://www.youtube.com/embed/iMz6lApJgu4'
+      id: 'grade-12',
+      title: 'الثاني ثانوي',
+      icon: <Microscope className="w-8 h-8 text-teal-400" />,
+      color: 'from-teal-500/20 to-cyan-500/30',
+      borderColor: 'border-teal-500/30 hover:border-teal-500/60',
+      units: 3,
+      lessons: 9,
+      videos: 45,
+      comingSoon: true
     }
   ];
 
+  if (selectedGrade === 'grade-11') {
+    return <GradeElevenBiology onBack={() => setSelectedGrade(null)} />;
+  }
+
+  if (selectedGrade === 'grade-12') {
+    return (
+      <div className="space-y-6">
+        <Button
+          onClick={() => setSelectedGrade(null)}
+          variant="ghost"
+          className="text-teal-400 hover:text-teal-300 hover:bg-teal-900/30"
+        >
+          &larr; العودة للصفوف
+        </Button>
+        
+        <div className="text-center py-12">
+          <Microscope className="w-16 h-16 text-teal-400 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-white mb-2">قريباً</h3>
+          <p className="text-white/70">محتوى الثاني ثانوي سيكون متاحاً قريباً</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {videos.map((video) => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-white to-emerald-500 mb-4">
+          فيديوهات الأحياء التعليمية
+        </h2>
+        <p className="text-white/70">اختر الصف الدراسي لمشاهدة الفيديوهات التعليمية</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {grades.map((grade) => (
           <Card 
-            key={video.id}
-            className="overflow-hidden bg-blue-900/20 border-subject-biology-primary/30 hover:border-subject-biology-primary/60 transition-all cursor-pointer group"
-            onClick={() => setSelectedVideo(video)}
+            key={grade.id}
+            className={`cursor-pointer overflow-hidden bg-gradient-to-br ${grade.color} ${grade.borderColor} transition-all duration-300 hover:-translate-y-1 shadow-lg ${grade.comingSoon ? 'opacity-60' : ''}`}
+            onClick={() => {
+              if (!grade.comingSoon) {
+                setSelectedGrade(grade.id);
+              }
+            }}
           >
-            <div className="relative aspect-video overflow-hidden">
-              <img 
-                src={video.thumbnailUrl} 
-                alt={video.title} 
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center">
-                <Button 
-                  size="icon" 
-                  className="rounded-full bg-subject-biology-primary/80 hover:bg-subject-biology-primary transition-all"
-                >
-                  <Play className="h-6 w-6" />
-                </Button>
+            <CardContent className="flex flex-col items-center justify-center h-64 text-center p-6">
+              <div className="mb-6 p-4 rounded-full bg-green-900/30 backdrop-blur-sm">
+                {grade.icon}
               </div>
-            </div>
-            <CardContent className="p-4">
-              <h3 className={`font-bold text-lg mb-2 text-white ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>{video.title}</h3>
-              <p className={`text-sm text-white/70 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>{video.description}</p>
+              <h3 className="text-2xl font-bold text-white mb-4">{grade.title}</h3>
+              
+              <div className="space-y-1 text-white/70 text-sm mb-4">
+                <div>{grade.units} وحدات</div>
+                <div>{grade.lessons} دروس</div>
+                <div>{grade.videos} فيديو</div>
+              </div>
+              
+              <div className="mt-auto">
+                <span className="inline-block px-4 py-1 bg-green-500/20 text-green-300 text-sm rounded-full">
+                  {grade.comingSoon ? 'قريباً' : 'استكشف المحتوى'}
+                </span>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{selectedVideo?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video w-full">
-            {selectedVideo && (
-              <iframe 
-                src={selectedVideo.videoUrl} 
-                className="w-full h-full"
-                title={selectedVideo.title}
-                allowFullScreen
-              ></iframe>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 };
 
