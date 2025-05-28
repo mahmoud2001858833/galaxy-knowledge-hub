@@ -1,8 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, RotateCcw, Info, X, Eye, EyeOff, Heart, Brain, Lungs } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, Info, X, Eye, EyeOff, Heart, Brain, Activity } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface OrganInfo {
