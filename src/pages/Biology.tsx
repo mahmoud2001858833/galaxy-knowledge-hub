@@ -158,10 +158,10 @@ const Biology = () => {
           className="text-center mb-12"
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-4 text-glow-green">
-            منصة الأحياء
+            منصة الأحياء المتطورة
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف عالم الأحياء من خلال مساعد ذكي وموسوعة علمية وجسم الإنسان التفاعلي
+            استكشف عالم الأحياء من خلال مساعد ذكي وموسوعة علمية وجسم الإنسان التفاعلي المتطور
           </p>
         </motion.div>
         
@@ -180,7 +180,7 @@ const Biology = () => {
                 <p className="text-white/70 mb-4">اسأل المساعد الذكي أي سؤال عن الأحياء</p>
                 <Button 
                   onClick={() => setSelectedTab("assistant")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
+                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
                 >
                   تحدث مع المساعد
                 </Button>
@@ -202,7 +202,7 @@ const Biology = () => {
                 <p className="text-white/70 mb-4">تعرف على أبرز علماء الأحياء عبر التاريخ</p>
                 <Button 
                   onClick={() => setSelectedTab("scientists")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
+                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
                 >
                   استكشف العلماء
                 </Button>
@@ -221,10 +221,10 @@ const Biology = () => {
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                 <User className="h-16 w-16 text-subject-biology-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-2 text-glow-green">جسم الإنسان التفاعلي</h3>
-                <p className="text-white/70 mb-4">استكشف أعضاء جسم الإنسان بشكل تفاعلي</p>
+                <p className="text-white/70 mb-4">استكشف أعضاء جسم الإنسان بتقنية متطورة وأنيميشنات حية</p>
                 <Button 
                   onClick={() => setSelectedTab("human-body")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
+                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
                 >
                   استكشف الجسم
                 </Button>
