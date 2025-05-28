@@ -8,9 +8,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Microscope, Leaf, TestTube } from 'lucide-react';
+import { Microscope, Leaf, TestTube, User } from 'lucide-react';
 import BiologyScientists from '@/components/biology/BiologyScientists';
 import BiologyAIAssistant from '@/components/biology/BiologyAIAssistant';
+import InteractiveHumanBody from '@/components/biology/InteractiveHumanBody';
 
 const Biology = () => {
   const [showMainContent, setShowMainContent] = useState(false);
@@ -160,11 +161,11 @@ const Biology = () => {
             منصة الأحياء
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف عالم الأحياء من خلال مساعد ذكي وموسوعة علمية
+            استكشف عالم الأحياء من خلال مساعد ذكي وموسوعة علمية وجسم الإنسان التفاعلي
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -208,6 +209,28 @@ const Biology = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: 1.03 }}
+            className="col-span-1"
+          >
+            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
+                <User className="h-16 w-16 text-subject-biology-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-glow-green">جسم الإنسان التفاعلي</h3>
+                <p className="text-white/70 mb-4">استكشف أعضاء جسم الإنسان بشكل تفاعلي</p>
+                <Button 
+                  onClick={() => setSelectedTab("human-body")}
+                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary"
+                >
+                  استكشف الجسم
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
         
         <motion.div
@@ -219,6 +242,7 @@ const Biology = () => {
         >
           {selectedTab === "assistant" && <BiologyAIAssistant />}
           {selectedTab === "scientists" && <BiologyScientists />}
+          {selectedTab === "human-body" && <InteractiveHumanBody />}
         </motion.div>
       </main>
       
