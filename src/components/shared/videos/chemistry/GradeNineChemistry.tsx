@@ -130,8 +130,23 @@ const GradeNineChemistry = ({ onBack }: GradeNineChemistryProps) => {
     );
   }
 
+  if (selectedSemester === 'metals-activity') {
+    return <MetalsActivityUnit onBack={() => setSelectedSemester('second')} />;
+  }
+
+  if (selectedSemester === 'electrochemistry') {
+    return <ElectrochemistryUnit onBack={() => setSelectedSemester('second')} />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Teacher Credit */}
+      <div className="absolute top-0 left-4 z-10">
+        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm border border-blue-500/30 rounded-lg px-3 py-2">
+          <p className="text-white/80 text-sm font-medium">فيديوهات للأستاذ ليث دبابسة</p>
+        </div>
+      </div>
+
       <div className="flex items-center gap-4 mb-6">
         <Button
           onClick={onBack}
@@ -144,7 +159,7 @@ const GradeNineChemistry = ({ onBack }: GradeNineChemistryProps) => {
 
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-blue-500 mb-4">
-          الصف التاسن - الكيمياء
+          الصف التاسع - الكيمياء
         </h2>
         <p className="text-white/70">اختر الفصل الدراسي</p>
       </div>

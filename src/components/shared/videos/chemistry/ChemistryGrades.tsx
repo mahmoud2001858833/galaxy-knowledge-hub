@@ -50,7 +50,17 @@ const ChemistryGrades = () => {
   }
 
   if (selectedGrade === 'grade-10') {
-    return <GradeTenChemistry onBack={() => setSelectedGrade(null)} />;
+    return (
+      <div className="space-y-6 relative">
+        {/* Teacher Credit */}
+        <div className="absolute top-0 left-4 z-10">
+          <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm border border-blue-500/30 rounded-lg px-3 py-2">
+            <p className="text-white/80 text-sm font-medium">فيديوهات للأستاذ ليث دبابسة</p>
+          </div>
+        </div>
+        <GradeTenChemistry onBack={() => setSelectedGrade(null)} />
+      </div>
+    );
   }
 
   if (selectedGrade === 'grade-11') {

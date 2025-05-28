@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -28,6 +27,18 @@ const GroupChat = ({
   const { toast } = useToast();
   const [isMessageSending, setIsMessageSending] = useState(false);
   const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Enhanced mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // تحسين استخدام اشتراك الوقت الفعلي
   const { refreshMessages } = useRealtimeMessages({
@@ -120,15 +131,21 @@ const GroupChat = ({
   }, [messages, isAutoScroll]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth'
-    });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
   };
 
   const scrollToTop = () => {
-    messagesStartRef.current?.scrollIntoView({
-      behavior: 'smooth'
-    });
+    if (messagesStartRef.current) {
+      messagesStartRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
   };
 
   const fetchRooms = async () => {
@@ -203,33 +220,34 @@ const GroupChat = ({
     }
   };
 
-  const handleSendMessage = async e => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !user || !activeRoom || isMessageSending) return;
+    
     setIsMessageSending(true);
+    
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('messages').insert([{
-        sender_id: user.id,
-        room_id: activeRoom,
-        message_text: message.trim()
-      }]);
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([{
+          sender_id: user.id,
+          room_id: activeRoom,
+          message_text: message.trim()
+        }]);
+        
       if (error) throw error;
 
-      // Clear the input
       setMessage('');
-
-      // تأكيد من التمرير لأسفل بعد إرسال الرسالة
       setIsAutoScroll(true);
-
-      // تحديث الرسائل فوراً
-      fetchMessages(activeRoom);
-
-      // نشر حدث للتحديث الفوري - يسرع عملية التحديث لجميع المستخدمين
+      
+      // Immediate refresh and scroll
+      await fetchMessages(activeRoom);
+      setTimeout(scrollToBottom, 100);
+      
+      // Global update event
       const refreshEvent = new CustomEvent('global-chat-update');
       document.dispatchEvent(refreshEvent);
+      
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -253,57 +271,62 @@ const GroupChat = ({
   };
 
   return (
-    <Card className="h-full bg-gradient-to-br from-emerald-900/20 to-emerald-900/10 backdrop-blur-sm border-emerald-500/20 flex flex-col overflow-hidden relative">
-      <CardHeader className="p-4 flex-row justify-between items-center border-b border-white/10 bg-emerald-900/20">
-        <CardTitle className="text-white flex items-center gap-2">
+    <div className={`h-full flex flex-col overflow-hidden ${isMobile ? 'bg-gradient-to-br from-emerald-950 to-emerald-900' : 'bg-gradient-to-br from-emerald-900/20 to-emerald-900/10'}`}>
+      {/* Enhanced Header for Mobile */}
+      <div className={`${isMobile ? 'p-3' : 'p-4'} flex justify-between items-center border-b border-white/10 bg-emerald-900/30 backdrop-blur-sm`}>
+        <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-emerald-400" />
-          {roomName || "المحادثة الجماعية"}
-        </CardTitle>
+          <h3 className={`text-white font-semibold ${isMobile ? 'text-lg' : 'text-xl'}`}>
+            {roomName || "المحادثة الجماعية"}
+          </h3>
+        </div>
         <Button 
           variant="outline" 
-          size="sm" 
+          size={isMobile ? "sm" : "default"}
           onClick={handleRefreshChat}
-          className="bg-emerald-900/30 border-emerald-500/30 hover:bg-emerald-800/50" 
+          className="bg-emerald-900/30 border-emerald-500/30 hover:bg-emerald-800/50 text-white" 
           title="تحديث المحادثة"
         >
-          <RefreshCw className="h-4 w-4 ml-2" />
-          <span>تحديث</span>
+          <RefreshCw className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} ml-1`} />
+          {!isMobile && <span>تحديث</span>}
         </Button>
-      </CardHeader>
+      </div>
 
-      <div className="flex-1 overflow-hidden">
-        {activeRoom ? (
-          <>
-            {/* Navigation buttons */}
-            <div className="fixed left-4 bottom-24 z-50 flex flex-col gap-2">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={scrollToTop}
-                className="rounded-full bg-emerald-900/50 border-emerald-500/30 hover:bg-emerald-800/70 h-10 w-10"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={scrollToBottom}
-                className="rounded-full bg-emerald-900/50 border-emerald-500/30 hover:bg-emerald-800/70 h-10 w-10"
-              >
-                <ArrowDown className="h-4 w-4" />
-              </Button>
-            </div>
+      {activeRoom ? (
+        <>
+          {/* Enhanced Navigation buttons for Mobile */}
+          <div className={`fixed ${isMobile ? 'left-2 bottom-20' : 'left-4 bottom-24'} z-50 flex flex-col gap-2`}>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={scrollToTop}
+              className={`rounded-full bg-emerald-900/70 border-emerald-500/30 hover:bg-emerald-800/80 ${isMobile ? 'h-8 w-8' : 'h-10 w-10'}`}
+            >
+              <ArrowUp className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-white`} />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={scrollToBottom}
+              className={`rounded-full bg-emerald-900/70 border-emerald-500/30 hover:bg-emerald-800/80 ${isMobile ? 'h-8 w-8' : 'h-10 w-10'}`}
+            >
+              <ArrowDown className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-white`} />
+            </Button>
+          </div>
 
-            {/* Messages area */}
-            <ScrollArea className="h-[calc(100%-130px)]">
-              <div className="p-4 space-y-1">
+          {/* Enhanced Messages area for Mobile */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-2`}>
                 <div ref={messagesStartRef} />
                 {messages.length === 0 ? (
-                  <div className="flex items-center justify-center p-10">
-                    <p className="text-white/50">لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p>
+                  <div className={`flex items-center justify-center ${isMobile ? 'p-8' : 'p-10'}`}>
+                    <p className="text-white/50 text-center">
+                      لا توجد رسائل بعد. كن أول من يبدأ المحادثة!
+                    </p>
                   </div>
                 ) : (
-                  messages.map(message => {
+                  messages.map((message) => {
                     const isCurrentUser = message.sender_id === user?.id;
                     const contact = isCurrentUser ? user : profiles[message.sender_id];
                     return (
@@ -320,41 +343,43 @@ const GroupChat = ({
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-
-            {/* Message input */}
-            <div className="p-4 border-t border-white/10 bg-emerald-900/20">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input 
-                  placeholder="اكتب رسالة..." 
-                  value={message} 
-                  onChange={e => setMessage(e.target.value)} 
-                  className="bg-white/10 border-white/20 text-white"
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!message.trim() || isMessageSending}
-                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
-                >
-                  {isMessageSending ? (
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-white" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
-              </form>
-            </div>
-          </>
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center space-y-2">
-              <Users className="h-16 w-16 text-emerald-500/70 mx-auto" />
-              <h3 className="text-xl font-medium text-white">اختر غرفة محادثة</h3>
-              <p className="text-white/50">اختر غرفة محادثة جماعية للمشاركة</p>
-            </div>
           </div>
-        )}
-      </div>
-    </Card>
+
+          {/* Enhanced Message input for Mobile */}
+          <div className={`${isMobile ? 'p-3' : 'p-4'} border-t border-white/10 bg-emerald-900/30 backdrop-blur-sm`}>
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input 
+                placeholder="اكتب رسالة..." 
+                value={message} 
+                onChange={(e) => setMessage(e.target.value)} 
+                className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 ${isMobile ? 'text-base' : ''}`}
+                style={{ fontSize: isMobile ? '16px' : undefined }} // Prevent zoom on iOS
+              />
+              <Button 
+                type="submit" 
+                disabled={!message.trim() || isMessageSending}
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shrink-0"
+                size={isMobile ? "default" : "default"}
+              >
+                {isMessageSending ? (
+                  <div className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} animate-spin rounded-full border-2 border-t-transparent border-white`} />
+                ) : (
+                  <Send className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                )}
+              </Button>
+            </form>
+          </div>
+        </>
+      ) : (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <Users className="h-16 w-16 text-emerald-500/70 mx-auto" />
+            <h3 className="text-xl font-medium text-white">اختر غرفة محادثة</h3>
+            <p className="text-white/50">اختر غرفة محادثة جماعية للمشاركة</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
