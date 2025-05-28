@@ -86,8 +86,10 @@ const AtomicComponentsLesson = ({ onBack }: AtomicComponentsLessonProps) => {
               {expandedVideo === video.id && (
                 <div className="mt-6 pt-6 border-t border-white/10">
                   <VideoPlayer
-                    url={video.url}
+                    videoUrl={video.url}
                     title={video.title}
+                    onBack={() => setExpandedVideo(null)}
+                    subject="chemistry"
                   />
                 </div>
               )}
