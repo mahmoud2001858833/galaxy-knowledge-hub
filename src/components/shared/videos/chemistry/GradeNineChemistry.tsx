@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar } from "lucide-react";
+import { BookOpen, Calendar, FlaskConical, ArrowRight, Zap } from "lucide-react";
 import { useLanguage } from '@/i18n/LanguageContext';
 import GradeNineFirstSemester from './GradeNineFirstSemester';
 import MetalsActivityUnit from './units/MetalsActivityUnit';
