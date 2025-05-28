@@ -6,6 +6,7 @@ import { BookOpen, GraduationCap, FlaskConical } from "lucide-react";
 import { useLanguage } from '@/i18n/LanguageContext';
 import GradeTenChemistry from './GradeTenChemistry';
 import GradeNineChemistry from './GradeNineChemistry';
+import GradeElevenChemistry from './GradeElevenChemistry';
 
 const ChemistryGrades = () => {
   const { t, dir } = useLanguage();
@@ -18,9 +19,9 @@ const ChemistryGrades = () => {
       icon: <BookOpen className="w-8 h-8 text-green-400" />,
       color: 'from-green-500/20 to-emerald-500/30',
       borderColor: 'border-green-500/30 hover:border-green-500/60',
-      units: 2,
-      lessons: 4,
-      videos: 20
+      units: 4,
+      lessons: 6,
+      videos: 42
     },
     {
       id: 'grade-10',
@@ -38,9 +39,9 @@ const ChemistryGrades = () => {
       icon: <GraduationCap className="w-8 h-8 text-purple-400" />,
       color: 'from-purple-500/20 to-violet-500/30',
       borderColor: 'border-purple-500/30 hover:border-purple-500/60',
-      units: 0,
-      lessons: 0,
-      videos: 0
+      units: 2,
+      lessons: 6,
+      videos: 28
     }
   ];
 
@@ -53,23 +54,7 @@ const ChemistryGrades = () => {
   }
 
   if (selectedGrade === 'grade-11') {
-    return (
-      <div className="space-y-6">
-        <Button
-          onClick={() => setSelectedGrade(null)}
-          variant="ghost"
-          className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30"
-        >
-          &larr; العودة للصفوف
-        </Button>
-        
-        <div className="text-center py-12">
-          <FlaskConical className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-white mb-2">قريباً</h3>
-          <p className="text-white/70">محتوى هذا الصف سيكون متاحاً قريباً</p>
-        </div>
-      </div>
-    );
+    return <GradeElevenChemistry onBack={() => setSelectedGrade(null)} />;
   }
 
   return (
@@ -94,17 +79,15 @@ const ChemistryGrades = () => {
               </div>
               <h3 className="text-2xl font-bold text-white mb-4">{grade.title}</h3>
               
-              {grade.videos > 0 && (
-                <div className="space-y-1 text-white/70 text-sm mb-4">
-                  <div>{grade.units} وحدات</div>
-                  <div>{grade.lessons} دروس</div>
-                  <div>{grade.videos} فيديو</div>
-                </div>
-              )}
+              <div className="space-y-1 text-white/70 text-sm mb-4">
+                <div>{grade.units} وحدات</div>
+                <div>{grade.lessons} دروس</div>
+                <div>{grade.videos} فيديو</div>
+              </div>
               
               <div className="mt-auto">
                 <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
-                  {grade.videos > 0 ? 'استكشف المحتوى' : 'قريباً'}
+                  استكشف المحتوى
                 </span>
               </div>
             </CardContent>
