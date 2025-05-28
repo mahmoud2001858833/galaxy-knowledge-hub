@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, ChevronDown, ChevronUp } from "lucide-react";
-import VideoPlayer from '../../VideoPlayer';
+import VideoPlayer from '../../../VideoPlayer';
 
 interface AcidsPropertiesLessonProps {
   onBack: () => void;
