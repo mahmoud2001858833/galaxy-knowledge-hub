@@ -1,10 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Heart, Brain, Lungs, X, BookOpen, TrendingUp, Users, AlertTriangle } from "lucide-react";
+import { Search, Heart, Brain, Activity, X, BookOpen, TrendingUp, Users, AlertTriangle } from "lucide-react";
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
