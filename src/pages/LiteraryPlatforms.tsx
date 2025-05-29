@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +20,7 @@ const LiteraryPlatforms = () => {
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
       description: t.literaryPlatforms.arabicDescription,
-      link: "#" // يمكن إضافة رابط لاحقاً
+      link: "/arabic-language"
     },
     {
       title: t.literaryPlatforms.english,
@@ -31,7 +30,7 @@ const LiteraryPlatforms = () => {
       borderColor: "border-indigo-500/30",
       hoverBorderColor: "hover:border-indigo-500/50",
       description: t.literaryPlatforms.englishDescription,
-      link: "#" // يمكن إضافة رابط لاحقاً
+      link: "#"
     }
   ];
 

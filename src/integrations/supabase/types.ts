@@ -9,6 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      arabic_scholars: {
+        Row: {
+          category: string
+          created_at: string
+          death_year: string
+          description: string
+          id: string
+          image_url: string | null
+          major_works: Json | null
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          death_year: string
+          description: string
+          id?: string
+          image_url?: string | null
+          major_works?: Json | null
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          death_year?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          major_works?: Json | null
+          name?: string
+        }
+        Relationships: []
+      }
+      arabic_words: {
+        Row: {
+          category: string
+          created_at: string
+          derivatives: Json | null
+          dialect_region: string | null
+          id: string
+          is_verified: boolean | null
+          meaning: string
+          poetry_examples: Json | null
+          quran_examples: Json | null
+          user_id: string | null
+          votes_count: number | null
+          word: string
+          word_pattern: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          derivatives?: Json | null
+          dialect_region?: string | null
+          id?: string
+          is_verified?: boolean | null
+          meaning: string
+          poetry_examples?: Json | null
+          quran_examples?: Json | null
+          user_id?: string | null
+          votes_count?: number | null
+          word: string
+          word_pattern?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          derivatives?: Json | null
+          dialect_region?: string | null
+          id?: string
+          is_verified?: boolean | null
+          meaning?: string
+          poetry_examples?: Json | null
+          quran_examples?: Json | null
+          user_id?: string | null
+          votes_count?: number | null
+          word?: string
+          word_pattern?: string | null
+        }
+        Relationships: []
+      }
       chemistry_puzzles: {
         Row: {
           admin_password: string | null
@@ -132,6 +213,36 @@ export type Database = {
           prompt?: string
           title?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      grammar_rules: {
+        Row: {
+          category: string
+          created_at: string
+          difficulty_level: string | null
+          examples: Json | null
+          id: string
+          rule_description: string
+          rule_name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          difficulty_level?: string | null
+          examples?: Json | null
+          id?: string
+          rule_description: string
+          rule_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          difficulty_level?: string | null
+          examples?: Json | null
+          id?: string
+          rule_description?: string
+          rule_name?: string
         }
         Relationships: []
       }
@@ -562,6 +673,44 @@ export type Database = {
           watched_at?: string
         }
         Relationships: []
+      }
+      word_contributions: {
+        Row: {
+          contribution_type: string | null
+          created_at: string
+          id: string
+          suggestion_text: string | null
+          user_id: string
+          vote_type: string | null
+          word_id: string
+        }
+        Insert: {
+          contribution_type?: string | null
+          created_at?: string
+          id?: string
+          suggestion_text?: string | null
+          user_id: string
+          vote_type?: string | null
+          word_id: string
+        }
+        Update: {
+          contribution_type?: string | null
+          created_at?: string
+          id?: string
+          suggestion_text?: string | null
+          user_id?: string
+          vote_type?: string | null
+          word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "word_contributions_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "arabic_words"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

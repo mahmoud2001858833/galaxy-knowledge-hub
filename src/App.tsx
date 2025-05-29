@@ -35,6 +35,7 @@ import PuzzleDetails from './pages/PuzzleDetails';
 import EducationalVideos from './pages/EducationalVideos';
 import ScientificPlatforms from './pages/ScientificPlatforms';
 import LiteraryPlatforms from './pages/LiteraryPlatforms';
+import ArabicLanguage from './pages/ArabicLanguage';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -125,6 +126,10 @@ const router = createBrowserRouter([
       {
         path: 'literary-platforms',
         element: <PublicRoute><LiteraryPlatforms /></PublicRoute>,
+      },
+      {
+        path: 'arabic-language',
+        element: <AuthGuard><ArabicLanguage /></AuthGuard>,
       },
       {
         path: 'physics',
