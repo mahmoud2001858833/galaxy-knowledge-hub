@@ -7,9 +7,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Microscope, Atom, FlaskConical, Magnet } from 'lucide-react';
+import { Microscope, Atom, FlaskConical, Magnet, Calculator } from 'lucide-react';
 import PhysicsScientists from '@/components/physics/PhysicsScientists';
 import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
+import PhysicsCalculations from '@/components/physics/PhysicsCalculations';
 
 const Physics = () => {
   const [showMainContent, setShowMainContent] = useState(false);
@@ -28,6 +29,8 @@ const Physics = () => {
   
   const renderSelectedComponent = () => {
     switch(activeComponent) {
+      case 'calculations':
+        return <PhysicsCalculations />;
       case 'assistant':
         return <PhysicsAIAssistant />;
       case 'scientists':
@@ -173,11 +176,33 @@ const Physics = () => {
             منصة الفيزياء
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
-            استكشف عالم الفيزياء من خلال مساعد ذكي، وموسوعة علمية
+            استكشف عالم الفيزياء من خلال الحسابات التفاعلية، مساعد ذكي، وموسوعة علمية
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            whileHover={{ scale: 1.03 }}
+            className="col-span-1"
+            onClick={() => setActiveComponent('calculations')}
+          >
+            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'calculations' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
+                <Calculator className="h-16 w-16 text-subject-physics-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-glow-purple">الحسابات الفيزيائية</h3>
+                <p className="text-white/70 mb-4">احسب جميع المعادلات الفيزيائية مع شرح تفصيلي</p>
+                <Button 
+                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+                >
+                  ابدأ الحسابات
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
