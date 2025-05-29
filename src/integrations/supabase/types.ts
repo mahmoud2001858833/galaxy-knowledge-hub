@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      arabic_poets: {
+        Row: {
+          achievements: string | null
+          biography: string
+          birth_year: string | null
+          created_at: string
+          death_year: string | null
+          era: string
+          famous_works: string[] | null
+          full_name: string | null
+          id: string
+          image_url: string | null
+          name: string
+          region: string | null
+        }
+        Insert: {
+          achievements?: string | null
+          biography: string
+          birth_year?: string | null
+          created_at?: string
+          death_year?: string | null
+          era: string
+          famous_works?: string[] | null
+          full_name?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          region?: string | null
+        }
+        Update: {
+          achievements?: string | null
+          biography?: string
+          birth_year?: string | null
+          created_at?: string
+          death_year?: string | null
+          era?: string
+          famous_works?: string[] | null
+          full_name?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          region?: string | null
+        }
+        Relationships: []
+      }
       arabic_scholars: {
         Row: {
           category: string
@@ -327,6 +372,47 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poems: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          meter: string | null
+          occasion: string | null
+          poet_id: string | null
+          theme: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          meter?: string | null
+          occasion?: string | null
+          poet_id?: string | null
+          theme?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          meter?: string | null
+          occasion?: string | null
+          poet_id?: string | null
+          theme?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poems_poet_id_fkey"
+            columns: ["poet_id"]
+            isOneToOne: false
+            referencedRelation: "arabic_poets"
             referencedColumns: ["id"]
           },
         ]

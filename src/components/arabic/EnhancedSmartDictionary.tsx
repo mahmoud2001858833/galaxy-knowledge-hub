@@ -1,558 +1,488 @@
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Search, BookOpen, ThumbsUp, ThumbsDown, Plus, Volume2, Star, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { Search, BookOpen, Star, ThumbsUp, ThumbsDown, Plus, Filter, Sparkles } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Tables } from '@/integrations/supabase/types';
 
-type ArabicWord = Tables<'arabic_words'>;
+interface ArabicWord {
+  id: string;
+  word: string;
+  meaning: string;
+  category: string;
+  dialect_region: string | null;
+  word_pattern: string | null;
+  quran_examples: any[];
+  poetry_examples: any[];
+  derivatives: any[];
+  user_id: string | null;
+  is_verified: boolean;
+  votes_count: number;
+  created_at: string;
+}
 
 const EnhancedSmartDictionary = () => {
   const [words, setWords] = useState<ArabicWord[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedWord, setSelectedWord] = useState<ArabicWord | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [suggestedWords, setSuggestedWords] = useState<ArabicWord[]>([]);
-  const { toast } = useToast();
-
+  const [loading, setLoading] = useState(true);
+  const [isAddingWord, setIsAddingWord] = useState(false);
   const [newWord, setNewWord] = useState({
     word: '',
     meaning: '',
-    category: 'classical' as const,
+    category: '',
     dialect_region: '',
     word_pattern: ''
   });
+  const { toast } = useToast();
 
-  // كلمات مقترحة ثابتة للعرض عند عدم وجود بحث
-  const featuredWords = [
-    {
-      id: 'featured-1',
-      word: 'الحِكْمَة',
-      meaning: 'العلم والفهم وإصابة الحق بالعلم والعقل',
-      category: 'classical',
-      quran_examples: ['وَمَن يُؤْتَ الْحِكْمَةَ فَقَدْ أُوتِيَ خَيْرًا كَثِيرًا'],
-      poetry_examples: ['الحكمة ضالة المؤمن أنى وجدها فهو أحق بها'],
-      derivatives: ['حكيم', 'محكمة', 'إحكام'],
-      votes_count: 156,
-      is_verified: true
-    },
-    {
-      id: 'featured-2',
-      word: 'الإِبْدَاع',
-      meaning: 'الإتيان بالجديد المبتكر والخلق من العدم',
-      category: 'modern',
-      quran_examples: ['بَدِيعُ السَّمَاوَاتِ وَالأَرْضِ'],
-      poetry_examples: ['أبدع في صنعه فجاء بديعاً'],
-      derivatives: ['مبدع', 'إبداعي', 'بديع'],
-      votes_count: 98,
-      is_verified: true
-    },
-    {
-      id: 'featured-3',
-      word: 'التَّوَاصُل',
-      meaning: 'الاتصال والتفاعل بين الأشخاص أو الجماعات',
-      category: 'modern',
-      quran_examples: [],
-      poetry_examples: ['بالتواصل تحيا القلوب وتزدهر المجتمعات'],
-      derivatives: ['وصل', 'موصول', 'صلة'],
-      votes_count: 87,
-      is_verified: true
-    }
+  const categories = [
+    { value: 'all', label: 'جميع الفئات' },
+    { value: 'اسم', label: 'الأسماء' },
+    { value: 'فعل', label: 'الأفعال' },
+    { value: 'صفة', label: 'الصفات' },
+    { value: 'حرف', label: 'الحروف' },
+    { value: 'ظرف', label: 'الظروف' },
+    { value: 'عامي', label: 'عامي' },
+    { value: 'فصيح', label: 'فصيح' },
+    { value: 'قديم', label: 'قديم' },
+    { value: 'حديث', label: 'حديث' }
   ];
 
-  useEffect(() => {
-    if (searchTerm.length >= 2) {
-      searchWords();
-    } else {
-      setWords([]);
-      // عرض كلمات مقترحة عند عدم وجود بحث
-      setSuggestedWords(featuredWords.map(word => ({
-        ...word,
-        created_at: new Date().toISOString(),
-        user_id: null,
-        dialect_region: null,
-        word_pattern: null,
-        quran_examples: word.quran_examples,
-        poetry_examples: word.poetry_examples,
-        derivatives: word.derivatives
-      })) as ArabicWord[]);
+  // البحث الفوري مع useMemo
+  const filteredWords = useMemo(() => {
+    if (!searchQuery && selectedCategory === 'all') {
+      return words;
     }
-  }, [searchTerm]);
 
-  const searchWords = async () => {
-    setLoading(true);
+    return words.filter(word => {
+      const matchesSearch = !searchQuery || 
+        word.word.includes(searchQuery) ||
+        word.meaning.includes(searchQuery) ||
+        (word.word_pattern && word.word_pattern.includes(searchQuery));
+      
+      const matchesCategory = selectedCategory === 'all' || word.category === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [words, searchQuery, selectedCategory]);
+
+  useEffect(() => {
+    fetchWords();
+  }, []);
+
+  const fetchWords = async () => {
     try {
       const { data, error } = await supabase
         .from('arabic_words')
         .select('*')
-        .ilike('word', `%${searchTerm}%`)
-        .order('votes_count', { ascending: false })
-        .limit(20);
+        .order('word');
 
       if (error) throw error;
       setWords(data || []);
-      setSuggestedWords([]);
     } catch (error) {
-      console.error('Error searching words:', error);
+      console.error('Error fetching words:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل الكلمات",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const getArrayFromJson = (jsonData: any): string[] => {
-    if (Array.isArray(jsonData)) return jsonData;
-    if (typeof jsonData === 'string') return [jsonData];
-    return [];
-  };
-
-  const handleVote = async (wordId: string, voteType: 'up' | 'down') => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "مطلوب تسجيل الدخول",
-          description: "يرجى تسجيل الدخول للتصويت",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { error } = await supabase
-        .from('word_contributions')
-        .insert({
-          user_id: user.id,
-          word_id: wordId,
-          contribution_type: 'vote',
-          vote_type: voteType
-        });
-
-      if (error) throw error;
-
-      // Update local state
-      setWords(prev => prev.map(word => 
-        word.id === wordId 
-          ? { ...word, votes_count: (word.votes_count || 0) + (voteType === 'up' ? 1 : -1) }
-          : word
-      ));
-
-      toast({
-        title: "تم التصويت بنجاح",
-        description: "شكراً لمساهمتك في تحسين المعجم"
-      });
-    } catch (error) {
-      console.error('Error voting:', error);
+  const handleAddWord = async () => {
+    if (!newWord.word || !newWord.meaning || !newWord.category) {
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء التصويت",
-        variant: "destructive"
+        description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
       });
+      return;
     }
-  };
 
-  const handleAddWord = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "مطلوب تسجيل الدخول",
-          description: "يرجى تسجيل الدخول لإضافة كلمات",
-          variant: "destructive"
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from('arabic_words')
-        .insert({
-          ...newWord,
-          user_id: user.id,
+        .insert([{
+          word: newWord.word,
+          meaning: newWord.meaning,
+          category: newWord.category,
+          dialect_region: newWord.dialect_region || null,
+          word_pattern: newWord.word_pattern || null,
           quran_examples: [],
           poetry_examples: [],
           derivatives: []
-        });
+        }]);
 
       if (error) throw error;
 
       toast({
-        title: "تمت الإضافة بنجاح",
-        description: "سيتم مراجعة الكلمة قبل نشرها"
+        title: "تم بنجاح",
+        description: "تمت إضافة الكلمة بنجاح",
       });
 
+      setIsAddingWord(false);
       setNewWord({
         word: '',
         meaning: '',
-        category: 'classical',
+        category: '',
         dialect_region: '',
         word_pattern: ''
       });
-      setShowAddForm(false);
+      fetchWords();
     } catch (error) {
       console.error('Error adding word:', error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء إضافة الكلمة",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'ar-SA';
-      speechSynthesis.speak(utterance);
-    }
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      'اسم': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      'فعل': 'bg-green-500/20 text-green-300 border-green-500/30',
+      'صفة': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      'حرف': 'bg-red-500/20 text-red-300 border-red-500/30',
+      'ظرف': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+      'عامي': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      'فصيح': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      'قديم': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      'حديث': 'bg-pink-500/20 text-pink-300 border-pink-500/30'
+    };
+    return colors[category] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
   };
 
-  if (selectedWord) {
-    const quranExamples = getArrayFromJson(selectedWord.quran_examples);
-    const poetryExamples = getArrayFromJson(selectedWord.poetry_examples);
-    const derivatives = getArrayFromJson(selectedWord.derivatives);
-    
+  if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto"
-      >
-        <button
-          onClick={() => setSelectedWord(null)}
-          className="mb-6 px-4 py-2 bg-amber-600/20 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-600/30 transition-colors"
-        >
-          ← العودة للمعجم
-        </button>
-        
-        <div className="bg-gradient-to-br from-amber-600/20 to-orange-600/20 rounded-xl p-8 border border-amber-500/30">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4">
-                <h2 className="text-4xl font-bold text-white">{selectedWord.word}</h2>
-                <button
-                  onClick={() => speakWord(selectedWord.word)}
-                  className="p-2 bg-amber-600/30 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-600/50 transition-colors"
-                >
-                  <Volume2 className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="flex items-center gap-4 mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  selectedWord.category === 'classical' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300' :
-                  selectedWord.category === 'dialect' ? 'bg-green-600/20 border border-green-500/30 text-green-300' :
-                  'bg-purple-600/20 border border-purple-500/30 text-purple-300'
-                }`}>
-                  {selectedWord.category === 'classical' ? 'فصحى' : 
-                   selectedWord.category === 'dialect' ? 'لهجة' : 'معاصر'}
-                </span>
-                
-                {selectedWord.dialect_region && (
-                  <span className="px-3 py-1 bg-amber-600/20 border border-amber-500/30 rounded-full text-amber-300 text-sm">
-                    {selectedWord.dialect_region}
-                  </span>
-                )}
-                
-                {selectedWord.is_verified && (
-                  <span className="px-3 py-1 bg-green-600/20 border border-green-500/30 rounded-full text-green-300 text-sm flex items-center gap-1">
-                    <Star className="w-4 h-4" />
-                    موثق
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleVote(selectedWord.id, 'up')}
-                className="p-2 bg-green-600/20 border border-green-500/30 rounded-lg text-green-300 hover:bg-green-600/30 transition-colors"
-              >
-                <ThumbsUp className="w-4 h-4" />
-              </button>
-              <span className="text-white font-medium">{selectedWord.votes_count || 0}</span>
-              <button
-                onClick={() => handleVote(selectedWord.id, 'down')}
-                className="p-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-300 hover:bg-red-600/30 transition-colors"
-              >
-                <ThumbsDown className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold text-amber-300 mb-2">المعنى</h3>
-              <p className="text-white/80 text-lg">{selectedWord.meaning}</p>
-            </div>
-            
-            {selectedWord.word_pattern && (
-              <div>
-                <h3 className="text-xl font-semibold text-amber-300 mb-2">الوزن</h3>
-                <p className="text-white/80">{selectedWord.word_pattern}</p>
-              </div>
-            )}
-            
-            {derivatives.length > 0 && (
-              <div>
-                <h3 className="text-xl font-semibold text-amber-300 mb-2">الاشتقاقات</h3>
-                <div className="flex flex-wrap gap-2">
-                  {derivatives.map((derivative, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-300"
-                    >
-                      {derivative}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {quranExamples.length > 0 && (
-              <div>
-                <h3 className="text-xl font-semibold text-amber-300 mb-2">أمثلة قرآنية</h3>
-                <div className="space-y-2">
-                  {quranExamples.map((example, index) => (
-                    <div key={index} className="bg-green-600/10 border border-green-500/30 rounded-lg p-3">
-                      <p className="text-white/80 text-lg text-center">{example}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {poetryExamples.length > 0 && (
-              <div>
-                <h3 className="text-xl font-semibold text-amber-300 mb-2">أمثلة شعرية</h3>
-                <div className="space-y-2">
-                  {poetryExamples.map((example, index) => (
-                    <div key={index} className="bg-purple-600/10 border border-purple-500/30 rounded-lg p-3">
-                      <p className="text-white/80 text-lg text-center font-serif">{example}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
         </div>
-      </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="bg-white/5 backdrop-blur-sm border-amber-500/20">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-16 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Search Header */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="ابحث في معجم العرب الشامل..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pr-10 pl-4 py-3 bg-white/10 border border-amber-500/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-500/50 text-lg"
-          />
-        </div>
-        
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="px-6 py-3 bg-amber-600/30 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-600/50 transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          إضافة كلمة
-        </button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-amber-300 mb-4 flex items-center justify-center gap-3">
+          <Sparkles className="w-8 h-8" />
+          معجم العرب الشامل المحسن
+        </h2>
+        <p className="text-white/70 text-lg">
+          معجم تفاعلي شامل مع البحث الفوري والذكي
+        </p>
       </div>
 
-      {/* Featured Words Section */}
-      {suggestedWords.length > 0 && searchTerm.length < 2 && (
-        <motion.div
+      {/* Search and Controls */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-400 w-5 h-5" />
+          <Input
+            placeholder="ابحث عن كلمة أو معنى... (البحث فوري ومباشر)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white/10 border-amber-500/30 text-white placeholder:text-white/50 pr-10 text-lg"
+          />
+        </div>
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-full md:w-48 bg-white/10 border-amber-500/30 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-amber-950 border-amber-500/30">
+            {categories.map((category) => (
+              <SelectItem key={category.value} value={category.value} className="text-white hover:bg-amber-800">
+                {category.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          onClick={() => setIsAddingWord(true)}
+          className="bg-amber-600 hover:bg-amber-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          إضافة كلمة
+        </Button>
+      </div>
+
+      {/* Live Search Results Counter */}
+      <div className="text-center">
+        <motion.p 
+          className="text-amber-300 text-lg"
+          key={filteredWords.length}
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          {searchQuery ? (
+            <>عدد النتائج: <span className="font-bold text-amber-200">{filteredWords.length}</span> كلمة</>
+          ) : (
+            <>إجمالي الكلمات: <span className="font-bold text-amber-200">{words.length}</span> كلمة</>
+          )}
+        </motion.p>
+      </div>
+
+      {/* Words Grid with Animation */}
+      <AnimatePresence mode="wait">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          key={`${searchQuery}-${selectedCategory}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-6 h-6 text-amber-400" />
-            <h3 className="text-xl font-semibold text-amber-300">كلمات مُختارة</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {suggestedWords.map((word, index) => (
-              <motion.div
-                key={word.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+          {filteredWords.map((word, index) => (
+            <motion.div
+              key={word.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: Math.min(index * 0.05, 0.5) }}
+            >
+              <Card 
+                className="bg-white/5 backdrop-blur-sm border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 cursor-pointer group h-full"
                 onClick={() => setSelectedWord(word)}
-                className="group cursor-pointer bg-gradient-to-br from-amber-600/20 to-orange-600/20 border border-amber-500/30 rounded-xl p-4 hover:from-amber-600/30 hover:to-orange-600/30 transition-all duration-300"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-lg font-bold text-white group-hover:text-amber-300 transition-colors">
-                    {word.word}
-                  </h4>
-                  <Star className="w-4 h-4 text-amber-400" />
-                </div>
-                <p className="text-white/70 text-sm line-clamp-2 mb-2">{word.meaning}</p>
-                <div className="flex items-center justify-between">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    word.category === 'classical' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300' :
-                    'bg-purple-600/20 border border-purple-500/30 text-purple-300'
-                  }`}>
-                    {word.category === 'classical' ? 'فصحى' : 'معاصر'}
-                  </span>
-                  <div className="flex items-center gap-1 text-amber-300">
-                    <ThumbsUp className="w-3 h-3" />
-                    <span className="text-sm">{word.votes_count}</span>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-amber-300 text-xl mb-2 group-hover:text-amber-200 transition-colors">
+                        {word.word}
+                      </CardTitle>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        <Badge className={`${getCategoryColor(word.category)} text-xs`}>
+                          {word.category}
+                        </Badge>
+                        {word.is_verified && (
+                          <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
+                            <Star className="w-3 h-3 mr-1" />
+                            موثق
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-white/80 line-clamp-3 leading-relaxed">
+                    {word.meaning}
+                  </p>
+                  {word.word_pattern && (
+                    <p className="text-amber-300/70 text-sm mt-2">
+                      الوزن: {word.word_pattern}
+                    </p>
+                  )}
+                  {word.dialect_region && (
+                    <p className="text-blue-300/70 text-sm mt-1">
+                      المنطقة: {word.dialect_region}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+
+      {filteredWords.length === 0 && (
+        <motion.div 
+          className="text-center py-16"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <BookOpen className="w-16 h-16 text-amber-300 mx-auto mb-4 opacity-50" />
+          <h3 className="text-xl font-medium text-amber-200 mb-2">لا توجد نتائج</h3>
+          <p className="text-white/60">
+            {searchQuery ? 
+              `لم يتم العثور على كلمات تحتوي على "${searchQuery}"` : 
+              'لا توجد كلمات في هذه الفئة'
+            }
+          </p>
         </motion.div>
       )}
 
-      {/* Add Word Form */}
-      {showAddForm && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-600/20 border border-amber-500/30 rounded-xl p-6"
-        >
-          <h3 className="text-xl font-semibold text-amber-300 mb-4">إضافة كلمة جديدة للمعجم</h3>
-          <form onSubmit={handleAddWord} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="الكلمة"
-                value={newWord.word}
-                onChange={(e) => setNewWord({...newWord, word: e.target.value})}
-                className="px-4 py-2 bg-white/10 border border-amber-500/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-500/50"
-                required
-              />
-              
-              <select
-                value={newWord.category}
-                onChange={(e) => setNewWord({...newWord, category: e.target.value as any})}
-                className="px-4 py-2 bg-white/10 border border-amber-500/30 rounded-lg text-white focus:outline-none focus:border-amber-500/50"
-              >
-                <option value="classical" className="bg-gray-800">فصحى</option>
-                <option value="dialect" className="bg-gray-800">لهجة</option>
-                <option value="modern" className="bg-gray-800">معاصر</option>
-              </select>
+      {/* Word Details Modal */}
+      <Dialog open={!!selectedWord} onOpenChange={() => setSelectedWord(null)}>
+        {selectedWord && (
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-amber-950/95 border-amber-500/30">
+            <DialogHeader>
+              <DialogTitle className="text-2xl text-amber-300 text-right flex items-center gap-3">
+                <BookOpen className="w-6 h-6" />
+                {selectedWord.word}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h3 className="text-lg font-bold text-amber-300 mb-3">المعنى والتفاصيل</h3>
+                <p className="text-white/80 text-lg leading-relaxed mb-4">{selectedWord.meaning}</p>
+                
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Badge className={getCategoryColor(selectedWord.category)}>
+                    {selectedWord.category}
+                  </Badge>
+                  {selectedWord.is_verified && (
+                    <Badge variant="outline" className="text-green-400 border-green-400">
+                      <Star className="w-3 h-3 mr-1" />
+                      موثق
+                    </Badge>
+                  )}
+                </div>
+
+                {selectedWord.word_pattern && (
+                  <p className="text-amber-300 mb-2">
+                    <span className="font-semibold">الوزن الصرفي:</span> {selectedWord.word_pattern}
+                  </p>
+                )}
+                
+                {selectedWord.dialect_region && (
+                  <p className="text-blue-300 mb-2">
+                    <span className="font-semibold">المنطقة/اللهجة:</span> {selectedWord.dialect_region}
+                  </p>
+                )}
+              </div>
+
+              {/* Quran Examples */}
+              {selectedWord.quran_examples && selectedWord.quran_examples.length > 0 && (
+                <div className="bg-green-500/10 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-green-300 mb-3">أمثلة قرآنية</h3>
+                  <div className="space-y-3">
+                    {selectedWord.quran_examples.map((example: any, index: number) => (
+                      <div key={index} className="bg-white/5 rounded p-3">
+                        <p className="text-white/90 italic">"{example.text}"</p>
+                        <p className="text-green-300/70 text-sm mt-1">{example.source}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Poetry Examples */}
+              {selectedWord.poetry_examples && selectedWord.poetry_examples.length > 0 && (
+                <div className="bg-purple-500/10 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-purple-300 mb-3">أمثلة شعرية</h3>
+                  <div className="space-y-3">
+                    {selectedWord.poetry_examples.map((example: any, index: number) => (
+                      <div key={index} className="bg-white/5 rounded p-3">
+                        <p className="text-white/90 italic font-serif">"{example.text}"</p>
+                        <p className="text-purple-300/70 text-sm mt-1">{example.poet}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Derivatives */}
+              {selectedWord.derivatives && selectedWord.derivatives.length > 0 && (
+                <div className="bg-amber-500/10 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-amber-300 mb-3">المشتقات والتصريفات</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {selectedWord.derivatives.map((derivative: any, index: number) => (
+                      <div key={index} className="bg-white/5 rounded p-2 text-center">
+                        <p className="text-amber-200">{derivative.word}</p>
+                        <p className="text-white/60 text-xs">{derivative.type}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            
-            <textarea
-              placeholder="المعنى والشرح"
-              value={newWord.meaning}
-              onChange={(e) => setNewWord({...newWord, meaning: e.target.value})}
-              className="w-full px-4 py-2 bg-white/10 border border-amber-500/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-500/50 min-h-[80px]"
-              required
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* Add Word Modal */}
+      <Dialog open={isAddingWord} onOpenChange={setIsAddingWord}>
+        <DialogContent className="bg-amber-950/95 border-amber-500/30">
+          <DialogHeader>
+            <DialogTitle className="text-amber-300 text-right">إضافة كلمة جديدة</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="الكلمة *"
+              value={newWord.word}
+              onChange={(e) => setNewWord({...newWord, word: e.target.value})}
+              className="bg-white/10 border-amber-500/30 text-white"
             />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="المنطقة (للهجات)"
-                value={newWord.dialect_region}
-                onChange={(e) => setNewWord({...newWord, dialect_region: e.target.value})}
-                className="px-4 py-2 bg-white/10 border border-amber-500/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-500/50"
-              />
-              
-              <input
-                type="text"
-                placeholder="الوزن الصرفي"
-                value={newWord.word_pattern}
-                onChange={(e) => setNewWord({...newWord, word_pattern: e.target.value})}
-                className="px-4 py-2 bg-white/10 border border-amber-500/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-amber-500/50"
-              />
-            </div>
+            <Textarea
+              placeholder="المعنى *"
+              value={newWord.meaning}
+              onChange={(e) => setNewWord({...newWord, meaning: e.target.value})}
+              className="bg-white/10 border-amber-500/30 text-white"
+            />
             
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-green-600/30 border border-green-500/30 rounded-lg text-green-300 hover:bg-green-600/50 transition-colors"
-              >
-                إضافة للمعجم
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-6 py-2 bg-gray-600/30 border border-gray-500/30 rounded-lg text-gray-300 hover:bg-gray-600/50 transition-colors"
-              >
-                إلغاء
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      )}
+            <Select value={newWord.category} onValueChange={(value) => setNewWord({...newWord, category: value})}>
+              <SelectTrigger className="bg-white/10 border-amber-500/30 text-white">
+                <SelectValue placeholder="اختر الفئة *" />
+              </SelectTrigger>
+              <SelectContent className="bg-amber-950 border-amber-500/30">
+                {categories.slice(1).map((category) => (
+                  <SelectItem key={category.value} value={category.value} className="text-white hover:bg-amber-800">
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Input
+              placeholder="المنطقة/اللهجة (اختياري)"
+              value={newWord.dialect_region}
+              onChange={(e) => setNewWord({...newWord, dialect_region: e.target.value})}
+              className="bg-white/10 border-amber-500/30 text-white"
+            />
+            
+            <Input
+              placeholder="الوزن الصرفي (اختياري)"
+              value={newWord.word_pattern}
+              onChange={(e) => setNewWord({...newWord, word_pattern: e.target.value})}
+              className="bg-white/10 border-amber-500/30 text-white"
+            />
+          </div>
 
-      {/* Search Results */}
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin h-8 w-8 border-4 border-amber-500 rounded-full border-t-transparent"></div>
-        </div>
-      )}
-
-      {searchTerm.length >= 2 && !loading && (
-        <div className="space-y-3">
-          {words.length > 0 ? (
-            words.map((word, index) => (
-              <motion.div
-                key={word.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => setSelectedWord(word)}
-                className="group cursor-pointer bg-gradient-to-r from-amber-600/10 to-orange-600/10 border border-amber-500/30 rounded-lg p-4 hover:from-amber-600/20 hover:to-orange-600/20 transition-all duration-300"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
-                        {word.word}
-                      </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        word.category === 'classical' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300' :
-                        word.category === 'dialect' ? 'bg-green-600/20 border border-green-500/30 text-green-300' :
-                        'bg-purple-600/20 border border-purple-500/30 text-purple-300'
-                      }`}>
-                        {word.category === 'classical' ? 'فصحى' : 
-                         word.category === 'dialect' ? 'لهجة' : 'معاصر'}
-                      </span>
-                      {word.is_verified && (
-                        <span className="text-green-400 text-xs">✓</span>
-                      )}
-                    </div>
-                    <p className="text-white/70 line-clamp-2">{word.meaning}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-amber-300">
-                    <ThumbsUp className="w-4 h-4" />
-                    <span>{word.votes_count || 0}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <BookOpen className="w-16 h-16 text-white/30 mx-auto mb-4" />
-              <p className="text-white/70">لم يتم العثور على كلمات مطابقة في المعجم</p>
-              <p className="text-white/50 text-sm mt-2">جرب البحث بكلمة أخرى أو أضف الكلمة للمعجم</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {searchTerm.length < 2 && suggestedWords.length === 0 && (
-        <div className="text-center py-12">
-          <Search className="w-16 h-16 text-white/30 mx-auto mb-4" />
-          <p className="text-white/70">ادخل حرفين على الأقل للبحث في معجم العرب الشامل</p>
-          <p className="text-white/50 text-sm mt-2">يحتوي المعجم على آلاف الكلمات العربية مع أمثلة وشروحات</p>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddingWord(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleAddWord} className="bg-amber-600 hover:bg-amber-700">
+              إضافة الكلمة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

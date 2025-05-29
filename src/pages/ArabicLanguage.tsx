@@ -9,8 +9,9 @@ import ArabicAIAssistant from '@/components/arabic/ArabicAIAssistant';
 import ArabicScholars from '@/components/arabic/ArabicScholars';
 import EnhancedSmartDictionary from '@/components/arabic/EnhancedSmartDictionary';
 import EnhancedGrammarAssistant from '@/components/arabic/EnhancedGrammarAssistant';
+import ArabicPoets from '@/components/arabic/ArabicPoets';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowLeft, ArrowRight, Bot, Users, BookOpen, PenTool } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bot, Users, BookOpen, PenTool, Feather } from 'lucide-react';
 
 const ArabicLanguage = () => {
   const navigate = useNavigate();
@@ -27,6 +28,15 @@ const ArabicLanguage = () => {
       component: "ai-assistant"
     },
     {
+      title: "شعراء العرب",
+      icon: <Feather className="w-8 h-8" />,
+      description: "موسوعة شاملة لأعلام الشعر العربي عبر التاريخ مع قصائدهم ومعلوماتهم",
+      color: "from-rose-600/20 to-pink-600/20",
+      borderColor: "border-rose-500/30",
+      hoverBorderColor: "hover:border-rose-500/50",
+      component: "poets"
+    },
+    {
       title: "موسوعة علماء اللغة العربية",
       icon: <Users className="w-8 h-8" />,
       description: "تعرف على أعلام النحو والأدب والبلاغة عبر التاريخ",
@@ -36,9 +46,9 @@ const ArabicLanguage = () => {
       component: "scholars"
     },
     {
-      title: "معجم العرب الشامل",
+      title: "معجم العرب الشامل المحسن",
       icon: <BookOpen className="w-8 h-8" />,
-      description: "معجم تفاعلي شامل يحتوي على آلاف الكلمات العربية مع أمثلة قرآنية وشعرية",
+      description: "معجم تفاعلي شامل مع البحث الفوري والذكي لآلاف الكلمات العربية",
       color: "from-purple-600/20 to-pink-600/20",
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
@@ -61,6 +71,8 @@ const ArabicLanguage = () => {
     switch (activeComponent) {
       case 'ai-assistant':
         return <ArabicAIAssistant />;
+      case 'poets':
+        return <ArabicPoets />;
       case 'scholars':
         return <ArabicScholars />;
       case 'dictionary':
