@@ -1088,7 +1088,7 @@ const Calculator = () => {
                         {key === 'imaginary' && `الجزء التخيلي: ±${value}i`}
                         {key === 'term' && `الحد رقم ${algebraInputs.n}: ${value}`}
                         {key === 'sum' && `مجموع ${algebraInputs.n} حدود: ${value}`}
-                        {key === 'message' && value as React.ReactNode}
+                        {key === 'message' && <span>{String(value)}</span>}
                       </div>
                     ))}
                   </div>
@@ -1170,7 +1170,7 @@ const Calculator = () => {
                   <div className="space-y-1">
                     {matrixResult.matrix && (
                       <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right">
-                        {matrixResult.matrix.map((row, i) => (
+                        {matrixResult.matrix.map((row: number[], i: number) => (
                           <div key={i} className="flex items-center justify-between">
                             {row.map((val, j) => (
                               <div key={j} className="px-2 py-1 text-white text-right">
