@@ -8,7 +8,7 @@ import { MessageCircle, Send, X, Bot, User, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -27,7 +27,6 @@ const PlatformGuideAssistant = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // الحصول على معلومات المستخدم
@@ -117,19 +116,12 @@ const PlatformGuideAssistant = () => {
       // إذا كان هناك مسار للتنقل، اعرض خيار الانتقال
       if (data.navigationPath) {
         setTimeout(() => {
-          toast({
-            title: "🧭 هل تريد الانتقال؟",
+          toast("🧭 هل تريد الانتقال؟", {
             description: "انقر هنا للانتقال إلى الصفحة المطلوبة",
-            action: (
-              <Button
-                size="sm"
-                onClick={() => navigate(data.navigationPath)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Navigation className="w-4 h-4 mr-1" />
-                انتقل الآن
-              </Button>
-            ),
+            action: {
+              label: "انتقل الآن",
+              onClick: () => navigate(data.navigationPath),
+            },
           });
         }, 1000);
       }
