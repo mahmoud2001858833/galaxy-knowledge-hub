@@ -42,31 +42,31 @@ const ContactsList = ({
   };
 
   return (
-    <div className="w-80 bg-gradient-to-b from-blue-950/90 to-purple-950/90 backdrop-blur-md border-l border-white/10 flex flex-col h-full sticky top-0 max-h-[calc(100vh-64px)] overflow-hidden">
-      <div className="p-4 border-b border-white/10 flex justify-between items-center">
+    <div className="w-80 bg-gradient-to-b from-gray-800/90 to-slate-800/90 backdrop-blur-md border-r border-gray-600/30 flex flex-col h-full sticky top-0 max-h-[calc(100vh-64px)] overflow-hidden">
+      <div className="p-4 border-b border-gray-600/30 flex justify-between items-center">
         <h3 className="text-lg font-medium text-white">جهات الاتصال</h3>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:bg-white/10"
+              className="text-white hover:bg-gray-700/50"
             >
               {sortOrder === 'name' ? <Mail className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-gradient-to-br from-blue-950/90 to-purple-950/90 border-blue-800/50">
+          <DropdownMenuContent align="end" className="bg-gradient-to-br from-gray-800/95 to-slate-800/95 border-gray-600/50 backdrop-blur-md">
             <DropdownMenuItem onClick={() => {
               setSortOrder('name');
               toggleSortOrder();
-            }} className="flex gap-2 text-xs text-white hover:bg-blue-800/50">
+            }} className="flex gap-2 text-xs text-white hover:bg-gray-700/50">
               <Mail className="h-3 w-3" />
               <span>ترتيب حسب الاسم</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
               setSortOrder('activity');
               toggleSortOrder();
-            }} className="flex gap-2 text-xs text-white hover:bg-blue-800/50">
+            }} className="flex gap-2 text-xs text-white hover:bg-gray-700/50">
               <Clock className="h-3 w-3" />
               <span>ترتيب حسب النشاط</span>
             </DropdownMenuItem>
@@ -81,7 +81,7 @@ const ContactsList = ({
             size="icon" 
             variant="ghost" 
             onClick={scrollContactsUp}
-            className="h-6 w-6 rounded-full bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50"
+            className="h-6 w-6 rounded-full bg-gray-700/50 border border-gray-600/30 hover:bg-gray-600/50"
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
@@ -107,7 +107,7 @@ const ContactsList = ({
                       variant="ghost" 
                       size="sm"
                       onClick={() => setShowAllContacts(!showAllContacts)}
-                      className="w-full text-xs text-white/70 hover:text-white hover:bg-blue-800/30 flex items-center justify-center gap-1"
+                      className="w-full text-xs text-white/70 hover:text-white hover:bg-gray-700/30 flex items-center justify-center gap-1"
                     >
                       {showAllContacts ? (
                         <>
@@ -126,13 +126,13 @@ const ContactsList = ({
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                <User className="h-12 w-12 text-blue-500/40 mb-3" />
+                <User className="h-12 w-12 text-emerald-500/40 mb-3" />
                 <p className="text-white/50">لا توجد جهات اتصال</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setIsContactSearchOpen(true)}
-                  className="mt-4 text-xs border-blue-500/30 hover:bg-blue-800/30"
+                  className="mt-4 text-xs border-emerald-500/30 hover:bg-emerald-700/30"
                 >
                   <Plus className="h-3 w-3 ml-1" />
                   إضافة جهة اتصال
@@ -147,19 +147,19 @@ const ContactsList = ({
             size="icon" 
             variant="ghost" 
             onClick={scrollContactsDown}
-            className="h-6 w-6 rounded-full bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50"
+            className="h-6 w-6 rounded-full bg-gray-700/50 border border-gray-600/30 hover:bg-gray-600/50"
           >
             <ChevronDown className="h-4 w-4" />
           </Button>
         </div>
       </div>
       
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-gray-600/30">
         <Button 
           variant="outline" 
           size="sm" 
           onClick={() => setIsContactSearchOpen(true)}
-          className="w-full border-blue-500/30 hover:bg-blue-800/30"
+          className="w-full border-emerald-500/30 hover:bg-emerald-700/30 text-emerald-300"
         >
           <Plus className="h-4 w-4 ml-2" />
           <span>إضافة جهة اتصال</span>
