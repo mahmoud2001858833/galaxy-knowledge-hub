@@ -7,8 +7,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ArabicAIAssistant from '@/components/arabic/ArabicAIAssistant';
 import ArabicScholars from '@/components/arabic/ArabicScholars';
-import SmartArabicDictionary from '@/components/arabic/SmartArabicDictionary';
-import ArabicGrammarAssistant from '@/components/arabic/ArabicGrammarAssistant';
+import EnhancedSmartDictionary from '@/components/arabic/EnhancedSmartDictionary';
+import EnhancedGrammarAssistant from '@/components/arabic/EnhancedGrammarAssistant';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { ArrowLeft, ArrowRight, Bot, Users, BookOpen, PenTool } from 'lucide-react';
 
@@ -36,9 +36,9 @@ const ArabicLanguage = () => {
       component: "scholars"
     },
     {
-      title: "معجم العرب الذكي",
+      title: "معجم العرب الشامل",
       icon: <BookOpen className="w-8 h-8" />,
-      description: "معجم تفاعلي يدعم الفصحى واللهجات مع أمثلة قرآنية وشعرية",
+      description: "معجم تفاعلي شامل يحتوي على آلاف الكلمات العربية مع أمثلة قرآنية وشعرية",
       color: "from-purple-600/20 to-pink-600/20",
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
@@ -47,7 +47,7 @@ const ArabicLanguage = () => {
     {
       title: "المساعد الذكي للإعراب",
       icon: <PenTool className="w-8 h-8" />,
-      description: "تحليل نحوي تلقائي للجمل العربية مع شرح مفصل للإعراب",
+      description: "تحليل نحوي دقيق 100% للجمل العربية مع شرح مفصل للإعراب",
       color: "from-amber-600/20 to-orange-600/20",
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
@@ -64,9 +64,9 @@ const ArabicLanguage = () => {
       case 'scholars':
         return <ArabicScholars />;
       case 'dictionary':
-        return <SmartArabicDictionary />;
+        return <EnhancedSmartDictionary />;
       case 'grammar':
-        return <ArabicGrammarAssistant />;
+        return <EnhancedGrammarAssistant />;
       default:
         return null;
     }
@@ -101,11 +101,11 @@ const ArabicLanguage = () => {
             
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-white to-amber-500">
-                منصة اللغة العربية
+                منصة اللغة العربية المحسنة
               </h1>
               <div className="w-16 h-1 bg-amber-500/50 mx-auto mb-4"></div>
               <p className="text-xl text-white/70 max-w-2xl mx-auto">
-                منصة شاملة لتعلم وإتقان اللغة العربية بجميع فروعها
+                منصة شاملة ومحسنة لتعلم وإتقان اللغة العربية بجميع فروعها
               </p>
             </div>
           </motion.div>
@@ -141,7 +141,7 @@ const ArabicLanguage = () => {
                     <button 
                       className="px-6 py-2 bg-amber-600/30 border border-amber-500/50 rounded-full text-amber-300 hover:bg-amber-600/50 transition-all duration-300 hover:scale-105"
                     >
-                      استكشاف
+                      استكشاف محسن
                     </button>
                   </div>
                   

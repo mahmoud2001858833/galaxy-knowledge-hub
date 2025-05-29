@@ -15,7 +15,7 @@ const LiteraryPlatforms = () => {
     {
       title: t.literaryPlatforms.arabic,
       icon: "🎭",
-      image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      image: "https://toutaworld.com/assets/posts/blogs/8896-aanasr-alaaml-aladby/8896-aanasr-alaaml-aladby-1200x630.jpeg",
       color: "from-amber-600/20 to-orange-600/20",
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
