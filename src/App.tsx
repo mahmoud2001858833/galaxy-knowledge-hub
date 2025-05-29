@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   createBrowserRouter,
@@ -5,6 +6,7 @@ import {
   Navigate,
   useNavigate,
   useLocation,
+  Outlet,
 } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +34,16 @@ import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
 import EducationalVideos from './pages/EducationalVideos';
+
+// Root layout component that includes the PlatformGuideAssistant
+const RootLayout = () => {
+  return (
+    <>
+      <Outlet />
+      <PlatformGuideAssistant />
+    </>
+  );
+};
 
 // Authentication guard component that redirects to login if not authenticated
 const AuthGuard = ({ children }) => {
@@ -90,110 +102,111 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// Create routes with proper authentication guards
+// Create routes with proper authentication guards and root layout
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <PublicRoute><Index /></PublicRoute>,
+    element: <RootLayout />,
     errorElement: <NotFound />,
-  },
-  {
-    path: '/auth',
-    element: <PublicRoute><Auth /></PublicRoute>,
-  },
-  {
-    path: '/physics',
-    element: <AuthGuard><Physics /></AuthGuard>,
-  },
-  {
-    path: '/chemistry',
-    element: <AuthGuard><Chemistry /></AuthGuard>,
-  },
-  {
-    path: '/mathematics',
-    element: <AuthGuard><Mathematics /></AuthGuard>,
-  },
-  {
-    path: '/mathematics/calculator',
-    element: <AuthGuard><CalculatorPage /></AuthGuard>,
-  },
-  {
-    path: '/mathematics/graph-visualizer',
-    element: <AuthGuard><GraphVisualizerPage /></AuthGuard>,
-  },
-  {
-    path: '/mathematics/mathematicians',
-    element: <AuthGuard><MathematiciansPage /></AuthGuard>,
-  },
-  {
-    path: '/mathematics/ai-assistant',
-    element: <AuthGuard><MathAIAssistantPage /></AuthGuard>,
-  },
-  {
-    path: '/biology',
-    element: <AuthGuard><Biology /></AuthGuard>,
-  },
-  {
-    path: '/subject-puzzles',
-    element: <AuthGuard><SubjectPuzzles /></AuthGuard>,
-  },
-  {
-    path: '/puzzle/:puzzleId',
-    element: <AuthGuard><PuzzleDetails /></AuthGuard>,
-  },
-  {
-    path: '/visual-library',
-    element: <AuthGuard><VisualLibrary /></AuthGuard>,
-  },
-  {
-    path: '/upload-image',
-    element: <AuthGuard><UploadImagePage /></AuthGuard>,
-  },
-  {
-    path: '/scientific-journal',
-    element: <AuthGuard><ScientificJournal /></AuthGuard>,
-  },
-  {
-    path: '/upload-journal',
-    element: <AuthGuard><UploadJournalPage /></AuthGuard>,
-  },
-  {
-    path: '/study-organization',
-    element: <AuthGuard><StudyOrganization /></AuthGuard>,
-  },
-  {
-    path: '/chat-rooms',
-    element: <AuthGuard><ChatRooms /></AuthGuard>,
-  },
-  {
-    path: '/math-puzzles',
-    element: <AuthGuard><MathPuzzles /></AuthGuard>,
-  },
-  {
-    path: '/profile',
-    element: <AuthGuard><UserProfile /></AuthGuard>,
-  },
-  {
-    path: '/contact',
-    element: <AuthGuard><Contact /></AuthGuard>,
-  },
-  {
-    path: '/educational-videos',
-    element: <AuthGuard><EducationalVideos /></AuthGuard>,
-  },
-  {
-    path: '*',
-    element: <NotFound />,
+    children: [
+      {
+        index: true,
+        element: <PublicRoute><Index /></PublicRoute>,
+      },
+      {
+        path: 'auth',
+        element: <PublicRoute><Auth /></PublicRoute>,
+      },
+      {
+        path: 'physics',
+        element: <AuthGuard><Physics /></AuthGuard>,
+      },
+      {
+        path: 'chemistry',
+        element: <AuthGuard><Chemistry /></AuthGuard>,
+      },
+      {
+        path: 'mathematics',
+        element: <AuthGuard><Mathematics /></AuthGuard>,
+      },
+      {
+        path: 'mathematics/calculator',
+        element: <AuthGuard><CalculatorPage /></AuthGuard>,
+      },
+      {
+        path: 'mathematics/graph-visualizer',
+        element: <AuthGuard><GraphVisualizerPage /></AuthGuard>,
+      },
+      {
+        path: 'mathematics/mathematicians',
+        element: <AuthGuard><MathematiciansPage /></AuthGuard>,
+      },
+      {
+        path: 'mathematics/ai-assistant',
+        element: <AuthGuard><MathAIAssistantPage /></AuthGuard>,
+      },
+      {
+        path: 'biology',
+        element: <AuthGuard><Biology /></AuthGuard>,
+      },
+      {
+        path: 'subject-puzzles',
+        element: <AuthGuard><SubjectPuzzles /></AuthGuard>,
+      },
+      {
+        path: 'puzzle/:puzzleId',
+        element: <AuthGuard><PuzzleDetails /></AuthGuard>,
+      },
+      {
+        path: 'visual-library',
+        element: <AuthGuard><VisualLibrary /></AuthGuard>,
+      },
+      {
+        path: 'upload-image',
+        element: <AuthGuard><UploadImagePage /></AuthGuard>,
+      },
+      {
+        path: 'scientific-journal',
+        element: <AuthGuard><ScientificJournal /></AuthGuard>,
+      },
+      {
+        path: 'upload-journal',
+        element: <AuthGuard><UploadJournalPage /></AuthGuard>,
+      },
+      {
+        path: 'study-organization',
+        element: <AuthGuard><StudyOrganization /></AuthGuard>,
+      },
+      {
+        path: 'chat-rooms',
+        element: <AuthGuard><ChatRooms /></AuthGuard>,
+      },
+      {
+        path: 'math-puzzles',
+        element: <AuthGuard><MathPuzzles /></AuthGuard>,
+      },
+      {
+        path: 'profile',
+        element: <AuthGuard><UserProfile /></AuthGuard>,
+      },
+      {
+        path: 'contact',
+        element: <AuthGuard><Contact /></AuthGuard>,
+      },
+      {
+        path: 'educational-videos',
+        element: <AuthGuard><EducationalVideos /></AuthGuard>,
+      },
+      {
+        path: '*',
+        element: <NotFound />,
+      }
+    ]
   }
 ]);
 
 function App() {
-  return (
-    <>
-      <RouterProvider router={router} />
-      <PlatformGuideAssistant />
-    </>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
