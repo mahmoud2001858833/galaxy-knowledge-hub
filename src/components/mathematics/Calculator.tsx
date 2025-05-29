@@ -967,7 +967,7 @@ const Calculator = () => {
                         {key === 'volume' && 'الحجم: '}
                         {key === 'surfaceArea' && 'مساحة السطح: '}
                         {key === 'type' && 'نوع المثلث: '}
-                        {value}
+                        {String(value)}
                       </div>
                     ))}
                   </div>
@@ -1079,15 +1079,15 @@ const Calculator = () => {
                   <div className="space-y-1">
                     {Object.entries(algebraResult).map(([key, value]) => (
                       <div key={key}>
-                        {key === 'x1' && `الجذر الأول: ${value}`}
-                        {key === 'x2' && `الجذر الثاني: ${value}`}
-                        {key === 'x' && `الجذر: ${value}`}
-                        {key === 'discriminant' && `المميز: ${value}`}
-                        {key === 'type' && `النوع: ${value}`}
-                        {key === 'real' && `الجزء الحقيقي: ${value}`}
-                        {key === 'imaginary' && `الجزء التخيلي: ±${value}i`}
-                        {key === 'term' && `الحد رقم ${algebraInputs.n}: ${value}`}
-                        {key === 'sum' && `مجموع ${algebraInputs.n} حدود: ${value}`}
+                        {key === 'x1' && `الجذر الأول: ${String(value)}`}
+                        {key === 'x2' && `الجذر الثاني: ${String(value)}`}
+                        {key === 'x' && `الجذر: ${String(value)}`}
+                        {key === 'discriminant' && `المميز: ${String(value)}`}
+                        {key === 'type' && `النوع: ${String(value)}`}
+                        {key === 'real' && `الجزء الحقيقي: ${String(value)}`}
+                        {key === 'imaginary' && `الجزء التخيلي: ±${String(value)}i`}
+                        {key === 'term' && `الحد رقم ${algebraInputs.n}: ${String(value)}`}
+                        {key === 'sum' && `مجموع ${algebraInputs.n} حدود: ${String(value)}`}
                         {key === 'message' && <span>{String(value)}</span>}
                       </div>
                     ))}
@@ -1181,6 +1181,11 @@ const Calculator = () => {
                         ))}
                       </div>
                     )}
+                    {matrixResult.determinant && (
+                      <div className="text-white text-right">
+                        المحدد: {matrixResult.determinant}
+                      </div>
+                    )}
                     {matrixResult.operation && (
                       <div className="text-white text-right">
                         العملية: {matrixResult.operation}
@@ -1208,47 +1213,114 @@ const Calculator = () => {
             </Select>
           </div>
           
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-white mb-2 text-right">المبلغ:</label>
-              <Input 
-                type="number"
-                value={financialInputs.amount || ''}
-                onChange={(e) => setFinancialInputs({...financialInputs, amount: e.target.value})}
-                className="bg-white/10 border-white/20 text-white text-right"
-                dir="ltr"
-              />
-            </div>
-            <div>
-              <label className="block text-white mb-2 text-right">معدل الفائدة:</label>
-              <Input 
-                type="number"
-                value={financialInputs.rate || ''}
-                onChange={(e) => setFinancialInputs({...financialInputs, rate: e.target.value})}
-                className="bg-white/10 border-white/20 text-white text-right"
-                dir="ltr"
-              />
-            </div>
-            <div>
-              <label className="block text-white mb-2 text-right">المدة:</label>
-              <Input 
-                type="number"
-                value={financialInputs.time || ''}
-                onChange={(e) => setFinancialInputs({...financialInputs, time: e.target.value})}
-                className="bg-white/10 border-white/20 text-white text-right"
-                dir="ltr"
-              />
-            </div>
-          </div>
-          
           {financialType === 'compound' && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-white mb-2 text-right">رأس المال:</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.principal || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, principal: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">معدل الفائدة (%):</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.rate || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, rate: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">المدة (سنوات):</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.time || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, time: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
               <div>
                 <label className="block text-white mb-2 text-right">تردد الفائدة:</label>
                 <Input 
                   type="number"
                   value={financialInputs.frequency || ''}
                   onChange={(e) => setFinancialInputs({...financialInputs, frequency: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          )}
+          
+          {financialType === 'simple' && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-white mb-2 text-right">رأس المال:</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.principal || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, principal: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">معدل الفائدة (%):</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.rate || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, rate: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">المدة (سنوات):</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.time || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, time: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          )}
+          
+          {financialType === 'loan' && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-white mb-2 text-right">مبلغ القرض:</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.amount || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, amount: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">معدل الفائدة السنوية (%):</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.rate || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, rate: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">عدد الأشهر:</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.months || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, months: e.target.value})}
                   className="bg-white/10 border-white/20 text-white text-right"
                   dir="ltr"
                 />
