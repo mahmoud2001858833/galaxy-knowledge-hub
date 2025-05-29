@@ -36,6 +36,23 @@ const Calculator = () => {
   const [geometryInputs, setGeometryInputs] = useState<{[key: string]: string}>({});
   const [geometryResult, setGeometryResult] = useState<any>(null);
   
+  // Advanced math variables
+  const [algebraOperation, setAlgebraOperation] = useState<string>('quadratic');
+  const [algebraInputs, setAlgebraInputs] = useState<{[key: string]: string}>({});
+  const [algebraResult, setAlgebraResult] = useState<any>(null);
+  
+  // Matrix variables
+  const [matrixSize, setMatrixSize] = useState<string>('2x2');
+  const [matrixA, setMatrixA] = useState<string>('');
+  const [matrixB, setMatrixB] = useState<string>('');
+  const [matrixOperation, setMatrixOperation] = useState<string>('add');
+  const [matrixResult, setMatrixResult] = useState<any>(null);
+  
+  // Financial variables
+  const [financialType, setFinancialType] = useState<string>('compound');
+  const [financialInputs, setFinancialInputs] = useState<{[key: string]: string}>({});
+  const [financialResult, setFinancialResult] = useState<any>(null);
+  
   // Clear result when changing tabs
   useEffect(() => {
     if (activeTab === 'basic') {
@@ -48,6 +65,12 @@ const Calculator = () => {
       setStatsResult(null);
     } else if (activeTab === 'geometry') {
       setGeometryResult(null);
+    } else if (activeTab === 'algebra') {
+      setAlgebraResult(null);
+    } else if (activeTab === 'matrix') {
+      setMatrixResult(null);
+    } else if (activeTab === 'financial') {
+      setFinancialResult(null);
     }
   }, [activeTab]);
   
@@ -256,12 +279,12 @@ const Calculator = () => {
       const standardDeviation = Math.sqrt(variance);
       
       // Mode calculation
-      const frequency = {};
+      const frequency: {[key: number]: number} = {};
       numbers.forEach(num => {
         frequency[num] = (frequency[num] || 0) + 1;
       });
       const maxFreq = Math.max(...Object.values(frequency));
-      const mode = Object.keys(frequency).filter(key => frequency[key] === maxFreq).map(Number);
+      const mode = Object.keys(frequency).filter(key => frequency[Number(key)] === maxFreq).map(Number);
       
       setStatsResult({
         count: numbers.length,
@@ -338,6 +361,201 @@ const Calculator = () => {
     }
   };
   
+  const calculateAlgebra = () => {
+    const inputs = algebraInputs;
+    let result: any = {};
+    
+    try {
+      switch (algebraOperation) {
+        case 'quadratic':
+          const a = parseFloat(inputs.a || '0');
+          const b = parseFloat(inputs.b || '0');
+          const c = parseFloat(inputs.c || '0');
+          
+          if (a === 0) {
+            result = { error: 'معامل x² لا يمكن أن يكون صفر' };
+          } else {
+            const discriminant = b * b - 4 * a * c;
+            if (discriminant > 0) {
+              const x1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+              const x2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+              result = { 
+                x1: x1.toFixed(4), 
+                x2: x2.toFixed(4), 
+                discriminant: discriminant.toFixed(4),
+                type: 'جذران حقيقيان مختلفان'
+              };
+            } else if (discriminant === 0) {
+              const x = -b / (2 * a);
+              result = { 
+                x: x.toFixed(4), 
+                discriminant: '0',
+                type: 'جذر حقيقي مضاعف'
+              };
+            } else {
+              const realPart = (-b / (2 * a)).toFixed(4);
+              const imagPart = (Math.sqrt(-discriminant) / (2 * a)).toFixed(4);
+              result = { 
+                real: realPart, 
+                imaginary: imagPart,
+                discriminant: discriminant.toFixed(4),
+                type: 'جذران مركبان'
+              };
+            }
+          }
+          break;
+        case 'cubic':
+          result = { message: 'حل المعادلات التكعيبية معقد جداً - سيتم إضافته لاحقاً' };
+          break;
+        case 'sequence':
+          const first = parseFloat(inputs.first || '0');
+          const diff = parseFloat(inputs.diff || '0');
+          const n = parseInt(inputs.n || '0');
+          
+          if (n > 0) {
+            const term = first + (n - 1) * diff;
+            const sum = (n * (2 * first + (n - 1) * diff)) / 2;
+            result = {
+              term: term.toFixed(2),
+              sum: sum.toFixed(2),
+              type: 'متتالية حسابية'
+            };
+          }
+          break;
+      }
+      setAlgebraResult(result);
+    } catch (error) {
+      setAlgebraResult({ error: 'خطأ في الحساب' });
+    }
+  };
+  
+  const calculateMatrix = () => {
+    try {
+      const parseMatrix = (matrixStr: string) => {
+        const rows = matrixStr.split(';').map(row => 
+          row.split(',').map(val => parseFloat(val.trim()))
+        );
+        return rows;
+      };
+      
+      const matA = parseMatrix(matrixA);
+      const matB = parseMatrix(matrixB);
+      
+      let result: any = {};
+      
+      switch (matrixOperation) {
+        case 'add':
+          if (matA.length === matB.length && matA[0].length === matB[0].length) {
+            const sum = matA.map((row, i) => 
+              row.map((val, j) => val + matB[i][j])
+            );
+            result = { matrix: sum, operation: 'الجمع' };
+          } else {
+            result = { error: 'أبعاد المصفوفتين يجب أن تتطابق للجمع' };
+          }
+          break;
+        case 'subtract':
+          if (matA.length === matB.length && matA[0].length === matB[0].length) {
+            const diff = matA.map((row, i) => 
+              row.map((val, j) => val - matB[i][j])
+            );
+            result = { matrix: diff, operation: 'الطرح' };
+          } else {
+            result = { error: 'أبعاد المصفوفتين يجب أن تتطابق للطرح' };
+          }
+          break;
+        case 'multiply':
+          if (matA[0].length === matB.length) {
+            const product = matA.map(row => 
+              matB[0].map((_, j) => 
+                row.reduce((sum, val, k) => sum + val * matB[k][j], 0)
+              )
+            );
+            result = { matrix: product, operation: 'الضرب' };
+          } else {
+            result = { error: 'عدد أعمدة المصفوفة الأولى يجب أن يساوي عدد صفوف المصفوفة الثانية' };
+          }
+          break;
+        case 'determinant':
+          if (matA.length === matA[0].length) {
+            const det = calculateDeterminant(matA);
+            result = { determinant: det.toFixed(4), operation: 'المحدد' };
+          } else {
+            result = { error: 'المصفوفة يجب أن تكون مربعة لحساب المحدد' };
+          }
+          break;
+      }
+      
+      setMatrixResult(result);
+    } catch (error) {
+      setMatrixResult({ error: 'خطأ في تحليل المصفوفات' });
+    }
+  };
+  
+  const calculateFinancial = () => {
+    const inputs = financialInputs;
+    let result: any = {};
+    
+    try {
+      switch (financialType) {
+        case 'compound':
+          const principal = parseFloat(inputs.principal || '0');
+          const rate = parseFloat(inputs.rate || '0') / 100;
+          const time = parseFloat(inputs.time || '0');
+          const frequency = parseFloat(inputs.frequency || '1');
+          
+          const amount = principal * Math.pow(1 + rate / frequency, frequency * time);
+          const interest = amount - principal;
+          
+          result = {
+            amount: amount.toFixed(2),
+            interest: interest.toFixed(2),
+            type: 'الفائدة المركبة'
+          };
+          break;
+        case 'simple':
+          const p = parseFloat(inputs.principal || '0');
+          const r = parseFloat(inputs.rate || '0') / 100;
+          const t = parseFloat(inputs.time || '0');
+          
+          const simpleInterest = p * r * t;
+          const totalAmount = p + simpleInterest;
+          
+          result = {
+            amount: totalAmount.toFixed(2),
+            interest: simpleInterest.toFixed(2),
+            type: 'الفائدة البسيطة'
+          };
+          break;
+        case 'loan':
+          const loanAmount = parseFloat(inputs.amount || '0');
+          const monthlyRate = parseFloat(inputs.rate || '0') / 100 / 12;
+          const months = parseFloat(inputs.months || '0');
+          
+          if (monthlyRate > 0) {
+            const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / 
+                                  (Math.pow(1 + monthlyRate, months) - 1);
+            const totalPayment = monthlyPayment * months;
+            const totalInterest = totalPayment - loanAmount;
+            
+            result = {
+              monthlyPayment: monthlyPayment.toFixed(2),
+              totalPayment: totalPayment.toFixed(2),
+              totalInterest: totalInterest.toFixed(2),
+              type: 'قسط شهري'
+            };
+          } else {
+            result = { error: 'معدل الفائدة يجب أن يكون أكبر من صفر' };
+          }
+          break;
+      }
+      
+      setFinancialResult(result);
+    } catch (error) {
+      setFinancialResult({ error: 'خطأ في الحساب المالي' });
+    }
+  };
+  
   // Helper functions
   const gcd = (a: number, b: number): number => {
     while (b !== 0) {
@@ -371,6 +589,19 @@ const Calculator = () => {
     return factorial(n) / factorial(n - r);
   };
   
+  const calculateDeterminant = (matrix: number[][]): number => {
+    const n = matrix.length;
+    if (n === 1) return matrix[0][0];
+    if (n === 2) return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+    
+    let det = 0;
+    for (let j = 0; j < n; j++) {
+      const minor = matrix.slice(1).map(row => row.filter((_, index) => index !== j));
+      det += Math.pow(-1, j) * matrix[0][j] * calculateDeterminant(minor);
+    }
+    return det;
+  };
+  
   return (
     <div>
       <h2 className="text-2xl font-bold text-white mb-6 text-right">الآلة الحاسبة المتقدمة</h2>
@@ -380,12 +611,15 @@ const Calculator = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="w-full grid grid-cols-5 mb-6 bg-white/5 p-1 rounded-lg">
+        <TabsList className="w-full grid grid-cols-4 lg:grid-cols-8 mb-6 bg-white/5 p-1 rounded-lg">
           <TabsTrigger value="basic">العمليات الأساسية</TabsTrigger>
           <TabsTrigger value="trigonometry">حساب المثلثات</TabsTrigger>
           <TabsTrigger value="calculus">التفاضل والتكامل</TabsTrigger>
           <TabsTrigger value="statistics">الإحصاءات</TabsTrigger>
           <TabsTrigger value="geometry">الهندسة</TabsTrigger>
+          <TabsTrigger value="algebra">الجبر المتقدم</TabsTrigger>
+          <TabsTrigger value="matrix">المصفوفات</TabsTrigger>
+          <TabsTrigger value="financial">المالية</TabsTrigger>
         </TabsList>
         
         <TabsContent value="basic" className="space-y-6">
@@ -736,6 +970,337 @@ const Calculator = () => {
                         {value}
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="algebra" className="space-y-6">
+          <div>
+            <label className="block text-white mb-2 text-right">نوع العملية الجبرية:</label>
+            <Select value={algebraOperation} onValueChange={setAlgebraOperation}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="اختر العملية" />
+              </SelectTrigger>
+              <SelectContent className="bg-space-cosmic-black border-white/20">
+                <SelectItem value="quadratic">المعادلة التربيعية</SelectItem>
+                <SelectItem value="cubic">المعادلة التكعيبية</SelectItem>
+                <SelectItem value="sequence">المتتالية الحسابية</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {algebraOperation === 'quadratic' && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-white mb-2 text-right">معامل x²:</label>
+                <Input 
+                  type="number"
+                  value={algebraInputs.a || ''}
+                  onChange={(e) => setAlgebraInputs({...algebraInputs, a: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">معامل x:</label>
+                <Input 
+                  type="number"
+                  value={algebraInputs.b || ''}
+                  onChange={(e) => setAlgebraInputs({...algebraInputs, b: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">الحد الثابت:</label>
+                <Input 
+                  type="number"
+                  value={algebraInputs.c || ''}
+                  onChange={(e) => setAlgebraInputs({...algebraInputs, c: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          )}
+          
+          {algebraOperation === 'sequence' && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-white mb-2 text-right">الحد الأول:</label>
+                <Input 
+                  type="number"
+                  value={algebraInputs.first || ''}
+                  onChange={(e) => setAlgebraInputs({...algebraInputs, first: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">الفرق المشترك:</label>
+                <Input 
+                  type="number"
+                  value={algebraInputs.diff || ''}
+                  onChange={(e) => setAlgebraInputs({...algebraInputs, diff: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-white mb-2 text-right">رقم الحد:</label>
+                <Input 
+                  type="number"
+                  value={algebraInputs.n || ''}
+                  onChange={(e) => setAlgebraInputs({...algebraInputs, n: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          )}
+          
+          <Button 
+            className="w-full bg-space-neon-blue hover:bg-space-bright-blue text-white"
+            onClick={calculateAlgebra}
+          >
+            حساب
+          </Button>
+          
+          {algebraResult && Object.keys(algebraResult).length > 0 && (
+            <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+              <label className="block text-white mb-2 text-right">نتائج الجبر:</label>
+              <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right">
+                {algebraResult.error ? (
+                  <div className="text-red-400">{algebraResult.error}</div>
+                ) : (
+                  <div className="space-y-1">
+                    {Object.entries(algebraResult).map(([key, value]) => (
+                      <div key={key}>
+                        {key === 'x1' && `الجذر الأول: ${value}`}
+                        {key === 'x2' && `الجذر الثاني: ${value}`}
+                        {key === 'x' && `الجذر: ${value}`}
+                        {key === 'discriminant' && `المميز: ${value}`}
+                        {key === 'type' && `النوع: ${value}`}
+                        {key === 'real' && `الجزء الحقيقي: ${value}`}
+                        {key === 'imaginary' && `الجزء التخيلي: ±${value}i`}
+                        {key === 'term' && `الحد رقم ${algebraInputs.n}: ${value}`}
+                        {key === 'sum' && `مجموع ${algebraInputs.n} حدود: ${value}`}
+                        {key === 'message' && value as React.ReactNode}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="matrix" className="space-y-6">
+          <div>
+            <label className="block text-white mb-2 text-right">حجم المصفوفة:</label>
+            <Select value={matrixSize} onValueChange={setMatrixSize}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="اختر الحجم" />
+              </SelectTrigger>
+              <SelectContent className="bg-space-cosmic-black border-white/20">
+                <SelectItem value="2x2">2x2</SelectItem>
+                <SelectItem value="3x3">3x3</SelectItem>
+                <SelectItem value="4x4">4x4</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white mb-2 text-right">المصفوفة A:</label>
+              <Input 
+                type="text"
+                value={matrixA}
+                onChange={(e) => setMatrixA(e.target.value)}
+                placeholder="أدخل المصفوفة A"
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className="block text-white mb-2 text-right">المصفوفة B:</label>
+              <Input 
+                type="text"
+                value={matrixB}
+                onChange={(e) => setMatrixB(e.target.value)}
+                placeholder="أدخل المصفوفة B"
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-white mb-2 text-right">نوع العملية:</label>
+            <Select value={matrixOperation} onValueChange={setMatrixOperation}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="اختر العملية" />
+              </SelectTrigger>
+              <SelectContent className="bg-space-cosmic-black border-white/20">
+                <SelectItem value="add">الجمع</SelectItem>
+                <SelectItem value="subtract">الطرح</SelectItem>
+                <SelectItem value="multiply">الضرب</SelectItem>
+                <SelectItem value="determinant">المحدد</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button 
+            className="w-full bg-space-neon-blue hover:bg-space-bright-blue text-white"
+            onClick={calculateMatrix}
+          >
+            حساب
+          </Button>
+          
+          {matrixResult && Object.keys(matrixResult).length > 0 && (
+            <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+              <label className="block text-white mb-2 text-right">النتائج المصفوفية:</label>
+              <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right">
+                {matrixResult.error ? (
+                  <div className="text-red-400">{matrixResult.error}</div>
+                ) : (
+                  <div className="space-y-1">
+                    {matrixResult.matrix && (
+                      <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right">
+                        {matrixResult.matrix.map((row, i) => (
+                          <div key={i} className="flex items-center justify-between">
+                            {row.map((val, j) => (
+                              <div key={j} className="px-2 py-1 text-white text-right">
+                                {val}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {matrixResult.operation && (
+                      <div className="text-white text-right">
+                        العملية: {matrixResult.operation}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="financial" className="space-y-6">
+          <div>
+            <label className="block text-white mb-2 text-right">نوع العملية المالية:</label>
+            <Select value={financialType} onValueChange={setFinancialType}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="اختر العملية" />
+              </SelectTrigger>
+              <SelectContent className="bg-space-cosmic-black border-white/20">
+                <SelectItem value="compound">الفائدة المركبة</SelectItem>
+                <SelectItem value="simple">الفائدة البسيطة</SelectItem>
+                <SelectItem value="loan">قسط شهري</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-white mb-2 text-right">المبلغ:</label>
+              <Input 
+                type="number"
+                value={financialInputs.amount || ''}
+                onChange={(e) => setFinancialInputs({...financialInputs, amount: e.target.value})}
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className="block text-white mb-2 text-right">معدل الفائدة:</label>
+              <Input 
+                type="number"
+                value={financialInputs.rate || ''}
+                onChange={(e) => setFinancialInputs({...financialInputs, rate: e.target.value})}
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className="block text-white mb-2 text-right">المدة:</label>
+              <Input 
+                type="number"
+                value={financialInputs.time || ''}
+                onChange={(e) => setFinancialInputs({...financialInputs, time: e.target.value})}
+                className="bg-white/10 border-white/20 text-white text-right"
+                dir="ltr"
+              />
+            </div>
+          </div>
+          
+          {financialType === 'compound' && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-white mb-2 text-right">تردد الفائدة:</label>
+                <Input 
+                  type="number"
+                  value={financialInputs.frequency || ''}
+                  onChange={(e) => setFinancialInputs({...financialInputs, frequency: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white text-right"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          )}
+          
+          <Button 
+            className="w-full bg-space-neon-blue hover:bg-space-bright-blue text-white"
+            onClick={calculateFinancial}
+          >
+            حساب
+          </Button>
+          
+          {financialResult && Object.keys(financialResult).length > 0 && (
+            <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+              <label className="block text-white mb-2 text-right">النتائج المالية:</label>
+              <div className="bg-white/10 border border-white/20 rounded-md py-3 px-4 text-white text-right">
+                {financialResult.error ? (
+                  <div className="text-red-400">{financialResult.error}</div>
+                ) : (
+                  <div className="space-y-1">
+                    {financialResult.amount && (
+                      <div className="text-white text-right">
+                        المبلغ النهائي: {financialResult.amount}
+                      </div>
+                    )}
+                    {financialResult.interest && (
+                      <div className="text-white text-right">
+                        الفائدة: {financialResult.interest}
+                      </div>
+                    )}
+                    {financialResult.monthlyPayment && (
+                      <div className="text-white text-right">
+                        القسط الشهري: {financialResult.monthlyPayment}
+                      </div>
+                    )}
+                    {financialResult.totalPayment && (
+                      <div className="text-white text-right">
+                        المبلغ الإجمالي: {financialResult.totalPayment}
+                      </div>
+                    )}
+                    {financialResult.totalInterest && (
+                      <div className="text-white text-right">
+                        الفائدة الإجمالية: {financialResult.totalInterest}
+                      </div>
+                    )}
+                    {financialResult.type && (
+                      <div className="text-white text-right">
+                        نوع العملية: {financialResult.type}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

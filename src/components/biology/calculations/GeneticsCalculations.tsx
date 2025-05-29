@@ -36,7 +36,7 @@ const GeneticsCalculations = () => {
     
     // مربع بونت
     const offspring = [];
-    const genotypes = {};
+    const genotypes: {[key: string]: number} = {};
     
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
@@ -51,8 +51,8 @@ const GeneticsCalculations = () => {
     }
     
     // حساب النسب
-    const genotypeRatios = {};
-    const phenotypeRatios = {};
+    const genotypeRatios: {[key: string]: string} = {};
+    const phenotypeRatios: {[key: string]: number} = {};
     
     for (const [genotype, count] of Object.entries(genotypes)) {
       const percentage = (count / 4) * 100;
@@ -71,9 +71,10 @@ const GeneticsCalculations = () => {
     }
     
     // تحويل نسب الطراز الظاهري إلى نسب مئوية
+    const phenotypeRatiosFormatted: {[key: string]: string} = {};
     for (const [phenotype, count] of Object.entries(phenotypeRatios)) {
       const percentage = (count / 4) * 100;
-      phenotypeRatios[phenotype] = `${count}/4 (${percentage}%)`;
+      phenotypeRatiosFormatted[phenotype] = `${count}/4 (${percentage}%)`;
     }
 
     const steps = [
@@ -88,7 +89,7 @@ const GeneticsCalculations = () => {
       ...Object.entries(genotypeRatios).map(([genotype, ratio]) => `${genotype}: ${ratio}`),
       ``,
       `👁️ النسب الظاهرية (الطراز الظاهري):`,
-      ...Object.entries(phenotypeRatios).map(([phenotype, ratio]) => `${phenotype}: ${ratio}`),
+      ...Object.entries(phenotypeRatiosFormatted).map(([phenotype, ratio]) => `${phenotype}: ${ratio}`),
       ``,
       `📝 قوانين مندل:`,
       `• قانون الانعزال: كل صفة تتحكم فيها زوج من الأليلات`,
@@ -96,7 +97,7 @@ const GeneticsCalculations = () => {
       `• الأليل المتنحي يظهر فقط إذا كان الزوجان متنحيان`
     ];
     
-    setPunnettCalc({ ...punnettCalc, result: { genotypeRatios, phenotypeRatios }, steps });
+    setPunnettCalc({ ...punnettCalc, result: { genotypeRatios, phenotypeRatios: phenotypeRatiosFormatted }, steps });
   };
 
   const calculateHardyWeinberg = () => {
@@ -212,7 +213,7 @@ const GeneticsCalculations = () => {
                 <h4 className="font-bold text-green-400 mb-2">نتائج مربع بونت</h4>
                 <div className="space-y-1 text-sm">
                   {punnettCalc.steps.map((step, index) => (
-                    <div key={index} className="text-white/80">• {step}</div>
+                    <div key={index} className="text-white/80">{step}</div>
                   ))}
                 </div>
               </motion.div>
@@ -270,7 +271,7 @@ const GeneticsCalculations = () => {
                 <h4 className="font-bold text-green-400 mb-2">نتائج توازن هاردي-واينبرغ</h4>
                 <div className="space-y-1 text-sm">
                   {hardyWeinbergCalc.steps.map((step, index) => (
-                    <div key={index} className="text-white/80">• {step}</div>
+                    <div key={index} className="text-white/80">{step}</div>
                   ))}
                 </div>
               </motion.div>
