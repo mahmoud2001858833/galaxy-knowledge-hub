@@ -84,7 +84,7 @@ const ModernPhysicsCalculations = () => {
     
     if (isNaN(N0) || isNaN(t_half) || isNaN(t) || t_half === 0) return;
     
-    const lambda = Math.ln(2) / t_half; // ثابت التحلل
+    const lambda = Math.log(2) / t_half; // ثابت التحلل
     const N = N0 * Math.exp(-lambda * t);
     const percentageRemaining = (N / N0) * 100;
     const percentageDecayed = 100 - percentageRemaining;
