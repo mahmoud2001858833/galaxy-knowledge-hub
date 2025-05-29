@@ -4,30 +4,29 @@ project_id = "esifpjjehdnpkhyilctv"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage"]
-
-[db]
-port = 54322
-
-[studio]
-enabled = true
-port = 54323
-api_url = "http://localhost"
-
-[inbucket]
-enabled = true
-port = 54324
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
 [auth]
 enabled = true
+port = 54322
 site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+refresh_token_rotation = true
+anonymous_users_enabled = false
 
 [storage]
 enabled = true
+port = 54323
 
-[realtime]
+[edge_functions]
 enabled = true
+port = 54324
 
-[functions.insert_solved_puzzle]
-verify_jwt = true
+[functions.ai-assistant]
+verify_jwt = false
 
+[functions.platform-guide-assistant]
+verify_jwt = false

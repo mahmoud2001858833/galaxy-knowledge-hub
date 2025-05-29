@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import Physics from './pages/Physics';
@@ -187,7 +188,12 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <PlatformGuideAssistant />
+    </>
+  );
 }
 
 export default App;
