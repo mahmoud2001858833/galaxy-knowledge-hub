@@ -12,6 +12,9 @@ interface ReactionsCalculationsUnitProps {
 const ReactionsCalculationsUnit = ({ onBack }: ReactionsCalculationsUnitProps) => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
+  // الصورة المصغرة الموحدة لجميع فيديوهات الكيمياء
+  const chemistryThumbnail = "https://i0.wp.com/hagag-edu.com/wp-content/uploads/2023/08/chemistry-colorful-round-vector-12906189.jpg?fit=768%2C829&ssl=1";
+
   const lessons = [
     {
       title: "الدرس الأول: التفاعلات الكيميائية",
@@ -172,9 +175,13 @@ const ReactionsCalculationsUnit = ({ onBack }: ReactionsCalculationsUnitProps) =
                   >
                     <div className="relative">
                       <img 
-                        src={`https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`}
+                        src={chemistryThumbnail}
                         alt={video.title}
                         className="w-full h-[120px] object-cover"
+                        onError={(e) => {
+                          // إذا فشل تحميل الصورة، نستخدم صورة YouTube كبديل
+                          e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`;
+                        }}
                       />
                       <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 text-white text-xs rounded">
                         {video.duration}
