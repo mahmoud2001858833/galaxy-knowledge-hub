@@ -4,20 +4,9 @@ import { motion } from 'framer-motion';
 import { Search, BookOpen, ThumbsUp, ThumbsDown, Plus, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Tables } from '@/integrations/supabase/types';
 
-interface ArabicWord {
-  id: string;
-  word: string;
-  meaning: string;
-  category: 'classical' | 'dialect' | 'modern';
-  dialect_region?: string;
-  quran_examples: string[];
-  poetry_examples: string[];
-  derivatives: string[];
-  word_pattern?: string;
-  votes_count: number;
-  is_verified: boolean;
-}
+type ArabicWord = Tables<'arabic_words'>;
 
 const SmartArabicDictionary = () => {
   const [words, setWords] = useState<ArabicWord[]>([]);
@@ -62,6 +51,12 @@ const SmartArabicDictionary = () => {
     }
   };
 
+  const getArrayFromJson = (jsonData: any): string[] => {
+    if (Array.isArray(jsonData)) return jsonData;
+    if (typeof jsonData === 'string') return [jsonData];
+    return [];
+  };
+
   const handleVote = async (wordId: string, voteType: 'up' | 'down') => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -89,7 +84,7 @@ const SmartArabicDictionary = () => {
       // Update local state
       setWords(prev => prev.map(word => 
         word.id === wordId 
-          ? { ...word, votes_count: word.votes_count + (voteType === 'up' ? 1 : -1) }
+          ? { ...word, votes_count: (word.votes_count || 0) + (voteType === 'up' ? 1 : -1) }
           : word
       ));
 
@@ -166,6 +161,10 @@ const SmartArabicDictionary = () => {
   };
 
   if (selectedWord) {
+    const quranExamples = getArrayFromJson(selectedWord.quran_examples);
+    const poetryExamples = getArrayFromJson(selectedWord.poetry_examples);
+    const derivatives = getArrayFromJson(selectedWord.derivatives);
+    
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -223,7 +222,7 @@ const SmartArabicDictionary = () => {
               >
                 <ThumbsUp className="w-4 h-4" />
               </button>
-              <span className="text-white font-medium">{selectedWord.votes_count}</span>
+              <span className="text-white font-medium">{selectedWord.votes_count || 0}</span>
               <button
                 onClick={() => handleVote(selectedWord.id, 'down')}
                 className="p-2 bg-red-600/20 border border-red-500/30 rounded-lg text-red-300 hover:bg-red-600/30 transition-colors"
@@ -246,11 +245,11 @@ const SmartArabicDictionary = () => {
               </div>
             )}
             
-            {selectedWord.derivatives.length > 0 && (
+            {derivatives.length > 0 && (
               <div>
                 <h3 className="text-xl font-semibold text-amber-300 mb-2">الاشتقاقات</h3>
                 <div className="flex flex-wrap gap-2">
-                  {selectedWord.derivatives.map((derivative, index) => (
+                  {derivatives.map((derivative, index) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-300"
@@ -262,11 +261,11 @@ const SmartArabicDictionary = () => {
               </div>
             )}
             
-            {selectedWord.quran_examples.length > 0 && (
+            {quranExamples.length > 0 && (
               <div>
                 <h3 className="text-xl font-semibold text-amber-300 mb-2">أمثلة قرآنية</h3>
                 <div className="space-y-2">
-                  {selectedWord.quran_examples.map((example, index) => (
+                  {quranExamples.map((example, index) => (
                     <div key={index} className="bg-green-600/10 border border-green-500/30 rounded-lg p-3">
                       <p className="text-white/80 text-lg text-center">{example}</p>
                     </div>
@@ -275,11 +274,11 @@ const SmartArabicDictionary = () => {
               </div>
             )}
             
-            {selectedWord.poetry_examples.length > 0 && (
+            {poetryExamples.length > 0 && (
               <div>
                 <h3 className="text-xl font-semibold text-amber-300 mb-2">أمثلة شعرية</h3>
                 <div className="space-y-2">
-                  {selectedWord.poetry_examples.map((example, index) => (
+                  {poetryExamples.map((example, index) => (
                     <div key={index} className="bg-purple-600/10 border border-purple-500/30 rounded-lg p-3">
                       <p className="text-white/80 text-lg text-center font-serif">{example}</p>
                     </div>
@@ -434,7 +433,7 @@ const SmartArabicDictionary = () => {
                   
                   <div className="flex items-center gap-2 text-amber-300">
                     <ThumbsUp className="w-4 h-4" />
-                    <span>{word.votes_count}</span>
+                    <span>{word.votes_count || 0}</span>
                   </div>
                 </div>
               </motion.div>

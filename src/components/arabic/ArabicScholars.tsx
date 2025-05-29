@@ -3,16 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, BookOpen, Calendar, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 
-interface Scholar {
-  id: string;
-  name: string;
-  death_year: string;
-  category: 'grammar' | 'rhetoric' | 'lexicon' | 'modern';
-  description: string;
-  major_works: string[];
-  image_url?: string;
-}
+type Scholar = Tables<'arabic_scholars'>;
 
 const categoryNames = {
   grammar: 'علماء النحو واللغة',
@@ -62,6 +55,12 @@ const ArabicScholars = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const getMajorWorks = (works: any): string[] => {
+    if (Array.isArray(works)) return works;
+    if (typeof works === 'string') return [works];
+    return [];
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -71,6 +70,8 @@ const ArabicScholars = () => {
   }
 
   if (selectedScholar) {
+    const majorWorks = getMajorWorks(selectedScholar.major_works);
+    
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -84,7 +85,7 @@ const ArabicScholars = () => {
           ← العودة للقائمة
         </button>
         
-        <div className={`bg-gradient-to-br ${categoryColors[selectedScholar.category]} rounded-xl p-8 border`}>
+        <div className={`bg-gradient-to-br ${categoryColors[selectedScholar.category as keyof typeof categoryColors]} rounded-xl p-8 border`}>
           <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-1/3">
               <div className="w-32 h-32 mx-auto md:mx-0 rounded-full bg-amber-600/30 flex items-center justify-center mb-4">
@@ -92,7 +93,7 @@ const ArabicScholars = () => {
               </div>
               <div className="text-center md:text-right">
                 <span className="inline-block px-3 py-1 bg-amber-600/20 border border-amber-500/30 rounded-full text-amber-300 text-sm">
-                  {categoryNames[selectedScholar.category]}
+                  {categoryNames[selectedScholar.category as keyof typeof categoryNames]}
                 </span>
               </div>
             </div>
@@ -108,14 +109,14 @@ const ArabicScholars = () => {
                 {selectedScholar.description}
               </p>
               
-              {selectedScholar.major_works.length > 0 && (
+              {majorWorks.length > 0 && (
                 <div>
                   <h3 className="text-xl font-semibold text-amber-300 mb-3 flex items-center gap-2">
                     <BookOpen className="w-5 h-5" />
                     أهم المؤلفات
                   </h3>
                   <ul className="space-y-2">
-                    {selectedScholar.major_works.map((work, index) => (
+                    {majorWorks.map((work, index) => (
                       <li
                         key={index}
                         className="flex items-start gap-2 text-white/70"
@@ -172,14 +173,14 @@ const ArabicScholars = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             onClick={() => setSelectedScholar(scholar)}
-            className={`group cursor-pointer bg-gradient-to-br ${categoryColors[scholar.category]} rounded-xl p-6 border hover:scale-105 transition-all duration-300`}
+            className={`group cursor-pointer bg-gradient-to-br ${categoryColors[scholar.category as keyof typeof categoryColors]} rounded-xl p-6 border hover:scale-105 transition-all duration-300`}
           >
             <div className="text-center mb-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-amber-600/30 flex items-center justify-center mb-3">
                 <User className="w-8 h-8 text-amber-300" />
               </div>
               <span className="inline-block px-2 py-1 bg-amber-600/20 border border-amber-500/30 rounded-full text-amber-300 text-xs">
-                {categoryNames[scholar.category]}
+                {categoryNames[scholar.category as keyof typeof categoryNames]}
               </span>
             </div>
             
