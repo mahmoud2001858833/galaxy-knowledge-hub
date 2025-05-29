@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 interface ArabicWord {
   id: string;
@@ -20,9 +20,9 @@ interface ArabicWord {
   category: string;
   dialect_region: string | null;
   word_pattern: string | null;
-  quran_examples: any[];
-  poetry_examples: any[];
-  derivatives: any[];
+  quran_examples: Json;
+  poetry_examples: Json;
+  derivatives: Json;
   user_id: string | null;
   is_verified: boolean;
   votes_count: number;
@@ -164,6 +164,14 @@ const EnhancedSmartDictionary = () => {
       'حديث': 'bg-pink-500/20 text-pink-300 border-pink-500/30'
     };
     return colors[category] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+  };
+
+  // Helper function to safely render JSON arrays
+  const renderJsonArray = (jsonData: Json): any[] => {
+    if (Array.isArray(jsonData)) {
+      return jsonData;
+    }
+    return [];
   };
 
   if (loading) {
@@ -375,11 +383,11 @@ const EnhancedSmartDictionary = () => {
               </div>
 
               {/* Quran Examples */}
-              {selectedWord.quran_examples && selectedWord.quran_examples.length > 0 && (
+              {renderJsonArray(selectedWord.quran_examples).length > 0 && (
                 <div className="bg-green-500/10 rounded-lg p-4">
                   <h3 className="text-lg font-bold text-green-300 mb-3">أمثلة قرآنية</h3>
                   <div className="space-y-3">
-                    {selectedWord.quran_examples.map((example: any, index: number) => (
+                    {renderJsonArray(selectedWord.quran_examples).map((example: any, index: number) => (
                       <div key={index} className="bg-white/5 rounded p-3">
                         <p className="text-white/90 italic">"{example.text}"</p>
                         <p className="text-green-300/70 text-sm mt-1">{example.source}</p>
@@ -390,11 +398,11 @@ const EnhancedSmartDictionary = () => {
               )}
 
               {/* Poetry Examples */}
-              {selectedWord.poetry_examples && selectedWord.poetry_examples.length > 0 && (
+              {renderJsonArray(selectedWord.poetry_examples).length > 0 && (
                 <div className="bg-purple-500/10 rounded-lg p-4">
                   <h3 className="text-lg font-bold text-purple-300 mb-3">أمثلة شعرية</h3>
                   <div className="space-y-3">
-                    {selectedWord.poetry_examples.map((example: any, index: number) => (
+                    {renderJsonArray(selectedWord.poetry_examples).map((example: any, index: number) => (
                       <div key={index} className="bg-white/5 rounded p-3">
                         <p className="text-white/90 italic font-serif">"{example.text}"</p>
                         <p className="text-purple-300/70 text-sm mt-1">{example.poet}</p>
@@ -405,11 +413,11 @@ const EnhancedSmartDictionary = () => {
               )}
 
               {/* Derivatives */}
-              {selectedWord.derivatives && selectedWord.derivatives.length > 0 && (
+              {renderJsonArray(selectedWord.derivatives).length > 0 && (
                 <div className="bg-amber-500/10 rounded-lg p-4">
                   <h3 className="text-lg font-bold text-amber-300 mb-3">المشتقات والتصريفات</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {selectedWord.derivatives.map((derivative: any, index: number) => (
+                    {renderJsonArray(selectedWord.derivatives).map((derivative: any, index: number) => (
                       <div key={index} className="bg-white/5 rounded p-2 text-center">
                         <p className="text-amber-200">{derivative.word}</p>
                         <p className="text-white/60 text-xs">{derivative.type}</p>
