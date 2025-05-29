@@ -5,7 +5,7 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EducationalResources from '@/components/EducationalResources';
-import EducationalPlatforms from '@/components/EducationalPlatforms';
+import PlatformCategories from '@/components/PlatformCategories';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const Index = () => {
@@ -78,8 +78,8 @@ const Index = () => {
           </motion.p>
         </motion.div>
         
-        {/* Add the Educational Platforms section */}
-        <EducationalPlatforms />
+        {/* Add the Platform Categories section */}
+        <PlatformCategories />
         
         {/* Add the Educational Resources section */}
         <EducationalResources />

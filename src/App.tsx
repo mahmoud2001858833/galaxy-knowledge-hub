@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   createBrowserRouter,
@@ -34,6 +33,8 @@ import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
 import PuzzleDetails from './pages/PuzzleDetails';
 import EducationalVideos from './pages/EducationalVideos';
+import ScientificPlatforms from './pages/ScientificPlatforms';
+import LiteraryPlatforms from './pages/LiteraryPlatforms';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -116,6 +117,14 @@ const router = createBrowserRouter([
       {
         path: 'auth',
         element: <PublicRoute><Auth /></PublicRoute>,
+      },
+      {
+        path: 'scientific-platforms',
+        element: <PublicRoute><ScientificPlatforms /></PublicRoute>,
+      },
+      {
+        path: 'literary-platforms',
+        element: <PublicRoute><LiteraryPlatforms /></PublicRoute>,
       },
       {
         path: 'physics',

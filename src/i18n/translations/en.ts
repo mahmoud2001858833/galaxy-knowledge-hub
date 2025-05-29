@@ -1,4 +1,3 @@
-
 export const en = {
   // Navbar
   nav: {
@@ -137,7 +136,9 @@ export const en = {
     add: "Add",
     update: "Update",
     submit: "Submit",
-    confirm: "Confirm"
+    confirm: "Confirm",
+    back: "Back",
+    comingSoon: "Coming Soon"
   },
   // Educational resources
   resources: {
@@ -154,6 +155,30 @@ export const en = {
     chatRooms: "Chat Rooms",
     educationalVideos: "Educational Videos",
     educationalVideosDescription: "Watch a variety of educational videos across different scientific subjects"
+  },
+  // Platform categories
+  platformCategories: {
+    title: "Educational Platform Categories",
+    subtitle: "Choose the category that matches your academic interests",
+    scientific: "Scientific Platforms",
+    scientificDescription: "Explore the world of science through Physics, Chemistry, Biology, and Mathematics platforms",
+    literary: "Literary Platforms",
+    literaryDescription: "Immerse yourself in the world of literature and languages with Arabic and English platforms",
+    explore: "Explore"
+  },
+  // Scientific platforms
+  scientificPlatforms: {
+    title: "Scientific Platforms",
+    subtitle: "Explore the world of science through our specialized interactive platforms"
+  },
+  // Literary platforms
+  literaryPlatforms: {
+    title: "Literary Platforms",
+    subtitle: "Immerse yourself in the world of literature and languages with our specialized platforms",
+    arabic: "Arabic Language Platform",
+    arabicDescription: "Discover the beauty of Arabic language and literature through interactive lessons and diverse activities",
+    english: "English Language Platform",
+    englishDescription: "Develop your English language skills through advanced educational content and practical applications"
   },
   // Educational platforms
   platforms: {
