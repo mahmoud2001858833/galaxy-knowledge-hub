@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRightLeft, Languages, Volume2, BookOpen, Lightbulb, Save, Loader2 } from 'lucide-react';
+import { ArrowRightLeft, Languages, Volume2, BookOpen, Lightbulb, Save, Loader2, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +33,7 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
   const [context, setContext] = useState('conversational');
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [savedWords, setSavedWords] = useState<any[]>([]);
   const { toast } = useToast();
 
   const t = {
@@ -62,7 +63,10 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
       grammarExplanation: "الشرح النحوي",
       suggestions: "اقتراحات للتحسين",
       saveWord: "احفظ الكلمة",
-      switchDirection: "عكس الاتجاه"
+      switchDirection: "عكس الاتجاه",
+      copy: "نسخ",
+      savedWords: "الكلمات المحفوظة",
+      clear: "مسح"
     },
     en: {
       title: "Smart Translator",
@@ -90,7 +94,10 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
       grammarExplanation: "Grammar Explanation",
       suggestions: "Improvement Suggestions",
       saveWord: "Save Word",
-      switchDirection: "Switch Direction"
+      switchDirection: "Switch Direction",
+      copy: "Copy",
+      savedWords: "Saved Words",
+      clear: "Clear"
     }
   };
 
@@ -120,6 +127,11 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
 
       if (error) throw error;
       setResult(data);
+      
+      toast({
+        title: language === 'ar' ? "تمت الترجمة بنجاح" : "Translation completed",
+        description: language === 'ar' ? "تم تحليل النص وترجمته بنجاح" : "Text analyzed and translated successfully",
+      });
     } catch (error) {
       console.error('Translation error:', error);
       toast({
@@ -130,6 +142,22 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const saveWord = (word: any) => {
+    setSavedWords(prev => [...prev, word]);
+    toast({
+      title: language === 'ar' ? "تم حفظ الكلمة" : "Word saved",
+      description: `${word.word} - ${word.meaning}`,
+    });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: language === 'ar' ? "تم النسخ" : "Copied",
+      description: language === 'ar' ? "تم نسخ النص إلى الحافظة" : "Text copied to clipboard",
+    });
   };
 
   const contextColors = {
@@ -202,6 +230,20 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
         {/* Input Section */}
         <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
           <CardContent className="p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">
+                {translationDirection === 'ar-en' ? currentLang.fromArabic : currentLang.fromEnglish}
+              </h3>
+              <Button
+                onClick={() => setInputText('')}
+                variant="ghost"
+                size="sm"
+                className="text-white/60 hover:text-white"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {currentLang.clear}
+              </Button>
+            </div>
             <Textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -244,13 +286,23 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
               {/* Translation Result */}
               <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
                 <CardHeader>
-                  <CardTitle className="text-indigo-300 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5" />
-                    {currentLang.translation}
+                  <CardTitle className="text-indigo-300 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5" />
+                      {currentLang.translation}
+                    </div>
+                    <Button
+                      onClick={() => copyToClipboard(result.translation)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-white/60 hover:text-white"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="p-4 bg-white/10 rounded-lg">
+                  <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                     <p className="text-white text-lg leading-relaxed" dir={translationDirection === 'ar-en' ? 'ltr' : 'rtl'}>
                       {result.translation}
                     </p>
@@ -268,65 +320,65 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
               </Card>
 
               {/* Detailed Analysis */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Explanation */}
-                <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-                  <CardHeader>
-                    <CardTitle className="text-indigo-300 flex items-center gap-2">
-                      <Lightbulb className="w-5 h-5" />
-                      {currentLang.whyThisTranslation}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-white/80 leading-relaxed">
-                      {result.explanation}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Grammar Explanation */}
-                <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-                  <CardHeader>
-                    <CardTitle className="text-indigo-300 flex items-center gap-2">
-                      <BookOpen className="w-5 h-5" />
-                      {currentLang.grammarExplanation}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-white/80 leading-relaxed">
-                      {result.grammarExplanation}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Key Words */}
-              {result.keyWords && result.keyWords.length > 0 && (
-                <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-                  <CardHeader>
-                    <CardTitle className="text-indigo-300 flex items-center gap-2">
-                      <Save className="w-5 h-5" />
-                      {currentLang.keyWords}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Tabs defaultValue="explanation" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 bg-white/10">
+                  <TabsTrigger value="explanation" className="text-white data-[state=active]:bg-indigo-600">
+                    {currentLang.whyThisTranslation}
+                  </TabsTrigger>
+                  <TabsTrigger value="grammar" className="text-white data-[state=active]:bg-indigo-600">
+                    {currentLang.grammarExplanation}
+                  </TabsTrigger>
+                  <TabsTrigger value="vocabulary" className="text-white data-[state=active]:bg-indigo-600">
+                    {currentLang.keyWords}
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="explanation" className="mt-4">
+                  <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+                    <CardContent className="p-6">
+                      <p className="text-white/80 leading-relaxed">
+                        {result.explanation}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="grammar" className="mt-4">
+                  <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+                    <CardContent className="p-6">
+                      <p className="text-white/80 leading-relaxed">
+                        {result.grammarExplanation}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="vocabulary" className="mt-4">
+                  {result.keyWords && result.keyWords.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {result.keyWords.map((word, index) => (
-                        <div key={index} className="p-3 bg-white/10 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-semibold text-indigo-300">{word.word}</span>
-                            <Button size="sm" variant="ghost" className="text-white/60 hover:text-white">
-                              <Save className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          <p className="text-white/80 text-sm mb-1">{word.meaning}</p>
-                          <p className="text-white/60 text-xs">[{word.pronunciation}]</p>
-                        </div>
+                        <Card key={index} className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-indigo-300">{word.word}</span>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="text-white/60 hover:text-white"
+                                onClick={() => saveWord(word)}
+                              >
+                                <Save className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <p className="text-white/80 text-sm mb-1">{word.meaning}</p>
+                            <p className="text-white/60 text-xs">[{word.pronunciation}]</p>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </TabsContent>
+              </Tabs>
 
               {/* Suggestions */}
               {result.suggestions && result.suggestions.length > 0 && (
@@ -352,6 +404,28 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Saved Words Section */}
+        {savedWords.length > 0 && (
+          <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+            <CardHeader>
+              <CardTitle className="text-indigo-300 flex items-center gap-2">
+                <Save className="w-5 h-5" />
+                {currentLang.savedWords} ({savedWords.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {savedWords.map((word, index) => (
+                  <div key={index} className="p-3 bg-white/10 rounded-lg border border-white/20">
+                    <span className="font-semibold text-indigo-300">{word.word}</span>
+                    <p className="text-white/80 text-sm">{word.meaning}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

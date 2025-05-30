@@ -1,3 +1,4 @@
+
 export const en = {
   // Navbar
   nav: {
@@ -198,7 +199,9 @@ export const en = {
     aiAssistant: "English AI Assistant",
     aiAssistantDescription: "An intelligent assistant specialized in English language learning and grammar",
     smartTranslator: "Smart Translator",
-    smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis"
+    smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis",
+    speechAssistant: "Speech & Pronunciation Coach",
+    speechAssistantDescription: "Improve your English pronunciation and speaking skills with interactive training"
   },
   // Smart Translator
   smartTranslator: {
@@ -228,5 +231,33 @@ export const en = {
     suggestions: "Improvement Suggestions",
     saveWord: "Save Word",
     savedWords: "Saved Words"
+  },
+  // Speech Assistant
+  speechAssistant: {
+    title: "Speech & Pronunciation AI Assistant",
+    subtitle: "Improve your English pronunciation and speaking skills with intelligent assistance",
+    accent: "Accent",
+    accents: {
+      american: "American",
+      british: "British"
+    },
+    modes: {
+      pronunciation: "Pronunciation Training",
+      fluency: "Fluency Coach",
+      roleplay: "Role Play",
+      challenge: "60-Second Challenge"
+    },
+    startRecording: "Start Recording",
+    stopRecording: "Stop Recording",
+    playExample: "Play Example",
+    tryAgain: "Try Again",
+    accuracy: "Pronunciation Accuracy",
+    score: "Score",
+    streak: "Streak",
+    excellent: "Excellent!",
+    good: "Good!",
+    needsWork: "Needs Work",
+    feedback: "Feedback",
+    nextExercise: "Next Exercise"
   }
 };

@@ -129,7 +129,7 @@ const EnglishAIAssistant: React.FC<EnglishAIAssistantProps> = ({ language }) => 
 
       {/* Chat Container */}
       <div className="max-w-4xl mx-auto">
-        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20 h-[500px] flex flex-col">
+        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20 h-[600px] flex flex-col">
           {/* Messages Area */}
           <CardContent className="flex-1 p-0">
             <ScrollArea className="h-full p-4">
@@ -171,7 +171,7 @@ const EnglishAIAssistant: React.FC<EnglishAIAssistantProps> = ({ language }) => 
                       animate={{ opacity: 1, y: 0 }}
                       className={`flex gap-3 ${message.role === 'user' ? (language === 'ar' ? 'flex-row-reverse' : 'flex-row-reverse') : ''}`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                         message.role === 'user' 
                           ? 'bg-indigo-600' 
                           : 'bg-indigo-500'
@@ -184,16 +184,18 @@ const EnglishAIAssistant: React.FC<EnglishAIAssistantProps> = ({ language }) => 
                       </div>
                       
                       <div className={`flex-1 ${message.role === 'user' ? 'text-right' : textAlign}`}>
-                        <div className={`inline-block p-3 rounded-lg max-w-[80%] ${
+                        <div className={`p-4 rounded-lg border max-w-[85%] ${
                           message.role === 'user'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white/10 text-white/90'
+                            ? 'bg-indigo-600 text-white border-indigo-500/50 ml-auto'
+                            : 'bg-white/10 text-white/90 border-white/20 mr-auto'
                         }`}>
-                          <p className="whitespace-pre-wrap leading-relaxed">
-                            {message.content}
-                          </p>
+                          <div className="prose prose-invert max-w-none">
+                            <p className="whitespace-pre-wrap leading-relaxed text-sm md:text-base">
+                              {message.content}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xs text-white/50 mt-1">
+                        <p className="text-xs text-white/50 mt-1 px-2">
                           {message.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
@@ -206,11 +208,11 @@ const EnglishAIAssistant: React.FC<EnglishAIAssistantProps> = ({ language }) => 
                       animate={{ opacity: 1 }}
                       className="flex gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                         <Bot className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <div className="inline-block p-3 rounded-lg bg-white/10">
+                        <div className="p-4 rounded-lg bg-white/10 border border-white/20 max-w-[85%]">
                           <div className="flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span className="text-white/70">

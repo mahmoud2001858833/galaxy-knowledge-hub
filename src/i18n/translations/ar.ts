@@ -199,7 +199,9 @@ export const ar = {
     aiAssistant: "المساعد الذكي الإنجليزي",
     aiAssistantDescription: "مساعد ذكي متخصص في تعلم اللغة الإنجليزية وقواعدها",
     smartTranslator: "المترجم الذكي",
-    smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل"
+    smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل",
+    speechAssistant: "المساعد الذكي للنطق والتحدث",
+    speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية"
   },
   // المترجم الذكي
   smartTranslator: {
@@ -229,5 +231,33 @@ export const ar = {
     suggestions: "اقتراحات للتحسين",
     saveWord: "احفظ الكلمة",
     savedWords: "الكلمات المحفوظة"
+  },
+  // المساعد الذكي للنطق والتحدث
+  speechAssistant: {
+    title: "المساعد الذكي للنطق والتحدث",
+    subtitle: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع مساعد ذكي",
+    accent: "اللهجة",
+    accents: {
+      american: "أمريكي",
+      british: "بريطاني"
+    },
+    modes: {
+      pronunciation: "تدريب النطق",
+      fluency: "تدريب الطلاقة",
+      roleplay: "تمثيل الأدوار",
+      challenge: "تحدي 60 ثانية"
+    },
+    startRecording: "ابدأ التسجيل",
+    stopRecording: "توقف عن التسجيل",
+    playExample: "استمع للمثال",
+    tryAgain: "حاول مرة أخرى",
+    accuracy: "دقة النطق",
+    score: "النقاط",
+    streak: "السلسلة",
+    excellent: "ممتاز!",
+    good: "جيد!",
+    needsWork: "يحتاج تحسين",
+    feedback: "التقييم",
+    nextExercise: "التمرين التالي"
   }
 };

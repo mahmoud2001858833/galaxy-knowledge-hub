@@ -7,7 +7,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EnglishAIAssistant from '@/components/english/EnglishAIAssistant';
 import SmartTranslator from '@/components/english/SmartTranslator';
-import { ArrowLeft, ArrowRight, Bot, Languages, Globe } from 'lucide-react';
+import SpeechAssistant from '@/components/english/SpeechAssistant';
+import { ArrowLeft, ArrowRight, Bot, Languages, Globe, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const EnglishLanguage = () => {
@@ -30,7 +31,9 @@ const EnglishLanguage = () => {
       aiAssistant: "المساعد الذكي الإنجليزي",
       aiAssistantDescription: "مساعد ذكي متخصص في تعلم اللغة الإنجليزية وقواعدها",
       smartTranslator: "المترجم الذكي",
-      smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل"
+      smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل",
+      speechAssistant: "المساعد الذكي للنطق والتحدث",
+      speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية"
     },
     en: {
       title: "Advanced English Language Platform",
@@ -42,7 +45,9 @@ const EnglishLanguage = () => {
       aiAssistant: "English AI Assistant",
       aiAssistantDescription: "An intelligent assistant specialized in English language learning and grammar",
       smartTranslator: "Smart Translator",
-      smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis"
+      smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis",
+      speechAssistant: "Speech & Pronunciation Coach",
+      speechAssistantDescription: "Improve your English pronunciation and speaking skills with interactive training"
     }
   };
 
@@ -68,6 +73,15 @@ const EnglishLanguage = () => {
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
       component: "translator"
+    },
+    {
+      title: currentLang.speechAssistant,
+      icon: <Headphones className="w-8 h-8" />,
+      description: currentLang.speechAssistantDescription,
+      color: "from-green-600/20 to-emerald-600/20",
+      borderColor: "border-green-500/30",
+      hoverBorderColor: "hover:border-green-500/50",
+      component: "speech"
     }
   ];
 
@@ -77,6 +91,8 @@ const EnglishLanguage = () => {
         return <EnglishAIAssistant language={language} />;
       case 'translator':
         return <SmartTranslator language={language} />;
+      case 'speech':
+        return <SpeechAssistant language={language} />;
       default:
         return null;
     }
@@ -137,7 +153,7 @@ const EnglishLanguage = () => {
 
           {!activeComponent ? (
             /* Features Grid */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
