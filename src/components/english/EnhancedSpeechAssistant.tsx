@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -60,16 +59,16 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
     ar: {
       title: "المساعد الذكي للنطق والتحدث",
       subtitle: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية متقدمة",
-      difficulty: "المستوى",
+      difficultyLabel: "المستوى",
       easy: "سهل",
       medium: "متوسط", 
       hard: "صعب",
-      mode: "نوع التدريب",
-      pronunciation: "تدريب النطق",
-      fluency: "تدريب الطلاقة",
-      roleplay: "تمثيل الأدوار",
-      challenge: "تحدي 60 ثانية",
-      voice: "الصوت",
+      modeLabel: "نوع التدريب",
+      pronunciationMode: "تدريب النطق",
+      fluencyMode: "تدريب الطلاقة",
+      roleplayMode: "تمثيل الأدوار",
+      challengeMode: "تحدي 60 ثانية",
+      voiceLabel: "الصوت",
       listenExample: "استمع للمثال",
       startRecording: "ابدأ التسجيل",
       stopRecording: "أوقف التسجيل",
@@ -99,16 +98,16 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
     en: {
       title: "Enhanced Speech & Pronunciation Coach",
       subtitle: "Master English pronunciation and speaking skills with advanced interactive training",
-      difficulty: "Difficulty",
+      difficultyLabel: "Difficulty",
       easy: "Easy",
       medium: "Medium",
       hard: "Hard", 
-      mode: "Training Mode",
-      pronunciation: "Pronunciation Training",
-      fluency: "Fluency Training",
-      roleplay: "Role Play",
-      challenge: "60-Second Challenge",
-      voice: "Voice",
+      modeLabel: "Training Mode",
+      pronunciationMode: "Pronunciation Training",
+      fluencyMode: "Fluency Training",
+      roleplayMode: "Role Play",
+      challengeMode: "60-Second Challenge",
+      voiceLabel: "Voice",
       listenExample: "Listen to Example",
       startRecording: "Start Recording",
       stopRecording: "Stop Recording", 
@@ -364,7 +363,7 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div>
-                <label className="block text-sm text-white/70 mb-2">{currentLang.difficulty}</label>
+                <label className="block text-sm text-white/70 mb-2">{currentLang.difficultyLabel}</label>
                 <Select value={difficulty} onValueChange={(value: any) => setDifficulty(value)}>
                   <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
                     <SelectValue />
@@ -378,21 +377,21 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
               </div>
 
               <div>
-                <label className="block text-sm text-white/70 mb-2">{currentLang.mode}</label>
+                <label className="block text-sm text-white/70 mb-2">{currentLang.modeLabel}</label>
                 <Select value={mode} onValueChange={setMode}>
                   <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-indigo-950 border-indigo-500/30">
-                    <SelectItem value="pronunciation" className="text-white hover:bg-indigo-800">{currentLang.pronunciation}</SelectItem>
-                    <SelectItem value="fluency" className="text-white hover:bg-indigo-800">{currentLang.fluency}</SelectItem>
-                    <SelectItem value="roleplay" className="text-white hover:bg-indigo-800">{currentLang.roleplay}</SelectItem>
+                    <SelectItem value="pronunciation" className="text-white hover:bg-indigo-800">{currentLang.pronunciationMode}</SelectItem>
+                    <SelectItem value="fluency" className="text-white hover:bg-indigo-800">{currentLang.fluencyMode}</SelectItem>
+                    <SelectItem value="roleplay" className="text-white hover:bg-indigo-800">{currentLang.roleplayMode}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="block text-sm text-white/70 mb-2">{currentLang.voice}</label>
+                <label className="block text-sm text-white/70 mb-2">{currentLang.voiceLabel}</label>
                 <Select value={voice} onValueChange={setVoice}>
                   <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
                     <SelectValue />
@@ -414,7 +413,7 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
                     className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white"
                   >
                     <Zap className="w-4 h-4 mr-2" />
-                    {currentLang.challenge}
+                    {currentLang.challengeMode}
                   </Button>
                 ) : (
                   <Button

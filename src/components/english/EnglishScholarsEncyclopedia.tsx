@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, BookOpen, Calendar, Award, Users, GraduationCap, Filter, X } from 'lucide-react';
@@ -25,7 +24,7 @@ const EnglishScholarsEncyclopedia: React.FC<EnglishScholarsEncyclopediaProps> = 
       title: "موسوعة علماء اللغة الإنجليزية",
       subtitle: "اكتشف عمالقة اللغة الإنجليزية الذين شكلوا تطورها عبر التاريخ",
       search: "البحث في الموسوعة...",
-      category: "الفئة",
+      categoryLabel: "الفئة",
       allCategories: "جميع الفئات",
       lexicographer: "معجمي",
       phonetician: "عالم أصوات",
@@ -39,7 +38,6 @@ const EnglishScholarsEncyclopedia: React.FC<EnglishScholarsEncyclopediaProps> = 
       birthYear: "سنة الميلاد",
       deathYear: "سنة الوفاة",
       era: "العصر",
-      category: "الفئة",
       achievements: "الإنجازات",
       majorWorks: "الأعمال الرئيسية",
       contribution: "المساهمة",
@@ -52,7 +50,7 @@ const EnglishScholarsEncyclopedia: React.FC<EnglishScholarsEncyclopediaProps> = 
       title: "English Language Scholars Encyclopedia",
       subtitle: "Discover the giants of English language who shaped its evolution throughout history",
       search: "Search encyclopedia...",
-      category: "Category",
+      categoryLabel: "Category",
       allCategories: "All Categories",
       lexicographer: "Lexicographer",
       phonetician: "Phonetician", 
@@ -284,7 +282,7 @@ const EnglishScholarsEncyclopedia: React.FC<EnglishScholarsEncyclopediaProps> = 
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-indigo-300" />
                   <div>
-                    <p className="text-sm text-white/60">{currentLang.category}</p>
+                    <p className="text-sm text-white/60">{currentLang.categoryLabel}</p>
                     <Badge className={`${categoryColors[selectedScholar.category]} text-xs px-2 py-1`}>
                       {language === 'ar' ? selectedScholar.categoryAr : selectedScholar.category}
                     </Badge>
