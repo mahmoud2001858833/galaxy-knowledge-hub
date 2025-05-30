@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Languages, FileText, Image as ImageIcon } from 'lucide-react';
+import { Languages, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SmartTranslatorCore from './SmartTranslatorCore';
-import ImageTextExtractorAdvanced from './ImageTextExtractorAdvanced';
 import AdvancedTextGenerator from './AdvancedTextGenerator';
 
 interface SmartTranslatorProps {
@@ -16,16 +15,14 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
   const t = {
     ar: {
       title: "المترجم الذكي المتطور",
-      subtitle: "ترجمة ذكية، ترجمة الصور، ومولد النصوص الإنجليزية",
+      subtitle: "ترجمة ذكية ومولد النصوص الإنجليزية",
       textTranslator: "المترجم الذكي",
-      imageTranslator: "ترجمة الصور",
       textGenerator: "مولد النصوص"
     },
     en: {
       title: "Advanced Smart Translator",
-      subtitle: "Smart translation, image translation, and English text generator",
+      subtitle: "Smart translation and English text generator",
       textTranslator: "Smart Translator",
-      imageTranslator: "Image Translation",
       textGenerator: "Text Generator"
     }
   };
@@ -53,14 +50,10 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
       <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
         <CardContent className="p-6">
           <Tabs defaultValue="translator" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-indigo-900/50 border border-indigo-500/30">
+            <TabsList className="grid w-full grid-cols-2 bg-indigo-900/50 border border-indigo-500/30">
               <TabsTrigger value="translator" className="data-[state=active]:bg-indigo-600 text-white">
                 <Languages className="w-4 h-4 mr-2" />
                 {currentLang.textTranslator}
-              </TabsTrigger>
-              <TabsTrigger value="image" className="data-[state=active]:bg-indigo-600 text-white">
-                <ImageIcon className="w-4 h-4 mr-2" />
-                {currentLang.imageTranslator}
               </TabsTrigger>
               <TabsTrigger value="generator" className="data-[state=active]:bg-indigo-600 text-white">
                 <FileText className="w-4 h-4 mr-2" />
@@ -71,10 +64,6 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
             <div className="mt-6">
               <TabsContent value="translator">
                 <SmartTranslatorCore language={language} />
-              </TabsContent>
-              
-              <TabsContent value="image">
-                <ImageTextExtractorAdvanced language={language} />
               </TabsContent>
               
               <TabsContent value="generator">

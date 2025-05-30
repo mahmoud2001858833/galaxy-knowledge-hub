@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import GroupChat from './GroupChat';
 import PrivateChat from './PrivateChat';
-import UserChatProfile from './UserChatProfile';
 import { MessageSquare, Users } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,7 +86,6 @@ const ChatLayout = () => {
     setShowChatSelector(false);
   };
 
-  // Reset to selector view
   const handleBackToSelector = () => {
     setActiveTab('');
     setShowChatSelector(true);
@@ -106,24 +104,6 @@ const ChatLayout = () => {
     };
   }, []);
 
-  // Listen for select contact events
-  useEffect(() => {
-    const handleSelectContact = (event: any) => {
-      if (event.detail && event.detail.contactId) {
-        // Switch to private chat tab and pass selected contact
-        setActiveTab('private');
-        setShowChatSelector(false);
-      }
-    };
-    
-    document.addEventListener('select-contact', handleSelectContact);
-    
-    return () => {
-      document.removeEventListener('select-contact', handleSelectContact);
-    };
-  }, []);
-
-  // Animated selector containers for better visual appeal
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { 

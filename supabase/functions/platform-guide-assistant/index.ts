@@ -26,125 +26,100 @@ serve(async (req) => {
     
     const lowerMessage = message.toLowerCase()
     
-    // معالجة طلبات التنقل المباشر والدقيق
+    // معالجة طلبات التنقل المباشر والفوري
     if (lowerMessage.includes('انتقل') || lowerMessage.includes('اذهب') || lowerMessage.includes('افتح') || lowerMessage.includes('خذني') || lowerMessage.includes('روح')) {
       
-      // تنقل دقيق للفيديوهات التعليمية حسب المادة والصف
+      // تنقل فوري للفيديوهات التعليمية حسب المادة والصف
       if (lowerMessage.includes('فيديو') || lowerMessage.includes('تعليمي') || lowerMessage.includes('فيدو')) {
         if (lowerMessage.includes('كيمياء')) {
           navigationPath = "/educational-videos?subject=chemistry"
           autoNavigate = true
-          responseText = `🧪 **جاري الانتقال إلى فيديوهات الكيمياء...**
-
-✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للكيمياء!**`
+          responseText = `✅ **تم الانتقال إلى فيديوهات الكيمياء بنجاح!** 🧪`
           
         } else if (lowerMessage.includes('فيزياء')) {
           navigationPath = "/educational-videos?subject=physics"
           autoNavigate = true
-          responseText = `⚛️ **جاري الانتقال إلى فيديوهات الفيزياء...**
-
-✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للفيزياء!**`
+          responseText = `✅ **تم الانتقال إلى فيديوهات الفيزياء بنجاح!** ⚛️`
           
         } else if (lowerMessage.includes('أحياء') || lowerMessage.includes('بيولوجي')) {
           navigationPath = "/educational-videos?subject=biology"
           autoNavigate = true
-          responseText = `🧬 **جاري الانتقال إلى فيديوهات الأحياء...**
-
-✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للأحياء!**`
+          responseText = `✅ **تم الانتقال إلى فيديوهات الأحياء بنجاح!** 🧬`
           
         } else if (lowerMessage.includes('رياضيات')) {
           navigationPath = "/educational-videos?subject=math"
           autoNavigate = true
-          responseText = `📊 **جاري الانتقال إلى فيديوهات الرياضيات...**
-
-✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للرياضيات!**`
+          responseText = `✅ **تم الانتقال إلى فيديوهات الرياضيات بنجاح!** 📊`
         } else {
           navigationPath = "/educational-videos"
           autoNavigate = true
-          responseText = `🎥 **جاري الانتقال إلى الفيديوهات التعليمية...**
-
-✨ **تم التنقل بنجاح!**`
+          responseText = `✅ **تم الانتقال إلى الفيديوهات التعليمية بنجاح!** 🎥`
         }
         
       } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة') || lowerMessage.includes('كالكوليتر')) {
         navigationPath = "/calculator"
         autoNavigate = true
-        responseText = `🧮 **جاري الانتقال إلى آلة الحاسبة...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى آلة الحاسبة بنجاح!** 🧮`
         
       } else if (lowerMessage.includes('مكتب') || lowerMessage.includes('مرئي') || lowerMessage.includes('صور')) {
         navigationPath = "/visual-library"
         autoNavigate = true
-        responseText = `📸 **جاري الانتقال إلى المكتبة المرئية...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى المكتبة المرئية بنجاح!** 📸`
         
       } else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي') || lowerMessage.includes('english')) {
         navigationPath = "/english-language"
         autoNavigate = true
-        responseText = `🇬🇧 **جاري الانتقال إلى منصة اللغة الإنجليزية...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى منصة اللغة الإنجليزية بنجاح!** 🇬🇧`
         
       } else if (lowerMessage.includes('عرب') || lowerMessage.includes('لغة عربية') || lowerMessage.includes('arabic')) {
         navigationPath = "/arabic-language"
         autoNavigate = true
-        responseText = `📚 **جاري الانتقال إلى منصة اللغة العربية...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى منصة اللغة العربية بنجاح!** 📚`
         
       } else if (lowerMessage.includes('كيمياء')) {
         navigationPath = "/chemistry"
         autoNavigate = true
-        responseText = `🧪 **جاري الانتقال إلى منصة الكيمياء...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى منصة الكيمياء بنجاح!** 🧪`
         
       } else if (lowerMessage.includes('فيزياء')) {
         navigationPath = "/physics"
         autoNavigate = true
-        responseText = `⚛️ **جاري الانتقال إلى منصة الفيزياء...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى منصة الفيزياء بنجاح!** ⚛️`
         
       } else if (lowerMessage.includes('أحياء') || lowerMessage.includes('بيولوجي')) {
         navigationPath = "/biology"
         autoNavigate = true
-        responseText = `🧬 **جاري الانتقال إلى منصة الأحياء...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى منصة الأحياء بنجاح!** 🧬`
         
       } else if (lowerMessage.includes('رياضيات')) {
         navigationPath = "/mathematics"
         autoNavigate = true
-        responseText = `📊 **جاري الانتقال إلى منصة الرياضيات...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى منصة الرياضيات بنجاح!** 📊`
         
       } else if (lowerMessage.includes('أدبي') || lowerMessage.includes('لغات')) {
         navigationPath = "/literary-platforms"
         autoNavigate = true
-        responseText = `📖 **جاري الانتقال إلى المنصات الأدبية...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى المنصات الأدبية بنجاح!** 📖`
         
       } else if (lowerMessage.includes('علمي') || lowerMessage.includes('علوم')) {
         navigationPath = "/scientific-platforms"
         autoNavigate = true
-        responseText = `🔬 **جاري الانتقال إلى المنصات العلمية...**
-
-✨ **تم التنقل بنجاح!**`
+        responseText = `✅ **تم الانتقال إلى المنصات العلمية بنجاح!** 🔬`
+        
+      } else if (lowerMessage.includes('محادث') || lowerMessage.includes('دردش')) {
+        navigationPath = "/chat-rooms"
+        autoNavigate = true
+        responseText = `✅ **تم الانتقال إلى غرف المحادثة بنجاح!** 💬`
       }
     }
     
     // إذا لم يكن هناك تنقل محدد، استخدم Gemini للإجابة
     if (!responseText) {
-      const prompt = `أنت مرشد ذكي لمنصة تعليمية شاملة. المنصة تحتوي على:
+      const prompt = `أنت مرشد ذكي لمنصة تعليمية شاملة. عندما يطلب المستخدم الانتقال إلى أي قسم، اشرح له المحتوى وقدم إجابة مفيدة. المنصة تحتوي على:
 
 **المنصات الأدبية:**
 - منصة اللغة العربية المحسنة (المساعد الذكي، شعراء العرب، علماء اللغة، مساعد الإعراب)
-- منصة اللغة الإنجليزية المتطورة (المساعد الذكي الإنجليزي، المترجم الذكي مع ترجمة الصور، مولد النصوص)
+- منصة اللغة الإنجليزية المتطورة (المساعد الذكي الإنجليزي، المترجم الذكي، مولد النصوص)
 
 **المنصات العلمية:**
 - الفيزياء (حسابات، ألغاز، علماء، مساعد ذكي، فيديوهات)
