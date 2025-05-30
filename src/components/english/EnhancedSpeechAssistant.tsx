@@ -1,113 +1,139 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Volume2, RotateCcw, Award, Target, CheckCircle, Timer, Zap } from 'lucide-react';
+import { 
+  Mic, MicOff, Play, Pause, RotateCcw, Volume2, Award, Target, 
+  Timer, Zap, TrendingUp, BookOpen, Users, Star, Trophy, 
+  ChevronRight, Settings, Headphones
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { englishExamples, getExamplesByDifficulty, getRandomExample, type ExampleItem } from '@/data/englishExamples';
+import { useToast } from '@/hooks/use-toast';
+import { expandedEnglishExamples, getExamplesForMode, getRandomExample } from '@/data/expandedEnglishExamples';
 
 interface EnhancedSpeechAssistantProps {
   language: 'ar' | 'en';
 }
 
+interface SpeechAnalysis {
+  transcription: string;
+  accuracy: number;
+  wordAccuracy: number;
+  pronunciationScore: number;
+  fluencyScore: number;
+  clarityScore: number;
+  feedback: string;
+  detailedAnalysis?: any;
+}
+
 const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ language }) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [accuracy, setAccuracy] = useState(0);
-  const [selectedAccent, setSelectedAccent] = useState('american');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentExample, setCurrentExample] = useState(expandedEnglishExamples[0]);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [mode, setMode] = useState('pronunciation');
+  const [analysis, setAnalysis] = useState<SpeechAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [currentExercise, setCurrentExercise] = useState<ExampleItem | null>(null);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
-  const [isPlayingExample, setIsPlayingExample] = useState(false);
-  const [feedback, setFeedback] = useState<string>('');
-  const [challengeTimeLeft, setChallengeTimeLeft] = useState(60);
-  const [challengeActive, setChallengeActive] = useState(false);
-  const [challengeScore, setChallengeScore] = useState(0);
+  const [voice, setVoice] = useState('Sarah');
   
-  const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const challengeTimer = useRef<NodeJS.Timeout | null>(null);
+  // Challenge mode states
+  const [challengeMode, setChallengeMode] = useState(false);
+  const [challengeTimeLeft, setChallengeTimeLeft] = useState(60);
+  const [challengeScore, setChallengeScore] = useState(0);
+  const [challengeWords, setChallengeWords] = useState(0);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const challengeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const t = {
     ar: {
       title: "المساعد الذكي للنطق والتحدث",
-      subtitle: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع مساعد ذكي",
-      accent: "اللهجة",
+      subtitle: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية متقدمة",
       difficulty: "المستوى",
-      accents: {
-        american: "أمريكي",
-        british: "بريطاني"
-      },
-      difficulties: {
-        easy: "سهل",
-        medium: "متوسط", 
-        hard: "صعب"
-      },
-      modes: {
-        pronunciation: "تدريب النطق",
-        fluency: "تدريب الطلاقة",
-        roleplay: "تمثيل الأدوار",
-        challenge: "تحدي 60 ثانية"
-      },
+      easy: "سهل",
+      medium: "متوسط", 
+      hard: "صعب",
+      mode: "نوع التدريب",
+      pronunciation: "تدريب النطق",
+      fluency: "تدريب الطلاقة",
+      roleplay: "تمثيل الأدوار",
+      challenge: "تحدي 60 ثانية",
+      voice: "الصوت",
+      listenExample: "استمع للمثال",
       startRecording: "ابدأ التسجيل",
-      stopRecording: "توقف عن التسجيل",
-      playExample: "استمع للمثال",
+      stopRecording: "أوقف التسجيل",
+      analyzing: "جاري التحليل...",
       tryAgain: "حاول مرة أخرى",
-      nextExercise: "التمرين التالي",
-      accuracy: "دقة النطق",
+      nextExample: "المثال التالي",
+      currentExample: "المثال الحالي",
+      yourRecording: "تسجيلك",
+      analysis: "التحليل",
+      accuracy: "الدقة",
+      pronunciation: "النطق", 
+      fluency: "الطلاقة",
+      clarity: "الوضوح",
+      feedback: "التعليقات",
       score: "النقاط",
       streak: "السلسلة",
+      timeLeft: "الوقت المتبقي",
+      wordsCompleted: "الكلمات المكتملة",
+      startChallenge: "ابدأ التحدي",
+      endChallenge: "إنهاء التحدي",
       excellent: "ممتاز!",
       good: "جيد!",
       needsWork: "يحتاج تحسين",
-      feedback: "التقييم",
-      challenge60: "تحدي 60 ثانية",
-      timeLeft: "الوقت المتبقي",
-      startChallenge: "ابدأ التحدي",
-      stopChallenge: "أوقف التحدي"
+      keepPracticing: "استمر في التدريب",
+      recordingTime: "وقت التسجيل"
     },
     en: {
-      title: "Enhanced Speech & Pronunciation AI Assistant",
-      subtitle: "Master English pronunciation and speaking with advanced AI coaching",
-      accent: "Accent",
+      title: "Enhanced Speech & Pronunciation Coach",
+      subtitle: "Master English pronunciation and speaking skills with advanced interactive training",
       difficulty: "Difficulty",
-      accents: {
-        american: "American",
-        british: "British"
-      },
-      difficulties: {
-        easy: "Easy",
-        medium: "Medium",
-        hard: "Hard"
-      },
-      modes: {
-        pronunciation: "Pronunciation Training",
-        fluency: "Fluency Coach",
-        roleplay: "Role Play",
-        challenge: "60-Second Challenge"
-      },
+      easy: "Easy",
+      medium: "Medium",
+      hard: "Hard", 
+      mode: "Training Mode",
+      pronunciation: "Pronunciation Training",
+      fluency: "Fluency Training",
+      roleplay: "Role Play",
+      challenge: "60-Second Challenge",
+      voice: "Voice",
+      listenExample: "Listen to Example",
       startRecording: "Start Recording",
-      stopRecording: "Stop Recording",
-      playExample: "Play Example",
+      stopRecording: "Stop Recording", 
+      analyzing: "Analyzing...",
       tryAgain: "Try Again",
-      nextExercise: "Next Exercise",
-      accuracy: "Pronunciation Accuracy",
+      nextExample: "Next Example",
+      currentExample: "Current Example",
+      yourRecording: "Your Recording",
+      analysis: "Analysis",
+      accuracy: "Accuracy",
+      pronunciation: "Pronunciation",
+      fluency: "Fluency", 
+      clarity: "Clarity",
+      feedback: "Feedback",
       score: "Score",
       streak: "Streak",
+      timeLeft: "Time Left",
+      wordsCompleted: "Words Completed",
+      startChallenge: "Start Challenge",
+      endChallenge: "End Challenge",
       excellent: "Excellent!",
       good: "Good!",
       needsWork: "Needs Work",
-      feedback: "Feedback",
-      challenge60: "60-Second Challenge",
-      timeLeft: "Time Left",
-      startChallenge: "Start Challenge",
-      stopChallenge: "Stop Challenge"
+      keepPracticing: "Keep Practicing",
+      recordingTime: "Recording Time"
     }
   };
 
@@ -115,44 +141,30 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const textAlign = language === 'ar' ? 'text-right' : 'text-left';
 
-  useEffect(() => {
-    loadNewExercise();
-  }, [difficulty, mode]);
+  const voices = [
+    { value: 'Sarah', label: 'Sarah (Clear American)' },
+    { value: 'Aria', label: 'Aria (Natural)' },
+    { value: 'Roger', label: 'Roger (British)' },
+    { value: 'Laura', label: 'Laura (Professional)' },
+    { value: 'Charlie', label: 'Charlie (Friendly)' }
+  ];
 
-  useEffect(() => {
-    if (challengeActive && challengeTimeLeft > 0) {
-      challengeTimer.current = setTimeout(() => {
-        setChallengeTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (challengeTimeLeft === 0) {
-      stopChallenge();
-    }
-    
-    return () => {
-      if (challengeTimer.current) {
-        clearTimeout(challengeTimer.current);
-      }
-    };
-  }, [challengeActive, challengeTimeLeft]);
-
-  const loadNewExercise = () => {
-    if (mode === 'challenge') return;
-    
-    const example = getRandomExample(difficulty);
-    setCurrentExercise(example);
-    setAccuracy(0);
-    setFeedback('');
+  const getNextExample = () => {
+    const examples = getExamplesForMode(mode, difficulty);
+    const randomExample = examples[Math.floor(Math.random() * examples.length)];
+    setCurrentExample(randomExample);
+    setAnalysis(null);
   };
 
-  const playExample = async () => {
-    if (!currentExercise || isPlayingExample) return;
+  const playExampleAudio = async () => {
+    if (isPlaying) return;
     
-    setIsPlayingExample(true);
+    setIsPlaying(true);
     try {
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+      const { data, error } = await supabase.functions.invoke('enhanced-text-to-speech', {
         body: { 
-          text: currentExercise.text,
-          voice: selectedAccent === 'american' ? 'Sarah' : 'Laura',
+          text: currentExample.text,
+          voice: voice,
           model: 'eleven_multilingual_v2'
         }
       });
@@ -168,7 +180,7 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
         const audio = new Audio(audioUrl);
         
         audio.onended = () => {
-          setIsPlayingExample(false);
+          setIsPlaying(false);
           URL.revokeObjectURL(audioUrl);
         };
         
@@ -176,211 +188,157 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
       }
     } catch (error) {
       console.error('Error playing audio:', error);
-      setIsPlayingExample(false);
+      setIsPlaying(false);
       toast({
-        title: language === 'ar' ? "خطأ في تشغيل الصوت" : "Audio Error",
-        description: language === 'ar' ? "لا يمكن تشغيل الصوت" : "Cannot play audio",
+        title: language === 'ar' ? "خطأ في تشغيل الصوت" : "Audio playback error",
+        description: language === 'ar' ? "حدث خطأ أثناء تشغيل الصوت" : "An error occurred while playing audio",
         variant: "destructive"
       });
     }
   };
 
   const startRecording = async () => {
-    if (!currentExercise && mode !== 'challenge') {
-      toast({
-        title: language === 'ar' ? "لا يوجد تمرين" : "No Exercise",
-        description: language === 'ar' ? "يرجى تحديد تمرين أولاً" : "Please select an exercise first",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder.current = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       
-      const audioChunks: BlobPart[] = [];
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
       
-      mediaRecorder.current.ondataavailable = (event) => {
-        audioChunks.push(event.data);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
       
-      mediaRecorder.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        await analyzeSpeech(audioBlob);
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await analyzeRecording(audioBlob);
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
       };
       
-      mediaRecorder.current.start();
+      mediaRecorder.start();
       setIsRecording(true);
+      setRecordingTime(0);
       
-      toast({
-        title: language === 'ar' ? "بدأ التسجيل" : "Recording Started",
-        description: language === 'ar' ? "تحدث بوضوح" : "Speak clearly",
-      });
+      // Start recording timer
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
     } catch (error) {
+      console.error('Error starting recording:', error);
       toast({
-        title: language === 'ar' ? "خطأ" : "Error",
-        description: language === 'ar' ? "لا يمكن الوصول للميكروفون" : "Cannot access microphone",
+        title: language === 'ar' ? "خطأ في التسجيل" : "Recording error",
+        description: language === 'ar' ? "تأكد من السماح بالوصول للميكروفون" : "Please allow microphone access",
         variant: "destructive"
       });
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder.current && isRecording) {
-      mediaRecorder.current.stop();
-      mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   };
 
-  const analyzeSpeech = async (audioBlob: Blob) => {
-    if (!currentExercise && mode !== 'challenge') return;
-
+  const analyzeRecording = async (audioBlob: Blob) => {
+    setIsAnalyzing(true);
+    
     try {
-      // Convert audio to base64
+      // Convert blob to base64
       const arrayBuffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       
-      const targetText = mode === 'challenge' ? 'Free speech challenge' : currentExercise!.text;
-      
-      const { data, error } = await supabase.functions.invoke('speech-analysis', {
+      const { data, error } = await supabase.functions.invoke('enhanced-speech-analysis', {
         body: {
           audioData: base64Audio,
-          targetText: targetText,
-          language: 'en'
+          targetText: currentExample.text,
+          language: 'en',
+          analysisType: mode
         }
       });
 
       if (error) throw error;
 
-      const analysisAccuracy = data.accuracy || Math.floor(Math.random() * 30) + 70;
-      setAccuracy(analysisAccuracy);
-      setFeedback(data.feedback || 'Keep practicing!');
+      setAnalysis(data);
       
-      if (mode === 'challenge') {
-        setChallengeScore(prev => prev + Math.floor(analysisAccuracy / 10));
-      } else {
-        if (analysisAccuracy >= 90) {
-          setScore(prev => prev + 100);
-          setStreak(prev => prev + 1);
-          toast({
-            title: currentLang.excellent,
-            description: `${analysisAccuracy}% ${currentLang.accuracy}`,
-          });
-        } else if (analysisAccuracy >= 80) {
-          setScore(prev => prev + 75);
-          toast({
-            title: currentLang.good,
-            description: `${analysisAccuracy}% ${currentLang.accuracy}`,
-          });
-        } else {
-          setStreak(0);
-          toast({
-            title: currentLang.needsWork,
-            description: `${analysisAccuracy}% ${currentLang.accuracy}`,
-            variant: "destructive"
-          });
+      // Update score and streak
+      if (data.accuracy >= 80) {
+        setStreak(prev => prev + 1);
+        setScore(prev => prev + Math.round(data.accuracy / 10));
+        
+        if (challengeMode) {
+          setChallengeScore(prev => prev + Math.round(data.accuracy / 10));
+          setChallengeWords(prev => prev + 1);
         }
+      } else {
+        setStreak(0);
       }
+      
+      toast({
+        title: data.accuracy >= 80 ? currentLang.excellent : data.accuracy >= 60 ? currentLang.good : currentLang.needsWork,
+        description: `${currentLang.accuracy}: ${data.accuracy}%`,
+      });
+      
     } catch (error) {
-      console.error('Speech analysis error:', error);
-      // Fallback to simulated analysis
-      const fallbackAccuracy = Math.floor(Math.random() * 30) + 70;
-      setAccuracy(fallbackAccuracy);
-      setFeedback('Analysis completed. Keep practicing!');
+      console.error('Error analyzing recording:', error);
+      toast({
+        title: language === 'ar' ? "خطأ في التحليل" : "Analysis error",
+        description: language === 'ar' ? "حدث خطأ أثناء تحليل التسجيل" : "An error occurred during analysis",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
   const startChallenge = () => {
-    setChallengeActive(true);
+    setChallengeMode(true);
     setChallengeTimeLeft(60);
     setChallengeScore(0);
+    setChallengeWords(0);
+    getNextExample();
+    
+    challengeTimerRef.current = setInterval(() => {
+      setChallengeTimeLeft(prev => {
+        if (prev <= 1) {
+          endChallenge();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const endChallenge = () => {
+    setChallengeMode(false);
+    if (challengeTimerRef.current) {
+      clearInterval(challengeTimerRef.current);
+      challengeTimerRef.current = null;
+    }
+    
     toast({
-      title: language === 'ar' ? "بدء التحدي" : "Challenge Started",
-      description: language === 'ar' ? "تحدث لمدة 60 ثانية!" : "Speak for 60 seconds!",
+      title: language === 'ar' ? "انتهى التحدي!" : "Challenge Complete!",
+      description: language === 'ar' 
+        ? `النقاط: ${challengeScore}, الكلمات: ${challengeWords}`
+        : `Score: ${challengeScore}, Words: ${challengeWords}`,
     });
   };
 
-  const stopChallenge = () => {
-    setChallengeActive(false);
-    if (challengeTimer.current) {
-      clearTimeout(challengeTimer.current);
-    }
-    toast({
-      title: language === 'ar' ? "انتهى التحدي" : "Challenge Complete",
-      description: `${language === 'ar' ? 'نقاطك:' : 'Your score:'} ${challengeScore}`,
-    });
-  };
-
-  const getDifficultyColor = (diff: string) => {
-    switch (diff) {
-      case 'easy': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      case 'hard': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-    }
-  };
-
-  const renderExerciseContent = () => {
-    if (mode === 'challenge') {
-      return (
-        <div className="text-center space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-indigo-300">{currentLang.challenge60}</h3>
-            <div className="flex justify-center items-center space-x-4">
-              <Timer className="w-8 h-8 text-yellow-400" />
-              <span className="text-4xl font-bold text-white">{challengeTimeLeft}s</span>
-            </div>
-            <Progress value={(challengeTimeLeft / 60) * 100} className="w-full max-w-md mx-auto" />
-            <div className="flex justify-center space-x-4">
-              <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                {currentLang.score}: {challengeScore}
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {!challengeActive ? (
-              <Button
-                onClick={startChallenge}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3"
-              >
-                <Zap className="w-5 h-5 mr-2" />
-                {currentLang.startChallenge}
-              </Button>
-            ) : (
-              <Button
-                onClick={stopChallenge}
-                variant="outline"
-                className="bg-white/10 border-red-500/30 text-red-300 hover:bg-red-600/20"
-              >
-                {currentLang.stopChallenge}
-              </Button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (!currentExercise) return null;
-
-    return (
-      <div className="text-center space-y-6">
-        <div className="space-y-3">
-          <Badge className={getDifficultyColor(currentExercise.difficulty)}>
-            {currentLang.difficulties[currentExercise.difficulty as keyof typeof currentLang.difficulties]}
-          </Badge>
-          <h3 className="text-3xl font-bold text-white">{currentExercise.text}</h3>
-          {currentExercise.phonetic && (
-            <p className="text-xl text-indigo-300">{currentExercise.phonetic}</p>
-          )}
-          {currentExercise.translation && (
-            <p className="text-lg text-white/70">{currentExercise.translation}</p>
-          )}
-        </div>
-      </div>
-    );
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return 'text-green-400';
+    if (score >= 70) return 'text-yellow-400';
+    if (score >= 50) return 'text-orange-400';
+    return 'text-red-400';
   };
 
   return (
@@ -392,198 +350,315 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Mic className="w-8 h-8" />
+          <Headphones className="w-8 h-8" />
           {currentLang.title}
         </motion.h2>
-        <p className="text-white/70 text-lg">
+        <p className="text-white/70 text-lg max-w-3xl mx-auto">
           {currentLang.subtitle}
         </p>
       </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-          <CardContent className="p-4 text-center">
-            <Award className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">{score}</p>
-            <p className="text-white/60 text-sm">{currentLang.score}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-          <CardContent className="p-4 text-center">
-            <Target className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">{accuracy}%</p>
-            <p className="text-white/60 text-sm">{currentLang.accuracy}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-          <CardContent className="p-4 text-center">
-            <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">{streak}</p>
-            <p className="text-white/60 text-sm">{currentLang.streak}</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Controls */}
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-          <Select value={selectedAccent} onValueChange={setSelectedAccent}>
-            <SelectTrigger className="w-48 bg-white/10 border-indigo-500/30 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-indigo-950 border-indigo-500/30">
-              <SelectItem value="american" className="text-white hover:bg-indigo-800">
-                {currentLang.accents.american}
-              </SelectItem>
-              <SelectItem value="british" className="text-white hover:bg-indigo-800">
-                {currentLang.accents.british}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {mode !== 'challenge' && (
-            <Select value={difficulty} onValueChange={(value: 'easy' | 'medium' | 'hard') => setDifficulty(value)}>
-              <SelectTrigger className="w-48 bg-white/10 border-indigo-500/30 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-indigo-950 border-indigo-500/30">
-                <SelectItem value="easy" className="text-white hover:bg-indigo-800">
-                  {currentLang.difficulties.easy}
-                </SelectItem>
-                <SelectItem value="medium" className="text-white hover:bg-indigo-800">
-                  {currentLang.difficulties.medium}
-                </SelectItem>
-                <SelectItem value="hard" className="text-white hover:bg-indigo-800">
-                  {currentLang.difficulties.hard}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
-          <Tabs value={mode} onValueChange={setMode} className="w-full max-w-2xl">
-            <TabsList className="grid w-full grid-cols-4 bg-white/10">
-              <TabsTrigger value="pronunciation" className="text-white data-[state=active]:bg-indigo-600 text-xs">
-                {currentLang.modes.pronunciation}
-              </TabsTrigger>
-              <TabsTrigger value="fluency" className="text-white data-[state=active]:bg-indigo-600 text-xs">
-                {currentLang.modes.fluency}
-              </TabsTrigger>
-              <TabsTrigger value="roleplay" className="text-white data-[state=active]:bg-indigo-600 text-xs">
-                {currentLang.modes.roleplay}
-              </TabsTrigger>
-              <TabsTrigger value="challenge" className="text-white data-[state=active]:bg-indigo-600 text-xs">
-                {currentLang.modes.challenge}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Exercise Content */}
+      <div className="max-w-4xl mx-auto">
         <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-          <CardContent className="p-8">
-            {renderExerciseContent()}
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div>
+                <label className="block text-sm text-white/70 mb-2">{currentLang.difficulty}</label>
+                <Select value={difficulty} onValueChange={(value: any) => setDifficulty(value)}>
+                  <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                    <SelectItem value="easy" className="text-white hover:bg-indigo-800">{currentLang.easy}</SelectItem>
+                    <SelectItem value="medium" className="text-white hover:bg-indigo-800">{currentLang.medium}</SelectItem>
+                    <SelectItem value="hard" className="text-white hover:bg-indigo-800">{currentLang.hard}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-white/70 mb-2">{currentLang.mode}</label>
+                <Select value={mode} onValueChange={setMode}>
+                  <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                    <SelectItem value="pronunciation" className="text-white hover:bg-indigo-800">{currentLang.pronunciation}</SelectItem>
+                    <SelectItem value="fluency" className="text-white hover:bg-indigo-800">{currentLang.fluency}</SelectItem>
+                    <SelectItem value="roleplay" className="text-white hover:bg-indigo-800">{currentLang.roleplay}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-white/70 mb-2">{currentLang.voice}</label>
+                <Select value={voice} onValueChange={setVoice}>
+                  <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                    {voices.map((v) => (
+                      <SelectItem key={v.value} value={v.value} className="text-white hover:bg-indigo-800">
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-end">
+                {!challengeMode ? (
+                  <Button
+                    onClick={startChallenge}
+                    className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    {currentLang.challenge}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={endChallenge}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    {currentLang.endChallenge}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-300">{score}</div>
+                <div className="text-sm text-white/60">{currentLang.score}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-400">{streak}</div>
+                <div className="text-sm text-white/60">{currentLang.streak}</div>
+              </div>
+              {challengeMode && (
+                <>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-400">{challengeTimeLeft}s</div>
+                    <div className="text-sm text-white/60">{currentLang.timeLeft}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400">{challengeWords}</div>
+                    <div className="text-sm text-white/60">{currentLang.wordsCompleted}</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Training Area */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Example Section */}
+        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+          <CardHeader>
+            <CardTitle className="text-indigo-300 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                {currentLang.currentExample}
+              </div>
+              <Badge className="bg-indigo-600/20 text-indigo-300 border-indigo-500/30">
+                {currentLang[difficulty]}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-6 bg-white/10 rounded-lg border border-white/20">
+              <p className="text-2xl font-medium text-white leading-relaxed text-center">
+                {currentExample.text}
+              </p>
+              {currentExample.phonetic && (
+                <p className="text-indigo-300 text-center mt-2 font-mono">
+                  {currentExample.phonetic}
+                </p>
+              )}
+              {currentExample.translation && language === 'ar' && (
+                <p className="text-white/60 text-center mt-2 text-sm">
+                  {currentExample.translation}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={playExampleAudio}
+                disabled={isPlaying}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isPlaying ? (
+                  <Pause className="w-4 h-4 mr-2" />
+                ) : (
+                  <Volume2 className="w-4 h-4 mr-2" />
+                )}
+                {currentLang.listenExample}
+              </Button>
+              
+              <Button
+                onClick={getNextExample}
+                variant="outline"
+                className="bg-white/10 border-indigo-500/30 text-white hover:bg-white/20"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Recording Controls */}
-        <div className="flex justify-center space-x-4">
-          {mode !== 'challenge' && currentExercise && (
-            <Button
-              onClick={playExample}
-              disabled={isPlayingExample}
-              variant="outline"
-              className="bg-white/10 border-indigo-500/30 text-white hover:bg-white/20"
-            >
-              <Volume2 className="w-5 h-5 mr-2" />
-              {currentLang.playExample}
-            </Button>
-          )}
+        {/* Recording Section */}
+        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+          <CardHeader>
+            <CardTitle className="text-indigo-300 flex items-center gap-2">
+              <Mic className="w-5 h-5" />
+              {currentLang.yourRecording}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Recording Button */}
+            <div className="text-center">
+              <Button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isAnalyzing}
+                className={`w-32 h-32 rounded-full text-white transition-all duration-300 ${
+                  isRecording 
+                    ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-105'
+                }`}
+              >
+                {isRecording ? (
+                  <MicOff className="w-8 h-8" />
+                ) : (
+                  <Mic className="w-8 h-8" />
+                )}
+              </Button>
+              
+              <p className="mt-4 text-white/70">
+                {isRecording ? currentLang.stopRecording : currentLang.startRecording}
+              </p>
+              
+              {isRecording && (
+                <p className="text-red-400 font-mono">
+                  {currentLang.recordingTime}: {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                </p>
+              )}
+            </div>
 
-          <Button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={mode === 'challenge' && !challengeActive}
-            className={`${isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-8`}
-          >
-            {isRecording ? (
-              <>
-                <MicOff className="w-5 h-5 mr-2" />
-                {currentLang.stopRecording}
-              </>
-            ) : (
-              <>
-                <Mic className="w-5 h-5 mr-2" />
-                {currentLang.startRecording}
-              </>
+            {/* Analysis Loading */}
+            {isAnalyzing && (
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mx-auto mb-2"></div>
+                <p className="text-white/70">{currentLang.analyzing}</p>
+              </div>
             )}
-          </Button>
-
-          {mode !== 'challenge' && (
-            <Button
-              onClick={loadNewExercise}
-              variant="outline"
-              className="bg-white/10 border-indigo-500/30 text-white hover:bg-white/20"
-            >
-              <RotateCcw className="w-5 h-5 mr-2" />
-              {currentLang.nextExercise}
-            </Button>
-          )}
-        </div>
-
-        {/* Feedback Section */}
-        <AnimatePresence>
-          {(accuracy > 0 || feedback) && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="max-w-md mx-auto"
-            >
-              <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-                <CardHeader>
-                  <CardTitle className="text-indigo-300 text-center">{currentLang.feedback}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {accuracy > 0 && (
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-white">{accuracy}%</p>
-                        <Progress value={accuracy} className="mt-2" />
-                      </div>
-                    )}
-                    
-                    {feedback && (
-                      <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                        <p className="text-white/80 text-sm leading-relaxed">{feedback}</p>
-                      </div>
-                    )}
-                    
-                    <div className="text-center">
-                      {accuracy >= 90 && (
-                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                          {currentLang.excellent}
-                        </Badge>
-                      )}
-                      {accuracy >= 80 && accuracy < 90 && (
-                        <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
-                          {currentLang.good}
-                        </Badge>
-                      )}
-                      {accuracy < 80 && accuracy > 0 && (
-                        <Badge className="bg-red-500/20 text-red-300 border-red-500/30">
-                          {currentLang.needsWork}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Analysis Results */}
+      <AnimatePresence>
+        {analysis && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-6xl mx-auto"
+          >
+            <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+              <CardHeader>
+                <CardTitle className="text-indigo-300 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  {currentLang.analysis}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="scores" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 bg-white/10">
+                    <TabsTrigger value="scores" className="text-white data-[state=active]:bg-indigo-600">
+                      Scores
+                    </TabsTrigger>
+                    <TabsTrigger value="feedback" className="text-white data-[state=active]:bg-indigo-600">
+                      {currentLang.feedback}
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="scores" className="mt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div className="text-center">
+                        <div className={`text-3xl font-bold ${getScoreColor(analysis.accuracy)}`}>
+                          {analysis.accuracy}%
+                        </div>
+                        <div className="text-sm text-white/60 mb-2">{currentLang.accuracy}</div>
+                        <Progress value={analysis.accuracy} className="h-2" />
+                      </div>
+                      
+                      <div className="text-center">
+                        <div className={`text-3xl font-bold ${getScoreColor(analysis.pronunciationScore)}`}>
+                          {analysis.pronunciationScore}%
+                        </div>
+                        <div className="text-sm text-white/60 mb-2">{currentLang.pronunciation}</div>
+                        <Progress value={analysis.pronunciationScore} className="h-2" />
+                      </div>
+                      
+                      <div className="text-center">
+                        <div className={`text-3xl font-bold ${getScoreColor(analysis.fluencyScore || 0)}`}>
+                          {analysis.fluencyScore || 0}%
+                        </div>
+                        <div className="text-sm text-white/60 mb-2">{currentLang.fluency}</div>
+                        <Progress value={analysis.fluencyScore || 0} className="h-2" />
+                      </div>
+                      
+                      <div className="text-center">
+                        <div className={`text-3xl font-bold ${getScoreColor(analysis.clarityScore || 0)}`}>
+                          {analysis.clarityScore || 0}%
+                        </div>
+                        <div className="text-sm text-white/60 mb-2">{currentLang.clarity}</div>
+                        <Progress value={analysis.clarityScore || 0} className="h-2" />
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="feedback" className="mt-6">
+                    <div className="bg-white/10 rounded-lg p-6 border border-white/20">
+                      <p className="text-white/90 leading-relaxed">
+                        {analysis.feedback}
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    onClick={() => setAnalysis(null)}
+                    variant="outline"
+                    className="bg-white/10 border-indigo-500/30 text-white hover:bg-white/20"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    {currentLang.tryAgain}
+                  </Button>
+                  
+                  <Button
+                    onClick={() => {
+                      getNextExample();
+                      setAnalysis(null);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <ChevronRight className="w-4 h-4 mr-2" />
+                    {currentLang.nextExample}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

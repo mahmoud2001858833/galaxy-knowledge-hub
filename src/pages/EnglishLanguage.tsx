@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,8 @@ import Footer from '@/components/Footer';
 import EnhancedEnglishAIAssistant from '@/components/english/EnhancedEnglishAIAssistant';
 import SmartTranslator from '@/components/english/SmartTranslator';
 import EnhancedSpeechAssistant from '@/components/english/EnhancedSpeechAssistant';
-import { ArrowLeft, ArrowRight, Bot, Languages, Globe, Headphones } from 'lucide-react';
+import EnglishScholarsEncyclopedia from '@/components/english/EnglishScholarsEncyclopedia';
+import { ArrowLeft, ArrowRight, Bot, Languages, Globe, Headphones, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const EnglishLanguage = () => {
@@ -22,7 +24,7 @@ const EnglishLanguage = () => {
   const t = {
     ar: {
       title: "منصة اللغة الإنجليزية المتطورة",
-      subtitle: "تعلم وأتقن اللغة الإنجليزية مع أدواتنا الذكية والتفاعلية",
+      subtitle: "تعلم وأتقن اللغة الإنجليزية مع أدواتنا الذكية والتفاعلية المطورة",
       backToLiterary: "العودة للمنصات الأدبية",
       backToMain: "العودة للقائمة الرئيسية",
       switchToEnglish: "English",
@@ -32,11 +34,13 @@ const EnglishLanguage = () => {
       smartTranslator: "المترجم الذكي",
       smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل متقدم",
       speechAssistant: "المساعد الذكي للنطق والتحدث",
-      speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية متقدمة"
+      speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية متقدمة",
+      scholarsEncyclopedia: "موسوعة علماء اللغة الإنجليزية",
+      scholarsEncyclopediaDescription: "اكتشف عمالقة اللغة الإنجليزية الذين شكلوا تطورها عبر التاريخ"
     },
     en: {
       title: "Advanced English Language Platform",
-      subtitle: "Learn and master English with our intelligent and interactive tools",
+      subtitle: "Learn and master English with our enhanced intelligent and interactive tools",
       backToLiterary: "Back to Literary Platforms",
       backToMain: "Back to Main Menu",
       switchToEnglish: "English",
@@ -46,7 +50,9 @@ const EnglishLanguage = () => {
       smartTranslator: "Smart Translator",
       smartTranslatorDescription: "Intelligent educational translation between Arabic and English with advanced analysis",
       speechAssistant: "Enhanced Speech & Pronunciation Coach",
-      speechAssistantDescription: "Master English pronunciation and speaking skills with advanced interactive training"
+      speechAssistantDescription: "Master English pronunciation and speaking skills with advanced interactive training",
+      scholarsEncyclopedia: "English Language Scholars Encyclopedia",
+      scholarsEncyclopediaDescription: "Discover the giants of English language who shaped its evolution throughout history"
     }
   };
 
@@ -81,6 +87,15 @@ const EnglishLanguage = () => {
       borderColor: "border-green-500/30",
       hoverBorderColor: "hover:border-green-500/50",
       component: "speech"
+    },
+    {
+      title: currentLang.scholarsEncyclopedia,
+      icon: <GraduationCap className="w-8 h-8" />,
+      description: currentLang.scholarsEncyclopediaDescription,
+      color: "from-amber-600/20 to-orange-600/20",
+      borderColor: "border-amber-500/30",
+      hoverBorderColor: "hover:border-amber-500/50",
+      component: "scholars"
     }
   ];
 
@@ -92,6 +107,8 @@ const EnglishLanguage = () => {
         return <SmartTranslator language={language} />;
       case 'speech':
         return <EnhancedSpeechAssistant language={language} />;
+      case 'scholars':
+        return <EnglishScholarsEncyclopedia language={language} />;
       default:
         return null;
     }
@@ -152,7 +169,7 @@ const EnglishLanguage = () => {
 
           {!activeComponent ? (
             /* Features Grid */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}

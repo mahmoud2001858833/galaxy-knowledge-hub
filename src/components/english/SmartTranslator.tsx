@@ -33,6 +33,7 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
   const [context, setContext] = useState('conversational');
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [savedWords, setSavedWords] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -66,7 +67,14 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
       switchDirection: "عكس الاتجاه",
       copy: "نسخ",
       savedWords: "الكلمات المحفوظة",
-      clear: "مسح"
+      clear: "مسح",
+      examples: "أمثلة للترجمة:",
+      exampleTexts: [
+        "أحب تعلم اللغة الإنجليزية",
+        "التكنولوجيا تغير حياتنا",
+        "السفر يوسع الآفاق",
+        "العلم نور والجهل ظلام"
+      ]
     },
     en: {
       title: "Smart Translator",
@@ -97,7 +105,14 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
       switchDirection: "Switch Direction",
       copy: "Copy",
       savedWords: "Saved Words",
-      clear: "Clear"
+      clear: "Clear",
+      examples: "Translation examples:",
+      exampleTexts: [
+        "I love learning English",
+        "Technology changes our lives",
+        "Travel broadens horizons",
+        "Knowledge is light and ignorance is darkness"
+      ]
     }
   };
 
@@ -144,6 +159,47 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
     }
   };
 
+  const playTranslationAudio = async (text: string) => {
+    if (isPlayingAudio) return;
+    
+    setIsPlayingAudio(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enhanced-text-to-speech', {
+        body: { 
+          text: text,
+          voice: 'Sarah',
+          model: 'eleven_multilingual_v2'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.audioContent) {
+        const audioBlob = new Blob([
+          Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))
+        ], { type: 'audio/mpeg' });
+        
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+          setIsPlayingAudio(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsPlayingAudio(false);
+      toast({
+        title: language === 'ar' ? "خطأ في تشغيل الصوت" : "Audio playback error",
+        description: language === 'ar' ? "حدث خطأ أثناء تشغيل الصوت" : "An error occurred while playing audio",
+        variant: "destructive"
+      });
+    }
+  };
+
   const saveWord = (word: any) => {
     setSavedWords(prev => [...prev, word]);
     toast({
@@ -158,6 +214,10 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
       title: language === 'ar' ? "تم النسخ" : "Copied",
       description: language === 'ar' ? "تم نسخ النص إلى الحافظة" : "Text copied to clipboard",
     });
+  };
+
+  const useExampleText = (text: string) => {
+    setInputText(text);
   };
 
   const contextColors = {
@@ -244,6 +304,7 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
                 {currentLang.clear}
               </Button>
             </div>
+            
             <Textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -251,6 +312,24 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
               className="min-h-[120px] bg-white/10 border-indigo-500/30 text-white placeholder:text-white/50 resize-none text-lg"
               dir={translationDirection === 'ar-en' ? 'rtl' : 'ltr'}
             />
+            
+            {/* Example texts */}
+            <div className="border-t border-white/10 pt-4">
+              <p className="text-sm text-white/60 mb-2">{currentLang.examples}</p>
+              <div className="flex flex-wrap gap-2">
+                {currentLang.exampleTexts.map((example, index) => (
+                  <Button
+                    key={index}
+                    onClick={() => useExampleText(example)}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/5 border-white/20 text-white/80 hover:bg-white/10 text-xs"
+                  >
+                    {example}
+                  </Button>
+                ))}
+              </div>
+            </div>
             
             <div className="flex justify-center">
               <Button
@@ -309,6 +388,8 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
                   </div>
                   
                   <Button
+                    onClick={() => playTranslationAudio(result.translation)}
+                    disabled={isPlayingAudio}
                     variant="outline"
                     size="sm"
                     className="mt-3 bg-white/10 border-indigo-500/30 text-white hover:bg-white/20"
