@@ -23,7 +23,7 @@ const PlatformCategories = () => {
       title: t.platformCategories.literary,
       icon: "📚",
       description: t.platformCategories.literaryDescription,
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSFj1QS-_1v4Ha7SJrFEW5JswcI6L4G5psQg&s",
       color: "from-purple-600/20 to-pink-600/20",
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -11,17 +12,139 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json()
+    const { message, currentPath, userName } = await req.json()
+    
+    if (!message || typeof message !== 'string') {
+      throw new Error('رسالة غير صالحة')
+    }
     
     const GEMINI_API_KEY = "AIzaSyC1u3-VRvMHRz-DxYJJp3Y9a1eqGOCk4CQ"
     
-    // التعرف على نوع الطلب وتوجيه المستخدم للمكان المناسب
     let responseText = ""
+    let navigationPath = ""
+    let autoNavigate = false
+    
     const lowerMessage = message.toLowerCase()
     
-    // التحقق من الكلمات المفتاحية للمنصات الأدبية
-    if (lowerMessage.includes('شعر') || lowerMessage.includes('شاعر') || lowerMessage.includes('قصيدة') || lowerMessage.includes('شعراء')) {
-      responseText = `أهلاً بك! يبدو أنك مهتم بالشعر العربي. لدينا قسم رائع يسمى "شعراء العرب" في المنصة الأدبية العربية.
+    // معالجة طلبات التنقل
+    if (lowerMessage.includes('انتقل') || lowerMessage.includes('اذهب') || lowerMessage.includes('افتح')) {
+      if (lowerMessage.includes('فيديو') || lowerMessage.includes('تعليمي')) {
+        navigationPath = "/educational-videos"
+        autoNavigate = true
+        responseText = `🎥 **جاري الانتقال إلى الفيديوهات التعليمية...**
+
+سيتم نقلك خلال ثانية واحدة إلى صفحة الفيديوهات التعليمية حيث يمكنك:
+
+📚 **تصفح الفيديوهات حسب المادة:**
+- فيزياء (صف تاسع، عاشر، حادي عشر)
+- كيمياء (صف تاسع، عاشر، حادي عشر) 
+- أحياء (صف حادي عشر)
+- رياضيات
+
+🎯 **ميزات متقدمة:**
+- فيديوهات عالية الجودة
+- تصنيف حسب الوحدات والدروس
+- مشغل فيديو محسن
+
+✨ **جاري التنقل الآن...**`
+      } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة')) {
+        navigationPath = "/calculator"
+        autoNavigate = true
+        responseText = `🧮 **جاري الانتقال إلى آلة الحاسبة المتقدمة...**
+
+سيتم نقلك خلال ثانية واحدة إلى آلة الحاسبة المتطورة التي تحتوي على:
+
+⚡ **حاسبة علمية متقدمة:**
+- عمليات رياضية معقدة
+- دوال مثلثية ولوغاريتمية
+- حسابات الجذور والقوى
+
+📊 **رسوم بيانية تفاعلية:**
+- رسم المعادلات
+- تحليل الدوال
+- واجهة تفاعلية
+
+🤖 **مساعد ذكي رياضي:**
+- حل المسائل خطوة بخطوة
+- شرح العمليات الحسابية
+
+✨ **جاري التنقل الآن...**`
+      } else if (lowerMessage.includes('مكتب') || lowerMessage.includes('مرئي')) {
+        navigationPath = "/visual-library"
+        autoNavigate = true
+        responseText = `📸 **جاري الانتقال إلى المكتبة المرئية...**
+
+سيتم نقلك خلال ثانية واحدة إلى المكتبة المرئية التي تحتوي على:
+
+🔬 **صور تعليمية متنوعة:**
+- صور الفيزياء والكيمياء
+- صور الأحياء والطب
+- صور الرياضيات والهندسة
+
+📚 **مواد مرئية منظمة:**
+- تصنيف حسب المواد
+- صور عالية الجودة
+- شروحات مرفقة
+
+🎯 **أدوات متقدمة:**
+- بحث ذكي
+- تحميل الصور
+- مشاركة المحتوى
+
+✨ **جاري التنقل الآن...**`
+      } else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي')) {
+        navigationPath = "/english-language"
+        autoNavigate = true
+        responseText = `🇬🇧 **جاري الانتقال إلى منصة اللغة الإنجليزية...**
+
+سيتم نقلك خلال ثانية واحدة إلى منصة اللغة الإنجليزية المتطورة:
+
+🤖 **المساعد الذكي الإنجليزي**
+- تعلم القواعد والمفردات
+- إجابات صوتية
+
+🌍 **المترجم الذكي المطور**
+- ترجمة الصور (OCR)
+- ترجمة النصوص
+- شرح تفصيلي
+
+🎤 **مساعد النطق والتحدث**
+- تقييم النطق
+- تدريبات صوتية
+
+✨ **مولد النصوص الإنجليزية**
+- نصوص احترافية
+- أساليب متنوعة
+
+✨ **جاري التنقل الآن...**`
+      } else if (lowerMessage.includes('عرب') || lowerMessage.includes('لغة')) {
+        navigationPath = "/arabic-language"
+        autoNavigate = true
+        responseText = `📚 **جاري الانتقال إلى منصة اللغة العربية...**
+
+سيتم نقلك خلال ثانية واحدة إلى منصة اللغة العربية المحسنة:
+
+🤖 **المساعد الذكي للعربية**
+- مساعد متخصص في النحو والصرف
+
+🎭 **شعراء العرب**
+- موسوعة 1000+ شاعر
+- قصائد كاملة
+
+👥 **علماء اللغة العربية**
+- موسوعة شاملة
+
+✍️ **مساعد الإعراب الذكي**
+- تحليل نحوي دقيق
+
+✨ **جاري التنقل الآن...**`
+      }
+    }
+    
+    // التعرف على نوع الطلب وتوجيه المستخدم للمكان المناسب
+    if (!responseText) {
+      if (lowerMessage.includes('شعر') || lowerMessage.includes('شاعر') || lowerMessage.includes('قصيدة') || lowerMessage.includes('شعراء')) {
+        responseText = `أهلاً بك! يبدو أنك مهتم بالشعر العربي. لدينا قسم رائع يسمى "شعراء العرب" في المنصة الأدبية العربية.
 
 في قسم شعراء العرب ستجد:
 🎭 موسوعة شاملة لأكثر من 1000 شاعر عربي مشهور
@@ -36,9 +159,9 @@ serve(async (req) => {
 3️⃣ ثم انقر على "شعراء العرب"
 
 هل تريد معرفة المزيد عن شاعر معين أم تفضل استكشاف عصر أدبي محدد؟`
-    } 
-    else if (lowerMessage.includes('لغة') || lowerMessage.includes('عربي') || lowerMessage.includes('نحو') || lowerMessage.includes('إعراب')) {
-      responseText = `أهلاً بك في المنصة التعليمية! بما أنك مهتم باللغة العربية، دعني أرشدك إلى منصة اللغة العربية المحسنة.
+      } 
+      else if (lowerMessage.includes('لغة') || lowerMessage.includes('عربي') || lowerMessage.includes('نحو') || lowerMessage.includes('إعراب')) {
+        responseText = `أهلاً بك في المنصة التعليمية! بما أنك مهتم باللغة العربية، دعني أرشدك إلى منصة اللغة العربية المحسنة.
 
 في منصة اللغة العربية ستجد:
 
@@ -59,9 +182,9 @@ serve(async (req) => {
 2️⃣ اختر "منصة اللغة العربية المحسنة"
 
 أي قسم تريد أن تبدأ به؟`
-    }
-    else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي') || lowerMessage.includes('english') || lowerMessage.includes('ترجمة') || lowerMessage.includes('مترجم')) {
-      responseText = `ممتاز! لدينا منصة جديدة ومتطورة للغة الإنجليزية مع أدوات ذكية رائعة!
+      }
+      else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي') || lowerMessage.includes('english') || lowerMessage.includes('ترجمة') || lowerMessage.includes('مترجم')) {
+        responseText = `ممتاز! لدينا منصة جديدة ومتطورة للغة الإنجليزية مع أدوات ذكية رائعة!
 
 **منصة اللغة الإنجليزية المتطورة** تحتوي على:
 
@@ -88,10 +211,10 @@ serve(async (req) => {
 2️⃣ اختر "منصة اللغة الإنجليزية"
 
 هل تريد معرفة المزيد عن المترجم الذكي أم المساعد الإنجليزي؟`
-    }
-    else {
-      // استخدام Gemini للردود العامة مع إضافة معرفة بالمنصة
-      const prompt = `أنت مرشد ذكي لمنصة تعليمية شاملة. المنصة تحتوي على:
+      }
+      else {
+        // استخدام Gemini للردود العامة مع إضافة معرفة بالمنصة
+        const prompt = `أنت مرشد ذكي لمنصة تعليمية شاملة. المنصة تحتوي على:
 
 **المنصات الأدبية:**
 - منصة اللغة العربية المحسنة (تحتوي على: المساعد الذكي، شعراء العرب، علماء اللغة، مساعد الإعراب)
@@ -114,30 +237,35 @@ serve(async (req) => {
 
 قدم إجابة مفيدة وودودة وأرشد المستخدم للقسم المناسب إذا أمكن. استخدم العربية دائماً.`
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ]
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt
+                  }
+                ]
+              }
+            ]
+          })
         })
-      })
 
-      const data = await response.json()
-      responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من فهم السؤال. يمكنك السؤال عن أي قسم في المنصة وسأوجهك إليه!"
+        const data = await response.json()
+        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من فهم السؤال. يمكنك السؤال عن أي قسم في المنصة وسأوجهك إليه!"
+      }
     }
 
     return new Response(
-      JSON.stringify({ reply: responseText }),
+      JSON.stringify({ 
+        result: responseText,
+        navigationPath: navigationPath,
+        autoNavigate: autoNavigate
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
@@ -145,7 +273,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: 'حدث خطأ في معالجة الطلب' }),
+      JSON.stringify({ 
+        result: 'عذراً، حدث خطأ في معالجة الطلب. يرجى المحاولة مرة أخرى.',
+        navigationPath: "",
+        autoNavigate: false
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

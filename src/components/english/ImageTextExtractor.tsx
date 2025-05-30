@@ -1,10 +1,12 @@
 
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Upload, FileText, Loader2, Image as ImageIcon, X } from 'lucide-react';
+import { Camera, Upload, FileText, Loader2, Image as ImageIcon, X, Languages, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ImageTextExtractorProps {
   onTextExtracted: (text: string) => void;
@@ -17,6 +19,10 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
   const [isCapturing, setIsCapturing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedText, setExtractedText] = useState('');
+  const [arabicTranslation, setArabicTranslation] = useState('');
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,38 +31,67 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
 
   const t = {
     ar: {
-      title: "استخراج النص من الصور",
+      title: "ترجمة النص من الصور",
       uploadImage: "رفع صورة",
       capturePhoto: "التقاط صورة",
-      extractText: "استخراج النص",
-      extracting: "جاري الاستخراج...",
+      extractTranslate: "استخراج وترجمة النص",
+      extracting: "جاري الاستخراج والترجمة...",
       startCapture: "بدء التصوير",
       stopCapture: "إيقاف التصوير",
-      useText: "استخدام النص",
+      useText: "استخدام النص الإنجليزي",
       clearImage: "مسح الصورة",
       noTextFound: "لم يتم العثور على نص في الصورة",
       extractionError: "حدث خطأ أثناء استخراج النص",
       cameraError: "لا يمكن الوصول للكاميرا",
-      extractionSuccess: "تم استخراج النص بنجاح"
+      extractionSuccess: "تم استخراج وترجمة النص بنجاح",
+      englishText: "النص الإنجليزي المستخرج",
+      arabicTranslation: "الترجمة العربية",
+      voiceLabel: "اختر صوت للقراءة",
+      listenText: "استمع للنص الإنجليزي"
     },
     en: {
-      title: "Extract Text from Images",
+      title: "Extract and Translate Text from Images",
       uploadImage: "Upload Image",
       capturePhoto: "Capture Photo",
-      extractText: "Extract Text",
-      extracting: "Extracting...",
+      extractTranslate: "Extract & Translate Text",
+      extracting: "Extracting and translating...",
       startCapture: "Start Capture",
       stopCapture: "Stop Capture",
-      useText: "Use Text",
+      useText: "Use English Text",
       clearImage: "Clear Image",
       noTextFound: "No text found in image",
       extractionError: "Error extracting text",
       cameraError: "Cannot access camera",
-      extractionSuccess: "Text extracted successfully"
+      extractionSuccess: "Text extracted and translated successfully",
+      englishText: "Extracted English Text",
+      arabicTranslation: "Arabic Translation",
+      voiceLabel: "Choose voice for reading",
+      listenText: "Listen to English Text"
     }
   };
 
   const currentLang = t[language];
+
+  // Initialize voices
+  React.useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = speechSynthesis.getVoices();
+      const englishVoices = availableVoices.filter(voice => 
+        voice.lang.startsWith('en-')
+      );
+      setVoices(englishVoices);
+      if (englishVoices.length > 0 && !selectedVoice) {
+        setSelectedVoice(englishVoices[0].name);
+      }
+    };
+
+    loadVoices();
+    speechSynthesis.addEventListener('voiceschanged', loadVoices);
+
+    return () => {
+      speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    };
+  }, [selectedVoice]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -68,6 +103,7 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
       };
       reader.readAsDataURL(file);
       setExtractedText('');
+      setArabicTranslation('');
     }
   };
 
@@ -106,6 +142,7 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
           setImagePreview(canvas.toDataURL());
           stopCamera();
           setExtractedText('');
+          setArabicTranslation('');
         }
       });
     }
@@ -119,30 +156,31 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
     }
   };
 
-  const extractTextFromImage = async () => {
+  const extractAndTranslateText = async () => {
     if (!selectedImage) return;
 
     setIsExtracting(true);
     try {
-      // Simulate OCR extraction - in real implementation, use Google Vision API or similar
-      // For demo purposes, simulate realistic text extraction
-      const simulatedTexts = [
-        "Welcome to our English Learning Center. We offer comprehensive courses for all levels.",
-        "MENU\nBreakfast Special - $12.99\nFresh coffee and pastries\nAvailable 7AM - 11AM",
-        "Important Notice: Please follow safety guidelines at all times.",
-        "Job Opening: English Teacher\nExperience required: 2+ years\nContact: hr@company.com",
-        "English Grammar Rules:\n1. Subject-Verb Agreement\n2. Proper Use of Articles\n3. Tense Consistency"
-      ];
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const randomText = simulatedTexts[Math.floor(Math.random() * simulatedTexts.length)];
-      setExtractedText(randomText);
-      
-      toast({
-        title: currentLang.extractionSuccess,
-      });
+      // تحويل الصورة إلى base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const imageData = e.target?.result as string;
+        
+        // استدعاء Edge Function للـ OCR والترجمة
+        const { data, error } = await supabase.functions.invoke('ocr-translator', {
+          body: { imageData }
+        });
+
+        if (error) throw error;
+
+        setExtractedText(data.extractedText);
+        setArabicTranslation(data.arabicTranslation);
+        
+        toast({
+          title: currentLang.extractionSuccess,
+        });
+      };
+      reader.readAsDataURL(selectedImage);
     } catch (error) {
       console.error('Text extraction error:', error);
       toast({
@@ -152,6 +190,33 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
     } finally {
       setIsExtracting(false);
     }
+  };
+
+  const playAudio = () => {
+    if (!extractedText) return;
+
+    if (isPlaying) {
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      return;
+    }
+
+    setIsPlaying(true);
+    const utterance = new SpeechSynthesisUtterance(extractedText);
+    const voice = voices.find(v => v.name === selectedVoice);
+    
+    if (voice) {
+      utterance.voice = voice;
+    }
+    
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+    
+    speechSynthesis.speak(utterance);
   };
 
   const useExtractedText = () => {
@@ -167,6 +232,7 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
     setSelectedImage(null);
     setImagePreview(null);
     setExtractedText('');
+    setArabicTranslation('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -259,7 +325,7 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
             
             <div className="flex gap-3 justify-center">
               <Button
-                onClick={extractTextFromImage}
+                onClick={extractAndTranslateText}
                 disabled={isExtracting}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
@@ -270,8 +336,8 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
                   </>
                 ) : (
                   <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    {currentLang.extractText}
+                    <Languages className="w-4 h-4 mr-2" />
+                    {currentLang.extractTranslate}
                   </>
                 )}
               </Button>
@@ -279,25 +345,73 @@ const ImageTextExtractor: React.FC<ImageTextExtractorProps> = ({ onTextExtracted
           </motion.div>
         )}
 
-        {/* Extracted Text */}
+        {/* Extracted and Translated Text */}
         {extractedText && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <h3 className="text-lg font-semibold text-indigo-300">
-              {language === 'ar' ? 'النص المستخرج' : 'Extracted Text'}
-            </h3>
-            <div className="p-4 bg-white/10 border border-white/20 rounded-lg">
-              <p className="text-white/90 leading-relaxed whitespace-pre-wrap">
-                {extractedText}
-              </p>
+            {/* English Text */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                {currentLang.englishText}
+              </h3>
+              <div className="p-4 bg-blue-600/10 border border-blue-500/20 rounded-lg">
+                <p className="text-white/90 leading-relaxed whitespace-pre-wrap">
+                  {extractedText}
+                </p>
+              </div>
+              
+              {/* Voice Controls for English */}
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <label className="block text-sm text-white/70 mb-2">{currentLang.voiceLabel}</label>
+                  <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                    <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                      {voices.map((voice) => (
+                        <SelectItem key={voice.name} value={voice.name} className="text-white hover:bg-indigo-800">
+                          {voice.name} ({voice.lang})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button
+                  onClick={playAudio}
+                  className="bg-green-600 hover:bg-green-700 text-white mt-6"
+                >
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  {isPlaying ? 'إيقاف' : currentLang.listenText}
+                </Button>
+              </div>
             </div>
+
+            {/* Arabic Translation */}
+            {arabicTranslation && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-green-300 flex items-center gap-2">
+                  <Languages className="w-5 h-5" />
+                  {currentLang.arabicTranslation}
+                </h3>
+                <div className="p-4 bg-green-600/10 border border-green-500/20 rounded-lg">
+                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap text-right" dir="rtl">
+                    {arabicTranslation}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Button */}
             <div className="text-center">
               <Button
                 onClick={useExtractedText}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
               >
                 <FileText className="w-4 h-4 mr-2" />
                 {currentLang.useText}
