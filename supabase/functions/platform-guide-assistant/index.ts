@@ -27,57 +27,37 @@ serve(async (req) => {
     const lowerMessage = message.toLowerCase()
     
     // معالجة طلبات التنقل المباشر والدقيق
-    if (lowerMessage.includes('انتقل') || lowerMessage.includes('اذهب') || lowerMessage.includes('افتح')) {
+    if (lowerMessage.includes('انتقل') || lowerMessage.includes('اذهب') || lowerMessage.includes('افتح') || lowerMessage.includes('خذني') || lowerMessage.includes('روح')) {
       
-      // تنقل دقيق للفيديوهات التعليمية حسب المادة
-      if (lowerMessage.includes('فيديو') || lowerMessage.includes('تعليمي')) {
+      // تنقل دقيق للفيديوهات التعليمية حسب المادة والصف
+      if (lowerMessage.includes('فيديو') || lowerMessage.includes('تعليمي') || lowerMessage.includes('فيدو')) {
         if (lowerMessage.includes('كيمياء')) {
-          if (lowerMessage.includes('تاسع') || lowerMessage.includes('9')) {
-            navigationPath = "/chemistry?grade=9&section=videos"
-          } else if (lowerMessage.includes('عاشر') || lowerMessage.includes('10')) {
-            navigationPath = "/chemistry?grade=10&section=videos"
-          } else if (lowerMessage.includes('حادي عشر') || lowerMessage.includes('11')) {
-            navigationPath = "/chemistry?grade=11&section=videos"
-          } else {
-            navigationPath = "/chemistry"
-          }
+          navigationPath = "/educational-videos?subject=chemistry"
           autoNavigate = true
           responseText = `🧪 **جاري الانتقال إلى فيديوهات الكيمياء...**
 
-✨ **تم التنقل بنجاح!**`
+✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للكيمياء!**`
           
         } else if (lowerMessage.includes('فيزياء')) {
-          if (lowerMessage.includes('تاسع') || lowerMessage.includes('9')) {
-            navigationPath = "/physics?grade=9&section=videos"
-          } else if (lowerMessage.includes('عاشر') || lowerMessage.includes('10')) {
-            navigationPath = "/physics?grade=10&section=videos"
-          } else if (lowerMessage.includes('حادي عشر') || lowerMessage.includes('11')) {
-            navigationPath = "/physics?grade=11&section=videos"
-          } else {
-            navigationPath = "/physics"
-          }
+          navigationPath = "/educational-videos?subject=physics"
           autoNavigate = true
           responseText = `⚛️ **جاري الانتقال إلى فيديوهات الفيزياء...**
 
-✨ **تم التنقل بنجاح!**`
+✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للفيزياء!**`
           
         } else if (lowerMessage.includes('أحياء') || lowerMessage.includes('بيولوجي')) {
-          if (lowerMessage.includes('حادي عشر') || lowerMessage.includes('11')) {
-            navigationPath = "/biology?grade=11&section=videos"
-          } else {
-            navigationPath = "/biology"
-          }
+          navigationPath = "/educational-videos?subject=biology"
           autoNavigate = true
           responseText = `🧬 **جاري الانتقال إلى فيديوهات الأحياء...**
 
-✨ **تم التنقل بنجاح!**`
+✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للأحياء!**`
           
         } else if (lowerMessage.includes('رياضيات')) {
           navigationPath = "/educational-videos?subject=math"
           autoNavigate = true
           responseText = `📊 **جاري الانتقال إلى فيديوهات الرياضيات...**
 
-✨ **تم التنقل بنجاح!**`
+✨ **تم التنقل بنجاح إلى الفيديوهات التعليمية للرياضيات!**`
         } else {
           navigationPath = "/educational-videos"
           autoNavigate = true
@@ -86,28 +66,28 @@ serve(async (req) => {
 ✨ **تم التنقل بنجاح!**`
         }
         
-      } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة')) {
+      } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة') || lowerMessage.includes('كالكوليتر')) {
         navigationPath = "/calculator"
         autoNavigate = true
         responseText = `🧮 **جاري الانتقال إلى آلة الحاسبة...**
 
 ✨ **تم التنقل بنجاح!**`
         
-      } else if (lowerMessage.includes('مكتب') || lowerMessage.includes('مرئي')) {
+      } else if (lowerMessage.includes('مكتب') || lowerMessage.includes('مرئي') || lowerMessage.includes('صور')) {
         navigationPath = "/visual-library"
         autoNavigate = true
         responseText = `📸 **جاري الانتقال إلى المكتبة المرئية...**
 
 ✨ **تم التنقل بنجاح!**`
         
-      } else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي')) {
+      } else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي') || lowerMessage.includes('english')) {
         navigationPath = "/english-language"
         autoNavigate = true
         responseText = `🇬🇧 **جاري الانتقال إلى منصة اللغة الإنجليزية...**
 
 ✨ **تم التنقل بنجاح!**`
         
-      } else if (lowerMessage.includes('عرب') || lowerMessage.includes('لغة عربية')) {
+      } else if (lowerMessage.includes('عرب') || lowerMessage.includes('لغة عربية') || lowerMessage.includes('arabic')) {
         navigationPath = "/arabic-language"
         autoNavigate = true
         responseText = `📚 **جاري الانتقال إلى منصة اللغة العربية...**
@@ -139,6 +119,20 @@ serve(async (req) => {
         navigationPath = "/mathematics"
         autoNavigate = true
         responseText = `📊 **جاري الانتقال إلى منصة الرياضيات...**
+
+✨ **تم التنقل بنجاح!**`
+        
+      } else if (lowerMessage.includes('أدبي') || lowerMessage.includes('لغات')) {
+        navigationPath = "/literary-platforms"
+        autoNavigate = true
+        responseText = `📖 **جاري الانتقال إلى المنصات الأدبية...**
+
+✨ **تم التنقل بنجاح!**`
+        
+      } else if (lowerMessage.includes('علمي') || lowerMessage.includes('علوم')) {
+        navigationPath = "/scientific-platforms"
+        autoNavigate = true
+        responseText = `🔬 **جاري الانتقال إلى المنصات العلمية...**
 
 ✨ **تم التنقل بنجاح!**`
       }

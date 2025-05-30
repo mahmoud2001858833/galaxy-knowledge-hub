@@ -214,19 +214,14 @@ const AdvancedTextGenerator: React.FC<AdvancedTextGeneratorProps> = ({ language 
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Input Section */}
-        <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
-          <CardHeader>
-            <CardTitle className="text-indigo-300 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              {language === 'ar' ? 'إعدادات التوليد' : 'Generation Settings'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Topic */}
+      {/* Input Form */}
+      <Card className="bg-white/5 backdrop-blur-sm border-indigo-500/20">
+        <CardContent className="space-y-6 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm text-white/70 mb-2">{currentLang.topicLabel}</label>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                {currentLang.topicLabel}
+              </label>
               <Input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
@@ -235,20 +230,42 @@ const AdvancedTextGenerator: React.FC<AdvancedTextGeneratorProps> = ({ language 
               />
             </div>
 
-            {/* Description */}
             <div>
-              <label className="block text-sm text-white/70 mb-2">{currentLang.descriptionLabel}</label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={currentLang.descriptionPlaceholder}
-                className="min-h-20 bg-white/10 border-indigo-500/30 text-white placeholder:text-white/50"
-              />
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                {currentLang.wordCountLabel}
+              </label>
+              <Select value={wordCount} onValueChange={setWordCount}>
+                <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                  {['25', '50', '100', '200', '500', '1000'].map((count) => (
+                    <SelectItem key={count} value={count} className="text-white hover:bg-indigo-800">
+                      {count} كلمة
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
 
-            {/* Style */}
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-2">
+              {currentLang.descriptionLabel}
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={currentLang.descriptionPlaceholder}
+              className="bg-white/10 border-indigo-500/30 text-white placeholder:text-white/50 min-h-[80px]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm text-white/70 mb-2">{currentLang.styleLabel}</label>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                {currentLang.styleLabel}
+              </label>
               <Select value={style} onValueChange={setStyle}>
                 <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
                   <SelectValue />
@@ -263,44 +280,28 @@ const AdvancedTextGenerator: React.FC<AdvancedTextGeneratorProps> = ({ language 
               </Select>
             </div>
 
-            {/* Difficulty and Word Count Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-white/70 mb-2">{currentLang.difficultyLabel}</label>
-                <Select value={difficulty} onValueChange={setDifficulty}>
-                  <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-indigo-950 border-indigo-500/30">
-                    {Object.entries(currentLang.difficulties).map(([key, value]) => (
-                      <SelectItem key={key} value={key} className="text-white hover:bg-indigo-800">
-                        {value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-white/70 mb-2">{currentLang.wordCountLabel}</label>
-                <Select value={wordCount} onValueChange={setWordCount}>
-                  <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-indigo-950 border-indigo-500/30">
-                    {['25', '50', '100', '200', '500', '1000'].map((count) => (
-                      <SelectItem key={count} value={count} className="text-white hover:bg-indigo-800">
-                        {count} {language === 'ar' ? 'كلمة' : 'words'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                {currentLang.difficultyLabel}
+              </label>
+              <Select value={difficulty} onValueChange={setDifficulty}>
+                <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                  {Object.entries(currentLang.difficulties).map(([key, value]) => (
+                    <SelectItem key={key} value={key} className="text-white hover:bg-indigo-800">
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Output Language */}
             <div>
-              <label className="block text-sm text-white/70 mb-2">{currentLang.languageLabel}</label>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                {currentLang.languageLabel}
+              </label>
               <Select value={outputLanguage} onValueChange={setOutputLanguage}>
                 <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
                   <SelectValue />
@@ -314,124 +315,125 @@ const AdvancedTextGenerator: React.FC<AdvancedTextGeneratorProps> = ({ language 
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            {/* Voice Selection */}
-            {voices.length > 0 && (
-              <div>
-                <label className="block text-sm text-white/70 mb-2">{currentLang.voiceLabel}</label>
-                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-                  <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-indigo-950 border-indigo-500/30">
-                    {voices.map((voice) => (
-                      <SelectItem key={voice.name} value={voice.name} className="text-white hover:bg-indigo-800">
-                        {voice.name} ({voice.lang})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Generate Button */}
+          <div className="text-center">
             <Button
               onClick={generateText}
               disabled={!topic.trim() || isGenerating}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   {currentLang.generating}
                 </>
               ) : (
                 <>
-                  <FileText className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-5 h-5 mr-2" />
                   {currentLang.generateButton}
                 </>
               )}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Output Section */}
-        <Card className="bg-white/5 backdrop-blur-sm border-purple-500/20">
-          <CardHeader>
-            <CardTitle className="text-purple-300 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              {currentLang.generatedText}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {generatedText ? (
-              <div className="space-y-6">
-                {/* English Text */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-white">{currentLang.generatedText}</h4>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => playAudio(generatedText)}
-                        size="sm"
-                        variant="outline"
-                        className="bg-white/10 border-purple-500/30 text-white hover:bg-white/20"
-                      >
-                        <Volume2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => copyToClipboard(generatedText)}
-                        size="sm"
-                        variant="outline"
-                        className="bg-white/10 border-purple-500/30 text-white hover:bg-white/20"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-purple-600/10 border border-purple-500/20 rounded-lg">
-                    <p className="text-white/90 leading-relaxed whitespace-pre-wrap">
-                      {generatedText}
-                    </p>
-                  </div>
+      {/* Generated Text Results */}
+      {generatedText && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* English Text */}
+          <Card className="bg-white/5 backdrop-blur-sm border-blue-500/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-blue-300 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {currentLang.generatedText}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => playAudio(generatedText)}
+                    size="sm"
+                    variant="outline"
+                    className="bg-white/10 border-blue-500/30 text-white hover:bg-white/20"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => copyToClipboard(generatedText)}
+                    size="sm"
+                    variant="outline"
+                    className="bg-white/10 border-blue-500/30 text-white hover:bg-white/20"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
                 </div>
-
-                {/* Arabic Translation */}
-                {arabicTranslation && (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-green-300 flex items-center gap-2">
-                        <Languages className="w-4 h-4" />
-                        {currentLang.translation}
-                      </h4>
-                      <Button
-                        onClick={() => copyToClipboard(arabicTranslation)}
-                        size="sm"
-                        variant="outline"
-                        className="bg-white/10 border-green-500/30 text-white hover:bg-white/20"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="p-4 bg-green-600/10 border border-green-500/20 rounded-lg">
-                      <p className="text-white/90 leading-relaxed whitespace-pre-wrap text-right" dir="rtl">
-                        {arabicTranslation}
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <Sparkles className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                <p className="text-white/60">
-                  {language === 'ar' ? 'أدخل موضوعاً لتوليد نص احترافي' : 'Enter a topic to generate professional text'}
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 bg-blue-600/10 border border-blue-500/20 rounded-lg">
+                <p className="text-white/90 leading-relaxed whitespace-pre-wrap">
+                  {generatedText}
                 </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              
+              {/* Voice Selection */}
+              {voices.length > 0 && (
+                <div className="mt-4 flex gap-4 items-center">
+                  <div className="flex-1">
+                    <label className="block text-sm text-white/70 mb-2">{currentLang.voiceLabel}</label>
+                    <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                      <SelectTrigger className="bg-white/10 border-indigo-500/30 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-indigo-950 border-indigo-500/30">
+                        {voices.map((voice) => (
+                          <SelectItem key={voice.name} value={voice.name} className="text-white hover:bg-indigo-800">
+                            {voice.name} ({voice.lang})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Arabic Translation */}
+          {arabicTranslation && (
+            <Card className="bg-white/5 backdrop-blur-sm border-green-500/20">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-green-300 flex items-center gap-2">
+                    <Languages className="w-5 h-5" />
+                    {currentLang.translation}
+                  </CardTitle>
+                  <Button
+                    onClick={() => copyToClipboard(arabicTranslation)}
+                    size="sm"
+                    variant="outline"
+                    className="bg-white/10 border-green-500/30 text-white hover:bg-white/20"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 bg-green-600/10 border border-green-500/20 rounded-lg">
+                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap text-right" dir="rtl">
+                    {arabicTranslation}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 };
