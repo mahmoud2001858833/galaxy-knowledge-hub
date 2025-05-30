@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import ImageTextExtractor from './ImageTextExtractor';
-import EnglishTextGenerator from './EnglishTextGenerator';
+import ImageTextExtractorAdvanced from './ImageTextExtractorAdvanced';
+import AdvancedTextGenerator from './AdvancedTextGenerator';
 
 interface SmartTranslatorProps {
   language: 'ar' | 'en';
@@ -43,15 +43,13 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
   const t = {
     ar: {
       title: "المترجم الذكي المتطور",
-      subtitle: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح مفصل",
+      subtitle: "ترجمة ذكية وتعليمية بين العربية والإنجليزية",
       inputLabel: "النص المراد ترجمته",
       inputPlaceholder: "أدخل النص هنا...",
       translateButton: "ترجمة ذكية",
       translating: "جاري الترجمة...",
       translationResult: "نتيجة الترجمة",
-      explanation: "شرح الترجمة",
       keyWords: "الكلمات المفتاحية",
-      suggestions: "اقتراحات للتحسين",
       contextLabel: "السياق",
       voiceLabel: "اختر صوت للقراءة",
       listenTranslation: "استمع للترجمة",
@@ -74,15 +72,13 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
     },
     en: {
       title: "Advanced Smart Translator",
-      subtitle: "Intelligent educational translation between Arabic and English with detailed explanations",
+      subtitle: "Intelligent educational translation between Arabic and English",
       inputLabel: "Text to translate",
       inputPlaceholder: "Enter text here...",
       translateButton: "Smart Translate",
       translating: "Translating...",
       translationResult: "Translation Result",
-      explanation: "Translation Explanation",
       keyWords: "Key Words",
-      suggestions: "Improvement Suggestions",
       contextLabel: "Context",
       voiceLabel: "Choose voice for reading",
       listenTranslation: "Listen to Translation",
@@ -206,18 +202,12 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
     });
   };
 
-  const handleImageTextExtracted = (text: string) => {
-    setActiveTab('translator');
-    setInputText(text);
-    setDirection('en-ar');
-  };
-
   const renderTabContent = () => {
     switch (activeTab) {
       case 'image-translate':
-        return <ImageTextExtractor onTextExtracted={handleImageTextExtracted} language={language} />;
+        return <ImageTextExtractorAdvanced language={language} />;
       case 'text-generator':
-        return <EnglishTextGenerator language={language} />;
+        return <AdvancedTextGenerator language={language} />;
       default:
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -353,17 +343,6 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
                       </div>
                     </div>
 
-                    {/* Explanation */}
-                    <div>
-                      <h4 className="font-semibold text-blue-300 mb-2 flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4" />
-                        {currentLang.explanation}
-                      </h4>
-                      <div className="p-3 bg-blue-600/10 border border-blue-500/20 rounded-lg">
-                        <p className="text-white/80 text-sm">{translationResult.explanation}</p>
-                      </div>
-                    </div>
-
                     {/* Key Words */}
                     {translationResult.keyWords && translationResult.keyWords.length > 0 && (
                       <div>
@@ -386,20 +365,6 @@ const SmartTranslator: React.FC<SmartTranslatorProps> = ({ language }) => {
                               {word.pronunciation && (
                                 <p className="text-green-300 text-xs mt-1">/{word.pronunciation}/</p>
                               )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Suggestions */}
-                    {translationResult.suggestions && translationResult.suggestions.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-yellow-300 mb-2">{currentLang.suggestions}</h4>
-                        <div className="space-y-2">
-                          {translationResult.suggestions.map((suggestion, index) => (
-                            <div key={index} className="p-2 bg-yellow-600/10 border border-yellow-500/20 rounded">
-                              <p className="text-white/80 text-sm">{suggestion}</p>
                             </div>
                           ))}
                         </div>
