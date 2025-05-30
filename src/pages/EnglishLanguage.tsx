@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EnglishAIAssistant from '@/components/english/EnglishAIAssistant';
+import EnhancedEnglishAIAssistant from '@/components/english/EnhancedEnglishAIAssistant';
 import SmartTranslator from '@/components/english/SmartTranslator';
-import SpeechAssistant from '@/components/english/SpeechAssistant';
+import EnhancedSpeechAssistant from '@/components/english/EnhancedSpeechAssistant';
 import { ArrowLeft, ArrowRight, Bot, Languages, Globe, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -29,11 +28,11 @@ const EnglishLanguage = () => {
       switchToEnglish: "English",
       switchToArabic: "العربية",
       aiAssistant: "المساعد الذكي الإنجليزي",
-      aiAssistantDescription: "مساعد ذكي متخصص في تعلم اللغة الإنجليزية وقواعدها",
+      aiAssistantDescription: "مساعد ذكي متخصص في تعلم اللغة الإنجليزية وقواعدها مع إجابات صوتية",
       smartTranslator: "المترجم الذكي",
-      smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل",
+      smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل متقدم",
       speechAssistant: "المساعد الذكي للنطق والتحدث",
-      speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية"
+      speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية متقدمة"
     },
     en: {
       title: "Advanced English Language Platform",
@@ -42,12 +41,12 @@ const EnglishLanguage = () => {
       backToMain: "Back to Main Menu",
       switchToEnglish: "English",
       switchToArabic: "العربية",
-      aiAssistant: "English AI Assistant",
-      aiAssistantDescription: "An intelligent assistant specialized in English language learning and grammar",
+      aiAssistant: "Enhanced English AI Assistant",
+      aiAssistantDescription: "An intelligent assistant specialized in English language learning with voice responses",
       smartTranslator: "Smart Translator",
-      smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis",
-      speechAssistant: "Speech & Pronunciation Coach",
-      speechAssistantDescription: "Improve your English pronunciation and speaking skills with interactive training"
+      smartTranslatorDescription: "Intelligent educational translation between Arabic and English with advanced analysis",
+      speechAssistant: "Enhanced Speech & Pronunciation Coach",
+      speechAssistantDescription: "Master English pronunciation and speaking skills with advanced interactive training"
     }
   };
 
@@ -88,11 +87,11 @@ const EnglishLanguage = () => {
   const renderActiveComponent = () => {
     switch (activeComponent) {
       case 'ai-assistant':
-        return <EnglishAIAssistant language={language} />;
+        return <EnhancedEnglishAIAssistant language={language} />;
       case 'translator':
         return <SmartTranslator language={language} />;
       case 'speech':
-        return <SpeechAssistant language={language} />;
+        return <EnhancedSpeechAssistant language={language} />;
       default:
         return null;
     }
