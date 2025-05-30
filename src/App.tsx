@@ -36,6 +36,7 @@ import EducationalVideos from './pages/EducationalVideos';
 import ScientificPlatforms from './pages/ScientificPlatforms';
 import LiteraryPlatforms from './pages/LiteraryPlatforms';
 import ArabicLanguage from './pages/ArabicLanguage';
+import EnglishLanguage from './pages/EnglishLanguage';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -130,6 +131,10 @@ const router = createBrowserRouter([
       {
         path: 'arabic-language',
         element: <AuthGuard><ArabicLanguage /></AuthGuard>,
+      },
+      {
+        path: 'english-language',
+        element: <AuthGuard><EnglishLanguage /></AuthGuard>,
       },
       {
         path: 'physics',

@@ -41,14 +41,12 @@ export const en = {
     calculations: "Calculations",
     visualizer: "Visualizer",
     educationalVideos: "Educational Videos",
-    // New subject-related translations
     subjectTitle: {
       physics: "Physics",
       chemistry: "Chemistry",
       biology: "Biology",
       mathematics: "Mathematics"
     },
-    // Difficulty levels
     difficulty: {
       easy: "Easy",
       medium: "Medium",
@@ -178,7 +176,7 @@ export const en = {
     arabic: "Arabic Language Platform",
     arabicDescription: "Discover the beauty of Arabic language and literature through interactive lessons and diverse activities",
     english: "English Language Platform",
-    englishDescription: "Develop your English language skills through advanced educational content and practical applications"
+    englishDescription: "Develop your English language skills through advanced educational content and intelligent tools"
   },
   // Educational platforms
   platforms: {
@@ -188,5 +186,47 @@ export const en = {
     biology: "Biology World",
     mathematics: "Mathematics Arena",
     explore: "Explore"
+  },
+  // English Platform
+  englishPlatform: {
+    title: "Advanced English Language Platform",
+    subtitle: "Learn and master English with our intelligent and interactive tools",
+    backToLiterary: "Back to Literary Platforms",
+    backToMain: "Back to Main Menu",
+    switchToEnglish: "English",
+    switchToArabic: "العربية",
+    aiAssistant: "English AI Assistant",
+    aiAssistantDescription: "An intelligent assistant specialized in English language learning and grammar",
+    smartTranslator: "Smart Translator",
+    smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis"
+  },
+  // Smart Translator
+  smartTranslator: {
+    title: "Smart Translator",
+    subtitle: "Intelligent educational translation between Arabic and English",
+    fromArabic: "From Arabic",
+    toEnglish: "To English",
+    fromEnglish: "From English", 
+    toArabic: "To Arabic",
+    enterText: "Enter text to translate...",
+    translate: "Translate",
+    translating: "Translating...",
+    translation: "Translation",
+    explanation: "Explanation & Analysis",
+    pronunciation: "Pronunciation",
+    keyWords: "Key Words",
+    context: "Context",
+    contextTypes: {
+      formal: "Formal",
+      academic: "Academic",
+      conversational: "Conversational",
+      literary: "Literary"
+    },
+    playAudio: "Play Pronunciation",
+    whyThisTranslation: "Why This Translation?",
+    grammarExplanation: "Grammar Explanation",
+    suggestions: "Improvement Suggestions",
+    saveWord: "Save Word",
+    savedWords: "Saved Words"
   }
 };

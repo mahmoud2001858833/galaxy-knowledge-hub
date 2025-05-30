@@ -1,3 +1,4 @@
+
 export const ar = {
   // النافبار
   nav: {
@@ -41,14 +42,12 @@ export const ar = {
     calculations: "الحسابات",
     visualizer: "المخططات",
     educationalVideos: "الفيديوهات التعليمية",
-    // ترجمات جديدة متعلقة بالمواد
     subjectTitle: {
       physics: "الفيزياء",
       chemistry: "الكيمياء",
       biology: "الأحياء",
       mathematics: "الرياضيات"
     },
-    // مستويات الصعوبة
     difficulty: {
       easy: "سهل",
       medium: "متوسط",
@@ -178,7 +177,7 @@ export const ar = {
     arabic: "منصة اللغة العربية",
     arabicDescription: "استكشف جمال اللغة العربية وأدبها من خلال دروس تفاعلية وأنشطة متنوعة",
     english: "منصة اللغة الإنجليزية",
-    englishDescription: "طور مهاراتك في اللغة الإنجليزية من خلال محتوى تعليمي متطور وتطبيقات عملية"
+    englishDescription: "طور مهاراتك في اللغة الإنجليزية من خلال محتوى تعليمي متطور وأدوات ذكية"
   },
   // منصات تعليمية
   platforms: {
@@ -188,5 +187,47 @@ export const ar = {
     biology: "عالم الأحياء",
     mathematics: "ساحة الرياضيات",
     explore: "استكشاف"
+  },
+  // منصة اللغة الإنجليزية الجديدة
+  englishPlatform: {
+    title: "منصة اللغة الإنجليزية المتطورة",
+    subtitle: "تعلم وأتقن اللغة الإنجليزية مع أدواتنا الذكية والتفاعلية",
+    backToLiterary: "العودة للمنصات الأدبية",
+    backToMain: "العودة للقائمة الرئيسية",
+    switchToEnglish: "English",
+    switchToArabic: "العربية",
+    aiAssistant: "المساعد الذكي الإنجليزي",
+    aiAssistantDescription: "مساعد ذكي متخصص في تعلم اللغة الإنجليزية وقواعدها",
+    smartTranslator: "المترجم الذكي",
+    smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل"
+  },
+  // المترجم الذكي
+  smartTranslator: {
+    title: "المترجم الذكي",
+    subtitle: "ترجمة تعليمية ذكية بين العربية والإنجليزية",
+    fromArabic: "من العربية",
+    toEnglish: "إلى الإنجليزية",
+    fromEnglish: "من الإنجليزية",
+    toArabic: "إلى العربية",
+    enterText: "أدخل النص للترجمة...",
+    translate: "ترجم",
+    translating: "جاري الترجمة...",
+    translation: "الترجمة",
+    explanation: "الشرح والتحليل",
+    pronunciation: "النطق",
+    keyWords: "الكلمات المفتاحية",
+    context: "السياق",
+    contextTypes: {
+      formal: "رسمي",
+      academic: "أكاديمي",
+      conversational: "محادثة",
+      literary: "أدبي"
+    },
+    playAudio: "استمع للنطق",
+    whyThisTranslation: "لماذا هذه الترجمة؟",
+    grammarExplanation: "الشرح النحوي",
+    suggestions: "اقتراحات للتحسين",
+    saveWord: "احفظ الكلمة",
+    savedWords: "الكلمات المحفوظة"
   }
 };

@@ -7,11 +7,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ArabicAIAssistant from '@/components/arabic/ArabicAIAssistant';
 import ArabicScholars from '@/components/arabic/ArabicScholars';
-import EnhancedSmartDictionary from '@/components/arabic/EnhancedSmartDictionary';
 import EnhancedGrammarAssistant from '@/components/arabic/EnhancedGrammarAssistant';
 import ArabicPoets from '@/components/arabic/ArabicPoets';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowLeft, ArrowRight, Bot, Users, BookOpen, PenTool, Feather } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bot, Users, PenTool, Feather } from 'lucide-react';
 
 const ArabicLanguage = () => {
   const navigate = useNavigate();
@@ -46,15 +45,6 @@ const ArabicLanguage = () => {
       component: "scholars"
     },
     {
-      title: "معجم العرب الشامل المحسن",
-      icon: <BookOpen className="w-8 h-8" />,
-      description: "معجم تفاعلي شامل مع البحث الفوري والذكي لآلاف الكلمات العربية",
-      color: "from-purple-600/20 to-pink-600/20",
-      borderColor: "border-purple-500/30",
-      hoverBorderColor: "hover:border-purple-500/50",
-      component: "dictionary"
-    },
-    {
       title: "المساعد الذكي للإعراب",
       icon: <PenTool className="w-8 h-8" />,
       description: "تحليل نحوي دقيق 100% للجمل العربية مع شرح مفصل للإعراب",
@@ -75,8 +65,6 @@ const ArabicLanguage = () => {
         return <ArabicPoets />;
       case 'scholars':
         return <ArabicScholars />;
-      case 'dictionary':
-        return <EnhancedSmartDictionary />;
       case 'grammar':
         return <EnhancedGrammarAssistant />;
       default:
