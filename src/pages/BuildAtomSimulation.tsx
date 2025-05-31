@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -40,11 +41,11 @@ interface ElementInfo {
   properties: string[];
 }
 
-const ORBITAL_RADII = [80, 120, 160, 200];
-const ORBITAL_CAPACITY = [2, 8, 18, 32];
+const ORBITAL_RADII = [120, 180, 240, 300, 360, 420, 480];
+const ORBITAL_CAPACITY = [2, 8, 18, 32, 32, 18, 8];
 const ATOM_CENTER = { x: 300, y: 300 };
-const NUCLEUS_RADIUS = 50;
-const PARTICLE_SIZE = 8;
+const NUCLEUS_RADIUS = 70;
+const PARTICLE_SIZE = 4;
 
 const BuildAtomSimulation = () => {
   const navigate = useNavigate();
@@ -96,7 +97,8 @@ const BuildAtomSimulation = () => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
-          const newAngle = (particle.angle || 0) + (0.02 / (particle.orbitalLevel + 1));
+          const speedFactor = 0.03 / (particle.orbitalLevel + 1);
+          const newAngle = (particle.angle || 0) + speedFactor;
           const radius = ORBITAL_RADII[particle.orbitalLevel];
           
           return {
@@ -122,6 +124,23 @@ const BuildAtomSimulation = () => {
     };
   }, [animateElectrons]);
 
+  // Get next electron orbital configuration
+  const getNextElectronOrbital = (electronCount: number) => {
+    let level = 0;
+    let electronsPlaced = 0;
+    
+    for (let i = 0; i < ORBITAL_CAPACITY.length; i++) {
+      if (electronsPlaced + ORBITAL_CAPACITY[i] >= electronCount) {
+        level = i;
+        break;
+      }
+      electronsPlaced += ORBITAL_CAPACITY[i];
+    }
+    
+    const electronsInLevel = electronCount - electronsPlaced;
+    return { level, electronsInLevel };
+  };
+
   // Add particle function
   const addParticle = (type: 'proton' | 'neutron' | 'electron') => {
     const newParticle: Particle = {
@@ -132,32 +151,25 @@ const BuildAtomSimulation = () => {
     };
 
     if (type === 'proton' || type === 'neutron') {
-      // Position in nucleus
+      // Improved nucleus positioning
       const existingNucleons = particles.filter(p => p.type === 'proton' || p.type === 'neutron').length;
-      const angle = (existingNucleons / (existingNucleons + 1)) * 2 * Math.PI;
-      const radius = Math.random() * (NUCLEUS_RADIUS - 10) + 5;
+      const layers = Math.ceil(Math.sqrt(existingNucleons + 1));
+      const angle = (existingNucleons * 2.4) % (2 * Math.PI);
+      const radius = Math.min(NUCLEUS_RADIUS - 15, (layers * 12));
+      
       newParticle.x = ATOM_CENTER.x + Math.cos(angle) * radius;
       newParticle.y = ATOM_CENTER.y + Math.sin(angle) * radius;
     } else if (type === 'electron') {
-      // Position in next available orbital
-      const electrons = particles.filter(p => p.type === 'electron');
-      let targetLevel = 0;
-      let electronsInLevel = 0;
-
-      for (let level = 0; level < ORBITAL_RADII.length; level++) {
-        electronsInLevel = electrons.filter(e => e.orbitalLevel === level).length;
-        if (electronsInLevel < ORBITAL_CAPACITY[level]) {
-          targetLevel = level;
-          break;
-        }
-      }
-
-      const angleStep = (2 * Math.PI) / Math.min(ORBITAL_CAPACITY[targetLevel], electronsInLevel + 1);
-      const angle = electronsInLevel * angleStep;
+      // Proper electron configuration
+      const electronCount = particles.filter(p => p.type === 'electron').length + 1;
+      const { level, electronsInLevel } = getNextElectronOrbital(electronCount);
       
-      newParticle.x = ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[targetLevel];
-      newParticle.y = ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[targetLevel];
-      newParticle.orbitalLevel = targetLevel;
+      const angleStep = (2 * Math.PI) / Math.min(ORBITAL_CAPACITY[level], electronsInLevel + 1);
+      const angle = (electronsInLevel) * angleStep;
+      
+      newParticle.x = ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[level];
+      newParticle.y = ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[level];
+      newParticle.orbitalLevel = level;
       newParticle.angle = angle;
     }
 
@@ -171,32 +183,37 @@ const BuildAtomSimulation = () => {
     const particleIndex = particles.findIndex(p => p.type === type);
     if (particleIndex === -1) return;
 
-    const newParticles = particles.filter((_, index) => index !== particleIndex);
+    let newParticles = particles.filter((_, index) => index !== particleIndex);
     
     // Reorganize electrons after removal
     if (type === 'electron') {
       const electronsOnly = newParticles.filter(p => p.type === 'electron');
-      let electronIndex = 0;
+      const otherParticles = newParticles.filter(p => p.type !== 'electron');
       
-      for (let level = 0; level < ORBITAL_RADII.length; level++) {
-        const electronsInThisLevel = Math.min(
-          electronsOnly.length - electronIndex,
-          ORBITAL_CAPACITY[level]
-        );
+      // Redistribute electrons properly
+      const redistributedElectrons = electronsOnly.map((electron, index) => {
+        const electronNumber = index + 1;
+        const { level } = getNextElectronOrbital(electronNumber);
         
-        for (let e = 0; e < electronsInThisLevel; e++) {
-          const angleStep = (2 * Math.PI) / electronsInThisLevel;
-          const angle = e * angleStep;
-          
-          if (electronsOnly[electronIndex]) {
-            electronsOnly[electronIndex].x = ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[level];
-            electronsOnly[electronIndex].y = ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[level];
-            electronsOnly[electronIndex].orbitalLevel = level;
-            electronsOnly[electronIndex].angle = angle;
-            electronIndex++;
-          }
+        let electronsInThisLevel = 0;
+        for (let i = 0; i < index; i++) {
+          const { level: prevLevel } = getNextElectronOrbital(i + 1);
+          if (prevLevel === level) electronsInThisLevel++;
         }
-      }
+        
+        const angleStep = (2 * Math.PI) / Math.min(ORBITAL_CAPACITY[level], electronsInThisLevel + 1);
+        const angle = electronsInThisLevel * angleStep;
+        
+        return {
+          ...electron,
+          x: ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[level],
+          y: ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[level],
+          orbitalLevel: level,
+          angle: angle
+        };
+      });
+      
+      newParticles = [...otherParticles, ...redistributedElectrons];
     }
     
     setParticles(newParticles);
@@ -495,7 +512,7 @@ const BuildAtomSimulation = () => {
                     style={{
                       width: `${NUCLEUS_RADIUS * 2}px`,
                       height: `${NUCLEUS_RADIUS * 2}px`,
-                      boxShadow: '0 0 30px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.3)'
+                      boxShadow: '0 0 40px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(255, 215, 0, 0.4)'
                     }}
                   >
                     <span className="text-yellow-300 text-sm font-bold">النواة</span>
@@ -505,19 +522,20 @@ const BuildAtomSimulation = () => {
                   {ORBITAL_RADII.map((radius, index) => (
                     <div
                       key={index}
-                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border border-blue-400/40 rounded-full animate-pulse"
+                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-2 border-blue-400/60 rounded-full"
                       style={{
                         width: `${radius * 2}px`,
                         height: `${radius * 2}px`,
-                        boxShadow: `0 0 ${8 + index * 3}px rgba(59, 130, 246, 0.3)`,
-                        background: `radial-gradient(circle, transparent 98%, rgba(59, 130, 246, 0.1) 100%)`
+                        boxShadow: `0 0 ${15 + index * 5}px rgba(59, 130, 246, 0.4), inset 0 0 ${10 + index * 3}px rgba(59, 130, 246, 0.2)`,
+                        background: `radial-gradient(circle, transparent 97%, rgba(59, 130, 246, 0.15) 100%)`,
+                        animation: 'pulse 3s infinite'
                       }}
                     >
                       <div 
-                        className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500/90 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg"
-                        style={{ fontSize: '10px' }}
+                        className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg border border-blue-300/50"
+                        style={{ fontSize: '11px' }}
                       >
-                        مستوى {index + 1}
+                        مستوى {index + 1} (max: {ORBITAL_CAPACITY[index]})
                       </div>
                     </div>
                   ))}
@@ -533,17 +551,19 @@ const BuildAtomSimulation = () => {
                         transform: 'translate(-50%, -50%)',
                         zIndex: 10,
                       }}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, type: "spring" }}
                     >
                       <div
-                        className="rounded-full border-2 border-white/80 flex items-center justify-center text-xs font-bold text-white shadow-xl"
+                        className="rounded-full border-2 border-white/90 flex items-center justify-center text-xs font-bold text-white shadow-2xl"
                         style={{ 
-                          width: `${PARTICLE_SIZE * 2}px`,
-                          height: `${PARTICLE_SIZE * 2}px`,
+                          width: `${PARTICLE_SIZE * 4}px`,
+                          height: `${PARTICLE_SIZE * 4}px`,
                           backgroundColor: getParticleColor(particle.type),
-                          boxShadow: `0 0 10px ${getParticleColor(particle.type)}, inset 0 0 5px rgba(255,255,255,0.4)`
+                          boxShadow: `0 0 15px ${getParticleColor(particle.type)}, inset 0 0 8px rgba(255,255,255,0.5)`,
+                          filter: particle.type === 'electron' ? 'drop-shadow(0 0 5px #3b82f6)' : 'none'
                         }}
                       >
                         {particle.type === 'proton' ? 'P+' : 
@@ -551,19 +571,6 @@ const BuildAtomSimulation = () => {
                       </div>
                     </motion.div>
                   ))}
-
-                  {/* Instructions */}
-                  {particles.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-gray-400">
-                        <div className="text-6xl mb-6">⚛️</div>
-                        <p className="text-2xl mb-4 font-bold">ابدأ ببناء ذرتك!</p>
-                        <p className="text-sm mb-2">استخدم أزرار الإضافة في اللوحة الجانبية</p>
-                        <p className="text-sm mb-2">ستتم إضافة الجسيمات تلقائياً في أماكنها الصحيحة</p>
-                        <p className="text-xs text-gray-500 mt-4">انقر على رمز العنصر لعرض معلومات مفصلة</p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
