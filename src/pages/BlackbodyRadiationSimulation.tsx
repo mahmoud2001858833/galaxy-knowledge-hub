@@ -14,11 +14,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Refe
 
 const BlackbodyRadiationSimulation = () => {
   const navigate = useNavigate();
-  const [temperatureCelsius, setTemperatureCelsius] = useState(2500); // Start with 2500°C
+  const [temperatureCelsius, setTemperatureCelsius] = useState(2500);
   const [showVisibleSpectrum, setShowVisibleSpectrum] = useState(true);
   const [showAssistant, setShowAssistant] = useState(false);
   const [assistantPosition, setAssistantPosition] = useState({ x: 20, y: 100 });
-  const [isDraggingAssistant, setIsDraggingAssistant] = useState(false);
   const [assistantQuery, setAssistantQuery] = useState('');
   const [assistantResponse, setAssistantResponse] = useState('');
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
@@ -31,9 +30,9 @@ const BlackbodyRadiationSimulation = () => {
   const c = 3e8; // Speed of light
   const k = 1.381e-23; // Boltzmann constant
 
-  // Planck's law function with smoother calculation
+  // Planck's law function
   const planckFunction = (wavelength: number, temperature: number) => {
-    const lambda = wavelength * 1e-9; // Convert nm to meters
+    const lambda = wavelength * 1e-9;
     const numerator = 2 * h * c * c;
     const denominator = Math.pow(lambda, 5) * (Math.exp((h * c) / (lambda * k * temperature)) - 1);
     return numerator / denominator;
@@ -41,31 +40,10 @@ const BlackbodyRadiationSimulation = () => {
 
   // Wien's displacement law
   const wienDisplacement = useMemo(() => {
-    return (2.898e-3 / temperatureKelvin) * 1e9; // in nanometers
+    return (2.898e-3 / temperatureKelvin) * 1e9;
   }, [temperatureKelvin]);
 
-  // Generate smooth data for the plot
-  const plotData = useMemo(() => {
-    const data = [];
-    const startWavelength = 100;
-    const endWavelength = 3000;
-    const steps = 200; // Increased steps for smoother curve
-    const stepSize = (endWavelength - startWavelength) / steps;
-
-    for (let i = 0; i <= steps; i++) {
-      const wavelength = startWavelength + i * stepSize;
-      const intensity = planckFunction(wavelength, temperatureKelvin);
-      
-      data.push({
-        wavelength,
-        intensity: intensity / 1e13, // Normalize for display
-        color: getWavelengthColor(wavelength)
-      });
-    }
-    return data;
-  }, [temperatureKelvin]);
-
-  // Get color based on wavelength
+  // Get wavelength color function
   const getWavelengthColor = (wavelength: number) => {
     if (wavelength < 380 || wavelength > 750) return 'rgba(128, 128, 128, 0.5)';
     
@@ -100,7 +78,28 @@ const BlackbodyRadiationSimulation = () => {
     return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, 0.8)`;
   };
 
-  // Smooth temperature update with debouncing
+  // Generate plot data
+  const plotData = useMemo(() => {
+    const data = [];
+    const startWavelength = 100;
+    const endWavelength = 3000;
+    const steps = 300;
+    const stepSize = (endWavelength - startWavelength) / steps;
+
+    for (let i = 0; i <= steps; i++) {
+      const wavelength = startWavelength + i * stepSize;
+      const intensity = planckFunction(wavelength, temperatureKelvin);
+      
+      data.push({
+        wavelength,
+        intensity: intensity / 1e13,
+        color: getWavelengthColor(wavelength)
+      });
+    }
+    return data;
+  }, [temperatureKelvin]);
+
+  // Smooth temperature update
   const [tempDisplayValue, setTempDisplayValue] = useState(temperatureCelsius);
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -113,10 +112,10 @@ const BlackbodyRadiationSimulation = () => {
     
     updateTimeoutRef.current = setTimeout(() => {
       setTemperatureCelsius(value[0]);
-    }, 50); // Faster update for smoother experience
+    }, 30);
   };
 
-  // Gemini AI Assistant functions
+  // Gemini AI Assistant
   const queryGeminiAPI = async (question: string) => {
     setIsLoadingResponse(true);
     try {
@@ -169,7 +168,6 @@ const BlackbodyRadiationSimulation = () => {
     });
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (updateTimeoutRef.current) {
@@ -208,7 +206,7 @@ const BlackbodyRadiationSimulation = () => {
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Temperature Control Panel - Now side by side with graph */}
+          {/* Temperature Control Panel */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <CardHeader>
@@ -220,7 +218,7 @@ const BlackbodyRadiationSimulation = () => {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-white font-medium">درجة الحرارة (سيلسيوس)</Label>
+                    <Label className="text-white font-medium">درجة الحرارة (°C)</Label>
                     <Badge variant="outline" className="text-orange-300 border-orange-300">
                       {tempDisplayValue}°C
                     </Badge>
@@ -318,7 +316,6 @@ const BlackbodyRadiationSimulation = () => {
               </CardHeader>
               <CardContent className="h-full p-4">
                 <div className="relative h-full">
-                  {/* Enhanced Chart with smooth curves */}
                   <div className="h-full bg-gradient-to-br from-black/80 to-gray-900/80 rounded-lg p-4 border border-gray-600/30">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={plotData} margin={{ top: 20, right: 30, left: 60, bottom: 60 }}>
@@ -335,27 +332,6 @@ const BlackbodyRadiationSimulation = () => {
                           tick={{ fill: 'white', fontSize: 12 }}
                         />
                         
-                        {/* Visible spectrum background */}
-                        {showVisibleSpectrum && (
-                          <>
-                            {/* Violet */}
-                            <ReferenceLine x={380} stroke="rgba(148, 0, 211, 0.6)" strokeWidth={8} />
-                            <ReferenceLine x={420} stroke="rgba(75, 0, 130, 0.6)" strokeWidth={8} />
-                            {/* Blue */}
-                            <ReferenceLine x={450} stroke="rgba(0, 0, 255, 0.6)" strokeWidth={8} />
-                            <ReferenceLine x={490} stroke="rgba(0, 100, 255, 0.6)" strokeWidth={8} />
-                            {/* Green */}
-                            <ReferenceLine x={520} stroke="rgba(0, 255, 0, 0.6)" strokeWidth={8} />
-                            <ReferenceLine x={560} stroke="rgba(127, 255, 0, 0.6)" strokeWidth={8} />
-                            {/* Yellow */}
-                            <ReferenceLine x={580} stroke="rgba(255, 255, 0, 0.6)" strokeWidth={8} />
-                            <ReferenceLine x={600} stroke="rgba(255, 165, 0, 0.6)" strokeWidth={8} />
-                            {/* Red */}
-                            <ReferenceLine x={650} stroke="rgba(255, 0, 0, 0.6)" strokeWidth={8} />
-                            <ReferenceLine x={750} stroke="rgba(139, 0, 0, 0.6)" strokeWidth={8} />
-                          </>
-                        )}
-                        
                         {/* Peak wavelength indicator */}
                         <ReferenceLine 
                           x={wienDisplacement} 
@@ -365,39 +341,37 @@ const BlackbodyRadiationSimulation = () => {
                           label={{ value: "ذروة الإشعاع", position: "top", style: { fill: 'yellow', fontWeight: 'bold' } }}
                         />
                         
-                        {/* Main curve with enhanced styling */}
+                        {/* Enhanced main curve */}
                         <Line 
                           type="monotone" 
                           dataKey="intensity" 
-                          stroke="url(#gradient)" 
-                          strokeWidth={3}
+                          stroke="#00ff88"
+                          strokeWidth={4}
                           dot={false}
                           connectNulls={false}
+                          filter="url(#glow)"
                         />
                         
-                        {/* Gradient definition for the line */}
                         <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#ff0000" />
-                            <stop offset="16.67%" stopColor="#ff8800" />
-                            <stop offset="33.33%" stopColor="#ffff00" />
-                            <stop offset="50%" stopColor="#00ff00" />
-                            <stop offset="66.67%" stopColor="#0088ff" />
-                            <stop offset="83.33%" stopColor="#0000ff" />
-                            <stop offset="100%" stopColor="#8800ff" />
-                          </linearGradient>
+                          <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge> 
+                              <feMergeNode in="coloredBlur"/>
+                              <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                          </filter>
                         </defs>
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Visible spectrum bar overlay */}
+                  {/* Visible spectrum bar */}
                   {showVisibleSpectrum && (
-                    <div className="absolute bottom-16 left-20 right-8 h-6 rounded-md overflow-hidden border border-white/30">
+                    <div className="absolute bottom-16 left-20 right-8 h-8 rounded-md overflow-hidden border-2 border-white/40">
                       <div className="h-full bg-gradient-to-r from-purple-600 via-blue-500 via-green-500 via-yellow-500 via-orange-500 to-red-600"></div>
                       <div className="absolute top-0 left-0 w-full h-full flex justify-between items-center px-2">
-                        <span className="text-xs text-white font-bold bg-black/50 px-1 rounded">380nm</span>
-                        <span className="text-xs text-white font-bold bg-black/50 px-1 rounded">750nm</span>
+                        <span className="text-xs text-white font-bold bg-black/70 px-2 py-1 rounded">380nm</span>
+                        <span className="text-xs text-white font-bold bg-black/70 px-2 py-1 rounded">750nm</span>
                       </div>
                     </div>
                   )}

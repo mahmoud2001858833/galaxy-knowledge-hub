@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, Info, Zap, Search, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Info, Zap, Search, Plus, Trash2, MessageCircle, Move, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ interface Particle {
   inContainer?: boolean;
   inNucleus?: boolean;
   orbitalLevel?: number;
+  angle?: number;
 }
 
 interface AtomData {
@@ -31,16 +32,21 @@ interface AtomData {
   isStable: boolean;
 }
 
-const ORBITAL_RADII = [80, 120, 160, 200];
+const ORBITAL_RADII = [60, 100, 140, 180];
 const ORBITAL_CAPACITY = [2, 8, 18, 32];
 const ATOM_CENTER = { x: 400, y: 300 };
-const NUCLEUS_RADIUS = 40;
-const ATTRACTION_DISTANCE = 60;
+const NUCLEUS_RADIUS = 30;
+const ATTRACTION_DISTANCE = 80;
 
 const BuildAtomSimulation = () => {
   const navigate = useNavigate();
   const atomAreaRef = useRef<HTMLDivElement>(null);
   const [particles, setParticles] = useState<Particle[]>([]);
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [assistantPosition, setAssistantPosition] = useState({ x: 20, y: 100 });
+  const [assistantQuery, setAssistantQuery] = useState('');
+  const [assistantResponse, setAssistantResponse] = useState('');
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [atomData, setAtomData] = useState<AtomData>({
     protons: 0,
     neutrons: 0,
@@ -53,10 +59,13 @@ const BuildAtomSimulation = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [particleCounts, setParticleCounts] = useState({
-    proton: 5,
-    neutron: 5,
-    electron: 5
+    proton: 10,
+    neutron: 10,
+    electron: 10
   });
+
+  // Animation frame for electron movement
+  const animationFrameRef = useRef<number>();
 
   // Filter elements based on search
   const filteredElements = allElements.filter(element => 
@@ -83,7 +92,8 @@ const BuildAtomSimulation = () => {
         return {
           x: ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[level],
           y: ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[level],
-          level
+          level,
+          angle
         };
       }
     }
@@ -97,7 +107,8 @@ const BuildAtomSimulation = () => {
     return {
       x: ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[lastLevel],
       y: ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[lastLevel],
-      level: lastLevel
+      level: lastLevel,
+      angle
     };
   };
 
@@ -124,8 +135,40 @@ const BuildAtomSimulation = () => {
     };
   }, []);
 
-  // Add particle to container
-  const addParticleToContainer = (type: 'proton' | 'neutron' | 'electron') => {
+  // Animate electrons in orbit
+  const animateElectrons = useCallback(() => {
+    setParticles(prevParticles => {
+      return prevParticles.map(particle => {
+        if (particle.type === 'electron' && particle.orbitalLevel !== undefined && !particle.isDragging) {
+          const newAngle = (particle.angle || 0) + (0.02 / (particle.orbitalLevel + 1));
+          const radius = ORBITAL_RADII[particle.orbitalLevel];
+          
+          return {
+            ...particle,
+            x: ATOM_CENTER.x + Math.cos(newAngle) * radius,
+            y: ATOM_CENTER.y + Math.sin(newAngle) * radius,
+            angle: newAngle
+          };
+        }
+        return particle;
+      });
+    });
+
+    animationFrameRef.current = requestAnimationFrame(animateElectrons);
+  }, []);
+
+  // Start/stop electron animation
+  useEffect(() => {
+    animationFrameRef.current = requestAnimationFrame(animateElectrons);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [animateElectrons]);
+
+  // Add particle from container
+  const addParticleFromContainer = (type: 'proton' | 'neutron' | 'electron') => {
     if (particleCounts[type] <= 0) return;
     
     const containerArea = getContainerArea(type);
@@ -137,8 +180,7 @@ const BuildAtomSimulation = () => {
       inContainer: true
     };
 
-    const newParticles = [...particles, newParticle];
-    setParticles(newParticles);
+    setParticles(prev => [...prev, newParticle]);
     setParticleCounts(prev => ({ ...prev, [type]: prev[type] - 1 }));
   };
 
@@ -146,11 +188,11 @@ const BuildAtomSimulation = () => {
   const getContainerArea = (type: 'proton' | 'neutron' | 'electron') => {
     switch (type) {
       case 'proton':
-        return { x: 20, y: 20, width: 180, height: 120 };
+        return { x: 50, y: 50, width: 200, height: 100 };
       case 'neutron':
-        return { x: 220, y: 20, width: 180, height: 120 };
+        return { x: 270, y: 50, width: 200, height: 100 };
       case 'electron':
-        return { x: 420, y: 20, width: 180, height: 120 };
+        return { x: 490, y: 50, width: 200, height: 100 };
       default:
         return { x: 0, y: 0, width: 0, height: 0 };
     }
@@ -159,7 +201,7 @@ const BuildAtomSimulation = () => {
   // Clear all particles
   const clearAllParticles = () => {
     setParticles([]);
-    setParticleCounts({ proton: 5, neutron: 5, electron: 5 });
+    setParticleCounts({ proton: 10, neutron: 10, electron: 10 });
     setAtomData({
       protons: 0,
       neutrons: 0,
@@ -193,6 +235,7 @@ const BuildAtomSimulation = () => {
     let inContainer = false;
     let inNucleus = false;
     let orbitalLevel = undefined;
+    let angle = undefined;
 
     // Check if particle is in container area
     const containerArea = getContainerArea(particle.type);
@@ -206,10 +249,10 @@ const BuildAtomSimulation = () => {
       if (particle.type === 'proton' || particle.type === 'neutron') {
         // Attract to nucleus
         if (distanceToCenter <= NUCLEUS_RADIUS + ATTRACTION_DISTANCE) {
-          const angle = Math.atan2(y - ATOM_CENTER.y, x - ATOM_CENTER.x);
-          const targetRadius = Math.random() * NUCLEUS_RADIUS;
-          newX = ATOM_CENTER.x + Math.cos(angle) * targetRadius;
-          newY = ATOM_CENTER.y + Math.sin(angle) * targetRadius;
+          const angleToCenter = Math.atan2(y - ATOM_CENTER.y, x - ATOM_CENTER.x);
+          const targetRadius = Math.random() * NUCLEUS_RADIUS * 0.8;
+          newX = ATOM_CENTER.x + Math.cos(angleToCenter) * targetRadius;
+          newY = ATOM_CENTER.y + Math.sin(angleToCenter) * targetRadius;
           inNucleus = true;
         }
       } else if (particle.type === 'electron') {
@@ -219,6 +262,7 @@ const BuildAtomSimulation = () => {
           newX = orbitalPosition.x;
           newY = orbitalPosition.y;
           orbitalLevel = orbitalPosition.level;
+          angle = orbitalPosition.angle;
         }
       }
     }
@@ -230,7 +274,9 @@ const BuildAtomSimulation = () => {
         y: newY, 
         inContainer,
         inNucleus,
-        orbitalLevel
+        orbitalLevel,
+        angle,
+        isDragging: false
       } : p
     );
     
@@ -246,7 +292,7 @@ const BuildAtomSimulation = () => {
     // Add protons to nucleus
     for (let i = 0; i < elementData.atomic_number; i++) {
       const angle = (i / elementData.atomic_number) * 2 * Math.PI;
-      const radius = Math.random() * 25 + 10;
+      const radius = Math.random() * 20 + 5;
       newParticles.push({
         id: `proton-${i}-${Date.now()}`,
         type: 'proton',
@@ -260,7 +306,7 @@ const BuildAtomSimulation = () => {
     // Add neutrons to nucleus
     for (let i = 0; i < elementData.commonNeutrons; i++) {
       const angle = ((i + elementData.atomic_number) / (elementData.atomic_number + elementData.commonNeutrons)) * 2 * Math.PI;
-      const radius = Math.random() * 25 + 10;
+      const radius = Math.random() * 20 + 5;
       newParticles.push({
         id: `neutron-${i}-${Date.now()}`,
         type: 'neutron',
@@ -286,7 +332,8 @@ const BuildAtomSimulation = () => {
           x: ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[shell],
           y: ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[shell],
           inContainer: false,
-          orbitalLevel: shell
+          orbitalLevel: shell,
+          angle: angle
         });
       }
       remainingElectrons -= electronsInThisShell;
@@ -316,6 +363,64 @@ const BuildAtomSimulation = () => {
     }
   };
 
+  // Gemini AI Assistant
+  const queryGeminiAPI = async (question: string) => {
+    setIsLoadingResponse(true);
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDR0bf_lLE8A83mionE3IT5gAH3Z8-O-MA`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `أنت مساعد ذكي متخصص في الكيمياء والفيزياء الذرية. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
+                    
+                    السياق الحالي:
+                    - العنصر: ${atomData.element} (${atomData.symbol})
+                    - البروتونات: ${atomData.protons}
+                    - النيوترونات: ${atomData.neutrons}
+                    - الإلكترونات: ${atomData.electrons}
+                    - العدد الكتلي: ${atomData.massNumber}
+                    - الشحنة: ${atomData.charge}
+                    - حالة الاستقرار: ${atomData.isStable ? 'مستقر' : 'غير مستقر'}
+                    `
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        setAssistantResponse(data.candidates[0].content.parts[0].text);
+      } else {
+        setAssistantResponse('عذراً، لم أتمكن من الحصول على إجابة. يرجى المحاولة مرة أخرى.');
+      }
+    } catch (error) {
+      console.error('Error querying Gemini API:', error);
+      setAssistantResponse('حدث خطأ في الاتصال بالمساعد الذكي. يرجى المحاولة لاحقاً.');
+    } finally {
+      setIsLoadingResponse(false);
+    }
+  };
+
+  // Handle assistant movement
+  const handleAssistantDrag = (event: any, info: any) => {
+    setAssistantPosition({
+      x: assistantPosition.x + info.delta.x,
+      y: assistantPosition.y + info.delta.y
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
       {/* Header */}
@@ -335,13 +440,16 @@ const BuildAtomSimulation = () => {
             </h1>
             
             <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowAssistant(!showAssistant)}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                المساعد الذكي
+              </Button>
               <Button variant="outline" size="sm" onClick={clearAllParticles} className="bg-red-600 hover:bg-red-700">
                 <Trash2 className="w-4 h-4 mr-1" />
                 حذف الكل
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setParticles([])}>
-                <RotateCcw className="w-4 h-4 mr-1" />
-                إعادة تعيين
               </Button>
             </div>
           </div>
@@ -352,74 +460,6 @@ const BuildAtomSimulation = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Control Panel */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Particle Containers */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-blue-300 flex items-center">
-                  <Zap className="w-5 h-5 mr-2" />
-                  أوعية الجسيمات
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Proton Container */}
-                <div className="bg-red-900/40 p-4 rounded-xl border-2 border-red-500/50">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-red-300 font-bold text-lg">البروتونات</span>
-                    <Badge className="bg-red-600 text-white">{particleCounts.proton}</Badge>
-                  </div>
-                  <Button
-                    onClick={() => addParticleToContainer('proton')}
-                    disabled={particleCounts.proton <= 0}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    إضافة بروتون (+)
-                  </Button>
-                  <div className="text-xs text-gray-300 mt-2">
-                    شحنة موجبة (+1) | في النواة
-                  </div>
-                </div>
-
-                {/* Neutron Container */}
-                <div className="bg-gray-900/40 p-4 rounded-xl border-2 border-gray-500/50">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-gray-300 font-bold text-lg">النيوترونات</span>
-                    <Badge className="bg-gray-600 text-white">{particleCounts.neutron}</Badge>
-                  </div>
-                  <Button
-                    onClick={() => addParticleToContainer('neutron')}
-                    disabled={particleCounts.neutron <= 0}
-                    className="w-full bg-gray-600 hover:bg-gray-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    إضافة نيوترون (0)
-                  </Button>
-                  <div className="text-xs text-gray-300 mt-2">
-                    متعادلة (0) | في النواة
-                  </div>
-                </div>
-
-                {/* Electron Container */}
-                <div className="bg-blue-900/40 p-4 rounded-xl border-2 border-blue-500/50">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-blue-300 font-bold text-lg">الإلكترونات</span>
-                    <Badge className="bg-blue-600 text-white">{particleCounts.electron}</Badge>
-                  </div>
-                  <Button
-                    onClick={() => addParticleToContainer('electron')}
-                    disabled={particleCounts.electron <= 0}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    إضافة إلكترون (-)
-                  </Button>
-                  <div className="text-xs text-gray-300 mt-2">
-                    شحنة سالبة (-1) | في المدارات
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Atom Information */}
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <CardHeader>
@@ -476,7 +516,7 @@ const BuildAtomSimulation = () => {
             {/* Elements Search and Quick Build */}
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <CardHeader>
-                <CardTitle className="text-purple-300">بناء العناصر (118 عنصر)</CardTitle>
+                <CardTitle className="text-purple-300">بناء العناصر السريع</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
@@ -517,69 +557,91 @@ const BuildAtomSimulation = () => {
                   ref={atomAreaRef}
                   className="relative w-full h-full bg-gradient-to-br from-gray-900/50 to-black/50 rounded-lg border-2 border-dashed border-gray-500/50 overflow-hidden"
                   style={{ 
-                    backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
-                    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)'
+                    backgroundImage: 'radial-gradient(circle at 50% 45%, rgba(59, 130, 246, 0.1) 0%, transparent 70%)'
                   }}
                 >
                   {/* Particle Containers at Top */}
                   <div className="absolute top-4 left-4 right-4 grid grid-cols-3 gap-4">
                     {/* Proton Container */}
-                    <div className="bg-red-900/30 border-2 border-red-500/60 rounded-xl p-3 h-32 backdrop-blur-sm">
-                      <div className="text-red-300 text-sm font-bold mb-2 text-center">أوعية البروتونات</div>
-                      <div className="h-full flex items-center justify-center">
-                        <div className="text-red-400 text-xs">اسحب البروتونات من هنا</div>
+                    <div className="bg-red-900/40 border-2 border-red-500/60 rounded-xl p-3 h-28 backdrop-blur-sm">
+                      <div className="text-red-300 text-sm font-bold mb-2 text-center flex items-center justify-between">
+                        <span>بروتونات (P+)</span>
+                        <Badge className="bg-red-600 text-white text-xs">{particleCounts.proton}</Badge>
                       </div>
+                      <Button
+                        onClick={() => addParticleFromContainer('proton')}
+                        disabled={particleCounts.proton <= 0}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white text-xs h-8"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        إضافة
+                      </Button>
                     </div>
                     
                     {/* Neutron Container */}
-                    <div className="bg-gray-900/30 border-2 border-gray-500/60 rounded-xl p-3 h-32 backdrop-blur-sm">
-                      <div className="text-gray-300 text-sm font-bold mb-2 text-center">أوعية النيوترونات</div>
-                      <div className="h-full flex items-center justify-center">
-                        <div className="text-gray-400 text-xs">اسحب النيوترونات من هنا</div>
+                    <div className="bg-gray-900/40 border-2 border-gray-500/60 rounded-xl p-3 h-28 backdrop-blur-sm">
+                      <div className="text-gray-300 text-sm font-bold mb-2 text-center flex items-center justify-between">
+                        <span>نيوترونات (n°)</span>
+                        <Badge className="bg-gray-600 text-white text-xs">{particleCounts.neutron}</Badge>
                       </div>
+                      <Button
+                        onClick={() => addParticleFromContainer('neutron')}
+                        disabled={particleCounts.neutron <= 0}
+                        className="w-full bg-gray-600 hover:bg-gray-700 text-white text-xs h-8"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        إضافة
+                      </Button>
                     </div>
                     
                     {/* Electron Container */}
-                    <div className="bg-blue-900/30 border-2 border-blue-500/60 rounded-xl p-3 h-32 backdrop-blur-sm">
-                      <div className="text-blue-300 text-sm font-bold mb-2 text-center">أوعية الإلكترونات</div>
-                      <div className="h-full flex items-center justify-center">
-                        <div className="text-blue-400 text-xs">اسحب الإلكترونات من هنا</div>
+                    <div className="bg-blue-900/40 border-2 border-blue-500/60 rounded-xl p-3 h-28 backdrop-blur-sm">
+                      <div className="text-blue-300 text-sm font-bold mb-2 text-center flex items-center justify-between">
+                        <span>إلكترونات (e-)</span>
+                        <Badge className="bg-blue-600 text-white text-xs">{particleCounts.electron}</Badge>
                       </div>
+                      <Button
+                        onClick={() => addParticleFromContainer('electron')}
+                        disabled={particleCounts.electron <= 0}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-8"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        إضافة
+                      </Button>
                     </div>
                   </div>
 
-                  {/* Central Nucleus with glow effect */}
+                  {/* Central Nucleus */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <div 
-                      className="rounded-full border-2 border-yellow-400/60 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center backdrop-blur-sm shadow-lg"
+                      className="rounded-full border-2 border-yellow-400/80 bg-gradient-to-br from-yellow-500/30 to-orange-500/30 flex items-center justify-center backdrop-blur-sm shadow-2xl"
                       style={{
                         width: `${NUCLEUS_RADIUS * 2}px`,
                         height: `${NUCLEUS_RADIUS * 2}px`,
-                        boxShadow: '0 0 20px rgba(255, 215, 0, 0.4), inset 0 0 10px rgba(255, 215, 0, 0.2)'
+                        boxShadow: '0 0 30px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.3)'
                       }}
                     >
-                      <span className="text-yellow-300 text-sm font-bold">النواة</span>
+                      <span className="text-yellow-300 text-xs font-bold">النواة</span>
                     </div>
                   </div>
 
-                  {/* Electron Orbitals with enhanced styling */}
+                  {/* Electron Orbitals */}
                   {ORBITAL_RADII.map((radius, index) => (
                     <div
                       key={index}
-                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border border-blue-400/40 rounded-full"
+                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border border-blue-400/50 rounded-full animate-pulse"
                       style={{
                         width: `${radius * 2}px`,
                         height: `${radius * 2}px`,
-                        boxShadow: `0 0 ${5 + index * 2}px rgba(59, 130, 246, 0.3)`,
-                        background: `radial-gradient(circle, transparent 98%, rgba(59, 130, 246, 0.1) 100%)`
+                        boxShadow: `0 0 ${8 + index * 3}px rgba(59, 130, 246, 0.4)`,
+                        background: `radial-gradient(circle, transparent 98%, rgba(59, 130, 246, 0.15) 100%)`
                       }}
                     >
-                      {/* Orbital level indicator */}
                       <div 
-                        className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-bold"
+                        className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500/90 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg"
                         style={{ fontSize: '10px' }}
                       >
-                        {index + 1}
+                        مستوى {index + 1}
                       </div>
                     </div>
                   ))}
@@ -597,6 +659,11 @@ const BuildAtomSimulation = () => {
                       }}
                       drag
                       dragMomentum={false}
+                      onDragStart={() => {
+                        setParticles(prev => prev.map(p => 
+                          p.id === particle.id ? { ...p, isDragging: true } : p
+                        ));
+                      }}
                       onDrag={(_, info) => {
                         updateParticlePosition(
                           particle.id,
@@ -604,30 +671,31 @@ const BuildAtomSimulation = () => {
                           particle.y + info.delta.y
                         );
                       }}
+                      onDragEnd={() => {
+                        setParticles(prev => prev.map(p => 
+                          p.id === particle.id ? { ...p, isDragging: false } : p
+                        ));
+                      }}
                       whileHover={{ scale: 1.2 }}
                       whileDrag={{ scale: 1.3 }}
                       animate={{
                         scale: particle.inNucleus || particle.orbitalLevel !== undefined ? [1, 1.1, 1] : 1,
-                        boxShadow: particle.inNucleus || particle.orbitalLevel !== undefined 
-                          ? `0 0 15px ${getParticleColor(particle.type)}` 
-                          : `0 0 5px ${getParticleColor(particle.type)}`
                       }}
                       transition={{ duration: 0.3 }}
                     >
                       <div
-                        className="w-10 h-10 rounded-full border-2 border-white/70 flex items-center justify-center text-sm font-bold text-white shadow-xl cursor-pointer group"
+                        className="w-8 h-8 rounded-full border-2 border-white/80 flex items-center justify-center text-xs font-bold text-white shadow-xl cursor-pointer group"
                         style={{ 
                           backgroundColor: getParticleColor(particle.type),
-                          boxShadow: `0 0 10px ${getParticleColor(particle.type)}, inset 0 0 5px rgba(255,255,255,0.3)`
+                          boxShadow: `0 0 15px ${getParticleColor(particle.type)}, inset 0 0 8px rgba(255,255,255,0.4)`
                         }}
                         onClick={() => removeParticle(particle.id)}
                         title={`${getParticleName(particle.type)} - انقر للحذف`}
                       >
                         {particle.type === 'proton' ? 'P+' : 
-                         particle.type === 'neutron' ? 'N' : 'e-'}
+                         particle.type === 'neutron' ? 'n°' : 'e-'}
                         
-                        {/* Enhanced Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/20">
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/20">
                           <div className="font-bold">{getParticleName(particle.type)}</div>
                           <div className="text-gray-300">انقر للحذف</div>
                         </div>
@@ -637,58 +705,99 @@ const BuildAtomSimulation = () => {
 
                   {/* Instructions */}
                   {particles.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-gray-400 mt-20">
-                        <div className="text-4xl mb-6">⚛️</div>
-                        <p className="text-xl mb-4 font-bold">ابدأ ببناء ذرتك!</p>
+                    <div className="absolute inset-0 flex items-center justify-center mt-20">
+                      <div className="text-center text-gray-400">
+                        <div className="text-6xl mb-6">⚛️</div>
+                        <p className="text-2xl mb-4 font-bold">ابدأ ببناء ذرتك!</p>
                         <p className="text-sm mb-2">أضف الجسيمات من الأوعية أعلاه</p>
                         <p className="text-sm mb-2">أو ابحث عن عنصر للبناء السريع</p>
                         <p className="text-xs text-gray-500 mt-4">سيتم جذب الجسيمات تلقائياً لمواضعها الصحيحة</p>
+                        <p className="text-xs text-gray-500">الإلكترونات ستتحرك في مداراتها بشكل مستمر</p>
                       </div>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Educational Information */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 mt-4">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-blue-300 mb-4">فيزياء بناء الذرة المتطورة</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                  <div className="bg-gradient-to-br from-red-900/30 to-pink-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-red-300 mb-2">البروتونات</h4>
-                    <ul className="text-gray-300 space-y-1">
-                      <li>• تحمل شحنة موجبة (+1)</li>
-                      <li>• توجد في النواة</li>
-                      <li>• تحدد نوع العنصر</li>
-                      <li>• جذب تلقائي للنواة</li>
-                    </ul>
-                  </div>
-                  <div className="bg-gradient-to-br from-gray-900/30 to-slate-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-gray-300 mb-2">النيوترونات</h4>
-                    <ul className="text-gray-300 space-y-1">
-                      <li>• متعادلة الشحنة (0)</li>
-                      <li>• توجد في النواة</li>
-                      <li>• تؤثر على استقرار الذرة</li>
-                      <li>• جذب تلقائي للنواة</li>
-                    </ul>
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-blue-300 mb-2">الإلكترونات</h4>
-                    <ul className="text-gray-300 space-y-1">
-                      <li>• تحمل شحنة سالبة (-1)</li>
-                      <li>• تدور في مدارات محددة</li>
-                      <li>• جذب تلقائي للمدارات</li>
-                      <li>• ترتيب ذكي حسب مستويات الطاقة</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
+
+      {/* Draggable AI Assistant */}
+      {showAssistant && (
+        <motion.div
+          drag
+          dragMomentum={false}
+          onDrag={handleAssistantDrag}
+          style={{
+            position: 'fixed',
+            left: assistantPosition.x,
+            top: assistantPosition.y,
+            zIndex: 1000
+          }}
+          className="w-96 max-w-[90vw]"
+          whileDrag={{ scale: 1.05 }}
+        >
+          <Card className="bg-purple-900/95 backdrop-blur-sm border-purple-500/50 shadow-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-purple-300 flex items-center text-sm">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  المساعد الذكي للفيزياء الذرية
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Move className="w-4 h-4 text-gray-400 cursor-move" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAssistant(false)}
+                    className="text-gray-400 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={assistantQuery}
+                  onChange={(e) => setAssistantQuery(e.target.value)}
+                  placeholder="اسأل عن بناء الذرات..."
+                  className="flex-1 bg-purple-800/50 border-purple-500/50"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && assistantQuery.trim()) {
+                      queryGeminiAPI(assistantQuery);
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => assistantQuery.trim() && queryGeminiAPI(assistantQuery)}
+                  disabled={isLoadingResponse || !assistantQuery.trim()}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {isLoadingResponse ? '...' : 'سؤال'}
+                </Button>
+              </div>
+              
+              {assistantResponse && (
+                <div className="bg-purple-800/30 p-3 rounded-lg max-h-64 overflow-y-auto">
+                  <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
+                    {assistantResponse}
+                  </p>
+                </div>
+              )}
+              
+              {!assistantResponse && !isLoadingResponse && (
+                <div className="text-center text-purple-300 text-sm">
+                  مرحباً! اسألني أي سؤال عن بناء الذرات والفيزياء الذرية
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 };
