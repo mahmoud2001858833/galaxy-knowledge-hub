@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -148,10 +147,33 @@ const BlackbodyRadiationSimulation = () => {
     
     const traces = [];
 
-    // Main curve with color segments
+    // Visible spectrum background with gradient colors
+    if (showVisibleSpectrum) {
+      const visibleWavelengths = [];
+      const visibleColors = [];
+      for (let wl = 380; wl <= 750; wl += 10) {
+        visibleWavelengths.push(wl);
+        visibleColors.push(getWavelengthColor(wl));
+      }
+      
+      traces.push({
+        x: visibleWavelengths,
+        y: visibleWavelengths.map(() => Math.max(...data.intensities) * 1.15),
+        type: 'bar',
+        marker: {
+          color: visibleColors,
+          line: { width: 0 }
+        },
+        name: 'الطيف المرئي',
+        showlegend: true,
+        hovertemplate: 'الطول الموجي: %{x} nm<extra></extra>'
+      });
+    }
+
+    // Main curve with color segments for visible spectrum
     for (let i = 0; i < data.wavelengths.length - 1; i++) {
       const wl = data.wavelengths[i];
-      const color = data.colors[i];
+      const color = wl >= 380 && wl <= 750 ? data.colors[i] : '#888888';
       
       traces.push({
         x: [data.wavelengths[i], data.wavelengths[i + 1]],
@@ -159,26 +181,11 @@ const BlackbodyRadiationSimulation = () => {
         type: 'scatter',
         mode: 'lines',
         line: {
-          color: wl >= 380 && wl <= 750 ? color : '#888888',
+          color: color,
           width: 3
         },
         showlegend: false,
         hovertemplate: `الطول الموجي: %{x} nm<br>الشدة: %{y:.2e}<extra></extra>`
-      });
-    }
-
-    // Visible spectrum background
-    if (showVisibleSpectrum) {
-      traces.unshift({
-        x: [380, 380, 750, 750, 380],
-        y: [0, Math.max(...data.intensities) * 1.1, Math.max(...data.intensities) * 1.1, 0, 0],
-        fill: 'toself',
-        fillcolor: 'rgba(255, 255, 255, 0.05)',
-        line: { color: 'rgba(255, 255, 255, 0.3)', width: 1 },
-        name: 'الطيف المرئي (380-750 nm)',
-        type: 'scatter',
-        mode: 'lines',
-        hoverinfo: 'name'
       });
     }
 
@@ -204,7 +211,7 @@ const BlackbodyRadiationSimulation = () => {
 
     const layout = {
       title: {
-        text: `منحنى إشعاع الجسم الأسود - درجة الحرارة: ${temperature[0]} K (${(temperature[0] - 273.15).toFixed(1)}°C)`,
+        text: `منحنى إشعاع الجسم الأسود - ${temperature[0]} K (${(temperature[0] - 273.15).toFixed(1)}°C)`,
         font: { size: 18, color: '#fff', family: 'Arial' }
       },
       xaxis: {
@@ -344,108 +351,6 @@ const BlackbodyRadiationSimulation = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Temperature Control Panel */}
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20 mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-blue-300">التحكم في درجة الحرارة</h3>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setZoomLevel(prev => Math.min(prev * 1.5, 10))}
-                >
-                  تكبير
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setZoomLevel(prev => Math.max(prev / 1.5, 0.1))}
-                >
-                  تصغير
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setTemperature([5778]);
-                    setZoomLevel(1);
-                  }}
-                >
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  إعادة تعيين
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">
-                  درجة الحرارة: {temperature[0]} K ({(temperature[0] - 273.15).toFixed(1)}°C)
-                </label>
-                <Slider
-                  value={temperature}
-                  onValueChange={setTemperature}
-                  min={273}
-                  max={10000}
-                  step={10}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">الإعدادات المسبقة</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(presets).slice(0, 4).map(([key, preset]) => (
-                    <Button
-                      key={key}
-                      variant={selectedPreset === key ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setSelectedPreset(key);
-                        setTemperature([preset.temp]);
-                      }}
-                      className="text-xs"
-                    >
-                      {preset.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={showPeakWavelength}
-                    onCheckedChange={setShowPeakWavelength}
-                  />
-                  <span className="text-sm text-gray-300">إظهار الذروة</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={showVisibleSpectrum}
-                    onCheckedChange={setShowVisibleSpectrum}
-                  />
-                  <span className="text-sm text-gray-300">الطيف المرئي</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={showIntensityValues}
-                    onCheckedChange={setShowIntensityValues}
-                  />
-                  <span className="text-sm text-gray-300">قيم الشدة</span>
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-300">
-                ذروة الطول الموجي: <Badge variant="outline">{calculatePeakWavelength(temperature[0]).toFixed(0)} nm</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Main Tabs */}
         <Tabs defaultValue="graph" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -463,46 +368,134 @@ const BlackbodyRadiationSimulation = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Graph Tab */}
+          {/* Graph Tab - New Side-by-side Layout */}
           <TabsContent value="graph">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardContent className="p-4">
-                <div ref={plotRef} className="w-full h-[600px]" />
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Control Panel - Left Side */}
+              <div className="lg:col-span-1">
+                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                  <CardContent className="p-4 space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-blue-300 mb-4">التحكم في درجة الحرارة</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-white mb-2 block">
+                            درجة الحرارة: {temperature[0]} K ({(temperature[0] - 273.15).toFixed(1)}°C)
+                          </label>
+                          <Slider
+                            value={temperature}
+                            onValueChange={setTemperature}
+                            min={273}
+                            max={10000}
+                            step={10}
+                            className="w-full"
+                          />
+                        </div>
 
-            {/* Visible Spectrum Bar */}
-            {showVisibleSpectrum && (
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 mt-4">
-                <CardContent className="p-4">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                    <Waves className="w-5 h-5 mr-2" />
-                    الطيف المرئي (380-750 nm)
-                  </h3>
-                  <div className="h-12 rounded-lg overflow-hidden flex border border-white/20">
-                    {Array.from({ length: 370 }, (_, i) => {
-                      const wl = 380 + i;
-                      return (
-                        <div
-                          key={wl}
-                          className="flex-1 h-full cursor-pointer hover:opacity-80 transition-opacity"
-                          style={{ backgroundColor: getWavelengthColor(wl) }}
-                          title={`${wl} nm`}
-                          onClick={() => setWavelength(wl)}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-300 mt-2">
-                    <span>بنفسجي (380nm)</span>
-                    <span>أزرق (450nm)</span>
-                    <span>أخضر (550nm)</span>
-                    <span>أصفر (580nm)</span>
-                    <span>أحمر (700nm)</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                        <div>
+                          <label className="text-sm font-medium text-white mb-2 block">الإعدادات المسبقة</label>
+                          <div className="grid grid-cols-1 gap-2">
+                            {Object.entries(presets).slice(0, 4).map(([key, preset]) => (
+                              <Button
+                                key={key}
+                                variant={selectedPreset === key ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPreset(key);
+                                  setTemperature([preset.temp]);
+                                }}
+                                className="text-xs justify-start"
+                              >
+                                {preset.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={showPeakWavelength}
+                              onCheckedChange={setShowPeakWavelength}
+                            />
+                            <span className="text-sm text-gray-300">إظهار الذروة</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={showVisibleSpectrum}
+                              onCheckedChange={setShowVisibleSpectrum}
+                            />
+                            <span className="text-sm text-gray-300">الطيف المرئي</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={showIntensityValues}
+                              onCheckedChange={setShowIntensityValues}
+                            />
+                            <span className="text-sm text-gray-300">قيم الشدة</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setZoomLevel(prev => Math.min(prev * 1.5, 10))}
+                            className="flex-1"
+                          >
+                            تكبير
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setZoomLevel(prev => Math.max(prev / 1.5, 0.1))}
+                            className="flex-1"
+                          >
+                            تصغير
+                          </Button>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTemperature([5778]);
+                            setZoomLevel(1);
+                          }}
+                          className="w-full"
+                        >
+                          <RotateCcw className="w-4 h-4 mr-1" />
+                          إعادة تعيين
+                        </Button>
+
+                        <div className="bg-gray-900/50 p-3 rounded-lg">
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">الذروة:</span>
+                              <Badge variant="outline">{calculatePeakWavelength(temperature[0]).toFixed(0)} nm</Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">القدرة الإجمالية:</span>
+                              <Badge variant="outline">{calculateTotalPower(temperature[0]).toExponential(1)} W/m²</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Graph - Right Side */}
+              <div className="lg:col-span-3">
+                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                  <CardContent className="p-4">
+                    <div ref={plotRef} className="w-full h-[600px]" />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Calculations Tab */}
