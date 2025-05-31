@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Flame, Beaker, Magnet, Wave } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Flame, Beaker, Magnet, Waves } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -46,7 +45,7 @@ const ScientificSimulations = () => {
       id: 'wave-physics',
       title: 'فيزياء الموجات',
       description: 'محاكاة انتشار الموجات والتداخل',
-      icon: <Wave className="w-8 h-8" />,
+      icon: <Waves className="w-8 h-8" />,
       color: 'from-cyan-600 to-blue-600',
       available: false
     },
