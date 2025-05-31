@@ -1,86 +1,73 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Camera, RotateCcw, Settings, Calculator, Bot, Waves } from 'lucide-react';
+import { ArrowLeft, Thermometer, Eye, Calculator, MessageCircle, Move, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import * as Plotly from 'plotly.js-dist';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 const BlackbodyRadiationSimulation = () => {
   const navigate = useNavigate();
-  const plotRef = useRef<HTMLDivElement>(null);
-  const [temperature, setTemperature] = useState([5778]); // Sun's temperature
-  const [showPeakWavelength, setShowPeakWavelength] = useState(true);
+  const [temperatureCelsius, setTemperatureCelsius] = useState(2500); // Start with 2500°C
   const [showVisibleSpectrum, setShowVisibleSpectrum] = useState(true);
-  const [showIntensityValues, setShowIntensityValues] = useState(true);
-  const [selectedPreset, setSelectedPreset] = useState('sun');
-  const [zoomLevel, setZoomLevel] = useState(1);
-  
-  // Calculator states
-  const [wavelength, setWavelength] = useState(500);
-  const [frequency, setFrequency] = useState(0);
-  const [photonEnergy, setPhotonEnergy] = useState(0);
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [assistantPosition, setAssistantPosition] = useState({ x: 20, y: 100 });
+  const [isDraggingAssistant, setIsDraggingAssistant] = useState(false);
+  const [assistantQuery, setAssistantQuery] = useState('');
+  const [assistantResponse, setAssistantResponse] = useState('');
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
-  // AI Assistant states
-  const [assistantInput, setAssistantInput] = useState('');
-  const [assistantResponse, setAssistantResponse] = useState('مرحباً! أنا مساعدك الذكي لفهم إشعاع الجسم الأسود. يمكنني الإجابة على أسئلتك حول قوانين بلانك وفين وستيفان-بولتزمان.');
-
-  const presets = {
-    'human': { temp: 310, name: 'جسم الإنسان (37°C)', color: '#ff6b6b' },
-    'room': { temp: 293, name: 'درجة حرارة الغرفة (20°C)', color: '#4ecdc4' },
-    'ice': { temp: 273, name: 'نقطة تجمد الماء (0°C)', color: '#45b7d1' },
-    'sun': { temp: 5778, name: 'سطح الشمس', color: '#f39c12' },
-    'incandescent': { temp: 2700, name: 'مصباح متوهج', color: '#e67e22' },
-    'candle': { temp: 1000, name: 'شمعة مشتعلة', color: '#d35400' },
-    'star_hot': { temp: 10000, name: 'نجم ساخن', color: '#3498db' },
-    'star_cool': { temp: 3000, name: 'نجم بارد', color: '#e74c3c' }
-  };
+  // Convert Celsius to Kelvin
+  const temperatureKelvin = temperatureCelsius + 273.15;
 
   // Physical constants
-  const h = 6.62607015e-34; // Planck constant
-  const c = 299792458; // Speed of light
-  const k = 1.380649e-23; // Boltzmann constant
+  const h = 6.626e-34; // Planck constant
+  const c = 3e8; // Speed of light
+  const k = 1.381e-23; // Boltzmann constant
 
-  // Planck's law calculation
-  const calculatePlanckFunction = (wavelength: number, temp: number) => {
-    const wl = wavelength * 1e-9; // Convert nm to meters
-    const exponential = Math.exp((h * c) / (wl * k * temp)) - 1;
-    
-    if (exponential === 0) return 0;
-    
-    return (2 * h * c * c) / (Math.pow(wl, 5) * exponential);
+  // Planck's law function with smoother calculation
+  const planckFunction = (wavelength: number, temperature: number) => {
+    const lambda = wavelength * 1e-9; // Convert nm to meters
+    const numerator = 2 * h * c * c;
+    const denominator = Math.pow(lambda, 5) * (Math.exp((h * c) / (lambda * k * temperature)) - 1);
+    return numerator / denominator;
   };
 
   // Wien's displacement law
-  const calculatePeakWavelength = (temp: number) => {
-    const b = 2.897771955e-3; // Wien displacement constant
-    return (b / temp) * 1e9; // Convert to nanometers
-  };
+  const wienDisplacement = useMemo(() => {
+    return (2.898e-3 / temperatureKelvin) * 1e9; // in nanometers
+  }, [temperatureKelvin]);
 
-  // Stefan-Boltzmann law
-  const calculateTotalPower = (temp: number) => {
-    const sigma = 5.670374419e-8; // Stefan-Boltzmann constant
-    return sigma * Math.pow(temp, 4);
-  };
+  // Generate smooth data for the plot
+  const plotData = useMemo(() => {
+    const data = [];
+    const startWavelength = 100;
+    const endWavelength = 3000;
+    const steps = 200; // Increased steps for smoother curve
+    const stepSize = (endWavelength - startWavelength) / steps;
 
-  // Calculate frequency from wavelength
-  const calculateFrequency = (wl: number) => {
-    return c / (wl * 1e-9); // Hz
-  };
+    for (let i = 0; i <= steps; i++) {
+      const wavelength = startWavelength + i * stepSize;
+      const intensity = planckFunction(wavelength, temperatureKelvin);
+      
+      data.push({
+        wavelength,
+        intensity: intensity / 1e13, // Normalize for display
+        color: getWavelengthColor(wavelength)
+      });
+    }
+    return data;
+  }, [temperatureKelvin]);
 
-  // Calculate photon energy
-  const calculatePhotonEnergy = (wl: number) => {
-    const freq = calculateFrequency(wl);
-    return h * freq / 1.602176634e-19; // Convert to eV
-  };
-
-  // Get wavelength color
+  // Get color based on wavelength
   const getWavelengthColor = (wavelength: number) => {
-    if (wavelength < 380 || wavelength > 750) return 'rgba(128, 128, 128, 0.3)';
+    if (wavelength < 380 || wavelength > 750) return 'rgba(128, 128, 128, 0.5)';
     
     let r = 0, g = 0, b = 0;
     
@@ -109,214 +96,87 @@ const BlackbodyRadiationSimulation = () => {
       g = 0;
       b = 0;
     }
-    
-    return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+
+    return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, 0.8)`;
   };
 
-  // Generate data for plotting
-  const generatePlotData = () => {
-    const wavelengths = [];
-    const intensities = [];
-    const colors = [];
+  // Smooth temperature update with debouncing
+  const [tempDisplayValue, setTempDisplayValue] = useState(temperatureCelsius);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const handleTemperatureChange = (value: number[]) => {
+    setTempDisplayValue(value[0]);
     
-    // Generate wavelength range from 100nm to 3000nm
-    for (let wl = 100; wl <= 3000; wl += 5) {
-      wavelengths.push(wl);
-      const intensity = calculatePlanckFunction(wl, temperature[0]);
-      intensities.push(intensity);
-      colors.push(getWavelengthColor(wl));
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
     }
-
-    const peakWl = calculatePeakWavelength(temperature[0]);
-    const peakIntensity = calculatePlanckFunction(peakWl, temperature[0]);
-
-    return {
-      wavelengths,
-      intensities,
-      colors,
-      peakWl,
-      peakIntensity
-    };
+    
+    updateTimeoutRef.current = setTimeout(() => {
+      setTemperatureCelsius(value[0]);
+    }, 50); // Faster update for smoother experience
   };
 
-  // Update plot
-  const updatePlot = () => {
-    if (!plotRef.current) return;
+  // Gemini AI Assistant functions
+  const queryGeminiAPI = async (question: string) => {
+    setIsLoadingResponse(true);
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDR0bf_lLE8A83mionE3IT5gAH3Z8-O-MA`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `أنت مساعد ذكي متخصص في الفيزياء وإشعاع الجسم الأسود. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
+                    
+                    السياق الحالي:
+                    - درجة الحرارة: ${temperatureCelsius}°C (${temperatureKelvin.toFixed(1)}K)
+                    - طول موجة الذروة: ${wienDisplacement.toFixed(1)} نانومتر
+                    `
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
 
-    const data = generatePlotData();
-    
-    const traces = [];
-
-    // Visible spectrum background with gradient colors
-    if (showVisibleSpectrum) {
-      const visibleWavelengths = [];
-      const visibleColors = [];
-      for (let wl = 380; wl <= 750; wl += 10) {
-        visibleWavelengths.push(wl);
-        visibleColors.push(getWavelengthColor(wl));
-      }
+      const data = await response.json();
       
-      traces.push({
-        x: visibleWavelengths,
-        y: visibleWavelengths.map(() => Math.max(...data.intensities) * 1.15),
-        type: 'bar',
-        marker: {
-          color: visibleColors,
-          line: { width: 0 }
-        },
-        name: 'الطيف المرئي',
-        showlegend: true,
-        hovertemplate: 'الطول الموجي: %{x} nm<extra></extra>'
-      });
-    }
-
-    // Main curve with color segments for visible spectrum
-    for (let i = 0; i < data.wavelengths.length - 1; i++) {
-      const wl = data.wavelengths[i];
-      const color = wl >= 380 && wl <= 750 ? data.colors[i] : '#888888';
-      
-      traces.push({
-        x: [data.wavelengths[i], data.wavelengths[i + 1]],
-        y: [data.intensities[i], data.intensities[i + 1]],
-        type: 'scatter',
-        mode: 'lines',
-        line: {
-          color: color,
-          width: 3
-        },
-        showlegend: false,
-        hovertemplate: `الطول الموجي: %{x} nm<br>الشدة: %{y:.2e}<extra></extra>`
-      });
-    }
-
-    // Peak wavelength marker
-    if (showPeakWavelength) {
-      traces.push({
-        x: [data.peakWl],
-        y: [data.peakIntensity],
-        type: 'scatter',
-        mode: 'markers+text',
-        name: `ذروة الطول الموجي: ${data.peakWl.toFixed(0)} nm`,
-        text: ['ذروة'],
-        textposition: 'top center',
-        marker: {
-          color: '#ff0000',
-          size: 15,
-          symbol: 'star',
-          line: { color: '#fff', width: 2 }
-        },
-        hovertemplate: `ذروة الطول الموجي: ${data.peakWl.toFixed(0)} nm<br>الشدة: ${data.peakIntensity.toExponential(2)}<extra></extra>`
-      });
-    }
-
-    const layout = {
-      title: {
-        text: `منحنى إشعاع الجسم الأسود - ${temperature[0]} K (${(temperature[0] - 273.15).toFixed(1)}°C)`,
-        font: { size: 18, color: '#fff', family: 'Arial' }
-      },
-      xaxis: {
-        title: {
-          text: 'الطول الموجي (نانومتر)',
-          font: { size: 14, color: '#fff' }
-        },
-        color: '#fff',
-        gridcolor: '#333',
-        range: [100 / zoomLevel, 3000 / zoomLevel],
-        showgrid: true,
-        zeroline: true,
-        zerolinecolor: '#555'
-      },
-      yaxis: {
-        title: {
-          text: 'شدة الإشعاع (W⋅sr⁻¹⋅m⁻³)',
-          font: { size: 14, color: '#fff' }
-        },
-        color: '#fff',
-        gridcolor: '#333',
-        showgrid: true,
-        zeroline: true,
-        zerolinecolor: '#555',
-        tickformat: '.2e'
-      },
-      plot_bgcolor: '#000000',
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#fff', family: 'Arial' },
-      margin: { t: 70, b: 70, l: 100, r: 50 },
-      showlegend: true,
-      legend: {
-        x: 0.02,
-        y: 0.98,
-        bgcolor: 'rgba(0,0,0,0.7)',
-        bordercolor: '#fff',
-        borderwidth: 1,
-        font: { color: '#fff' }
+      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        setAssistantResponse(data.candidates[0].content.parts[0].text);
+      } else {
+        setAssistantResponse('عذراً، لم أتمكن من الحصول على إجابة. يرجى المحاولة مرة أخرى.');
       }
-    };
+    } catch (error) {
+      console.error('Error querying Gemini API:', error);
+      setAssistantResponse('حدث خطأ في الاتصال بالمساعد الذكي. يرجى المحاولة لاحقاً.');
+    } finally {
+      setIsLoadingResponse(false);
+    }
+  };
 
-    Plotly.newPlot(plotRef.current, traces, layout, { 
-      responsive: true, 
-      displayModeBar: true,
-      modeBarButtonsToAdd: ['pan2d', 'select2d', 'lasso2d']
+  // Handle assistant movement
+  const handleAssistantDrag = (event: any, info: any) => {
+    setAssistantPosition({
+      x: assistantPosition.x + info.delta.x,
+      y: assistantPosition.y + info.delta.y
     });
   };
 
-  // Calculator functions
+  // Cleanup timeout on unmount
   useEffect(() => {
-    const freq = calculateFrequency(wavelength);
-    const energy = calculatePhotonEnergy(wavelength);
-    setFrequency(freq);
-    setPhotonEnergy(energy);
-  }, [wavelength]);
-
-  // Update plot when parameters change
-  useEffect(() => {
-    updatePlot();
-  }, [temperature, showPeakWavelength, showVisibleSpectrum, showIntensityValues, zoomLevel]);
-
-  // Screenshot function
-  const takeScreenshot = () => {
-    if (plotRef.current) {
-      Plotly.toImage(plotRef.current, { format: 'png', width: 1200, height: 800 })
-        .then((url) => {
-          const link = document.createElement('a');
-          link.download = `blackbody_radiation_${temperature[0]}K.png`;
-          link.href = url;
-          link.click();
-        });
-    }
-  };
-
-  // Export data function
-  const exportData = () => {
-    const data = generatePlotData();
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Wavelength(nm),Intensity\n" +
-      data.wavelengths.map((wl, i) => `${wl},${data.intensities[i]}`).join("\n");
-    
-    const link = document.createElement('a');
-    link.href = encodeURI(csvContent);
-    link.download = `blackbody_data_${temperature[0]}K.csv`;
-    link.click();
-  };
-
-  const handleAIQuestion = () => {
-    if (!assistantInput.trim()) return;
-    
-    // Simple response logic for demonstration
-    let response = "عذراً، لم أتمكن من فهم سؤالك. يمكنك السؤال عن قوانين بلانك، فين، أو ستيفان-بولتزمان.";
-    
-    const input = assistantInput.toLowerCase();
-    if (input.includes('بلانك')) {
-      response = "قانون بلانك يصف توزيع الطاقة الطيفية للإشعاع المنبعث من جسم أسود مثالي. الصيغة هي: E = (8πhc/λ⁵) × 1/(e^(hc/λkT) - 1)";
-    } else if (input.includes('فين')) {
-      response = `قانون فين ينص على أن الطول الموجي للذروة يتناسب عكسياً مع درجة الحرارة. λmax = b/T حيث b = 2.898×10⁻³ م⋅ك. عند ${temperature[0]} K، الذروة عند ${calculatePeakWavelength(temperature[0]).toFixed(0)} nm`;
-    } else if (input.includes('ستيفان') || input.includes('بولتزمان')) {
-      response = `قانون ستيفان-بولتزمان ينص على أن القدرة الإجمالية المشعة تتناسب مع القوة الرابعة لدرجة الحرارة. P = σT⁴ حيث σ = 5.67×10⁻⁸ W⋅m⁻²⋅K⁻⁴. عند ${temperature[0]} K، القدرة = ${calculateTotalPower(temperature[0]).toExponential(2)} W/m²`;
-    }
-    
-    setAssistantResponse(response);
-    setAssistantInput('');
-  };
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
@@ -335,327 +195,311 @@ const BlackbodyRadiationSimulation = () => {
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               محاكاة إشعاع الجسم الأسود المتطورة
             </h1>
-            
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={takeScreenshot}>
-                <Camera className="w-4 h-4 mr-1" />
-                لقطة شاشة
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportData}>
-                <Download className="w-4 h-4 mr-1" />
-                تصدير البيانات
-              </Button>
-            </div>
+            <Button
+              onClick={() => setShowAssistant(!showAssistant)}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              المساعد الذكي
+            </Button>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Main Tabs */}
-        <Tabs defaultValue="graph" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="graph" className="flex items-center gap-2">
-              <Waves className="w-4 h-4" />
-              التمثيل البياني
-            </TabsTrigger>
-            <TabsTrigger value="calculations" className="flex items-center gap-2">
-              <Calculator className="w-4 h-4" />
-              الحسابات
-            </TabsTrigger>
-            <TabsTrigger value="assistant" className="flex items-center gap-2">
-              <Bot className="w-4 h-4" />
-              المساعد الذكي
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Graph Tab - New Side-by-side Layout */}
-          <TabsContent value="graph">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Control Panel - Left Side */}
-              <div className="lg:col-span-1">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                  <CardContent className="p-4 space-y-6">
-                    <div>
-                      <h3 className="text-lg font-bold text-blue-300 mb-4">التحكم في درجة الحرارة</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium text-white mb-2 block">
-                            درجة الحرارة: {temperature[0]} K ({(temperature[0] - 273.15).toFixed(1)}°C)
-                          </label>
-                          <Slider
-                            value={temperature}
-                            onValueChange={setTemperature}
-                            min={273}
-                            max={10000}
-                            step={10}
-                            className="w-full"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-white mb-2 block">الإعدادات المسبقة</label>
-                          <div className="grid grid-cols-1 gap-2">
-                            {Object.entries(presets).slice(0, 4).map(([key, preset]) => (
-                              <Button
-                                key={key}
-                                variant={selectedPreset === key ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedPreset(key);
-                                  setTemperature([preset.temp]);
-                                }}
-                                className="text-xs justify-start"
-                              >
-                                {preset.name}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={showPeakWavelength}
-                              onCheckedChange={setShowPeakWavelength}
-                            />
-                            <span className="text-sm text-gray-300">إظهار الذروة</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={showVisibleSpectrum}
-                              onCheckedChange={setShowVisibleSpectrum}
-                            />
-                            <span className="text-sm text-gray-300">الطيف المرئي</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={showIntensityValues}
-                              onCheckedChange={setShowIntensityValues}
-                            />
-                            <span className="text-sm text-gray-300">قيم الشدة</span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setZoomLevel(prev => Math.min(prev * 1.5, 10))}
-                            className="flex-1"
-                          >
-                            تكبير
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setZoomLevel(prev => Math.max(prev / 1.5, 0.1))}
-                            className="flex-1"
-                          >
-                            تصغير
-                          </Button>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setTemperature([5778]);
-                            setZoomLevel(1);
-                          }}
-                          className="w-full"
-                        >
-                          <RotateCcw className="w-4 h-4 mr-1" />
-                          إعادة تعيين
-                        </Button>
-
-                        <div className="bg-gray-900/50 p-3 rounded-lg">
-                          <div className="text-sm space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-gray-300">الذروة:</span>
-                              <Badge variant="outline">{calculatePeakWavelength(temperature[0]).toFixed(0)} nm</Badge>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-300">القدرة الإجمالية:</span>
-                              <Badge variant="outline">{calculateTotalPower(temperature[0]).toExponential(1)} W/m²</Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Graph - Right Side */}
-              <div className="lg:col-span-3">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                  <CardContent className="p-4">
-                    <div ref={plotRef} className="w-full h-[600px]" />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Calculations Tab */}
-          <TabsContent value="calculations">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Temperature Control Panel - Now side by side with graph */}
+          <div className="lg:col-span-1 space-y-6">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <CardHeader>
-                <CardTitle className="flex items-center text-green-300">
-                  <Calculator className="w-5 h-5 mr-2" />
-                  حاسبة الفيزياء المتطورة
+                <CardTitle className="text-orange-300 flex items-center">
+                  <Thermometer className="w-5 h-5 mr-2" />
+                  التحكم في درجة الحرارة
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <label className="text-sm font-medium text-white mb-2 block">
-                    الطول الموجي (nm): {wavelength}
-                  </label>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-white font-medium">درجة الحرارة (سيلسيوس)</Label>
+                    <Badge variant="outline" className="text-orange-300 border-orange-300">
+                      {tempDisplayValue}°C
+                    </Badge>
+                  </div>
                   <Slider
-                    value={[wavelength]}
-                    onValueChange={(value) => setWavelength(value[0])}
-                    min={100}
-                    max={3000}
+                    value={[tempDisplayValue]}
+                    onValueChange={handleTemperatureChange}
+                    min={27}
+                    max={6000}
                     step={1}
                     className="w-full"
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-blue-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-blue-300 mb-3">القيم المحسوبة</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">التردد:</span>
-                        <span className="text-white">{(frequency / 1e12).toFixed(2)} THz</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">طاقة الفوتون:</span>
-                        <span className="text-white">{photonEnergy.toFixed(3)} eV</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">اللون:</span>
-                        <div className="w-8 h-4 rounded border" style={{ backgroundColor: getWavelengthColor(wavelength) }}></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-purple-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-purple-300 mb-3">معلومات إضافية</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">الذروة عند درجة الحرارة:</span>
-                        <span className="text-white">{calculatePeakWavelength(temperature[0]).toFixed(0)} nm</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">القدرة الإجمالية:</span>
-                        <span className="text-white">{calculateTotalPower(temperature[0]).toExponential(2)} W/m²</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">نوع الإشعاع:</span>
-                        <span className="text-white">
-                          {wavelength < 380 ? 'فوق بنفسجي' : 
-                           wavelength > 750 ? 'تحت أحمر' : 'مرئي'}
-                        </span>
-                      </div>
-                    </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>27°C</span>
+                    <span>6000°C</span>
                   </div>
                 </div>
 
-                <div className="bg-green-900/30 p-4 rounded-lg">
-                  <h4 className="font-bold text-green-300 mb-3">القوانين الفيزيائية</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-green-300 font-medium">قانون بلانك:</span>
-                      <p className="text-gray-300 mt-1">E = (8πhc/λ⁵) × 1/(e^(hc/λkT) - 1)</p>
-                    </div>
-                    <div>
-                      <span className="text-green-300 font-medium">قانون فين:</span>
-                      <p className="text-gray-300 mt-1">λmax = b/T = 2.898×10⁻³/T</p>
-                    </div>
-                    <div>
-                      <span className="text-green-300 font-medium">قانون ستيفان-بولتزمان:</span>
-                      <p className="text-gray-300 mt-1">P = σT⁴ = 5.67×10⁻⁸T⁴</p>
-                    </div>
+                <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 p-4 rounded-lg space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">درجة الحرارة (كلفن):</span>
+                    <span className="text-white font-mono">{temperatureKelvin.toFixed(1)}K</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">طول موجة الذروة:</span>
+                    <span className="text-white font-mono">{wienDisplacement.toFixed(1)} nm</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">منطقة الطيف:</span>
+                    <span className="text-white">
+                      {wienDisplacement < 380 ? 'فوق البنفسجي' : 
+                       wienDisplacement > 750 ? 'تحت الأحمر' : 'مرئي'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-white">إعدادات العرض</Label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="showSpectrum"
+                      checked={showVisibleSpectrum}
+                      onChange={(e) => setShowVisibleSpectrum(e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="showSpectrum" className="text-sm text-gray-300">
+                      إظهار الطيف المرئي
+                    </Label>
+                  </div>
+                </div>
+
+                {/* Quick Temperature Presets */}
+                <div className="space-y-3">
+                  <Label className="text-white">إعدادات سريعة</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { name: 'الشمس', temp: 5500 },
+                      { name: 'النار', temp: 1200 },
+                      { name: 'المصباح', temp: 2700 },
+                      { name: 'الليزر الأحمر', temp: 700 }
+                    ].map((preset) => (
+                      <Button
+                        key={preset.name}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTempDisplayValue(preset.temp);
+                          setTemperatureCelsius(preset.temp);
+                        }}
+                        className="text-xs"
+                      >
+                        {preset.name}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          {/* AI Assistant Tab */}
-          <TabsContent value="assistant">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+          {/* Main Graph Area */}
+          <div className="lg:col-span-2">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 h-[600px]">
               <CardHeader>
-                <CardTitle className="flex items-center text-purple-300">
-                  <Bot className="w-5 h-5 mr-2" />
-                  المساعد الذكي للفيزياء
+                <CardTitle className="text-blue-300 flex items-center justify-between">
+                  <span className="flex items-center">
+                    <Eye className="w-5 h-5 mr-2" />
+                    منحنى بلانك للإشعاع
+                  </span>
+                  <Badge variant="outline" className="text-blue-300 border-blue-300">
+                    T = {temperatureCelsius}°C
+                  </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-gray-900/50 rounded-lg p-4 h-64 overflow-y-auto border border-gray-600">
-                  <p className="text-gray-300 text-sm leading-relaxed">{assistantResponse}</p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={assistantInput}
-                    onChange={(e) => setAssistantInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAIQuestion()}
-                    placeholder="اسأل عن قوانين بلانك، فين، أو ستيفان-بولتزمان..."
-                    className="flex-1 bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  />
-                  <Button onClick={handleAIQuestion} size="sm">
-                    إرسال
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-blue-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-blue-300 mb-3">أسئلة مقترحة</h4>
-                    <div className="space-y-2">
-                      {[
-                        'ما هو قانون بلانك؟',
-                        'كيف يعمل قانون فين؟',
-                        'ما هو قانون ستيفان-بولتزمان؟',
-                        'لماذا تختلف ألوان النجوم؟'
-                      ].map((question, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setAssistantInput(question)}
-                          className="w-full text-left text-sm text-blue-200 hover:text-blue-100 p-2 rounded bg-blue-800/20 hover:bg-blue-800/40 transition-colors"
-                        >
-                          {question}
-                        </button>
-                      ))}
-                    </div>
+              <CardContent className="h-full p-4">
+                <div className="relative h-full">
+                  {/* Enhanced Chart with smooth curves */}
+                  <div className="h-full bg-gradient-to-br from-black/80 to-gray-900/80 rounded-lg p-4 border border-gray-600/30">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={plotData} margin={{ top: 20, right: 30, left: 60, bottom: 60 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis 
+                          dataKey="wavelength" 
+                          stroke="white"
+                          label={{ value: 'الطول الموجي (نانومتر)', position: 'insideBottom', offset: -10, style: { textAnchor: 'middle', fill: 'white' } }}
+                          tick={{ fill: 'white', fontSize: 12 }}
+                        />
+                        <YAxis 
+                          stroke="white"
+                          label={{ value: 'الشدة النسبية', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'white' } }}
+                          tick={{ fill: 'white', fontSize: 12 }}
+                        />
+                        
+                        {/* Visible spectrum background */}
+                        {showVisibleSpectrum && (
+                          <>
+                            {/* Violet */}
+                            <ReferenceLine x={380} stroke="rgba(148, 0, 211, 0.6)" strokeWidth={8} />
+                            <ReferenceLine x={420} stroke="rgba(75, 0, 130, 0.6)" strokeWidth={8} />
+                            {/* Blue */}
+                            <ReferenceLine x={450} stroke="rgba(0, 0, 255, 0.6)" strokeWidth={8} />
+                            <ReferenceLine x={490} stroke="rgba(0, 100, 255, 0.6)" strokeWidth={8} />
+                            {/* Green */}
+                            <ReferenceLine x={520} stroke="rgba(0, 255, 0, 0.6)" strokeWidth={8} />
+                            <ReferenceLine x={560} stroke="rgba(127, 255, 0, 0.6)" strokeWidth={8} />
+                            {/* Yellow */}
+                            <ReferenceLine x={580} stroke="rgba(255, 255, 0, 0.6)" strokeWidth={8} />
+                            <ReferenceLine x={600} stroke="rgba(255, 165, 0, 0.6)" strokeWidth={8} />
+                            {/* Red */}
+                            <ReferenceLine x={650} stroke="rgba(255, 0, 0, 0.6)" strokeWidth={8} />
+                            <ReferenceLine x={750} stroke="rgba(139, 0, 0, 0.6)" strokeWidth={8} />
+                          </>
+                        )}
+                        
+                        {/* Peak wavelength indicator */}
+                        <ReferenceLine 
+                          x={wienDisplacement} 
+                          stroke="yellow" 
+                          strokeWidth={3} 
+                          strokeDasharray="5 5"
+                          label={{ value: "ذروة الإشعاع", position: "top", style: { fill: 'yellow', fontWeight: 'bold' } }}
+                        />
+                        
+                        {/* Main curve with enhanced styling */}
+                        <Line 
+                          type="monotone" 
+                          dataKey="intensity" 
+                          stroke="url(#gradient)" 
+                          strokeWidth={3}
+                          dot={false}
+                          connectNulls={false}
+                        />
+                        
+                        {/* Gradient definition for the line */}
+                        <defs>
+                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#ff0000" />
+                            <stop offset="16.67%" stopColor="#ff8800" />
+                            <stop offset="33.33%" stopColor="#ffff00" />
+                            <stop offset="50%" stopColor="#00ff00" />
+                            <stop offset="66.67%" stopColor="#0088ff" />
+                            <stop offset="83.33%" stopColor="#0000ff" />
+                            <stop offset="100%" stopColor="#8800ff" />
+                          </linearGradient>
+                        </defs>
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
 
-                  <div className="bg-purple-900/30 p-4 rounded-lg">
-                    <h4 className="font-bold text-purple-300 mb-3">معلومات سريعة</h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-gray-300">
-                        <span className="text-purple-300">درجة الحرارة الحالية:</span> {temperature[0]} K
-                      </p>
-                      <p className="text-gray-300">
-                        <span className="text-purple-300">ذروة الطول الموجي:</span> {calculatePeakWavelength(temperature[0]).toFixed(0)} nm
-                      </p>
-                      <p className="text-gray-300">
-                        <span className="text-purple-300">نوع الذروة:</span> {
-                          calculatePeakWavelength(temperature[0]) < 380 ? 'فوق بنفسجي' :
-                          calculatePeakWavelength(temperature[0]) > 750 ? 'تحت أحمر' : 'مرئي'
-                        }
-                      </p>
+                  {/* Visible spectrum bar overlay */}
+                  {showVisibleSpectrum && (
+                    <div className="absolute bottom-16 left-20 right-8 h-6 rounded-md overflow-hidden border border-white/30">
+                      <div className="h-full bg-gradient-to-r from-purple-600 via-blue-500 via-green-500 via-yellow-500 via-orange-500 to-red-600"></div>
+                      <div className="absolute top-0 left-0 w-full h-full flex justify-between items-center px-2">
+                        <span className="text-xs text-white font-bold bg-black/50 px-1 rounded">380nm</span>
+                        <span className="text-xs text-white font-bold bg-black/50 px-1 rounded">750nm</span>
+                      </div>
                     </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Physics Information */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 mt-4">
+              <CardContent className="p-4">
+                <h3 className="text-lg font-bold text-blue-300 mb-3">معلومات فيزيائية مهمة</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-white">قانون بلانك:</h4>
+                    <p className="text-gray-300">I(λ,T) = (2hc²/λ⁵) × 1/(e^(hc/λkT) - 1)</p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-white">قانون فين:</h4>
+                    <p className="text-gray-300">λmax = 2.898×10⁻³ / T</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
+
+      {/* Draggable AI Assistant */}
+      {showAssistant && (
+        <motion.div
+          drag
+          dragMomentum={false}
+          onDrag={handleAssistantDrag}
+          style={{
+            position: 'fixed',
+            left: assistantPosition.x,
+            top: assistantPosition.y,
+            zIndex: 1000
+          }}
+          className="w-96 max-w-[90vw]"
+          whileDrag={{ scale: 1.05 }}
+        >
+          <Card className="bg-purple-900/95 backdrop-blur-sm border-purple-500/50 shadow-2xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-purple-300 flex items-center text-sm">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  المساعد الذكي للفيزياء
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Move className="w-4 h-4 text-gray-400 cursor-move" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAssistant(false)}
+                    className="text-gray-400 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={assistantQuery}
+                  onChange={(e) => setAssistantQuery(e.target.value)}
+                  placeholder="اسأل عن إشعاع الجسم الأسود..."
+                  className="flex-1 bg-purple-800/50 border-purple-500/50"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && assistantQuery.trim()) {
+                      queryGeminiAPI(assistantQuery);
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => assistantQuery.trim() && queryGeminiAPI(assistantQuery)}
+                  disabled={isLoadingResponse || !assistantQuery.trim()}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {isLoadingResponse ? '...' : 'سؤال'}
+                </Button>
+              </div>
+              
+              {assistantResponse && (
+                <div className="bg-purple-800/30 p-3 rounded-lg max-h-64 overflow-y-auto">
+                  <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
+                    {assistantResponse}
+                  </p>
+                </div>
+              )}
+              
+              {!assistantResponse && !isLoadingResponse && (
+                <div className="text-center text-purple-300 text-sm">
+                  مرحباً! اسألني أي سؤال عن إشعاع الجسم الأسود والفيزياء
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 };
