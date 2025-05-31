@@ -49,7 +49,7 @@ const EducationalResources = () => {
     {
       title: "محاكاة التجارب العلمية",
       icon: <Atom className="h-6 w-6 text-purple-400" />,
-      description: "محاكاة تفاعلية للتجارب الفيزيائية والكيميائية",
+      description: "محاكاة تفاعلية متطورة للتجارب الفيزيائية مع أدوات حسابية ومساعد ذكي",
       link: '/scientific-simulations'
     }
   ];

@@ -57,19 +57,41 @@ serve(async (req) => {
         }
         
       } else if (lowerMessage.includes('محاكاة') || lowerMessage.includes('تجارب') || lowerMessage.includes('محاكي') || lowerMessage.includes('علمية')) {
-        navigationPath = "/scientific-simulations"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى محاكاة التجارب العلمية بنجاح!** 🔬⚗️`
+        if (lowerMessage.includes('اشعاع') || lowerMessage.includes('جسم اسود') || lowerMessage.includes('بلانك') || lowerMessage.includes('فين') || lowerMessage.includes('اسود')) {
+          navigationPath = "/simulation/blackbody-radiation"
+          autoNavigate = true
+          responseText = `✅ **تم الانتقال إلى محاكاة إشعاع الجسم الأسود المتطورة بنجاح!** ⚛️🌟 
+          
+المحاكاة تتضمن:
+🔬 الطيف المرئي الملون
+🔍 أدوات تكبير وتصغير متطورة  
+🧮 حاسبات فيزيائية للطول الموجي والتردد
+🤖 مساعد ذكي للفيزياء
+📊 رسوم بيانية تفاعلية متقدمة`
+        } else {
+          navigationPath = "/scientific-simulations"
+          autoNavigate = true
+          responseText = `✅ **تم الانتقال إلى محاكاة التجارب العلمية بنجاح!** 🔬⚗️`
+        }
         
-      } else if (lowerMessage.includes('اشعاع') || lowerMessage.includes('جسم اسود') || lowerMessage.includes('بلانك')) {
+      } else if (lowerMessage.includes('اشعاع') || lowerMessage.includes('جسم اسود') || lowerMessage.includes('بلانك') || lowerMessage.includes('فين') || lowerMessage.includes('اسود') || lowerMessage.includes('طيف')) {
         navigationPath = "/simulation/blackbody-radiation"
         autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى محاكاة إشعاع الجسم الأسود بنجاح!** ⚛️🌟`
+        responseText = `✅ **تم الانتقال إلى محاكاة إشعاع الجسم الأسود المتطورة بنجاح!** ⚛️🌟
+
+هذه المحاكاة المتطورة تشمل:
+🌈 **الطيف المرئي الملون** - شاهد الألوان الحقيقية للطيف
+🔍 **أدوات التكبير والتصغير** - تحليل دقيق للمنحنيات  
+🧮 **حاسبات فيزيائية متقدمة** - حساب التردد والطول الموجي والطاقة
+🤖 **مساعد ذكي** - للإجابة على جميع أسئلتك الفيزيائية
+📊 **رسوم بيانية تفاعلية** - مع شبكة ومحاور واضحة
+⚙️ **إعدادات مسبقة** - من الشمس إلى جسم الإنسان
+🎛️ **لوحة تحكم متطورة** - تحكم كامل في جميع المعاملات`
         
       } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة') || lowerMessage.includes('كالكوليتر')) {
-        navigationPath = "/calculator"
+        navigationPath = "/mathematics/calculator"
         autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى آلة الحاسبة بنجاح!** 🧮`
+        responseText = `✅ **تم الانتقال إلى آلة الحاسبة المتقدمة بنجاح!** 🧮`
         
       } else if (lowerMessage.includes('مكتب') || lowerMessage.includes('مرئي') || lowerMessage.includes('صور')) {
         navigationPath = "/visual-library"
@@ -137,11 +159,8 @@ serve(async (req) => {
 - الأحياء (جسم الإنسان، حسابات، ألغاز، علماء، موسوعة الأمراض، فيديوهات)
 - الرياضيات (آلة حاسبة متقدمة، رسوم بيانية، ألغاز، علماء، فيديوهات)
 
-**محاكاة التجارب العلمية:**
-- محاكاة إشعاع الجسم الأسود المتقدمة
-- محاكاة التفاعلات الكيميائية (قريباً)
-- قوانين نيوتن للحركة (قريباً)
-- الكهرباء والمغناطيسية (قريباً)
+**محاكاة التجارب العلمية المتطورة:**
+- محاكاة إشعاع الجسم الأسود المتقدمة (مع الطيف المرئي، أدوات التكبير، حاسبات فيزيائية، مساعد ذكي)
 
 **أقسام أخرى:**
 - المكتبة المرئية (صور تعليمية)
