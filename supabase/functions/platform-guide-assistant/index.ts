@@ -56,6 +56,16 @@ serve(async (req) => {
           responseText = `✅ **تم الانتقال إلى الفيديوهات التعليمية بنجاح!** 🎥`
         }
         
+      } else if (lowerMessage.includes('محاكاة') || lowerMessage.includes('تجارب') || lowerMessage.includes('محاكي') || lowerMessage.includes('علمية')) {
+        navigationPath = "/scientific-simulations"
+        autoNavigate = true
+        responseText = `✅ **تم الانتقال إلى محاكاة التجارب العلمية بنجاح!** 🔬⚗️`
+        
+      } else if (lowerMessage.includes('اشعاع') || lowerMessage.includes('جسم اسود') || lowerMessage.includes('بلانك')) {
+        navigationPath = "/simulation/blackbody-radiation"
+        autoNavigate = true
+        responseText = `✅ **تم الانتقال إلى محاكاة إشعاع الجسم الأسود بنجاح!** ⚛️🌟`
+        
       } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة') || lowerMessage.includes('كالكوليتر')) {
         navigationPath = "/calculator"
         autoNavigate = true
@@ -126,6 +136,12 @@ serve(async (req) => {
 - الكيمياء (الجدول الدوري، حسابات، ألغاز، علماء، فيديوهات)
 - الأحياء (جسم الإنسان، حسابات، ألغاز، علماء، موسوعة الأمراض، فيديوهات)
 - الرياضيات (آلة حاسبة متقدمة، رسوم بيانية، ألغاز، علماء، فيديوهات)
+
+**محاكاة التجارب العلمية:**
+- محاكاة إشعاع الجسم الأسود المتقدمة
+- محاكاة التفاعلات الكيميائية (قريباً)
+- قوانين نيوتن للحركة (قريباً)
+- الكهرباء والمغناطيسية (قريباً)
 
 **أقسام أخرى:**
 - المكتبة المرئية (صور تعليمية)

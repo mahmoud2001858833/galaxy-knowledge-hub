@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, MessageSquare, Video } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, MessageSquare, Video, Atom } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
@@ -45,6 +45,12 @@ const EducationalResources = () => {
       icon: <Video className="h-6 w-6 text-blue-400" />,
       description: t.resources.explorationTools,
       link: '/educational-videos'
+    },
+    {
+      title: "محاكاة التجارب العلمية",
+      icon: <Atom className="h-6 w-6 text-purple-400" />,
+      description: "محاكاة تفاعلية للتجارب الفيزيائية والكيميائية",
+      link: '/scientific-simulations'
     }
   ];
 
@@ -63,7 +69,7 @@ const EducationalResources = () => {
         <div className="w-16 h-1 bg-blue-500/50 mx-auto mt-4"></div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
         {resources.map((resource, index) => (
           <motion.div
             key={index}
