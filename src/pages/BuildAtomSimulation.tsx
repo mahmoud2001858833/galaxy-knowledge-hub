@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -242,7 +241,7 @@ const BuildAtomSimulation = () => {
       group: element.atomic_number <= 2 ? element.atomic_number : 
              element.atomic_number <= 10 ? element.atomic_number - 2 :
              element.atomic_number <= 18 ? element.atomic_number - 10 : 1,
-      category: element.category || 'غير محدد',
+      category: element.type || 'غير محدد',
       electronicConfiguration: element.electron_configuration || 'غير محدد',
       uses: ['استخدامات متنوعة في الصناعة', 'تطبيقات في الطب', 'استخدامات في التكنولوجيا'],
       properties: ['خصائص فيزيائية فريدة', 'خصائص كيميائية مميزة', 'تفاعلات خاصة']
