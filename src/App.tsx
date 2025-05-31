@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   createBrowserRouter,
@@ -40,6 +39,7 @@ import ArabicLanguage from './pages/ArabicLanguage';
 import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
 import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
+import BuildAtomSimulation from './pages/BuildAtomSimulation';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -226,6 +226,10 @@ const router = createBrowserRouter([
       {
         path: 'simulation/blackbody-radiation',
         element: <AuthGuard><BlackbodyRadiationSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/build-atom',
+        element: <AuthGuard><BuildAtomSimulation /></AuthGuard>,
       },
       {
         path: '*',
