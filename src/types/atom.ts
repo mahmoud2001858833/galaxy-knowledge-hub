@@ -42,11 +42,11 @@ export interface ElementInfo {
   properties: string[];
 }
 
-// الثوابت الفيزيائية
+// الثوابت الفيزيائية المحدثة لضمان التوضع الصحيح
 export const ATOM_CENTER = { x: 350, y: 350 };
-export const NUCLEUS_RADIUS = 60;
-export const PARTICLE_SIZE = 8;
-export const ORBITAL_RADII = [120, 180, 240, 300, 360, 420, 480];
+export const NUCLEUS_RADIUS = 40; // تصغير النواة قليلاً
+export const PARTICLE_SIZE = 6; // تصغير حجم الجسيمات
+export const ORBITAL_RADII = [80, 130, 180, 230, 280, 330, 380]; // مدارات أقرب للنواة
 export const ORBITAL_CAPACITY = [2, 8, 18, 32, 32, 18, 8];
 
 // ترتيب ملء الإلكترونات الصحيح

@@ -32,7 +32,7 @@ export const generateElectronConfiguration = (electronCount: number): string => 
   return config.join(' ');
 };
 
-// حساب المستوى المداري للإلكترون
+// حساب المستوى المداري للإلكترون - تم إصلاحه بالكامل
 export const getElectronOrbitalLevel = (electronIndex: number) => {
   let electronCount = 0;
   
@@ -78,17 +78,24 @@ export const calculateAtomData = (particles: Particle[]): AtomData => {
   };
 };
 
-// حساب موضع النوكليون في النواة
+// حساب موضع النوكليون في النواة - تم إصلاحه بالكامل
 export const calculateNucleonPosition = (index: number) => {
   if (index === 0) {
+    // الجسيم الأول في المركز التام
     return { x: ATOM_CENTER.x, y: ATOM_CENTER.y };
   }
   
-  const layer = Math.floor((index - 1) / 6);
+  // توزيع دائري متدرج داخل النواة
+  const layer = Math.floor((index - 1) / 6) + 1;
   const positionInLayer = (index - 1) % 6;
-  const radius = Math.min(20 + layer * 12, NUCLEUS_RADIUS - 10);
-  const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
-  const angle = positionInLayer * angleStep;
+  
+  // نصف قطر متدرج داخل النواة
+  const radius = Math.min(8 + layer * 6, NUCLEUS_RADIUS - 8);
+  
+  // توزيع الجسيمات في دوائر
+  const particlesInLayer = Math.min(6, 6 + (layer - 1) * 2);
+  const angleStep = (2 * Math.PI) / particlesInLayer;
+  const angle = positionInLayer * angleStep + (layer * 0.5); // إزاحة طفيفة لكل طبقة
   
   return {
     x: ATOM_CENTER.x + Math.cos(angle) * radius,
@@ -96,43 +103,53 @@ export const calculateNucleonPosition = (index: number) => {
   };
 };
 
-// حساب موضع الإلكترون في المدار
-export const calculateElectronPosition = (electronIndex: number, allElectrons: Particle[]) => {
+// حساب موضع الإلكترون في المدار - تم إصلاحه بالكامل
+export const calculateElectronPosition = (electronIndex: number, totalElectrons: number) => {
   const { level } = getElectronOrbitalLevel(electronIndex);
   
   // حساب عدد الإلكترونات في نفس المستوى
   let electronsInLevel = 0;
-  for (let i = 0; i < electronIndex; i++) {
-    const { level: prevLevel } = getElectronOrbitalLevel(i);
-    if (prevLevel === level) electronsInLevel++;
+  let electronPositionInLevel = 0;
+  
+  for (let i = 0; i <= electronIndex; i++) {
+    const { level: currentLevel } = getElectronOrbitalLevel(i);
+    if (currentLevel === level) {
+      if (i === electronIndex) {
+        electronPositionInLevel = electronsInLevel;
+      }
+      electronsInLevel++;
+    }
   }
   
   // حساب إجمالي الإلكترونات في هذا المستوى
   let totalInLevel = 0;
-  for (let i = 0; i < allElectrons.length; i++) {
+  for (let i = 0; i < totalElectrons; i++) {
     const { level: l } = getElectronOrbitalLevel(i);
     if (l === level) totalInLevel++;
   }
   
-  // حساب الزاوية
+  // حساب الزاوية مع توزيع أفضل
   const angleStep = (2 * Math.PI) / Math.max(totalInLevel, 2);
-  const angle = electronsInLevel * angleStep;
+  const angle = electronPositionInLevel * angleStep + (level * 0.3); // إزاحة لكل مستوى
+  
+  // التأكد من أن المدار داخل النطاق المسموح
+  const orbitalRadius = ORBITAL_RADII[Math.min(level, ORBITAL_RADII.length - 1)];
   
   return {
-    x: ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[level],
-    y: ATOM_CENTER.y + Math.sin(angle) * ORBITAL_RADII[level],
+    x: ATOM_CENTER.x + Math.cos(angle) * orbitalRadius,
+    y: ATOM_CENTER.y + Math.sin(angle) * orbitalRadius,
     level,
     angle
   };
 };
 
-// إعادة تنظيم الجسيمات
+// إعادة تنظيم الجسيمات - تم تحسينه
 export const reorganizeParticles = (particles: Particle[], removedType?: string): Particle[] => {
   const protons = particles.filter(p => p.type === 'proton');
   const neutrons = particles.filter(p => p.type === 'neutron');
   const electrons = particles.filter(p => p.type === 'electron');
   
-  // إعادة تنظيم النوكليونات
+  // إعادة تنظيم النوكليونات مع الحفاظ على النمط
   const reorganizedNucleons = [...protons, ...neutrons].map((particle, index) => {
     const position = calculateNucleonPosition(index);
     return {
@@ -142,9 +159,9 @@ export const reorganizeParticles = (particles: Particle[], removedType?: string)
     };
   });
   
-  // إعادة تنظيم الإلكترونات
+  // إعادة تنظيم الإلكترونات مع التوزيع الصحيح
   const reorganizedElectrons = electrons.map((electron, index) => {
-    const position = calculateElectronPosition(index, electrons);
+    const position = calculateElectronPosition(index, electrons.length);
     return {
       ...electron,
       x: position.x,
@@ -157,7 +174,7 @@ export const reorganizeParticles = (particles: Particle[], removedType?: string)
   return [...reorganizedNucleons, ...reorganizedElectrons];
 };
 
-// إنشاء جسيم جديد
+// إنشاء جسيم جديد - تم إصلاحه بالكامل
 export const createNewParticle = (type: 'proton' | 'neutron' | 'electron', particles: Particle[]): Particle => {
   const newParticle: Particle = {
     id: `${type}-${Date.now()}-${Math.random()}`,
@@ -167,13 +184,15 @@ export const createNewParticle = (type: 'proton' | 'neutron' | 'electron', parti
   };
 
   if (type === 'proton' || type === 'neutron') {
+    // حساب موضع النوكليون الجديد
     const nucleons = particles.filter(p => p.type === 'proton' || p.type === 'neutron');
     const position = calculateNucleonPosition(nucleons.length);
     newParticle.x = position.x;
     newParticle.y = position.y;
   } else if (type === 'electron') {
+    // حساب موضع الإلكترون الجديد
     const electrons = particles.filter(p => p.type === 'electron');
-    const position = calculateElectronPosition(electrons.length, [...electrons, newParticle]);
+    const position = calculateElectronPosition(electrons.length, electrons.length + 1);
     newParticle.x = position.x;
     newParticle.y = position.y;
     newParticle.orbitalLevel = position.level;

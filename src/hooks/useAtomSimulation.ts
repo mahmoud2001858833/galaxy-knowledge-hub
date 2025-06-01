@@ -12,15 +12,15 @@ export const useAtomSimulation = () => {
   // حساب بيانات الذرة
   const atomData: AtomData = calculateAtomData(particles);
 
-  // تحريك الإلكترونات
+  // تحريك الإلكترونات - محسن
   const animateElectrons = useCallback(() => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
-          // سرعة أبطأ للمدارات الخارجية
-          const speedFactor = 0.015 / Math.pow(particle.orbitalLevel + 1, 0.3);
+          // سرعة مختلفة حسب المستوى
+          const speedFactor = 0.02 / Math.pow(particle.orbitalLevel + 1, 0.4);
           const newAngle = (particle.angle || 0) + speedFactor;
-          const radius = ORBITAL_RADII[particle.orbitalLevel];
+          const radius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
           
           return {
             ...particle,
@@ -46,26 +46,40 @@ export const useAtomSimulation = () => {
     };
   }, [animateElectrons]);
 
-  // إضافة جسيم
+  // إضافة جسيم - تم إصلاحه بالكامل
   const addParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
+    console.log(`إضافة جسيم: ${type}`);
+    
     const newParticle = createNewParticle(type, particles);
     const newParticles = [...particles, newParticle];
-    setParticles(newParticles);
+    
+    // إعادة تنظيم جميع الجسيمات لضمان التوضع الصحيح
+    const reorganizedParticles = reorganizeParticles(newParticles);
+    
+    console.log(`تم إضافة ${type} في الموضع:`, { x: newParticle.x, y: newParticle.y });
+    setParticles(reorganizedParticles);
   }, [particles]);
 
-  // حذف جسيم
+  // حذف جسيم - تم إصلاحه
   const removeParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
+    console.log(`حذف جسيم: ${type}`);
+    
     const particleIndex = particles.findIndex(p => p.type === type);
     if (particleIndex === -1) return;
 
     let newParticles = particles.filter((_, index) => index !== particleIndex);
+    
+    // إعادة تنظيم الجسيمات بعد الحذف
     newParticles = reorganizeParticles(newParticles, type);
     
+    console.log(`تم حذف ${type}, الجسيمات المتبقية:`, newParticles.length);
     setParticles(newParticles);
   }, [particles]);
 
-  // بناء عنصر مقترح
+  // بناء عنصر مقترح - محسن
   const buildSuggestedElement = useCallback((element: SuggestedElement) => {
+    console.log(`بناء العنصر: ${element.name}`);
+    
     const newParticles: Particle[] = [];
     
     // إضافة البروتونات والنيوترونات
@@ -81,12 +95,17 @@ export const useAtomSimulation = () => {
       newParticles.push(particle);
     }
     
-    setParticles(newParticles);
+    // تنظيم نهائي لجميع الجسيمات
+    const finalParticles = reorganizeParticles(newParticles);
+    
+    console.log(`تم بناء ${element.name} بنجاح، إجمالي الجسيمات:`, finalParticles.length);
+    setParticles(finalParticles);
     setSelectedSuggestedElement(element);
   }, []);
 
   // مسح الكل
   const clearAll = useCallback(() => {
+    console.log('مسح جميع الجسيمات');
     setParticles([]);
     setSelectedSuggestedElement(null);
   }, []);

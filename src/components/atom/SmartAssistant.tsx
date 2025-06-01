@@ -26,32 +26,48 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // أوامر التنقل المباشر
+  // أوامر التنقل المباشر - تم إصلاحها للتنقل الفوري
   const handleNavigationCommands = (query: string) => {
     const lowerQuery = query.toLowerCase();
     
     if (lowerQuery.includes('كيمياء') || lowerQuery.includes('chemistry')) {
       navigate('/chemistry');
+      setResponse('تم الانتقال إلى منصة الكيمياء');
       return true;
     }
     if (lowerQuery.includes('فيزياء') || lowerQuery.includes('physics')) {
       navigate('/physics');
+      setResponse('تم الانتقال إلى منصة الفيزياء');
       return true;
     }
     if (lowerQuery.includes('رياضيات') || lowerQuery.includes('math')) {
       navigate('/mathematics');
+      setResponse('تم الانتقال إلى منصة الرياضيات');
       return true;
     }
     if (lowerQuery.includes('أحياء') || lowerQuery.includes('biology')) {
       navigate('/biology');
+      setResponse('تم الانتقال إلى منصة الأحياء');
       return true;
     }
-    if (lowerQuery.includes('رئيسية') || lowerQuery.includes('home')) {
+    if (lowerQuery.includes('رئيسية') || lowerQuery.includes('home') || lowerQuery.includes('الرئيسية')) {
       navigate('/');
+      setResponse('تم الانتقال إلى الصفحة الرئيسية');
       return true;
     }
     if (lowerQuery.includes('محاكاة') || lowerQuery.includes('simulation')) {
       navigate('/scientific-simulations');
+      setResponse('تم الانتقال إلى المحاكاة العلمية');
+      return true;
+    }
+    if (lowerQuery.includes('انجليزي') || lowerQuery.includes('english')) {
+      navigate('/english');
+      setResponse('تم الانتقال إلى منصة الإنجليزية');
+      return true;
+    }
+    if (lowerQuery.includes('عربي') || lowerQuery.includes('arabic')) {
+      navigate('/arabic');
+      setResponse('تم الانتقال إلى منصة العربية');
       return true;
     }
     
@@ -59,9 +75,8 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
   };
 
   const queryGeminiAPI = async (question: string) => {
-    // التحقق من أوامر التنقل أولاً
+    // التحقق من أوامر التنقل أولاً - التنقل الفوري
     if (handleNavigationCommands(question)) {
-      setResponse('تم التنقل إلى الصفحة المطلوبة!');
       return;
     }
 
@@ -79,7 +94,7 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
               {
                 parts: [
                   {
-                    text: `أنت مساعد ذكي متخصص في الكيمياء والفيزياء الذرية. يمكنك أيضاً التنقل المباشر للصفحات عندما يطلب المستخدم ذلك. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
+                    text: `أنت مساعد ذكي متخصص في الكيمياء والفيزياء الذرية. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
                     
                     السياق الحالي:
                     - العنصر: ${atomData.element} (${atomData.symbol})
@@ -91,7 +106,7 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
                     - التوزيع الإلكتروني: ${atomData.electronConfiguration}
                     - حالة الاستقرار: ${atomData.isStable ? 'مستقر' : 'غير مستقر'}
                     
-                    إذا طلب المستخدم الانتقال لصفحة معينة (مثل الكيمياء، الفيزياء، الرياضيات، الأحياء)، أخبره أنه سيتم التنقل فوراً.
+                    أجب بشكل مختصر ومفيد.
                     `
                   }
                 ]
@@ -155,7 +170,7 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="اسأل عن بناء الذرات أو اطلب الانتقال لصفحة..."
+              placeholder="اسأل عن بناء الذرات أو اطلب الانتقال (كيمياء، فيزياء، رياضيات...)..."
               className="flex-1 bg-purple-800/50 border-purple-500/50"
               onKeyPress={(e) => {
                 if (e.key === 'Enter' && query.trim()) {
@@ -183,7 +198,11 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
           
           {!response && !isLoading && (
             <div className="text-center text-purple-300 text-sm">
-              مرحباً! اسألني أي سؤال عن بناء الذرات أو اطلب الانتقال لأي صفحة
+              مرحباً! اسألني أي سؤال عن بناء الذرات أو اطلب الانتقال السريع للمنصات
+              <br />
+              <span className="text-xs text-purple-400">
+                مثال: "كيمياء" للانتقال فوراً لمنصة الكيمياء
+              </span>
             </div>
           )}
         </CardContent>
