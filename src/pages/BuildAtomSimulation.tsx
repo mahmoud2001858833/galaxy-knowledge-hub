@@ -11,6 +11,7 @@ import { ElectronConfiguration } from '@/components/atom/ElectronConfiguration';
 import { SuggestedElements } from '@/components/atom/SuggestedElements';
 import { AtomVisualization } from '@/components/atom/AtomVisualization';
 import { SmartAssistant } from '@/components/atom/SmartAssistant';
+import { AdvancedControls } from '@/components/atom/AdvancedControls';
 import { allElements } from '@/data/all-elements';
 
 const BuildAtomSimulation = () => {
@@ -22,7 +23,8 @@ const BuildAtomSimulation = () => {
     addParticle,
     removeParticle,
     buildSuggestedElement,
-    clearAll
+    clearAll,
+    setParticles
   } = useAtomSimulation();
 
   const [showAssistant, setShowAssistant] = useState(false);
@@ -74,7 +76,7 @@ const BuildAtomSimulation = () => {
               العودة للمحاكاة
             </Button>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              محاكاة بناء الذرة التفاعلية المحدثة
+              محاكاة بناء الذرة المحدثة والمطورة
             </h1>
             
             <div className="flex items-center gap-2">
@@ -103,6 +105,13 @@ const BuildAtomSimulation = () => {
               atomData={atomData}
               onAddParticle={addParticle}
               onRemoveParticle={removeParticle}
+            />
+
+            {/* التحكم المتقدم */}
+            <AdvancedControls
+              atomData={atomData}
+              particles={particles}
+              onParticlesChange={setParticles}
             />
 
             {/* معلومات الذرة */}
@@ -197,6 +206,17 @@ const BuildAtomSimulation = () => {
                   <p className="text-sm text-gray-300 bg-blue-900/20 p-3 rounded font-mono">
                     {atomData.electronConfiguration}
                   </p>
+                </div>
+              )}
+
+              {atomData.warnings.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-yellow-300 mb-2">تحذيرات:</h4>
+                  <ul className="text-sm text-yellow-200 bg-yellow-900/20 p-3 rounded space-y-1">
+                    {atomData.warnings.map((warning, index) => (
+                      <li key={index}>• {warning}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

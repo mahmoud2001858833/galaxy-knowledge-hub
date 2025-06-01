@@ -26,48 +26,40 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // أوامر التنقل المباشر - تم إصلاحها للتنقل الفوري
-  const handleNavigationCommands = (query: string) => {
+  // أوامر التنقل المباشر - تنقل فوري بدون كلام
+  const handleNavigationCommands = (query: string): boolean => {
     const lowerQuery = query.toLowerCase();
     
     if (lowerQuery.includes('كيمياء') || lowerQuery.includes('chemistry')) {
       navigate('/chemistry');
-      setResponse('تم الانتقال إلى منصة الكيمياء');
       return true;
     }
     if (lowerQuery.includes('فيزياء') || lowerQuery.includes('physics')) {
       navigate('/physics');
-      setResponse('تم الانتقال إلى منصة الفيزياء');
       return true;
     }
     if (lowerQuery.includes('رياضيات') || lowerQuery.includes('math')) {
       navigate('/mathematics');
-      setResponse('تم الانتقال إلى منصة الرياضيات');
       return true;
     }
     if (lowerQuery.includes('أحياء') || lowerQuery.includes('biology')) {
       navigate('/biology');
-      setResponse('تم الانتقال إلى منصة الأحياء');
       return true;
     }
     if (lowerQuery.includes('رئيسية') || lowerQuery.includes('home') || lowerQuery.includes('الرئيسية')) {
       navigate('/');
-      setResponse('تم الانتقال إلى الصفحة الرئيسية');
       return true;
     }
     if (lowerQuery.includes('محاكاة') || lowerQuery.includes('simulation')) {
       navigate('/scientific-simulations');
-      setResponse('تم الانتقال إلى المحاكاة العلمية');
       return true;
     }
     if (lowerQuery.includes('انجليزي') || lowerQuery.includes('english')) {
       navigate('/english');
-      setResponse('تم الانتقال إلى منصة الإنجليزية');
       return true;
     }
     if (lowerQuery.includes('عربي') || lowerQuery.includes('arabic')) {
       navigate('/arabic');
-      setResponse('تم الانتقال إلى منصة العربية');
       return true;
     }
     
@@ -75,9 +67,10 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
   };
 
   const queryGeminiAPI = async (question: string) => {
-    // التحقق من أوامر التنقل أولاً - التنقل الفوري
+    // التحقق من أوامر التنقل أولاً - تنقل فوري
     if (handleNavigationCommands(question)) {
-      return;
+      setQuery('');
+      return; // تنقل فوري بدون رسائل
     }
 
     setIsLoading(true);
@@ -94,9 +87,9 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
               {
                 parts: [
                   {
-                    text: `أنت مساعد ذكي متخصص في الكيمياء والفيزياء الذرية. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
+                    text: `أنت مساعد ذكي متخصص في الفيزياء الذرية. أجب على السؤال باللغة العربية بشكل مختصر وعلمي: ${question}
                     
-                    السياق الحالي:
+                    الذرة الحالية:
                     - العنصر: ${atomData.element} (${atomData.symbol})
                     - البروتونات: ${atomData.protons}
                     - النيوترونات: ${atomData.neutrons}
@@ -105,8 +98,10 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
                     - الشحنة: ${atomData.charge}
                     - التوزيع الإلكتروني: ${atomData.electronConfiguration}
                     - حالة الاستقرار: ${atomData.isStable ? 'مستقر' : 'غير مستقر'}
+                    - صحة التوزيع: ${atomData.isValid ? 'صحيح' : 'خاطئ'}
+                    ${atomData.warnings.length > 0 ? `- تحذيرات: ${atomData.warnings.join(', ')}` : ''}
                     
-                    أجب بشكل مختصر ومفيد.
+                    أجب بشكل مختصر ومفيد (3 أسطر كحد أقصى).
                     `
                   }
                 ]
@@ -170,8 +165,8 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="اسأل عن بناء الذرات أو اطلب الانتقال (كيمياء، فيزياء، رياضيات...)..."
-              className="flex-1 bg-purple-800/50 border-purple-500/50"
+              placeholder="اسأل عن الذرات أو اكتب اسم المنصة للانتقال فوراً..."
+              className="flex-1 bg-purple-800/50 border-purple-500/50 text-white placeholder-purple-300"
               onKeyPress={(e) => {
                 if (e.key === 'Enter' && query.trim()) {
                   queryGeminiAPI(query);
@@ -188,6 +183,18 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
             </Button>
           </div>
           
+          {/* عرض تحذيرات التوزيع */}
+          {atomData.warnings.length > 0 && (
+            <div className="bg-yellow-800/30 p-3 rounded-lg border border-yellow-500/50">
+              <h4 className="text-yellow-300 font-bold text-sm mb-2">تحذيرات التوزيع:</h4>
+              <ul className="text-yellow-200 text-xs space-y-1">
+                {atomData.warnings.map((warning, index) => (
+                  <li key={index}>• {warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
           {response && (
             <div className="bg-purple-800/30 p-3 rounded-lg max-h-64 overflow-y-auto">
               <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
@@ -198,11 +205,11 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
           
           {!response && !isLoading && (
             <div className="text-center text-purple-300 text-sm">
-              مرحباً! اسألني أي سؤال عن بناء الذرات أو اطلب الانتقال السريع للمنصات
-              <br />
-              <span className="text-xs text-purple-400">
-                مثال: "كيمياء" للانتقال فوراً لمنصة الكيمياء
-              </span>
+              <div className="mb-2">مرحباً! اسألني عن بناء الذرات</div>
+              <div className="text-xs text-purple-400 space-y-1">
+                <div><strong>للتنقل الفوري:</strong> اكتب "كيمياء"، "فيزياء"، "رياضيات"...</div>
+                <div><strong>للأسئلة:</strong> اسأل عن التوزيع الإلكتروني أو خصائص العناصر</div>
+              </div>
             </div>
           )}
         </CardContent>

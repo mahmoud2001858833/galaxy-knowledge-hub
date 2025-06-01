@@ -9,16 +9,16 @@ export const useAtomSimulation = () => {
   const [selectedSuggestedElement, setSelectedSuggestedElement] = useState<SuggestedElement | null>(null);
   const animationFrameRef = useRef<number>();
 
-  // حساب بيانات الذرة
+  // حساب بيانات الذرة مع التحقق من الصحة
   const atomData: AtomData = calculateAtomData(particles);
 
-  // تحريك الإلكترونات - محسن
+  // تحريك الإلكترونات - محسن مع سرعات مختلفة
   const animateElectrons = useCallback(() => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
-          // سرعة مختلفة حسب المستوى
-          const speedFactor = 0.02 / Math.pow(particle.orbitalLevel + 1, 0.4);
+          // سرعة مختلفة حسب المستوى (المستويات الأقرب أسرع)
+          const speedFactor = 0.015 / Math.pow(particle.orbitalLevel + 1, 0.3);
           const newAngle = (particle.angle || 0) + speedFactor;
           const radius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
           
@@ -46,21 +46,30 @@ export const useAtomSimulation = () => {
     };
   }, [animateElectrons]);
 
-  // إضافة جسيم - تم إصلاحه بالكامل
+  // إضافة جسيم مع التحقق من الحدود
   const addParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
     console.log(`إضافة جسيم: ${type}`);
+    
+    // تحقق من الحدود
+    if (type === 'electron') {
+      const currentElectrons = particles.filter(p => p.type === 'electron').length;
+      if (currentElectrons >= 118) { // حد أقصى للإلكترونات
+        console.warn('تم الوصول للحد الأقصى من الإلكترونات');
+        return;
+      }
+    }
     
     const newParticle = createNewParticle(type, particles);
     const newParticles = [...particles, newParticle];
     
-    // إعادة تنظيم جميع الجسيمات لضمان التوضع الصحيح
+    // إعادة تنظيم جميع الجسيمات
     const reorganizedParticles = reorganizeParticles(newParticles);
     
     console.log(`تم إضافة ${type} في الموضع:`, { x: newParticle.x, y: newParticle.y });
     setParticles(reorganizedParticles);
   }, [particles]);
 
-  // حذف جسيم - تم إصلاحه
+  // حذف جسيم مع إعادة التنظيم
   const removeParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
     console.log(`حذف جسيم: ${type}`);
     
@@ -70,13 +79,13 @@ export const useAtomSimulation = () => {
     let newParticles = particles.filter((_, index) => index !== particleIndex);
     
     // إعادة تنظيم الجسيمات بعد الحذف
-    newParticles = reorganizeParticles(newParticles, type);
+    newParticles = reorganizeParticles(newParticles);
     
     console.log(`تم حذف ${type}, الجسيمات المتبقية:`, newParticles.length);
     setParticles(newParticles);
   }, [particles]);
 
-  // بناء عنصر مقترح - محسن
+  // بناء عنصر مقترح مع التوزيع الصحيح
   const buildSuggestedElement = useCallback((element: SuggestedElement) => {
     console.log(`بناء العنصر: ${element.name}`);
     
@@ -117,6 +126,7 @@ export const useAtomSimulation = () => {
     addParticle,
     removeParticle,
     buildSuggestedElement,
-    clearAll
+    clearAll,
+    setParticles // لدعم التحكم المتقدم
   };
 };
