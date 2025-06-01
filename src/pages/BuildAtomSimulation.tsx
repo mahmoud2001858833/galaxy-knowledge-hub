@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -52,12 +53,12 @@ interface SuggestedElement {
 }
 
 // Enhanced orbital configurations
-const ORBITAL_RADII = [100, 160, 220, 280, 340, 400, 460];
+const ORBITAL_RADII = [120, 180, 240, 300, 360, 420, 480];
 const ORBITAL_CAPACITY = [2, 8, 18, 32, 32, 18, 8];
 const ELECTRON_SHELL_ORDER = ['1s', '2s', '2p', '3s', '3p', '4s', '3d', '4p', '5s', '4d', '5p', '6s', '4f', '5d', '6p', '7s'];
-const ATOM_CENTER = { x: 300, y: 300 };
-const NUCLEUS_RADIUS = 80;
-const PARTICLE_SIZE = 6;
+const ATOM_CENTER = { x: 350, y: 350 };
+const NUCLEUS_RADIUS = 60;
+const PARTICLE_SIZE = 8;
 
 // Suggested common elements
 const SUGGESTED_ELEMENTS: SuggestedElement[] = [
@@ -186,7 +187,7 @@ const BuildAtomSimulation = () => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
           // Slower speed for outer orbitals (more realistic)
-          const speedFactor = 0.02 / Math.pow(particle.orbitalLevel + 1, 0.5);
+          const speedFactor = 0.015 / Math.pow(particle.orbitalLevel + 1, 0.3);
           const newAngle = (particle.angle || 0) + speedFactor;
           const radius = ORBITAL_RADII[particle.orbitalLevel];
           
@@ -213,7 +214,7 @@ const BuildAtomSimulation = () => {
     };
   }, [animateElectrons]);
 
-  // Add particle with proper placement
+  // Add particle with proper placement - FIXED TO PLACE IN CORRECT POSITIONS
   const addParticle = (type: 'proton' | 'neutron' | 'electron') => {
     const newParticle: Particle = {
       id: `${type}-${Date.now()}-${Math.random()}`,
@@ -223,20 +224,28 @@ const BuildAtomSimulation = () => {
     };
 
     if (type === 'proton' || type === 'neutron') {
-      // Place nucleons in organized pattern within nucleus
+      // Place nucleons in tight circular pattern within nucleus CENTER
       const existingNucleons = particles.filter(p => p.type === 'proton' || p.type === 'neutron').length;
-      const layer = Math.floor(existingNucleons / 6);
-      const positionInLayer = existingNucleons % 6;
-      const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
-      const radius = Math.min(NUCLEUS_RADIUS - 20, 15 + layer * 20);
-      const angle = positionInLayer * angleStep + (layer * 0.5);
       
-      newParticle.x = ATOM_CENTER.x + Math.cos(angle) * radius;
-      newParticle.y = ATOM_CENTER.y + Math.sin(angle) * radius;
+      if (existingNucleons === 0) {
+        // First particle at center
+        newParticle.x = ATOM_CENTER.x;
+        newParticle.y = ATOM_CENTER.y;
+      } else {
+        // Arrange in concentric circles around center
+        const layer = Math.floor((existingNucleons - 1) / 6);
+        const positionInLayer = (existingNucleons - 1) % 6;
+        const radius = Math.min(25 + layer * 15, NUCLEUS_RADIUS - 15);
+        const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
+        const angle = positionInLayer * angleStep;
+        
+        newParticle.x = ATOM_CENTER.x + Math.cos(angle) * radius;
+        newParticle.y = ATOM_CENTER.y + Math.sin(angle) * radius;
+      }
     } else if (type === 'electron') {
       // Place electron according to electron configuration rules
       const electronCount = particles.filter(p => p.type === 'electron').length;
-      const { level, positionInLevel } = getElectronOrbitalLevel(electronCount);
+      const { level } = getElectronOrbitalLevel(electronCount);
       
       // Count electrons already in this level
       const electronsInLevel = particles.filter(p => 
@@ -244,8 +253,8 @@ const BuildAtomSimulation = () => {
       ).length;
       
       // Calculate position in orbital
-      const totalElectronsInLevel = Math.min(ORBITAL_CAPACITY[level], electronsInLevel + 1);
-      const angleStep = (2 * Math.PI) / totalElectronsInLevel;
+      const totalElectronsInLevel = electronsInLevel + 1;
+      const angleStep = (2 * Math.PI) / Math.max(totalElectronsInLevel, 2);
       const angle = electronsInLevel * angleStep;
       
       newParticle.x = ATOM_CENTER.x + Math.cos(angle) * ORBITAL_RADII[level];
@@ -266,16 +275,39 @@ const BuildAtomSimulation = () => {
 
     let newParticles = particles.filter((_, index) => index !== particleIndex);
     
-    // Reorganize electrons if an electron was removed
-    if (type === 'electron') {
+    // Reorganize particles after removal
+    if (type === 'proton' || type === 'neutron') {
+      // Reorganize nucleons in nucleus
+      const nucleons = newParticles.filter(p => p.type === 'proton' || p.type === 'neutron');
+      const otherParticles = newParticles.filter(p => p.type === 'electron');
+      
+      const reorganizedNucleons = nucleons.map((nucleon, index) => {
+        if (index === 0) {
+          return { ...nucleon, x: ATOM_CENTER.x, y: ATOM_CENTER.y };
+        }
+        
+        const layer = Math.floor((index - 1) / 6);
+        const positionInLayer = (index - 1) % 6;
+        const radius = Math.min(25 + layer * 15, NUCLEUS_RADIUS - 15);
+        const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
+        const angle = positionInLayer * angleStep;
+        
+        return {
+          ...nucleon,
+          x: ATOM_CENTER.x + Math.cos(angle) * radius,
+          y: ATOM_CENTER.y + Math.sin(angle) * radius
+        };
+      });
+      
+      newParticles = [...reorganizedNucleons, ...otherParticles];
+    } else if (type === 'electron') {
+      // Reorganize electrons
       const electronsOnly = newParticles.filter(p => p.type === 'electron');
       const otherParticles = newParticles.filter(p => p.type !== 'electron');
       
-      // Redistribute electrons according to configuration rules
       const redistributedElectrons = electronsOnly.map((electron, index) => {
         const { level } = getElectronOrbitalLevel(index);
         
-        // Count electrons in this level up to current position
         let electronsInLevel = 0;
         for (let i = 0; i < index; i++) {
           const { level: prevLevel } = getElectronOrbitalLevel(i);
@@ -287,7 +319,7 @@ const BuildAtomSimulation = () => {
           return l === level;
         }).length;
         
-        const angleStep = (2 * Math.PI) / totalInLevel;
+        const angleStep = (2 * Math.PI) / Math.max(totalInLevel, 2);
         const angle = electronsInLevel * angleStep;
         
         return {
@@ -306,36 +338,49 @@ const BuildAtomSimulation = () => {
     setAtomData(calculateAtomData(newParticles));
   };
 
-  // Build suggested element
+  // Build suggested element with proper positioning
   const buildSuggestedElement = (element: SuggestedElement) => {
     setParticles([]);
     
     const newParticles: Particle[] = [];
     
-    // Add protons
+    // Add nucleons (protons and neutrons) in nucleus center
+    const totalNucleons = element.protons + element.neutrons;
+    let nucleonIndex = 0;
+    
+    // Add protons first
     for (let i = 0; i < element.protons; i++) {
-      const layer = Math.floor(i / 6);
-      const positionInLayer = i % 6;
-      const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
-      const radius = Math.min(NUCLEUS_RADIUS - 20, 15 + layer * 20);
-      const angle = positionInLayer * angleStep + (layer * 0.5);
-      
-      newParticles.push({
-        id: `proton-${i}`,
-        type: 'proton',
-        x: ATOM_CENTER.x + Math.cos(angle) * radius,
-        y: ATOM_CENTER.y + Math.sin(angle) * radius
-      });
+      if (nucleonIndex === 0) {
+        newParticles.push({
+          id: `proton-${i}`,
+          type: 'proton',
+          x: ATOM_CENTER.x,
+          y: ATOM_CENTER.y
+        });
+      } else {
+        const layer = Math.floor((nucleonIndex - 1) / 6);
+        const positionInLayer = (nucleonIndex - 1) % 6;
+        const radius = Math.min(25 + layer * 15, NUCLEUS_RADIUS - 15);
+        const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
+        const angle = positionInLayer * angleStep;
+        
+        newParticles.push({
+          id: `proton-${i}`,
+          type: 'proton',
+          x: ATOM_CENTER.x + Math.cos(angle) * radius,
+          y: ATOM_CENTER.y + Math.sin(angle) * radius
+        });
+      }
+      nucleonIndex++;
     }
     
     // Add neutrons
     for (let i = 0; i < element.neutrons; i++) {
-      const totalNucleons = element.protons + i;
-      const layer = Math.floor(totalNucleons / 6);
-      const positionInLayer = totalNucleons % 6;
+      const layer = Math.floor((nucleonIndex - 1) / 6);
+      const positionInLayer = (nucleonIndex - 1) % 6;
+      const radius = Math.min(25 + layer * 15, NUCLEUS_RADIUS - 15);
       const angleStep = (2 * Math.PI) / Math.max(6, 6 + layer * 2);
-      const radius = Math.min(NUCLEUS_RADIUS - 20, 15 + layer * 20);
-      const angle = positionInLayer * angleStep + (layer * 0.5);
+      const angle = positionInLayer * angleStep;
       
       newParticles.push({
         id: `neutron-${i}`,
@@ -343,27 +388,26 @@ const BuildAtomSimulation = () => {
         x: ATOM_CENTER.x + Math.cos(angle) * radius,
         y: ATOM_CENTER.y + Math.sin(angle) * radius
       });
+      nucleonIndex++;
     }
     
-    // Add electrons
+    // Add electrons in proper orbitals
     for (let i = 0; i < element.electrons; i++) {
       const { level } = getElectronOrbitalLevel(i);
       
-      // Count electrons in this level
       let electronsInLevel = 0;
       for (let j = 0; j < i; j++) {
         const { level: prevLevel } = getElectronOrbitalLevel(j);
         if (prevLevel === level) electronsInLevel++;
       }
       
-      // Count total electrons that will be in this level
       let totalInLevel = 0;
       for (let j = 0; j < element.electrons; j++) {
         const { level: l } = getElectronOrbitalLevel(j);
         if (l === level) totalInLevel++;
       }
       
-      const angleStep = (2 * Math.PI) / totalInLevel;
+      const angleStep = (2 * Math.PI) / Math.max(totalInLevel, 2);
       const angle = electronsInLevel * angleStep;
       
       newParticles.push({
@@ -525,54 +569,9 @@ const BuildAtomSimulation = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-          {/* Control Panel and Suggested Elements */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Control Panel - Left Side */}
           <div className="xl:col-span-1 space-y-4">
-            {/* Suggested Elements */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-green-300 flex items-center">
-                  <Zap className="w-5 h-5 mr-2" />
-                  العناصر المقترحة
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {SUGGESTED_ELEMENTS.map((element, index) => (
-                  <motion.div
-                    key={element.symbol}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Button
-                      onClick={() => buildSuggestedElement(element)}
-                      className={`w-full justify-start text-left p-3 h-auto ${
-                        selectedSuggestedElement?.symbol === element.symbol
-                          ? 'bg-blue-600 hover:bg-blue-700 border-blue-400'
-                          : 'bg-white/5 hover:bg-white/10 border-white/20'
-                      }`}
-                      variant="outline"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <span className="text-2xl">{element.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-lg">{element.symbol}</span>
-                            <span className="text-sm opacity-90">{element.name}</span>
-                          </div>
-                          <div className="text-xs opacity-70 mt-1">
-                            {element.protons}p, {element.neutrons}n, {element.electrons}e
-                          </div>
-                          <div className="text-xs opacity-60 mt-1 font-mono">
-                            {element.electronConfig}
-                          </div>
-                        </div>
-                      </div>
-                    </Button>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-
             {/* Particle Controls */}
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <CardHeader>
@@ -667,7 +666,7 @@ const BuildAtomSimulation = () => {
               <CardHeader>
                 <CardTitle className="text-yellow-300 flex items-center">
                   <Info className="w-5 h-5 mr-2" />
-                  معلومات الذرة
+                  العنصر المُمثل
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -704,19 +703,76 @@ const BuildAtomSimulation = () => {
                       {atomData.charge > 0 ? `+${atomData.charge}` : atomData.charge}
                     </Badge>
                   </div>
-                  {atomData.electronConfiguration && (
-                    <div className="mt-3 p-3 bg-blue-900/20 rounded-lg border border-blue-500/30">
-                      <div className="text-xs text-blue-300 mb-1">التوزيع الإلكتروني:</div>
-                      <div className="text-sm font-mono text-white">{atomData.electronConfiguration}</div>
-                    </div>
-                  )}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Electronic Configuration */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <CardHeader>
+                <CardTitle className="text-blue-300 flex items-center">
+                  <Zap className="w-5 h-5 mr-2" />
+                  التوزيع الإلكتروني
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {atomData.electronConfiguration ? (
+                  <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                    <div className="text-sm font-mono text-white">{atomData.electronConfiguration}</div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 text-sm">
+                    لا يوجد إلكترونات لعرض التوزيع
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Suggested Elements */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <CardHeader>
+                <CardTitle className="text-green-300 flex items-center">
+                  <Zap className="w-5 h-5 mr-2" />
+                  العناصر المقترحة
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {SUGGESTED_ELEMENTS.map((element, index) => (
+                  <motion.div
+                    key={element.symbol}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      onClick={() => buildSuggestedElement(element)}
+                      className={`w-full justify-start text-left p-3 h-auto ${
+                        selectedSuggestedElement?.symbol === element.symbol
+                          ? 'bg-blue-600 hover:bg-blue-700 border-blue-400'
+                          : 'bg-white/5 hover:bg-white/10 border-white/20'
+                      }`}
+                      variant="outline"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="text-2xl">{element.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-lg">{element.symbol}</span>
+                            <span className="text-sm opacity-90">{element.name}</span>
+                          </div>
+                          <div className="text-xs opacity-70 mt-1">
+                            {element.protons}p, {element.neutrons}n, {element.electrons}e
+                          </div>
+                        </div>
+                      </div>
+                    </Button>
+                  </motion.div>
+                ))}
               </CardContent>
             </Card>
           </div>
 
           {/* Main Atom Area */}
-          <div className="xl:col-span-4">
+          <div className="xl:col-span-3">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 h-[700px]">
               <CardContent className="p-4 h-full">
                 <div className="relative w-full h-full bg-gradient-to-br from-gray-900/50 to-black/50 rounded-lg border-2 border-dashed border-gray-500/30 overflow-hidden">
@@ -786,22 +842,6 @@ const BuildAtomSimulation = () => {
                       </div>
                     </motion.div>
                   ))}
-
-                  {/* Educational overlay when atom is empty */}
-                  {particles.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-white/70 max-w-md">
-                        <div className="text-6xl mb-4">⚛️</div>
-                        <h3 className="text-xl font-bold mb-2">ابدأ ببناء ذرتك!</h3>
-                        <p className="text-sm mb-4">
-                          اختر عنصراً مقترحاً أو أضف الجسيمات يدوياً باستخدام الأزرار
-                        </p>
-                        <div className="text-xs opacity-60">
-                          💡 ستتم إضافة الجسيمات تلقائياً في أماكنها الصحيحة حسب قواعد الفيزياء الذرية
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
