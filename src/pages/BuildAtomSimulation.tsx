@@ -29,6 +29,18 @@ interface AtomData {
   electronConfiguration: string;
 }
 
+interface ElementInfo {
+  name: string;
+  symbol: string;
+  atomicNumber: number;
+  period: number;
+  group: number;
+  category: string;
+  electronicConfiguration: string;
+  uses: string[];
+  properties: string[];
+}
+
 interface SuggestedElement {
   name: string;
   symbol: string;
