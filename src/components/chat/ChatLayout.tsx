@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WelcomeScreen from './WelcomeScreen';
@@ -113,11 +114,25 @@ const ChatLayout = () => {
             transition={{ duration: 0.3 }}
             className="w-full"
           >
-            <ChatInterface
-              selectedContact={selectedContact}
-              onBackToContacts={handleBackToContacts}
-              currentUser={currentUser}
-            />
+            <div className="flex h-full">
+              {/* قائمة جهات الاتصال في الجانب */}
+              <div className="w-80 border-r border-emerald-500/20">
+                <ContactsList
+                  selectedContact={selectedContact}
+                  setSelectedContact={handleSelectContact}
+                  onBackToWelcome={handleBackToWelcome}
+                  currentUser={currentUser}
+                />
+              </div>
+              
+              {/* واجهة المحادثة */}
+              <div className="flex-1">
+                <ChatInterface
+                  selectedContact={selectedContact}
+                  currentUser={currentUser}
+                />
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

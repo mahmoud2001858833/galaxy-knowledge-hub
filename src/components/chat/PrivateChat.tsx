@@ -182,6 +182,10 @@ const PrivateChat = ({ user }) => {
     );
   }
 
+  const handleBackToWelcome = () => {
+    setSelectedContact(null);
+  };
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-gray-900/90 to-slate-900/90">
       {/* Contacts sidebar - separate and elegant */}
@@ -205,16 +209,10 @@ const PrivateChat = ({ user }) => {
 
         {/* Contacts list */}
         <ContactsList 
-          contacts={contacts}
           selectedContact={selectedContact}
           setSelectedContact={setSelectedContact}
-          setIsContactSearchOpen={setIsContactSearchOpen}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-          toggleSortOrder={toggleSortOrder}
-          contactsAreaRef={contactsAreaRef}
-          scrollContactsUp={scrollContactsUp}
-          scrollContactsDown={scrollContactsDown}
+          onBackToWelcome={handleBackToWelcome}
+          currentUser={user}
         />
       </div>
 
