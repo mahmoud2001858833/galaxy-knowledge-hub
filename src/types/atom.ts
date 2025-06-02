@@ -6,7 +6,7 @@ export interface Particle {
   y: number;
   orbitalLevel?: number;
   angle?: number;
-  isLocked?: boolean; // لمنع سحب النوكليونات خارج النواة
+  isLocked?: boolean;
 }
 
 export interface AtomData {
@@ -19,8 +19,8 @@ export interface AtomData {
   charge: number;
   isStable: boolean;
   electronConfiguration: string;
-  isValid: boolean; // للتحقق من صحة التوزيع
-  warnings: string[]; // تحذيرات التوزيع
+  isValid: boolean;
+  warnings: string[];
 }
 
 export interface SuggestedElement {
@@ -45,14 +45,14 @@ export interface ElementInfo {
   properties: string[];
 }
 
-// الثوابت الفيزيائية المحدثة - نواة أكبر ومدارات أوضح
-export const ATOM_CENTER = { x: 350, y: 350 };
-export const NUCLEUS_RADIUS = 60; // نواة أكبر لتستوعب النوكليونات
-export const PARTICLE_SIZE = 8; // جسيمات أكبر قليلاً
-export const ORBITAL_RADII = [120, 170, 220, 270, 320, 370, 420]; // مدارات أبعد عن النواة
-export const ORBITAL_CAPACITY = [2, 8, 18, 32, 32, 18, 8]; // السعة الصحيحة
+// الثوابت الفيزيائية المحسنة - نواة أكبر ومدارات صحيحة
+export const ATOM_CENTER = { x: 400, y: 350 };
+export const NUCLEUS_RADIUS = 80; // نواة أكبر بكثير لتستوعب النوكليونات بوضوح
+export const PARTICLE_SIZE = 12; // جسيمات أكبر للوضوح
+export const ORBITAL_RADII = [140, 190, 240, 290, 340, 390, 440]; // مدارات متباعدة وواضحة
+export const ORBITAL_CAPACITY = [2, 8, 18, 32, 32, 18, 8]; // السعة الصحيحة للمدارات
 
-// ترتيب ملء الإلكترونات المبسط
+// ترتيب ملء الإلكترونات
 export const ELECTRON_SHELL_ORDER = ['1s', '2s', '2p', '3s', '3p', '4s', '3d', '4p', '5s', '4d', '5p', '6s', '4f', '5d', '6p', '7s'];
 
 // سعة كل مدار فرعي
@@ -61,15 +61,15 @@ export const SHELL_CAPACITIES: { [key: string]: number } = {
   '4p': 6, '5s': 2, '4d': 10, '5p': 6, '6s': 2, '4f': 14, '5d': 10, '6p': 6, '7s': 2
 };
 
-// تطابق المدارات مع المستويات (مبسط)
+// تطابق المدارات مع المستويات
 export const SHELL_TO_LEVEL: { [key: string]: number } = {
-  '1s': 0, // المستوى الأول
-  '2s': 1, '2p': 1, // المستوى الثاني 
-  '3s': 2, '3p': 2, '3d': 2, // المستوى الثالث
-  '4s': 3, '4p': 3, '4d': 3, '4f': 3, // المستوى الرابع
-  '5s': 4, '5p': 4, '5d': 4, // المستوى الخامس
-  '6s': 5, '6p': 5, // المستوى السادس
-  '7s': 6 // المستوى السابع
+  '1s': 0,
+  '2s': 1, '2p': 1,
+  '3s': 2, '3p': 2, '3d': 2,
+  '4s': 3, '4p': 3, '4d': 3, '4f': 3,
+  '5s': 4, '5p': 4, '5d': 4,
+  '6s': 5, '6p': 5,
+  '7s': 6
 };
 
 // العناصر المقترحة

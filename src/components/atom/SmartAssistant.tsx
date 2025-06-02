@@ -26,40 +26,70 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // أوامر التنقل المباشر - تنقل فوري بدون كلام
-  const handleNavigationCommands = (query: string): boolean => {
-    const lowerQuery = query.toLowerCase();
+  // أوامر التنقل المباشر - تنقل فوري بدون أي كلام
+  const handleDirectNavigation = (query: string): boolean => {
+    const lowerQuery = query.toLowerCase().trim();
     
-    if (lowerQuery.includes('كيمياء') || lowerQuery.includes('chemistry')) {
+    // تنقل فوري للكيمياء
+    if (lowerQuery.includes('كيمياء') || lowerQuery.includes('chemistry') || lowerQuery === 'كيمياء') {
       navigate('/chemistry');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('فيزياء') || lowerQuery.includes('physics')) {
+    
+    // تنقل فوري للفيزياء
+    if (lowerQuery.includes('فيزياء') || lowerQuery.includes('physics') || lowerQuery === 'فيزياء') {
       navigate('/physics');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('رياضيات') || lowerQuery.includes('math')) {
+    
+    // تنقل فوري للرياضيات
+    if (lowerQuery.includes('رياضيات') || lowerQuery.includes('math') || lowerQuery === 'رياضيات') {
       navigate('/mathematics');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('أحياء') || lowerQuery.includes('biology')) {
+    
+    // تنقل فوري للأحياء
+    if (lowerQuery.includes('أحياء') || lowerQuery.includes('biology') || lowerQuery === 'أحياء') {
       navigate('/biology');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('رئيسية') || lowerQuery.includes('home') || lowerQuery.includes('الرئيسية')) {
+    
+    // تنقل فوري للرئيسية
+    if (lowerQuery.includes('رئيسية') || lowerQuery.includes('home') || lowerQuery === 'الرئيسية' || lowerQuery === 'رئيسية') {
       navigate('/');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('محاكاة') || lowerQuery.includes('simulation')) {
+    
+    // تنقل فوري للمحاكاة
+    if (lowerQuery.includes('محاكاة') || lowerQuery.includes('simulation') || lowerQuery === 'محاكاة') {
       navigate('/scientific-simulations');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('انجليزي') || lowerQuery.includes('english')) {
+    
+    // تنقل فوري للإنجليزي
+    if (lowerQuery.includes('انجليزي') || lowerQuery.includes('english') || lowerQuery === 'انجليزي') {
       navigate('/english');
+      setQuery('');
       return true;
     }
-    if (lowerQuery.includes('عربي') || lowerQuery.includes('arabic')) {
+    
+    // تنقل فوري للعربي
+    if (lowerQuery.includes('عربي') || lowerQuery.includes('arabic') || lowerQuery === 'عربي') {
       navigate('/arabic');
+      setQuery('');
+      return true;
+    }
+    
+    // تنقل فوري للمحادثة
+    if (lowerQuery.includes('محادثة') || lowerQuery.includes('chat') || lowerQuery === 'محادثة') {
+      navigate('/chat-rooms');
+      setQuery('');
       return true;
     }
     
@@ -67,10 +97,9 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
   };
 
   const queryGeminiAPI = async (question: string) => {
-    // التحقق من أوامر التنقل أولاً - تنقل فوري
-    if (handleNavigationCommands(question)) {
-      setQuery('');
-      return; // تنقل فوري بدون رسائل
+    // التحقق من أوامر التنقل أولاً - تنقل فوري بدون أي رسائل
+    if (handleDirectNavigation(question)) {
+      return; // تنقل فوري بدون أي تعليمات أو رسائل
     }
 
     setIsLoading(true);
@@ -165,7 +194,7 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="اسأل عن الذرات أو اكتب اسم المنصة للانتقال فوراً..."
+              placeholder="اكتب اسم المنصة للانتقال فوراً أو اسأل عن الذرات..."
               className="flex-1 bg-purple-800/50 border-purple-500/50 text-white placeholder-purple-300"
               onKeyPress={(e) => {
                 if (e.key === 'Enter' && query.trim()) {
@@ -207,7 +236,7 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
             <div className="text-center text-purple-300 text-sm">
               <div className="mb-2">مرحباً! اسألني عن بناء الذرات</div>
               <div className="text-xs text-purple-400 space-y-1">
-                <div><strong>للتنقل الفوري:</strong> اكتب "كيمياء"، "فيزياء"، "رياضيات"...</div>
+                <div><strong>للتنقل الفوري:</strong> اكتب "كيمياء"، "فيزياء"، "رياضيات"، "أحياء"، "محادثة"...</div>
                 <div><strong>للأسئلة:</strong> اسأل عن التوزيع الإلكتروني أو خصائص العناصر</div>
               </div>
             </div>

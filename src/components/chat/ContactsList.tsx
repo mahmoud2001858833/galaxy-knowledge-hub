@@ -1,170 +1,189 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, Plus, ChevronUp, ChevronDown, Clock, Mail } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import ContactCard from './ContactCard';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowLeft, Search, UserPlus, Users, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import ContactSearch from './ContactSearch';
 
 interface ContactsListProps {
-  contacts: any[];
   selectedContact: any;
   setSelectedContact: (contact: any) => void;
-  setIsContactSearchOpen: (isOpen: boolean) => void;
-  sortOrder: 'name' | 'activity';
-  setSortOrder: (order: 'name' | 'activity') => void;
-  toggleSortOrder: () => void;
-  contactsAreaRef: React.RefObject<HTMLDivElement>;
-  scrollContactsUp: () => void;
-  scrollContactsDown: () => void;
+  onBackToWelcome: () => void;
+  currentUser: any;
 }
 
-const ContactsList = ({
-  contacts,
-  selectedContact,
-  setSelectedContact,
-  setIsContactSearchOpen,
-  sortOrder,
-  setSortOrder,
-  toggleSortOrder,
-  contactsAreaRef,
-  scrollContactsUp,
-  scrollContactsDown,
-}: ContactsListProps) => {
-  const [showAllContacts, setShowAllContacts] = useState(false);
+const ContactsList = ({ selectedContact, setSelectedContact, onBackToWelcome, currentUser }: ContactsListProps) => {
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isContactSearchOpen, setIsContactSearchOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get visible contacts (limited or all)
-  const getVisibleContacts = () => {
-    if (showAllContacts || contacts.length <= 5) {
-      return contacts;
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  const loadContacts = async () => {
+    try {
+      setIsLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: contactsData, error } = await supabase
+        .from('contacts')
+        .select(`
+          *,
+          contact_profile:profiles!contacts_contact_id_fkey(
+            id,
+            username,
+            avatar_url,
+            is_online
+          )
+        `)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      const formattedContacts = contactsData?.map(contact => ({
+        id: contact.contact_profile.id,
+        username: contact.contact_profile.username,
+        avatar_url: contact.contact_profile.avatar_url,
+        isOnline: contact.contact_profile.is_online,
+        ...contact
+      })) || [];
+
+      setContacts(formattedContacts);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+    } finally {
+      setIsLoading(false);
     }
-    return contacts.slice(0, 5);
   };
 
+  const filteredContacts = contacts.filter(contact =>
+    contact.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="w-80 bg-gradient-to-b from-gray-800/90 to-slate-800/90 backdrop-blur-md border-r border-gray-600/30 flex flex-col h-full sticky top-0 max-h-[calc(100vh-64px)] overflow-hidden">
-      <div className="p-4 border-b border-gray-600/30 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-white">جهات الاتصال</h3>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:bg-gray-700/50"
-            >
-              {sortOrder === 'name' ? <Mail className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-gradient-to-br from-gray-800/95 to-slate-800/95 border-gray-600/50 backdrop-blur-md">
-            <DropdownMenuItem onClick={() => {
-              setSortOrder('name');
-              toggleSortOrder();
-            }} className="flex gap-2 text-xs text-white hover:bg-gray-700/50">
-              <Mail className="h-3 w-3" />
-              <span>ترتيب حسب الاسم</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              setSortOrder('activity');
-              toggleSortOrder();
-            }} className="flex gap-2 text-xs text-white hover:bg-gray-700/50">
-              <Clock className="h-3 w-3" />
-              <span>ترتيب حسب النشاط</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
-      <div className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Navigation arrows for contacts */}
-        <div className="absolute left-1/2 top-1 -translate-x-1/2 z-10">
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            onClick={scrollContactsUp}
-            className="h-6 w-6 rounded-full bg-gray-700/50 border border-gray-600/30 hover:bg-gray-600/50"
+    <div className="flex flex-col h-screen bg-gradient-to-br from-emerald-950 to-teal-900">
+      {/* الرأس */}
+      <div className="bg-gradient-to-r from-emerald-800/50 to-teal-800/50 backdrop-blur-sm border-b border-emerald-500/20 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            onClick={onBackToWelcome}
+            className="text-white hover:bg-white/10"
           >
-            <ChevronUp className="h-4 w-4" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            العودة
           </Button>
-        </div>
-        
-        <ScrollArea className="flex-1 h-full py-2 px-2">
-          <div ref={contactsAreaRef} className="space-y-1">
-            {contacts.length > 0 ? (
-              <>
-                {getVisibleContacts().map((contact) => (
-                  <ContactCard
-                    key={contact.id}
-                    contact={contact}
-                    isSelected={selectedContact?.id === contact.id}
-                    onClick={() => setSelectedContact(contact)}
-                  />
-                ))}
-                
-                {/* Show more/less button when contacts > 5 */}
-                {contacts.length > 5 && (
-                  <div className="flex justify-center mt-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setShowAllContacts(!showAllContacts)}
-                      className="w-full text-xs text-white/70 hover:text-white hover:bg-gray-700/30 flex items-center justify-center gap-1"
-                    >
-                      {showAllContacts ? (
-                        <>
-                          <ChevronUp className="h-3.5 w-3.5" /> 
-                          <span>عرض أقل</span>
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="h-3.5 w-3.5" />
-                          <span>عرض المزيد ({contacts.length - 5})</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                <User className="h-12 w-12 text-emerald-500/40 mb-3" />
-                <p className="text-white/50">لا توجد جهات اتصال</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsContactSearchOpen(true)}
-                  className="mt-4 text-xs border-emerald-500/30 hover:bg-emerald-700/30"
-                >
-                  <Plus className="h-3 w-3 ml-1" />
-                  إضافة جهة اتصال
-                </Button>
-              </div>
+          
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-white">جهات الاتصال</h2>
+            {currentUser && (
+              <p className="text-emerald-300 text-sm">
+                <User className="w-4 h-4 inline mr-1" />
+                {currentUser.username}
+              </p>
             )}
           </div>
-        </ScrollArea>
-        
-        <div className="absolute left-1/2 bottom-1 -translate-x-1/2 z-10">
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            onClick={scrollContactsDown}
-            className="h-6 w-6 rounded-full bg-gray-700/50 border border-gray-600/30 hover:bg-gray-600/50"
+          
+          <Button
+            onClick={() => setIsContactSearchOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <ChevronDown className="h-4 w-4" />
+            <UserPlus className="w-4 h-4 mr-2" />
+            إضافة
           </Button>
         </div>
+
+        {/* شريط البحث */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="البحث عن جهات الاتصال..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-emerald-900/30 border-emerald-500/50 text-white placeholder-emerald-300"
+          />
+        </div>
       </div>
-      
-      <div className="p-3 border-t border-gray-600/30">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setIsContactSearchOpen(true)}
-          className="w-full border-emerald-500/30 hover:bg-emerald-700/30 text-emerald-300"
-        >
-          <Plus className="h-4 w-4 ml-2" />
-          <span>إضافة جهة اتصال</span>
-        </Button>
+
+      {/* قائمة جهات الاتصال */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-emerald-300">جاري التحميل...</div>
+          </div>
+        ) : filteredContacts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <Users className="w-16 h-16 text-emerald-400/50 mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">لا توجد جهات اتصال</h3>
+            <p className="text-emerald-300 mb-6">ابدأ بإضافة جهات اتصال جديدة للمحادثة</p>
+            <Button
+              onClick={() => setIsContactSearchOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              إضافة جهة اتصال
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredContacts.map((contact, index) => (
+              <motion.div
+                key={contact.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => setSelectedContact(contact)}
+                className={`p-4 rounded-lg cursor-pointer transition-all duration-300 ${
+                  selectedContact?.id === contact.id
+                    ? 'bg-emerald-600/50 border border-emerald-400/50'
+                    : 'bg-emerald-900/20 hover:bg-emerald-800/30 border border-emerald-500/20 hover:border-emerald-400/30'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <Avatar className="h-12 w-12 border-2 border-emerald-500/40">
+                      {contact.avatar_url ? (
+                        <AvatarImage src={contact.avatar_url} />
+                      ) : (
+                        <AvatarFallback className="bg-emerald-600 text-white">
+                          {contact.username?.[0]?.toUpperCase() || '؟'}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    {contact.isOnline && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-white truncate">{contact.username}</h3>
+                    <p className="text-sm text-emerald-300">
+                      {contact.isOnline ? 'متصل الآن' : 'غير متصل'}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* نافذة البحث */}
+      {isContactSearchOpen && (
+        <ContactSearch
+          isOpen={isContactSearchOpen}
+          onClose={() => setIsContactSearchOpen(false)}
+          onContactAdded={() => {
+            setIsContactSearchOpen(false);
+            loadContacts();
+          }}
+        />
+      )}
     </div>
   );
 };
