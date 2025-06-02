@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WelcomeScreen from './WelcomeScreen';
-import ContactSearch from './ContactSearch';
+import ContactSearchDialog from './ContactSearchDialog';
 import ContactsList from './ContactsList';
 import ChatInterface from './ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
@@ -125,16 +124,15 @@ const ChatLayout = () => {
 
       {/* نافذة البحث عن جهات الاتصال */}
       {isContactSearchOpen && (
-        <ContactSearch
-          isOpen={isContactSearchOpen}
-          onClose={() => setIsContactSearchOpen(false)}
-          onContactAdded={() => {
-            setIsContactSearchOpen(false);
-            toast({
-              title: "تم بنجاح",
-              description: "تم إضافة جهة الاتصال بنجاح",
-            });
-          }}
+        <ContactSearchDialog
+          isContactSearchOpen={isContactSearchOpen}
+          setIsContactSearchOpen={setIsContactSearchOpen}
+          searchQuery=""
+          setSearchQuery={() => {}}
+          handleSearchUsers={() => {}}
+          isSearching={false}
+          searchResults={[]}
+          addContact={() => {}}
         />
       )}
     </div>

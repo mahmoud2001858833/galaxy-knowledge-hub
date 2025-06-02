@@ -57,7 +57,6 @@ export const calculateElectronPosition = (electronIndex: number, totalElectrons:
   
   // حساب عدد الإلكترونات في نفس المستوى
   let electronsInLevel = 0;
-  let tempCount = 0;
   for (let i = 0; i < totalElectrons; i++) {
     const tempLevel = getElectronLevel(i);
     if (tempLevel === level) {
@@ -109,12 +108,12 @@ export const validateParticlePlacement = (particles: Particle[]): { isValid: boo
   
   // تحقق من سعة المدارات
   const electronsByLevel: number[] = new Array(ORBITAL_CAPACITY.length).fill(0);
-  electrons.forEach((_, index) => {
-    const level = getElectronLevel(index);
+  for (let i = 0; i < electrons; i++) {
+    const level = getElectronLevel(i);
     if (level < electronsByLevel.length) {
       electronsByLevel[level]++;
     }
-  });
+  }
   
   electronsByLevel.forEach((count, level) => {
     if (count > ORBITAL_CAPACITY[level]) {

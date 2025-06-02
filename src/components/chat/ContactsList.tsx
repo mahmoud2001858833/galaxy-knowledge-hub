@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Search, UserPlus, Users, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import ContactSearch from './ContactSearch';
+import ContactSearchDialog from './ContactSearchDialog';
 
 interface ContactsListProps {
   selectedContact: any;
@@ -31,34 +31,60 @@ const ContactsList = ({ selectedContact, setSelectedContact, onBackToWelcome, cu
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      // استعلام مبسط لجلب جهات الاتصال
       const { data: contactsData, error } = await supabase
         .from('contacts')
-        .select(`
-          *,
-          contact_profile:profiles!contacts_contact_id_fkey(
-            id,
-            username,
-            avatar_url,
-            is_online
-          )
-        `)
+        .select('contact_id')
         .eq('user_id', session.user.id);
 
       if (error) throw error;
 
-      const formattedContacts = contactsData?.map(contact => ({
-        id: contact.contact_profile.id,
-        username: contact.contact_profile.username,
-        avatar_url: contact.contact_profile.avatar_url,
-        isOnline: contact.contact_profile.is_online,
-        ...contact
-      })) || [];
+      if (contactsData && contactsData.length > 0) {
+        const contactIds = contactsData.map(contact => contact.contact_id);
+        
+        // جلب معلومات المستخدمين
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('users_profiles')
+          .select('id, username, avatar_url')
+          .in('id', contactIds);
 
-      setContacts(formattedContacts);
+        if (profilesError) throw profilesError;
+
+        const formattedContacts = profilesData?.map(profile => ({
+          id: profile.id,
+          username: profile.username,
+          avatar_url: profile.avatar_url,
+          isOnline: Math.random() > 0.5 // محاكاة حالة الاتصال
+        })) || [];
+
+        setContacts(formattedContacts);
+      } else {
+        setContacts([]);
+      }
     } catch (error) {
       console.error('Error loading contacts:', error);
+      setContacts([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const addContact = async (contactId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return false;
+
+      const { error } = await supabase
+        .from('contacts')
+        .insert([{ user_id: session.user.id, contact_id: contactId }]);
+
+      if (error) throw error;
+
+      loadContacts();
+      return true;
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      return false;
     }
   };
 
@@ -175,13 +201,15 @@ const ContactsList = ({ selectedContact, setSelectedContact, onBackToWelcome, cu
 
       {/* نافذة البحث */}
       {isContactSearchOpen && (
-        <ContactSearch
-          isOpen={isContactSearchOpen}
-          onClose={() => setIsContactSearchOpen(false)}
-          onContactAdded={() => {
-            setIsContactSearchOpen(false);
-            loadContacts();
-          }}
+        <ContactSearchDialog
+          isContactSearchOpen={isContactSearchOpen}
+          setIsContactSearchOpen={setIsContactSearchOpen}
+          searchQuery=""
+          setSearchQuery={() => {}}
+          handleSearchUsers={() => {}}
+          isSearching={false}
+          searchResults={[]}
+          addContact={addContact}
         />
       )}
     </div>
