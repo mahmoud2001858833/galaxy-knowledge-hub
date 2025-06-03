@@ -45,11 +45,11 @@ export interface ElementInfo {
   properties: string[];
 }
 
-// الثوابت الفيزيائية المحسنة - نواة أكبر ومدارات صحيحة
+// الثوابت الفيزيائية المحسنة - نواة أكبر ومدارات محسنة
 export const ATOM_CENTER = { x: 400, y: 350 };
-export const NUCLEUS_RADIUS = 80; // نواة أكبر بكثير لتستوعب النوكليونات بوضوح
-export const PARTICLE_SIZE = 12; // جسيمات أكبر للوضوح
-export const ORBITAL_RADII = [140, 190, 240, 290, 340, 390, 440]; // مدارات متباعدة وواضحة
+export const NUCLEUS_RADIUS = 120; // نواة أكبر بكثير لتستوعب المزيد من النوكليونات
+export const PARTICLE_SIZE = 15; // جسيمات أكبر للوضوح البصري
+export const ORBITAL_RADII = [160, 220, 280, 340, 400, 460, 520]; // مدارات أوسع ومتباعدة أكثر
 export const ORBITAL_CAPACITY = [2, 8, 18, 32, 32, 18, 8]; // السعة الصحيحة للمدارات
 
 // ترتيب ملء الإلكترونات

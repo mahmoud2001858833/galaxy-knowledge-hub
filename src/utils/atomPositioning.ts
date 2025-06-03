@@ -2,34 +2,34 @@
 import { ATOM_CENTER, NUCLEUS_RADIUS, ORBITAL_RADII, ORBITAL_CAPACITY } from '@/types/atom';
 import type { Particle } from '@/types/atom';
 
-// حساب موضع النوكليون في النواة - محسن ومطور
+// حساب موضع النوكليون في النواة - محسن جداً مع كثافة أعلى
 export const calculateNucleonPosition = (nucleonIndex: number): { x: number; y: number } => {
   if (nucleonIndex === 0) {
     // الجسيم الأول في مركز النواة تماماً
     return { x: ATOM_CENTER.x, y: ATOM_CENTER.y };
   }
   
-  // توزيع النوكليونات في طبقات دائرية داخل النواة فقط
-  const particlesPerLayer = 6; // 6 جسيمات في كل طبقة
+  // توزيع النوكليونات في طبقات دائرية متعددة داخل النواة مع كثافة عالية
+  const particlesPerLayer = 8; // 8 جسيمات في كل طبقة للحصول على كثافة أعلى
   const layer = Math.floor((nucleonIndex - 1) / particlesPerLayer);
   const positionInLayer = (nucleonIndex - 1) % particlesPerLayer;
   
-  // نصف قطر الطبقة داخل النواة (مع ضمان البقاء داخل النواة)
-  const maxLayerRadius = NUCLEUS_RADIUS - 20; // هامش أمان كبير
-  const layerRadius = Math.min(20 + layer * 18, maxLayerRadius);
+  // نصف قطر الطبقة داخل النواة (استغلال كامل للنواة المكبرة)
+  const maxLayerRadius = NUCLEUS_RADIUS - 15; // هامش أمان أقل للاستفادة من المساحة
+  const layerRadius = Math.min(15 + layer * 20, maxLayerRadius); // طبقات أقرب ببعضها
   
-  // حساب الزاوية مع توزيع متساو
+  // حساب الزاوية مع توزيع متساو وتنوع بين الطبقات
   const angleStep = (2 * Math.PI) / particlesPerLayer;
-  const angle = positionInLayer * angleStep + (layer * 0.4); // إزاحة طفيفة بين الطبقات
+  const angle = positionInLayer * angleStep + (layer * 0.3); // تنوع أكبر بين الطبقات
   
   const x = ATOM_CENTER.x + Math.cos(angle) * layerRadius;
   const y = ATOM_CENTER.y + Math.sin(angle) * layerRadius;
   
-  // التحقق من أن الموضع داخل النواة
+  // التحقق من أن الموضع داخل النواة مع استغلال أفضل للمساحة
   const distanceFromCenter = Math.sqrt(Math.pow(x - ATOM_CENTER.x, 2) + Math.pow(y - ATOM_CENTER.y, 2));
   if (distanceFromCenter > NUCLEUS_RADIUS - 10) {
-    // إذا كان خارج النواة، ضعه في طبقة أقرب
-    const safeRadius = Math.min(layerRadius, NUCLEUS_RADIUS - 15);
+    // إذا كان خارج النواة، ضعه في موضع آمن داخلها
+    const safeRadius = Math.min(layerRadius, NUCLEUS_RADIUS - 12);
     return {
       x: ATOM_CENTER.x + Math.cos(angle) * safeRadius,
       y: ATOM_CENTER.y + Math.sin(angle) * safeRadius
@@ -39,7 +39,7 @@ export const calculateNucleonPosition = (nucleonIndex: number): { x: number; y: 
   return { x, y };
 };
 
-// حساب موضع الإلكترون في المدار - مطور وصحيح
+// حساب موضع الإلكترون في المدار - محسن مع توزيع أفضل وحركة أكثر فعالية
 export const calculateElectronPosition = (electronIndex: number, totalElectrons: number): { x: number; y: number; level: number; angle: number } => {
   // تحديد المستوى حسب قاعدة 2, 8, 18, 32
   let level = 0;
@@ -64,11 +64,13 @@ export const calculateElectronPosition = (electronIndex: number, totalElectrons:
     }
   }
   
-  // حساب الزاوية مع توزيع متساو
+  // حساب الزاوية مع توزيع محسن للحصول على حركة أكثر جمالاً
   const angleStep = (2 * Math.PI) / Math.max(electronsInLevel, 2);
-  const angle = positionInLevel * angleStep + (level * 0.3); // إزاحة بين المستويات
+  // إضافة عشوائية طفيفة لجعل التوزيع أكثر طبيعية
+  const randomOffset = (Math.sin(electronIndex * 2.5) * 0.2); 
+  const angle = positionInLevel * angleStep + (level * 0.4) + randomOffset;
   
-  // نصف قطر المدار المحدد
+  // نصف قطر المدار المحدد مع تحسينات للمساحة
   const orbitalRadius = ORBITAL_RADII[Math.min(level, ORBITAL_RADII.length - 1)];
   
   return {
@@ -93,7 +95,7 @@ const getElectronLevel = (electronIndex: number): number => {
   return 0;
 };
 
-// التحقق من صحة توضع الجسيمات مع قيود صارمة
+// التحقق من صحة توضع الجسيمات مع قيود محسنة
 export const validateParticlePlacement = (particles: Particle[]): { isValid: boolean; warnings: string[] } => {
   const warnings: string[] = [];
   
@@ -155,9 +157,9 @@ export const enforceParticlePlacement = (particle: Particle): Particle => {
     );
     
     if (distanceFromCenter > NUCLEUS_RADIUS) {
-      // إعادة وضعه في النواة
+      // إعادة وضعه في النواة مع استغلال أفضل للمساحة
       const angle = Math.atan2(particle.y - ATOM_CENTER.y, particle.x - ATOM_CENTER.x);
-      const safeRadius = NUCLEUS_RADIUS - 15;
+      const safeRadius = NUCLEUS_RADIUS - 12; // هامش أمان أقل
       return {
         ...particle,
         x: ATOM_CENTER.x + Math.cos(angle) * safeRadius,

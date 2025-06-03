@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
 
@@ -10,7 +10,7 @@ interface WelcomeScreenProps {
   lastContact: any;
   setSelectedContact: (contact: any) => void;
   setShowContactsList: (show: boolean) => void;
-  onStartChat: () => void; // دالة لبدء المحادثة
+  onStartChat: () => void;
 }
 
 const WelcomeScreen = ({ 
@@ -59,7 +59,7 @@ const WelcomeScreen = ({
 
       {/* المحتوى الرئيسي */}
       <motion.div 
-        className="bg-gradient-to-br from-emerald-900/40 to-teal-900/20 border-emerald-500/30 shadow-glow-emerald rounded-xl overflow-hidden w-full max-w-4xl"
+        className="bg-gradient-to-br from-emerald-900/40 to-teal-900/20 border-emerald-500/30 shadow-glow-emerald rounded-xl overflow-hidden w-full max-w-2xl"
         variants={itemVariants}
       >
         <div className="p-8 text-center">
@@ -77,7 +77,7 @@ const WelcomeScreen = ({
             تواصل مع جهات اتصالك بسهولة عبر محادثات خاصة وآمنة
           </motion.p>
 
-          {/* زر البدء الرئيسي */}
+          {/* زر البدء الرئيسي - الوحيد */}
           <motion.div
             variants={itemVariants}
             whileHover={{ scale: 1.05 }}
@@ -86,45 +86,12 @@ const WelcomeScreen = ({
           >
             <Button
               onClick={onStartChat}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-12 py-6 text-xl font-bold rounded-2xl shadow-2xl border border-emerald-400/30 transform transition-all duration-300"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-16 py-8 text-2xl font-bold rounded-2xl shadow-2xl border border-emerald-400/30 transform transition-all duration-300"
             >
-              <MessageSquare className="w-6 h-6 mr-3" />
+              <MessageSquare className="w-8 h-8 mr-4" />
               تفضل بالدخول للمحادثة
             </Button>
           </motion.div>
-
-          {/* خيارات إضافية */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* اختيار جهات الاتصال */}
-            <motion.div 
-              whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(16, 185, 129, 0.4)" }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-br from-emerald-800/50 to-teal-800/30 hover:from-emerald-700/60 hover:to-teal-700/40 transition-all rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer border border-emerald-500/30 hover:border-emerald-400/60 shadow-lg"
-              onClick={() => setShowContactsList(true)}
-              variants={itemVariants}
-            >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600/80 to-teal-600/60 flex items-center justify-center mb-4 shadow-glow-emerald">
-                <Users className="h-8 w-8 text-emerald-200" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">اختيار جهات الاتصال</h3>
-              <p className="text-emerald-200/80 text-center text-sm">عرض جميع جهات الاتصال المحفوظة</p>
-            </motion.div>
-            
-            {/* إضافة جهة اتصال جديدة */}
-            <motion.div 
-              whileHover={{ scale: 1.03, boxShadow: "0 0 25px rgba(20, 184, 166, 0.3)" }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-br from-teal-800/40 to-emerald-800/30 hover:from-teal-700/50 hover:to-emerald-700/40 transition-all rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer border border-teal-500/30 hover:border-teal-500/50 shadow-md"
-              onClick={() => setIsContactSearchOpen(true)}
-              variants={itemVariants}
-            >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-600/80 to-emerald-600/60 flex items-center justify-center mb-4 shadow-glow-sm">
-                <UserPlus className="h-8 w-8 text-teal-200" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">إضافة جهة اتصال</h3>
-              <p className="text-teal-200/80 text-center text-sm">البحث عن مستخدمين جدد</p>
-            </motion.div>
-          </div>
 
           {/* آخر جهة اتصال */}
           {lastContact && (

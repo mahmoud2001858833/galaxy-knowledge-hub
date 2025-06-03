@@ -12,20 +12,28 @@ export const useAtomSimulation = () => {
   // حساب بيانات الذرة مع التحقق من الصحة
   const atomData: AtomData = calculateAtomData(particles);
 
-  // تحريك الإلكترونات - محسن مع سرعات مختلفة
+  // تحريك الإلكترونات - محسن مع سرعات متنوعة وحركة أكثر سلاسة
   const animateElectrons = useCallback(() => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
-          // سرعة مختلفة حسب المستوى (المستويات الأقرب أسرع)
-          const speedFactor = 0.015 / Math.pow(particle.orbitalLevel + 1, 0.3);
+          // سرعة محسنة ومتنوعة حسب المستوى (المستويات الأقرب أسرع)
+          const baseSpeed = 0.025; // سرعة أساسية أعلى
+          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.4); // تنوع أكبر في السرعة
+          const randomVariation = 0.8 + (Math.sin(Date.now() * 0.001 + particle.orbitalLevel) * 0.4); // تنوع عشوائي
+          const speedFactor = baseSpeed * levelMultiplier * randomVariation;
+          
           const newAngle = (particle.angle || 0) + speedFactor;
           const radius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
           
+          // إضافة اهتزاز طفيف لجعل الحركة أكثر طبيعية
+          const oscillation = Math.sin(newAngle * 3) * 2;
+          const adjustedRadius = radius + oscillation;
+          
           return {
             ...particle,
-            x: ATOM_CENTER.x + Math.cos(newAngle) * radius,
-            y: ATOM_CENTER.y + Math.sin(newAngle) * radius,
+            x: ATOM_CENTER.x + Math.cos(newAngle) * adjustedRadius,
+            y: ATOM_CENTER.y + Math.sin(newAngle) * adjustedRadius,
             angle: newAngle
           };
         }
@@ -50,11 +58,17 @@ export const useAtomSimulation = () => {
   const addParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
     console.log(`إضافة جسيم: ${type}`);
     
-    // تحقق من الحدود
+    // تحقق من الحدود مع زيادة مرونة للنوكليونات
     if (type === 'electron') {
       const currentElectrons = particles.filter(p => p.type === 'electron').length;
-      if (currentElectrons >= 118) { // حد أقصى للإلكترونات
+      if (currentElectrons >= 118) {
         console.warn('تم الوصول للحد الأقصى من الإلكترونات');
+        return;
+      }
+    } else if (type === 'proton' || type === 'neutron') {
+      const currentNucleons = particles.filter(p => p.type === 'proton' || p.type === 'neutron').length;
+      if (currentNucleons >= 50) { // حد أعلى للنوكليونات لاستغلال النواة المكبرة
+        console.warn('تم الوصول للحد الأقصى من النوكليونات في النواة');
         return;
       }
     }
@@ -127,6 +141,6 @@ export const useAtomSimulation = () => {
     removeParticle,
     buildSuggestedElement,
     clearAll,
-    setParticles // لدعم التحكم المتقدم
+    setParticles
   };
 };

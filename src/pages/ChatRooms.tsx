@@ -3,13 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import ChatLayout from '@/components/chat/ChatLayout';
+import ChatTabs from '@/components/chat/ChatTabs';
 
 const ChatRooms = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -24,7 +25,17 @@ const ChatRooms = () => {
           navigate('/auth');
           return;
         }
+        
         setUserId(session.user.id);
+        
+        // جلب بيانات المستخدم من جدول profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        setUser(profile);
       } catch (error) {
         console.error('خطأ في التحقق من المستخدم:', error);
         toast({
@@ -111,10 +122,18 @@ const ChatRooms = () => {
     document.dispatchEvent(refreshEvent);
   };
 
+  if (!user) {
+    return (
+      <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-950 to-purple-950 z-50 flex items-center justify-center">
+        <div className="text-white text-lg">جاري التحميل...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-950 to-purple-950 z-50 overflow-hidden">
       <div className="w-full h-full overflow-hidden">
-        <ChatLayout />
+        <ChatTabs user={user} />
       </div>
     </div>
   );
