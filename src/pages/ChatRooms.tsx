@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import ChatTabs from '@/components/chat/ChatTabs';
+import ModernChatLayout from '@/components/chat/ModernChatLayout';
 
 const ChatRooms = () => {
   const navigate = useNavigate();
@@ -49,13 +49,13 @@ const ChatRooms = () => {
     checkUser();
 
     // Set page title
-    document.title = "المحادثات - منصة تعليمية";
+    document.title = "المحادثات المطورة - منصة تعليمية";
     return () => {
       document.title = "منصة تعليمية";
     };
   }, [navigate]);
 
-  // Improve real-time message notification system
+  // Enhanced real-time message notification system
   useEffect(() => {
     if (!userId) return;
 
@@ -98,9 +98,9 @@ const ChatRooms = () => {
   // Effect for new message title
   useEffect(() => {
     if (hasNewMessages) {
-      document.title = "🔔 رسالة جديدة - منصة تعليمية";
+      document.title = "🔔 رسالة جديدة - المحادثات المطورة";
     } else {
-      document.title = "المحادثات - منصة تعليمية";
+      document.title = "المحادثات المطورة - منصة تعليمية";
     }
     return () => {
       document.title = "منصة تعليمية";
@@ -124,17 +124,18 @@ const ChatRooms = () => {
 
   if (!user) {
     return (
-      <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-950 to-purple-950 z-50 flex items-center justify-center">
-        <div className="text-white text-lg">جاري التحميل...</div>
+      <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-gray-900 via-purple-900 to-black z-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-cyan-300 text-lg font-semibold">جاري تحميل المحادثات المطورة...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-950 to-purple-950 z-50 overflow-hidden">
-      <div className="w-full h-full overflow-hidden">
-        <ChatTabs user={user} />
-      </div>
+    <div className="fixed inset-0 w-full h-full z-50 overflow-hidden">
+      <ModernChatLayout user={user} />
     </div>
   );
 };
