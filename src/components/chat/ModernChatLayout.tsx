@@ -69,7 +69,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="fixed inset-0 w-full h-full bg-gradient-to-br from-gray-900 via-purple-900 to-black overflow-hidden"
+      className="fixed inset-0 w-full h-full bg-gradient-to-br from-gray-900 via-purple-900 to-black overflow-hidden flex flex-col"
     >
       {/* خلفية الجسيمات المتحركة */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -98,39 +98,39 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
       {/* شريط التبويبات المطور */}
       <motion.div
         variants={tabVariants}
-        className="relative z-10 p-6"
+        className="relative z-10 p-4 flex-shrink-0"
       >
         <Card className="bg-black/40 backdrop-blur-xl border-purple-500/30 shadow-2xl shadow-purple-500/20">
           <div className="p-4">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <motion.h1
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                className="text-2xl font-bold bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent"
+                className="text-xl font-bold bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent"
               >
                 منصة المحادثات المطورة
               </motion.h1>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 rounded-full"
                 >
-                  <Settings className="w-5 h-5 text-purple-300" />
+                  <Settings className="w-4 h-4 text-purple-300" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/30 rounded-full"
                 >
-                  <Search className="w-5 h-5 text-cyan-300" />
+                  <Search className="w-4 h-4 text-cyan-300" />
                 </Button>
               </div>
             </div>
 
             {/* أزرار التبويبات المطورة */}
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {[
                 { id: 'welcome', label: 'الرئيسية', icon: Star, color: 'from-yellow-400 to-orange-500' },
                 { id: 'private', label: 'المحادثات الخاصة', icon: MessageSquare, color: 'from-cyan-400 to-blue-500' },
@@ -141,21 +141,21 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 ${
+                  className={`relative px-4 py-2 rounded-xl font-medium transition-all duration-300 text-sm ${
                     activeTab === tab.id
-                      ? `bg-gradient-to-r ${tab.color} text-white shadow-lg shadow-${tab.color.split('-')[1]}-500/50`
+                      ? `bg-gradient-to-r ${tab.color} text-white shadow-lg`
                       : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border border-gray-600/30'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <tab.icon className="w-5 h-5" />
+                    <tab.icon className="w-4 h-4" />
                     <span>{tab.label}</span>
                   </div>
                   
                   {activeTab === tab.id && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute inset-0 rounded-2xl border-2 border-white/30"
+                      className="absolute inset-0 rounded-xl border-2 border-white/30"
                       transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
                     />
                   )}
@@ -166,8 +166,8 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
         </Card>
       </motion.div>
 
-      {/* محتوى التبويبات */}
-      <div className="flex-1 px-6 pb-6">
+      {/* محتوى التبويبات - مع تمرير كامل */}
+      <div className="flex-1 px-4 pb-4 overflow-hidden">
         <AnimatePresence mode="wait">
           {activeTab === 'welcome' && (
             <motion.div
@@ -176,7 +176,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.5 }}
-              className="h-full"
+              className="h-full overflow-auto"
             >
               <ModernWelcomeScreen 
                 onNavigate={setActiveTab}
@@ -192,7 +192,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.5 }}
-              className="h-full"
+              className="h-full overflow-hidden"
             >
               <ModernPrivateChat user={user} />
             </motion.div>
@@ -205,7 +205,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.5 }}
-              className="h-full"
+              className="h-full overflow-hidden"
             >
               <ModernGroupChat user={user} />
             </motion.div>
