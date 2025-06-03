@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WelcomeScreen from './WelcomeScreen';
@@ -129,7 +130,7 @@ const ChatLayout = () => {
               <div className="flex-1">
                 <ChatInterface
                   selectedContact={selectedContact}
-                  currentUser={currentUser}
+                  user={currentUser}
                 />
               </div>
             </div>
@@ -155,3 +156,4 @@ const ChatLayout = () => {
 };
 
 export default ChatLayout;
+
