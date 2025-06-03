@@ -1,6 +1,5 @@
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WelcomeScreen from './WelcomeScreen';
 import ContactSearchDialog from './ContactSearchDialog';
@@ -8,6 +7,8 @@ import ContactsList from './ContactsList';
 import ChatInterface from './ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useMessages } from './hooks/useMessages';
+import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 
 const ChatLayout = () => {
   const [currentView, setCurrentView] = useState<'welcome' | 'contacts' | 'chat'>('welcome');
@@ -16,7 +17,33 @@ const ChatLayout = () => {
   const [showContactsList, setShowContactsList] = useState(false);
   const [lastContact, setLastContact] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStartRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Use the messages hook
+  const {
+    messages,
+    message,
+    setMessage,
+    sendMessage,
+    fetchMessages,
+    isMessageSending
+  } = useMessages(currentUser?.id, selectedContact);
+
+  // Subscribe to new messages
+  useRealtimeMessages({
+    userId: currentUser?.id,
+    onNewMessage: () => {
+      if (selectedContact) {
+        fetchMessages();
+        if (isAutoScroll) {
+          setTimeout(scrollToBottom, 100);
+        }
+      }
+    }
+  });
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -38,6 +65,28 @@ const ChatLayout = () => {
 
     getCurrentUser();
   }, []);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+  
+  const scrollToTop = () => {
+    if (messagesStartRef.current) {
+      messagesStartRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || isMessageSending) return;
+    
+    sendMessage(message);
+    setIsAutoScroll(true);
+    
+    setTimeout(scrollToBottom, 100);
+  };
 
   // بدء المحادثة من الشاشة الرئيسية
   const handleStartChat = () => {
@@ -130,6 +179,17 @@ const ChatLayout = () => {
               <div className="flex-1">
                 <ChatInterface
                   selectedContact={selectedContact}
+                  messages={messages}
+                  message={message}
+                  setMessage={setMessage}
+                  handleSendMessage={handleSendMessage}
+                  isMessageSending={isMessageSending}
+                  messagesEndRef={messagesEndRef}
+                  messagesStartRef={messagesStartRef}
+                  scrollToBottom={scrollToBottom}
+                  scrollToTop={scrollToTop}
+                  isAutoScroll={isAutoScroll}
+                  setIsAutoScroll={setIsAutoScroll}
                   user={currentUser}
                 />
               </div>
@@ -156,4 +216,3 @@ const ChatLayout = () => {
 };
 
 export default ChatLayout;
-
