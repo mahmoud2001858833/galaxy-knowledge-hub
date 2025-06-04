@@ -2,44 +2,33 @@
 import { ATOM_CENTER, NUCLEUS_RADIUS, ORBITAL_RADII, ORBITAL_CAPACITY } from '@/types/atom';
 import type { Particle } from '@/types/atom';
 
-// حساب موضع النوكليون في النواة - محسن للوضع الدقيق في المركز
+// حساب موضع النوكليون في النواة - مُحسَّن للوضع المُحدد في المركز
 export const calculateNucleonPosition = (nucleonIndex: number): { x: number; y: number } => {
   if (nucleonIndex === 0) {
     // الجسيم الأول في مركز النواة تماماً
     return { x: ATOM_CENTER.x, y: ATOM_CENTER.y };
   }
   
-  // توزيع النوكليونات في دوائر متحدة المركز داخل النواة
-  const particlesPerLayer = 6; // عدد أقل لكل طبقة للحصول على توزيع أكثر دقة
+  // توزيع النوكليونات في طبقات دائرية مُحكمة داخل النواة
+  const particlesPerLayer = 6;
   const layer = Math.floor((nucleonIndex - 1) / particlesPerLayer);
   const positionInLayer = (nucleonIndex - 1) % particlesPerLayer;
   
-  // نصف قطر الطبقة داخل النواة - مع ضمان البقاء في المركز
-  const maxLayerRadius = NUCLEUS_RADIUS * 0.7; // استخدام 70% من نصف قطر النواة
-  const layerRadius = Math.min(8 + layer * 12, maxLayerRadius); // طبقات أكثر تقارباً من المركز
+  // نصف قطر الطبقة داخل النواة - محدود بشدة للبقاء في المركز
+  const maxSafeRadius = NUCLEUS_RADIUS * 0.4; // 40% فقط من نصف قطر النواة
+  const layerRadius = Math.min(5 + layer * 8, maxSafeRadius);
   
   // حساب الزاوية مع توزيع متساو
   const angleStep = (2 * Math.PI) / particlesPerLayer;
-  const angle = positionInLayer * angleStep + (layer * 0.2); // تنوع أقل بين الطبقات
+  const angle = positionInLayer * angleStep + (layer * 0.15);
   
   const x = ATOM_CENTER.x + Math.cos(angle) * layerRadius;
   const y = ATOM_CENTER.y + Math.sin(angle) * layerRadius;
   
-  // التحقق من أن الموضع داخل النواة
-  const distanceFromCenter = Math.sqrt(Math.pow(x - ATOM_CENTER.x, 2) + Math.pow(y - ATOM_CENTER.y, 2));
-  if (distanceFromCenter > NUCLEUS_RADIUS * 0.8) {
-    // إذا كان خارج المنطقة المسموحة، ضعه أقرب للمركز
-    const safeRadius = Math.min(layerRadius, NUCLEUS_RADIUS * 0.6);
-    return {
-      x: ATOM_CENTER.x + Math.cos(angle) * safeRadius,
-      y: ATOM_CENTER.y + Math.sin(angle) * safeRadius
-    };
-  }
-  
   return { x, y };
 };
 
-// حساب موضع الإلكترون في المدار - محسن للدوران الدقيق حول مستويات الطاقة
+// حساب موضع الإلكترون في المدار - مُحسَّن للدوران الدقيق على مستويات الطاقة
 export const calculateElectronPosition = (electronIndex: number, totalElectrons: number): { x: number; y: number; level: number; angle: number } => {
   // تحديد المستوى حسب قاعدة 2, 8, 18, 32
   let level = 0;
@@ -68,12 +57,16 @@ export const calculateElectronPosition = (electronIndex: number, totalElectrons:
   const angleStep = (2 * Math.PI) / Math.max(electronsInLevel, 1);
   const angle = positionInLevel * angleStep;
   
-  // نصف قطر المدار المحدد - الضبط الدقيق لمستويات الطاقة
+  // نصف قطر المدار المُثبت - دقيق تماماً لمستويات الطاقة
   const orbitalRadius = ORBITAL_RADII[Math.min(level, ORBITAL_RADII.length - 1)];
   
+  // موضع الإلكترون بالضبط على مستوى الطاقة
+  const x = ATOM_CENTER.x + Math.cos(angle) * orbitalRadius;
+  const y = ATOM_CENTER.y + Math.sin(angle) * orbitalRadius;
+  
   return {
-    x: ATOM_CENTER.x + Math.cos(angle) * orbitalRadius,
-    y: ATOM_CENTER.y + Math.sin(angle) * orbitalRadius,
+    x,
+    y,
     level,
     angle
   };
@@ -93,7 +86,7 @@ const getElectronLevel = (electronIndex: number): number => {
   return 0;
 };
 
-// التحقق من صحة توضع الجسيمات مع قيود محسنة
+// التحقق من صحة توضع الجسيمات مع قيود مُحسنة
 export const validateParticlePlacement = (particles: Particle[]): { isValid: boolean; warnings: string[] } => {
   const warnings: string[] = [];
   
@@ -128,18 +121,6 @@ export const validateParticlePlacement = (particles: Particle[]): { isValid: boo
     }
   }
   
-  // تحقق من وضع النوكليونات في النواة
-  particles.forEach(particle => {
-    if (particle.type === 'proton' || particle.type === 'neutron') {
-      const distanceFromCenter = Math.sqrt(
-        Math.pow(particle.x - ATOM_CENTER.x, 2) + Math.pow(particle.y - ATOM_CENTER.y, 2)
-      );
-      if (distanceFromCenter > NUCLEUS_RADIUS * 0.8) {
-        warnings.push(`${particle.type === 'proton' ? 'بروتون' : 'نيوترون'} بعيد عن مركز النواة`);
-      }
-    }
-  });
-  
   return {
     isValid: warnings.length === 0,
     warnings
@@ -154,10 +135,10 @@ export const enforceParticlePlacement = (particle: Particle): Particle => {
       Math.pow(particle.x - ATOM_CENTER.x, 2) + Math.pow(particle.y - ATOM_CENTER.y, 2)
     );
     
-    if (distanceFromCenter > NUCLEUS_RADIUS * 0.8) {
+    if (distanceFromCenter > NUCLEUS_RADIUS * 0.6) {
       // إعادة وضعه في مركز النواة
       const angle = Math.atan2(particle.y - ATOM_CENTER.y, particle.x - ATOM_CENTER.x);
-      const safeRadius = NUCLEUS_RADIUS * 0.5; // نصف المسافة من المركز
+      const safeRadius = NUCLEUS_RADIUS * 0.3;
       return {
         ...particle,
         x: ATOM_CENTER.x + Math.cos(angle) * safeRadius,

@@ -12,28 +12,30 @@ export const useAtomSimulation = () => {
   // حساب بيانات الذرة مع التحقق من الصحة
   const atomData: AtomData = calculateAtomData(particles);
 
-  // تحريك الإلكترونات - محسن مع سرعات متنوعة وحركة أكثر سلاسة
+  // تحريك الإلكترونات - محسن مع ثبات المدار وسرعات متنوعة
   const animateElectrons = useCallback(() => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
           // سرعة محسنة ومتنوعة حسب المستوى (المستويات الأقرب أسرع)
-          const baseSpeed = 0.025; // سرعة أساسية أعلى
-          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.4); // تنوع أكبر في السرعة
-          const randomVariation = 0.8 + (Math.sin(Date.now() * 0.001 + particle.orbitalLevel) * 0.4); // تنوع عشوائي
+          const baseSpeed = 0.03; // سرعة أساسية أعلى
+          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.3); // تنوع أكبر في السرعة
+          const randomVariation = 0.9 + (Math.sin(Date.now() * 0.0008 + particle.orbitalLevel) * 0.2); // تنوع عشوائي أقل
           const speedFactor = baseSpeed * levelMultiplier * randomVariation;
           
           const newAngle = (particle.angle || 0) + speedFactor;
+          
+          // نصف قطر ثابت تماماً - لا اهتزاز
           const radius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
           
-          // إضافة اهتزاز طفيف لجعل الحركة أكثر طبيعية
-          const oscillation = Math.sin(newAngle * 3) * 2;
-          const adjustedRadius = radius + oscillation;
+          // موضع دقيق على المدار بدون اهتزاز
+          const x = ATOM_CENTER.x + Math.cos(newAngle) * radius;
+          const y = ATOM_CENTER.y + Math.sin(newAngle) * radius;
           
           return {
             ...particle,
-            x: ATOM_CENTER.x + Math.cos(newAngle) * adjustedRadius,
-            y: ATOM_CENTER.y + Math.sin(newAngle) * adjustedRadius,
+            x,
+            y,
             angle: newAngle
           };
         }
@@ -67,7 +69,7 @@ export const useAtomSimulation = () => {
       }
     } else if (type === 'proton' || type === 'neutron') {
       const currentNucleons = particles.filter(p => p.type === 'proton' || p.type === 'neutron').length;
-      if (currentNucleons >= 50) { // حد أعلى للنوكليونات لاستغلال النواة المكبرة
+      if (currentNucleons >= 80) { // حد أعلى للنوكليونات لاستغلال النواة المُحسنة
         console.warn('تم الوصول للحد الأقصى من النوكليونات في النواة');
         return;
       }

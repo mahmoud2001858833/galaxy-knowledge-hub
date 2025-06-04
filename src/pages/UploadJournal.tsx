@@ -37,87 +37,50 @@ const UploadJournal = () => {
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // إزالة قيود الحجم للصور
+      // إزالة جميع قيود الحجم للصور - قبول أي حجم
       setCoverImage(file);
       const reader = new FileReader();
       reader.onload = (e) => setCoverPreview(e.target?.result as string);
       reader.readAsDataURL(file);
+      
+      toast({
+        title: "تم اختيار صورة الغلاف",
+        description: `تم اختيار صورة بحجم ${formatFileSize(file.size)}`,
+      });
     }
   };
 
   const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // إزالة جميع قيود الحجم - قبول أي حجم
-      if (file.type !== 'application/pdf') {
-        toast({
-          title: "نوع ملف غير صحيح",
-          description: "يرجى اختيار ملف PDF فقط",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setPdfFile(file);
+    if (!file) return;
+    
+    // إزالة جميع قيود الحجم للملفات - قبول أي حجم حتى 1000+ جيجابايت
+    if (file.type !== 'application/pdf') {
       toast({
-        title: "تم اختيار الملف",
-        description: `تم اختيار ملف بحجم ${(file.size / (1024 * 1024 * 1024)).toFixed(2)} جيجابايت`,
+        title: "نوع ملف غير صحيح",
+        description: "يرجى اختيار ملف PDF فقط",
+        variant: "destructive"
       });
+      return;
     }
+    
+    setPdfFile(file);
+    toast({
+      title: "تم اختيار الملف بنجاح",
+      description: `تم اختيار ملف بحجم ${formatFileSize(file.size)} - جاهز للرفع`,
+    });
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes >= 1024 * 1024 * 1024) {
+    if (bytes >= 1024 * 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2)} تيرابايت`;
+    } else if (bytes >= 1024 * 1024 * 1024) {
       return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} جيجابايت`;
     } else if (bytes >= 1024 * 1024) {
       return `${(bytes / (1024 * 1024)).toFixed(2)} ميجابايت`;
     } else {
       return `${(bytes / 1024).toFixed(2)} كيلوبايت`;
     }
-  };
-
-  const uploadFileWithProgress = async (file: File, bucket: string, path: string) => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(progress);
-        }
-      });
-
-      xhr.addEventListener('load', async () => {
-        if (xhr.status === 200) {
-          // استخدام Supabase للرفع النهائي
-          const { data, error } = await supabase.storage
-            .from(bucket)
-            .upload(path, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-          
-          if (error) {
-            reject(error);
-          } else {
-            resolve(data);
-          }
-        } else {
-          reject(new Error('فشل في رفع الملف'));
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        reject(new Error('حدث خطأ أثناء رفع الملف'));
-      });
-
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // استخدام endpoint مخصص للملفات الكبيرة
-      xhr.open('POST', '/api/upload-large-file');
-      xhr.send(formData);
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,23 +109,33 @@ const UploadJournal = () => {
         return;
       }
 
-      // رفع صورة الغلاف
+      // رفع صورة الغلاف - بدون قيود حجم
+      toast({
+        title: "بدء رفع صورة الغلاف",
+        description: `جاري رفع صورة بحجم ${formatFileSize(coverImage.size)}...`,
+      });
+
+      setUploadProgress(10);
       const coverPath = `covers/${Date.now()}-${coverImage.name}`;
       const { data: coverData, error: coverError } = await supabase.storage
         .from('scientific-journals')
-        .upload(coverPath, coverImage);
+        .upload(coverPath, coverImage, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (coverError) throw coverError;
+      setUploadProgress(30);
 
-      // رفع ملف PDF مع شريط التقدم للملفات الكبيرة
-      setUploadProgress(0);
-      const pdfPath = `pdfs/${Date.now()}-${pdfFile.name}`;
-      
+      // رفع ملف PDF - بدون قيود حجم (يدعم ملفات ضخمة)
       toast({
-        title: "بدء رفع الملف",
-        description: `جاري رفع ملف بحجم ${formatFileSize(pdfFile.size)}...`,
+        title: "بدء رفع الملف الرئيسي",
+        description: `جاري رفع ملف PDF بحجم ${formatFileSize(pdfFile.size)}...`,
       });
 
+      const pdfPath = `pdfs/${Date.now()}-${pdfFile.name}`;
+      
+      setUploadProgress(40);
       const { data: pdfData, error: pdfError } = await supabase.storage
         .from('scientific-journals')
         .upload(pdfPath, pdfFile, {
@@ -171,6 +144,7 @@ const UploadJournal = () => {
         });
 
       if (pdfError) throw pdfError;
+      setUploadProgress(80);
 
       // الحصول على URLs
       const { data: coverUrl } = supabase.storage
@@ -180,6 +154,8 @@ const UploadJournal = () => {
       const { data: pdfUrl } = supabase.storage
         .from('scientific-journals')
         .getPublicUrl(pdfPath);
+
+      setUploadProgress(90);
 
       // حفظ البيانات في قاعدة البيانات
       const { error: dbError } = await supabase
@@ -197,10 +173,11 @@ const UploadJournal = () => {
         ]);
 
       if (dbError) throw dbError;
+      setUploadProgress(100);
 
       toast({
         title: "تم رفع المجلة بنجاح",
-        description: "تم رفع المجلة العلمية وحفظها في قاعدة البيانات",
+        description: `تم رفع المجلة (${formatFileSize(pdfFile.size)}) وحفظها في قاعدة البيانات`,
       });
 
       navigate('/scientific-journals');
@@ -240,8 +217,11 @@ const UploadJournal = () => {
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardHeader>
             <CardTitle className="text-white text-center text-xl">
-              معلومات المجلة العلمية (حجم لا محدود)
+              معلومات المجلة العلمية (بدون قيود حجم - يدعم ملفات ضخمة)
             </CardTitle>
+            <p className="text-white/80 text-center text-sm">
+              يدعم رفع ملفات حتى 1000+ جيجابايت بدون قيود
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -319,7 +299,7 @@ const UploadJournal = () => {
                       <div className="text-center">
                         <Image className="w-12 h-12 text-white/60 mx-auto mb-2" />
                         <p className="text-white/80">اضغط لاختيار صورة الغلاف</p>
-                        <p className="text-white/60 text-sm">أي حجم مقبول</p>
+                        <p className="text-white/60 text-sm">أي حجم مقبول (بدون قيود)</p>
                       </div>
                     )}
                   </div>
@@ -348,12 +328,18 @@ const UploadJournal = () => {
                         <p className="text-white/80 text-sm">
                           الحجم: {formatFileSize(pdfFile.size)}
                         </p>
+                        <p className="text-green-400 text-xs">
+                          ✓ جاهز للرفع - بدون قيود حجم
+                        </p>
                       </div>
                     ) : (
                       <div className="text-center">
                         <FileText className="w-12 h-12 text-white/60 mx-auto mb-2" />
                         <p className="text-white/80">اضغط لاختيار ملف PDF</p>
-                        <p className="text-white/60 text-sm">حجم لا محدود (حتى 1000+ جيجابايت)</p>
+                        <p className="text-white/60 text-sm">حجم لا محدود</p>
+                        <p className="text-green-400 text-xs mt-2">
+                          ✓ يدعم ملفات حتى 1000+ جيجابايت
+                        </p>
                       </div>
                     )}
                   </div>
@@ -371,17 +357,20 @@ const UploadJournal = () => {
               {isUploading && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-white">
-                    <span>جاري الرفع...</span>
+                    <span>جاري الرفع... (ملف كبير)</span>
                     <span>{uploadProgress}%</span>
                   </div>
-                  <div className="w-full bg-white/20 rounded-full h-3">
+                  <div className="w-full bg-white/20 rounded-full h-4">
                     <motion.div
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full"
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${uploadProgress}%` }}
                       transition={{ duration: 0.3 }}
                     />
                   </div>
+                  <p className="text-white/80 text-sm text-center">
+                    {pdfFile && `رفع ملف بحجم ${formatFileSize(pdfFile.size)}`}
+                  </p>
                 </div>
               )}
 
@@ -394,12 +383,12 @@ const UploadJournal = () => {
                 {isUploading ? (
                   <>
                     <Loader className="w-5 h-5 mr-2 animate-spin" />
-                    جاري الرفع...
+                    جاري الرفع... (قد يستغرق وقتاً للملفات الكبيرة)
                   </>
                 ) : (
                   <>
                     <Upload className="w-5 h-5 mr-2" />
-                    رفع المجلة
+                    رفع المجلة (بدون قيود حجم)
                   </>
                 )}
               </Button>

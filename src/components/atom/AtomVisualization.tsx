@@ -32,26 +32,26 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
       <CardContent className="p-4 h-full">
         <div className="relative w-full h-full bg-gradient-to-br from-gray-900/50 to-black/50 rounded-lg border-2 border-dashed border-gray-500/30 overflow-hidden">
           
-          {/* النواة المركزية - محسنة مع تأثيرات أقوى */}
+          {/* النواة المركزية - محسنة مع تأثيرات أقوى وحجم أصغر */}
           <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-yellow-300/95 bg-gradient-to-br from-yellow-400/60 to-orange-600/60 flex items-center justify-center backdrop-blur-sm shadow-2xl"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-yellow-300/95 bg-gradient-to-br from-yellow-400/80 to-orange-600/80 flex items-center justify-center backdrop-blur-sm shadow-2xl"
             style={{
-              width: `${NUCLEUS_RADIUS * 2}px`,
-              height: `${NUCLEUS_RADIUS * 2}px`,
-              boxShadow: '0 0 80px rgba(255, 215, 0, 1), inset 0 0 50px rgba(255, 215, 0, 0.5), 0 0 150px rgba(255, 165, 0, 0.8)',
-              filter: 'drop-shadow(0 0 30px rgba(255, 215, 0, 0.9))',
+              width: `${NUCLEUS_RADIUS * 1.5}px`,
+              height: `${NUCLEUS_RADIUS * 1.5}px`,
+              boxShadow: '0 0 60px rgba(255, 215, 0, 1), inset 0 0 40px rgba(255, 215, 0, 0.6), 0 0 120px rgba(255, 165, 0, 0.9)',
+              filter: 'drop-shadow(0 0 25px rgba(255, 215, 0, 0.95))',
               animation: 'pulse 3s infinite'
             }}
           >
             <div className="text-center">
-              <div className="text-yellow-100 text-sm font-bold">النواة</div>
-              <div className="text-yellow-200 text-xs mt-1">
+              <div className="text-yellow-100 text-lg font-bold">النواة</div>
+              <div className="text-yellow-200 text-sm mt-1">
                 {nucleons.length} جسيم
               </div>
             </div>
           </div>
 
-          {/* مسارات الإلكترونات - محسنة مع تأثيرات ضوئية أقوى */}
+          {/* مسارات الإلكترونات - محسنة مع خطوط أكثر وضوحاً */}
           {ORBITAL_RADII.map((radius, index) => {
             const capacity = ORBITAL_CAPACITY[index];
             const current = electronsByLevel[index] || 0;
@@ -61,30 +61,30 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
             return (
               <div
                 key={index}
-                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-3 rounded-full ${
+                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-4 rounded-full ${
                   isFull ? 'border-green-300/95' : 
-                  isEmpty ? 'border-blue-300/60' : 'border-blue-300/85'
+                  isEmpty ? 'border-blue-300/50' : 'border-blue-300/80'
                 }`}
                 style={{
                   width: `${radius * 2}px`,
                   height: `${radius * 2}px`,
-                  borderWidth: '3px',
+                  borderWidth: '4px',
                   boxShadow: isFull ? 
-                    `0 0 35px rgba(34, 197, 94, 0.9), inset 0 0 25px rgba(34, 197, 94, 0.4), 0 0 70px rgba(34, 197, 94, 0.6)` :
-                    `0 0 ${25 + index * 8}px rgba(59, 130, 246, 0.8), inset 0 0 ${20 + index * 5}px rgba(59, 130, 246, 0.3), 0 0 ${50 + index * 10}px rgba(59, 130, 246, 0.5)`,
+                    `0 0 40px rgba(34, 197, 94, 0.95), inset 0 0 30px rgba(34, 197, 94, 0.5), 0 0 80px rgba(34, 197, 94, 0.7)` :
+                    `0 0 ${30 + index * 10}px rgba(59, 130, 246, 0.9), inset 0 0 ${25 + index * 6}px rgba(59, 130, 246, 0.4), 0 0 ${60 + index * 12}px rgba(59, 130, 246, 0.6)`,
                   background: isFull ? 
-                    `radial-gradient(circle, transparent 96%, rgba(34, 197, 94, 0.25) 100%)` :
-                    `radial-gradient(circle, transparent 96%, rgba(59, 130, 246, 0.2) 100%)`,
-                  animation: isEmpty ? 'none' : `pulse 4s infinite, spin ${8 + index * 3}s linear infinite`,
-                  filter: `drop-shadow(0 0 ${15 + index * 3}px ${isFull ? 'rgba(34, 197, 94, 0.5)' : 'rgba(59, 130, 246, 0.5)'})`
+                    `radial-gradient(circle, transparent 95%, rgba(34, 197, 94, 0.3) 100%)` :
+                    `radial-gradient(circle, transparent 95%, rgba(59, 130, 246, 0.25) 100%)`,
+                  animation: isEmpty ? 'none' : `pulse 4s infinite, spin ${10 + index * 4}s linear infinite`,
+                  filter: `drop-shadow(0 0 ${18 + index * 4}px ${isFull ? 'rgba(34, 197, 94, 0.6)' : 'rgba(59, 130, 246, 0.6)'})`
                 }}
               >
                 <div 
-                  className={`absolute -top-12 left-1/2 transform -translate-x-1/2 ${
+                  className={`absolute -top-14 left-1/2 transform -translate-x-1/2 ${
                     isFull ? 'bg-green-400/95 border-green-200 text-white' : 
-                    isEmpty ? 'bg-gray-600/80 border-gray-400 text-gray-200' : 'bg-blue-400/95 border-blue-200 text-white'
-                  } text-xs px-5 py-2 rounded-full font-bold shadow-xl border-2 backdrop-blur-sm`}
-                  style={{ fontSize: '12px', fontWeight: '700' }}
+                    isEmpty ? 'bg-gray-600/85 border-gray-400 text-gray-200' : 'bg-blue-400/95 border-blue-200 text-white'
+                  } text-sm px-6 py-3 rounded-full font-bold shadow-xl border-3 backdrop-blur-sm`}
+                  style={{ fontSize: '13px', fontWeight: '800' }}
                 >
                   مستوى {index + 1}: {current}/{capacity}
                 </div>
@@ -101,28 +101,28 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
                 left: particle.x,
                 top: particle.y,
                 transform: 'translate(-50%, -50%)',
-                zIndex: particle.type === 'electron' ? 15 : 25,
+                zIndex: particle.type === 'electron' ? 20 : 30,
               }}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              transition={{ duration: 0.5, type: "spring", stiffness: 400 }}
-              whileHover={{ scale: 1.4, zIndex: 35 }}
+              transition={{ duration: 0.6, type: "spring", stiffness: 500 }}
+              whileHover={{ scale: 1.5, zIndex: 40 }}
             >
               <div
-                className="rounded-full border-3 border-white/95 flex items-center justify-center text-xs font-bold text-white shadow-2xl cursor-pointer"
+                className="rounded-full border-4 border-white/95 flex items-center justify-center text-sm font-bold text-white shadow-2xl cursor-pointer"
                 style={{ 
-                  width: `${PARTICLE_SIZE * 3}px`,
-                  height: `${PARTICLE_SIZE * 3}px`,
-                  borderWidth: '3px',
+                  width: `${PARTICLE_SIZE * 3.5}px`,
+                  height: `${PARTICLE_SIZE * 3.5}px`,
+                  borderWidth: '4px',
                   backgroundColor: getParticleColor(particle.type),
-                  boxShadow: `0 0 30px ${getParticleColor(particle.type)}, inset 0 0 15px rgba(255,255,255,0.6), 0 0 60px ${getParticleColor(particle.type)}90`,
+                  boxShadow: `0 0 35px ${getParticleColor(particle.type)}, inset 0 0 20px rgba(255,255,255,0.7), 0 0 70px ${getParticleColor(particle.type)}95`,
                   filter: particle.type === 'electron' ? 
-                           'drop-shadow(0 0 15px #3b82f6) drop-shadow(0 0 30px #3b82f680)' : 
+                           'drop-shadow(0 0 18px #3b82f6) drop-shadow(0 0 35px #3b82f685)' : 
                            particle.type === 'proton' ? 
-                           'drop-shadow(0 0 15px #ef4444) drop-shadow(0 0 30px #ef444480)' :
-                           'drop-shadow(0 0 15px #64748b) drop-shadow(0 0 30px #64748b80)',
-                  animation: particle.type === 'electron' ? 'pulse 2.5s infinite' : 'pulse 4s infinite'
+                           'drop-shadow(0 0 18px #ef4444) drop-shadow(0 0 35px #ef444485)' :
+                           'drop-shadow(0 0 18px #64748b) drop-shadow(0 0 35px #64748b85)',
+                  animation: particle.type === 'electron' ? 'pulse 2.8s infinite' : 'pulse 4.5s infinite'
                 }}
                 title={`${particle.type === 'proton' ? 'بروتون' : 
                          particle.type === 'neutron' ? 'نيوترون' : 'إلكترون'} (${particle.id})`}
@@ -134,46 +134,46 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
           ))}
 
           {/* مؤشر التوضع المحسن */}
-          <div className="absolute bottom-4 left-4 bg-black/90 p-5 rounded-xl text-xs text-white border-2 border-white/40 backdrop-blur-sm shadow-2xl">
-            <div className="font-bold mb-4 text-yellow-300 text-base">مفتاح الذرة:</div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="w-6 h-6 rounded-full bg-red-500 border-3 border-white/80 shadow-lg"></div>
-                <span className="text-sm font-medium">بروتونات (P+) - في النواة</span>
+          <div className="absolute bottom-4 left-4 bg-black/95 p-6 rounded-xl text-sm text-white border-3 border-white/50 backdrop-blur-sm shadow-2xl">
+            <div className="font-bold mb-5 text-yellow-300 text-lg">مفتاح الذرة:</div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-5">
+                <div className="w-7 h-7 rounded-full bg-red-500 border-4 border-white/85 shadow-lg"></div>
+                <span className="text-base font-medium">بروتونات (P+) - في النواة</span>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-6 h-6 rounded-full bg-gray-500 border-3 border-white/80 shadow-lg"></div>
-                <span className="text-sm font-medium">نيوترونات (n°) - في النواة</span>
+              <div className="flex items-center gap-5">
+                <div className="w-7 h-7 rounded-full bg-gray-500 border-4 border-white/85 shadow-lg"></div>
+                <span className="text-base font-medium">نيوترونات (n°) - في النواة</span>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-6 h-6 rounded-full bg-blue-500 border-3 border-white/80 shadow-lg animate-pulse"></div>
-                <span className="text-sm font-medium">إلكترونات (e-) - في المدارات</span>
+              <div className="flex items-center gap-5">
+                <div className="w-7 h-7 rounded-full bg-blue-500 border-4 border-white/85 shadow-lg animate-pulse"></div>
+                <span className="text-base font-medium">إلكترونات (e-) - في المدارات</span>
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-white/40 text-xs text-gray-300">
+            <div className="mt-5 pt-4 border-t border-white/50 text-sm text-gray-300">
               <div className="font-medium">المدارات: الأخضر = ممتلئ، الأزرق = جزئي، الرمادي = فارغ</div>
             </div>
           </div>
 
           {/* إحصائيات سريعة محسنة */}
-          <div className="absolute top-4 right-4 bg-black/90 p-5 rounded-xl text-xs text-white border-2 border-white/40 backdrop-blur-sm shadow-2xl">
-            <div className="font-bold mb-4 text-purple-300 text-base">إحصائيات الذرة:</div>
-            <div className="space-y-3">
+          <div className="absolute top-4 right-4 bg-black/95 p-6 rounded-xl text-sm text-white border-3 border-white/50 backdrop-blur-sm shadow-2xl">
+            <div className="font-bold mb-5 text-purple-300 text-lg">إحصائيات الذرة:</div>
+            <div className="space-y-4">
               <div className="flex justify-between">
                 <span className="font-medium">البروتونات:</span>
-                <span className="text-red-400 font-bold text-sm">{particles.filter(p => p.type === 'proton').length}</span>
+                <span className="text-red-400 font-bold text-base">{particles.filter(p => p.type === 'proton').length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">النيوترونات:</span>
-                <span className="text-gray-400 font-bold text-sm">{particles.filter(p => p.type === 'neutron').length}</span>
+                <span className="text-gray-400 font-bold text-base">{particles.filter(p => p.type === 'neutron').length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">الإلكترونات:</span>
-                <span className="text-blue-400 font-bold text-sm">{particles.filter(p => p.type === 'electron').length}</span>
+                <span className="text-blue-400 font-bold text-base">{particles.filter(p => p.type === 'electron').length}</span>
               </div>
-              <div className="pt-3 border-t border-white/40 flex justify-between">
+              <div className="pt-4 border-t border-white/50 flex justify-between">
                 <span className="font-medium">المجموع:</span>
-                <span className="text-yellow-400 font-bold text-sm">{particles.length} جسيم</span>
+                <span className="text-yellow-400 font-bold text-base">{particles.length} جسيم</span>
               </div>
             </div>
           </div>
