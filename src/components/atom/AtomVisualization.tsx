@@ -32,7 +32,7 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
       <CardContent className="p-4 h-full">
         <div className="relative w-full h-full bg-gradient-to-br from-gray-900/50 to-black/50 rounded-lg border-2 border-dashed border-gray-500/30 overflow-hidden">
           
-          {/* النواة المركزية - محسنة مع تأثيرات أقوى وحجم أصغر */}
+          {/* النواة المركزية - مثبتة في المركز تماماً */}
           <div 
             className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-yellow-300/95 bg-gradient-to-br from-yellow-400/80 to-orange-600/80 flex items-center justify-center backdrop-blur-sm shadow-2xl"
             style={{
@@ -40,7 +40,11 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
               height: `${NUCLEUS_RADIUS * 1.5}px`,
               boxShadow: '0 0 60px rgba(255, 215, 0, 1), inset 0 0 40px rgba(255, 215, 0, 0.6), 0 0 120px rgba(255, 165, 0, 0.9)',
               filter: 'drop-shadow(0 0 25px rgba(255, 215, 0, 0.95))',
-              animation: 'pulse 3s infinite'
+              animation: 'pulse 3s infinite',
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)'
             }}
           >
             <div className="text-center">
@@ -51,7 +55,7 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
             </div>
           </div>
 
-          {/* مسارات الإلكترونات - محسنة مع خطوط أكثر وضوحاً */}
+          {/* مسارات الإلكترونات - ثابتة تماماً */}
           {ORBITAL_RADII.map((radius, index) => {
             const capacity = ORBITAL_CAPACITY[index];
             const current = electronsByLevel[index] || 0;
@@ -60,14 +64,17 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
             
             return (
               <div
-                key={index}
-                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-4 rounded-full ${
+                key={`orbital-${index}`}
+                className={`absolute border-4 rounded-full ${
                   isFull ? 'border-green-300/95' : 
                   isEmpty ? 'border-blue-300/50' : 'border-blue-300/80'
                 }`}
                 style={{
                   width: `${radius * 2}px`,
                   height: `${radius * 2}px`,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
                   borderWidth: '4px',
                   boxShadow: isFull ? 
                     `0 0 40px rgba(34, 197, 94, 0.95), inset 0 0 30px rgba(34, 197, 94, 0.5), 0 0 80px rgba(34, 197, 94, 0.7)` :
@@ -75,7 +82,6 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
                   background: isFull ? 
                     `radial-gradient(circle, transparent 95%, rgba(34, 197, 94, 0.3) 100%)` :
                     `radial-gradient(circle, transparent 95%, rgba(59, 130, 246, 0.25) 100%)`,
-                  animation: isEmpty ? 'none' : `pulse 4s infinite, spin ${10 + index * 4}s linear infinite`,
                   filter: `drop-shadow(0 0 ${18 + index * 4}px ${isFull ? 'rgba(34, 197, 94, 0.6)' : 'rgba(59, 130, 246, 0.6)'})`
                 }}
               >
@@ -92,7 +98,7 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
             );
           })}
 
-          {/* الجسيمات - محسنة مع أحجام أكبر وتأثيرات أقوى */}
+          {/* الجسيمات - مثبتة في مواضعها الصحيحة */}
           {particles.map((particle) => (
             <motion.div
               key={particle.id}
@@ -139,19 +145,19 @@ export const AtomVisualization: React.FC<AtomVisualizationProps> = ({ particles 
             <div className="space-y-4">
               <div className="flex items-center gap-5">
                 <div className="w-7 h-7 rounded-full bg-red-500 border-4 border-white/85 shadow-lg"></div>
-                <span className="text-base font-medium">بروتونات (P+) - في النواة</span>
+                <span className="text-base font-medium">بروتونات (P+) - ثابتة في النواة</span>
               </div>
               <div className="flex items-center gap-5">
                 <div className="w-7 h-7 rounded-full bg-gray-500 border-4 border-white/85 shadow-lg"></div>
-                <span className="text-base font-medium">نيوترونات (n°) - في النواة</span>
+                <span className="text-base font-medium">نيوترونات (n°) - ثابتة في النواة</span>
               </div>
               <div className="flex items-center gap-5">
                 <div className="w-7 h-7 rounded-full bg-blue-500 border-4 border-white/85 shadow-lg animate-pulse"></div>
-                <span className="text-base font-medium">إلكترونات (e-) - في المدارات</span>
+                <span className="text-base font-medium">إلكترونات (e-) - تدور في مدارات ثابتة</span>
               </div>
             </div>
             <div className="mt-5 pt-4 border-t border-white/50 text-sm text-gray-300">
-              <div className="font-medium">المدارات: الأخضر = ممتلئ، الأزرق = جزئي، الرمادي = فارغ</div>
+              <div className="font-medium">المدارات ثابتة: الأخضر = ممتلئ، الأزرق = جزئي، الرمادي = فارغ</div>
             </div>
           </div>
 

@@ -12,25 +12,24 @@ export const useAtomSimulation = () => {
   // حساب بيانات الذرة مع التحقق من الصحة
   const atomData: AtomData = calculateAtomData(particles);
 
-  // تحريك الإلكترونات - محسن مع ثبات المدار وسرعات متنوعة
+  // تحريك الإلكترونات - محسن للثبات التام للمدارات
   const animateElectrons = useCallback(() => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
-          // سرعة محسنة ومتنوعة حسب المستوى (المستويات الأقرب أسرع)
-          const baseSpeed = 0.03; // سرعة أساسية أعلى
-          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.3); // تنوع أكبر في السرعة
-          const randomVariation = 0.9 + (Math.sin(Date.now() * 0.0008 + particle.orbitalLevel) * 0.2); // تنوع عشوائي أقل
-          const speedFactor = baseSpeed * levelMultiplier * randomVariation;
+          // سرعة محسنة مع ثبات المدار
+          const baseSpeed = 0.025; // سرعة ثابتة
+          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.2); // تنوع خفيف
+          const speedFactor = baseSpeed * levelMultiplier;
           
           const newAngle = (particle.angle || 0) + speedFactor;
           
-          // نصف قطر ثابت تماماً - لا اهتزاز
-          const radius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
+          // نصف قطر المدار ثابت تماماً - لا تغيير أبداً
+          const orbitalRadius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
           
-          // موضع دقيق على المدار بدون اهتزاز
-          const x = ATOM_CENTER.x + Math.cos(newAngle) * radius;
-          const y = ATOM_CENTER.y + Math.sin(newAngle) * radius;
+          // موضع ثابت ودقيق على المدار
+          const x = ATOM_CENTER.x + Math.cos(newAngle) * orbitalRadius;
+          const y = ATOM_CENTER.y + Math.sin(newAngle) * orbitalRadius;
           
           return {
             ...particle,
@@ -39,7 +38,7 @@ export const useAtomSimulation = () => {
             angle: newAngle
           };
         }
-        return particle;
+        return particle; // النوكليونات تبقى ثابتة في النواة
       });
     });
 
@@ -56,11 +55,11 @@ export const useAtomSimulation = () => {
     };
   }, [animateElectrons]);
 
-  // إضافة جسيم مع التحقق من الحدود
+  // إضافة جسيم مع ضمان الموضع الصحيح
   const addParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
     console.log(`إضافة جسيم: ${type}`);
     
-    // تحقق من الحدود مع زيادة مرونة للنوكليونات
+    // تحقق من الحدود
     if (type === 'electron') {
       const currentElectrons = particles.filter(p => p.type === 'electron').length;
       if (currentElectrons >= 118) {
@@ -69,7 +68,7 @@ export const useAtomSimulation = () => {
       }
     } else if (type === 'proton' || type === 'neutron') {
       const currentNucleons = particles.filter(p => p.type === 'proton' || p.type === 'neutron').length;
-      if (currentNucleons >= 80) { // حد أعلى للنوكليونات لاستغلال النواة المُحسنة
+      if (currentNucleons >= 80) {
         console.warn('تم الوصول للحد الأقصى من النوكليونات في النواة');
         return;
       }
@@ -78,10 +77,10 @@ export const useAtomSimulation = () => {
     const newParticle = createNewParticle(type, particles);
     const newParticles = [...particles, newParticle];
     
-    // إعادة تنظيم جميع الجسيمات
+    // إعادة تنظيم جميع الجسيمات مع ضمان الثبات
     const reorganizedParticles = reorganizeParticles(newParticles);
     
-    console.log(`تم إضافة ${type} في الموضع:`, { x: newParticle.x, y: newParticle.y });
+    console.log(`تم إضافة ${type} في الموضع الصحيح`);
     setParticles(reorganizedParticles);
   }, [particles]);
 
@@ -94,36 +93,36 @@ export const useAtomSimulation = () => {
 
     let newParticles = particles.filter((_, index) => index !== particleIndex);
     
-    // إعادة تنظيم الجسيمات بعد الحذف
+    // إعادة تنظيم الجسيمات بعد الحذف مع ضمان الثبات
     newParticles = reorganizeParticles(newParticles);
     
     console.log(`تم حذف ${type}, الجسيمات المتبقية:`, newParticles.length);
     setParticles(newParticles);
   }, [particles]);
 
-  // بناء عنصر مقترح مع التوزيع الصحيح
+  // بناء عنصر مقترح مع التوزيع الصحيح والثابت
   const buildSuggestedElement = useCallback((element: SuggestedElement) => {
     console.log(`بناء العنصر: ${element.name}`);
     
     const newParticles: Particle[] = [];
     
-    // إضافة البروتونات والنيوترونات
+    // إضافة البروتونات والنيوترونات في مركز النواة
     for (let i = 0; i < element.protons + element.neutrons; i++) {
       const type = i < element.protons ? 'proton' : 'neutron';
       const particle = createNewParticle(type, newParticles);
       newParticles.push(particle);
     }
     
-    // إضافة الإلكترونات
+    // إضافة الإلكترونات على المدارات الثابتة
     for (let i = 0; i < element.electrons; i++) {
       const particle = createNewParticle('electron', newParticles);
       newParticles.push(particle);
     }
     
-    // تنظيم نهائي لجميع الجسيمات
+    // تنظيم نهائي لجميع الجسيمات مع ضمان الثبات
     const finalParticles = reorganizeParticles(newParticles);
     
-    console.log(`تم بناء ${element.name} بنجاح، إجمالي الجسيمات:`, finalParticles.length);
+    console.log(`تم بناء ${element.name} بنجاح مع مدارات ثابتة`);
     setParticles(finalParticles);
     setSelectedSuggestedElement(element);
   }, []);
