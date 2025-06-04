@@ -24,12 +24,12 @@ const formSchema = z.object({
   author: z.string().min(3, { message: "يجب أن يكون اسم المؤلف 3 أحرف على الأقل" }),
   subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics']),
   coverImage: z.instanceof(File).refine(
-    (file) => file.size < 5 * 1024 * 1024, // 5MB
-    { message: "حجم صورة الغلاف يجب أن يكون أقل من 5 ميجابايت" }
+    (file) => file.size < 10 * 1024 * 1024, // 10MB للصور
+    { message: "حجم صورة الغلاف يجب أن يكون أقل من 10 ميجابايت" }
   ),
   pdfFile: z.instanceof(File).refine(
-    (file) => file.size < 20 * 1024 * 1024, // 20MB
-    { message: "حجم ملف PDF يجب أن يكون أقل من 20 ميجابايت" }
+    (file) => file.size < 2 * 1024 * 1024 * 1024, // 2GB للملفات PDF
+    { message: "حجم ملف PDF يجب أن يكون أقل من 2 جيجابايت" }
   ).refine(
     (file) => file.type === 'application/pdf',
     { message: "يجب أن يكون الملف بصيغة PDF" }
@@ -54,7 +54,7 @@ const UploadJournalPage = () => {
         if (!bucketExists) {
           await supabase.storage.createBucket('scientific_journals', {
             public: true,
-            fileSizeLimit: 20971520, // 20MB
+            fileSizeLimit: 2147483648, // 2GB في بايت
           });
         }
       } catch (error) {
@@ -75,9 +75,28 @@ const UploadJournalPage = () => {
     },
   });
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} جيجابايت`;
+    } else if (bytes >= 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(2)} ميجابايت`;
+    } else {
+      return `${(bytes / 1024).toFixed(2)} كيلوبايت`;
+    }
+  };
+
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      toast({
+        title: "حجم الصورة كبير جداً",
+        description: "يجب أن يكون حجم صورة الغلاف أقل من 10 ميجابايت",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -92,8 +111,31 @@ const UploadJournalPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB
+      toast({
+        title: "حجم الملف كبير جداً",
+        description: "يجب أن يكون حجم ملف PDF أقل من 2 جيجابايت",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.type !== 'application/pdf') {
+      toast({
+        title: "نوع ملف غير صحيح",
+        description: "يرجى اختيار ملف PDF فقط",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSelectedPdfName(file.name);
     form.setValue("pdfFile", file);
+    
+    toast({
+      title: "تم اختيار الملف بنجاح",
+      description: `تم اختيار ملف بحجم ${formatFileSize(file.size)}`,
+    });
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -165,7 +207,7 @@ const UploadJournalPage = () => {
 
       toast({
         title: "تم رفع المجلة بنجاح",
-        description: "تمت إضافة المجلة إلى المكتبة العلمية",
+        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية`,
       });
 
       // إعادة تعيين النموذج وإغلاق الدرج
@@ -213,6 +255,15 @@ const UploadJournalPage = () => {
           </div>
           
           <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
+            <div className="mb-4 text-center">
+              <p className="text-white/80 text-sm">
+                الحد الأقصى لحجم ملف PDF: <span className="text-green-400 font-bold">2 جيجابايت</span>
+              </p>
+              <p className="text-white/60 text-xs mt-1">
+                الحد الأقصى لحجم صورة الغلاف: 10 ميجابايت
+              </p>
+            </div>
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-right">
                 <FormField
@@ -323,7 +374,7 @@ const UploadJournalPage = () => {
                   name="pdfFile"
                   render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel>ملف المجلة (PDF)</FormLabel>
+                      <FormLabel>ملف المجلة (PDF - حتى 2 جيجابايت)</FormLabel>
                       <FormControl>
                         <div className="flex flex-col gap-2">
                           <Input
@@ -333,8 +384,13 @@ const UploadJournalPage = () => {
                             {...fieldProps}
                           />
                           {selectedPdfName && (
-                            <div className="mt-2 border rounded-md p-3 flex items-center justify-between">
-                              <span className="text-sm text-gray-300 truncate">{selectedPdfName}</span>
+                            <div className="mt-2 border rounded-md p-3 flex items-center justify-between bg-green-500/10 border-green-500/30">
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-300 truncate">{selectedPdfName}</span>
+                                <span className="text-xs text-green-400">
+                                  ✓ مقبول - حجم الملف ضمن الحد المسموح (2 جيجابايت)
+                                </span>
+                              </div>
                               <FileText className="h-5 w-5 text-purple-400" />
                             </div>
                           )}
@@ -353,12 +409,12 @@ const UploadJournalPage = () => {
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      جارٍ الرفع...
+                      جارٍ الرفع... (قد يستغرق وقتاً للملفات الكبيرة)
                     </>
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      رفع المجلة
+                      رفع المجلة (حتى 2 جيجابايت)
                     </>
                   )}
                 </Button>
