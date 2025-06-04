@@ -166,8 +166,8 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
         </Card>
       </motion.div>
 
-      {/* محتوى التبويبات - مع تمرير كامل */}
-      <div className="flex-1 px-4 pb-4 overflow-hidden">
+      {/* محتوى التبويبات - إصلاح العرض الكامل والتمرير */}
+      <div className="flex-1 px-4 pb-4 min-h-0 overflow-hidden">
         <AnimatePresence mode="wait">
           {activeTab === 'welcome' && (
             <motion.div
@@ -176,7 +176,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.5 }}
-              className="h-full overflow-auto"
+              className="h-full w-full"
             >
               <ModernWelcomeScreen 
                 onNavigate={setActiveTab}
@@ -192,7 +192,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.5 }}
-              className="h-full overflow-hidden"
+              className="h-full w-full"
             >
               <ModernPrivateChat user={user} />
             </motion.div>
@@ -205,7 +205,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.5 }}
-              className="h-full overflow-hidden"
+              className="h-full w-full"
             >
               <ModernGroupChat user={user} />
             </motion.div>

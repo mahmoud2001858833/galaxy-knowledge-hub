@@ -17,7 +17,7 @@ const UploadJournalDrawer = () => {
       className="group bg-purple-500 hover:bg-purple-600"
     >
       <Upload className="mr-2 h-4 w-4" />
-      رفع مجلة علمية
+      رفع مجلة علمية (حجم لا محدود)
     </Button>
   );
 };
