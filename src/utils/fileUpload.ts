@@ -12,7 +12,7 @@ export const ensureStorageBucket = async () => {
       const { error } = await supabase.storage.createBucket('scientific_journals', {
         public: true,
         allowedMimeTypes: ['application/pdf', 'image/*'],
-        fileSizeLimit: 5368709120, // 5GB
+        fileSizeLimit: 10737418240, // 10GB
       });
       
       if (error) {
@@ -30,8 +30,8 @@ export const ensureStorageBucket = async () => {
   }
 };
 
-// رفع ملف مع معالجة محسنة للملفات الكبيرة
-export const uploadFileWithProgress = async (
+// رفع ملف واحد كامل بدون تجزئة (محسن للملفات الكبيرة)
+export const uploadLargeFileComplete = async (
   file: File, 
   path: string, 
   onProgress?: (progress: number) => void
@@ -40,68 +40,24 @@ export const uploadFileWithProgress = async (
     // التأكد من وجود bucket
     await ensureStorageBucket();
     
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    console.log(`بدء رفع ملف كامل: ${file.name} (${formatFileSize(file.size)})`);
     
-    if (file.size <= CHUNK_SIZE) {
-      // رفع مباشر للملفات الصغيرة
-      const { data, error } = await supabase.storage
-        .from('scientific_journals')
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (error) throw error;
-      onProgress?.(100);
-      return data;
+    // رفع الملف كاملاً دون تجزئة
+    const { data, error } = await supabase.storage
+      .from('scientific_journals')
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false // عدم الكتابة فوق الملفات الموجودة
+      });
+    
+    if (error) {
+      console.error('خطأ في رفع الملف:', error);
+      throw error;
     }
     
-    // رفع متجزء للملفات الكبيرة
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    let uploadedBytes = 0;
-    
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
-      const end = Math.min(start + CHUNK_SIZE, file.size);
-      const chunk = file.slice(start, end);
-      
-      const chunkPath = i === 0 ? path : `${path}.part${i}`;
-      
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        try {
-          const { error } = await supabase.storage
-            .from('scientific_journals')
-            .upload(chunkPath, chunk, {
-              cacheControl: '3600',
-              upsert: i > 0
-            });
-          
-          if (error) throw error;
-          break;
-          
-        } catch (error) {
-          retryCount++;
-          if (retryCount >= maxRetries) throw error;
-          
-          // انتظار قبل المحاولة مرة أخرى
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-        }
-      }
-      
-      uploadedBytes += chunk.size;
-      const progress = Math.round((uploadedBytes / file.size) * 100);
-      onProgress?.(progress);
-      
-      // توقف قصير بين الأجزاء
-      if (i < totalChunks - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-    
-    return { path };
+    onProgress?.(100);
+    console.log('تم رفع الملف بنجاح:', data);
+    return data;
     
   } catch (error) {
     console.error('خطأ في رفع الملف:', error);
@@ -120,5 +76,36 @@ export const getSecurePublicUrl = (path: string) => {
   } catch (error) {
     console.error('خطأ في إنشاء الرابط:', error);
     return null;
+  }
+};
+
+// دالة لحذف الملفات من التخزين نهائياً
+export const deleteFileFromStorage = async (filePath: string) => {
+  try {
+    const { error } = await supabase.storage
+      .from('scientific_journals')
+      .remove([filePath]);
+    
+    if (error) {
+      console.error('خطأ في حذف الملف من التخزين:', error);
+      throw error;
+    }
+    
+    console.log('تم حذف الملف من التخزين بنجاح:', filePath);
+    return true;
+  } catch (error) {
+    console.error('خطأ في حذف الملف من التخزين:', error);
+    return false;
+  }
+};
+
+// دالة لتنسيق حجم الملف
+export const formatFileSize = (bytes: number) => {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} جيجابايت`;
+  } else if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} ميجابايت`;
+  } else {
+    return `${(bytes / 1024).toFixed(2)} كيلوبايت`;
   }
 };

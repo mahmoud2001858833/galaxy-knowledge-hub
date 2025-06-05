@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadFileWithProgress, getSecurePublicUrl } from '@/utils/fileUpload';
+import { uploadLargeFileComplete, getSecurePublicUrl, formatFileSize } from '@/utils/fileUpload';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
@@ -28,8 +28,8 @@ const formSchema = z.object({
     { message: "حجم صورة الغلاف يجب أن يكون أقل من 50 ميجابايت" }
   ),
   pdfFile: z.instanceof(File).refine(
-    (file) => file.size < 2 * 1024 * 1024 * 1024, // 2GB للملفات PDF
-    { message: "حجم ملف PDF يجب أن يكون أقل من 2 جيجابايت" }
+    (file) => file.size < 5 * 1024 * 1024 * 1024, // 5GB للملفات PDF
+    { message: "حجم ملف PDF يجب أن يكون أقل من 5 جيجابايت" }
   ).refine(
     (file) => file.type === 'application/pdf',
     { message: "يجب أن يكون الملف بصيغة PDF" }
@@ -55,16 +55,6 @@ const UploadJournalPage = () => {
       subject: "physics",
     },
   });
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes >= 1024 * 1024 * 1024) {
-      return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} جيجابايت`;
-    } else if (bytes >= 1024 * 1024) {
-      return `${(bytes / (1024 * 1024)).toFixed(2)} ميجابايت`;
-    } else {
-      return `${(bytes / 1024).toFixed(2)} كيلوبايت`;
-    }
-  };
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,10 +86,10 @@ const UploadJournalPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB
+    if (file.size > 5 * 1024 * 1024 * 1024) { // 5GB
       toast({
         title: "حجم الملف كبير جداً",
-        description: "يجب أن يكون حجم ملف PDF أقل من 2 جيجابايت",
+        description: "يجب أن يكون حجم ملف PDF أقل من 5 جيجابايت",
         variant: "destructive",
       });
       return;
@@ -119,7 +109,7 @@ const UploadJournalPage = () => {
     
     toast({
       title: "تم اختيار الملف بنجاح",
-      description: `تم اختيار ملف PDF بحجم ${formatFileSize(file.size)} - جاهز للرفع`,
+      description: `تم اختيار ملف PDF بحجم ${formatFileSize(file.size)} - جاهز للرفع كملف واحد`,
     });
   };
 
@@ -149,20 +139,20 @@ const UploadJournalPage = () => {
       const coverFileName = `cover_${uuidv4()}.${coverExt}`;
       const coverFilePath = `${data.subject}/${coverFileName}`;
 
-      await uploadFileWithProgress(data.coverImage, coverFilePath, (progress) => {
+      await uploadLargeFileComplete(data.coverImage, coverFilePath, (progress) => {
         setUploadProgress(progress * 0.3); // 30% للصورة
       });
 
       toast({
         title: "جاري رفع الملف الرئيسي",
-        description: `جاري رفع ملف PDF بحجم ${formatFileSize(data.pdfFile.size)}...`,
+        description: `جاري رفع ملف PDF بحجم ${formatFileSize(data.pdfFile.size)} كملف واحد...`,
       });
 
-      // رفع ملف PDF مع تتبع التقدم
+      // رفع ملف PDF كاملاً بدون تجزئة
       const pdfFileName = `pdf_${uuidv4()}.pdf`;
       const pdfFilePath = `${data.subject}/${pdfFileName}`;
 
-      await uploadFileWithProgress(data.pdfFile, pdfFilePath, (progress) => {
+      await uploadLargeFileComplete(data.pdfFile, pdfFilePath, (progress) => {
         setUploadProgress(30 + (progress * 0.6)); // 60% للـ PDF
       });
 
@@ -212,7 +202,7 @@ const UploadJournalPage = () => {
 
       toast({
         title: "تم رفع المجلة بنجاح",
-        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية وحفظها في قاعدة البيانات`,
+        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية وحفظها في قاعدة البيانات كملف واحد`,
       });
 
       // إعادة تعيين النموذج
@@ -257,20 +247,20 @@ const UploadJournalPage = () => {
             </Button>
             
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-white to-purple-500">
-              رفع مجلة علمية جديدة (محسن)
+              رفع مجلة علمية جديدة (ملف واحد كامل)
             </h1>
           </div>
           
           <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
             <div className="mb-4 text-center">
               <p className="text-white/80 text-sm">
-                الحد الأقصى لحجم ملف PDF: <span className="text-green-400 font-bold">2 جيجابايت</span>
+                الحد الأقصى لحجم ملف PDF: <span className="text-green-400 font-bold">5 جيجابايت</span>
               </p>
               <p className="text-white/60 text-xs mt-1">
                 الحد الأقصى لحجم صورة الغلاف: 50 ميجابايت
               </p>
               <p className="text-blue-400 text-xs mt-1">
-                ✓ نظام رفع محسن مع ضمان الحفظ في قاعدة البيانات
+                ✓ رفع ملف واحد كامل بدون تجزئة مع ضمان الحفظ في قاعدة البيانات
               </p>
             </div>
 
@@ -278,12 +268,12 @@ const UploadJournalPage = () => {
             {isUploading && (
               <div className="mb-6 space-y-3">
                 <div className="flex items-center justify-between text-white">
-                  <span>جاري الرفع... (نظام محسن)</span>
+                  <span>جاري الرفع... (ملف واحد كامل)</span>
                   <span>{uploadProgress.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-4 overflow-hidden">
                   <motion.div
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full flex items-center justify-center"
+                    className="bg-gradient-to-r from-green-500 to-purple-500 h-4 rounded-full flex items-center justify-center"
                     initial={{ width: 0 }}
                     animate={{ width: `${uploadProgress}%` }}
                     transition={{ duration: 0.3 }}
@@ -296,7 +286,7 @@ const UploadJournalPage = () => {
                   </motion.div>
                 </div>
                 <p className="text-white/80 text-sm text-center">
-                  {selectedPdfName && `رفع ${selectedPdfName} - ${formatFileSize(form.watch("pdfFile")?.size || 0)}`}
+                  {selectedPdfName && `رفع ${selectedPdfName} - ${formatFileSize(form.watch("pdfFile")?.size || 0)} كملف واحد`}
                 </p>
               </div>
             )}
@@ -411,7 +401,7 @@ const UploadJournalPage = () => {
                   name="pdfFile"
                   render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel>ملف المجلة (PDF - حتى 2 جيجابايت)</FormLabel>
+                      <FormLabel>ملف المجلة (PDF - حتى 5 جيجابايت - ملف واحد كامل)</FormLabel>
                       <FormControl>
                         <div className="flex flex-col gap-2">
                           <Input
@@ -425,7 +415,7 @@ const UploadJournalPage = () => {
                               <div className="flex flex-col">
                                 <span className="text-sm text-gray-300 truncate">{selectedPdfName}</span>
                                 <span className="text-xs text-green-400">
-                                  ✓ مقبول - حجم الملف: {formatFileSize(form.watch("pdfFile")?.size || 0)}
+                                  ✓ مقبول - حجم الملف: {formatFileSize(form.watch("pdfFile")?.size || 0)} - سيتم رفعه كملف واحد
                                 </span>
                               </div>
                               <FileText className="h-5 w-5 text-purple-400" />
@@ -446,12 +436,12 @@ const UploadJournalPage = () => {
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      جارٍ الرفع... (نظام محسن مع ضمان الحفظ)
+                      جارٍ الرفع... (ملف واحد كامل مع ضمان الحفظ)
                     </>
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      رفع المجلة (حتى 2 جيجابايت - محسن)
+                      رفع المجلة (حتى 5 جيجابايت - ملف واحد كامل)
                     </>
                   )}
                 </Button>

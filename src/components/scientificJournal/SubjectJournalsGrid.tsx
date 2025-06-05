@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Trash, BookOpen, ExternalLink } from "lucide-react";
 import AdminControl from '../visualLibrary/AdminControl';
+import { deleteFileFromStorage } from '@/utils/fileUpload';
 
 interface Journal {
   id: string;
@@ -31,7 +32,8 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
   const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [journalToDelete, setJournalToDelete] = useState<string | null>(null);
+  const [journalToDelete, setJournalToDelete] = useState<Journal | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,40 +76,77 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
     }
   };
 
+  // استخراج مسار الملف من الرابط
+  const extractFilePathFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathSegments = urlObj.pathname.split('/');
+      // البحث عن المسار بعد /storage/v1/object/public/scientific_journals/
+      const bucketIndex = pathSegments.findIndex(segment => segment === 'scientific_journals');
+      if (bucketIndex !== -1 && bucketIndex < pathSegments.length - 1) {
+        return pathSegments.slice(bucketIndex + 1).join('/');
+      }
+      return '';
+    } catch (error) {
+      console.error('خطأ في استخراج مسار الملف:', error);
+      return '';
+    }
+  };
+
   const handleDeleteJournal = async () => {
     if (!journalToDelete) return;
 
+    setIsDeleting(true);
+    
     try {
-      // Delete the journal from the database permanently
+      // حذف الملفات من التخزين أولاً
+      const coverImagePath = extractFilePathFromUrl(journalToDelete.cover_image_url);
+      const pdfPath = extractFilePathFromUrl(journalToDelete.pdf_url);
+
+      console.log('حذف الملفات من التخزين:', { coverImagePath, pdfPath });
+
+      // حذف صورة الغلاف
+      if (coverImagePath) {
+        await deleteFileFromStorage(coverImagePath);
+      }
+
+      // حذف ملف PDF
+      if (pdfPath) {
+        await deleteFileFromStorage(pdfPath);
+      }
+
+      // حذف السجل من قاعدة البيانات نهائياً
       const { error } = await supabase
         .from('scientific_journals')
         .delete()
-        .eq('id', journalToDelete);
+        .eq('id', journalToDelete.id);
       
       if (error) throw error;
 
       toast({
-        title: "تم بنجاح",
-        description: "تم حذف المجلة بنجاح",
+        title: "تم الحذف بنجاح",
+        description: "تم حذف المجلة نهائياً من قاعدة البيانات والتطبيق مع جميع ملفاتها",
       });
 
       // تحديث القائمة بعد الحذف
-      setJournals(journals.filter(j => j.id !== journalToDelete));
+      setJournals(journals.filter(j => j.id !== journalToDelete.id));
       setDeleteConfirmationOpen(false);
       setJournalToDelete(null);
     } catch (error) {
       console.error('خطأ في حذف المجلة:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء محاولة حذف المجلة",
+        title: "خطأ في الحذف",
+        description: "حدث خطأ أثناء محاولة حذف المجلة. يرجى المحاولة مرة أخرى.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const openDeleteConfirmation = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+  const openDeleteConfirmation = (e: React.MouseEvent<HTMLButtonElement>, journal: Journal) => {
     e.stopPropagation(); // منع فتح المجلة عند النقر على زر الحذف
-    setJournalToDelete(id);
+    setJournalToDelete(journal);
     setDeleteConfirmationOpen(true);
   };
 
@@ -121,7 +160,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
     } else {
       toast({
         title: "تم تفعيل وضع المشرف",
-        description: "يمكنك الآن إدارة المجلات العلمية",
+        description: "يمكنك الآن إدارة المجلات العلمية وحذفها نهائياً",
       });
     }
   };
@@ -161,21 +200,26 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
     <>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-white">
-          {isAdminMode ? 'وضع المشرف: يمكنك حذف المجلات' : ''}
+          {isAdminMode ? 'وضع المشرف: يمكنك حذف المجلات نهائياً من التطبيق' : ''}
         </h2>
         <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
       </div>
       
       {isAdminMode ? (
         <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 mb-6">
-          <h3 className="text-xl font-bold mb-4">قائمة المجلات العلمية</h3>
+          <h3 className="text-xl font-bold mb-4 text-red-400">قائمة المجلات العلمية - حذف نهائي</h3>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+            <p className="text-red-300 text-sm font-medium">
+              ⚠️ تحذير: عند حذف مجلة، سيتم حذفها نهائياً من قاعدة البيانات والتطبيق مع جميع ملفاتها
+            </p>
+          </div>
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-right py-2 px-4">العنوان</th>
                 <th className="text-right py-2 px-4">المؤلف</th>
                 <th className="text-right py-2 px-4">التاريخ</th>
-                <th className="text-right py-2 px-4 w-24">الإجراء</th>
+                <th className="text-right py-2 px-4 w-24">حذف نهائي</th>
               </tr>
             </thead>
             <tbody>
@@ -190,10 +234,10 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
                     <Button 
                       variant="destructive" 
                       size="sm"
-                      onClick={(e) => openDeleteConfirmation(e, journal.id)}
-                      className="w-full"
+                      onClick={(e) => openDeleteConfirmation(e, journal)}
+                      className="w-full bg-red-600 hover:bg-red-700"
                     >
-                      <Trash className="w-4 h-4 mr-1" /> حذف
+                      <Trash className="w-4 h-4 mr-1" /> حذف نهائي
                     </Button>
                   </td>
                 </tr>
@@ -231,7 +275,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
                   variant="destructive" 
                   size="icon" 
                   className="absolute top-2 left-2 bg-red-600 hover:bg-red-700"
-                  onClick={(e) => openDeleteConfirmation(e, journal.id)}
+                  onClick={(e) => openDeleteConfirmation(e, journal)}
                 >
                   <Trash className="w-4 h-4" />
                 </Button>
@@ -288,9 +332,20 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
       <Dialog open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-right">تأكيد الحذف</DialogTitle>
+            <DialogTitle className="text-right text-red-400">تأكيد الحذف النهائي</DialogTitle>
             <DialogDescription className="text-right">
-              هل أنت متأكد من رغبتك في حذف هذه المجلة؟ هذا الإجراء لا يمكن التراجع عنه.
+              <div className="space-y-2">
+                <p className="font-medium">هل أنت متأكد من رغبتك في حذف هذه المجلة نهائياً؟</p>
+                {journalToDelete && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded p-2">
+                    <p className="text-sm"><strong>العنوان:</strong> {journalToDelete.title}</p>
+                    <p className="text-sm"><strong>المؤلف:</strong> {journalToDelete.author || 'غير معروف'}</p>
+                  </div>
+                )}
+                <p className="text-red-300 text-sm font-medium">
+                  ⚠️ سيتم حذف المجلة نهائياً من قاعدة البيانات والتطبيق مع جميع ملفاتها. هذا الإجراء لا يمكن التراجع عنه.
+                </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
 
@@ -299,6 +354,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
               type="button"
               variant="outline"
               onClick={() => setDeleteConfirmationOpen(false)}
+              disabled={isDeleting}
             >
               إلغاء
             </Button>
@@ -306,8 +362,10 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
               type="button"
               variant="destructive"
               onClick={handleDeleteJournal}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
             >
-              حذف المجلة
+              {isDeleting ? "جاري الحذف..." : "حذف نهائي"}
             </Button>
           </DialogFooter>
         </DialogContent>
