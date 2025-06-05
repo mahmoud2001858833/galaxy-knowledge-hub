@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Upload, Loader2, FileText } from 'lucide-react';
+import { ArrowRight, Upload, Loader2, FileText, CheckCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadLargeFileComplete, getSecurePublicUrl, formatFileSize } from '@/utils/fileUpload';
+import { uploadLargeFileComplete, getSecurePublicUrl, formatFileSize, validateFileSize } from '@/utils/fileUpload';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
@@ -24,8 +24,8 @@ const formSchema = z.object({
   author: z.string().min(3, { message: "يجب أن يكون اسم المؤلف 3 أحرف على الأقل" }),
   subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics']),
   coverImage: z.instanceof(File).refine(
-    (file) => file.size < 50 * 1024 * 1024, // 50MB للصور
-    { message: "حجم صورة الغلاف يجب أن يكون أقل من 50 ميجابايت" }
+    (file) => file.size < 100 * 1024 * 1024, // 100MB للصور
+    { message: "حجم صورة الغلاف يجب أن يكون أقل من 100 ميجابايت" }
   ),
   pdfFile: z.instanceof(File).refine(
     (file) => file.size < 5 * 1024 * 1024 * 1024, // 5GB للملفات PDF
@@ -41,8 +41,10 @@ type FormValues = z.infer<typeof formSchema>;
 const UploadJournalPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -60,62 +62,60 @@ const UploadJournalPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) { // 50MB
+    try {
+      validateFileSize(file, 0.1); // 100MB للصور
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      form.setValue("coverImage", file);
+      toast({
+        title: "تم اختيار صورة الغلاف",
+        description: `تم اختيار صورة بحجم ${formatFileSize(file.size)}`,
+      });
+    } catch (error: any) {
       toast({
         title: "حجم الصورة كبير جداً",
-        description: "يجب أن يكون حجم صورة الغلاف أقل من 50 ميجابايت",
+        description: error.message,
         variant: "destructive",
       });
-      return;
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCoverPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    form.setValue("coverImage", file);
-    toast({
-      title: "تم اختيار صورة الغلاف",
-      description: `تم اختيار صورة بحجم ${formatFileSize(file.size)}`,
-    });
   };
 
   const handlePdfFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    if (file.size > 5 * 1024 * 1024 * 1024) { // 5GB
+    try {
+      validateFileSize(file, 5); // 5GB للـ PDF
+      
+      if (file.type !== 'application/pdf') {
+        throw new Error("يرجى اختيار ملف PDF فقط");
+      }
+      
+      setSelectedPdfName(file.name);
+      form.setValue("pdfFile", file);
+      
       toast({
-        title: "حجم الملف كبير جداً",
-        description: "يجب أن يكون حجم ملف PDF أقل من 5 جيجابايت",
+        title: "تم اختيار الملف بنجاح",
+        description: `تم اختيار ملف PDF بحجم ${formatFileSize(file.size)} - جاهز للرفع كملف واحد كامل`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الملف",
+        description: error.message,
         variant: "destructive",
       });
-      return;
     }
-
-    if (file.type !== 'application/pdf') {
-      toast({
-        title: "نوع ملف غير صحيح",
-        description: "يرجى اختيار ملف PDF فقط",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setSelectedPdfName(file.name);
-    form.setValue("pdfFile", file);
-    
-    toast({
-      title: "تم اختيار الملف بنجاح",
-      description: `تم اختيار ملف PDF بحجم ${formatFileSize(file.size)} - جاهز للرفع كملف واحد`,
-    });
   };
 
   const onSubmit = async (data: FormValues) => {
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadSuccess(false);
     
     try {
       // الحصول على بيانات المستخدم الحالي
@@ -129,6 +129,7 @@ const UploadJournalPage = () => {
         return;
       }
 
+      setCurrentStep("رفع صورة الغلاف...");
       toast({
         title: "بدء عملية الرفع",
         description: "جاري رفع صورة الغلاف...",
@@ -143,9 +144,10 @@ const UploadJournalPage = () => {
         setUploadProgress(progress * 0.3); // 30% للصورة
       });
 
+      setCurrentStep(`رفع ملف PDF الكامل (${formatFileSize(data.pdfFile.size)})...`);
       toast({
         title: "جاري رفع الملف الرئيسي",
-        description: `جاري رفع ملف PDF بحجم ${formatFileSize(data.pdfFile.size)} كملف واحد...`,
+        description: `جاري رفع ملف PDF بحجم ${formatFileSize(data.pdfFile.size)} كملف واحد كامل...`,
       });
 
       // رفع ملف PDF كاملاً بدون تجزئة
@@ -156,6 +158,7 @@ const UploadJournalPage = () => {
         setUploadProgress(30 + (progress * 0.6)); // 60% للـ PDF
       });
 
+      setCurrentStep("حفظ البيانات في قاعدة البيانات...");
       setUploadProgress(95);
 
       // الحصول على الروابط العامة المحسنة
@@ -166,9 +169,9 @@ const UploadJournalPage = () => {
         throw new Error('فشل في إنشاء روابط الملفات');
       }
 
-      // تخزين البيانات الوصفية في قاعدة البيانات مع إعادة المحاولة المحسنة
+      // تخزين البيانات الوصفية في قاعدة البيانات مع ضمانات إضافية
       let retryCount = 0;
-      const maxRetries = 5;
+      const maxRetries = 3;
       
       while (retryCount < maxRetries) {
         try {
@@ -187,8 +190,10 @@ const UploadJournalPage = () => {
           if (dbError) throw dbError;
           break; // نجح الإدراج، اخرج من الحلقة
           
-        } catch (error) {
+        } catch (error: any) {
           retryCount++;
+          console.error(`محاولة ${retryCount} فشلت:`, error);
+          
           if (retryCount >= maxRetries) {
             throw new Error(`فشل في حفظ البيانات بعد ${maxRetries} محاولات: ${error.message}`);
           }
@@ -199,17 +204,22 @@ const UploadJournalPage = () => {
       }
 
       setUploadProgress(100);
+      setCurrentStep("تم الرفع بنجاح!");
+      setUploadSuccess(true);
 
       toast({
         title: "تم رفع المجلة بنجاح",
-        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية وحفظها في قاعدة البيانات كملف واحد`,
+        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية بنجاح كملف واحد كامل`,
       });
 
-      // إعادة تعيين النموذج
-      form.reset();
-      setCoverPreviewUrl(null);
-      setSelectedPdfName(null);
-      navigate('/scientific-journal');
+      // إعادة تعيين النموذج بعد 2 ثانية
+      setTimeout(() => {
+        form.reset();
+        setCoverPreviewUrl(null);
+        setSelectedPdfName(null);
+        setUploadSuccess(false);
+        navigate('/scientific-journal');
+      }, 2000);
       
     } catch (error: any) {
       console.error('Error uploading journal:', error);
@@ -221,6 +231,7 @@ const UploadJournalPage = () => {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setCurrentStep("");
     }
   };
 
@@ -257,7 +268,7 @@ const UploadJournalPage = () => {
                 الحد الأقصى لحجم ملف PDF: <span className="text-green-400 font-bold">5 جيجابايت</span>
               </p>
               <p className="text-white/60 text-xs mt-1">
-                الحد الأقصى لحجم صورة الغلاف: 50 ميجابايت
+                الحد الأقصى لحجم صورة الغلاف: 100 ميجابايت
               </p>
               <p className="text-blue-400 text-xs mt-1">
                 ✓ رفع ملف واحد كامل بدون تجزئة مع ضمان الحفظ في قاعدة البيانات
@@ -268,7 +279,7 @@ const UploadJournalPage = () => {
             {isUploading && (
               <div className="mb-6 space-y-3">
                 <div className="flex items-center justify-between text-white">
-                  <span>جاري الرفع... (ملف واحد كامل)</span>
+                  <span>{currentStep}</span>
                   <span>{uploadProgress.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-4 overflow-hidden">
@@ -286,8 +297,17 @@ const UploadJournalPage = () => {
                   </motion.div>
                 </div>
                 <p className="text-white/80 text-sm text-center">
-                  {selectedPdfName && `رفع ${selectedPdfName} - ${formatFileSize(form.watch("pdfFile")?.size || 0)} كملف واحد`}
+                  {selectedPdfName && `رفع ${selectedPdfName} - ${formatFileSize(form.watch("pdfFile")?.size || 0)} كملف واحد كامل`}
                 </p>
+              </div>
+            )}
+
+            {/* رسالة النجاح */}
+            {uploadSuccess && (
+              <div className="mb-6 bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
+                <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                <p className="text-green-400 font-medium">تم رفع المجلة بنجاح!</p>
+                <p className="text-green-300 text-sm">سيتم تحويلك إلى المجلة العلمية خلال ثوانٍ...</p>
               </div>
             )}
             
@@ -371,7 +391,7 @@ const UploadJournalPage = () => {
                   name="coverImage"
                   render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel>صورة الغلاف (حتى 50 ميجابايت)</FormLabel>
+                      <FormLabel>صورة الغلاف (حتى 100 ميجابايت)</FormLabel>
                       <FormControl>
                         <div className="flex flex-col gap-2">
                           <Input
@@ -415,7 +435,7 @@ const UploadJournalPage = () => {
                               <div className="flex flex-col">
                                 <span className="text-sm text-gray-300 truncate">{selectedPdfName}</span>
                                 <span className="text-xs text-green-400">
-                                  ✓ مقبول - حجم الملف: {formatFileSize(form.watch("pdfFile")?.size || 0)} - سيتم رفعه كملف واحد
+                                  ✓ مقبول - حجم الملف: {formatFileSize(form.watch("pdfFile")?.size || 0)} - سيتم رفعه كملف واحد كامل
                                 </span>
                               </div>
                               <FileText className="h-5 w-5 text-purple-400" />
@@ -430,13 +450,18 @@ const UploadJournalPage = () => {
                 
                 <Button 
                   type="submit" 
-                  disabled={isUploading} 
+                  disabled={isUploading || uploadSuccess} 
                   className="w-full bg-purple-500 hover:bg-purple-600 mt-6"
                 >
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       جارٍ الرفع... (ملف واحد كامل مع ضمان الحفظ)
+                    </>
+                  ) : uploadSuccess ? (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      تم الرفع بنجاح
                     </>
                   ) : (
                     <>

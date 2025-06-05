@@ -30,7 +30,7 @@ export const ensureStorageBucket = async () => {
   }
 };
 
-// رفع ملف واحد كامل بدون تجزئة (محسن للملفات الكبيرة)
+// رفع ملف واحد كامل بدون تجزئة (محسن للملفات الكبيرة حتى 5 جيجابايت)
 export const uploadLargeFileComplete = async (
   file: File, 
   path: string, 
@@ -42,12 +42,13 @@ export const uploadLargeFileComplete = async (
     
     console.log(`بدء رفع ملف كامل: ${file.name} (${formatFileSize(file.size)})`);
     
-    // رفع الملف كاملاً دون تجزئة
+    // رفع الملف كاملاً دون تجزئة مع تحسينات للملفات الكبيرة
     const { data, error } = await supabase.storage
       .from('scientific_journals')
       .upload(path, file, {
         cacheControl: '3600',
-        upsert: false // عدم الكتابة فوق الملفات الموجودة
+        upsert: false, // عدم الكتابة فوق الملفات الموجودة
+        duplex: 'half' // تحسين للملفات الكبيرة
       });
     
     if (error) {
@@ -55,6 +56,7 @@ export const uploadLargeFileComplete = async (
       throw error;
     }
     
+    // تحديث شريط التقدم
     onProgress?.(100);
     console.log('تم رفع الملف بنجاح:', data);
     return data;
@@ -65,13 +67,19 @@ export const uploadLargeFileComplete = async (
   }
 };
 
-// دالة لإنشاء رابط عام محسن
+// دالة لإنشاء رابط عام محسن مع التحقق من الصحة
 export const getSecurePublicUrl = (path: string) => {
   try {
     const { data } = supabase.storage
       .from('scientific_journals')
       .getPublicUrl(path);
     
+    // التحقق من صحة الرابط
+    if (!data.publicUrl) {
+      throw new Error('فشل في إنشاء الرابط العام');
+    }
+    
+    console.log('تم إنشاء رابط عام:', data.publicUrl);
     return data.publicUrl;
   } catch (error) {
     console.error('خطأ في إنشاء الرابط:', error);
@@ -79,9 +87,11 @@ export const getSecurePublicUrl = (path: string) => {
   }
 };
 
-// دالة لحذف الملفات من التخزين نهائياً
+// دالة محسنة لحذف الملفات من التخزين نهائياً
 export const deleteFileFromStorage = async (filePath: string) => {
   try {
+    console.log('بدء حذف الملف من التخزين:', filePath);
+    
     const { error } = await supabase.storage
       .from('scientific_journals')
       .remove([filePath]);
@@ -95,7 +105,7 @@ export const deleteFileFromStorage = async (filePath: string) => {
     return true;
   } catch (error) {
     console.error('خطأ في حذف الملف من التخزين:', error);
-    return false;
+    throw error; // رفع الخطأ ليتم التعامل معه في المكون
   }
 };
 
@@ -108,4 +118,15 @@ export const formatFileSize = (bytes: number) => {
   } else {
     return `${(bytes / 1024).toFixed(2)} كيلوبايت`;
   }
+};
+
+// دالة للتحقق من حجم الملف قبل الرفع
+export const validateFileSize = (file: File, maxSizeGB: number = 5) => {
+  const maxBytes = maxSizeGB * 1024 * 1024 * 1024; // تحويل إلى بايت
+  
+  if (file.size > maxBytes) {
+    throw new Error(`حجم الملف كبير جداً. الحد الأقصى المسموح: ${maxSizeGB} جيجابايت`);
+  }
+  
+  return true;
 };
