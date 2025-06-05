@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Particle, AtomData, SuggestedElement } from '@/types/atom';
 import { calculateAtomData, createNewParticle, reorganizeParticles } from '@/utils/atomCalculations';
+import { enforceParticlePlacement, resetAllParticlePositions } from '@/utils/atomPositioning';
 import { ATOM_CENTER, ORBITAL_RADII } from '@/types/atom';
 
 export const useAtomSimulation = () => {
@@ -12,22 +13,22 @@ export const useAtomSimulation = () => {
   // حساب بيانات الذرة مع التحقق من الصحة
   const atomData: AtomData = calculateAtomData(particles);
 
-  // تحريك الإلكترونات - محسن للثبات التام للمدارات
+  // تحريك الإلكترونات - محسن للثبات المطلق للمدارات
   const animateElectrons = useCallback(() => {
     setParticles(prevParticles => {
       return prevParticles.map(particle => {
         if (particle.type === 'electron' && particle.orbitalLevel !== undefined) {
-          // سرعة محسنة مع ثبات المدار
-          const baseSpeed = 0.025; // سرعة ثابتة
-          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.2); // تنوع خفيف
+          // سرعة ثابتة ومدروسة
+          const baseSpeed = 0.02;
+          const levelMultiplier = 1 / Math.pow(particle.orbitalLevel + 1, 0.15);
           const speedFactor = baseSpeed * levelMultiplier;
           
           const newAngle = (particle.angle || 0) + speedFactor;
           
-          // نصف قطر المدار ثابت تماماً - لا تغيير أبداً
+          // نصف قطر المدار ثابت مطلقاً - لا تغيير أبداً
           const orbitalRadius = ORBITAL_RADII[Math.min(particle.orbitalLevel, ORBITAL_RADII.length - 1)];
           
-          // موضع ثابت ودقيق على المدار
+          // موضع مثبت بدقة مطلقة على المدار
           const x = ATOM_CENTER.x + Math.cos(newAngle) * orbitalRadius;
           const y = ATOM_CENTER.y + Math.sin(newAngle) * orbitalRadius;
           
@@ -38,7 +39,13 @@ export const useAtomSimulation = () => {
             angle: newAngle
           };
         }
-        return particle; // النوكليونات تبقى ثابتة في النواة
+        
+        // النوكليونات تبقى ثابتة تماماً في النواة
+        if (particle.type === 'proton' || particle.type === 'neutron') {
+          return enforceParticlePlacement(particle);
+        }
+        
+        return particle;
       });
     });
 
@@ -55,9 +62,9 @@ export const useAtomSimulation = () => {
     };
   }, [animateElectrons]);
 
-  // إضافة جسيم مع ضمان الموضع الصحيح
+  // إضافة جسيم مع ضمان الموضع الصحيح المطلق
   const addParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
-    console.log(`إضافة جسيم: ${type}`);
+    console.log(`إضافة جسيم: ${type} في الموضع الصحيح المحدد`);
     
     // تحقق من الحدود
     if (type === 'electron') {
@@ -77,32 +84,37 @@ export const useAtomSimulation = () => {
     const newParticle = createNewParticle(type, particles);
     const newParticles = [...particles, newParticle];
     
-    // إعادة تنظيم جميع الجسيمات مع ضمان الثبات
-    const reorganizedParticles = reorganizeParticles(newParticles);
+    // إعادة تنظيم جميع الجسيمات مع فرض المواضع الصحيحة
+    const reorganizedParticles = resetAllParticlePositions(newParticles);
     
-    console.log(`تم إضافة ${type} في الموضع الصحيح`);
+    console.log(`تم إضافة ${type} في الموضع المحدد بدقة:`, {
+      x: newParticle.x,
+      y: newParticle.y,
+      level: newParticle.orbitalLevel
+    });
+    
     setParticles(reorganizedParticles);
   }, [particles]);
 
-  // حذف جسيم مع إعادة التنظيم
+  // حذف جسيم مع إعادة التنظيم المحكم
   const removeParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
-    console.log(`حذف جسيم: ${type}`);
+    console.log(`حذف جسيم: ${type} مع إعادة ترتيب دقيق`);
     
     const particleIndex = particles.findIndex(p => p.type === type);
     if (particleIndex === -1) return;
 
     let newParticles = particles.filter((_, index) => index !== particleIndex);
     
-    // إعادة تنظيم الجسيمات بعد الحذف مع ضمان الثبات
-    newParticles = reorganizeParticles(newParticles);
+    // إعادة تنظيم محكم مع فرض المواضع الصحيحة
+    newParticles = resetAllParticlePositions(newParticles);
     
-    console.log(`تم حذف ${type}, الجسيمات المتبقية:`, newParticles.length);
+    console.log(`تم حذف ${type}, إعادة ترتيب ${newParticles.length} جسيم في مواضعهم الصحيحة`);
     setParticles(newParticles);
   }, [particles]);
 
-  // بناء عنصر مقترح مع التوزيع الصحيح والثابت
+  // بناء عنصر مقترح مع التوزيع المحكم
   const buildSuggestedElement = useCallback((element: SuggestedElement) => {
-    console.log(`بناء العنصر: ${element.name}`);
+    console.log(`بناء العنصر: ${element.name} مع مواضع محكمة`);
     
     const newParticles: Particle[] = [];
     
@@ -113,16 +125,16 @@ export const useAtomSimulation = () => {
       newParticles.push(particle);
     }
     
-    // إضافة الإلكترونات على المدارات الثابتة
+    // إضافة الإلكترونات على المدارات المحددة
     for (let i = 0; i < element.electrons; i++) {
       const particle = createNewParticle('electron', newParticles);
       newParticles.push(particle);
     }
     
-    // تنظيم نهائي لجميع الجسيمات مع ضمان الثبات
-    const finalParticles = reorganizeParticles(newParticles);
+    // تنظيم نهائي محكم لجميع الجسيمات
+    const finalParticles = resetAllParticlePositions(newParticles);
     
-    console.log(`تم بناء ${element.name} بنجاح مع مدارات ثابتة`);
+    console.log(`تم بناء ${element.name} بدقة مطلقة مع ${finalParticles.length} جسيم في مواضعهم الصحيحة`);
     setParticles(finalParticles);
     setSelectedSuggestedElement(element);
   }, []);
@@ -134,6 +146,11 @@ export const useAtomSimulation = () => {
     setSelectedSuggestedElement(null);
   }, []);
 
+  // دالة لفرض المواضع الصحيحة لجميع الجسيمات
+  const enforceCorrectPositions = useCallback(() => {
+    setParticles(prevParticles => resetAllParticlePositions(prevParticles));
+  }, []);
+
   return {
     particles,
     atomData,
@@ -142,6 +159,7 @@ export const useAtomSimulation = () => {
     removeParticle,
     buildSuggestedElement,
     clearAll,
-    setParticles
+    setParticles,
+    enforceCorrectPositions
   };
 };

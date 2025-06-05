@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadFileWithProgress, getSecurePublicUrl } from '@/utils/fileUpload';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
@@ -27,8 +28,8 @@ const formSchema = z.object({
     { message: "حجم صورة الغلاف يجب أن يكون أقل من 50 ميجابايت" }
   ),
   pdfFile: z.instanceof(File).refine(
-    (file) => file.size < 5 * 1024 * 1024 * 1024, // 5GB للملفات PDF
-    { message: "حجم ملف PDF يجب أن يكون أقل من 5 جيجابايت" }
+    (file) => file.size < 2 * 1024 * 1024 * 1024, // 2GB للملفات PDF
+    { message: "حجم ملف PDF يجب أن يكون أقل من 2 جيجابايت" }
   ).refine(
     (file) => file.type === 'application/pdf',
     { message: "يجب أن يكون الملف بصيغة PDF" }
@@ -44,26 +45,6 @@ const UploadJournalPage = () => {
   const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkBucket = async () => {
-      try {
-        const { data: buckets } = await supabase.storage.listBuckets();
-        const bucketExists = buckets?.some(bucket => bucket.name === 'scientific_journals');
-        
-        if (!bucketExists) {
-          await supabase.storage.createBucket('scientific_journals', {
-            public: true,
-            fileSizeLimit: 5368709120, // 5GB في بايت
-          });
-        }
-      } catch (error) {
-        console.error("خطأ في التحقق من مجلد التخزين:", error);
-      }
-    };
-    
-    checkBucket();
-  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -115,10 +96,10 @@ const UploadJournalPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    if (file.size > 5 * 1024 * 1024 * 1024) { // 5GB
+    if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB
       toast({
         title: "حجم الملف كبير جداً",
-        description: "يجب أن يكون حجم ملف PDF أقل من 5 جيجابايت",
+        description: "يجب أن يكون حجم ملف PDF أقل من 2 جيجابايت",
         variant: "destructive",
       });
       return;
@@ -140,60 +121,6 @@ const UploadJournalPage = () => {
       title: "تم اختيار الملف بنجاح",
       description: `تم اختيار ملف PDF بحجم ${formatFileSize(file.size)} - جاهز للرفع`,
     });
-  };
-
-  // دالة رفع محسنة للملفات الكبيرة مع إدارة أفضل للأخطاء
-  const uploadLargeFile = async (file: File, path: string, onProgress?: (progress: number) => void) => {
-    const CHUNK_SIZE = 6 * 1024 * 1024; // 6MB chunks للملفات الكبيرة
-    
-    if (file.size <= CHUNK_SIZE) {
-      // رفع مباشر للملفات الصغيرة
-      const { data, error } = await supabase.storage
-        .from('scientific_journals')
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (error) throw error;
-      return data;
-    }
-    
-    // رفع متجزء للملفات الكبيرة
-    let uploadedBytes = 0;
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
-      const end = Math.min(start + CHUNK_SIZE, file.size);
-      const chunk = file.slice(start, end);
-      
-      const chunkPath = i === 0 ? path : `${path}.part${i}`;
-      
-      const { error } = await supabase.storage
-        .from('scientific_journals')
-        .upload(chunkPath, chunk, {
-          cacheControl: '3600',
-          upsert: i > 0
-        });
-      
-      if (error) {
-        console.error(`خطأ في رفع الجزء ${i}:`, error);
-        throw error;
-      }
-      
-      uploadedBytes += chunk.size;
-      if (onProgress) {
-        onProgress((uploadedBytes / file.size) * 100);
-      }
-      
-      // توقف قصير بين الأجزاء لتجنب التحميل الزائد
-      if (i < totalChunks - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-    
-    return { path };
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -222,9 +149,9 @@ const UploadJournalPage = () => {
       const coverFileName = `cover_${uuidv4()}.${coverExt}`;
       const coverFilePath = `${data.subject}/${coverFileName}`;
 
-      setUploadProgress(10);
-      await uploadLargeFile(data.coverImage, coverFilePath);
-      setUploadProgress(25);
+      await uploadFileWithProgress(data.coverImage, coverFilePath, (progress) => {
+        setUploadProgress(progress * 0.3); // 30% للصورة
+      });
 
       toast({
         title: "جاري رفع الملف الرئيسي",
@@ -235,24 +162,23 @@ const UploadJournalPage = () => {
       const pdfFileName = `pdf_${uuidv4()}.pdf`;
       const pdfFilePath = `${data.subject}/${pdfFileName}`;
 
-      await uploadLargeFile(data.pdfFile, pdfFilePath, (progress) => {
-        setUploadProgress(25 + (progress * 0.6)); // 25% إلى 85%
+      await uploadFileWithProgress(data.pdfFile, pdfFilePath, (progress) => {
+        setUploadProgress(30 + (progress * 0.6)); // 60% للـ PDF
       });
 
-      setUploadProgress(90);
+      setUploadProgress(95);
 
-      // الحصول على الروابط العامة
-      const { data: coverPublicUrlData } = supabase.storage
-        .from('scientific_journals')
-        .getPublicUrl(coverFilePath);
+      // الحصول على الروابط العامة المحسنة
+      const coverPublicUrl = getSecurePublicUrl(coverFilePath);
+      const pdfPublicUrl = getSecurePublicUrl(pdfFilePath);
 
-      const { data: pdfPublicUrlData } = supabase.storage
-        .from('scientific_journals')
-        .getPublicUrl(pdfFilePath);
+      if (!coverPublicUrl || !pdfPublicUrl) {
+        throw new Error('فشل في إنشاء روابط الملفات');
+      }
 
-      // تخزين البيانات الوصفية في قاعدة البيانات مع إعادة المحاولة
+      // تخزين البيانات الوصفية في قاعدة البيانات مع إعادة المحاولة المحسنة
       let retryCount = 0;
-      const maxRetries = 3;
+      const maxRetries = 5;
       
       while (retryCount < maxRetries) {
         try {
@@ -263,8 +189,8 @@ const UploadJournalPage = () => {
               description: data.description || null,
               subject: data.subject,
               author: data.author,
-              cover_image_url: coverPublicUrlData.publicUrl,
-              pdf_url: pdfPublicUrlData.publicUrl,
+              cover_image_url: coverPublicUrl,
+              pdf_url: pdfPublicUrl,
               created_by: user.id,
             });
 
@@ -274,11 +200,11 @@ const UploadJournalPage = () => {
         } catch (error) {
           retryCount++;
           if (retryCount >= maxRetries) {
-            throw error;
+            throw new Error(`فشل في حفظ البيانات بعد ${maxRetries} محاولات: ${error.message}`);
           }
           
-          // انتظار قبل إعادة المحاولة
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          // انتظار متزايد قبل إعادة المحاولة
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
         }
       }
 
@@ -286,7 +212,7 @@ const UploadJournalPage = () => {
 
       toast({
         title: "تم رفع المجلة بنجاح",
-        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية`,
+        description: `تمت إضافة المجلة (${formatFileSize(data.pdfFile.size)}) إلى المكتبة العلمية وحفظها في قاعدة البيانات`,
       });
 
       // إعادة تعيين النموذج
@@ -299,7 +225,7 @@ const UploadJournalPage = () => {
       console.error('Error uploading journal:', error);
       toast({
         title: "خطأ في تحميل المجلة",
-        description: `حدث خطأ: ${error.message || "خطأ غير متوقع"}. يرجى المحاولة مرة أخرى.`,
+        description: `حدث خطأ: ${error.message || "خطأ غير متوقع"}. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى.`,
         variant: "destructive",
       });
     } finally {
@@ -331,20 +257,20 @@ const UploadJournalPage = () => {
             </Button>
             
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-white to-purple-500">
-              رفع مجلة علمية جديدة
+              رفع مجلة علمية جديدة (محسن)
             </h1>
           </div>
           
           <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
             <div className="mb-4 text-center">
               <p className="text-white/80 text-sm">
-                الحد الأقصى لحجم ملف PDF: <span className="text-green-400 font-bold">5 جيجابايت</span>
+                الحد الأقصى لحجم ملف PDF: <span className="text-green-400 font-bold">2 جيجابايت</span>
               </p>
               <p className="text-white/60 text-xs mt-1">
                 الحد الأقصى لحجم صورة الغلاف: 50 ميجابايت
               </p>
               <p className="text-blue-400 text-xs mt-1">
-                ✓ يدعم رفع الملفات الكبيرة مع شريط تقدم محسن
+                ✓ نظام رفع محسن مع ضمان الحفظ في قاعدة البيانات
               </p>
             </div>
 
@@ -352,7 +278,7 @@ const UploadJournalPage = () => {
             {isUploading && (
               <div className="mb-6 space-y-3">
                 <div className="flex items-center justify-between text-white">
-                  <span>جاري الرفع... (ملف كبير)</span>
+                  <span>جاري الرفع... (نظام محسن)</span>
                   <span>{uploadProgress.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-4 overflow-hidden">
@@ -485,7 +411,7 @@ const UploadJournalPage = () => {
                   name="pdfFile"
                   render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel>ملف المجلة (PDF - حتى 5 جيجابايت)</FormLabel>
+                      <FormLabel>ملف المجلة (PDF - حتى 2 جيجابايت)</FormLabel>
                       <FormControl>
                         <div className="flex flex-col gap-2">
                           <Input
@@ -520,12 +446,12 @@ const UploadJournalPage = () => {
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      جارٍ الرفع... (معالجة محسنة للملفات الكبيرة)
+                      جارٍ الرفع... (نظام محسن مع ضمان الحفظ)
                     </>
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      رفع المجلة (حتى 5 جيجابايت)
+                      رفع المجلة (حتى 2 جيجابايت - محسن)
                     </>
                   )}
                 </Button>
