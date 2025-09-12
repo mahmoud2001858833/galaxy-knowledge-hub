@@ -40,6 +40,10 @@ import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
 import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
 import BuildAtomSimulation from './pages/BuildAtomSimulation';
+import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
+import CarbonCalculator from './pages/CarbonCalculator';
+import SchoolProjects from './pages/SchoolProjects';
+import HomeProjects from './pages/HomeProjects';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -230,6 +234,22 @@ const router = createBrowserRouter([
       {
         path: 'simulation/build-atom',
         element: <AuthGuard><BuildAtomSimulation /></AuthGuard>,
+      },
+      {
+        path: 'environmental-sustainability',
+        element: <AuthGuard><EnvironmentalSustainability /></AuthGuard>,
+      },
+      {
+        path: 'environmental/carbon-calculator',
+        element: <AuthGuard><CarbonCalculator /></AuthGuard>,
+      },
+      {
+        path: 'environmental/school-projects',
+        element: <AuthGuard><SchoolProjects /></AuthGuard>,
+      },
+      {
+        path: 'environmental/home-projects',
+        element: <AuthGuard><HomeProjects /></AuthGuard>,
       },
       {
         path: '*',

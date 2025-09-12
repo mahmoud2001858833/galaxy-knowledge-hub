@@ -163,6 +163,8 @@ export const en = {
     scientificDescription: "Explore the world of science through Physics, Chemistry, Biology, and Mathematics platforms",
     literary: "Literary Platforms",
     literaryDescription: "Immerse yourself in the world of literature and languages with Arabic and English platforms",
+    environmental: "Environmental Sustainability",
+    environmentalDescription: "Learn how to protect the environment through school and home projects and carbon footprint calculation",
     explore: "Explore"
   },
   // Scientific platforms
@@ -259,5 +261,153 @@ export const en = {
     needsWork: "Needs Work",
     feedback: "Feedback",
     nextExercise: "Next Exercise"
+  },
+  // Environmental Sustainability
+  environmental: {
+    title: "Environmental Sustainability",
+    subtitle: "Learn how to protect the environment and preserve planet Earth for future generations",
+    backToMain: "Back to Main Menu",
+    carbonCalculator: "Carbon Footprint Calculator",
+    carbonCalculatorDescription: "Calculate your environmental impact through electricity, water, and transportation consumption",
+    schoolProjects: "School Environmental Projects",
+    schoolProjectsDescription: "10 environmental projects that can be implemented in school to protect the environment",
+    homeProjects: "Home Environmental Projects",
+    homeProjectsDescription: "10 environmental projects that can be implemented at home to reduce waste and protect the environment"
+  },
+  // Carbon Calculator
+  carbonCalculator: {
+    title: "Carbon Footprint Calculator",
+    subtitle: "Calculate your personal environmental impact and discover ways to reduce it",
+    electricityConsumption: "Monthly electricity consumption (kWh)",
+    waterConsumption: "Monthly water consumption (cubic meters)",
+    carUsage: "Monthly car distance (kilometers)",
+    publicTransport: "Public transport usage (times per week)",
+    flights: "Number of flights per year",
+    calculate: "Calculate Carbon Footprint",
+    result: "Carbon Footprint Result",
+    totalEmissions: "Total Carbon Emissions",
+    tonsCO2: "tons CO2 per year",
+    breakdown: "Emissions Breakdown",
+    electricity: "Electricity",
+    water: "Water",
+    transportation: "Transportation",
+    flightsBreakdown: "Flights",
+    suggestions: "Suggestions to Reduce Carbon Footprint",
+    aiAssistant: "Environmental AI Assistant",
+    askQuestion: "Ask an environmental question..."
+  },
+  // School Projects
+  schoolProjects: {
+    title: "School Environmental Projects",
+    subtitle: "10 environmental projects that can be implemented in school",
+    projects: {
+      paperRecycling: {
+        title: "Paper Recycling Project",
+        description: "Collect old papers and used notebooks from school and send them to recycling centers instead of throwing them away.",
+        examples: "Examples: Make dedicated boxes inside classrooms to collect paper, or reuse paper on the second side for printing and homework."
+      },
+      plasticRecycling: {
+        title: "Plastic Recycling Project",
+        description: "Reduce plastic in school, collect used bottles and bags for recycling.",
+        examples: "Examples: Turn plastic bottles into plant pots or storage tools."
+      },
+      compost: {
+        title: "Organic Compost Project (Compost)",
+        description: "Utilize food leftovers in the school cafeteria to make natural organic compost for the school garden.",
+        examples: "Examples: Use fruit and vegetable peels to make compost that feeds plants."
+      },
+      noBags: {
+        title: "'My School Without Plastic Bags' Project",
+        description: "Replace plastic bags with reusable fabric bags.",
+        examples: "Examples: Distribute small fabric bags to students to use instead of plastic."
+      },
+      greywater: {
+        title: "Greywater Reuse Project",
+        description: "Use school wash water to irrigate plants instead of wasting it.",
+        examples: "Examples: Create a simple system to collect wash water and direct it to the garden."
+      },
+      artRecycling: {
+        title: "'Artistic Recycling' Project",
+        description: "Use waste and old items in art projects.",
+        examples: "Examples: Turn damaged CDs into wall decor or use tin cans for art projects."
+      },
+      bookExchange: {
+        title: "Book Exchange Project",
+        description: "Create a school corner for exchanging books and stories instead of always buying new ones.",
+        examples: "Examples: A small library in school, any student leaves a book and takes another."
+      },
+      solarEnergy: {
+        title: "Solar Energy Project",
+        description: "Use solar energy to operate some school facilities.",
+        examples: "Examples: Install solar panels to power garden lights or charge devices."
+      },
+      furnitureReuse: {
+        title: "Furniture Reuse Project",
+        description: "Repair and restore old school furniture instead of disposing of it.",
+        examples: "Examples: Repaint broken chairs or turn old wood into shelves."
+      },
+      zeroWaste: {
+        title: "'Zero Waste in the Cafeteria' Project",
+        description: "Reduce waste from food and drinks.",
+        examples: "Examples: Use reusable containers instead of plastic ones, encourage students to bring their own lunch boxes."
+      }
+    }
+  },
+  // Home Projects
+  homeProjects: {
+    title: "Home Environmental Projects",
+    subtitle: "10 environmental projects that can be implemented at home",
+    projects: {
+      wasteSorting: {
+        title: "Household Waste Sorting",
+        description: "Allocate different bins at home for paper, plastic, glass, and organic waste.",
+        examples: "Examples: A paper bin next to the printer and another for plastic near the kitchen."
+      },
+      foodCompost: {
+        title: "Food Waste Composting (Compost)",
+        description: "Use vegetable and fruit leftovers to make natural organic compost for home plants.",
+        examples: "Examples: Put banana and apple peels in a special container for fermentation and use the resulting compost for planting."
+      },
+      glassReuse: {
+        title: "Reusing Glass Containers",
+        description: "Turn empty jars and glass containers into storage tools.",
+        examples: "Examples: Store legumes or spices inside them instead of buying new containers."
+      },
+      clothingRecycling: {
+        title: "Clothing Recycling",
+        description: "Use old clothes instead of throwing them away.",
+        examples: "Examples: Turn old shirts into fabric bags or cleaning cloths."
+      },
+      waterReuse: {
+        title: "Water Reuse",
+        description: "Collect washing water or rainwater and use it to irrigate plants.",
+        examples: "Examples: Place a bucket under the tap while washing fruits, then use it for watering."
+      },
+      electricityReduction: {
+        title: "Reducing Electricity Consumption",
+        description: "Conserve energy using LED lights and turning off unused devices.",
+        examples: "Examples: Use a timer to cut off electrical devices at night."
+      },
+      plasticBottleReuse: {
+        title: "Plastic Recycling",
+        description: "Reuse plastic bottles instead of disposing of them.",
+        examples: "Examples: Cut bottles and use them as small plant pots."
+      },
+      deviceRepair: {
+        title: "Repairing Devices Instead of Disposing",
+        description: "Maintain damaged devices instead of buying new ones.",
+        examples: "Examples: Repair a vacuum cleaner or phone instead of throwing it away."
+      },
+      bagReplacement: {
+        title: "Replacing Plastic Bags",
+        description: "Use reusable fabric bags instead of plastic ones.",
+        examples: "Examples: Carry fabric bags while shopping."
+      },
+      paperRecycling: {
+        title: "Paper Recycling at Home",
+        description: "Reuse papers on the second side or make small notebooks from them.",
+        examples: "Examples: Cut used papers and make a handmade notebook."
+      }
+    }
   }
 };
