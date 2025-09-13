@@ -4,22 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Calculator, Zap, Droplets, Car, Plane, Bot, Send } from 'lucide-react';
+import { ArrowLeft, Calculator, BarChart3, Download, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import CalculationModule, { ModuleData } from '@/components/carbon-calculator/CalculationModule';
+import { calculationModules } from '@/components/carbon-calculator/modules';
 
 const CarbonCalculator = () => {
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
   const { toast } = useToast();
   const [isCalculating, setIsCalculating] = useState(false);
-  const [isAskingAI, setIsAskingAI] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [aiResponse, setAiResponse] = useState('');
-  const [question, setQuestion] = useState('');
 
   const [formData, setFormData] = useState({
     electricity: '',
@@ -72,32 +67,6 @@ const CarbonCalculator = () => {
     }, 2000);
   };
 
-  const askAI = async () => {
-    if (!question.trim()) return;
-    
-    setIsAskingAI(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: { 
-          message: `كمساعد ذكي بيئي، أجب على هذا السؤال: ${question}`,
-          context: 'environmental'
-        }
-      });
-
-      if (error) throw error;
-      setAiResponse(data.result);
-      setQuestion('');
-    } catch (error) {
-      console.error('AI Assistant Error:', error);
-      toast({
-        title: t.common.error,
-        description: "حدث خطأ في المساعد الذكي",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAskingAI(false);
-    }
-  };
 
   const suggestions = [
     "استخدم المصابيح الموفرة للطاقة (LED)",
@@ -312,46 +281,6 @@ const CarbonCalculator = () => {
               </Card>
             </motion.div>
 
-            {/* AI Assistant */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Bot className="w-5 h-5" />
-                    {t.carbonCalculator.aiAssistant}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Textarea
-                      value={question}
-                      onChange={(e) => setQuestion(e.target.value)}
-                      placeholder={t.carbonCalculator.askQuestion}
-                      className="bg-white/5 border-white/20 text-white resize-none"
-                      rows={2}
-                    />
-                    <Button
-                      onClick={askAI}
-                      disabled={isAskingAI || !question.trim()}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  {aiResponse && (
-                    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                      <p className="text-white/90 whitespace-pre-wrap">{aiResponse}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
           </div>
         </div>
       </div>

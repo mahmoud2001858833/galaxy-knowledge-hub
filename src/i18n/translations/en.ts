@@ -272,7 +272,9 @@ export const en = {
     schoolProjects: "School Environmental Projects",
     schoolProjectsDescription: "10 environmental projects that can be implemented in school to protect the environment",
     homeProjects: "Home Environmental Projects",
-    homeProjectsDescription: "10 environmental projects that can be implemented at home to reduce waste and protect the environment"
+    homeProjectsDescription: "10 environmental projects that can be implemented at home to reduce waste and protect the environment",
+    personalSustainabilityIndex: "Personal Sustainability Index",
+    personalSustainabilityIndexDescription: "Discover your level of environmental commitment through a comprehensive interactive test"
   },
   // Carbon Calculator
   carbonCalculator: {

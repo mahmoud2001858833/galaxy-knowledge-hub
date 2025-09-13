@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calculator, School, Home, Leaf } from 'lucide-react';
+import { ArrowLeft, Calculator, School, Home, Leaf, BarChart } from 'lucide-react';
+import sustainabilityBg from '@/assets/sustainability-background.png';
 
 const EnvironmentalSustainability = () => {
   const navigate = useNavigate();
@@ -37,11 +38,29 @@ const EnvironmentalSustainability = () => {
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
       link: "/environmental/home-projects"
+    },
+    {
+      title: t.environmental.personalSustainabilityIndex,
+      description: t.environmental.personalSustainabilityIndexDescription,
+      icon: BarChart,
+      color: "from-teal-600/20 to-blue-600/20",
+      borderColor: "border-teal-500/30",
+      hoverBorderColor: "hover:border-teal-500/50",
+      link: "/environmental/personal-sustainability-index"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-950 via-blue-950 to-emerald-950 p-4" dir={dir}>
+    <div 
+      className="min-h-screen p-4 relative" 
+      dir={dir}
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${sustainabilityBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
         <motion.div
@@ -79,7 +98,7 @@ const EnvironmentalSustainability = () => {
         </motion.div>
 
         {/* Sections Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
           {sections.map((section, index) => (
             <motion.div
               key={index}

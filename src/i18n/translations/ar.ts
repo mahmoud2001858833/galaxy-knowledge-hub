@@ -272,7 +272,9 @@ export const ar = {
     schoolProjects: "المشاريع البيئية المدرسية",
     schoolProjectsDescription: "10 مشاريع بيئية يمكن تطبيقها في المدرسة لحماية البيئة",
     homeProjects: "المشاريع البيئية المنزلية",
-    homeProjectsDescription: "10 مشاريع بيئية يمكن تطبيقها في المنزل لتقليل النفايات وحماية البيئة"
+    homeProjectsDescription: "10 مشاريع بيئية يمكن تطبيقها في المنزل لتقليل النفايات وحماية البيئة",
+    personalSustainabilityIndex: "مؤشر الاستدامة الشخصي",
+    personalSustainabilityIndexDescription: "اكتشف مستوى التزامك البيئي من خلال اختبار تفاعلي شامل"
   },
   // حاسبة البصمة الكربونية
   carbonCalculator: {

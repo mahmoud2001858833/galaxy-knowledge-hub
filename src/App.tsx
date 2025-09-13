@@ -44,6 +44,7 @@ import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
 import HomeProjects from './pages/HomeProjects';
+import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
