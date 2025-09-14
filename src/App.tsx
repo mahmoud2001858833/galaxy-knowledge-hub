@@ -253,6 +253,10 @@ const router = createBrowserRouter([
         element: <AuthGuard><HomeProjects /></AuthGuard>,
       },
       {
+        path: 'environmental/personal-sustainability-index',
+        element: <AuthGuard><PersonalSustainabilityIndex /></AuthGuard>,
+      },
+      {
         path: '*',
         element: <NotFound />,
       }
