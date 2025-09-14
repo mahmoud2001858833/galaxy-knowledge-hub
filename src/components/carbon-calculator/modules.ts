@@ -1,4 +1,4 @@
-import { Car, Bike, Bus, Train, Plane, Zap, Flame, Droplets, AirVent, Refrigerator, Shirt, Utensils, Trash2, TreePine, Home, Package, Heart, Hammer } from 'lucide-react';
+import { Car, Bike, Bus, Train, Plane, Zap, Flame, Droplets, AirVent, Refrigerator, Shirt, Utensils, Trash2, TreePine, Home, Package, Heart, Hammer, Lightbulb, Monitor, Printer, ShoppingCart, Coffee, Phone, Laptop, Tv } from 'lucide-react';
 import { ModuleData } from './CalculationModule';
 
 export const calculationModules: ModuleData[] = [
@@ -840,5 +840,220 @@ export const calculationModules: ModuleData[] = [
     unit: 'كج CO₂e',
     source: 'Our World in Data',
     sourceUrl: 'https://ourworldindata.org/'
+  },
+  
+  // Additional Consumption & Technology modules
+  {
+    id: 'digital-devices',
+    title: 'الأجهزة الرقمية',
+    description: 'انبعاثات استخدام الحاسوب والهاتف والتلفزيون',
+    category: 'Consumption',
+    icon: Monitor,
+    inputs: [
+      {
+        id: 'computerHours',
+        label: 'ساعات استخدام الحاسوب يومياً',
+        type: 'number',
+        unit: 'ساعة',
+        placeholder: '6',
+        required: true
+      },
+      {
+        id: 'tvHours',
+        label: 'ساعات مشاهدة التلفزيون يومياً',
+        type: 'number',
+        unit: 'ساعة',
+        placeholder: '3',
+        required: true
+      },
+      {
+        id: 'phoneCharging',
+        label: 'عدد مرات شحن الهاتف يومياً',
+        type: 'number',
+        unit: 'مرة',
+        placeholder: '1',
+        required: true
+      }
+    ],
+    formula: 'إجمالي الاستهلاك × 365 × معامل الانبعاث',
+    emissionFactor: 0.4,
+    unit: 'كج CO₂e',
+    source: 'وكالة الطاقة الدولية',
+    sourceUrl: 'https://www.iea.org/'
+  },
+  {
+    id: 'coffee-consumption',
+    title: 'استهلاك القهوة',
+    description: 'انبعاثات إنتاج ونقل القهوة',
+    category: 'Food',
+    icon: Coffee,
+    inputs: [
+      {
+        id: 'cupsPerDay',
+        label: 'عدد أكواب القهوة يومياً',
+        type: 'number',
+        unit: 'كوب',
+        placeholder: '3',
+        required: true
+      },
+      {
+        id: 'coffeeType',
+        label: 'نوع القهوة',
+        type: 'select',
+        options: ['قهوة عادية', 'قهوة إسبريسو', 'قهوة بالحليب', 'قهوة سريعة التحضير'],
+        required: true
+      }
+    ],
+    formula: 'عدد الأكواب × 365 × معامل الانبعاث',
+    emissionFactor: 0.125,
+    unit: 'كج CO₂e',
+    source: 'منظمة القهوة العالمية',
+    sourceUrl: 'https://www.ico.org/'
+  },
+  {
+    id: 'mobile-phone-usage',
+    title: 'استخدام الهاتف المحمول',
+    description: 'انبعاثات شبكات الاتصال واستهلاك البيانات',
+    category: 'Consumption',
+    icon: Phone,
+    inputs: [
+      {
+        id: 'dataUsage',
+        label: 'استهلاك البيانات الشهري',
+        type: 'number',
+        unit: 'جيجابايت',
+        placeholder: '10',
+        required: true
+      },
+      {
+        id: 'callMinutes',
+        label: 'دقائق المكالمات الشهرية',
+        type: 'number',
+        unit: 'دقيقة',
+        placeholder: '300',
+        required: true
+      },
+      {
+        id: 'networkType',
+        label: 'نوع الشبكة',
+        type: 'select',
+        options: ['3G', '4G', '5G', 'واي فاي'],
+        required: true
+      }
+    ],
+    formula: 'استهلاك البيانات × 12 × معامل الانبعاث + المكالمات × معامل المكالمات × 12',
+    emissionFactor: 0.006,
+    unit: 'كج CO₂e',
+    source: 'معهد التكنولوجيا الرقمية',
+    sourceUrl: 'https://digital.org/'
+  },
+  {
+    id: 'streaming-services',
+    title: 'خدمات البث المرئي',
+    description: 'انبعاثات مشاهدة نتفلكس ويوتيوب وخدمات البث',
+    category: 'Consumption',
+    icon: Tv,
+    inputs: [
+      {
+        id: 'hoursPerDay',
+        label: 'ساعات المشاهدة يومياً',
+        type: 'number',
+        unit: 'ساعة',
+        placeholder: '2',
+        required: true
+      },
+      {
+        id: 'quality',
+        label: 'جودة المشاهدة',
+        type: 'select',
+        options: ['عادية (480p)', 'عالية (720p)', 'عالية جداً (1080p)', '4K'],
+        required: true
+      },
+      {
+        id: 'deviceType',
+        label: 'نوع الجهاز',
+        type: 'select',
+        options: ['هاتف ذكي', 'تابلت', 'حاسوب محمول', 'تلفزيون ذكي'],
+        required: true
+      }
+    ],
+    formula: 'ساعات المشاهدة × 365 × معامل الانبعاث',
+    emissionFactor: 0.0036,
+    unit: 'كج CO₂e',
+    source: 'مجموعة الكربون الرقمي',
+    sourceUrl: 'https://theshiftproject.org/'
+  },
+  {
+    id: 'printing-paper',
+    title: 'الطباعة واستهلاك الورق',
+    description: 'انبعاثات طباعة الأوراق والمستندات',
+    category: 'Consumption',
+    icon: Printer,
+    inputs: [
+      {
+        id: 'sheetsPerMonth',
+        label: 'عدد الأوراق المطبوعة شهرياً',
+        type: 'number',
+        unit: 'ورقة',
+        placeholder: '100',
+        required: true
+      },
+      {
+        id: 'paperType',
+        label: 'نوع الورق',
+        type: 'select',
+        options: ['ورق عادي', 'ورق معاد التدوير', 'ورق ملون', 'كرتون'],
+        required: true
+      },
+      {
+        id: 'printType',
+        label: 'نوع الطباعة',
+        type: 'select',
+        options: ['أبيض وأسود', 'ملون'],
+        required: true
+      }
+    ],
+    formula: 'عدد الأوراق × 12 × معامل الانبعاث',
+    emissionFactor: 0.005,
+    unit: 'كج CO₂e',
+    source: 'صناعة الورق والطباعة',
+    sourceUrl: 'https://www.paperrecycles.org/'
+  },
+  {
+    id: 'online-shopping',
+    title: 'التسوق الإلكتروني',
+    description: 'انبعاثات المشتريات عبر الإنترنت والتغليف',
+    category: 'Consumption',
+    icon: ShoppingCart,
+    inputs: [
+      {
+        id: 'ordersPerMonth',
+        label: 'عدد الطلبات شهرياً',
+        type: 'number',
+        unit: 'طلب',
+        placeholder: '8',
+        required: true
+      },
+      {
+        id: 'averageValue',
+        label: 'متوسط قيمة الطلب',
+        type: 'number',
+        unit: 'ريال',
+        placeholder: '200',
+        required: true
+      },
+      {
+        id: 'productType',
+        label: 'نوع المنتجات',
+        type: 'select',
+        options: ['ملابس', 'إلكترونيات', 'كتب ومجلات', 'منتجات منزلية', 'مواد غذائية'],
+        required: true
+      }
+    ],
+    formula: 'عدد الطلبات × القيمة × معامل الانبعاث × 12',
+    emissionFactor: 0.001,
+    unit: 'كج CO₂e',
+    source: 'مجلة التجارة الإلكترونية',
+    sourceUrl: 'https://ecommerce.org/'
   }
 ];

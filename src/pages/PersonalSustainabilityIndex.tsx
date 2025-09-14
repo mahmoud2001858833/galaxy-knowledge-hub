@@ -27,7 +27,7 @@ const PersonalSustainabilityIndex = () => {
     },
     {
       id: 2,
-      category: "Transportation", 
+      category: "Energy", 
       text: "هل تحمل كيس تسوق قابل لإعادة الاستخدام؟",
       type: "yesno",
       options: ["نعم", "لا"]
@@ -157,76 +157,6 @@ const PersonalSustainabilityIndex = () => {
       text: "هل تغطي الأواني أثناء الطبخ لتوفير الطاقة؟",
       type: "frequency",
       options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 21,
-      category: "Transportation",
-      text: "هل تستخدم المواصلات العامة عندما يكون ذلك ممكناً؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 22,
-      category: "Food",
-      text: "هل تختار الطعام المحلي/الموسمي عندما يكون ممكناً؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 23,
-      category: "Energy",
-      text: "هل تستخدم منظم حراري قابل للبرمجة أو جدولة التدفئة/التبريد؟",
-      type: "yesno",
-      options: ["نعم", "لا"]
-    },
-    {
-      id: 24,
-      category: "Water",
-      text: "كم مرة تستحم يومياً ومتوسط مدة الاستحمام؟",
-      type: "choice",
-      options: ["مرة واحدة - 5 دقائق", "مرة واحدة - 10 دقائق", "مرة واحدة - 15+ دقيقة", "مرتان يومياً", "أكثر من مرتين"]
-    },
-    {
-      id: 25,
-      category: "Consumption",
-      text: "هل تصلح الأجهزة المنزلية بدلاً من استبدالها؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 26,
-      category: "Consumption",
-      text: "هل تتبرع بالأشياء غير المستخدمة بدلاً من رميها؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 27,
-      category: "Consumption",
-      text: "هل تفضل المنتجات ذات العلامات البيئية؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 28,
-      category: "Consumption",
-      text: "هل تعيد ملء عبوات منتجات العناية الشخصية؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
-    },
-    {
-      id: 29,
-      category: "Water",
-      text: "هل تستخدم أجهزة توفير المياه؟",
-      type: "yesno",
-      options: ["نعم", "لا"]
-    },
-    {
-      id: 30,
-      category: "Habits",
-      text: "هل تشارك في الأنشطة البيئية المحلية؟",
-      type: "frequency",
-      options: ["أبداً", "نادراً", "أحياناً", "غالباً", "دائماً"]
     }
   ];
 
@@ -267,13 +197,14 @@ const PersonalSustainabilityIndex = () => {
       let score = 0;
 
       if (question.type === 'frequency') {
-        const frequencyScores = { "أبداً": 100, "نادراً": 75, "أحياناً": 50, "غالباً": 25, "دائماً": 0 };
-        // For positive environmental actions, invert the scoring
-        if (question.text.includes('تطفئ') || question.text.includes('تفصل') || question.text.includes('تحاول') || question.text.includes('تستخدم المواصلات')) {
-          const invertedScores = { "أبداً": 0, "نادراً": 25, "أحياناً": 50, "غالباً": 75, "دائماً": 100 };
-          score = invertedScores[answer as keyof typeof invertedScores] || 0;
-        } else {
+        const frequencyScores = { "أبداً": 0, "نادراً": 25, "أحياناً": 50, "غالباً": 75, "دائماً": 100 };
+        // For positive environmental actions, use normal scoring
+        if (question.text.includes('تطفئ') || question.text.includes('تفصل') || question.text.includes('تحاول') || question.text.includes('تستخدم المواصلات') || question.text.includes('تغطي') || question.text.includes('تصلح') || question.text.includes('تتبرع') || question.text.includes('تفضل') || question.text.includes('تعيد ملء') || question.text.includes('تشارك') || question.text.includes('تختار')) {
           score = frequencyScores[answer as keyof typeof frequencyScores] || 0;
+        } else {
+          // For negative environmental actions, invert the scoring
+          const invertedScores = { "أبداً": 100, "نادراً": 75, "أحياناً": 50, "غالباً": 25, "دائماً": 0 };
+          score = invertedScores[answer as keyof typeof invertedScores] || 0;
         }
       } else if (question.type === 'yesno') {
         // For positive environmental actions
@@ -290,11 +221,26 @@ const PersonalSustainabilityIndex = () => {
         } else if (question.text.includes('LED')) {
           const ledScores = { "0%": 0, "25%": 25, "50%": 50, "75%": 75, "100%": 100 };
           score = ledScores[answer as keyof typeof ledScores] || 0;
+        } else if (question.text.includes('رحلة طيران')) {
+          const flightScores = { "0": 100, "1-2": 70, "3-5": 40, "6+": 0 };
+          score = flightScores[answer as keyof typeof flightScores] || 0;
+        } else if (question.text.includes('ملابس جديدة')) {
+          const clothingScores = { "0-5": 100, "6-10": 70, "11-20": 50, "21-30": 25, "30+": 0 };
+          score = clothingScores[answer as keyof typeof clothingScores] || 0;
+        } else if (question.text.includes('الاستحمام')) {
+          const showerScores = { "مرة واحدة - 5 دقائق": 100, "مرة واحدة - 10 دقائق": 75, "مرة واحدة - 15+ دقيقة": 50, "مرتان يومياً": 25, "أكثر من مرتين": 0 };
+          score = showerScores[answer as keyof typeof showerScores] || 0;
         }
-        // Add more choice scoring logic as needed
       } else if (question.type === 'number') {
-        // Custom scoring for numeric answers
-        score = 50; // Default middle score for numeric answers
+        // For numeric answers, provide basic scoring
+        const numAnswer = parseInt(answer) || 0;
+        if (question.text.includes('لحم أحمر')) {
+          score = Math.max(0, 100 - (numAnswer * 15)); // Less red meat = higher score
+        } else if (question.text.includes('نباتية')) {
+          score = Math.min(100, numAnswer * 15); // More plant-based = higher score
+        } else {
+          score = 50; // Default middle score for other numeric answers
+        }
       }
 
       categoryScores[question.category as keyof typeof categoryScores] += score;

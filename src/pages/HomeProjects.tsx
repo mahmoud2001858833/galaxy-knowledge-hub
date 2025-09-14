@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Home, Recycle, Droplets, Container, Shirt, Zap, Wrench, ShoppingBag, FileText, Trash2 } from 'lucide-react';
+import ProjectDetailModal from '@/components/projects/ProjectDetailModal';
 
 const HomeProjects = () => {
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleProjectClick = (project: any) => {
+    setSelectedProject({
+      ...project,
+      type: 'home' as const
+    });
+    setIsModalOpen(true);
+  };
 
   const projectIcons = [
     Trash2, Droplets, Container, Shirt, Droplets, Zap, Recycle, Wrench, ShoppingBag, FileText
@@ -93,7 +104,10 @@ const HomeProjects = () => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 + index * 0.05 }}
             >
-              <Card className={`group h-full cursor-pointer ${project.borderColor} border-2 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 hover:scale-105 bg-gradient-to-br ${project.color} backdrop-blur-sm`}>
+              <Card 
+                className={`group h-full cursor-pointer ${project.borderColor} border-2 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 hover:scale-105 bg-gradient-to-br ${project.color} backdrop-blur-sm`}
+                onClick={() => handleProjectClick(project)}
+              >
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto mb-3 p-3 rounded-full bg-white/10 backdrop-blur-sm w-fit">
                     <project.icon className="w-6 h-6 text-white" />
@@ -154,6 +168,15 @@ const HomeProjects = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Project Detail Modal */}
+        {selectedProject && (
+          <ProjectDetailModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            project={selectedProject}
+          />
+        )}
       </div>
     </div>
   );
