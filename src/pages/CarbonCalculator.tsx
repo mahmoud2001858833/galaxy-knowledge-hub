@@ -4,10 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calculator, BarChart3, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Calculator, Zap, Droplets, Car, Plane } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import CalculationModule, { ModuleData } from '@/components/carbon-calculator/CalculationModule';
-import { calculationModules } from '@/components/carbon-calculator/modules';
 
 const CarbonCalculator = () => {
   const navigate = useNavigate();
