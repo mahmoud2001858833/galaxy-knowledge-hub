@@ -28,6 +28,7 @@ import UploadJournalPage from './pages/UploadJournalPage';
 import StudyOrganization from './pages/StudyOrganization';
 import ChatRooms from './pages/ChatRooms';
 import Auth from './pages/Auth';
+import FalakKnowledgeAI from './pages/FalakKnowledgeAI';
 import MathPuzzles from './pages/MathPuzzles';
 import UserProfile from './pages/UserProfile';
 import Contact from './pages/Contact';
@@ -255,6 +256,10 @@ const router = createBrowserRouter([
       {
         path: 'environmental/personal-sustainability-index',
         element: <AuthGuard><PersonalSustainabilityIndex /></AuthGuard>,
+      },
+      {
+        path: 'falak-knowledge-ai',
+        element: <AuthGuard><FalakKnowledgeAI /></AuthGuard>,
       },
       {
         path: '*',

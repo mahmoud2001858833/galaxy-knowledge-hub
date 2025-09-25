@@ -38,6 +38,16 @@ const PlatformCategories = () => {
       borderColor: "border-green-500/30",
       hoverBorderColor: "hover:border-green-500/50",
       link: "/environmental-sustainability"
+    },
+    {
+      title: t.platformCategories.falakAI,
+      icon: "🌌",
+      description: t.platformCategories.falakAIDescription,
+      image: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-indigo-600/20 to-purple-600/20",
+      borderColor: "border-indigo-500/30",
+      hoverBorderColor: "hover:border-indigo-500/50",
+      link: "/falak-knowledge-ai"
     }
   ];
 

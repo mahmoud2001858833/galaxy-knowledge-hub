@@ -165,6 +165,8 @@ export const en = {
     literaryDescription: "Immerse yourself in the world of literature and languages with Arabic and English platforms",
     environmental: "Environmental Sustainability",
     environmentalDescription: "Learn how to protect the environment through school and home projects and carbon footprint calculation",
+    falakAI: "Falak Knowledge AI",
+    falakAIDescription: "Advanced AI assistant supporting Jordanian curriculum with space-age technology, image and video analysis",
     explore: "Explore"
   },
   // Scientific platforms
