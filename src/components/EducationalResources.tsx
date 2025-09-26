@@ -41,12 +41,6 @@ const EducationalResources = () => {
       link: '/chat-rooms'
     },
     {
-      title: t.resources.educationalVideos,
-      icon: <Video className="h-6 w-6 text-blue-400" />,
-      description: t.resources.explorationTools,
-      link: '/educational-videos'
-    },
-    {
       title: "محاكاة التجارب العلمية",
       icon: <Atom className="h-6 w-6 text-purple-400" />,
       description: "محاكاة تفاعلية متطورة للتجارب الفيزيائية مع أدوات حسابية ومساعد ذكي",

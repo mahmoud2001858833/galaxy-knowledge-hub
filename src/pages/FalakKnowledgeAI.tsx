@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, Wand2, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,6 +38,10 @@ const FalakKnowledgeAI = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -183,6 +187,46 @@ const FalakKnowledgeAI = () => {
         timestamp: new Date()
       }]);
       setIsLoading(false);
+    }
+  };
+
+  const generateImage = async () => {
+    if (!imagePrompt.trim() || generatingImage) return;
+
+    setGeneratingImage(true);
+    try {
+      const response = await supabase.functions.invoke('falak-knowledge-ai', {
+        body: {
+          message: `اريد انشاء صورة احترافية: ${imagePrompt}`,
+          generateImage: true,
+          imagePrompt: imagePrompt
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      setGeneratedImage(response.data.generatedImageUrl);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `تم إنشاء الصورة بنجاح! 🎨\n\nالوصف: ${imagePrompt}`,
+        timestamp: new Date(),
+        hasImage: true
+      }]);
+      
+      setImagePrompt('');
+      setShowImageGenerator(false);
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في إنشاء الصورة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
@@ -386,8 +430,18 @@ const FalakKnowledgeAI = () => {
               onClick={() => fileInputRef.current?.click()}
               variant="outline"
               className="border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30"
+              title="رفع صورة"
             >
               <Upload className="w-4 h-4" />
+            </Button>
+
+            <Button
+              onClick={() => setShowImageGenerator(true)}
+              variant="outline"
+              className="border-purple-500/50 text-purple-300 hover:bg-purple-900/30"
+              title="إنشاء صورة بالذكاء الاصطناعي"
+            >
+              <Wand2 className="w-4 h-4" />
             </Button>
             
             <Textarea
@@ -408,6 +462,121 @@ const FalakKnowledgeAI = () => {
             className="hidden"
           />
         </motion.div>
+
+        {/* Image Generator Modal */}
+        <AnimatePresence>
+          {showImageGenerator && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-indigo-950/90 to-purple-950/90 backdrop-blur-sm rounded-2xl border border-indigo-500/30 p-8 max-w-2xl w-full"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <Palette className="w-6 h-6 text-purple-400 ml-3" />
+                    <h3 className="text-2xl font-bold text-white">إنشاء صورة احترافية</h3>
+                  </div>
+                  <Button
+                    onClick={() => setShowImageGenerator(false)}
+                    variant="ghost"
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-white/80 mb-2">وصف الصورة المطلوبة:</label>
+                    <Textarea
+                      value={imagePrompt}
+                      onChange={(e) => setImagePrompt(e.target.value)}
+                      placeholder="اكتب وصفاً تفصيلياً للصورة التي تريد إنشاءها..."
+                      className="w-full bg-gray-900/50 border-indigo-500/30 text-white placeholder:text-gray-400 min-h-[100px]"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-white/70 text-sm mb-2">أمثلة للإلهام:</p>
+                      <div className="space-y-1">
+                        {[
+                          "رسم توضيحي لدورة الماء في الطبيعة",
+                          "مخطط للجهاز التنفسي بالتفصيل",
+                          "صورة تعليمية للنظام الشمسي",
+                          "رسم بياني للعمليات الرياضية"
+                        ].map((example, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setImagePrompt(example)}
+                            className="block text-right w-full p-2 text-xs text-indigo-300 hover:text-indigo-200 hover:bg-indigo-900/20 rounded"
+                          >
+                            • {example}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-white/70 text-sm mb-2">خيارات التخصيص:</p>
+                      <div className="space-y-1 text-xs text-gray-300">
+                        <p>• استخدم كلمات وصفية دقيقة</p>
+                        <p>• اذكر الألوان المفضلة</p>
+                        <p>• حدد نوع الرسم (توضيحي، علمي، فني)</p>
+                        <p>• اضف تفاصيل تعليمية مطلوبة</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {generatedImage && (
+                    <div className="text-center">
+                      <img
+                        src={generatedImage}
+                        alt="Generated"
+                        className="max-w-full h-auto rounded-lg border border-indigo-500/30"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 justify-end">
+                    <Button
+                      onClick={() => setShowImageGenerator(false)}
+                      variant="outline"
+                      className="border-gray-500/50 text-gray-300"
+                    >
+                      إلغاء
+                    </Button>
+                    <Button
+                      onClick={generateImage}
+                      disabled={!imagePrompt.trim() || generatingImage}
+                      className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                    >
+                      {generatingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                          جاري الإنشاء...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 ml-2" />
+                          إنشاء الصورة
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+         </AnimatePresence>
       </main>
       
       <Footer />

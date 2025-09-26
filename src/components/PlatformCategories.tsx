@@ -33,7 +33,7 @@ const PlatformCategories = () => {
       title: t.platformCategories.environmental,
       icon: "🌱",
       description: t.platformCategories.environmentalDescription,
-      image: "https://images.unsplash.com/photo-1569163139394-de44cb4f4ee2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      image: "/src/assets/sustainability-background.png",
       color: "from-green-600/20 to-emerald-600/20",
       borderColor: "border-green-500/30",
       hoverBorderColor: "hover:border-green-500/50",
