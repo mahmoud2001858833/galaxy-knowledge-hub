@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, Wand2, Palette } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, Wand2, Palette, Download, Settings, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
+import PreferencesForm from '@/components/PreferencesForm';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -19,8 +20,17 @@ interface Message {
   timestamp: Date;
   step?: number;
   hasImage?: boolean;
+  imageUrl?: string;
   videoSuggestions?: VideoSuggestion[];
   relatedQuestions?: string[];
+}
+
+interface UserPreferences {
+  age: string;
+  grade: string;
+  school: string;
+  accuracy: string;
+  explanationType: string;
 }
 
 interface VideoSuggestion {
@@ -42,6 +52,8 @@ const FalakKnowledgeAI = () => {
   const [imagePrompt, setImagePrompt] = useState('');
   const [generatingImage, setGeneratingImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,11 +77,16 @@ const FalakKnowledgeAI = () => {
 
     getCurrentUser();
 
+    // Check if user preferences are set
+    if (!userPreferences) {
+      setShowPreferences(true);
+    }
+
     // Welcome message
     setMessages([{
       id: '1',
       type: 'system',
-      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك خلال أربع خطوات متطورة:\n\n✨ الخطوة الأولى: تحليل السؤال بعناية\n🔍 الخطوة الثانية: فحص المصادر الموثوقة\n🧠 الخطوة الثالثة: إنتاج إجابة مفصلة ودقيقة\n✅ الخطوة الرابعة: مراجعة نهائية للدقة والوضوح\n\nيمكنني أيضاً تحليل الصور والمواد المرئية واقتراح فيديوهات تعليمية ذات صلة. اسأل عن أي موضوع تريد!`,
+      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك خلال أربع خطوات متطورة:\n\n🎯 تحليل السؤال بعناية\n🔍 فحص تفصيلي للموضوع\n💡 تقديم النصائح والإرشادات\n✨ الإجابة الكاملة في فقرة واحدة\n\nيمكنني أيضاً تحليل الصور وإنشاء صور احترافية واقتراح فيديوهات تعليمية ذات صلة. اسأل عن أي موضوع تريد!`,
       timestamp: new Date()
     }]);
   }, []);
@@ -137,7 +154,8 @@ const FalakKnowledgeAI = () => {
           message: inputText,
           image: imageBase64,
           userName: userName,
-          hasImage: !!selectedImage
+          hasImage: !!selectedImage,
+          userPreferences: userPreferences
         }
       });
 
@@ -197,7 +215,6 @@ const FalakKnowledgeAI = () => {
     try {
       const response = await supabase.functions.invoke('falak-knowledge-ai', {
         body: {
-          message: `اريد انشاء صورة احترافية: ${imagePrompt}`,
           generateImage: true,
           imagePrompt: imagePrompt
         }
@@ -207,17 +224,17 @@ const FalakKnowledgeAI = () => {
         throw new Error(response.error.message);
       }
 
-      setGeneratedImage(response.data.generatedImageUrl);
+      const imageUrl = response.data.imageUrl;
+      setGeneratedImage(imageUrl);
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         type: 'ai',
         content: `تم إنشاء الصورة بنجاح! 🎨\n\nالوصف: ${imagePrompt}`,
         timestamp: new Date(),
-        hasImage: true
+        imageUrl: imageUrl
       }]);
       
       setImagePrompt('');
-      setShowImageGenerator(false);
     } catch (error) {
       console.error('Error generating image:', error);
       toast({
@@ -228,6 +245,24 @@ const FalakKnowledgeAI = () => {
     } finally {
       setGeneratingImage(false);
     }
+  };
+
+  const downloadImage = (imageUrl: string, filename: string = 'generated-image.png') => {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const savePreferences = (prefs: UserPreferences) => {
+    setUserPreferences(prefs);
+    setShowPreferences(false);
+    toast({
+      title: "تم حفظ التفضيلات",
+      description: "سيتم تخصيص الإجابات وفقاً لمعلوماتك",
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -331,6 +366,24 @@ const FalakKnowledgeAI = () => {
                       <div className="mt-2">
                         <ImageIcon className="w-4 h-4 text-indigo-400 inline ml-1" />
                         <span className="text-xs text-indigo-400">صورة مرفقة</span>
+                      </div>
+                    )}
+
+                    {message.imageUrl && (
+                      <div className="mt-4 text-center">
+                        <img
+                          src={message.imageUrl}
+                          alt="Generated"
+                          className="max-w-full h-auto rounded-lg border border-indigo-500/30"
+                        />
+                        <Button
+                          onClick={() => downloadImage(message.imageUrl!, `generated-${Date.now()}.png`)}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30"
+                        >
+                          تحميل الصورة
+                        </Button>
                       </div>
                     )}
                     
@@ -543,6 +596,14 @@ const FalakKnowledgeAI = () => {
                         alt="Generated"
                         className="max-w-full h-auto rounded-lg border border-indigo-500/30"
                       />
+                      <Button
+                        onClick={() => downloadImage(generatedImage, `generated-${Date.now()}.png`)}
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30"
+                      >
+                        تحميل الصورة
+                      </Button>
                     </div>
                   )}
 
@@ -576,7 +637,36 @@ const FalakKnowledgeAI = () => {
               </motion.div>
             </motion.div>
           )}
-         </AnimatePresence>
+        </AnimatePresence>
+
+        {/* User Preferences Modal */}
+        <AnimatePresence>
+          {showPreferences && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-b from-indigo-950/95 to-purple-950/95 backdrop-blur-sm rounded-2xl border border-indigo-500/30 p-8 max-w-2xl w-full"
+              >
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-sm border border-indigo-400/30 mb-4">
+                    <span className="text-3xl">🎓</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">مرحباً بك في فلك المعرفة!</h3>
+                  <p className="text-indigo-200">الرجاء إدخال معلوماتك لتخصيص التجربة التعليمية</p>
+                </div>
+
+                <PreferencesForm onSave={savePreferences} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       
       <Footer />

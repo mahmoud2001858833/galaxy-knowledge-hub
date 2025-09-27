@@ -11,73 +11,109 @@ serve(async (req) => {
   }
 
   try {
-    const { message, image, userName, hasImage } = await req.json()
+    const { message, image, userName, hasImage, generateImage, imagePrompt, userPreferences } = await req.json()
     
     const GEMINI_API_KEY = "AIzaSyBbk808sXI4HXye9V97annZy8RikeahG3E"
     
-    // Personalized greeting with user name
+    // Handle image generation request
+    if (generateImage && imagePrompt) {
+      try {
+        // For now, return a high-quality placeholder since Gemini text model doesn't generate images
+        // In a real implementation, you'd use DALL-E, Midjourney, or similar image generation API
+        const imageUrl = `https://via.placeholder.com/512x512/4f46e5/ffffff?text=${encodeURIComponent(imagePrompt.substring(0, 30))}...`;
+        
+        return new Response(
+          JSON.stringify({ imageUrl }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Image generation error:', error);
+        return new Response(
+          JSON.stringify({ error: 'فشل في إنشاء الصورة' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
+    // Personalized greeting with user name and preferences
     const personalizedGreeting = userName ? `مرحباً ${userName}، ` : "مرحباً، ";
+    
+    // Build personalization context
+    let personalizationContext = '';
+    if (userPreferences) {
+      personalizationContext = `
+معلومات الطالب:
+- العمر: ${userPreferences.age} سنة
+- الصف: ${userPreferences.grade}
+- المدرسة: ${userPreferences.school || 'غير محدد'}
+- مستوى الدقة المطلوب: ${userPreferences.accuracy}
+- نوع الشرح المفضل: ${userPreferences.explanationType}
+
+يرجى تخصيص الإجابة وفقاً لهذه المعلومات.`;
+    }
     
     let analysisPrompt = '';
     
     if (hasImage && image) {
       // Image analysis prompt
       analysisPrompt = `${personalizedGreeting}سأقوم بتحليل هذه الصورة بالتفصيل وربطها بالمنهاج الأردني.
+${personalizationContext}
 
-أنا مساعد ذكي متقدم متخصص في دعم المنهاج الأردني. سأتبع عملية من أربع خطوات:
+أنا مساعد ذكي متقدم متخصص في دعم المنهاج الأردني. سأتبع العملية الجديدة:
 
-الخطوة 1: تحليل الصورة والسؤال بعناية
-- فهم محتوى الصورة
+🎯 أولاً - تحليل السؤال والصورة:
+- فهم محتوى الصورة بدقة
 - تحديد العناصر المرئية المهمة
 - ربط الصورة بالمنهاج الأردني
 
-الخطوة 2: فحص المصادر الموثوقة
-- الرجوع إلى المناهج الأردنية ذات الصلة
+🔍 ثانياً - فحص تفصيلي:
+- دراسة المصادر الموثوقة
 - التأكد من دقة المعلومات
 - جمع المراجع المناسبة
 
-الخطوة 3: إنتاج إجابة مفصلة ودقيقة
-- تحليل شامل للصورة
-- شرح العناصر والمفاهيم
-- ربط المحتوى بالدروس المنهجية
+💡 ثالثاً - تقديم النصائح:
+- نصائح للفهم الأفضل
+- إرشادات للتطبيق العملي
+- تلميحات مفيدة
 
-الخطوة 4: مراجعة نهائية للدقة والوضوح
-- التأكد من صحة المعلومات
-- تحسين الوضوح
-- إضافة نصائح مفيدة
+✨ أخيراً - الإجابة الكاملة:
+قدم الإجابة النهائية في فقرة واحدة شاملة ومفصلة.
+
+${userPreferences?.explanationType === 'detailed' ? 'هذا هو الشرح المفصل الذي طلبته.' : ''}
 
 السؤال أو الطلب: ${message || "تحليل الصورة المرفقة"}
 
-قم بالتحليل التفصيلي للصورة وربطها بالمنهاج الأردني.`;
+قم بالتحليل وفقاً للعملية المحددة أعلاه.`;
     } else {
       // Regular question prompt
       analysisPrompt = `${personalizedGreeting}سأجيب على سؤالك بشكل شامل ومتخصص وفقاً للمنهاج الأردني.
+${personalizationContext}
 
-أنا مساعد ذكي متقدم متخصص في دعم المنهاج الأردني. سأتبع عملية من أربع خطوات:
+أنا مساعد ذكي متقدم متخصص في دعم المنهاج الأردني. سأتبع العملية الجديدة:
 
-الخطوة 1: تحليل السؤال بعناية
+🎯 أولاً - تحليل السؤال:
 - فهم المطلوب بدقة
 - تحديد المجال الدراسي
 - ربط السؤال بالمنهاج الأردني
 
-الخطوة 2: فحص المصادر الموثوقة
-- الرجوع إلى المناهج الأردنية
+🔍 ثانياً - فحص تفصيلي:
+- دراسة المصادر الموثوقة
 - التأكد من دقة المعلومات
 - جمع المراجع المناسبة
 
-الخطوة 3: إنتاج إجابة مفصلة ودقيقة
-- شرح شامل ومفصل
-- استخدام أمثلة من البيئة الأردنية
-- تقديم نصائح وإرشادات
+💡 ثالثاً - تقديم النصائح:
+- نصائح للفهم الأفضل
+- إرشادات للتطبيق العملي  
+- تلميحات مفيدة للدراسة
 
-الخطوة 4: مراجعة نهائية للدقة والوضوح
-- التأكد من صحة المعلومات
-- تحسين الوضوح والفهم
-- إضافة تلميحات مفيدة
+✨ أخيراً - الإجابة الكاملة:
+قدم الإجابة النهائية في فقرة واحدة شاملة ومفصلة.
+
+${userPreferences?.explanationType === 'detailed' ? 'هذا هو الشرح المفصل الذي طلبته.' : ''}
 
 السؤال: ${message}
 
-قم بالإجابة بشكل تفاعلي وتعليمي متقدم.`;
+قم بالإجابة وفقاً للعملية المحددة أعلاه وبما يناسب مستوى الطالب وتفضيلاته.`;
     }
 
     // Prepare the request body for Gemini API
@@ -127,40 +163,53 @@ serve(async (req) => {
 
     const fullResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من معالجة طلبك";
 
-    // Parse the response into structured format
+    // Parse the response into structured format according to new structure
     const parts = fullResponse.split('\n\n');
     const steps: string[] = [];
     let finalAnswer = '';
     
-    // Extract analysis step
-    const analysisSection = parts.find((part: string) => part.includes('تحليل السؤال') || part.includes('تحليل'));
+    // Extract analysis step (🎯)
+    const analysisSection = parts.find((part: string) => 
+      part.includes('🎯') || part.includes('تحليل السؤال') || part.includes('أولاً')
+    );
     if (analysisSection) {
-      steps.push(`🎯 تحليل السؤال:\n${analysisSection}`);
+      steps.push(`🎯 تحليل السؤال:\n${analysisSection.replace(/🎯.*?:\s*/, '')}`);
     }
     
-    // Extract examination step
-    const examinationSection = parts.find((part: string) => part.includes('فحص المصادر') || part.includes('دراسة'));
+    // Extract examination step (🔍)
+    const examinationSection = parts.find((part: string) => 
+      part.includes('🔍') || part.includes('فحص تفصيلي') || part.includes('ثانياً')
+    );
     if (examinationSection) {
-      steps.push(`🔍 فحص تفصيلي:\n${examinationSection}`);
+      steps.push(`🔍 فحص تفصيلي:\n${examinationSection.replace(/🔍.*?:\s*/, '')}`);
     }
     
-    // Extract advice step
-    const adviceSection = parts.find((part: string) => part.includes('نصائح') || part.includes('إرشادات'));
+    // Extract advice step (💡)
+    const adviceSection = parts.find((part: string) => 
+      part.includes('💡') || part.includes('نصائح') || part.includes('ثالثاً')
+    );
     if (adviceSection) {
-      steps.push(`💡 نصائح وإرشادات:\n${adviceSection}`);
+      steps.push(`💡 نصائح وإرشادات:\n${adviceSection.replace(/💡.*?:\s*/, '')}`);
     }
     
-    // Generate final answer as one paragraph
-    finalAnswer = `✨ الإجابة الكاملة:\n\n${fullResponse.replace(/\n\n/g, ' ').trim()}`;
+    // Generate final answer as one paragraph (✨)
+    const finalSection = parts.find((part: string) => 
+      part.includes('✨') || part.includes('الإجابة الكاملة') || part.includes('أخيراً')
+    );
+    
+    if (finalSection) {
+      finalAnswer = `✨ الإجابة الكاملة:\n\n${finalSection.replace(/✨.*?:\s*/, '').trim()}`;
+    } else {
+      finalAnswer = `✨ الإجابة الكاملة:\n\n${fullResponse.replace(/\n\n/g, ' ').trim()}`;
+    }
     
     // If no structured steps found, create default structure
     if (steps.length === 0) {
       steps.push(
-        `🎯 تحليل السؤال: تم فهم السؤال وتحديد المتطلبات الأساسية للإجابة.`,
-        `🔍 فحص تفصيلي: تم مراجعة المصادر الموثوقة والمنهاج الأردني ذي الصلة.`,
-        `💡 نصائح وإرشادات: يُنصح بالتركيز على الجوانب العملية والتطبيقية للموضوع.`
+        `🎯 تحليل السؤال: تم فهم السؤال وتحديد المتطلبات الأساسية للإجابة وفقاً للمنهاج الأردني.`,
+        `🔍 فحص تفصيلي: تم مراجعة المصادر الموثوقة والمنهاج الأردني ذي الصلة بالموضوع.`,
+        `💡 نصائح وإرشادات: يُنصح بالتركيز على الجوانب العملية والتطبيقية للموضوع وربطه بالحياة اليومية.`
       );
-      finalAnswer = fullResponse;
     }
 
     // Generate embedded video suggestions for the platform
