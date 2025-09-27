@@ -236,10 +236,11 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error('Error processing request:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error processing request:', errorMessage);
     
     return new Response(
-      JSON.stringify({ error: `Error processing request: ${error.message}` }),
+      JSON.stringify({ error: `Error processing request: ${errorMessage}` }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

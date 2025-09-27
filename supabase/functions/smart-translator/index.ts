@@ -16,7 +16,7 @@ serve(async (req) => {
     
     const GEMINI_API_KEY = "AIzaSyC1u3-VRvMHRz-DxYJJp3Y9a1eqGOCk4CQ"
     
-    const contextDescriptions = {
+    const contextDescriptions: { [key: string]: string } = {
       formal: language === 'ar' ? 'رسمي ومهني' : 'formal and professional',
       academic: language === 'ar' ? 'أكاديمي وعلمي' : 'academic and scientific',
       conversational: language === 'ar' ? 'محادثة يومية عادية' : 'casual daily conversation',
@@ -28,7 +28,7 @@ serve(async (req) => {
 
 النص المراد ترجمته: "${text}"
 اتجاه الترجمة: ${direction === 'ar-en' ? 'من العربية إلى الإنجليزية' : 'من الإنجليزية إلى العربية'}
-السياق: ${contextDescriptions[context]}
+السياق: ${contextDescriptions[context] || 'عام'}
 
 يرجى تقديم:
 
@@ -56,7 +56,7 @@ serve(async (req) => {
 
 Text to translate: "${text}"
 Translation direction: ${direction === 'ar-en' ? 'from Arabic to English' : 'from English to Arabic'}
-Context: ${contextDescriptions[context]}
+Context: ${contextDescriptions[context] || 'general'}
 
 Please provide:
 
@@ -137,9 +137,10 @@ Format the response as JSON:
     }
   } catch (error) {
     console.error('Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ 
-        error: language === 'ar' ? 'حدث خطأ في الترجمة' : 'Translation error occurred',
+        error: 'Translation error occurred',
         translation: "",
         explanation: "",
         grammarExplanation: "",

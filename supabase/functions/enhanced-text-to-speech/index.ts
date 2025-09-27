@@ -88,10 +88,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in enhanced-text-to-speech function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in enhanced-text-to-speech function:', errorMessage);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         details: 'Check console logs for more information'
       }),
       {

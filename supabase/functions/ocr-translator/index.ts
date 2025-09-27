@@ -84,10 +84,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in OCR translator function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in OCR translator function:', errorMessage);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         extractedText: '',
         arabicTranslation: '',
         success: false

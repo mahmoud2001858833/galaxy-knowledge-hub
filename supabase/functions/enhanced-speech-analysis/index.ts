@@ -92,10 +92,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in enhanced-speech-analysis function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in enhanced-speech-analysis function:', errorMessage);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         details: 'Speech analysis service temporarily unavailable. Please try again.'
       }),
       {

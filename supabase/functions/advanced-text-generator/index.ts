@@ -136,9 +136,10 @@ Please create an engaging, well-structured text that covers the topic thoroughly
     );
   } catch (error) {
     console.error('Error in text generator function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         englishText: '',
         arabicTranslation: '',
         success: false

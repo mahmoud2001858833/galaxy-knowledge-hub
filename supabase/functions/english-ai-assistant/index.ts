@@ -86,11 +86,12 @@ Provide comprehensive answers with practical examples and clear explanations.`;
       }
     );
   } catch (error) {
-    console.error('Error in English AI assistant function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in English AI assistant function:', errorMessage);
     return new Response(
       JSON.stringify({ 
         reply: 'عذراً، حدث خطأ في معالجة السؤال. يرجى المحاولة مرة أخرى.',
-        error: error.message 
+        error: errorMessage 
       }),
       {
         status: 500,

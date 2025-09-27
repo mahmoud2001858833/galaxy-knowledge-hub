@@ -88,11 +88,12 @@ Provide comprehensive answers with calculations, laws, and practical examples.`;
       }
     );
   } catch (error) {
-    console.error('Error in enhanced physics assistant function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in enhanced physics assistant function:', errorMessage);
     return new Response(
       JSON.stringify({ 
         reply: 'عذراً، حدث خطأ في معالجة السؤال. يرجى المحاولة مرة أخرى.',
-        error: error.message 
+        error: errorMessage 
       }),
       {
         status: 500,
