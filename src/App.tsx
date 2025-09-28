@@ -7,6 +7,8 @@ import {
   useLocation,
   Outlet,
 } from "react-router-dom";
+import StudyScheduleCreator from './pages/StudyScheduleCreator';
+import StudentProgress from './pages/StudentProgress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
@@ -260,6 +262,14 @@ const router = createBrowserRouter([
       {
         path: 'falak-knowledge-ai',
         element: <AuthGuard><FalakKnowledgeAI /></AuthGuard>,
+      },
+      {
+        path: 'study-schedule',
+        element: <AuthGuard><StudyScheduleCreator /></AuthGuard>,
+      },
+      {
+        path: 'student-progress',
+        element: <AuthGuard><StudentProgress /></AuthGuard>,
       },
       {
         path: '*',

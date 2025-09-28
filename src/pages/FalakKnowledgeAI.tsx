@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, Wand2, Palette, Download, Settings, GraduationCap } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,10 +48,6 @@ const FalakKnowledgeAI = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [showImageGenerator, setShowImageGenerator] = useState(false);
-  const [imagePrompt, setImagePrompt] = useState('');
-  const [generatingImage, setGeneratingImage] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [showPreferences, setShowPreferences] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,8 +73,11 @@ const FalakKnowledgeAI = () => {
 
     getCurrentUser();
 
-    // Check if user preferences are set
-    if (!userPreferences) {
+    // Check if user preferences are stored in localStorage
+    const storedPreferences = localStorage.getItem('falak-user-preferences');
+    if (storedPreferences) {
+      setUserPreferences(JSON.parse(storedPreferences));
+    } else {
       setShowPreferences(true);
     }
 
@@ -86,7 +85,7 @@ const FalakKnowledgeAI = () => {
     setMessages([{
       id: '1',
       type: 'system',
-      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك خلال أربع خطوات متطورة:\n\n🎯 تحليل السؤال بعناية\n🔍 فحص تفصيلي للموضوع\n💡 تقديم النصائح والإرشادات\n✨ الإجابة الكاملة في فقرة واحدة\n\nيمكنني أيضاً تحليل الصور وإنشاء صور احترافية واقتراح فيديوهات تعليمية ذات صلة. اسأل عن أي موضوع تريد!`,
+      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك خلال أربع خطوات متطورة:\n\n🎯 تحليل السؤال بعناية\n🔍 فحص تفصيلي للموضوع\n💡 تقديم النصائح والإرشادات\n✨ الإجابة الكاملة في فقرة واحدة\n\nيمكنني أيضاً تحليل الصور واقتراح فيديوهات تعليمية ذات صلة. اسأل عن أي موضوع تريد!`,
       timestamp: new Date()
     }]);
   }, []);
@@ -208,56 +207,10 @@ const FalakKnowledgeAI = () => {
     }
   };
 
-  const generateImage = async () => {
-    if (!imagePrompt.trim() || generatingImage) return;
-
-    setGeneratingImage(true);
-    try {
-      const response = await supabase.functions.invoke('falak-knowledge-ai', {
-        body: {
-          generateImage: true,
-          imagePrompt: imagePrompt
-        }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      const imageUrl = response.data.imageUrl;
-      setGeneratedImage(imageUrl);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        type: 'ai',
-        content: `تم إنشاء الصورة بنجاح! 🎨\n\nالوصف: ${imagePrompt}`,
-        timestamp: new Date(),
-        imageUrl: imageUrl
-      }]);
-      
-      setImagePrompt('');
-    } catch (error) {
-      console.error('Error generating image:', error);
-      toast({
-        title: "خطأ",
-        description: "فشل في إنشاء الصورة. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
-      });
-    } finally {
-      setGeneratingImage(false);
-    }
-  };
-
-  const downloadImage = (imageUrl: string, filename: string = 'generated-image.png') => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const savePreferences = (prefs: UserPreferences) => {
     setUserPreferences(prefs);
+    localStorage.setItem('falak-user-preferences', JSON.stringify(prefs));
     setShowPreferences(false);
     toast({
       title: "تم حفظ التفضيلات",
@@ -376,14 +329,6 @@ const FalakKnowledgeAI = () => {
                           alt="Generated"
                           className="max-w-full h-auto rounded-lg border border-indigo-500/30"
                         />
-                        <Button
-                          onClick={() => downloadImage(message.imageUrl!, `generated-${Date.now()}.png`)}
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30"
-                        >
-                          تحميل الصورة
-                        </Button>
                       </div>
                     )}
                     
@@ -487,15 +432,6 @@ const FalakKnowledgeAI = () => {
             >
               <Upload className="w-4 h-4" />
             </Button>
-
-            <Button
-              onClick={() => setShowImageGenerator(true)}
-              variant="outline"
-              className="border-purple-500/50 text-purple-300 hover:bg-purple-900/30"
-              title="إنشاء صورة بالذكاء الاصطناعي"
-            >
-              <Wand2 className="w-4 h-4" />
-            </Button>
             
             <Textarea
               value={inputText}
@@ -516,128 +452,40 @@ const FalakKnowledgeAI = () => {
           />
         </motion.div>
 
-        {/* Image Generator Modal */}
-        <AnimatePresence>
-          {showImageGenerator && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        {/* Additional Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"
+        >
+          <Card className="p-6 bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border-purple-500/30 backdrop-blur-sm">
+            <div className="flex items-center mb-4">
+              <Target className="w-6 h-6 text-purple-400 ml-3" />
+              <h3 className="text-xl font-bold text-white">تتبع تقدم الطالب</h3>
+            </div>
+            <p className="text-purple-100 mb-4">اكتشف نقاط القوة والضعف واحصل على خطط تدريب مخصصة</p>
+            <Button 
+              onClick={() => navigate('/student-progress')}
+              className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-gradient-to-b from-indigo-950/90 to-purple-950/90 backdrop-blur-sm rounded-2xl border border-indigo-500/30 p-8 max-w-2xl w-full"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center">
-                    <Palette className="w-6 h-6 text-purple-400 ml-3" />
-                    <h3 className="text-2xl font-bold text-white">إنشاء صورة احترافية</h3>
-                  </div>
-                  <Button
-                    onClick={() => setShowImageGenerator(false)}
-                    variant="ghost"
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
+              ابدأ التقييم
+            </Button>
+          </Card>
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-white/80 mb-2">وصف الصورة المطلوبة:</label>
-                    <Textarea
-                      value={imagePrompt}
-                      onChange={(e) => setImagePrompt(e.target.value)}
-                      placeholder="اكتب وصفاً تفصيلياً للصورة التي تريد إنشاءها..."
-                      className="w-full bg-gray-900/50 border-indigo-500/30 text-white placeholder:text-gray-400 min-h-[100px]"
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-white/70 text-sm mb-2">أمثلة للإلهام:</p>
-                      <div className="space-y-1">
-                        {[
-                          "رسم توضيحي لدورة الماء في الطبيعة",
-                          "مخطط للجهاز التنفسي بالتفصيل",
-                          "صورة تعليمية للنظام الشمسي",
-                          "رسم بياني للعمليات الرياضية"
-                        ].map((example, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setImagePrompt(example)}
-                            className="block text-right w-full p-2 text-xs text-indigo-300 hover:text-indigo-200 hover:bg-indigo-900/20 rounded"
-                          >
-                            • {example}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-white/70 text-sm mb-2">خيارات التخصيص:</p>
-                      <div className="space-y-1 text-xs text-gray-300">
-                        <p>• استخدم كلمات وصفية دقيقة</p>
-                        <p>• اذكر الألوان المفضلة</p>
-                        <p>• حدد نوع الرسم (توضيحي، علمي، فني)</p>
-                        <p>• اضف تفاصيل تعليمية مطلوبة</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {generatedImage && (
-                    <div className="text-center">
-                      <img
-                        src={generatedImage}
-                        alt="Generated"
-                        className="max-w-full h-auto rounded-lg border border-indigo-500/30"
-                      />
-                      <Button
-                        onClick={() => downloadImage(generatedImage, `generated-${Date.now()}.png`)}
-                        variant="outline"
-                        size="sm"
-                        className="mt-2 border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30"
-                      >
-                        تحميل الصورة
-                      </Button>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 justify-end">
-                    <Button
-                      onClick={() => setShowImageGenerator(false)}
-                      variant="outline"
-                      className="border-gray-500/50 text-gray-300"
-                    >
-                      إلغاء
-                    </Button>
-                    <Button
-                      onClick={generateImage}
-                      disabled={!imagePrompt.trim() || generatingImage}
-                      className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-                    >
-                      {generatingImage ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                          جاري الإنشاء...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 ml-2" />
-                          إنشاء الصورة
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <Card className="p-6 bg-gradient-to-br from-indigo-900/30 to-cyan-900/30 border-indigo-500/30 backdrop-blur-sm">
+            <div className="flex items-center mb-4">
+              <GraduationCap className="w-6 h-6 text-indigo-400 ml-3" />
+              <h3 className="text-xl font-bold text-white">جدولة الدراسة</h3>
+            </div>
+            <p className="text-indigo-100 mb-4">أنشئ جدولاً دراسياً احترافياً مخصصاً لاحتياجاتك</p>
+            <Button 
+              onClick={() => navigate('/study-schedule')}
+              className="w-full bg-indigo-600 hover:bg-indigo-700"
+            >
+              إنشاء الجدول
+            </Button>
+          </Card>
+        </motion.div>
 
         {/* User Preferences Modal */}
         <AnimatePresence>
