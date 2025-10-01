@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
-import PreferencesForm from '@/components/PreferencesForm';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -23,14 +22,6 @@ interface Message {
   imageUrl?: string;
   videoSuggestions?: VideoSuggestion[];
   relatedQuestions?: string[];
-}
-
-interface UserPreferences {
-  age: string;
-  grade: string;
-  school: string;
-  accuracy: string;
-  explanationType: string;
 }
 
 interface VideoSuggestion {
@@ -48,8 +39,6 @@ const FalakKnowledgeAI = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -73,19 +62,11 @@ const FalakKnowledgeAI = () => {
 
     getCurrentUser();
 
-    // Check if user preferences are stored in localStorage
-    const storedPreferences = localStorage.getItem('falak-user-preferences');
-    if (storedPreferences) {
-      setUserPreferences(JSON.parse(storedPreferences));
-    } else {
-      setShowPreferences(true);
-    }
-
     // Welcome message
     setMessages([{
       id: '1',
       type: 'system',
-      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك خلال أربع خطوات متطورة:\n\n🎯 تحليل السؤال بعناية\n🔍 فحص تفصيلي للموضوع\n💡 تقديم النصائح والإرشادات\n✨ الإجابة الكاملة في فقرة واحدة\n\nيمكنني أيضاً تحليل الصور واقتراح فيديوهات تعليمية ذات صلة. اسأل عن أي موضوع تريد!`,
+      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك بشكل تفصيلي خلال أربع خطوات:\n\n🎯 تحليل السؤال بدقة\n🔍 فحص تفصيلي مع الشرح\n💡 النصائح والإرشادات\n✨ الإجابة الكاملة والشاملة\n\nيمكنني تحليل الصور والإجابة على أسئلتك. اسأل عن أي موضوع تريد!`,
       timestamp: new Date()
     }]);
   }, []);
@@ -153,8 +134,7 @@ const FalakKnowledgeAI = () => {
           message: inputText,
           image: imageBase64,
           userName: userName,
-          hasImage: !!selectedImage,
-          userPreferences: userPreferences
+          hasImage: !!selectedImage
         }
       });
 
@@ -164,35 +144,32 @@ const FalakKnowledgeAI = () => {
 
       const aiResponse = response.data;
 
-      // Add step-by-step AI response
+      // Add all step messages immediately
       const steps = aiResponse.steps || [];
-      for (let i = 0; i < steps.length; i++) {
-        setTimeout(() => {
-          const stepMessage: Message = {
-            id: `${Date.now()}-step-${i}`,
-            type: 'ai',
-            content: steps[i],
-            timestamp: new Date(),
-            step: i + 1
-          };
-          setMessages(prev => [...prev, stepMessage]);
-        }, i * 1500);
-      }
-
-      // Add final answer with suggestions
-      setTimeout(() => {
-        const finalMessage: Message = {
-          id: `${Date.now()}-final`,
+      const allMessages: Message[] = [];
+      
+      steps.forEach((step: string, i: number) => {
+        allMessages.push({
+          id: `${Date.now()}-step-${i}`,
           type: 'ai',
-          content: aiResponse.finalAnswer,
+          content: step,
           timestamp: new Date(),
-          videoSuggestions: aiResponse.videoSuggestions || [],
-          relatedQuestions: aiResponse.relatedQuestions || []
-        };
-        setMessages(prev => [...prev, finalMessage]);
-        setIsLoading(false);
-      }, steps.length * 1500);
+          step: i + 1
+        });
+      });
+      
+      // Add final answer
+      allMessages.push({
+        id: `${Date.now()}-final`,
+        type: 'ai',
+        content: aiResponse.finalAnswer,
+        timestamp: new Date(),
+        videoSuggestions: aiResponse.videoSuggestions || [],
+        relatedQuestions: aiResponse.relatedQuestions || []
+      });
 
+      setMessages(prev => [...prev, ...allMessages]);
+      setIsLoading(false);
       removeImage();
 
     } catch (error) {
@@ -207,16 +184,6 @@ const FalakKnowledgeAI = () => {
     }
   };
 
-
-  const savePreferences = (prefs: UserPreferences) => {
-    setUserPreferences(prefs);
-    localStorage.setItem('falak-user-preferences', JSON.stringify(prefs));
-    setShowPreferences(false);
-    toast({
-      title: "تم حفظ التفضيلات",
-      description: "سيتم تخصيص الإجابات وفقاً لمعلوماتك",
-    });
-  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -254,7 +221,7 @@ const FalakKnowledgeAI = () => {
             العودة للرئيسية
           </Button>
           
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -265,9 +232,27 @@ const FalakKnowledgeAI = () => {
             <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 mb-4">
               فلك المعرفة الذكي
             </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+            <p className="text-xl text-white/80 max-w-2xl mx-auto mb-6">
               مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات فضائية حديثة
             </p>
+            
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap justify-center gap-3 mt-4">
+              <Button
+                onClick={() => navigate('/student-progress')}
+                className="bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-700 hover:to-indigo-700 text-white"
+              >
+                <Target className="w-4 h-4 ml-2" />
+                تقييم مستوى الطالب
+              </Button>
+              <Button
+                onClick={() => navigate('/study-schedule-creator')}
+                className="bg-gradient-to-r from-green-600/80 to-blue-600/80 hover:from-green-700 hover:to-blue-700 text-white"
+              >
+                <GraduationCap className="w-4 h-4 ml-2" />
+                إنشاء جدول دراسي
+              </Button>
+            </div>
           </div>
         </motion.div>
         
@@ -486,35 +471,6 @@ const FalakKnowledgeAI = () => {
             </Button>
           </Card>
         </motion.div>
-
-        {/* User Preferences Modal */}
-        <AnimatePresence>
-          {showPreferences && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-gradient-to-b from-indigo-950/95 to-purple-950/95 backdrop-blur-sm rounded-2xl border border-indigo-500/30 p-8 max-w-2xl w-full"
-              >
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-sm border border-indigo-400/30 mb-4">
-                    <span className="text-3xl">🎓</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">مرحباً بك في فلك المعرفة!</h3>
-                  <p className="text-indigo-200">الرجاء إدخال معلوماتك لتخصيص التجربة التعليمية</p>
-                </div>
-
-                <PreferencesForm onSave={savePreferences} />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
       
       <Footer />
