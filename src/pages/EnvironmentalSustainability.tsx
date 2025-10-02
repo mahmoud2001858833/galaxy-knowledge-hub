@@ -5,7 +5,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Calculator, School, Home, Leaf, BarChart } from 'lucide-react';
-import sustainabilityBg from '@/assets/sustainability-background.png';
+import sustainabilityBg from '@/assets/environmental-bg.png';
 
 const EnvironmentalSustainability = () => {
   const navigate = useNavigate();
