@@ -66,7 +66,7 @@ const FalakKnowledgeAI = () => {
     setMessages([{
       id: '1',
       type: 'system',
-      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقوم بمساعدتك بشكل تفصيلي خلال أربع خطوات:\n\n🎯 تحليل السؤال بدقة\n🔍 فحص تفصيلي مع الشرح\n💡 النصائح والإرشادات\n✨ الإجابة الكاملة والشاملة\n\nيمكنني تحليل الصور والإجابة على أسئلتك. اسأل عن أي موضوع تريد!`,
+      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقدم لك إجابات شاملة ومفصلة تتضمن:\n\n📋 تحليل دقيق للسؤال\n📚 شرح تفصيلي كامل مع الأمثلة\n💡 نصائح وإرشادات عملية\n\nيمكنني تحليل الصور والإجابة على أسئلتك. اسأل عن أي موضوع تريد!`,
       timestamp: new Date()
     }]);
   }, []);
@@ -144,31 +144,17 @@ const FalakKnowledgeAI = () => {
 
       const aiResponse = response.data;
 
-      // Add all step messages immediately
-      const steps = aiResponse.steps || [];
-      const allMessages: Message[] = [];
-      
-      steps.forEach((step: string, i: number) => {
-        allMessages.push({
-          id: `${Date.now()}-step-${i}`,
-          type: 'ai',
-          content: step,
-          timestamp: new Date(),
-          step: i + 1
-        });
-      });
-      
-      // Add final answer
-      allMessages.push({
-        id: `${Date.now()}-final`,
+      // Add the complete answer as a single message
+      const aiMessage: Message = {
+        id: `${Date.now()}-answer`,
         type: 'ai',
-        content: aiResponse.finalAnswer,
+        content: aiResponse.answer || 'عذراً، لم أتمكن من معالجة طلبك.',
         timestamp: new Date(),
         videoSuggestions: aiResponse.videoSuggestions || [],
         relatedQuestions: aiResponse.relatedQuestions || []
-      });
+      };
 
-      setMessages(prev => [...prev, ...allMessages]);
+      setMessages(prev => [...prev, aiMessage]);
       setIsLoading(false);
       removeImage();
 
@@ -279,16 +265,6 @@ const FalakKnowledgeAI = () => {
                       ? 'bg-purple-900/40 border border-purple-500/50 text-purple-100'
                       : 'bg-gray-800/50 border border-gray-600/50 text-gray-100'
                   }`}>
-                    {message.step && (
-                      <div className="flex items-center mb-2 text-indigo-300">
-                        {message.step === 1 && <Target className="w-4 h-4 ml-2" />}
-                        {message.step === 2 && <Eye className="w-4 h-4 ml-2" />}
-                        {message.step === 3 && <Brain className="w-4 h-4 ml-2" />}
-                        {message.step === 4 && <Sparkles className="w-4 h-4 ml-2" />}
-                        <span className="text-sm font-semibold">الخطوة {message.step}</span>
-                      </div>
-                    )}
-                    
                     {message.type === 'user' && currentUser && (
                       <div className="flex items-center mb-2">
                         <User className="w-4 h-4 ml-2 text-indigo-300" />
