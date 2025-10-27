@@ -11,6 +11,7 @@ import { Microscope, Atom, FlaskConical, Magnet, Calculator } from 'lucide-react
 import PhysicsScientists from '@/components/physics/PhysicsScientists';
 import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
 import PhysicsCalculations from '@/components/physics/PhysicsCalculations';
+import { SEO } from '@/components/SEO';
 
 const Physics = () => {
   const [showMainContent, setShowMainContent] = useState(false);
@@ -43,6 +44,11 @@ const Physics = () => {
   if (!showMainContent) {
     return (
       <div className="min-h-screen flex flex-col text-right bg-space-cosmic-black" dir="rtl">
+        <SEO 
+          title="منصة الفيزياء"
+          description="استكشف عالم الفيزياء مع منصة فلك المعرفة التفاعلية - حسابات فيزيائية، مساعد ذكي، علماء الفيزياء، وأدوات تعليمية متطورة للمنهاج الأردني"
+          keywords="الفيزياء, تعلم الفيزياء, حسابات فيزيائية, قوانين الفيزياء, الكهرباء, الميكانيكا, الضوء, الحركة, الطاقة, علماء الفيزياء, مساعد فيزياء ذكي, المنهاج الأردني"
+        />
         <StarField starCount={200} speed={0.2} />
         <Navbar />
         
@@ -147,6 +153,11 @@ const Physics = () => {
   
   return (
     <div className="min-h-screen flex flex-col text-right" dir="rtl">
+      <SEO 
+        title="منصة الفيزياء"
+        description="استكشف عالم الفيزياء مع منصة فلك المعرفة التفاعلية - حسابات فيزيائية، مساعد ذكي، علماء الفيزياء، وأدوات تعليمية متطورة للمنهاج الأردني"
+        keywords="الفيزياء, تعلم الفيزياء, حسابات فيزيائية, قوانين الفيزياء, الكهرباء, الميكانيكا, الضوء, الحركة, الطاقة, علماء الفيزياء, مساعد فيزياء ذكي, المنهاج الأردني"
+      />
       <StarField starCount={150} speed={0.2} />
       
       {/* Floating Physics Symbols - reduced for performance */}

@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 const ScientificPlatforms = () => {
   const navigate = useNavigate();
@@ -53,6 +54,11 @@ const ScientificPlatforms = () => {
 
   return (
     <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950`} dir={dir}>
+      <SEO 
+        title="المنصات العلمية"
+        description="استكشف المنصات العلمية في فلك المعرفة - الفيزياء، الكيمياء، الأحياء، والرياضيات مع أدوات تفاعلية ومساعدين أذكياء للمنهاج الأردني"
+        keywords="المنصات العلمية, الفيزياء, الكيمياء, الأحياء, الرياضيات, تعلم العلوم, المنهاج الأردني, منصات تعليمية علمية"
+      />
       <StarField />
       <Navbar />
       

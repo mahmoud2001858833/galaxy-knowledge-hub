@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- الصفحة الرئيسية -->
+  <url>
+    <loc>https://yoursite.lovable.app/</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- المنصات العلمية -->
+  <url>
+    <loc>https://yoursite.lovable.app/scientific-platforms</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- الفيزياء -->
+  <url>
+    <loc>https://yoursite.lovable.app/physics</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- الكيمياء -->
+  <url>
+    <loc>https://yoursite.lovable.app/chemistry</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- الأحياء -->
+  <url>
+    <loc>https://yoursite.lovable.app/biology</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- الرياضيات -->
+  <url>
+    <loc>https://yoursite.lovable.app/mathematics</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- المنصات الأدبية -->
+  <url>
+    <loc>https://yoursite.lovable.app/literary-platforms</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- اللغة العربية -->
+  <url>
+    <loc>https://yoursite.lovable.app/arabic-language</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- اللغة الإنجليزية -->
+  <url>
+    <loc>https://yoursite.lovable.app/english-language</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- الاستدامة البيئية -->
+  <url>
+    <loc>https://yoursite.lovable.app/environmental-sustainability</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- حاسبة البصمة الكربونية -->
+  <url>
+    <loc>https://yoursite.lovable.app/carbon-calculator</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- المشاريع المدرسية -->
+  <url>
+    <loc>https://yoursite.lovable.app/school-projects</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- المشاريع المنزلية -->
+  <url>
+    <loc>https://yoursite.lovable.app/home-projects</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- فلك المعرفة الذكي -->
+  <url>
+    <loc>https://yoursite.lovable.app/falak-knowledge-ai</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- الألغاز التعليمية -->
+  <url>
+    <loc>https://yoursite.lovable.app/subject-puzzles</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- الفيديوهات التعليمية -->
+  <url>
+    <loc>https://yoursite.lovable.app/educational-videos</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- المكتبة المرئية -->
+  <url>
+    <loc>https://yoursite.lovable.app/visual-library</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- المجلات العلمية -->
+  <url>
+    <loc>https://yoursite.lovable.app/scientific-journal</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- منظم الدراسة -->
+  <url>
+    <loc>https://yoursite.lovable.app/study-organization</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- تتبع تقدم الطالب -->
+  <url>
+    <loc>https://yoursite.lovable.app/student-progress</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- المحادثات -->
+  <url>
+    <loc>https://yoursite.lovable.app/chat</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- تسجيل الدخول -->
+  <url>
+    <loc>https://yoursite.lovable.app/auth</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- الملف الشخصي -->
+  <url>
+    <loc>https://yoursite.lovable.app/profile</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- اتصل بنا -->
+  <url>
+    <loc>https://yoursite.lovable.app/contact</loc>
+    <lastmod>2025-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+</urlset>

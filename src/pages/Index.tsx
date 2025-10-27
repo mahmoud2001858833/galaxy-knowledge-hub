@@ -7,12 +7,18 @@ import Footer from '@/components/Footer';
 import EducationalResources from '@/components/EducationalResources';
 import PlatformCategories from '@/components/PlatformCategories';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { SEO } from '@/components/SEO';
 
 const Index = () => {
   const { t, dir } = useLanguage();
   
   return (
     <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950`} dir={dir}>
+      <SEO 
+        title="الصفحة الرئيسية"
+        description="فلك المعرفة - منصة تعليمية تفاعلية شاملة لتعلم العلوم والرياضيات واللغات مع مساعد ذكي وأدوات تعليمية متطورة"
+        keywords="فلك المعرفة, منصة تعليمية, تعلم الفيزياء, تعلم الكيمياء, تعلم الأحياء, تعلم الرياضيات, تعلم اللغة العربية, تعلم الإنجليزية, مساعد ذكي, ألغاز تعليمية, فيديوهات تعليمية, الاستدامة البيئية"
+      />
       <StarField />
       <Navbar />
       

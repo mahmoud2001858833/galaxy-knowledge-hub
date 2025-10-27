@@ -11,6 +11,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
 import { supabase } from '@/integrations/supabase/client';
+import { SEO } from '@/components/SEO';
 
 interface Message {
   id: string;
@@ -180,6 +181,11 @@ const FalakKnowledgeAI = () => {
 
   return (
     <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-indigo-950 via-purple-900 to-black" dir="rtl">
+      <SEO 
+        title="فلك المعرفة الذكي - AI Assistant"
+        description="مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات الذكاء الاصطناعي - تحليل الصور، إجابات شاملة، واقتراحات تعليمية متطورة في جميع المواد"
+        keywords="فلك المعرفة الذكي, مساعد ذكي, ذكاء اصطناعي, AI, المنهاج الأردني, تحليل الصور, مساعد تعليمي, chatbot, روبوت محادثة تعليمي"
+      />
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={400} />
         {/* Cosmic nebula effects */}

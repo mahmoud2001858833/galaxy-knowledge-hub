@@ -11,6 +11,7 @@ import ChemistryAssistant from '@/components/chemistry/ChemistryAssistant';
 import ChemistryCalculations from '@/components/chemistry/ChemistryCalculations';
 import ChemistryScientists from '@/components/chemistry/ChemistryScientists';
 import EnhancedPeriodicTable from '@/components/chemistry/EnhancedPeriodicTable';
+import { SEO } from '@/components/SEO';
 
 const Chemistry = () => {
   const [selectedTab, setSelectedTab] = useState("");
@@ -72,6 +73,11 @@ const Chemistry = () => {
   
   return (
     <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950 bg-fixed" dir="rtl">
+      <SEO 
+        title="منصة الكيمياء"
+        description="اكتشف عالم الكيمياء مع منصة فلك المعرفة - الجدول الدوري التفاعلي، حسابات كيميائية، علماء الكيمياء، والمساعد الذكي للمنهاج الأردني"
+        keywords="الكيمياء, تعلم الكيمياء, الجدول الدوري, التفاعلات الكيميائية, العناصر الكيميائية, المركبات, الأحماض والقواعد, الكيمياء العضوية, علماء الكيمياء, المنهاج الأردني"
+      />
       {/* Limited number of stars for better performance */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={300} />
