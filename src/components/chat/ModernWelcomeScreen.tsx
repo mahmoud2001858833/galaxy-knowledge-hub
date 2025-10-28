@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface ModernWelcomeScreenProps {
-  onNavigate: (tab: 'welcome' | 'private' | 'group') => void;
+  onNavigate: (tab: 'welcome' | 'private') => void;
   user: any;
 }
 
@@ -84,76 +84,40 @@ const ModernWelcomeScreen = ({ onNavigate, user }: ModernWelcomeScreenProps) => 
         </motion.p>
       </motion.div>
 
-      {/* بطاقات الخيارات */}
+      {/* بطاقة المحادثات الخاصة */}
       <motion.div
         variants={itemVariants}
-        className="grid md:grid-cols-2 gap-8 max-w-4xl w-full"
+        className="max-w-2xl w-full mx-auto"
       >
-        {/* بطاقة المحادثات الخاصة */}
         <motion.div
           whileHover={{ scale: 1.05, rotateY: 5 }}
           whileTap={{ scale: 0.95 }}
           variants={itemVariants}
         >
-          <Card className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border-cyan-500/30 backdrop-blur-xl shadow-2xl shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-500 cursor-pointer h-64"
+          <Card className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border-cyan-500/30 backdrop-blur-xl shadow-2xl shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-500 cursor-pointer h-72"
             onClick={() => onNavigate('private')}
           >
-            <CardContent className="p-8 h-full flex flex-col justify-between">
+            <CardContent className="p-10 h-full flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <MessageSquare className="w-12 h-12 text-cyan-300" />
+                <div className="flex items-center justify-between mb-6">
+                  <MessageSquare className="w-16 h-16 text-cyan-300" />
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                   >
-                    <Star className="w-6 h-6 text-cyan-400" />
+                    <Star className="w-8 h-8 text-cyan-400" />
                   </motion.div>
                 </div>
                 
-                <h3 className="text-2xl font-bold text-white mb-3">المحادثات الخاصة</h3>
-                <p className="text-cyan-200 text-sm leading-relaxed">
-                  تواصل مع أصدقائك في محادثات خاصة آمنة مع واجهة مطورة وميزات متقدمة
+                <h3 className="text-3xl font-bold text-white mb-4">المحادثات الخاصة</h3>
+                <p className="text-cyan-200 text-lg leading-relaxed">
+                  تواصل مع أصدقائك في محادثات خاصة آمنة مع واجهة مطورة وميزات متقدمة. رسائل فورية مع تحديثات لحظية.
                 </p>
               </div>
               
-              <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg">
-                <MessageSquare className="w-5 h-5 mr-2" />
-                ابدأ المحادثة
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* بطاقة المحادثات الجماعية */}
-        <motion.div
-          whileHover={{ scale: 1.05, rotateY: -5 }}
-          whileTap={{ scale: 0.95 }}
-          variants={itemVariants}
-        >
-          <Card className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-500/30 backdrop-blur-xl shadow-2xl shadow-purple-500/20 hover:shadow-purple-500/40 transition-all duration-500 cursor-pointer h-64"
-            onClick={() => onNavigate('group')}
-          >
-            <CardContent className="p-8 h-full flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Users className="w-12 h-12 text-purple-300" />
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <Heart className="w-6 h-6 text-pink-400" />
-                  </motion.div>
-                </div>
-                
-                <h3 className="text-2xl font-bold text-white mb-3">المحادثات الجماعية</h3>
-                <p className="text-purple-200 text-sm leading-relaxed">
-                  انضم إلى مجتمعات نشطة وشارك في مناقشات جماعية مع واجهة تفاعلية مبهرة
-                </p>
-              </div>
-              
-              <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold py-3 rounded-xl shadow-lg">
-                <Users className="w-5 h-5 mr-2" />
-                انضم للمجموعات
+              <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg text-lg">
+                <MessageSquare className="w-6 h-6 mr-2" />
+                ابدأ المحادثة الآن
               </Button>
             </CardContent>
           </Card>
@@ -167,8 +131,8 @@ const ModernWelcomeScreen = ({ onNavigate, user }: ModernWelcomeScreenProps) => 
       >
         {[
           { icon: MessageSquare, label: 'رسالة', count: '2.5K+', color: 'text-cyan-400' },
-          { icon: Users, label: 'مستخدم', count: '150+', color: 'text-purple-400' },
-          { icon: Zap, label: 'غرفة نشطة', count: '12', color: 'text-pink-400' },
+          { icon: Users, label: 'مستخدم نشط', count: '150+', color: 'text-purple-400' },
+          { icon: Zap, label: 'محادثة مباشرة', count: '48', color: 'text-pink-400' },
         ].map((stat, index) => (
           <motion.div
             key={index}

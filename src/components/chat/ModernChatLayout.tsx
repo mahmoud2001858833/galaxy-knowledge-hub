@@ -5,7 +5,7 @@ import { MessageSquare, Users, Settings, Search, Plus, Star, Zap } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import ModernPrivateChat from './ModernPrivateChat';
-import ModernGroupChat from './ModernGroupChat';
+
 import ModernWelcomeScreen from './ModernWelcomeScreen';
 
 interface ModernChatLayoutProps {
@@ -13,7 +13,7 @@ interface ModernChatLayoutProps {
 }
 
 const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
-  const [activeTab, setActiveTab] = useState<'welcome' | 'private' | 'group'>('welcome');
+  const [activeTab, setActiveTab] = useState<'welcome' | 'private'>('welcome');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -133,8 +133,7 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
             <div className="flex gap-3">
               {[
                 { id: 'welcome', label: 'الرئيسية', icon: Star, color: 'from-yellow-400 to-orange-500' },
-                { id: 'private', label: 'المحادثات الخاصة', icon: MessageSquare, color: 'from-cyan-400 to-blue-500' },
-                { id: 'group', label: 'المحادثات الجماعية', icon: Users, color: 'from-purple-400 to-pink-500' }
+                { id: 'private', label: 'المحادثات الخاصة', icon: MessageSquare, color: 'from-cyan-400 to-blue-500' }
               ].map((tab) => (
                 <motion.button
                   key={tab.id}
@@ -198,18 +197,6 @@ const ModernChatLayout = ({ user }: ModernChatLayoutProps) => {
             </motion.div>
           )}
 
-          {activeTab === 'group' && (
-            <motion.div
-              key="group"
-              initial={{ opacity: 0, x: -100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 100 }}
-              transition={{ duration: 0.5 }}
-              className="h-full w-full"
-            >
-              <ModernGroupChat user={user} />
-            </motion.div>
-          )}
         </AnimatePresence>
       </div>
     </motion.div>

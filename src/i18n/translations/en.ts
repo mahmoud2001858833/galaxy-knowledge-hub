@@ -17,7 +17,7 @@ export const en = {
   },
   // Home page
   home: {
-    title: "Knowledge Galaxy",
+    title: "Peak of Science",
     subtitle: "Interactive platform for intelligent learning in basic sciences"
   },
   // Profile page
@@ -131,7 +131,7 @@ export const en = {
     delete: "Delete",
     create: "Create",
     view: "View",
-    welcome: "Welcome to Knowledge Galaxy",
+    welcome: "Welcome to Peak of Science",
     add: "Add",
     update: "Update",
     submit: "Submit",
@@ -165,7 +165,7 @@ export const en = {
     literaryDescription: "Immerse yourself in the world of literature and languages with Arabic and English platforms",
     environmental: "Environmental Sustainability",
     environmentalDescription: "Learn how to protect the environment through school and home projects and carbon footprint calculation",
-    falakAI: "Falak Knowledge AI",
+    falakAI: "Peak of Science AI",
     falakAIDescription: "Advanced AI assistant supporting Jordanian curriculum with space-age technology, image and video analysis",
     explore: "Explore"
   },

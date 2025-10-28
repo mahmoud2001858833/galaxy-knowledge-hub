@@ -11,11 +11,11 @@ interface SEOProps {
 export const SEO = ({ 
   title, 
   description, 
-  keywords = "فلك المعرفة, تعليم, منصة تعليمية",
+  keywords = "ذروة العلم, تعليم, منصة تعليمية",
   canonicalUrl,
   ogImage = "https://i.postimg.cc/mr48sKY6/image.png"
 }: SEOProps) => {
-  const fullTitle = `${title} | فلك المعرفة`;
+  const fullTitle = `${title} | ذروة العلم`;
   
   return (
     <Helmet>
