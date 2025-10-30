@@ -166,6 +166,14 @@
     <priority>0.7</priority>
   </url>
 
+  <!-- المرشد النفسي - دعم نفسي - ذروة العلم -->
+  <url>
+    <loc>https://yoursite.lovable.app/psychological-guide</loc>
+    <lastmod>2025-01-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- المحادثات - ذروة العلم -->
   <url>
     <loc>https://yoursite.lovable.app/chat</loc>

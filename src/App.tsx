@@ -48,6 +48,7 @@ import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
 import HomeProjects from './pages/HomeProjects';
 import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
+import PsychologicalGuide from './pages/PsychologicalGuide';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -270,6 +271,10 @@ const router = createBrowserRouter([
       {
         path: 'student-progress',
         element: <AuthGuard><StudentProgress /></AuthGuard>,
+      },
+      {
+        path: 'psychological-guide',
+        element: <AuthGuard><PsychologicalGuide /></AuthGuard>,
       },
       {
         path: '*',

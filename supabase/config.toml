@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.platform-guide-assistant]
 verify_jwt = false
+
+[functions.psychological-guide-ai]
+verify_jwt = false

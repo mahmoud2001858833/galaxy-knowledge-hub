@@ -48,6 +48,16 @@ const PlatformCategories = () => {
       borderColor: "border-indigo-500/30",
       hoverBorderColor: "hover:border-indigo-500/50",
       link: "/falak-knowledge-ai"
+    },
+    {
+      title: "مرشدك النفسي",
+      icon: "💙",
+      description: "دعم نفسي ذكي يساعدك في فهم مشاعرك ويوجهك للقسم المناسب",
+      image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-pink-600/20 to-purple-600/20",
+      borderColor: "border-pink-500/30",
+      hoverBorderColor: "hover:border-pink-500/50",
+      link: "/psychological-guide"
     }
   ];
 
