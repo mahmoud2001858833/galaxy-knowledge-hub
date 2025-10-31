@@ -5,6 +5,7 @@ import { MessageSquare, Users, Settings, Search, Plus, Star, Zap } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import ModernPrivateChat from './ModernPrivateChat';
+import ModernPrivateChatWithSearch from './ModernPrivateChatWithSearch';
 
 import ModernWelcomeScreen from './ModernWelcomeScreen';
 

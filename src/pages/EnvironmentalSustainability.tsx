@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calculator, School, Home, Leaf, BarChart } from 'lucide-react';
+import { ArrowLeft, Calculator, School, Home, Leaf, BarChart, Users } from 'lucide-react';
 import sustainabilityBg from '@/assets/sustainability-background.png';
+import heroImage from '@/assets/environmental-hero.jpg';
 
 const EnvironmentalSustainability = () => {
   const navigate = useNavigate();
@@ -47,6 +48,15 @@ const EnvironmentalSustainability = () => {
       borderColor: "border-teal-500/30",
       hoverBorderColor: "hover:border-teal-500/50",
       link: "/environmental/personal-sustainability-index"
+    },
+    {
+      title: 'مشاريع الطلاب',
+      description: 'شارك مشاريعك البيئية مع الآخرين',
+      icon: Users,
+      color: "from-amber-600/20 to-yellow-600/20",
+      borderColor: "border-amber-500/30",
+      hoverBorderColor: "hover:border-amber-500/50",
+      link: "/environmental/student-projects"
     }
   ];
 
@@ -62,6 +72,20 @@ const EnvironmentalSustainability = () => {
       }}
     >
       <div className="container mx-auto max-w-6xl">
+        {/* Hero Image */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8 rounded-2xl overflow-hidden shadow-2xl"
+        >
+          <img 
+            src={heroImage} 
+            alt="Environmental Sustainability" 
+            className="w-full h-64 md:h-96 object-cover"
+          />
+        </motion.div>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

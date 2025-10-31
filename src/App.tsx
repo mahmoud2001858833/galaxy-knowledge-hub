@@ -49,6 +49,8 @@ import SchoolProjects from './pages/SchoolProjects';
 import HomeProjects from './pages/HomeProjects';
 import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
 import PsychologicalGuide from './pages/PsychologicalGuide';
+import StudentProjects from './components/environmental/StudentProjects';
+import RecordedLessons from './components/educational/RecordedLessons';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {

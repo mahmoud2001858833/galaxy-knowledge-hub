@@ -41,11 +41,17 @@ const EducationalResources = () => {
       link: '/chat-rooms'
     },
     {
-      title: "محاكاة التجارب العلمية",
-      icon: <Atom className="h-6 w-6 text-purple-400" />,
-      description: "محاكاة تفاعلية متطورة للتجارب الفيزيائية مع أدوات حسابية ومساعد ذكي",
-      link: '/scientific-simulations'
-    }
+      title: t.resources.educationalVideos,
+      icon: <Video className="h-6 w-6 text-blue-400" />,
+      description: t.resources.explorationTools,
+      link: '/educational-videos'
+    },
+    {
+      title: "الدروس المسجلة",
+      icon: <Video className="h-6 w-6 text-purple-400" />,
+      description: "دروس مسجلة من المعلمين يمكن مشاهدتها في أي وقت",
+      link: '/recorded-lessons'
+    },
   ];
 
   return (

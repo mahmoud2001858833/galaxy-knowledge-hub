@@ -198,33 +198,68 @@ const PsychologicalGuide = () => {
     : 'bg-gradient-to-b from-purple-950 via-indigo-900 to-black';
 
   const brainAgeQuestions = [
-    'هل تتذكر الأحداث بسهولة؟',
-    'هل تستطيع حل المسائل الرياضية بسرعة؟',
-    'هل تتعلم أشياء جديدة بسهولة؟',
-    'هل تركز جيداً عند القراءة؟',
-    'هل تنسى الأشياء بسرعة؟',
-    'هل تشعر بالتعب العقلي بسرعة؟',
-    'هل تستطيع تعلم لغة جديدة بسهولة؟',
-    'هل تحل الألغاز والألعاب الذهنية بسرعة؟',
-    'هل تتذكر الأسماء والوجوه جيداً؟',
-    'هل تستطيع القيام بعدة مهام في وقت واحد؟',
-    'هل تجد صعوبة في اتخاذ القرارات؟',
-    'هل تفكر بطريقة إبداعية؟',
-    'هل تتكيف مع المواقف الجديدة بسهولة؟',
-    'هل تتذكر التفاصيل الدقيقة؟',
-    'هل تشعر بالنشاط الذهني معظم الوقت؟',
-    'هل تستطيع التخطيط للمستقبل بوضوح؟',
-    'هل تفهم المفاهيم المعقدة بسرعة؟',
-    'هل تتعلم من أخطائك بسرعة؟',
-    'هل تحتفظ بالمعلومات لفترة طويلة؟',
-    'هل تشعر أن ذاكرتك قوية؟'
+    { text: 'هل تتذكر أرقام الهواتف بعد سماعها مرة واحدة؟', category: 'memory', reverse: false },
+    { text: 'كم مرة تنسى أين وضعت مفاتيحك أو هاتفك خلال الأسبوع؟', category: 'memory', reverse: true },
+    { text: 'هل يمكنك حل 5 × 17 ذهنياً في أقل من 5 ثوانٍ؟', category: 'processing', reverse: false },
+    { text: 'كم يستغرقك فهم فكرة جديدة ومعقدة؟', category: 'processing', reverse: true },
+    { text: 'هل تستطيع التركيز على مهمة واحدة لمدة ساعة دون تشتت؟', category: 'focus', reverse: false },
+    { text: 'كم مرة تحتاج لإعادة قراءة فقرة لفهمها؟', category: 'focus', reverse: true },
+    { text: 'هل تتعلم تطبيقاً جديداً على الهاتف خلال 10 دقائق؟', category: 'learning', reverse: false },
+    { text: 'كم يستغرقك إتقان مهارة جديدة بسيطة؟', category: 'learning', reverse: true },
+    { text: 'هل تحل ألغاز الكلمات المتقاطعة بسهولة؟', category: 'logic', reverse: false },
+    { text: 'كم مرة تشعر بالتعب الذهني بعد ساعة من التفكير؟', category: 'stamina', reverse: true },
+    { text: 'هل تتذكر أحداث طفولتك بوضوح؟', category: 'memory', reverse: false },
+    { text: 'هل تنسى المواعيد حتى بعد تدوينها؟', category: 'memory', reverse: true },
+    { text: 'هل تستطيع كتابة 3 كلمات باستخدام حروف "س ل م" في 30 ثانية؟', category: 'creativity', reverse: false },
+    { text: 'كم يستغرقك اتخاذ قرار بسيط مثل اختيار وجبة؟', category: 'decision', reverse: true },
+    { text: 'هل تتكيف بسرعة مع تغيير روتينك اليومي؟', category: 'flexibility', reverse: false },
+    { text: 'هل تشعر بالارتباك عند مواجهة موقف غير متوقع؟', category: 'flexibility', reverse: true },
+    { text: 'هل تتذكر ما تناولته على الغداء قبل 3 أيام؟', category: 'memory', reverse: false },
+    { text: 'كم مرة تحتاج لكتابة قائمة لتتذكر مشترياتك؟', category: 'memory', reverse: true },
+    { text: 'هل تستطيع القيام بمهمتين معقدتين في وقت واحد بكفاءة؟', category: 'multitasking', reverse: false },
+    { text: 'كم يستغرقك فهم نكتة معقدة أو لغز ذكي؟', category: 'processing', reverse: true }
   ];
 
   const calculateBrainAge = () => {
-    const totalScore = brainAgeAnswers.reduce((sum, val) => sum + val, 0);
-    const averageScore = totalScore / brainAgeAnswers.length;
-    const calculatedAge = realAge! - (averageScore - 3) * 5;
-    setBrainAgeResult(Math.round(calculatedAge));
+    // Advanced calculation using weighted categories
+    const categories = ['memory', 'processing', 'focus', 'learning', 'logic', 'stamina', 'creativity', 'decision', 'flexibility', 'multitasking'];
+    const categoryScores: Record<string, number[]> = {};
+    
+    brainAgeQuestions.forEach((q, idx) => {
+      if (!categoryScores[q.category]) {
+        categoryScores[q.category] = [];
+      }
+      // Reverse score if needed (higher score for negative questions means worse performance)
+      const score = q.reverse ? (6 - brainAgeAnswers[idx]) : brainAgeAnswers[idx];
+      categoryScores[q.category].push(score);
+    });
+
+    // Calculate average for each category
+    const categoryAverages = Object.entries(categoryScores).map(([cat, scores]) => {
+      return scores.reduce((sum, val) => sum + val, 0) / scores.length;
+    });
+
+    // Overall cognitive score (1-5 scale)
+    const overallScore = categoryAverages.reduce((sum, val) => sum + val, 0) / categoryAverages.length;
+
+    // More realistic brain age calculation
+    // Score of 5 = brain age is 10 years younger
+    // Score of 3 = brain age equals real age
+    // Score of 1 = brain age is 10 years older
+    const ageDifference = (overallScore - 3) * 5;
+    const calculatedAge = realAge! - ageDifference;
+
+    // Add some variance based on consistency (standard deviation)
+    const variance = calculateVariance(brainAgeAnswers);
+    const consistencyFactor = variance > 1.5 ? -2 : (variance < 0.8 ? 2 : 0);
+    
+    setBrainAgeResult(Math.round(Math.max(10, Math.min(100, calculatedAge + consistencyFactor))));
+  };
+
+  const calculateVariance = (scores: number[]) => {
+    const mean = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+    const squaredDiffs = scores.map(score => Math.pow(score - mean, 2));
+    return Math.sqrt(squaredDiffs.reduce((sum, val) => sum + val, 0) / scores.length);
   };
 
   return (
@@ -348,8 +383,8 @@ const PsychologicalGuide = () => {
                           <p className="text-teal-200">السؤال {currentQuestion + 1} من {brainAgeQuestions.length}</p>
                         </div>
                         
-                        <div className="bg-teal-950/30 p-6 rounded-xl mb-6">
-                          <p className="text-xl text-white text-center">{brainAgeQuestions[currentQuestion]}</p>
+                        <div className="bg-teal-950/30 p-6 rounded-xl mb-6 border border-teal-400/20">
+                          <p className="text-xl text-white text-center leading-relaxed">{brainAgeQuestions[currentQuestion].text}</p>
                         </div>
                         
                         <div className="grid grid-cols-5 gap-3">
