@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Upload, Image as ImageIcon, ArrowLeft, Loader2, School, FileText, ImagePlus } from 'lucide-react';
+import { Upload, Image as ImageIcon, ArrowLeft, Loader2, School, FileText, ImagePlus, X } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface Project {
   id: string;
@@ -29,6 +30,7 @@ const StudentProjects = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     projectName: '',
@@ -171,11 +173,11 @@ const StudentProjects = () => {
         >
           <Button
             variant="outline"
-            onClick={() => navigate('/environmental')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <ArrowLeft className="w-4 h-4" />
-            العودة
+            العودة للصفحة الرئيسية
           </Button>
 
           <Button
@@ -330,13 +332,19 @@ const StudentProjects = () => {
               >
                 <Card className="group h-full bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-green-500/30 hover:border-green-500/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/20">
                   {project.image_url && (
-                    <div className="relative h-48 overflow-hidden rounded-t-lg">
+                    <div 
+                      className="relative h-48 overflow-hidden rounded-t-lg cursor-pointer"
+                      onClick={() => setSelectedImage(project.image_url)}
+                    >
                       <img
                         src={project.image_url}
                         alt={project.project_name}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                        <ImageIcon className="w-12 h-12 text-white" />
+                      </div>
                     </div>
                   )}
                   <CardHeader>
@@ -366,6 +374,29 @@ const StudentProjects = () => {
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-5xl p-0 bg-black/90 border-green-500/30">
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 left-2 z-10 bg-black/50 hover:bg-black/70 text-white"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            {selectedImage && (
+              <img
+                src={selectedImage}
+                alt="Project"
+                className="w-full h-auto max-h-[90vh] object-contain"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

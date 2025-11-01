@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Video, ArrowLeft, Loader2, BookOpen, Clock } from 'lucide-react';
+import { Upload, Video, ArrowLeft, Loader2, BookOpen, Clock, Search } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Lesson {
@@ -29,9 +29,10 @@ const RecordedLessons = () => {
   const { toast } = useToast();
   const { t, dir } = useLanguage();
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [filteredLessons, setFilteredLessons] = useState<Lesson[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [showForm, setShowForm] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -46,6 +47,20 @@ const RecordedLessons = () => {
     fetchLessons();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredLessons(lessons);
+    } else {
+      const filtered = lessons.filter(lesson =>
+        lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lesson.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lesson.grade_level?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lesson.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredLessons(filtered);
+    }
+  }, [searchQuery, lessons]);
+
   const fetchLessons = async () => {
     try {
       const { data, error } = await supabase
@@ -55,6 +70,7 @@ const RecordedLessons = () => {
 
       if (error) throw error;
       setLessons(data || []);
+      setFilteredLessons(data || []);
     } catch (error) {
       console.error('Error fetching lessons:', error);
       toast({
@@ -107,55 +123,42 @@ const RecordedLessons = () => {
     }
 
     setUploading(true);
-    setUploadProgress(0);
 
     try {
       const fileExt = formData.video.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${session.user.id}/${fileName}`;
 
-      // Upload video (note: progress tracking not available in Supabase storage API)
+      // Upload video to storage
       const { error: uploadError } = await supabase.storage
         .from('lesson-videos')
         .upload(filePath, formData.video);
-      
-      setUploadProgress(50); // Set progress after upload starts
 
       if (uploadError) throw uploadError;
-
-      setUploadProgress(90); // Set progress before metadata extraction
 
       const { data: { publicUrl } } = supabase.storage
         .from('lesson-videos')
         .getPublicUrl(filePath);
 
-      // Create video element to get duration
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.src = URL.createObjectURL(formData.video);
-      
-      await new Promise((resolve) => {
-        video.onloadedmetadata = resolve;
-      });
-
-      const duration = Math.round(video.duration);
-
-      // Check if duration exceeds 1 hour (3600 seconds)
-      if (duration > 3600) {
-        // Delete the uploaded video
-        await supabase.storage
-          .from('lesson-videos')
-          .remove([filePath]);
-
-        toast({
-          title: 'خطأ',
-          description: 'مدة الفيديو يجب أن تكون أقل من ساعة واحدة',
-          variant: 'destructive'
+      // Get duration in background without blocking
+      let duration = null;
+      try {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(formData.video);
+        
+        await new Promise((resolve) => {
+          video.onloadedmetadata = resolve;
+          setTimeout(resolve, 2000); // Timeout after 2 seconds
         });
-        setUploading(false);
-        return;
+
+        duration = Math.round(video.duration);
+        URL.revokeObjectURL(video.src);
+      } catch (err) {
+        console.log('Could not extract video duration:', err);
       }
 
+      // Insert into database immediately
       const { error: insertError } = await supabase
         .from('recorded_lessons')
         .insert({
@@ -183,7 +186,6 @@ const RecordedLessons = () => {
         video: null
       });
       setShowForm(false);
-      setUploadProgress(0);
       fetchLessons();
     } catch (error) {
       console.error('Error uploading lesson:', error);
@@ -245,6 +247,26 @@ const RecordedLessons = () => {
           </p>
         </motion.div>
 
+        {/* Search Bar */}
+        {!showForm && lessons.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 max-w-2xl mx-auto"
+          >
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
+              <Input
+                type="text"
+                placeholder="ابحث عن درس... (العنوان، المادة، المستوى، الوصف)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 pr-12 py-6 text-lg"
+              />
+            </div>
+          </motion.div>
+        )}
+
         {/* Upload Form */}
         {showForm && (
           <motion.div
@@ -259,7 +281,7 @@ const RecordedLessons = () => {
                   رفع درس جديد
                 </CardTitle>
                 <CardDescription className="text-white/70">
-                  املأ المعلومات التالية لرفع درسك التعليمي (الحد الأقصى: 100 جيجابايت، مدة ساعة واحدة)
+                  املأ المعلومات التالية لرفع درسك التعليمي (الحد الأقصى: 100 جيجابايت)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -334,7 +356,7 @@ const RecordedLessons = () => {
                   <div>
                     <Label htmlFor="video" className="text-white flex items-center gap-2 mb-2">
                       <Video className="w-4 h-4" />
-                      فيديو الدرس (حد أقصى 100 جيجابايت، مدة ساعة)
+                      فيديو الدرس (حد أقصى 100 جيجابايت)
                     </Label>
                     <Input
                       id="video"
@@ -351,15 +373,6 @@ const RecordedLessons = () => {
                     )}
                   </div>
 
-                  {uploading && uploadProgress > 0 && (
-                    <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  )}
-
                   <Button
                     type="submit"
                     disabled={uploading}
@@ -368,7 +381,7 @@ const RecordedLessons = () => {
                     {uploading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        جاري الرفع... {uploadProgress}%
+                        جاري الرفع...
                       </>
                     ) : (
                       <>
@@ -388,6 +401,14 @@ const RecordedLessons = () => {
           <div className="flex justify-center items-center py-20">
             <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
           </div>
+        ) : filteredLessons.length === 0 && searchQuery ? (
+          <Card className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/30 backdrop-blur-sm">
+            <CardContent className="text-center py-12">
+              <Search className="w-16 h-16 text-white/50 mx-auto mb-4" />
+              <p className="text-white/70 text-lg">لا توجد نتائج للبحث "{searchQuery}"</p>
+              <p className="text-white/50 text-sm mt-2">جرب البحث بكلمات مختلفة</p>
+            </CardContent>
+          </Card>
         ) : lessons.length === 0 ? (
           <Card className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/30 backdrop-blur-sm">
             <CardContent className="text-center py-12">
@@ -398,7 +419,7 @@ const RecordedLessons = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lessons.map((lesson, index) => (
+            {filteredLessons.map((lesson, index) => (
               <motion.div
                 key={lesson.id}
                 initial={{ opacity: 0, y: 20 }}
