@@ -279,6 +279,14 @@ const router = createBrowserRouter([
         element: <AuthGuard><PsychologicalGuide /></AuthGuard>,
       },
       {
+        path: 'environmental/student-projects',
+        element: <AuthGuard><StudentProjects /></AuthGuard>,
+      },
+      {
+        path: 'recorded-lessons',
+        element: <AuthGuard><RecordedLessons /></AuthGuard>,
+      },
+      {
         path: '*',
         element: <NotFound />,
       }

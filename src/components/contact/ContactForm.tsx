@@ -53,15 +53,14 @@ const ContactForm = () => {
     setIsSubmitting(true);
     
     try {
-      // تحويل البيانات إلى JSON وإرسالها إلى قاعدة البيانات
-      const messageData = JSON.stringify(values);
-      
       const { error } = await supabase
-        .from('messages')
+        .from('contact_messages')
         .insert([
           { 
-            message_text: messageData,
-            sender_id: null  // للمستخدمين غير المسجلين
+            name: values.name,
+            email: values.email,
+            subject: values.subject,
+            message: values.message
           }
         ]);
       

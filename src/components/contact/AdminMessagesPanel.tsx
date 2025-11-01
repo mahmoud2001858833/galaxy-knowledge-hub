@@ -9,16 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash } from "lucide-react";
 
-interface Message {
+interface ContactMessage {
   id: string;
   created_at: string;
-  message_text: string;
-  parsed_message?: {
-    name: string;
-    email: string;
-    subject: string;
-    message: string;
-  };
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
 }
 
 const AdminMessagesPanel = () => {
@@ -26,7 +23,7 @@ const AdminMessagesPanel = () => {
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const { toast } = useToast();
@@ -41,35 +38,13 @@ const AdminMessagesPanel = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('messages')
+        .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // تحليل محتوى الرسائل
-      const parsedMessages = data?.map(msg => {
-        try {
-          const parsedText = JSON.parse(msg.message_text);
-          return {
-            ...msg,
-            parsed_message: parsedText
-          };
-        } catch (e) {
-          // إذا لم يكن محتوى الرسالة بصيغة JSON
-          return {
-            ...msg,
-            parsed_message: {
-              name: "غير معروف",
-              email: "غير معروف",
-              subject: "غير معروف",
-              message: msg.message_text
-            }
-          };
-        }
-      });
-
-      setMessages(parsedMessages || []);
+      setMessages(data || []);
     } catch (error) {
       console.error("خطأ في جلب الرسائل:", error);
       toast({
@@ -105,7 +80,7 @@ const AdminMessagesPanel = () => {
 
     try {
       const { error } = await supabase
-        .from('messages')
+        .from('contact_messages')
         .delete()
         .eq('id', messageToDelete);
       
@@ -224,7 +199,7 @@ const AdminMessagesPanel = () => {
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg flex-1 text-right">
-                    {message.parsed_message?.subject || "بدون موضوع"}
+                    {message.subject}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-white/60">
@@ -247,14 +222,14 @@ const AdminMessagesPanel = () => {
               <CardContent>
                 <div className="mb-4 border-b border-white/10 pb-2">
                   <div className="flex justify-between items-center text-sm text-white/80">
-                    <span>{message.parsed_message?.name}</span>
-                    <a href={`mailto:${message.parsed_message?.email}`} className="text-blue-400 hover:underline">
-                      {message.parsed_message?.email}
+                    <span>{message.name}</span>
+                    <a href={`mailto:${message.email}`} className="text-blue-400 hover:underline">
+                      {message.email}
                     </a>
                   </div>
                 </div>
                 <p className="text-right whitespace-pre-wrap">
-                  {message.parsed_message?.message}
+                  {message.message}
                 </p>
               </CardContent>
             </Card>

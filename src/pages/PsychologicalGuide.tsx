@@ -56,24 +56,14 @@ const sideMenuOptions = [
     icon: Heart,
     description: 'طرق التغلب على القلق',
     gradient: 'from-purple-600 to-indigo-600'
-  },
-  {
-    title: 'قياس عمر الدماغ',
-    icon: Brain,
-    description: 'اختبار لقياس عمر دماغك',
-    gradient: 'from-teal-600 to-emerald-600'
   }
 ];
 
 const PsychologicalGuide = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState<'salah' | 'mood' | 'chat' | 'brainAge'>('salah');
+  const [step, setStep] = useState<'salah' | 'mood' | 'chat'>('salah');
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [brainAgeAnswers, setBrainAgeAnswers] = useState<number[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [realAge, setRealAge] = useState<number | null>(null);
-  const [brainAgeResult, setBrainAgeResult] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -172,15 +162,6 @@ const PsychologicalGuide = () => {
   };
 
   const handleSideMenuOption = (option: typeof sideMenuOptions[0]) => {
-    if (option.title === 'قياس عمر الدماغ') {
-      setStep('brainAge');
-      setBrainAgeAnswers([]);
-      setCurrentQuestion(0);
-      setRealAge(null);
-      setBrainAgeResult(null);
-      return;
-    }
-    
     const messageMap: Record<string, string> = {
       'مشكلة فهم الدراسة': 'عندي مشكلة في فهم الدراسة',
       'مشكلة تنظيم الوقت': 'عندي مشكلة في تنظيم الوقت',
@@ -196,71 +177,6 @@ const PsychologicalGuide = () => {
   const bgClass = step === 'chat' && selectedMoodData 
     ? `bg-gradient-to-b ${selectedMoodData.bgGradient}`
     : 'bg-gradient-to-b from-purple-950 via-indigo-900 to-black';
-
-  const brainAgeQuestions = [
-    { text: 'هل تتذكر أرقام الهواتف بعد سماعها مرة واحدة؟', category: 'memory', reverse: false },
-    { text: 'كم مرة تنسى أين وضعت مفاتيحك أو هاتفك خلال الأسبوع؟', category: 'memory', reverse: true },
-    { text: 'هل يمكنك حل 5 × 17 ذهنياً في أقل من 5 ثوانٍ؟', category: 'processing', reverse: false },
-    { text: 'كم يستغرقك فهم فكرة جديدة ومعقدة؟', category: 'processing', reverse: true },
-    { text: 'هل تستطيع التركيز على مهمة واحدة لمدة ساعة دون تشتت؟', category: 'focus', reverse: false },
-    { text: 'كم مرة تحتاج لإعادة قراءة فقرة لفهمها؟', category: 'focus', reverse: true },
-    { text: 'هل تتعلم تطبيقاً جديداً على الهاتف خلال 10 دقائق؟', category: 'learning', reverse: false },
-    { text: 'كم يستغرقك إتقان مهارة جديدة بسيطة؟', category: 'learning', reverse: true },
-    { text: 'هل تحل ألغاز الكلمات المتقاطعة بسهولة؟', category: 'logic', reverse: false },
-    { text: 'كم مرة تشعر بالتعب الذهني بعد ساعة من التفكير؟', category: 'stamina', reverse: true },
-    { text: 'هل تتذكر أحداث طفولتك بوضوح؟', category: 'memory', reverse: false },
-    { text: 'هل تنسى المواعيد حتى بعد تدوينها؟', category: 'memory', reverse: true },
-    { text: 'هل تستطيع كتابة 3 كلمات باستخدام حروف "س ل م" في 30 ثانية؟', category: 'creativity', reverse: false },
-    { text: 'كم يستغرقك اتخاذ قرار بسيط مثل اختيار وجبة؟', category: 'decision', reverse: true },
-    { text: 'هل تتكيف بسرعة مع تغيير روتينك اليومي؟', category: 'flexibility', reverse: false },
-    { text: 'هل تشعر بالارتباك عند مواجهة موقف غير متوقع؟', category: 'flexibility', reverse: true },
-    { text: 'هل تتذكر ما تناولته على الغداء قبل 3 أيام؟', category: 'memory', reverse: false },
-    { text: 'كم مرة تحتاج لكتابة قائمة لتتذكر مشترياتك؟', category: 'memory', reverse: true },
-    { text: 'هل تستطيع القيام بمهمتين معقدتين في وقت واحد بكفاءة؟', category: 'multitasking', reverse: false },
-    { text: 'كم يستغرقك فهم نكتة معقدة أو لغز ذكي؟', category: 'processing', reverse: true }
-  ];
-
-  const calculateBrainAge = () => {
-    // Advanced calculation using weighted categories
-    const categories = ['memory', 'processing', 'focus', 'learning', 'logic', 'stamina', 'creativity', 'decision', 'flexibility', 'multitasking'];
-    const categoryScores: Record<string, number[]> = {};
-    
-    brainAgeQuestions.forEach((q, idx) => {
-      if (!categoryScores[q.category]) {
-        categoryScores[q.category] = [];
-      }
-      // Reverse score if needed (higher score for negative questions means worse performance)
-      const score = q.reverse ? (6 - brainAgeAnswers[idx]) : brainAgeAnswers[idx];
-      categoryScores[q.category].push(score);
-    });
-
-    // Calculate average for each category
-    const categoryAverages = Object.entries(categoryScores).map(([cat, scores]) => {
-      return scores.reduce((sum, val) => sum + val, 0) / scores.length;
-    });
-
-    // Overall cognitive score (1-5 scale)
-    const overallScore = categoryAverages.reduce((sum, val) => sum + val, 0) / categoryAverages.length;
-
-    // More realistic brain age calculation
-    // Score of 5 = brain age is 10 years younger
-    // Score of 3 = brain age equals real age
-    // Score of 1 = brain age is 10 years older
-    const ageDifference = (overallScore - 3) * 5;
-    const calculatedAge = realAge! - ageDifference;
-
-    // Add some variance based on consistency (standard deviation)
-    const variance = calculateVariance(brainAgeAnswers);
-    const consistencyFactor = variance > 1.5 ? -2 : (variance < 0.8 ? 2 : 0);
-    
-    setBrainAgeResult(Math.round(Math.max(10, Math.min(100, calculatedAge + consistencyFactor))));
-  };
-
-  const calculateVariance = (scores: number[]) => {
-    const mean = scores.reduce((sum, val) => sum + val, 0) / scores.length;
-    const squaredDiffs = scores.map(score => Math.pow(score - mean, 2));
-    return Math.sqrt(squaredDiffs.reduce((sum, val) => sum + val, 0) / scores.length);
-  };
 
   return (
     <div className={`min-h-screen flex flex-col text-right ${bgClass}`} dir="rtl">
@@ -359,130 +275,6 @@ const PsychologicalGuide = () => {
                     </motion.button>
                   ))}
                 </div>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === 'brainAge' && (
-            <motion.div
-              key="brainAge"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex-1 flex items-center justify-center"
-            >
-              <Card className="p-8 bg-gradient-to-br from-teal-900/40 to-emerald-900/40 border-teal-500/30 backdrop-blur-xl max-w-2xl w-full">
-                {brainAgeResult === null ? (
-                  <>
-                    {currentQuestion < brainAgeQuestions.length ? (
-                      <>
-                        <div className="text-center mb-6">
-                          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-teal-500/20 to-emerald-500/20 backdrop-blur-sm border border-teal-400/30 mb-4">
-                            <Brain className="w-8 h-8 text-teal-300" />
-                          </div>
-                          <h2 className="text-2xl font-bold text-white mb-2">قياس عمر الدماغ</h2>
-                          <p className="text-teal-200">السؤال {currentQuestion + 1} من {brainAgeQuestions.length}</p>
-                        </div>
-                        
-                        <div className="bg-teal-950/30 p-6 rounded-xl mb-6 border border-teal-400/20">
-                          <p className="text-xl text-white text-center leading-relaxed">{brainAgeQuestions[currentQuestion].text}</p>
-                        </div>
-                        
-                        <div className="grid grid-cols-5 gap-3">
-                          {[1, 2, 3, 4, 5].map((score) => (
-                            <Button
-                              key={score}
-                              onClick={() => {
-                                setBrainAgeAnswers([...brainAgeAnswers, score]);
-                                setCurrentQuestion(currentQuestion + 1);
-                              }}
-                              className="h-16 text-lg bg-teal-600/30 hover:bg-teal-600/50 border border-teal-400/30"
-                            >
-                              {score}
-                            </Button>
-                          ))}
-                        </div>
-                        <p className="text-center text-teal-300 text-sm mt-4">
-                          (1 = لا إطلاقاً، 5 = نعم تماماً)
-                        </p>
-                      </>
-                    ) : realAge === null ? (
-                      <>
-                        <div className="text-center mb-6">
-                          <h2 className="text-2xl font-bold text-white mb-4">ما هو عمرك الحقيقي؟</h2>
-                        </div>
-                        <input
-                          type="number"
-                          placeholder="أدخل عمرك"
-                          className="w-full p-4 rounded-xl bg-teal-950/30 border border-teal-400/30 text-white text-center text-xl mb-4"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              const age = parseInt((e.target as HTMLInputElement).value);
-                              if (age > 0 && age < 120) {
-                                setRealAge(age);
-                                calculateBrainAge();
-                              }
-                            }
-                          }}
-                        />
-                        <Button
-                          onClick={() => {
-                            const input = document.querySelector('input[type="number"]') as HTMLInputElement;
-                            const age = parseInt(input.value);
-                            if (age > 0 && age < 120) {
-                              setRealAge(age);
-                              calculateBrainAge();
-                            }
-                          }}
-                          className="w-full bg-teal-600 hover:bg-teal-700"
-                        >
-                          احسب عمر دماغي
-                        </Button>
-                      </>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="text-center space-y-6">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-teal-500/20 to-emerald-500/20 backdrop-blur-sm border border-teal-400/30 mb-4">
-                      <Brain className="w-10 h-10 text-teal-300" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-white">نتيجة الاختبار</h2>
-                    <div className="bg-teal-950/30 p-8 rounded-xl space-y-4">
-                      <p className="text-xl text-teal-200">عمرك الحقيقي: <span className="text-white font-bold">{realAge} سنة</span></p>
-                      <p className="text-2xl text-white">عمر دماغك: <span className="text-teal-300 font-bold text-3xl">{brainAgeResult} سنة</span></p>
-                      
-                      {brainAgeResult! < realAge! ? (
-                        <div className="mt-6 p-6 bg-green-900/30 rounded-xl border border-green-400/30">
-                          <p className="text-green-300 font-bold text-xl mb-3">🎉 ممتاز!</p>
-                          <p className="text-green-200">دماغك أصغر من عمرك الحقيقي! هذا يعني أن قدراتك العقلية ممتازة.</p>
-                          <p className="text-green-200 mt-2">استمر في التعلم والتحدي العقلي للحفاظ على هذا المستوى.</p>
-                        </div>
-                      ) : brainAgeResult! > realAge! ? (
-                        <div className="mt-6 p-6 bg-orange-900/30 rounded-xl border border-orange-400/30">
-                          <p className="text-orange-300 font-bold text-xl mb-3">⚠️ انتبه</p>
-                          <p className="text-orange-200">دماغك أكبر من عمرك الحقيقي. قد تحتاج لتحسين نشاطك العقلي.</p>
-                          <p className="text-orange-200 mt-2">ننصحك بممارسة الألعاب الذهنية والقراءة والتعلم المستمر.</p>
-                        </div>
-                      ) : (
-                        <div className="mt-6 p-6 bg-blue-900/30 rounded-xl border border-blue-400/30">
-                          <p className="text-blue-300 font-bold text-xl mb-3">✨ جيد</p>
-                          <p className="text-blue-200">عمر دماغك مطابق لعمرك الحقيقي. قدراتك العقلية طبيعية.</p>
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setStep('mood');
-                        setBrainAgeAnswers([]);
-                        setCurrentQuestion(0);
-                        setRealAge(null);
-                        setBrainAgeResult(null);
-                      }}
-                      className="bg-teal-600 hover:bg-teal-700"
-                    >
-                      العودة للقائمة الرئيسية
-                    </Button>
-                  </div>
-                )}
               </Card>
             </motion.div>
           )}
