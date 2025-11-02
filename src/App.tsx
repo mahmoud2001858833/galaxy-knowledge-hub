@@ -38,6 +38,13 @@ import PuzzleDetails from './pages/PuzzleDetails';
 import EducationalVideos from './pages/EducationalVideos';
 import ScientificPlatforms from './pages/ScientificPlatforms';
 import LiteraryPlatforms from './pages/LiteraryPlatforms';
+import BTEC from './pages/BTEC';
+import BTECInformationTechnology from './pages/BTECInformationTechnology';
+import ProgrammingSection from './components/btec/ProgrammingSection';
+import BTECStudentProjects from './components/btec/BTECStudentProjects';
+import CodeFixerSection from './components/btec/CodeFixerSection';
+import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
+import BuildPlatformSection from './components/btec/BuildPlatformSection';
 import ArabicLanguage from './pages/ArabicLanguage';
 import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
@@ -141,6 +148,34 @@ const router = createBrowserRouter([
       {
         path: 'literary-platforms',
         element: <PublicRoute><LiteraryPlatforms /></PublicRoute>,
+      },
+      {
+        path: 'btec',
+        element: <PublicRoute><BTEC /></PublicRoute>,
+      },
+      {
+        path: 'btec/information-technology',
+        element: <PublicRoute><BTECInformationTechnology /></PublicRoute>,
+      },
+      {
+        path: 'btec/it/programming',
+        element: <PublicRoute><ProgrammingSection /></PublicRoute>,
+      },
+      {
+        path: 'btec/it/student-projects',
+        element: <PublicRoute><BTECStudentProjects /></PublicRoute>,
+      },
+      {
+        path: 'btec/it/code-fixer',
+        element: <PublicRoute><CodeFixerSection /></PublicRoute>,
+      },
+      {
+        path: 'btec/it/dev-tips',
+        element: <PublicRoute><DevelopmentTipsSection /></PublicRoute>,
+      },
+      {
+        path: 'btec/it/build-platform',
+        element: <PublicRoute><BuildPlatformSection /></PublicRoute>,
       },
       {
         path: 'arabic-language',

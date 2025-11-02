@@ -30,6 +30,16 @@ const PlatformCategories = () => {
       link: "/literary-platforms"
     },
     {
+      title: "بتك BTEC",
+      icon: "💻",
+      description: "منصة التعليم المهني - تكنولوجيا المعلومات، البرمجة، والتطوير",
+      image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-orange-600/20 to-red-600/20",
+      borderColor: "border-orange-500/30",
+      hoverBorderColor: "hover:border-orange-500/50",
+      link: "/btec"
+    },
+    {
       title: t.platformCategories.environmental,
       icon: "🌱",
       description: t.platformCategories.environmentalDescription,

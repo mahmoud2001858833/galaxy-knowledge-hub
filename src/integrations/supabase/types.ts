@@ -140,6 +140,107 @@ export type Database = {
         }
         Relationships: []
       }
+      btec_custom_platforms: {
+        Row: {
+          created_at: string | null
+          custom_code: string
+          description: string
+          id: string
+          language: string
+          name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_code: string
+          description: string
+          id?: string
+          language: string
+          name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_code?: string
+          description?: string
+          id?: string
+          language?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      btec_project_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          project_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "btec_project_likes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "btec_student_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      btec_student_projects: {
+        Row: {
+          created_at: string | null
+          id: string
+          likes_count: number | null
+          programming_languages: string[]
+          project_description: string
+          project_idea: string
+          project_name: string
+          student_name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          programming_languages?: string[]
+          project_description: string
+          project_idea: string
+          project_name: string
+          student_name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          programming_languages?: string[]
+          project_description?: string
+          project_idea?: string
+          project_name?: string
+          student_name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chemistry_puzzles: {
         Row: {
           admin_password: string | null

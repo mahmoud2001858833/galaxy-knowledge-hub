@@ -33,3 +33,15 @@ verify_jwt = false
 
 [functions.psychological-guide-ai]
 verify_jwt = false
+
+[functions.btec-programming-assistant]
+verify_jwt = false
+
+[functions.btec-math-to-code]
+verify_jwt = false
+
+[functions.btec-code-fixer]
+verify_jwt = false
+
+[functions.btec-dev-tips]
+verify_jwt = false
