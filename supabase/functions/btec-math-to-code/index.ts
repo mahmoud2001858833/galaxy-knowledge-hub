@@ -34,6 +34,13 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    
+    // Check if the response has the expected structure
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+      console.error('Invalid API response:', JSON.stringify(data));
+      throw new Error('Invalid response from AI API: ' + JSON.stringify(data));
+    }
+    
     let code = data.candidates[0].content.parts[0].text;
     
     // Remove markdown code blocks if present
