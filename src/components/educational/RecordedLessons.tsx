@@ -199,7 +199,8 @@ const RecordedLessons = () => {
         subject: '',
         gradeLevel: '',
         description: '',
-        video: null
+        video: null,
+        thumbnail: null
       });
       setShowForm(false);
       fetchLessons();
