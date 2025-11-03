@@ -272,7 +272,7 @@ const ProgrammingSection = () => {
       category: "برمجة متقدمة",
       desc: "تنفيذ عدة عمليات في وقت واحد",
       detailed: "المعالجة المتوازية تقسم المهمة لأجزاء تُنفذ معاً على عدة processors/cores. أنواع: Data Parallelism (نفس العملية على بيانات مختلفة)، Task Parallelism (عمليات مختلفة معاً). تحديات: تزامن Synchronization، race conditions، deadlock. مكتبات: OpenMP، MPI، Python multiprocessing. مفيدة للحسابات الثقيلة، معالجة الصور.",
-      example": "from multiprocessing import Pool\n\ndef square(x):\n    return x * x\n\nwith Pool(4) as p:\n    results = p.map(square, [1,2,3,4,5])"
+      example: "from multiprocessing import Pool\\n\\ndef square(x):\\n    return x * x\\n\\nwith Pool(4) as p:\\n    results = p.map(square, [1,2,3,4,5])"
     },
     {
       title: "الخيوط (Threads)",
