@@ -44,11 +44,18 @@ const AIAssistantTab = () => {
     setAnswer('');
     
     try {
+      console.log('Sending question:', question);
       const { data, error } = await supabase.functions.invoke('btec-programming-assistant', {
         body: { prompt: question }
       });
 
-      if (error) throw error;
+      console.log('Response data:', data);
+      console.log('Response error:', error);
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw error;
+      }
       
       if (data && data.response) {
         setAnswer(data.response);
@@ -56,11 +63,15 @@ const AIAssistantTab = () => {
           title: "✅ تم الحصول على الإجابة", 
           description: "تم معالجة سؤالك بنجاح"
         });
+      } else if (data && data.error) {
+        throw new Error(data.error);
       } else {
-        throw new Error('لم يتم استلام إجابة من الخادم');
+        console.error('Invalid response format:', data);
+        throw new Error('لم يتم استلام إجابة صحيحة من الخادم');
       }
     } catch (error: any) {
       console.error('AI Assistant Error:', error);
+      setAnswer('حدث خطأ: ' + (error.message || 'خطأ غير معروف'));
       toast({ 
         title: "خطأ", 
         description: error.message || "حدث خطأ أثناء معالجة السؤال",

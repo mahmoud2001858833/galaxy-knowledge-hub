@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Heart, ExternalLink, Search, Plus, Image as ImageIcon } from 'lucide-react';
+import { Upload, Heart, ExternalLink, Search, Plus, Image as ImageIcon, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Project {
   id: string;
@@ -39,6 +40,9 @@ const StudentProjectsTab = () => {
     programming_languages: '',
     project_link: '',
   });
+  
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -64,6 +68,45 @@ const StudentProjectsTab = () => {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `btec-projects/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('educational_images')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('educational_images')
+          .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      setUploadedImages(prev => [...prev, ...urls]);
+      toast({ title: "✅ تم الرفع", description: `تم رفع ${urls.length} صورة بنجاح` });
+    } catch (error: any) {
+      console.error('Error uploading images:', error);
+      toast({ title: "خطأ", description: "فشل رفع الصور: " + error.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول أولاً", variant: "destructive" });
@@ -87,6 +130,7 @@ const StudentProjectsTab = () => {
           project_description: formData.project_description,
           programming_languages: formData.programming_languages.split(',').map(l => l.trim()),
           project_link: formData.project_link || null,
+          project_images: uploadedImages.length > 0 ? uploadedImages : null,
         }]);
 
       if (error) throw error;
@@ -101,6 +145,7 @@ const StudentProjectsTab = () => {
         programming_languages: '',
         project_link: '',
       });
+      setUploadedImages([]);
       fetchProjects();
     } catch (error: any) {
       console.error('Error adding project:', error);
@@ -225,9 +270,49 @@ const StudentProjectsTab = () => {
                 onChange={(e) => setFormData({ ...formData, project_link: e.target.value })}
                 className="bg-white/5 border-white/10"
               />
+              
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  صور المشروع (اختياري):
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="bg-white/5 border-white/10"
+                  />
+                  {uploading && <span className="text-sm text-gray-400">جاري الرفع...</span>}
+                </div>
+                {uploadedImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {uploadedImages.map((url, idx) => (
+                      <div key={idx} className="relative group">
+                        <img 
+                          src={url} 
+                          alt={`صورة ${idx + 1}`} 
+                          className="w-full h-20 object-cover rounded border border-white/10"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          onClick={() => removeImage(idx)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               <Button
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || uploading}
                 className="w-full bg-gradient-to-r from-green-500 to-teal-500"
               >
                 {isLoading ? 'جاري الإضافة...' : 'إضافة المشروع'}
@@ -261,6 +346,20 @@ const StudentProjectsTab = () => {
                   <p className="text-sm font-semibold text-green-400 mb-1">الوصف:</p>
                   <p className="text-sm text-gray-300 line-clamp-3">{project.project_description}</p>
                 </div>
+                
+                {project.project_images && project.project_images.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto">
+                    {project.project_images.map((img, i) => (
+                      <img 
+                        key={i} 
+                        src={img} 
+                        alt={`صورة ${i + 1}`}
+                        className="h-20 w-20 object-cover rounded border border-white/20"
+                      />
+                    ))}
+                  </div>
+                )}
+                
                 <div className="flex flex-wrap gap-2">
                   {project.programming_languages?.map((lang, i) => (
                     <Badge key={i} variant="outline" className="text-xs">{lang}</Badge>

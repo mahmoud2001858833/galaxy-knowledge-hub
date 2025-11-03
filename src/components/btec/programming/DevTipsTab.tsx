@@ -36,16 +36,22 @@ const DevTipsTab = () => {
         ? `وصف المشروع: ${projectDescription}\nرابط المشروع: ${projectLink}`
         : projectDescription;
 
+      console.log('Getting dev tips for:', combinedDescription.substring(0, 50) + '...');
       const { data, error } = await supabase.functions.invoke('btec-dev-tips', {
         body: { project_description: combinedDescription }
       });
 
-      if (error) throw error;
+      console.log('Response data:', data);
+      console.log('Response error:', error);
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw error;
+      }
       
       if (data && data.tips) {
         setTips(data.tips);
         // Generate a random score between 6-10 for demonstration
-        // In a real scenario, the AI would provide this
         const generatedScore = Math.floor(Math.random() * 5) + 6;
         setScore(generatedScore);
         
@@ -53,11 +59,15 @@ const DevTipsTab = () => {
           title: "✅ تم التقييم", 
           description: "تم تحليل المشروع وتقديم النصائح"
         });
+      } else if (data && data.error) {
+        throw new Error(data.error);
       } else {
+        console.error('Invalid response format:', data);
         throw new Error('لم يتم استلام النصائح من الخادم');
       }
     } catch (error: any) {
       console.error('Dev Tips Error:', error);
+      setTips('حدث خطأ: ' + (error.message || 'خطأ غير معروف'));
       toast({ 
         title: "خطأ", 
         description: error.message || "حدث خطأ أثناء التقييم",

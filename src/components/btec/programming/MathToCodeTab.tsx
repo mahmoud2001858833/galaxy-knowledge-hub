@@ -29,11 +29,18 @@ const MathToCodeTab = () => {
     setGeneratedCode('');
     
     try {
+      console.log('Converting operation:', operation, 'to', language);
       const { data, error } = await supabase.functions.invoke('btec-math-to-code', {
         body: { operation, language }
       });
 
-      if (error) throw error;
+      console.log('Response data:', data);
+      console.log('Response error:', error);
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw error;
+      }
       
       if (data && data.code) {
         setGeneratedCode(data.code);
@@ -41,11 +48,15 @@ const MathToCodeTab = () => {
           title: "✅ تم التحويل بنجاح", 
           description: `تم تحويل العملية إلى كود ${language}`
         });
+      } else if (data && data.error) {
+        throw new Error(data.error);
       } else {
+        console.error('Invalid response format:', data);
         throw new Error('لم يتم استلام الكود من الخادم');
       }
     } catch (error: any) {
       console.error('Math to Code Error:', error);
+      setGeneratedCode('// حدث خطأ: ' + (error.message || 'خطأ غير معروف'));
       toast({ 
         title: "خطأ", 
         description: error.message || "حدث خطأ أثناء التحويل",

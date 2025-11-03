@@ -165,8 +165,68 @@ const BuildPlatformTab = () => {
         />
       );
     }
+    
+    if (platform.language === 'JavaScript') {
+      // Wrap JavaScript code in HTML to execute it
+      const htmlWithJs = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                padding: 20px; 
+                background: #1a1a1a;
+                color: #fff;
+              }
+              #output { 
+                background: #2a2a2a; 
+                padding: 15px; 
+                border-radius: 8px;
+                margin-top: 10px;
+                border: 1px solid #444;
+              }
+            </style>
+          </head>
+          <body>
+            <div id="app"></div>
+            <div id="output"></div>
+            <script>
+              // Override console.log to display in the page
+              const output = document.getElementById('output');
+              const originalLog = console.log;
+              console.log = function(...args) {
+                originalLog.apply(console, args);
+                output.innerHTML += args.join(' ') + '<br>';
+              };
+              
+              try {
+                ${platform.custom_code}
+              } catch (error) {
+                output.innerHTML = '<span style="color: #ff6b6b;">خطأ: ' + error.message + '</span>';
+              }
+            </script>
+          </body>
+        </html>
+      `;
+      
+      return (
+        <iframe
+          srcDoc={htmlWithJs}
+          className="w-full h-96 border border-white/10 rounded-lg"
+          title={platform.name}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      );
+    }
+    
+    // For Java and other languages, show the code
     return (
       <div className="bg-gray-900 rounded-lg p-4 border border-white/10">
+        <div className="mb-2 text-yellow-400 text-sm">
+          ملاحظة: لا يمكن تشغيل كود {platform.language} في المتصفح. يتم عرض الكود فقط.
+        </div>
         <pre className="text-green-400 text-sm overflow-x-auto">
           <code>{platform.custom_code}</code>
         </pre>

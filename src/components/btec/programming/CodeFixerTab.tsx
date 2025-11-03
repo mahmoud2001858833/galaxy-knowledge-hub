@@ -30,11 +30,18 @@ const CodeFixerTab = () => {
     setExplanation('');
     
     try {
+      console.log('Fixing code:', originalCode.substring(0, 50) + '...');
       const { data, error } = await supabase.functions.invoke('btec-code-fixer', {
         body: { code: originalCode }
       });
 
-      if (error) throw error;
+      console.log('Response data:', data);
+      console.log('Response error:', error);
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw error;
+      }
       
       if (data && data.fixed_code) {
         setFixedCode(data.fixed_code);
@@ -43,11 +50,16 @@ const CodeFixerTab = () => {
           title: "✅ تم التصحيح", 
           description: "تم تحليل وتصحيح الكود بنجاح"
         });
+      } else if (data && data.error) {
+        throw new Error(data.error);
       } else {
+        console.error('Invalid response format:', data);
         throw new Error('لم يتم استلام الكود المصحح من الخادم');
       }
     } catch (error: any) {
       console.error('Code Fixer Error:', error);
+      setFixedCode('// حدث خطأ: ' + (error.message || 'خطأ غير معروف'));
+      setExplanation('حدث خطأ أثناء تصحيح الكود. الرجاء المحاولة مرة أخرى.');
       toast({ 
         title: "خطأ", 
         description: error.message || "حدث خطأ أثناء تصحيح الكود",
