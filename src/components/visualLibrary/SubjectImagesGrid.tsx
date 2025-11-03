@@ -16,16 +16,31 @@ interface SubjectImagesGridProps {
 
 const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
   const [images, setImages] = useState<EducationalImage[]>([]);
+  const [filteredImages, setFilteredImages] = useState<EducationalImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<EducationalImage | null>(null);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchImages();
   }, [subject]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredImages(images);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = images.filter(img => 
+        img.title.toLowerCase().includes(query) || 
+        (img.description?.toLowerCase().includes(query) ?? false)
+      );
+      setFilteredImages(filtered);
+    }
+  }, [searchQuery, images]);
 
   const fetchImages = async () => {
     setLoading(true);
@@ -47,6 +62,7 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
       })) || [];
 
       setImages(typedData as EducationalImage[]);
+      setFilteredImages(typedData as EducationalImage[]);
     } catch (error: any) {
       console.error('Error fetching images:', error);
       toast({
@@ -154,11 +170,23 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-white">
-          {isAdminMode ? 'وضع المشرف: يمكنك حذف الصور' : ''}
-        </h2>
+      <div className="flex justify-between items-center mb-6 gap-4">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="ابحث عن صورة..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:border-blue-500"
+          />
+        </div>
         <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
+      </div>
+      
+      <div className="mb-4">
+        <h2 className="text-lg font-medium text-white">
+          {isAdminMode ? 'وضع المشرف: يمكنك حذف الصور' : searchQuery ? `نتائج البحث (${filteredImages.length})` : ''}
+        </h2>
       </div>
       
       {isAdminMode ? (
@@ -173,7 +201,7 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
               </tr>
             </thead>
             <tbody>
-              {images.map(image => (
+              {filteredImages.map(image => (
                 <tr key={image.id} className="border-b border-white/10 hover:bg-white/5">
                   <td className="py-2 px-4">{image.title}</td>
                   <td className="py-2 px-4">{image.description || 'لا يوجد وصف'}</td>
@@ -192,9 +220,17 @@ const SubjectImagesGrid = ({ subject }: SubjectImagesGridProps) => {
             </tbody>
           </table>
         </div>
+      ) : filteredImages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Image className="w-16 h-16 text-blue-300 mb-4 opacity-50" />
+          <h3 className="text-xl font-medium text-blue-200 mb-2">لا توجد نتائج</h3>
+          <p className="text-blue-300">
+            لم يتم العثور على صور تطابق البحث "{searchQuery}"
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {images.map((image) => (
+          {filteredImages.map((image) => (
             <Card 
               key={image.id} 
               className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative"

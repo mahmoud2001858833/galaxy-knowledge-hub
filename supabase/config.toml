@@ -45,3 +45,12 @@ verify_jwt = false
 
 [functions.btec-dev-tips]
 verify_jwt = false
+
+[functions.arabic-essay-corrector]
+verify_jwt = false
+
+[functions.arabic-essay-generator]
+verify_jwt = false
+
+[functions.arabic-question-bank]
+verify_jwt = false

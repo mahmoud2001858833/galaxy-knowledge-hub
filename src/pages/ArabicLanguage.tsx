@@ -9,6 +9,8 @@ import ArabicAIAssistant from '@/components/arabic/ArabicAIAssistant';
 import ArabicScholars from '@/components/arabic/ArabicScholars';
 import EnhancedGrammarAssistant from '@/components/arabic/EnhancedGrammarAssistant';
 import ArabicPoets from '@/components/arabic/ArabicPoets';
+import ArabicEssayWriter from '@/components/arabic/ArabicEssayWriter';
+import ArabicQuestionBank from '@/components/arabic/ArabicQuestionBank';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { ArrowLeft, ArrowRight, Bot, Users, PenTool, Feather } from 'lucide-react';
 
@@ -52,6 +54,24 @@ const ArabicLanguage = () => {
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
       component: "grammar"
+    },
+    {
+      title: "التعبير",
+      icon: <PenTool className="w-8 h-8" />,
+      description: "تدريب على كتابة التعبير وتصحيحه تلقائياً",
+      color: "from-indigo-600/20 to-blue-600/20",
+      borderColor: "border-indigo-500/30",
+      hoverBorderColor: "hover:border-indigo-500/50",
+      component: "essay"
+    },
+    {
+      title: "بنك الأسئلة",
+      icon: <Bot className="w-8 h-8" />,
+      description: "توليد أسئلة تعليمية بالذكاء الاصطناعي",
+      color: "from-teal-600/20 to-green-600/20",
+      borderColor: "border-teal-500/30",
+      hoverBorderColor: "hover:border-teal-500/50",
+      component: "questions"
     }
   ];
 
@@ -67,6 +87,10 @@ const ArabicLanguage = () => {
         return <ArabicScholars />;
       case 'grammar':
         return <EnhancedGrammarAssistant />;
+      case 'essay':
+        return <ArabicEssayWriter />;
+      case 'questions':
+        return <ArabicQuestionBank />;
       default:
         return null;
     }

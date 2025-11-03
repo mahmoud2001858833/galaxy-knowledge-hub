@@ -40,8 +40,10 @@ const RecordedLessons = () => {
     subject: '',
     gradeLevel: '',
     description: '',
-    video: null as File | null
+    video: null as File | null,
+    thumbnail: null as File | null
   });
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     fetchLessons();
@@ -86,16 +88,30 @@ const RecordedLessons = () => {
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Max 100GB = 107374182400 bytes
-      if (file.size > 107374182400) {
+      if (file.size > 2147483648) { // 2GB
         toast({
           title: 'خطأ',
-          description: 'حجم الفيديو يجب أن يكون أقل من 100 جيجابايت',
+          description: 'حجم الفيديو يجب أن يكون أقل من 2 جيجابايت',
           variant: 'destructive'
         });
         return;
       }
       setFormData({ ...formData, video: file });
+    }
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5242880) { // 5MB
+        toast({
+          title: 'خطأ',
+          description: 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت',
+          variant: 'destructive'
+        });
+        return;
+      }
+      setFormData({ ...formData, thumbnail: file });
     }
   };
 

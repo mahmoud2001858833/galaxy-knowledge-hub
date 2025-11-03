@@ -27,17 +27,33 @@ interface SubjectJournalsGridProps {
 
 const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
   const [journals, setJournals] = useState<Journal[]>([]);
+  const [filteredJournals, setFilteredJournals] = useState<Journal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [journalToDelete, setJournalToDelete] = useState<Journal | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchJournals();
   }, [subject]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredJournals(journals);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = journals.filter(journal => 
+        journal.title.toLowerCase().includes(query) || 
+        (journal.description?.toLowerCase().includes(query) ?? false) ||
+        (journal.author?.toLowerCase().includes(query) ?? false)
+      );
+      setFilteredJournals(filtered);
+    }
+  }, [searchQuery, journals]);
 
   const fetchJournals = async () => {
     setLoading(true);
@@ -53,6 +69,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
       }
 
       setJournals(data as Journal[]);
+      setFilteredJournals(data as Journal[]);
     } catch (error: any) {
       console.error('Error fetching journals:', error);
       toast({
@@ -215,11 +232,23 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-white">
-          {isAdminMode ? 'وضع المشرف: يمكنك حذف المجلات نهائياً للأبد من التطبيق' : ''}
-        </h2>
+      <div className="flex justify-between items-center mb-6 gap-4">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="ابحث عن مجلة علمية..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:border-purple-500"
+          />
+        </div>
         <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
+      </div>
+      
+      <div className="mb-4">
+        <h2 className="text-lg font-medium text-white">
+          {isAdminMode ? 'وضع المشرف: يمكنك حذف المجلات نهائياً للأبد من التطبيق' : searchQuery ? `نتائج البحث (${filteredJournals.length})` : ''}
+        </h2>
       </div>
       
       {isAdminMode ? (
@@ -243,7 +272,7 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
               </tr>
             </thead>
             <tbody>
-              {journals.map(journal => (
+              {filteredJournals.map(journal => (
                 <tr key={journal.id} className="border-b border-white/10 hover:bg-white/5">
                   <td className="py-2 px-4">{journal.title}</td>
                   <td className="py-2 px-4">{journal.author || 'غير معروف'}</td>
@@ -267,9 +296,17 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
             </tbody>
           </table>
         </div>
+      ) : filteredJournals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <BookOpen className="w-16 h-16 text-purple-300 mb-4 opacity-50" />
+          <h3 className="text-xl font-medium text-purple-200 mb-2">لا توجد نتائج</h3>
+          <p className="text-purple-300">
+            لم يتم العثور على مجلات تطابق البحث "{searchQuery}"
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {journals.map((journal) => (
+          {filteredJournals.map((journal) => (
             <Card 
               key={journal.id} 
               className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative"
