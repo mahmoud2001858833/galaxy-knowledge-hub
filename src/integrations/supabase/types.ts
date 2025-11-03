@@ -146,6 +146,7 @@ export type Database = {
           custom_code: string
           description: string
           id: string
+          is_rendered: boolean | null
           language: string
           name: string
           updated_at: string | null
@@ -156,6 +157,7 @@ export type Database = {
           custom_code: string
           description: string
           id?: string
+          is_rendered?: boolean | null
           language: string
           name: string
           updated_at?: string | null
@@ -166,6 +168,7 @@ export type Database = {
           custom_code?: string
           description?: string
           id?: string
+          is_rendered?: boolean | null
           language?: string
           name?: string
           updated_at?: string | null
@@ -210,6 +213,8 @@ export type Database = {
           programming_languages: string[]
           project_description: string
           project_idea: string
+          project_images: string[] | null
+          project_link: string | null
           project_name: string
           student_name: string
           updated_at: string | null
@@ -222,6 +227,8 @@ export type Database = {
           programming_languages?: string[]
           project_description: string
           project_idea: string
+          project_images?: string[] | null
+          project_link?: string | null
           project_name: string
           student_name: string
           updated_at?: string | null
@@ -234,6 +241,8 @@ export type Database = {
           programming_languages?: string[]
           project_description?: string
           project_idea?: string
+          project_images?: string[] | null
+          project_link?: string | null
           project_name?: string
           student_name?: string
           updated_at?: string | null
