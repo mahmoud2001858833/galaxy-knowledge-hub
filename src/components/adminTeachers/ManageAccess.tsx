@@ -61,68 +61,21 @@ const ManageAccess = () => {
     setSubmitting(true);
 
     try {
-      // Check if user exists in profiles
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id')
-        .limit(1000);
-      
-      // Get all user emails from admin_teacher_access and profiles
-      const { data: existingEmails } = await supabase
-        .from('admin_teacher_access')
-        .select('email, user_id');
+      // Call edge function to add/update access immediately (bypasses RLS)
+      const { data, error } = await supabase.functions.invoke('admin-manage-access', {
+        body: { email: newEmail, access_level: newAccessLevel }
+      });
 
-      // Find user by checking if they have a profile
-      let userId: string | null = null;
-      
-      // Try to find the user in existing access records
-      const existingUser = existingEmails?.find(u => u.email === newEmail);
-      if (existingUser) {
-        userId = existingUser.user_id;
-      } else {
-        // If not found, we need to get it from auth (this requires the user to be logged in once)
-        toast({
-          title: "تنبيه",
-          description: "يجب أن يكون المستخدم قد سجل الدخول مرة واحدة على الأقل",
-          variant: "default"
-        });
-        setSubmitting(false);
-        return;
-      }
+      if (error) throw error;
 
-      const { data: currentUser } = await supabase.auth.getUser();
+      toast({
+        title: "تم الإضافة",
+        description: "تم إضافة الوصول بنجاح وتفعيله فوراً"
+      });
 
-      const { error } = await supabase
-        .from('admin_teacher_access')
-        .insert([
-          {
-            user_id: userId,
-            email: newEmail,
-            access_level: newAccessLevel,
-            created_by: currentUser.user?.id
-          }
-        ]);
-
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "خطأ",
-            description: "هذا البريد الإلكتروني موجود بالفعل",
-            variant: "destructive"
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "تم الإضافة",
-          description: "تم إضافة الوصول بنجاح"
-        });
-
-        setNewEmail("");
-        setNewAccessLevel('member');
-        fetchAccessList();
-      }
+      setNewEmail("");
+      setNewAccessLevel('member');
+      fetchAccessList();
     } catch (error) {
       toast({
         title: "خطأ",

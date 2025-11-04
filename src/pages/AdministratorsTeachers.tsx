@@ -16,6 +16,7 @@ const AdministratorsTeachers = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isMemberMode, setIsMemberMode] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,11 +34,18 @@ const AdministratorsTeachers = () => {
 
       setUser(user);
 
+      // Ensure admin mapping for special emails
+      try {
+        await supabase.functions.invoke('ensure-admin-access');
+      } catch (e) {
+        console.warn('ensure-admin-access failed', e);
+      }
+
       const { data: access, error } = await supabase
         .from("admin_teacher_access")
         .select("access_level")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error || !access) {
         setAccessLevel(null);
@@ -60,7 +68,7 @@ const AdministratorsTeachers = () => {
     );
   }
 
-  if (!accessLevel && !isAdminMode) {
+  if (!accessLevel && !isAdminMode && !isMemberMode) {
     return (
       <div className="min-h-screen bg-background">
         <SEO 
@@ -68,16 +76,19 @@ const AdministratorsTeachers = () => {
           description="منصة المشرفين والمعلمين"
         />
         <Navbar />
-        <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl font-bold mb-4">غير مصرح</h1>
-          <p className="text-muted-foreground text-lg mb-6">
-            ليس لديك صلاحية للوصول إلى هذه المنصة. يرجى التواصل مع المشرف لطلب الوصول.
-          </p>
-          <div className="flex justify-center">
+        <div className="container mx-auto px-4 py-20 relative">
+          <div className="absolute top-4 left-4">
             <AdminControl 
               onAdminAccess={() => setIsAdminMode(!isAdminMode)}
+              onMemberAccess={() => setIsMemberMode(true)}
               isAdminMode={isAdminMode}
             />
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-4">غير مصرح</h1>
+            <p className="text-muted-foreground text-lg mb-6">
+              ليس لديك صلاحية للوصول إلى هذه المنصة. يرجى التواصل مع المشرف لطلب الوصول.
+            </p>
           </div>
         </div>
         <Footer />
@@ -95,7 +106,7 @@ const AdministratorsTeachers = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          {(accessLevel === 'member' && !isAdminMode) ? (
+          {((accessLevel === 'member' && !isAdminMode) || isMemberMode) ? (
             <MemberSection userId={user?.id} />
           ) : (
             <AdminSection 

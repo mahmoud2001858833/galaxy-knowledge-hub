@@ -9,10 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 
 interface AdminControlProps {
   onAdminAccess: () => void;
+  onMemberAccess?: () => void;
   isAdminMode: boolean;
 }
 
-const AdminControl: React.FC<AdminControlProps> = ({ onAdminAccess, isAdminMode }) => {
+const AdminControl: React.FC<AdminControlProps> = ({ onAdminAccess, onMemberAccess, isAdminMode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -20,13 +21,19 @@ const AdminControl: React.FC<AdminControlProps> = ({ onAdminAccess, isAdminMode 
 
   const handleVerifyPassword = () => {
     setIsLoading(true);
-    // كلمة المرور ثابتة للمشرف
     if (password === "mahmoud200") {
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: "تم تفعيل وضع المشرف",
       });
       onAdminAccess();
+      setIsOpen(false);
+    } else if (password === "mahmoud20") {
+      toast({
+        title: "تم تسجيل الدخول",
+        description: "تم الدخول كعضو",
+      });
+      onMemberAccess?.();
       setIsOpen(false);
     } else {
       toast({
@@ -53,7 +60,7 @@ const AdminControl: React.FC<AdminControlProps> = ({ onAdminAccess, isAdminMode 
             إيقاف وضع المشرف
           </>
         ) : (
-          "دخول المشرف"
+          "دخول"
         )}
       </Button>
 
