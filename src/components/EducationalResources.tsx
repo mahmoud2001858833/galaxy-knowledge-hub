@@ -41,10 +41,10 @@ const EducationalResources = () => {
       link: '/chat-rooms'
     },
     {
-      title: t.resources.educationalVideos,
-      icon: <Video className="h-6 w-6 text-blue-400" />,
-      description: t.resources.explorationTools,
-      link: '/educational-videos'
+      title: "التجارب العلمية",
+      icon: <Atom className="h-6 w-6 text-green-400" />,
+      description: "محاكاة وتجارب علمية تفاعلية",
+      link: '/scientific-simulations'
     },
     {
       title: "الدروس المسجلة",

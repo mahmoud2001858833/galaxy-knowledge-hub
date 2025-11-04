@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_teacher_access: {
+        Row: {
+          access_level: Database["public"]["Enums"]["admin_teacher_access_level"]
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["admin_teacher_access_level"]
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["admin_teacher_access_level"]
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       arabic_poets: {
         Row: {
           achievements: string | null
@@ -893,6 +920,71 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_project_messages: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          message: string
+          project_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          message: string
+          project_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_project_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_projects: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          images: string[] | null
+          member_id: string
+          status: string | null
+          teacher_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          images?: string[] | null
+          member_id: string
+          status?: string | null
+          teacher_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[] | null
+          member_id?: string
+          status?: string | null
+          teacher_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_solved_puzzles: {
         Row: {
           id: string
@@ -1022,9 +1114,14 @@ export type Database = {
         Returns: undefined
       }
       calculate_user_level: { Args: { usage_minutes: number }; Returns: number }
+      get_admin_teacher_access_level: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
+      }
+      has_admin_teacher_access: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      admin_teacher_access_level: "member" | "admin" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1151,6 +1248,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admin_teacher_access_level: ["member", "admin", "super_admin"],
+    },
   },
 } as const

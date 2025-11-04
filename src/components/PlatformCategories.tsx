@@ -68,6 +68,16 @@ const PlatformCategories = () => {
       borderColor: "border-pink-500/30",
       hoverBorderColor: "hover:border-pink-500/50",
       link: "/psychological-guide"
+    },
+    {
+      title: "المشرفون والمعلمون",
+      icon: "👨‍🏫",
+      description: "منصة خاصة للمشرفين والمعلمين لإدارة المشاريع والمتابعة",
+      image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-amber-600/20 to-yellow-600/20",
+      borderColor: "border-amber-500/30",
+      hoverBorderColor: "hover:border-amber-500/50",
+      link: "/administrators-teachers"
     }
   ];
 

@@ -58,6 +58,7 @@ import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
 import PsychologicalGuide from './pages/PsychologicalGuide';
 import StudentProjects from './components/environmental/StudentProjects';
 import RecordedLessons from './components/educational/RecordedLessons';
+import AdministratorsTeachers from './pages/AdministratorsTeachers';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -320,6 +321,10 @@ const router = createBrowserRouter([
       {
         path: 'recorded-lessons',
         element: <AuthGuard><RecordedLessons /></AuthGuard>,
+      },
+      {
+        path: 'administrators-teachers',
+        element: <AuthGuard><AdministratorsTeachers /></AuthGuard>,
       },
       {
         path: '*',
