@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import MemberSection from "@/components/adminTeachers/MemberSection";
 import AdminSection from "@/components/adminTeachers/AdminSection";
+import AdminControl from "@/components/visualLibrary/AdminControl";
 
 type AccessLevel = 'member' | 'admin' | 'super_admin' | null;
 
@@ -14,6 +15,7 @@ const AdministratorsTeachers = () => {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,7 +60,7 @@ const AdministratorsTeachers = () => {
     );
   }
 
-  if (!accessLevel) {
+  if (!accessLevel && !isAdminMode) {
     return (
       <div className="min-h-screen bg-background">
         <SEO 
@@ -68,9 +70,15 @@ const AdministratorsTeachers = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="text-4xl font-bold mb-4">غير مصرح</h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-lg mb-6">
             ليس لديك صلاحية للوصول إلى هذه المنصة. يرجى التواصل مع المشرف لطلب الوصول.
           </p>
+          <div className="flex justify-center">
+            <AdminControl 
+              onAdminAccess={() => setIsAdminMode(!isAdminMode)}
+              isAdminMode={isAdminMode}
+            />
+          </div>
         </div>
         <Footer />
       </div>
@@ -87,12 +95,12 @@ const AdministratorsTeachers = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          {accessLevel === 'member' ? (
-            <MemberSection userId={user.id} />
+          {(accessLevel === 'member' && !isAdminMode) ? (
+            <MemberSection userId={user?.id} />
           ) : (
             <AdminSection 
-              userId={user.id} 
-              isSuperAdmin={accessLevel === 'super_admin'} 
+              userId={user?.id} 
+              isSuperAdmin={accessLevel === 'super_admin' || isAdminMode} 
             />
           )}
         </div>
