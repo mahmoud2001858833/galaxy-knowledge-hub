@@ -954,6 +954,7 @@ export type Database = {
       }
       teacher_projects: {
         Row: {
+          admin_id: string | null
           created_at: string
           description: string
           id: string
@@ -964,6 +965,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_id?: string | null
           created_at?: string
           description: string
           id?: string
@@ -974,6 +976,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_id?: string | null
           created_at?: string
           description?: string
           id?: string

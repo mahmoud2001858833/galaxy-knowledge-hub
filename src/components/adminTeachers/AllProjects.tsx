@@ -42,19 +42,25 @@ const AllProjects = ({ adminId, isSuperAdmin }: AllProjectsProps) => {
 
   const fetchProjects = async () => {
     try {
-    let data, error;
-    if (isSuperAdmin) {
-      ({ data, error } = await supabase
-        .from('teacher_projects')
-        .select('*')
-        .order('created_at', { ascending: false }));
-    } else {
-      ({ data, error } = await supabase
-        .from('teacher_projects')
-        .select('*')
-        .eq('admin_id', adminId)
-        .order('created_at', { ascending: false }));
-    }
+      let data;
+      let error;
+      
+      if (isSuperAdmin) {
+        const response = await supabase
+          .from('teacher_projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+        data = response.data;
+        error = response.error;
+      } else {
+        const response = await supabase
+          .from('teacher_projects')
+          .select('*')
+          .eq('admin_id', adminId)
+          .order('created_at', { ascending: false });
+        data = response.data;
+        error = response.error;
+      }
 
       if (error) throw error;
 
