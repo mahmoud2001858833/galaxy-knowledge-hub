@@ -69,7 +69,17 @@ const MemberSection = ({ userId }: MemberSectionProps) => {
         imageUrls.push(publicUrl);
       }
 
-      // Insert project
+      // Find a supervisor (prefer super_admin)
+      const { data: superAdmins } = await supabase
+        .from('admin_teacher_access')
+        .select('user_id')
+        .eq('access_level', 'super_admin')
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      const supervisorId = superAdmins?.[0]?.user_id || null;
+
+      // Insert project assigned to supervisor
       const { error: insertError } = await supabase
         .from('teacher_projects')
         .insert([
@@ -77,7 +87,8 @@ const MemberSection = ({ userId }: MemberSectionProps) => {
             member_id: userId,
             teacher_name: teacherName,
             description: description,
-            images: imageUrls
+            images: imageUrls,
+            admin_id: supervisorId
           }
         ]);
 

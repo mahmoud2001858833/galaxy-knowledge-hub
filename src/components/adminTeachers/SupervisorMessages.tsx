@@ -25,10 +25,31 @@ interface Message {
 const SupervisorMessages = ({ userId }: SupervisorMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [projectIds, setProjectIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchMessages();
   }, [userId]);
+
+  useEffect(() => {
+    if (projectIds.length === 0) return;
+    const channel = supabase
+      .channel(`teacher-projects-messages-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'teacher_project_messages' },
+        (payload) => {
+          const pid = (payload.new as any).project_id;
+          if (projectIds.includes(pid)) {
+            fetchMessages();
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectIds, userId]);
 
   const fetchMessages = async () => {
     try {
@@ -40,9 +61,10 @@ const SupervisorMessages = ({ userId }: SupervisorMessagesProps) => {
 
       if (projectsError) throw projectsError;
 
-      const projectIds = projects?.map(p => p.id) || [];
+      const ids = projects?.map(p => p.id) || [];
+      setProjectIds(ids);
 
-      if (projectIds.length === 0) {
+      if (ids.length === 0) {
         setMessages([]);
         setLoading(false);
         return;
@@ -52,7 +74,7 @@ const SupervisorMessages = ({ userId }: SupervisorMessagesProps) => {
       const { data: messagesData, error: messagesError } = await supabase
         .from('teacher_project_messages')
         .select('*')
-        .in('project_id', projectIds)
+        .in('project_id', ids)
         .order('created_at', { ascending: false });
 
       if (messagesError) throw messagesError;

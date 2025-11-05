@@ -41,7 +41,7 @@ const AdminSection = ({ userId, isSuperAdmin }: AdminSectionProps) => {
         </div>
       </div>
 
-      {activeTab === 'projects' && <AllProjects adminId={userId} />}
+      {activeTab === 'projects' && <AllProjects adminId={userId} isSuperAdmin={isSuperAdmin} />}
       {activeTab === 'access' && isSuperAdmin && <ManageAccess />}
     </div>
   );

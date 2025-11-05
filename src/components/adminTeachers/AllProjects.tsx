@@ -11,6 +11,7 @@ import { ar } from "date-fns/locale";
 
 interface AllProjectsProps {
   adminId: string;
+  isSuperAdmin: boolean;
 }
 
 interface Project {
@@ -27,7 +28,7 @@ interface Project {
   message_count?: number;
 }
 
-const AllProjects = ({ adminId }: AllProjectsProps) => {
+const AllProjects = ({ adminId, isSuperAdmin }: AllProjectsProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -41,10 +42,19 @@ const AllProjects = ({ adminId }: AllProjectsProps) => {
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
+    let data, error;
+    if (isSuperAdmin) {
+      ({ data, error } = await supabase
         .from('teacher_projects')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }));
+    } else {
+      ({ data, error } = await supabase
+        .from('teacher_projects')
+        .select('*')
+        .eq('admin_id', adminId)
+        .order('created_at', { ascending: false }));
+    }
 
       if (error) throw error;
 
