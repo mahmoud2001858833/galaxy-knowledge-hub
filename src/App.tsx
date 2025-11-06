@@ -46,6 +46,7 @@ import CodeFixerSection from './components/btec/CodeFixerSection';
 import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
 import BuildPlatformSection from './components/btec/BuildPlatformSection';
 import ArabicLanguage from './pages/ArabicLanguage';
+import ArabicLanguagePlatform from './pages/ArabicLanguagePlatform';
 import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
 import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
@@ -181,6 +182,10 @@ const router = createBrowserRouter([
       {
         path: 'arabic-language',
         element: <AuthGuard><ArabicLanguage /></AuthGuard>,
+      },
+      {
+        path: 'arabic-platform',
+        element: <AuthGuard><ArabicLanguagePlatform /></AuthGuard>,
       },
       {
         path: 'english-language',

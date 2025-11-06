@@ -430,6 +430,39 @@ export type Database = {
         }
         Relationships: []
       }
+      grammar_foundation_files: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string
+          file_url: string
+          folder_image_url: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_url: string
+          folder_image_url?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_url?: string
+          folder_image_url?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       grammar_rules: {
         Row: {
           category: string

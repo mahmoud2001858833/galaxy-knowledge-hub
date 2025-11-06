@@ -54,3 +54,12 @@ verify_jwt = false
 
 [functions.arabic-question-bank]
 verify_jwt = false
+
+[functions.morphology-derivatives]
+verify_jwt = false
+
+[functions.morphology-ai-assistant]
+verify_jwt = false
+
+[functions.morphology-root-tool]
+verify_jwt = false
