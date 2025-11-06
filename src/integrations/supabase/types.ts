@@ -21,7 +21,7 @@ export type Database = {
           created_by: string | null
           email: string
           id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           access_level?: Database["public"]["Enums"]["admin_teacher_access_level"]
@@ -29,7 +29,7 @@ export type Database = {
           created_by?: string | null
           email: string
           id?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           access_level?: Database["public"]["Enums"]["admin_teacher_access_level"]
@@ -37,7 +37,7 @@ export type Database = {
           created_by?: string | null
           email?: string
           id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

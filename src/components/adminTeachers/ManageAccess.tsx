@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Mail, Shield } from "lucide-react";
 
 interface Access {
   id: string;
@@ -49,7 +48,9 @@ const ManageAccess = () => {
   const handleAddAccess = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newEmail.trim()) {
+    const emailToAdd = newEmail.trim().toLowerCase();
+    
+    if (!emailToAdd) {
       toast({
         title: "خطأ",
         description: "يرجى إدخال البريد الإلكتروني",
@@ -58,19 +59,28 @@ const ManageAccess = () => {
       return;
     }
 
+    // Check for duplicates
+    if (accessList.some(access => access.email.toLowerCase() === emailToAdd)) {
+      toast({
+        title: "خطأ",
+        description: "هذا البريد الإلكتروني موجود مسبقاً",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // Call edge function to add/update access immediately (bypasses RLS)
       const { data, error } = await supabase.functions.invoke('admin-manage-access', {
-        body: { email: newEmail, access_level: newAccessLevel }
+        body: { email: emailToAdd, access_level: newAccessLevel }
       });
 
       if (error) throw error;
 
       toast({
         title: "تم الإضافة",
-        description: "تم إضافة الوصول بنجاح وتفعيله فوراً"
+        description: "تم إضافة الوصول بنجاح"
       });
 
       setNewEmail("");
@@ -122,13 +132,18 @@ const ManageAccess = () => {
 
   const getAccessLevelBadge = (level: string) => {
     const variants: Record<string, any> = {
-      super_admin: { variant: "default", label: "مشرف عام" },
-      admin: { variant: "secondary", label: "مشرف" },
-      member: { variant: "outline", label: "عضو" }
+      super_admin: { variant: "default", label: "مشرف عام", icon: <Shield className="w-3 h-3" /> },
+      admin: { variant: "secondary", label: "مشرف", icon: <Shield className="w-3 h-3" /> },
+      member: { variant: "outline", label: "عضو", icon: <Mail className="w-3 h-3" /> }
     };
 
     const config = variants[level] || variants.member;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return (
+      <Badge variant={config.variant} className="flex items-center gap-1">
+        {config.icon}
+        {config.label}
+      </Badge>
+    );
   };
 
   return (
@@ -183,42 +198,46 @@ const ManageAccess = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>قائمة المستخدمين</CardTitle>
+          <CardTitle>قائمة المستخدمين ({accessList.length})</CardTitle>
+          <CardDescription>جميع الأعضاء والمشرفين في النظام</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center p-8">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
+          ) : accessList.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              لا يوجد مستخدمون بعد
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>البريد الإلكتروني</TableHead>
-                  <TableHead>مستوى الوصول</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accessList.map((access) => (
-                  <TableRow key={access.id}>
-                    <TableCell>{access.email}</TableCell>
-                    <TableCell>{getAccessLevelBadge(access.access_level)}</TableCell>
-                    <TableCell>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {accessList.map((access) => (
+                <Card key={access.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      {getAccessLevelBadge(access.access_level)}
                       {access.email !== 'jowmahdmoud6@gmail.com' && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveAccess(access.id, access.email)}
+                          className="h-7 w-7 p-0"
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-start gap-2">
+                      <Mail className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <p className="text-sm break-all">{access.email}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
