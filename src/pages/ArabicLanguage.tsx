@@ -12,7 +12,7 @@ import ArabicPoets from '@/components/arabic/ArabicPoets';
 import ArabicEssayWriter from '@/components/arabic/ArabicEssayWriter';
 import ArabicQuestionBank from '@/components/arabic/ArabicQuestionBank';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowLeft, ArrowRight, Bot, Users, PenTool, Feather } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bot, Users, PenTool, Feather, BookOpen } from 'lucide-react';
 
 const ArabicLanguage = () => {
   const navigate = useNavigate();
