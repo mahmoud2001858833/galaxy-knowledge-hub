@@ -20,6 +20,15 @@ const ArabicLanguage = () => {
   
   const features = [
     {
+      title: "علوم اللغة العربية",
+      icon: <BookOpen className="w-8 h-8" />,
+      description: "منصة متكاملة تشمل النحو، الصرف، العروض، النقد الأدبي، والبلاغة مع أدوات ذكية",
+      color: "from-purple-600/20 to-pink-600/20",
+      borderColor: "border-purple-500/30",
+      hoverBorderColor: "hover:border-purple-500/50",
+      component: "language-sciences"
+    },
+    {
       title: "المساعد الذكي للغة العربية",
       icon: <Bot className="w-8 h-8" />,
       description: "مساعد ذكي متخصص في النحو والصرف والبلاغة العربية",
@@ -79,6 +88,9 @@ const ArabicLanguage = () => {
 
   const renderActiveComponent = () => {
     switch (activeComponent) {
+      case 'language-sciences':
+        navigate('/arabic-platform');
+        return null;
       case 'ai-assistant':
         return <ArabicAIAssistant />;
       case 'poets':
