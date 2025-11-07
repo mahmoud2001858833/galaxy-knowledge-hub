@@ -167,6 +167,145 @@ export type Database = {
         }
         Relationships: []
       }
+      art_project_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          project_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          project_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "art_project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "art_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      art_project_likes: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "art_project_likes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "art_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      art_projects: {
+        Row: {
+          artist_name: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          likes_count: number | null
+          project_title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist_name: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url: string
+          likes_count?: number | null
+          project_title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string
+          likes_count?: number | null
+          project_title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      artists: {
+        Row: {
+          art_style: string | null
+          biography: string
+          birth_year: string | null
+          created_at: string
+          death_year: string | null
+          famous_works: string[] | null
+          id: string
+          image_url: string | null
+          name: string
+          nationality: string | null
+        }
+        Insert: {
+          art_style?: string | null
+          biography: string
+          birth_year?: string | null
+          created_at?: string
+          death_year?: string | null
+          famous_works?: string[] | null
+          id?: string
+          image_url?: string | null
+          name: string
+          nationality?: string | null
+        }
+        Update: {
+          art_style?: string | null
+          biography?: string
+          birth_year?: string | null
+          created_at?: string
+          death_year?: string | null
+          famous_works?: string[] | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          nationality?: string | null
+        }
+        Relationships: []
+      }
       btec_custom_platforms: {
         Row: {
           created_at: string | null
@@ -361,6 +500,51 @@ export type Database = {
           created_at?: string
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      drawing_challenges: {
+        Row: {
+          ai_evaluation: string | null
+          challenge_prompt: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          player1_id: string
+          player1_submission: string | null
+          player2_id: string
+          player2_submission: string | null
+          status: string
+          time_limit: number
+          winner_id: string | null
+        }
+        Insert: {
+          ai_evaluation?: string | null
+          challenge_prompt: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          player1_id: string
+          player1_submission?: string | null
+          player2_id: string
+          player2_submission?: string | null
+          status?: string
+          time_limit?: number
+          winner_id?: string | null
+        }
+        Update: {
+          ai_evaluation?: string | null
+          challenge_prompt?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          player1_id?: string
+          player1_submission?: string | null
+          player2_id?: string
+          player2_submission?: string | null
+          status?: string
+          time_limit?: number
+          winner_id?: string | null
         }
         Relationships: []
       }
