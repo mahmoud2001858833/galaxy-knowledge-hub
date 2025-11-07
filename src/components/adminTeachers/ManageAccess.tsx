@@ -72,8 +72,15 @@ const ManageAccess = () => {
     setSubmitting(true);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        throw new Error('يجب تسجيل الدخول بحساب مصرح');
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-manage-access', {
-        body: { email: emailToAdd, access_level: newAccessLevel }
+        body: { email: emailToAdd, access_level: newAccessLevel },
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
 
       if (error) {
@@ -107,10 +114,11 @@ const ManageAccess = () => {
   };
 
   const handleRemoveAccess = async (id: string, email: string) => {
-    if (email === 'jowmahdmoud6@gmail.com') {
+    const protectedEmails = ['jowmahdmoud6@gmail.com', 'jali53207@gmail.com'];
+    if (protectedEmails.includes(email)) {
       toast({
         title: "خطأ",
-        description: "لا يمكن حذف المشرف العام الرئيسي",
+        description: "لا يمكن حذف حسابات المشرفين العامّين المحمية",
         variant: "destructive"
       });
       return;

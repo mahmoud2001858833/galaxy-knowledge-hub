@@ -15,7 +15,7 @@ const AdministratorsTeachers = () => {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [isAdminMode, setIsAdminMode] = useState(true); // Default to admin view
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const [isMemberMode, setIsMemberMode] = useState(false);
   const navigate = useNavigate();
 
@@ -49,8 +49,12 @@ const AdministratorsTeachers = () => {
 
       if (error || !access) {
         setAccessLevel(null);
+        setIsAdminMode(false);
+        setIsMemberMode(false);
       } else {
         setAccessLevel(access.access_level);
+        setIsAdminMode(access.access_level === 'admin' || access.access_level === 'super_admin');
+        setIsMemberMode(access.access_level === 'member');
       }
     } catch (error) {
       console.error("Error checking access:", error);
@@ -68,7 +72,7 @@ const AdministratorsTeachers = () => {
     );
   }
 
-  if (!accessLevel && !isAdminMode && !isMemberMode) {
+  if (!accessLevel) {
     return (
       <div className="min-h-screen bg-background">
         <SEO 
@@ -79,8 +83,8 @@ const AdministratorsTeachers = () => {
         <div className="container mx-auto px-4 py-20 relative">
           <div className="absolute top-4 left-4">
             <AdminControl 
-              onAdminAccess={() => setIsAdminMode(!isAdminMode)}
-              onMemberAccess={() => setIsMemberMode(true)}
+              onAdminAccess={() => checkAccess()}
+              onMemberAccess={() => checkAccess()}
               isAdminMode={isAdminMode}
             />
           </div>
@@ -106,12 +110,12 @@ const AdministratorsTeachers = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          {((accessLevel === 'member' && !isAdminMode) || isMemberMode) ? (
+          {accessLevel === 'member' ? (
             <MemberSection userId={user?.id} />
           ) : (
             <AdminSection 
               userId={user?.id} 
-              isSuperAdmin={accessLevel === 'super_admin' || isAdminMode} 
+              isSuperAdmin={accessLevel === 'super_admin'} 
             />
           )}
         </div>

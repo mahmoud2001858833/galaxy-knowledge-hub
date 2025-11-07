@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { SEO } from '@/components/SEO';
 import ArabicAIAssistant from '@/components/arabic/ArabicAIAssistant';
 import ArabicScholars from '@/components/arabic/ArabicScholars';
 import EnhancedGrammarAssistant from '@/components/arabic/EnhancedGrammarAssistant';
@@ -109,9 +110,10 @@ const ArabicLanguage = () => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b from-amber-900/40 to-amber-950`} dir={dir}>
+    <div className={`min-h-screen flex flex-col text-right bg-background`} dir={dir}>
       <StarField />
       <Navbar />
+      <SEO title="علوم اللغة العربية - منصة محسّنة" description="اكتشف النحو، الصرف، البلاغة، والشعر مع أدوات ذكية وتصميم عصري" />
       
       <main className="flex-1 container mx-auto px-4 py-12">
         <motion.div 
@@ -136,12 +138,12 @@ const ArabicLanguage = () => {
             </button>
             
             <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-white to-amber-500">
-                منصة اللغة العربية المحسنة
+              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">
+                علوم اللغة العربية
               </h1>
-              <div className="w-16 h-1 bg-amber-500/50 mx-auto mb-4"></div>
-              <p className="text-xl text-white/70 max-w-2xl mx-auto">
-                منصة شاملة ومحسنة لتعلم وإتقان اللغة العربية بجميع فروعها
+              <div className="w-16 h-1 bg-primary/40 mx-auto mb-4"></div>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                منصة شاملة ومحسّنة لتعلم وإتقان اللغة العربية بجميع فروعها
               </p>
             </div>
           </motion.div>
@@ -152,39 +154,29 @@ const ArabicLanguage = () => {
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
+                  transition={{ delay: 0.15 + index * 0.08, duration: 0.45 }}
                   onClick={() => setActiveComponent(feature.component)}
-                  className={`group relative h-[280px] rounded-xl overflow-hidden cursor-pointer ${feature.borderColor} ${feature.hoverBorderColor} border transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10 hover:scale-105`}
+                  className={"group relative h-[280px] rounded-xl overflow-hidden cursor-pointer glass-card interactive-hover"}
                 >
-                  {/* Background */}
-                  <div className="absolute inset-0">
-                    <div className={`absolute inset-0 bg-gradient-radial ${feature.color} opacity-90`}></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-amber-950/90 to-transparent"></div>
-                  </div>
-                  
+                  <div className="absolute inset-0 neural-network-bg opacity-70" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-background/20" />
                   <div className="absolute inset-0 p-6 z-10 flex flex-col justify-center items-center text-center">
-                    <div className="text-amber-300 mb-4 group-hover:scale-110 transition-transform">
+                    <div className="text-primary mb-4 group-hover:scale-110 transition-transform">
                       {feature.icon}
                     </div>
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4 group-hover:text-amber-300 transition-colors">
+                    <h3 className="text-xl md:text-2xl font-bold mb-3 group-hover:text-primary transition-colors">
                       {feature.title}
                     </h3>
-                    <p className="text-white/80 text-sm md:text-base mb-6 leading-relaxed">
+                    <p className="text-muted-foreground text-sm md:text-base mb-6 leading-relaxed">
                       {feature.description}
                     </p>
                     <button 
-                      className="px-6 py-2 bg-amber-600/30 border border-amber-500/50 rounded-full text-amber-300 hover:bg-amber-600/50 transition-all duration-300 hover:scale-105"
+                      className="px-6 py-2 bg-secondary/40 border border-border/50 rounded-full text-foreground hover:bg-secondary/60 transition-all duration-300 hover:scale-105"
                     >
-                      استكشاف محسن
+                      استكشاف
                     </button>
-                  </div>
-                  
-                  {/* Hover Glow Effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/0 via-amber-400/10 to-amber-500/0"></div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-amber-400/20 to-transparent"></div>
                   </div>
                 </motion.div>
               ))}
