@@ -67,6 +67,11 @@ import TeacherRegistration from './pages/TeacherRegistration';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherAssignments from './pages/TeacherAssignments';
 import TeacherNotes from './pages/TeacherNotes';
+import ParentRegistration from './pages/ParentRegistration';
+import ParentDashboard from './pages/ParentDashboard';
+import ParentAssignments from './pages/ParentAssignments';
+import ParentNotes from './pages/ParentNotes';
+import ClassChat from './pages/ClassChat';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -365,6 +370,30 @@ const router = createBrowserRouter([
       {
         path: 'teacher/notes',
         element: <AuthGuard><TeacherNotes /></AuthGuard>,
+      },
+      {
+        path: 'teacher/chat',
+        element: <AuthGuard><ClassChat /></AuthGuard>,
+      },
+      {
+        path: 'parent-registration',
+        element: <AuthGuard><ParentRegistration /></AuthGuard>,
+      },
+      {
+        path: 'parent-dashboard',
+        element: <AuthGuard><ParentDashboard /></AuthGuard>,
+      },
+      {
+        path: 'parent/assignments',
+        element: <AuthGuard><ParentAssignments /></AuthGuard>,
+      },
+      {
+        path: 'parent/notes',
+        element: <AuthGuard><ParentNotes /></AuthGuard>,
+      },
+      {
+        path: 'parent/chat',
+        element: <AuthGuard><ClassChat /></AuthGuard>,
       },
       {
         path: '*',
