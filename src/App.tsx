@@ -60,6 +60,7 @@ import PsychologicalGuide from './pages/PsychologicalGuide';
 import StudentProjects from './components/environmental/StudentProjects';
 import RecordedLessons from './components/educational/RecordedLessons';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
+import ArtDesign from './pages/ArtDesign';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -330,6 +331,10 @@ const router = createBrowserRouter([
       {
         path: 'administrators-teachers',
         element: <AuthGuard><AdministratorsTeachers /></AuthGuard>,
+      },
+      {
+        path: 'art-design',
+        element: <AuthGuard><ArtDesign /></AuthGuard>,
       },
       {
         path: '*',

@@ -31,6 +31,16 @@ const LiteraryPlatforms = () => {
       hoverBorderColor: "hover:border-indigo-500/50",
       description: t.literaryPlatforms.englishDescription,
       link: "/english-language"
+    },
+    {
+      title: "الفن والتصميم",
+      icon: "🎨",
+      image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800",
+      color: "from-purple-600/20 to-pink-600/20",
+      borderColor: "border-purple-500/30",
+      hoverBorderColor: "hover:border-purple-500/50",
+      description: "منصة شاملة للفن - مشاريع الطلاب، ذكاء اصطناعي، فنانون، تحديات ونصائح",
+      link: "/art-design"
     }
   ];
 

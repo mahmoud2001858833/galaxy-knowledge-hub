@@ -1341,6 +1341,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_art_project_likes: {
+        Args: { increment: number; project_id: string }
+        Returns: undefined
+      }
       adjust_user_score: {
         Args: { points_adjustment: number; user_id: string }
         Returns: undefined
