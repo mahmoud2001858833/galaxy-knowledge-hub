@@ -503,6 +503,41 @@ export type Database = {
         }
         Relationships: []
       }
+      drawing_challenge_messages: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          message_text: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          message_text: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          message_text?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawing_challenge_messages_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "drawing_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drawing_challenges: {
         Row: {
           ai_evaluation: string | null
