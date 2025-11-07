@@ -95,27 +95,27 @@ const ArtistsGallery = () => {
               />
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">السيرة الذاتية</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{artist.biography}</p>
+                  <h4 className="font-semibold mb-2 text-right">السيرة الذاتية</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed text-right">{artist.biography}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">الأعمال الشهيرة</h4>
-                  <ul className="list-disc list-inside space-y-1">
+                  <h4 className="font-semibold mb-2 text-right">الأعمال الشهيرة</h4>
+                  <ul className="list-disc list-inside space-y-1 text-right">
                     {artist.famous_works.map((work, index) => (
-                      <li key={index} className="text-sm text-muted-foreground">
+                      <li key={index} className="text-sm text-muted-foreground" dir="rtl">
                         {work}
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="flex items-center gap-4 flex-wrap">
-                  <Badge>{artist.art_style}</Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {artist.nationality}
-                  </span>
+                <div className="flex items-center gap-4 flex-wrap justify-end text-right" dir="rtl">
                   <span className="text-sm text-muted-foreground">
                     {artist.birth_year} - {artist.death_year}
                   </span>
+                  <span className="text-sm text-muted-foreground">
+                    {artist.nationality}
+                  </span>
+                  <Badge>{artist.art_style}</Badge>
                 </div>
               </div>
             </div>

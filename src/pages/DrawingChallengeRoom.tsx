@@ -23,8 +23,12 @@ const DrawingChallengeRoom = () => {
   const [player2Username, setPlayer2Username] = useState<string>("");
 
   useEffect(() => {
-    getCurrentUser();
-    fetchChallenge();
+    const initializeRoom = async () => {
+      await getCurrentUser();
+      await fetchChallenge();
+    };
+    
+    initializeRoom();
     
     const channel = supabase
       .channel(`challenge-${roomId}`)
@@ -37,6 +41,7 @@ const DrawingChallengeRoom = () => {
           filter: `id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("Challenge updated:", payload);
           fetchChallenge();
         }
       )
@@ -79,31 +84,40 @@ const DrawingChallengeRoom = () => {
         .single();
 
       if (error) throw error;
+      
+      console.log("Challenge data:", data);
       setChallenge(data);
 
       // Fetch usernames
       if (data.player1_id) {
-        const { data: profile1 } = await supabase
+        const { data: profile1, error: profile1Error } = await supabase
           .from("profiles")
           .select("username")
           .eq("id", data.player1_id)
           .single();
+        
+        console.log("Player 1 profile:", profile1, "Error:", profile1Error);
         if (profile1) setPlayer1Username(profile1.username);
       }
 
       if (data.player2_id) {
-        const { data: profile2 } = await supabase
+        const { data: profile2, error: profile2Error } = await supabase
           .from("profiles")
           .select("username")
           .eq("id", data.player2_id)
           .single();
+        
+        console.log("Player 2 profile:", profile2, "Error:", profile2Error);
         if (profile2) setPlayer2Username(profile2.username);
       }
 
+      // Get current user for comparison
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Check if current user has already submitted
-      if (data.player1_id === currentUserId && data.player1_submission) {
+      if (data.player1_id === user?.id && data.player1_submission) {
         setMySubmission(data.player1_submission);
-      } else if (data.player2_id === currentUserId && data.player2_submission) {
+      } else if (data.player2_id === user?.id && data.player2_submission) {
         setMySubmission(data.player2_submission);
       }
     } catch (error: any) {
