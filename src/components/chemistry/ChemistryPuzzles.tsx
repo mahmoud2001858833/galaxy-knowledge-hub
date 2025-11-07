@@ -18,8 +18,6 @@ const ChemistryPuzzles = () => {
   const [puzzles, setPuzzles] = useState<ChemistryPuzzleType[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState("");
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
   // New puzzle state
@@ -35,7 +33,22 @@ const ChemistryPuzzles = () => {
   
   useEffect(() => {
     fetchPuzzles();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (data) setIsAdmin(true);
+  };
   
   const fetchPuzzles = async () => {
     setIsLoading(true);
@@ -79,15 +92,6 @@ const ChemistryPuzzles = () => {
     }
   };
   
-  const handleAdminAccess = () => {
-    if (adminPassword === "mahmoud") {
-      setIsAdmin(true);
-      setIsPasswordDialogOpen(false);
-      toast.success("تم تسجيل الدخول كمشرف");
-    } else {
-      toast.error("كلمة المرور غير صحيحة");
-    }
-  };
   
   const handleNewPuzzleChange = (field: string, value: string | number) => {
     setNewPuzzle(prev => ({
@@ -137,8 +141,7 @@ const ChemistryPuzzles = () => {
           correct_answer: newPuzzle.correct_answer,
           difficulty: newPuzzle.difficulty,
           points: newPuzzle.points,
-          image: newPuzzle.image,
-          admin_password: "mahmoud" // Required for admin access later
+          image: newPuzzle.image
         }])
         .select();
       
@@ -198,49 +201,8 @@ const ChemistryPuzzles = () => {
         ألغاز الكيمياء
       </motion.h2>
       
-      <div className="mb-8 flex justify-between items-center">
+      <div className="mb-8">
         <p className="text-white/70">اختبر معلوماتك في الكيمياء من خلال هذه الألغاز المتنوعة</p>
-        
-        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="border-cyan-700/30 text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30"
-            >
-              <Lock className="w-4 h-4 ml-2" />
-              المشرف
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-blue-950 border-cyan-900/50 sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-cyan-400">تسجيل الدخول كمشرف</DialogTitle>
-              <DialogDescription>
-                أدخل كلمة المرور للوصول إلى وحدة تحكم المشرف
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="password" className="text-white">كلمة المرور</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  className="bg-blue-950/50 border-cyan-900/30"
-                  placeholder="أدخل كلمة المرور"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                onClick={handleAdminAccess}
-                className="bg-cyan-600 hover:bg-cyan-700"
-              >
-                تسجيل الدخول
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
       
       {isAdmin && (

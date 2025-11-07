@@ -279,7 +279,6 @@ export type Database = {
       }
       chemistry_puzzles: {
         Row: {
-          admin_password: string | null
           correct_answer: string
           created_at: string
           created_by: string | null
@@ -292,7 +291,6 @@ export type Database = {
           title: string
         }
         Insert: {
-          admin_password?: string | null
           correct_answer: string
           created_at?: string
           created_by?: string | null
@@ -305,7 +303,6 @@ export type Database = {
           title: string
         }
         Update: {
-          admin_password?: string | null
           correct_answer?: string
           created_at?: string
           created_by?: string | null
@@ -724,7 +721,6 @@ export type Database = {
       }
       puzzles: {
         Row: {
-          admin_password: string
           correct_answer: string
           created_at: string
           created_by: string | null
@@ -737,7 +733,6 @@ export type Database = {
           title: string
         }
         Insert: {
-          admin_password?: string
           correct_answer: string
           created_at?: string
           created_by?: string | null
@@ -750,7 +745,6 @@ export type Database = {
           title: string
         }
         Update: {
-          admin_password?: string
           correct_answer?: string
           created_at?: string
           created_by?: string | null
@@ -910,7 +904,6 @@ export type Database = {
       }
       subject_puzzles: {
         Row: {
-          admin_password: string
           correct_answer: string
           created_at: string
           created_by: string | null
@@ -924,7 +917,6 @@ export type Database = {
           title: string
         }
         Insert: {
-          admin_password?: string
           correct_answer: string
           created_at?: string
           created_by?: string | null
@@ -938,7 +930,6 @@ export type Database = {
           title: string
         }
         Update: {
-          admin_password?: string
           correct_answer?: string
           created_at?: string
           created_by?: string | null
@@ -1018,6 +1009,27 @@ export type Database = {
           status?: string | null
           teacher_name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -1155,9 +1167,17 @@ export type Database = {
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
       has_admin_teacher_access: { Args: { _user_id: string }; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       admin_teacher_access_level: "member" | "admin" | "super_admin"
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1286,6 +1306,7 @@ export const Constants = {
   public: {
     Enums: {
       admin_teacher_access_level: ["member", "admin", "super_admin"],
+      app_role: ["admin", "moderator", "user"],
     },
   },
 } as const

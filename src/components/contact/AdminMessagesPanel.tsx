@@ -19,9 +19,7 @@ interface ContactMessage {
 }
 
 const AdminMessagesPanel = () => {
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [password, setPassword] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
@@ -29,10 +27,30 @@ const AdminMessagesPanel = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchMessages();
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setIsAdmin(false);
+      return;
     }
-  }, [isAuthenticated]);
+
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (data && !error) {
+      setIsAdmin(true);
+      fetchMessages();
+    } else {
+      setIsAdmin(false);
+    }
+  };
 
   const fetchMessages = async () => {
     setIsLoading(true);
@@ -57,23 +75,6 @@ const AdminMessagesPanel = () => {
     }
   };
 
-  const handlePasswordSubmit = () => {
-    if (password === "mahmoud200") {
-      setIsAuthenticated(true);
-      setIsPasswordDialogOpen(false);
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: "تم تفعيل وضع المشرف"
-      });
-    } else {
-      toast({
-        title: "خطأ في كلمة المرور",
-        description: "كلمة المرور غير صحيحة",
-        variant: "destructive",
-      });
-    }
-    setPassword("");
-  };
 
   const handleDeleteMessage = async () => {
     if (!messageToDelete) return;
@@ -108,54 +109,13 @@ const AdminMessagesPanel = () => {
     return date.toLocaleString('ar-SA');
   };
 
-  if (!isAuthenticated) {
+  if (!isAdmin) {
     return (
-      <div className="flex justify-center my-8">
-        <Button onClick={() => setIsPasswordDialogOpen(true)}>
-          دخول المشرف
-        </Button>
-
-        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-right">تسجيل دخول المشرف</DialogTitle>
-              <DialogDescription className="text-right">
-                يرجى إدخال كلمة المرور للوصول إلى لوحة الرسائل
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex flex-col space-y-4 my-4">
-              <Input
-                placeholder="كلمة المرور"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handlePasswordSubmit();
-                  }
-                }}
-              />
-            </div>
-
-            <DialogFooter className="sm:justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsPasswordDialogOpen(false)}
-              >
-                إلغاء
-              </Button>
-              <Button
-                type="button"
-                onClick={handlePasswordSubmit}
-                disabled={!password}
-              >
-                تسجيل الدخول
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      <div className="flex justify-center my-8 bg-white/5 backdrop-blur-sm rounded-lg p-8">
+        <div className="text-center">
+          <p className="text-xl text-white/80 mb-2">لوحة الرسائل - للمشرفين فقط</p>
+          <p className="text-white/60">يجب أن تكون مشرفاً للوصول إلى هذه الصفحة</p>
+        </div>
       </div>
     );
   }
@@ -186,10 +146,7 @@ const AdminMessagesPanel = () => {
     <div className="space-y-4 my-8">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">لوحة الرسائل ({messages.length})</h2>
-        <div className="space-x-2 space-x-reverse">
-          <Button onClick={fetchMessages} variant="outline">تحديث</Button>
-          <Button onClick={() => setIsAuthenticated(false)} variant="destructive">تسجيل الخروج</Button>
-        </div>
+        <Button onClick={fetchMessages} variant="outline">تحديث</Button>
       </div>
       
       {messages.length > 0 ? (

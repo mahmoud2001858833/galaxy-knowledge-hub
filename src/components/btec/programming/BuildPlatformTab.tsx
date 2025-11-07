@@ -161,7 +161,7 @@ const BuildPlatformTab = () => {
           srcDoc={platform.custom_code}
           className="w-full h-96 border border-white/10 rounded-lg bg-white"
           title={platform.name}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
         />
       );
     }
@@ -216,7 +216,7 @@ const BuildPlatformTab = () => {
           srcDoc={htmlWithJs}
           className="w-full h-96 border border-white/10 rounded-lg"
           title={platform.name}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
         />
       );
     }

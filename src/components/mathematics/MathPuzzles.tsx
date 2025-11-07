@@ -55,8 +55,6 @@ const MathPuzzles: React.FC = () => {
   const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState<boolean>(false);
-  const [adminPassword, setAdminPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -84,11 +82,26 @@ const MathPuzzles: React.FC = () => {
     });
     
     fetchPuzzles();
+    checkAdminStatus();
     
     return () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (data) setIsAdmin(true);
+  };
   
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -175,15 +188,6 @@ const MathPuzzles: React.FC = () => {
     }
   };
   
-  const handleAdminAccess = () => {
-    if (adminPassword === 'mahmoud') {
-      setIsAdmin(true);
-      setIsPasswordDialogOpen(false);
-      toast.success('تم تسجيل الدخول بنجاح كمشرف');
-    } else {
-      toast.error('كلمة المرور غير صحيحة');
-    }
-  };
   
   const filteredPuzzles = selectedDifficulty === 'all'
     ? puzzles
@@ -343,42 +347,9 @@ const MathPuzzles: React.FC = () => {
             </SelectContent>
           </Select>
           
-          {isAdmin ? (
-            <MathPuzzleAdmin />
-          ) : (
-            <Button 
-              className="bg-subject-math-primary/10 hover:bg-subject-math-primary/20 text-subject-math-primary border border-subject-math-primary/30"
-              onClick={() => setIsPasswordDialogOpen(true)}
-            >
-              لوحة المشرف
-            </Button>
-          )}
+          {isAdmin && <MathPuzzleAdmin />}
         </div>
       </div>
-      
-      {/* Admin Password Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="bg-space-cosmic-black border-white/20 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-white">أدخل كلمة مرور المشرف</DialogTitle>
-          </DialogHeader>
-          <div className="py-6">
-            <Input
-              type="password"
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-              placeholder="كلمة المرور"
-              className="bg-white/10 border-white/20 text-white text-center"
-            />
-          </div>
-          <Button 
-            className="w-full bg-subject-math-primary hover:bg-subject-math-secondary"
-            onClick={handleAdminAccess}
-          >
-            تأكيد
-          </Button>
-        </DialogContent>
-      </Dialog>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {selectedPuzzle ? (
