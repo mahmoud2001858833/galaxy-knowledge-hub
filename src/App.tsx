@@ -63,6 +63,10 @@ import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
 import CommunicationBridge from './pages/CommunicationBridge';
+import TeacherRegistration from './pages/TeacherRegistration';
+import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherAssignments from './pages/TeacherAssignments';
+import TeacherNotes from './pages/TeacherNotes';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -347,8 +351,20 @@ const router = createBrowserRouter([
         element: <AuthGuard><CommunicationBridge /></AuthGuard>,
       },
       {
-        path: 'communication-bridge/:userType',
-        element: <AuthGuard><CommunicationBridge /></AuthGuard>,
+        path: 'teacher-registration',
+        element: <AuthGuard><TeacherRegistration /></AuthGuard>,
+      },
+      {
+        path: 'teacher-dashboard',
+        element: <AuthGuard><TeacherDashboard /></AuthGuard>,
+      },
+      {
+        path: 'teacher/assignments',
+        element: <AuthGuard><TeacherAssignments /></AuthGuard>,
+      },
+      {
+        path: 'teacher/notes',
+        element: <AuthGuard><TeacherNotes /></AuthGuard>,
       },
       {
         path: '*',

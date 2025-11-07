@@ -37,7 +37,11 @@ const CommunicationBridge = () => {
 
   const handleTypeSelect = (type: 'teacher' | 'parent') => {
     setSelectedType(type);
-    navigate(`/communication-bridge/${type}`);
+    if (type === 'teacher') {
+      navigate('/teacher-registration');
+    } else {
+      navigate('/parent-registration');
+    }
   };
 
   return (
