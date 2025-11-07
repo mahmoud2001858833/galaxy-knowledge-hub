@@ -19,6 +19,8 @@ const DrawingChallengeRoom = () => {
   const [uploading, setUploading] = useState(false);
   const [mySubmission, setMySubmission] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [player1Username, setPlayer1Username] = useState<string>("");
+  const [player2Username, setPlayer2Username] = useState<string>("");
 
   useEffect(() => {
     getCurrentUser();
@@ -79,31 +81,58 @@ const DrawingChallengeRoom = () => {
       if (error) throw error;
       setChallenge(data);
 
+      // Fetch usernames
+      if (data.player1_id) {
+        const { data: profile1 } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", data.player1_id)
+          .single();
+        if (profile1) setPlayer1Username(profile1.username);
+      }
+
+      if (data.player2_id) {
+        const { data: profile2 } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", data.player2_id)
+          .single();
+        if (profile2) setPlayer2Username(profile2.username);
+      }
+
       // Check if current user has already submitted
       if (data.player1_id === currentUserId && data.player1_submission) {
         setMySubmission(data.player1_submission);
       } else if (data.player2_id === currentUserId && data.player2_submission) {
         setMySubmission(data.player2_submission);
       }
-
-      // Auto-start game when both players join
-      if (data.player1_id && data.player2_id && data.status === "waiting") {
-        const { error: updateError } = await supabase
-          .from("drawing_challenges")
-          .update({
-            status: "in_progress",
-            start_time: new Date().toISOString(),
-            end_time: new Date(Date.now() + (data.time_limit || 1800) * 1000).toISOString(),
-          })
-          .eq("id", roomId);
-
-        if (updateError) {
-          console.error("Error starting game:", updateError);
-        }
-      }
     } catch (error: any) {
       console.error("Error fetching challenge:", error);
       toast.error("فشل تحميل التحدي");
+    }
+  };
+
+  const startChallenge = async () => {
+    if (!challenge || challenge.room_created_by !== currentUserId) {
+      toast.error("فقط منشئ الغرفة يمكنه بدء التحدي");
+      return;
+    }
+
+    try {
+      const { error: updateError } = await supabase
+        .from("drawing_challenges")
+        .update({
+          status: "in_progress",
+          start_time: new Date().toISOString(),
+          end_time: new Date(Date.now() + (challenge.time_limit || 1800) * 1000).toISOString(),
+        })
+        .eq("id", roomId);
+
+      if (updateError) throw updateError;
+      toast.success("بدأ التحدي!");
+    } catch (error: any) {
+      console.error("Error starting game:", error);
+      toast.error("فشل بدء التحدي");
     }
   };
 
@@ -243,8 +272,35 @@ const DrawingChallengeRoom = () => {
               </div>
 
               {challenge.status === "waiting" && (
-                <div className="text-center p-6">
-                  <p className="text-lg">في انتظار انضمام اللاعب الثاني...</p>
+                <div className="text-center p-6 space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-lg">اللاعبون:</h4>
+                    <div className="flex justify-center gap-8">
+                      <div className="p-4 bg-primary/10 rounded-lg min-w-[150px]">
+                        <p className="text-sm text-muted-foreground mb-1">اللاعب الأول</p>
+                        <p className="font-semibold">{player1Username || "..."}</p>
+                      </div>
+                      <div className="p-4 bg-primary/10 rounded-lg min-w-[150px]">
+                        <p className="text-sm text-muted-foreground mb-1">اللاعب الثاني</p>
+                        <p className="font-semibold">{player2Username || "في الانتظار..."}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {!challenge.player2_id && (
+                    <p className="text-lg text-muted-foreground">في انتظار انضمام اللاعب الثاني...</p>
+                  )}
+                  
+                  {challenge.player2_id && challenge.room_created_by === currentUserId && (
+                    <Button onClick={startChallenge} size="lg" className="gap-2">
+                      <Trophy className="w-5 h-5" />
+                      بدء التحدي
+                    </Button>
+                  )}
+                  
+                  {challenge.player2_id && challenge.room_created_by !== currentUserId && (
+                    <p className="text-lg text-primary">في انتظار منشئ الغرفة لبدء التحدي...</p>
+                  )}
                 </div>
               )}
 
