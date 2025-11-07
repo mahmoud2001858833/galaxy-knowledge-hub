@@ -77,8 +77,8 @@ const ArtistsGallery = () => {
                   </div>
                 </div>
                 <CardContent className="p-4">
-                  <Badge variant="secondary">{artist.art_style}</Badge>
-                  <p className="text-sm text-muted-foreground mt-2">{artist.nationality}</p>
+                  <Badge variant="secondary">الأسلوب: {artist.art_style}</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">الجنسية: {artist.nationality}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -108,13 +108,13 @@ const ArtistsGallery = () => {
                     ))}
                   </ul>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Badge>{artist.art_style}</Badge>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <Badge>الأسلوب: {artist.art_style}</Badge>
                   <span className="text-sm text-muted-foreground">
-                    {artist.nationality}
+                    الجنسية: {artist.nationality}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    {artist.birth_year} - {artist.death_year}
+                    تاريخ الميلاد: {artist.birth_year} - تاريخ الوفاة: {artist.death_year}
                   </span>
                 </div>
               </div>

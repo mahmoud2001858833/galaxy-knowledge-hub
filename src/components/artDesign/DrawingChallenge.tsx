@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Upload, Clock, Users, Search, Plus } from "lucide-react";
+import { Trophy, Upload, Clock, Users, Search, Plus, X, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,13 +25,25 @@ const DrawingChallenge = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [timeLimit, setTimeLimit] = useState(30);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (showOptions) {
       fetchRooms();
     }
   }, [showOptions]);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
 
   const fetchRooms = async () => {
     try {
@@ -54,6 +66,7 @@ const DrawingChallenge = () => {
   };
 
   const createRoom = async () => {
+    setIsCreating(true);
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -61,12 +74,6 @@ const DrawingChallenge = () => {
         toast.error("يجب تسجيل الدخول أولاً");
         return;
       }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", user.id)
-        .single();
 
       // Get AI prompt
       const { data: promptData, error: promptError } = await supabase.functions.invoke(
@@ -84,6 +91,7 @@ const DrawingChallenge = () => {
           player1_id: user.id,
           room_created_by: user.id,
           status: "waiting",
+          time_limit: timeLimit * 60,
         })
         .select()
         .single();
@@ -97,6 +105,23 @@ const DrawingChallenge = () => {
       toast.error("فشل إنشاء الغرفة");
     } finally {
       setLoading(false);
+      setIsCreating(false);
+    }
+  };
+
+  const cancelRoom = async (roomId: string) => {
+    try {
+      const { error } = await supabase
+        .from("drawing_challenges")
+        .delete()
+        .eq("id", roomId);
+
+      if (error) throw error;
+
+      toast.success("تم إلغاء الغرفة");
+      fetchRooms();
+    } catch (error: any) {
+      toast.error("فشل إلغاء الغرفة");
     }
   };
 
@@ -109,13 +134,16 @@ const DrawingChallenge = () => {
         return;
       }
 
+      const { data: roomData } = await supabase
+        .from("drawing_challenges")
+        .select("time_limit")
+        .eq("id", roomId)
+        .single();
+
       const { error } = await supabase
         .from("drawing_challenges")
         .update({
           player2_id: user.id,
-          status: "in_progress",
-          start_time: new Date().toISOString(),
-          end_time: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
         })
         .eq("id", roomId);
 
@@ -224,17 +252,38 @@ const DrawingChallenge = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={createRoom}
-              disabled={loading}
-              className="h-32 flex flex-col gap-2"
-            >
-              <Plus className="w-8 h-8" />
-              <span>إنشاء غرفة جديدة</span>
-              <span className="text-xs text-muted-foreground">سيتم توليد رقم الغرفة تلقائياً</span>
-            </Button>
+            {!isCreating ? (
+              <Card className="p-6 space-y-4">
+                <h3 className="font-bold text-lg">إنشاء غرفة جديدة</h3>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    مدة التحدي (بالدقائق)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="60"
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(Number(e.target.value))}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-background"
+                  />
+                </div>
+                <Button
+                  onClick={createRoom}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? "جاري الإنشاء..." : "إنشاء غرفة"}
+                </Button>
+              </Card>
+            ) : (
+              <Card className="p-6">
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                  <p>جاري إنشاء الغرفة...</p>
+                </div>
+              </Card>
+            )}
 
             <Button
               size="lg"
@@ -267,23 +316,39 @@ const DrawingChallenge = () => {
                   لا توجد غرف متاحة حالياً
                 </div>
               ) : (
-                filteredRooms.map((room) => (
-                  <Card key={room.id} className="border-2">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{room.room_number}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {room.challenge_prompt}
-                          </p>
+                filteredRooms.map((room) => {
+                  const isCreator = room.room_created_by === currentUserId;
+                  const canCancel = isCreator && !room.player2_id;
+
+                  return (
+                    <Card key={room.id} className="border-2">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{room.room_number}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {room.challenge_prompt}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button onClick={() => joinRoom(room.id)} disabled={loading}>
+                              انضم
+                            </Button>
+                            {canCancel && (
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => cancelRoom(room.id)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <Button onClick={() => joinRoom(room.id)} disabled={loading}>
-                          انضم
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </div>
           </div>

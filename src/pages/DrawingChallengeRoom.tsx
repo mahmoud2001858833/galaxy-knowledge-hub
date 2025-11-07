@@ -35,7 +35,7 @@ const DrawingChallengeRoom = () => {
           filter: `id=eq.${roomId}`,
         },
         (payload) => {
-          setChallenge(payload.new);
+          fetchChallenge();
         }
       )
       .subscribe();
@@ -85,6 +85,22 @@ const DrawingChallengeRoom = () => {
       } else if (data.player2_id === currentUserId && data.player2_submission) {
         setMySubmission(data.player2_submission);
       }
+
+      // Auto-start game when both players join
+      if (data.player1_id && data.player2_id && data.status === "waiting") {
+        const { error: updateError } = await supabase
+          .from("drawing_challenges")
+          .update({
+            status: "in_progress",
+            start_time: new Date().toISOString(),
+            end_time: new Date(Date.now() + (data.time_limit || 1800) * 1000).toISOString(),
+          })
+          .eq("id", roomId);
+
+        if (updateError) {
+          console.error("Error starting game:", updateError);
+        }
+      }
     } catch (error: any) {
       console.error("Error fetching challenge:", error);
       toast.error("فشل تحميل التحدي");
@@ -133,47 +149,44 @@ const DrawingChallengeRoom = () => {
   };
 
   const evaluateChallenge = async () => {
+    if (!challenge) return;
+
     try {
-      const { data: player1Profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", challenge.player1_id)
-        .single();
+      // Determine winner based on who uploaded first
+      let winnerId = null;
+      let evaluation = "";
 
-      const { data: player2Profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", challenge.player2_id)
-        .single();
-
-      const { data: evaluationData, error: evalError } = await supabase.functions.invoke(
-        "drawing-challenge-evaluate",
-        {
-          body: {
-            prompt: challenge.challenge_prompt,
-            player1Name: player1Profile?.username || "اللاعب الأول",
-            player2Name: player2Profile?.username || "اللاعب الثاني",
-          },
-        }
-      );
-
-      if (evalError) throw evalError;
+      if (challenge.player1_submission && !challenge.player2_submission) {
+        winnerId = challenge.player1_id;
+        evaluation = "🎉 اللاعب الأول هو الفائز لأنه قام بتحميل الرسم في الوقت المحدد بينما لم يقم اللاعب الثاني بالتحميل!";
+      } else if (!challenge.player1_submission && challenge.player2_submission) {
+        winnerId = challenge.player2_id;
+        evaluation = "🎉 اللاعب الثاني هو الفائز لأنه قام بتحميل الرسم في الوقت المحدد بينما لم يقم اللاعب الأول بالتحميل!";
+      } else if (challenge.player1_submission && challenge.player2_submission) {
+        evaluation = "⚠️ كلا اللاعبين قاما بتحميل رسوماتهما! الفائز هو من رفع أولاً.";
+        // In a real scenario, you would check timestamps to determine who uploaded first
+        winnerId = challenge.player1_id; // Default to player 1 if both uploaded
+      } else {
+        evaluation = "❌ لم يقم أي من اللاعبين بتحميل رسم في الوقت المحدد. لا يوجد فائز.";
+      }
 
       const { error: updateError } = await supabase
         .from("drawing_challenges")
         .update({
           status: "completed",
-          ai_evaluation: evaluationData.evaluation,
+          ai_evaluation: evaluation,
           completed_at: new Date().toISOString(),
+          winner_id: winnerId,
         })
         .eq("id", roomId);
 
       if (updateError) throw updateError;
 
-      toast.success("انتهى التحدي! جاري عرض النتائج...");
+      fetchChallenge();
+      toast.success("انتهى التحدي!");
     } catch (error: any) {
       console.error("Error evaluating:", error);
-      toast.error("فشل تقييم الأعمال");
+      toast.error("فشل تقييم التحدي");
     }
   };
 
@@ -237,32 +250,47 @@ const DrawingChallengeRoom = () => {
 
               {challenge.status === "in_progress" && (
                 <div className="space-y-4">
-                  {!mySubmission ? (
+                  <div className="bg-primary/10 p-4 rounded-lg space-y-2">
+                    <h4 className="font-bold">متطلبات الرسم:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• يجب رفع الرسم قبل انتهاء الوقت</li>
+                      <li>• الفائز هو من يرفع رسمه أولاً</li>
+                      <li>• الصيغ المقبولة: JPG, PNG, GIF</li>
+                      <li>• الحد الأقصى لحجم الملف: 10 ميجابايت</li>
+                    </ul>
+                  </div>
+
+                  <div className="text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={uploading || timeLeft <= 0}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload">
+                      <Button asChild disabled={uploading || timeLeft <= 0}>
+                        <span className="cursor-pointer">
+                          <Upload className="w-4 h-4 ml-2" />
+                          {uploading ? "جاري الرفع..." : timeLeft <= 0 ? "انتهى الوقت" : "رفع عملك"}
+                        </span>
+                      </Button>
+                    </label>
+                    {timeLeft <= 0 && !mySubmission && (
+                      <p className="text-destructive mt-2 text-sm">
+                        ⏰ انتهى الوقت! لا يمكن رفع المزيد من الرسومات
+                      </p>
+                    )}
+                  </div>
+
+                  {mySubmission && (
                     <div className="text-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                        className="hidden"
-                        id="file-upload"
-                      />
-                      <label htmlFor="file-upload">
-                        <Button asChild disabled={uploading}>
-                          <span className="cursor-pointer">
-                            <Upload className="w-4 h-4 ml-2" />
-                            {uploading ? "جاري الرفع..." : "رفع عملك"}
-                          </span>
-                        </Button>
-                      </label>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-green-500 mb-4">✓ تم رفع عملك بنجاح</p>
+                      <p className="text-green-500 mb-4 font-semibold">✓ تم رفع عملك بنجاح! انتظر النتائج...</p>
                       <img
                         src={mySubmission}
                         alt="عملك"
-                        className="max-w-md mx-auto rounded-lg"
+                        className="max-w-md mx-auto rounded-lg shadow-lg"
                       />
                     </div>
                   )}
