@@ -63,3 +63,12 @@ verify_jwt = false
 
 [functions.morphology-root-tool]
 verify_jwt = false
+
+[functions.art-ai-assistant]
+verify_jwt = false
+
+[functions.drawing-challenge-prompt]
+verify_jwt = false
+
+[functions.drawing-challenge-evaluate]
+verify_jwt = false

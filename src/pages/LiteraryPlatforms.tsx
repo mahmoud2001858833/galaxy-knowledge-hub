@@ -31,16 +31,6 @@ const LiteraryPlatforms = () => {
       hoverBorderColor: "hover:border-indigo-500/50",
       description: t.literaryPlatforms.englishDescription,
       link: "/english-language"
-    },
-    {
-      title: "الفن والتصميم",
-      icon: "🎨",
-      image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800",
-      color: "from-purple-600/20 to-pink-600/20",
-      borderColor: "border-purple-500/30",
-      hoverBorderColor: "hover:border-purple-500/50",
-      description: "منصة شاملة للفن - مشاريع الطلاب، ذكاء اصطناعي، فنانون، تحديات ونصائح",
-      link: "/art-design"
     }
   ];
 
@@ -83,7 +73,7 @@ const LiteraryPlatforms = () => {
           </motion.div>
 
           {/* Platforms Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {platforms.map((platform, index) => (
               <motion.div
                 key={index}

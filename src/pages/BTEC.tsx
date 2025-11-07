@@ -27,7 +27,7 @@ const BTEC = () => {
       color: "from-purple-600/20 to-pink-600/20",
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
-      link: "#"
+      link: "/art-design"
     },
     {
       title: "إدارة أعمال",

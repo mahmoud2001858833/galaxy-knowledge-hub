@@ -509,11 +509,15 @@ export type Database = {
           challenge_prompt: string
           completed_at: string | null
           created_at: string
+          end_time: string | null
           id: string
           player1_id: string
           player1_submission: string | null
-          player2_id: string
+          player2_id: string | null
           player2_submission: string | null
+          room_created_by: string | null
+          room_number: string | null
+          start_time: string | null
           status: string
           time_limit: number
           winner_id: string | null
@@ -523,11 +527,15 @@ export type Database = {
           challenge_prompt: string
           completed_at?: string | null
           created_at?: string
+          end_time?: string | null
           id?: string
           player1_id: string
           player1_submission?: string | null
-          player2_id: string
+          player2_id?: string | null
           player2_submission?: string | null
+          room_created_by?: string | null
+          room_number?: string | null
+          start_time?: string | null
           status?: string
           time_limit?: number
           winner_id?: string | null
@@ -537,11 +545,15 @@ export type Database = {
           challenge_prompt?: string
           completed_at?: string | null
           created_at?: string
+          end_time?: string | null
           id?: string
           player1_id?: string
           player1_submission?: string | null
-          player2_id?: string
+          player2_id?: string | null
           player2_submission?: string | null
+          room_created_by?: string | null
+          room_number?: string | null
+          start_time?: string | null
           status?: string
           time_limit?: number
           winner_id?: string | null
