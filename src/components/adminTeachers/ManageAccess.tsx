@@ -76,20 +76,29 @@ const ManageAccess = () => {
         body: { email: emailToAdd, access_level: newAccessLevel }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        throw new Error(data.error);
+      }
 
       toast({
         title: "تم الإضافة",
-        description: "تم إضافة الوصول بنجاح"
+        description: `تم إضافة ${emailToAdd} كـ ${newAccessLevel === 'admin' ? 'مشرف' : 'عضو'} بنجاح`
       });
 
       setNewEmail("");
       setNewAccessLevel('member');
-      fetchAccessList();
-    } catch (error) {
+      await fetchAccessList();
+    } catch (error: any) {
+      console.error('Add access error:', error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إضافة الوصول",
+        description: error?.message || "حدث خطأ أثناء إضافة الوصول",
         variant: "destructive"
       });
     } finally {

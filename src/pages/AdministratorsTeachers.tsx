@@ -15,7 +15,7 @@ const AdministratorsTeachers = () => {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(true); // Default to admin view
   const [isMemberMode, setIsMemberMode] = useState(false);
   const navigate = useNavigate();
 

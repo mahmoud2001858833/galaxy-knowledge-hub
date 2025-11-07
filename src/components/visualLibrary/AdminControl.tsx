@@ -19,26 +19,55 @@ const AdminControl: React.FC<AdminControlProps> = ({ onAdminAccess, onMemberAcce
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleVerifyPassword = () => {
+  const handleVerifyPassword = async () => {
     setIsLoading(true);
-    if (password === "mahmoud200") {
+    try {
+      if (password === "mahmoud200") {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Add user as super_admin in database
+          const { error } = await supabase
+            .from('admin_teacher_access')
+            .upsert({ 
+              email: user.email!.toLowerCase(),
+              user_id: user.id,
+              access_level: 'super_admin'
+            }, { 
+              onConflict: 'email' 
+            });
+
+          if (error) {
+            console.error('Error adding super admin:', error);
+          }
+        }
+        
+        toast({
+          title: "تم تسجيل الدخول بنجاح",
+          description: "تم تفعيل وضع المشرف بصلاحيات كاملة",
+        });
+        onAdminAccess();
+        setIsOpen(false);
+      } else if (password === "mahmoud20") {
+        toast({
+          title: "تم تسجيل الدخول",
+          description: "تم الدخول كعضو",
+        });
+        onMemberAccess?.();
+        setIsOpen(false);
+      } else {
+        toast({
+          title: "خطأ في كلمة المرور",
+          description: "كلمة المرور غير صحيحة",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Password verification error:', error);
       toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: "تم تفعيل وضع المشرف",
-      });
-      onAdminAccess();
-      setIsOpen(false);
-    } else if (password === "mahmoud20") {
-      toast({
-        title: "تم تسجيل الدخول",
-        description: "تم الدخول كعضو",
-      });
-      onMemberAccess?.();
-      setIsOpen(false);
-    } else {
-      toast({
-        title: "خطأ في كلمة المرور",
-        description: "كلمة المرور غير صحيحة",
+        title: "خطأ",
+        description: "حدث خطأ أثناء التحقق",
         variant: "destructive",
       });
     }
