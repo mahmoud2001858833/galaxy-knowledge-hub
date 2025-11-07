@@ -1163,7 +1163,7 @@ export type Database = {
       }
       calculate_user_level: { Args: { usage_minutes: number }; Returns: number }
       get_admin_teacher_access_level: {
-        Args: { _user_id: string }
+        Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
       has_admin_teacher_access: { Args: { _user_id: string }; Returns: boolean }
