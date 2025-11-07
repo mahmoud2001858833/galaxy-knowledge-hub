@@ -44,6 +44,15 @@ const EducationalPlatforms = () => {
       borderColor: "border-yellow-500/30",
       hoverBorderColor: "hover:border-yellow-500/50",
       link: "/mathematics"
+    },
+    {
+      title: t.platforms.communicationBridge,
+      icon: "🌉",
+      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80",
+      color: "from-teal-600/20 to-cyan-600/20",
+      borderColor: "border-teal-500/30",
+      hoverBorderColor: "hover:border-teal-500/50",
+      link: "/communication-bridge"
     }
   ];
 

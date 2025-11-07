@@ -190,6 +190,7 @@ export const en = {
     chemistry: "Chemistry Lab",
     biology: "Biology World",
     mathematics: "Mathematics Arena",
+    communicationBridge: "Communication Bridge",
     explore: "Explore"
   },
   // English Platform
@@ -206,6 +207,71 @@ export const en = {
     smartTranslatorDescription: "Intelligent educational translation between Arabic and English with explanations and analysis",
     speechAssistant: "Speech & Pronunciation Coach",
     speechAssistantDescription: "Improve your English pronunciation and speaking skills with interactive training"
+  },
+  // Communication Bridge
+  communicationBridge: {
+    title: "Communication Bridge",
+    subtitle: "Communication platform between teachers and parents",
+    selectUserType: "Select user type",
+    teacher: "Teacher",
+    parent: "Parent",
+    teacherForm: {
+      title: "Teacher Information",
+      schoolName: "School Name",
+      teacherName: "Teacher Name",
+      homeroomClass: "Homeroom Teacher for which class",
+      subjectTaught: "Subject Taught",
+      gradesSections: "Grades and Sections Taught",
+      addGradeSection: "Add Grade and Section",
+      grade: "Grade",
+      section: "Section",
+      submit: "Register"
+    },
+    parentForm: {
+      title: "Parent Information",
+      parentName: "Parent Name",
+      studentName: "Student Name",
+      grade: "Grade",
+      section: "Section",
+      schoolName: "School Name",
+      submit: "Register"
+    },
+    dashboard: {
+      assignments: "Assignments",
+      notes: "Notes",
+      chat: "Chat"
+    },
+    assignments: {
+      title: "Assignments",
+      uploadAssignment: "Upload Assignment",
+      assignmentName: "Assignment Name",
+      description: "Description",
+      grade: "Grade",
+      section: "Section",
+      imageOptional: "Image (Optional)",
+      submit: "Add Assignment",
+      noAssignments: "No assignments available"
+    },
+    notes: {
+      title: "Notes",
+      addNote: "Add Note",
+      teacherName: "Teacher Name",
+      classSection: "Class and Section",
+      studentName: "Student Name",
+      parentName: "Parent Name",
+      description: "Issue Description",
+      submit: "Add Note",
+      noNotes: "No notes available"
+    },
+    chat: {
+      title: "Chat",
+      typeMessage: "Type your message...",
+      send: "Send",
+      uploadImage: "Upload Image",
+      teacher: "Teacher",
+      parent: "Parent",
+      noMessages: "No messages yet"
+    }
   },
   // Smart Translator
   smartTranslator: {

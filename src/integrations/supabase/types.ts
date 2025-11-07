@@ -455,6 +455,133 @@ export type Database = {
         }
         Relationships: []
       }
+      class_assignments: {
+        Row: {
+          assignment_name: string
+          created_at: string
+          description: string
+          grade: string
+          id: string
+          image_url: string | null
+          section: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_name: string
+          created_at?: string
+          description: string
+          grade: string
+          id?: string
+          image_url?: string | null
+          section: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_name?: string
+          created_at?: string
+          description?: string
+          grade?: string
+          id?: string
+          image_url?: string | null
+          section?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_chat_messages: {
+        Row: {
+          created_at: string
+          grade: string
+          id: string
+          image_url: string | null
+          message_text: string
+          school_name: string
+          section: string
+          user_id: string
+          user_type: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          grade: string
+          id?: string
+          image_url?: string | null
+          message_text: string
+          school_name: string
+          section: string
+          user_id: string
+          user_type: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          grade?: string
+          id?: string
+          image_url?: string | null
+          message_text?: string
+          school_name?: string
+          section?: string
+          user_id?: string
+          user_type?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      class_notes: {
+        Row: {
+          class_section: string
+          created_at: string
+          description: string
+          id: string
+          parent_name: string
+          student_name: string
+          teacher_id: string
+          teacher_name: string
+          updated_at: string
+        }
+        Insert: {
+          class_section: string
+          created_at?: string
+          description: string
+          id?: string
+          parent_name: string
+          student_name: string
+          teacher_id: string
+          teacher_name: string
+          updated_at?: string
+        }
+        Update: {
+          class_section?: string
+          created_at?: string
+          description?: string
+          id?: string
+          parent_name?: string
+          student_name?: string
+          teacher_id?: string
+          teacher_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_notes_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -805,6 +932,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parents: {
+        Row: {
+          created_at: string
+          grade: string
+          id: string
+          parent_name: string
+          school_name: string
+          section: string
+          student_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          grade: string
+          id?: string
+          parent_name: string
+          school_name: string
+          section: string
+          student_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          grade?: string
+          id?: string
+          parent_name?: string
+          school_name?: string
+          section?: string
+          student_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       poems: {
         Row: {
@@ -1243,6 +1406,42 @@ export type Database = {
         }
         Relationships: []
       }
+      teachers: {
+        Row: {
+          created_at: string
+          grades_sections: Json
+          homeroom_class: string
+          id: string
+          school_name: string
+          subject_taught: string
+          teacher_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          grades_sections?: Json
+          homeroom_class: string
+          id?: string
+          school_name: string
+          subject_taught: string
+          teacher_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          grades_sections?: Json
+          homeroom_class?: string
+          id?: string
+          school_name?: string
+          subject_taught?: string
+          teacher_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1413,6 +1612,7 @@ export type Database = {
     Enums: {
       admin_teacher_access_level: "member" | "admin" | "super_admin"
       app_role: "admin" | "moderator" | "user"
+      communication_user_type: "teacher" | "parent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1542,6 +1742,7 @@ export const Constants = {
     Enums: {
       admin_teacher_access_level: ["member", "admin", "super_admin"],
       app_role: ["admin", "moderator", "user"],
+      communication_user_type: ["teacher", "parent"],
     },
   },
 } as const

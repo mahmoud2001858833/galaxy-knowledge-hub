@@ -190,6 +190,7 @@ export const ar = {
     chemistry: "مختبر الكيمياء",
     biology: "عالم الأحياء",
     mathematics: "ساحة الرياضيات",
+    communicationBridge: "جسر التواصل",
     explore: "استكشاف"
   },
   // منصة اللغة الإنجليزية الجديدة
@@ -206,6 +207,71 @@ export const ar = {
     smartTranslatorDescription: "ترجمة ذكية وتعليمية بين العربية والإنجليزية مع شرح وتحليل",
     speechAssistant: "المساعد الذكي للنطق والتحدث",
     speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية"
+  },
+  // جسر التواصل
+  communicationBridge: {
+    title: "جسر التواصل",
+    subtitle: "منصة تواصل بين المعلمين وأولياء الأمور",
+    selectUserType: "اختر نوع المستخدم",
+    teacher: "معلم",
+    parent: "ولي أمر",
+    teacherForm: {
+      title: "معلومات المعلم",
+      schoolName: "اسم المدرسة",
+      teacherName: "اسم المعلم",
+      homeroomClass: "مربي صف لأي صف",
+      subjectTaught: "المادة المُدرسة",
+      gradesSections: "الصفوف والشعب التي يدرسها",
+      addGradeSection: "إضافة صف وشعبة",
+      grade: "الصف",
+      section: "الشعبة",
+      submit: "تسجيل"
+    },
+    parentForm: {
+      title: "معلومات ولي الأمر",
+      parentName: "اسم ولي الأمر",
+      studentName: "اسم الطالب",
+      grade: "الصف",
+      section: "الشعبة",
+      schoolName: "اسم المدرسة",
+      submit: "تسجيل"
+    },
+    dashboard: {
+      assignments: "الواجبات",
+      notes: "الملاحظات",
+      chat: "الدردشة"
+    },
+    assignments: {
+      title: "الواجبات",
+      uploadAssignment: "رفع واجب",
+      assignmentName: "اسم الواجب",
+      description: "الوصف",
+      grade: "الصف",
+      section: "الشعبة",
+      imageOptional: "صورة (اختياري)",
+      submit: "إضافة الواجب",
+      noAssignments: "لا توجد واجبات حالياً"
+    },
+    notes: {
+      title: "الملاحظات",
+      addNote: "إضافة ملاحظة",
+      teacherName: "اسم المعلم",
+      classSection: "الصف والشعبة",
+      studentName: "اسم الطالب",
+      parentName: "اسم ولي الأمر",
+      description: "وصف المشكلة",
+      submit: "إضافة الملاحظة",
+      noNotes: "لا توجد ملاحظات حالياً"
+    },
+    chat: {
+      title: "الدردشة",
+      typeMessage: "اكتب رسالتك...",
+      send: "إرسال",
+      uploadImage: "رفع صورة",
+      teacher: "معلم",
+      parent: "ولي أمر",
+      noMessages: "لا توجد رسائل بعد"
+    }
   },
   // المترجم الذكي
   smartTranslator: {

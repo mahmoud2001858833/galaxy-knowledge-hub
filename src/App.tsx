@@ -62,6 +62,7 @@ import RecordedLessons from './components/educational/RecordedLessons';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
+import CommunicationBridge from './pages/CommunicationBridge';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -340,6 +341,14 @@ const router = createBrowserRouter([
       {
         path: 'drawing-challenge/:roomId',
         element: <AuthGuard><DrawingChallengeRoom /></AuthGuard>,
+      },
+      {
+        path: 'communication-bridge',
+        element: <AuthGuard><CommunicationBridge /></AuthGuard>,
+      },
+      {
+        path: 'communication-bridge/:userType',
+        element: <AuthGuard><CommunicationBridge /></AuthGuard>,
       },
       {
         path: '*',
