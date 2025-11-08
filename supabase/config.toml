@@ -55,6 +55,18 @@ verify_jwt = false
 [functions.arabic-question-bank]
 verify_jwt = false
 
+[functions.arabic-prosody-analyzer]
+verify_jwt = false
+
+[functions.arabic-prosody-ocr]
+verify_jwt = false
+
+[functions.arabic-prosody-analyzer]
+verify_jwt = false
+
+[functions.arabic-prosody-ocr]
+verify_jwt = false
+
 [functions.morphology-derivatives]
 verify_jwt = false
 

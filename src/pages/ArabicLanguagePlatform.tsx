@@ -7,6 +7,8 @@ import GrammarFoundation from '@/components/arabic/GrammarFoundation';
 import MorphologyDerivatives from '@/components/arabic/MorphologyDerivatives';
 import MorphologyAIAssistant from '@/components/arabic/MorphologyAIAssistant';
 import MorphologyRootTool from '@/components/arabic/MorphologyRootTool';
+import ArabicProsody from '@/components/arabic/ArabicProsody';
+import LiteraryReview from '@/components/arabic/LiteraryReview';
 
 type Section = 'grammar' | 'morphology' | 'prosody' | 'criticism' | 'rhetoric' | null;
 type GrammarTool = 'ai-assistant' | 'smart-syntax' | 'foundation' | null;
@@ -162,6 +164,14 @@ const ArabicLanguagePlatform = () => {
         case 'root':
           return <MorphologyRootTool />;
       }
+    }
+
+    if (activeSection === 'prosody') {
+      return <ArabicProsody />;
+    }
+
+    if (activeSection === 'criticism') {
+      return <LiteraryReview />;
     }
 
     return (
