@@ -67,6 +67,7 @@ import TeacherRegistration from './pages/TeacherRegistration';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherAssignments from './pages/TeacherAssignments';
 import TeacherNotes from './pages/TeacherNotes';
+import TeacherStatistics from './pages/TeacherStatistics';
 import ParentRegistration from './pages/ParentRegistration';
 import ParentDashboard from './pages/ParentDashboard';
 import ParentAssignments from './pages/ParentAssignments';
@@ -370,6 +371,10 @@ const router = createBrowserRouter([
       {
         path: 'teacher/notes',
         element: <AuthGuard><TeacherNotes /></AuthGuard>,
+      },
+      {
+        path: 'teacher/statistics',
+        element: <AuthGuard><TeacherStatistics /></AuthGuard>,
       },
       {
         path: 'teacher/chat',
