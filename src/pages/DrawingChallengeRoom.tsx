@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, Upload, Trophy, ArrowLeft, MessageCircle } from "lucide-react";
+import { Clock, Upload, Trophy, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DrawingChallengeChat } from "@/components/artDesign/DrawingChallengeChat";
+
 
 const DrawingChallengeRoom = () => {
   const { roomId } = useParams();
@@ -22,7 +22,6 @@ const DrawingChallengeRoom = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [player1Username, setPlayer1Username] = useState<string>("");
   const [player2Username, setPlayer2Username] = useState<string>("");
-  const [showChat, setShowChat] = useState(true);
 
   useEffect(() => {
     const initializeRoom = async () => {
@@ -252,33 +251,20 @@ const DrawingChallengeRoom = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        <div className="flex items-center justify-between mb-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/art-design")}
-          >
-            <ArrowLeft className="w-4 h-4 ml-2" />
-            العودة
-          </Button>
-          
-          {!showChat && (
-            <Button
-              onClick={() => setShowChat(true)}
-              variant="outline"
-              className="gap-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              إظهار المحادثة
-            </Button>
-          )}
-        </div>
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/art-design")}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 ml-2" />
+          العودة
+        </Button>
 
-        <div className="flex gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`space-y-6 transition-all ${showChat ? "flex-1" : "w-full"}`}
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -320,10 +306,15 @@ const DrawingChallengeRoom = () => {
                     <p className="text-lg text-muted-foreground">في انتظار انضمام اللاعب الثاني...</p>
                   )}
                   
-                  {challenge.player2_id && challenge.room_created_by === currentUserId && (
-                    <Button onClick={startChallenge} size="lg" className="gap-2">
+                  {challenge.room_created_by === currentUserId && (
+                    <Button 
+                      onClick={startChallenge} 
+                      size="lg" 
+                      className="gap-2"
+                      disabled={!challenge.player2_id}
+                    >
                       <Trophy className="w-5 h-5" />
-                      بدء التحدي
+                      {!challenge.player2_id ? "في انتظار اللاعب الثاني..." : "بدء التحدي"}
                     </Button>
                   )}
                   
@@ -419,23 +410,7 @@ const DrawingChallengeRoom = () => {
               )}
             </CardContent>
           </Card>
-          </motion.div>
-
-          {showChat && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="w-80 flex-shrink-0"
-            >
-              <div className="sticky top-4 h-[calc(100vh-8rem)]">
-                <DrawingChallengeChat
-                  challengeId={roomId!}
-                  onClose={() => setShowChat(false)}
-                />
-              </div>
-            </motion.div>
-          )}
-        </div>
+        </motion.div>
       </div>
 
       <Footer />
