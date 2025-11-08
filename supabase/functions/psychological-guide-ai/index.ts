@@ -13,7 +13,13 @@ serve(async (req) => {
   try {
     const { message, mood, conversationHistory } = await req.json();
 
-    const GOOGLE_API_KEY = "AIzaSyD4rUuEExFqobyo5Vju3Mu348TQ-5tDgSw";
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GOOGLE_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured', answer: 'عذراً، حدث خطأ في الإعداد.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Build conversation context
     const messages = conversationHistory || [];

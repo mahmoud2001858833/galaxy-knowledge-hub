@@ -13,7 +13,13 @@ serve(async (req) => {
   try {
     const { message, image, userName, hasImage } = await req.json()
     
-    const GEMINI_API_KEY = "AIzaSyBbk808sXI4HXye9V97annZy8RikeahG3E"
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Personalized greeting with user name
     const personalizedGreeting = userName ? `مرحباً ${userName}! ` : "أهلاً بك! ";

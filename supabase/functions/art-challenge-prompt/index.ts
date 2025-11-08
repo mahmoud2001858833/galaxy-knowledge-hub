@@ -11,7 +11,13 @@ serve(async (req) => {
   }
 
   try {
-    const GOOGLE_AI_API_KEY = "AIzaSyAbAo_OV5kaFLtvPe6rdd5Vm-Yo1itqJHU";
+    const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GOOGLE_AI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const systemPrompt = `أنت مساعد ذكي متخصص في إنشاء أفكار إبداعية للتحديات الفنية. اقترح فكرة واحدة مثيرة للاهتمام وواضحة يمكن للطالب رسمها أو تصميمها. يجب أن تكون الفكرة:
 - واضحة ومحددة

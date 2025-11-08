@@ -12,7 +12,13 @@ serve(async (req) => {
 
   try {
     const { message } = await req.json();
-    const GEMINI_API_KEY = 'AIzaSyDQlwmyH9zhAOlUmxn9S7Ywae9EpkYaumM';
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const systemPrompt = `أنت مساعد ذكي متخصص في علم الصرف العربي. أنت خبير في:
 - الميزان الصرفي

@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import MemberSection from "@/components/adminTeachers/MemberSection";
 import AdminSection from "@/components/adminTeachers/AdminSection";
-import AdminControl from "@/components/visualLibrary/AdminControl";
 
 type AccessLevel = 'member' | 'admin' | 'super_admin' | null;
 
@@ -80,14 +79,7 @@ const AdministratorsTeachers = () => {
           description="منصة المشرفين والمعلمين"
         />
         <Navbar />
-        <div className="container mx-auto px-4 py-20 relative">
-          <div className="absolute top-4 left-4">
-            <AdminControl 
-              onAdminAccess={() => checkAccess()}
-              onMemberAccess={() => checkAccess()}
-              isAdminMode={isAdminMode}
-            />
-          </div>
+        <div className="container mx-auto px-4 py-20">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4">غير مصرح</h1>
             <p className="text-muted-foreground text-lg mb-6">

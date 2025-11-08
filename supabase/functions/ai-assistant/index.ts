@@ -23,8 +23,14 @@ serve(async (req) => {
     }
 
     if (useGemini) {
-      // Use Gemini API with the provided API key
-      const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || 'AIzaSyD4rUuEExFqobyo5Vju3Mu348TQ-5tDgSw';
+      // Use Gemini API with environment variable
+      const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+      if (!GEMINI_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: 'API key not configured' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
       
       // Prepare the prompt based on the subject with enhanced instructions
       let fullPrompt = prompt;
@@ -94,22 +100,8 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // Use the original method or API
-      // Choose the appropriate API key based on the subject
-      let API_KEY = Deno.env.get('GOOGLE_API_KEY');
-      
-      // If subject is physics, use the physics-specific API key
-      if (subject === 'physics') {
-        API_KEY = Deno.env.get('PHYSICS_API_KEY') || 'AIzaSyCrbnTAA8tPj52LzXQOgQpv7EFxcflzODs';
-      } 
-      // If subject is biology, use the biology-specific API key with our new key
-      else if (subject === 'biology') {
-        API_KEY = Deno.env.get('BIOLOGY_API_KEY') || 'AIzaSyD4rUuEExFqobyo5Vju3Mu348TQ-5tDgSw';
-      } 
-      // Default API key for other subjects (currently used for math and chemistry)
-      else {
-        API_KEY = API_KEY || 'AIzaSyC4qVy7Fa3G-ZcxkRI0N_E2yLASf3B2QaA';
-      }
+      // Use environment variable for API key
+      const API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
       
       if (!API_KEY) {
         return new Response(

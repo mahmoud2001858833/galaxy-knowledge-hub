@@ -18,7 +18,13 @@ serve(async (req) => {
       throw new Error('رسالة غير صالحة')
     }
     
-    const GEMINI_API_KEY = "AIzaSyDevT37iCVPLQAQ-dsenv1cDgbh86-Ftro"
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ result: 'عذراً، حدث خطأ في الإعداد. يرجى المحاولة مرة أخرى.', navigationPath: '', autoNavigate: false }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     let responseText = ""
     let navigationPath = ""

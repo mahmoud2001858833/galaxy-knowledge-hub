@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Trash, BookOpen, ExternalLink } from "lucide-react";
-import AdminControl from '../visualLibrary/AdminControl';
 import { deleteFileFromStorage } from '@/utils/fileUpload';
 
 interface Journal {
@@ -39,7 +38,29 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
 
   useEffect(() => {
     fetchJournals();
+    checkAdminAccess();
   }, [subject]);
+
+  const checkAdminAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsAdminMode(false);
+        return;
+      }
+
+      const { data: access } = await supabase
+        .from('admin_teacher_access')
+        .select('access_level')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setIsAdminMode(access?.access_level === 'super_admin' || access?.access_level === 'admin');
+    } catch (error) {
+      console.error('Error checking admin access:', error);
+      setIsAdminMode(false);
+    }
+  };
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -179,24 +200,9 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
   };
 
   const openDeleteConfirmation = (e: React.MouseEvent<HTMLButtonElement>, journal: Journal) => {
-    e.stopPropagation(); // منع فتح المجلة عند النقر على زر الحذف
+    e.stopPropagation();
     setJournalToDelete(journal);
     setDeleteConfirmationOpen(true);
-  };
-
-  const toggleAdminMode = () => {
-    setIsAdminMode(!isAdminMode);
-    if (isAdminMode) {
-      toast({
-        title: "تم إيقاف وضع المشرف",
-        description: "تم إيقاف وضع المشرف بنجاح",
-      });
-    } else {
-      toast({
-        title: "تم تفعيل وضع المشرف",
-        description: "يمكنك الآن إدارة المجلات العلمية وحذفها نهائياً للأبد",
-      });
-    }
   };
 
   if (loading) {
@@ -218,9 +224,6 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
   if (journals.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex justify-end w-full mb-6">
-          <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
-        </div>
         <BookOpen className="w-16 h-16 text-purple-300 mb-4 opacity-50" />
         <h3 className="text-xl font-medium text-purple-200 mb-2">لا توجد مجلات بعد</h3>
         <p className="text-purple-300">
@@ -242,7 +245,6 @@ const SubjectJournalsGrid = ({ subject }: SubjectJournalsGridProps) => {
             className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:border-purple-500"
           />
         </div>
-        <AdminControl onAdminAccess={toggleAdminMode} isAdminMode={isAdminMode} />
       </div>
       
       <div className="mb-4">

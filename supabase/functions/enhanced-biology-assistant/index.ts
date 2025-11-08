@@ -16,7 +16,13 @@ serve(async (req) => {
     
     console.log('Enhanced Biology Assistant request:', { message, language });
 
-    const GEMINI_API_KEY = "AIzaSyDevT37iCVPLQAQ-dsenv1cDgbh86-Ftro";
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     const systemPrompt = language === 'ar' 
       ? `أنت مساعد ذكي متخصص في علم الأحياء والحسابات الحيوية. أجب بوضوح ودقة علمية عالية باللغة العربية.

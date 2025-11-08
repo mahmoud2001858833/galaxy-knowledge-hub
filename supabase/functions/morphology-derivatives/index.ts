@@ -12,7 +12,13 @@ serve(async (req) => {
 
   try {
     const { word } = await req.json();
-    const GEMINI_API_KEY = 'AIzaSyBvXCcQZNHwBXbqfjaeUNzUgXUOr87IA5g';
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const prompt = `أنت خبير في علم الصرف العربي. قم بتحليل الكلمة التالية وإظهار جميع مشتقاتها:
 

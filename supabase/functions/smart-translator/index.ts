@@ -14,7 +14,13 @@ serve(async (req) => {
   try {
     const { text, direction, context, language } = await req.json()
     
-    const GEMINI_API_KEY = "AIzaSyC1u3-VRvMHRz-DxYJJp3Y9a1eqGOCk4CQ"
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured', translation: '', explanation: '', grammarExplanation: '', keyWords: [], suggestions: [] }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     const contextDescriptions: { [key: string]: string } = {
       formal: language === 'ar' ? 'رسمي ومهني' : 'formal and professional',

@@ -12,7 +12,13 @@ serve(async (req) => {
 
   try {
     const { imageUrl } = await req.json();
-    const GEMINI_API_KEY = 'AIzaSyDVHrMAsh-jY04ZWsdbFxVDZRZRmkUqAGk';
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log('Fetching image from:', imageUrl);
     

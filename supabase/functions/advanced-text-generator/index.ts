@@ -16,7 +16,13 @@ serve(async (req) => {
     
     console.log('Text generation request:', { topic, style, difficulty, wordCount, language });
 
-    const GEMINI_API_KEY = "AIzaSyDevT37iCVPLQAQ-dsenv1cDgbh86-Ftro";
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured', success: false }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // بناء البرومبت حسب المعايير المطلوبة
     let stylePrompt = "";

@@ -13,7 +13,13 @@ serve(async (req) => {
   try {
     const { essayType, wordCount, additionalInfo } = await req.json()
     
-    const GEMINI_API_KEY = "AIzaSyAx2V-sMox-5DV6p_WM1cwB8SjZVd271LA"
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     const essayTypeArabic = {
       article: 'مقالة',
