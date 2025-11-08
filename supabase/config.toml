@@ -72,3 +72,12 @@ verify_jwt = false
 
 [functions.drawing-challenge-evaluate]
 verify_jwt = false
+
+[functions.art-challenge-prompt]
+verify_jwt = false
+
+[functions.art-challenge-evaluate]
+verify_jwt = false
+
+[functions.rate-your-art]
+verify_jwt = false

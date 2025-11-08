@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Palette, Upload, Bot, Users, Trophy, Lightbulb } from "lucide-react";
+import { Palette, Upload, Bot, Users, Trophy, Lightbulb, Star } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StudentArtProjects from "@/components/artDesign/StudentArtProjects";
 import AIForArt from "@/components/artDesign/AIForArt";
 import ArtistsGallery from "@/components/artDesign/ArtistsGallery";
-import DrawingChallenge from "@/components/artDesign/DrawingChallenge";
+import ArtChallenge from "@/components/artDesign/ArtChallenge";
+import RateYourArt from "@/components/artDesign/RateYourArt";
 import DrawingTips from "@/components/artDesign/DrawingTips";
 
 const ArtDesign = () => {
@@ -19,7 +20,8 @@ const ArtDesign = () => {
     { id: "projects", label: "مشاريع الطلاب", icon: Upload },
     { id: "ai", label: "الذكاء الاصطناعي للفن", icon: Bot },
     { id: "artists", label: "الفنانون", icon: Users },
-    { id: "challenge", label: "تحدي الرسم", icon: Trophy },
+    { id: "challenge", label: "تحدي فني", icon: Trophy },
+    { id: "rate", label: "قيّم عملك الفني", icon: Star },
     { id: "tips", label: "نصائح الرسم", icon: Lightbulb },
   ];
 
@@ -51,7 +53,7 @@ const ArtDesign = () => {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-          <TabsList className="grid w-full grid-cols-5 mb-8 bg-card/50 backdrop-blur-sm p-2 rounded-xl">
+          <TabsList className="grid w-full grid-cols-6 mb-8 bg-card/50 backdrop-blur-sm p-2 rounded-xl">
             {tabs.map((tab, index) => (
               <TabsTrigger
                 key={tab.id}
@@ -77,7 +79,11 @@ const ArtDesign = () => {
           </TabsContent>
 
           <TabsContent value="challenge">
-            <DrawingChallenge />
+            <ArtChallenge />
+          </TabsContent>
+
+          <TabsContent value="rate">
+            <RateYourArt />
           </TabsContent>
 
           <TabsContent value="tips">
