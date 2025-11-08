@@ -68,44 +68,52 @@ const TeacherStatistics = () => {
       };
       setTeacher(teacherInfo);
 
-      // Fetch statistics for each class
-      const stats: ClassStatistics[] = [];
-
-      for (const gradeSection of teacherInfo.grades_sections) {
-        // Parse grade and section (format: "10A" -> grade: "10", section: "A")
-        const grade = gradeSection.replace(/[^0-9]/g, '');
-        const section = gradeSection.replace(/[0-9]/g, '');
-
-        // Count assignments
-        const { count: assignmentsCount } = await supabase
+      // Fetch all data at once for better performance
+      const [assignmentsData, notesData, messagesData] = await Promise.all([
+        supabase
           .from('class_assignments')
-          .select('*', { count: 'exact', head: true })
-          .eq('teacher_id', teacherInfo.id)
-          .eq('grade', grade)
-          .eq('section', section);
-
-        // Count notes
-        const { count: notesCount } = await supabase
+          .select('grade, section')
+          .eq('teacher_id', teacherInfo.id),
+        supabase
           .from('class_notes')
-          .select('*', { count: 'exact', head: true })
-          .eq('teacher_id', teacherInfo.id)
-          .ilike('class_section', `%${grade}%${section}%`);
-
-        // Count messages
-        const { count: messagesCount } = await supabase
+          .select('class_section')
+          .eq('teacher_id', teacherInfo.id),
+        supabase
           .from('class_chat_messages')
-          .select('*', { count: 'exact', head: true })
+          .select('grade, section')
           .eq('school_name', teacherInfo.school_name)
-          .eq('grade', grade)
-          .eq('section', section);
+      ]);
 
-        stats.push({
+      // Build statistics for each class
+      const stats: ClassStatistics[] = teacherInfo.grades_sections.map(gradeSection => {
+        // Normalize the grade-section string (remove spaces and convert to lowercase for comparison)
+        const normalized = gradeSection.replace(/\s+/g, '').toLowerCase();
+        
+        // Count assignments - match by concatenating grade+section and comparing
+        const assignmentsCount = (assignmentsData.data || []).filter(assignment => {
+          const assignmentGradeSection = `${assignment.grade}${assignment.section}`.replace(/\s+/g, '').toLowerCase();
+          return assignmentGradeSection === normalized;
+        }).length;
+
+        // Count notes - check if class_section contains the grade-section
+        const notesCount = (notesData.data || []).filter(note => {
+          const noteSection = note.class_section.replace(/\s+/g, '').toLowerCase();
+          return noteSection.includes(normalized) || normalized.includes(noteSection);
+        }).length;
+
+        // Count messages - match by concatenating grade+section
+        const messagesCount = (messagesData.data || []).filter(message => {
+          const messageGradeSection = `${message.grade}${message.section}`.replace(/\s+/g, '').toLowerCase();
+          return messageGradeSection === normalized;
+        }).length;
+
+        return {
           gradeSection,
-          assignmentsCount: assignmentsCount || 0,
-          notesCount: notesCount || 0,
-          messagesCount: messagesCount || 0
-        });
-      }
+          assignmentsCount,
+          notesCount,
+          messagesCount
+        };
+      });
 
       setStatistics(stats);
     } catch (error) {
