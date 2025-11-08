@@ -167,6 +167,8 @@ export const en = {
     environmentalDescription: "Learn how to protect the environment through school and home projects and carbon footprint calculation",
     falakAI: "Peak of Science AI",
     falakAIDescription: "Advanced AI assistant supporting Jordanian curriculum with space-age technology, image and video analysis",
+    communicationBridge: "Communication Bridge",
+    communicationBridgeDescription: "Interactive communication platform between teachers and parents to monitor students and manage assignments and notes",
     explore: "Explore"
   },
   // Scientific platforms

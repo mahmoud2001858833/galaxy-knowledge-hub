@@ -70,6 +70,16 @@ const PlatformCategories = () => {
       link: "/psychological-guide"
     },
     {
+      title: t.platformCategories.communicationBridge,
+      icon: "🌉",
+      description: t.platformCategories.communicationBridgeDescription,
+      image: "https://images.unsplash.com/photo-1577563908411-5077b6dc7624?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-teal-600/20 to-cyan-600/20",
+      borderColor: "border-teal-500/30",
+      hoverBorderColor: "hover:border-teal-500/50",
+      link: "/communication-bridge"
+    },
+    {
       title: "المشرفون والمعلمون",
       icon: "👨‍🏫",
       description: "منصة خاصة للمشرفين والمعلمين لإدارة المشاريع والمتابعة",
