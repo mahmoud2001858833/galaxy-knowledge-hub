@@ -14,6 +14,20 @@ serve(async (req) => {
     const { prompt, imageUrl } = await req.json();
     const GOOGLE_AI_API_KEY = "AIzaSyAbAo_OV5kaFLtvPe6rdd5Vm-Yo1itqJHU";
 
+    // Fetch the image and convert to base64
+    console.log("Fetching image from:", imageUrl);
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error("Failed to fetch image");
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    
+    // Determine mime type from URL or default to jpeg
+    const mimeType = imageUrl.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
+    console.log("Image fetched and converted to base64, mime type:", mimeType);
+
     const systemPrompt = `أنت ناقد فني محترف متخصص في تقييم الأعمال الفنية. تم تكليف الطالب برسم أو تصميم: "${prompt}"
 
 قيّم العمل الفني المرفق بناءً على:
@@ -32,6 +46,7 @@ serve(async (req) => {
 
 قدم التقييم بأسلوب تشجيعي وبناء ومفصل.`;
 
+    console.log("Sending request to Google AI with image");
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_AI_API_KEY}`,
       {
@@ -45,6 +60,12 @@ serve(async (req) => {
               parts: [
                 {
                   text: systemPrompt,
+                },
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64Image,
+                  },
                 },
               ],
             },
