@@ -18,7 +18,7 @@ const BTEC = () => {
       color: "from-blue-600/20 to-cyan-600/20",
       borderColor: "border-blue-500/30",
       hoverBorderColor: "hover:border-blue-500/50",
-      link: "/btec/information-technology"
+      link: "/btec/it/programming"
     },
     {
       title: "فن وتصميم",
