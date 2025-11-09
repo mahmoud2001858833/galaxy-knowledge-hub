@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Trash } from "lucide-react";
+import { Trash, Lock } from "lucide-react";
 
 interface ContactMessage {
   id: string;
@@ -19,6 +19,9 @@ interface ContactMessage {
 }
 
 const AdminMessagesPanel = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -34,6 +37,7 @@ const AdminMessagesPanel = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsAdmin(false);
+      setIsLoading(false);
       return;
     }
 
@@ -46,9 +50,29 @@ const AdminMessagesPanel = () => {
 
     if (data && !error) {
       setIsAdmin(true);
-      fetchMessages();
     } else {
       setIsAdmin(false);
+    }
+    setIsLoading(false);
+  };
+
+  const handlePasswordSubmit = () => {
+    if (password === 'mahmoud200') {
+      setIsAuthenticated(true);
+      setShowPasswordDialog(false);
+      if (isAdmin) {
+        fetchMessages();
+      }
+      toast({
+        title: "تم التحقق بنجاح",
+        description: "مرحباً بك في لوحة الرسائل",
+      });
+    } else {
+      toast({
+        title: "خطأ",
+        description: "كلمة المرور غير صحيحة",
+        variant: "destructive",
+      });
     }
   };
 
@@ -74,7 +98,6 @@ const AdminMessagesPanel = () => {
       setIsLoading(false);
     }
   };
-
 
   const handleDeleteMessage = async () => {
     if (!messageToDelete) return;
@@ -108,6 +131,40 @@ const AdminMessagesPanel = () => {
     const date = new Date(dateString);
     return date.toLocaleString('ar-SA');
   };
+
+  if (!isAuthenticated) {
+    return (
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md bg-gradient-to-br from-purple-900/50 to-indigo-900/50 backdrop-blur-xl border-purple-500/30">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 text-white">
+              <Lock className="w-5 h-5 text-purple-400" />
+              الدخول إلى لوحة الرسائل
+            </DialogTitle>
+            <DialogDescription className="text-right text-gray-300">
+              يرجى إدخال كلمة المرور للوصول إلى لوحة الرسائل
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              placeholder="كلمة المرور"
+              className="text-right bg-white/10 border-white/20 text-white placeholder:text-white/40"
+            />
+            <Button
+              onClick={handlePasswordSubmit}
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            >
+              تسجيل الدخول
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!isAdmin) {
     return (

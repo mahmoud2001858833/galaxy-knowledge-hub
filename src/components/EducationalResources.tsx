@@ -35,12 +35,6 @@ const EducationalResources = () => {
       link: '/subject-puzzles'
     },
     {
-      title: t.resources.chatRooms,
-      icon: <MessageSquare className="h-6 w-6 text-blue-400" />,
-      description: t.resources.explorationTools,
-      link: '/chat-rooms'
-    },
-    {
       title: "التجارب العلمية",
       icon: <Atom className="h-6 w-6 text-green-400" />,
       description: "محاكاة وتجارب علمية تفاعلية",
@@ -69,7 +63,7 @@ const EducationalResources = () => {
         <div className="w-16 h-1 bg-blue-500/50 mx-auto mt-4"></div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {resources.map((resource, index) => (
           <motion.div
             key={index}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Send, Loader2, Brain, Heart, Sparkles, BookOpen, Video, ExternalLink } from 'lucide-react';
+import { ArrowRight, Send, Loader2, Brain, Heart, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -32,33 +32,6 @@ const moods = [
   { emoji: '😊', label: 'سعيد', value: 'happy', color: 'from-green-500 to-teal-500', bgGradient: 'from-green-950 via-green-900 to-black' }
 ];
 
-const sideMenuOptions = [
-  {
-    title: 'مشكلة فهم الدراسة',
-    icon: BookOpen,
-    description: 'أفضل طرق الدراسة والمراجعة',
-    gradient: 'from-blue-600 to-purple-600'
-  },
-  {
-    title: 'مشكلة تنظيم الوقت',
-    icon: Brain,
-    description: 'أفضل طرق تنظيم الوقت',
-    gradient: 'from-pink-600 to-rose-600'
-  },
-  {
-    title: 'صعوبة في التركيز',
-    icon: Sparkles,
-    description: 'تحسين التركيز والانتباه',
-    gradient: 'from-cyan-600 to-blue-600'
-  },
-  {
-    title: 'قلق من الامتحانات',
-    icon: Heart,
-    description: 'طرق التغلب على القلق',
-    gradient: 'from-purple-600 to-indigo-600'
-  }
-];
-
 const PsychologicalGuide = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,7 +40,6 @@ const PsychologicalGuide = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSideMenu, setShowSideMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -161,18 +133,6 @@ const PsychologicalGuide = () => {
     }
   };
 
-  const handleSideMenuOption = (option: typeof sideMenuOptions[0]) => {
-    const messageMap: Record<string, string> = {
-      'مشكلة فهم الدراسة': 'عندي مشكلة في فهم الدراسة',
-      'مشكلة تنظيم الوقت': 'عندي مشكلة في تنظيم الوقت',
-      'صعوبة في التركيز': 'عندي صعوبة في التركيز',
-      'قلق من الامتحانات': 'عندي قلق من الامتحانات'
-    };
-    
-    setInputText(messageMap[option.title] || option.title);
-    setShowSideMenu(false);
-  };
-
   const selectedMoodData = moods.find(m => m.value === selectedMood);
   const bgClass = step === 'chat' && selectedMoodData 
     ? `bg-gradient-to-b ${selectedMoodData.bgGradient}`
@@ -197,7 +157,7 @@ const PsychologicalGuide = () => {
       
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-6 relative z-10 flex flex-col max-w-6xl">
+      <main className="flex-1 container mx-auto px-4 py-6 relative z-10 flex flex-col max-w-4xl">
         <Button
           onClick={() => navigate('/')}
           variant="ghost"
@@ -216,21 +176,21 @@ const PsychologicalGuide = () => {
               exit={{ opacity: 0, scale: 0.8 }}
               className="flex-1 flex items-center justify-center"
             >
-              <Card className="p-16 bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-purple-400/40 backdrop-blur-2xl shadow-2xl max-w-3xl">
+              <Card className="p-12 md:p-16 bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-purple-400/40 backdrop-blur-2xl shadow-2xl max-w-3xl">
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
                   className="text-center space-y-8"
                 >
-                  <div className="text-8xl mb-6">🤲</div>
-                  <h2 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-pink-200 to-purple-300 leading-relaxed">
+                  <div className="text-6xl md:text-8xl mb-6">🤲</div>
+                  <h2 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-pink-200 to-purple-300 leading-relaxed">
                     صلِّ على النبي ﷺ
                   </h2>
                   <div className="mt-8 pt-8 border-t border-purple-400/30">
-                    <p className="text-2xl text-purple-200 font-semibold leading-relaxed">
+                    <p className="text-xl md:text-2xl text-purple-200 font-semibold leading-relaxed">
                       ﴿ إِنَّا لَا نُضِيعُ أَجْرَ مَنْ أَحْسَنَ عَمَلًا ﴾
                     </p>
-                    <p className="text-lg text-purple-300/80 mt-4">
+                    <p className="text-base md:text-lg text-purple-300/80 mt-4">
                       سورة الكهف
                     </p>
                   </div>
@@ -245,20 +205,20 @@ const PsychologicalGuide = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex items-center justify-center"
+              className="flex-1 flex items-center justify-center px-2"
             >
-              <Card className="p-12 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-500/30 backdrop-blur-xl max-w-2xl w-full">
+              <Card className="p-8 md:p-12 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-500/30 backdrop-blur-xl max-w-2xl w-full">
                 <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 mb-4">
-                    <Heart className="w-10 h-10 text-purple-300" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 mb-4">
+                    <Heart className="w-8 h-8 md:w-10 md:h-10 text-purple-300" />
                   </div>
-                  <h2 className="text-3xl font-bold text-white mb-4">
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                     كيف هو مزاجك اليوم؟
                   </h2>
-                  <p className="text-purple-200">اختر ما يعبر عن شعورك الحالي</p>
+                  <p className="text-sm md:text-base text-purple-200">اختر ما يعبر عن شعورك الحالي</p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-3 md:gap-6">
                   {moods.map((mood, index) => (
                     <motion.button
                       key={mood.value}
@@ -268,10 +228,10 @@ const PsychologicalGuide = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleMoodSelect(mood.value)}
-                      className={`p-8 rounded-2xl bg-gradient-to-br ${mood.color} hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 border border-white/20`}
+                      className={`p-4 md:p-8 rounded-2xl bg-gradient-to-br ${mood.color} hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 border border-white/20`}
                     >
-                      <div className="text-6xl mb-3">{mood.emoji}</div>
-                      <div className="text-white font-bold text-xl">{mood.label}</div>
+                      <div className="text-4xl md:text-6xl mb-2 md:mb-3">{mood.emoji}</div>
+                      <div className="text-white font-bold text-base md:text-xl">{mood.label}</div>
                     </motion.button>
                   ))}
                 </div>
@@ -284,49 +244,15 @@ const PsychologicalGuide = () => {
               key="chat"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex-1 flex gap-4"
+              className="flex-1 flex"
             >
-              {/* Side Menu */}
-              <motion.div
-                initial={{ x: -300, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="w-80 space-y-4"
-              >
-                <Card className="p-6 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 border-purple-500/30 backdrop-blur-xl">
-                  <div className="flex items-center mb-4">
-                    <Sparkles className="w-6 h-6 text-purple-300 ml-2" />
-                    <h3 className="text-xl font-bold text-white">قائمة المساعدة</h3>
+              {/* Chat Area - Full Width on Mobile */}
+              <Card className="flex-1 p-4 md:p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-500/30 backdrop-blur-xl flex flex-col">
+                <div className="text-center mb-4 md:mb-6">
+                  <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 mb-3">
+                    <Brain className="w-6 h-6 md:w-8 md:h-8 text-purple-300" />
                   </div>
-                  
-                  <div className="space-y-3">
-                    {sideMenuOptions.map((option, index) => (
-                      <motion.button
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleSideMenuOption(option)}
-                        className={`w-full p-4 rounded-xl bg-gradient-to-r ${option.gradient} text-white text-right hover:shadow-lg transition-all`}
-                      >
-                        <div className="flex items-start">
-                          <option.icon className="w-5 h-5 ml-3 mt-1" />
-                          <div>
-                            <div className="font-bold mb-1">{option.title}</div>
-                            <div className="text-sm opacity-90">{option.description}</div>
-                          </div>
-                        </div>
-                      </motion.button>
-                    ))}
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Chat Area */}
-              <Card className="flex-1 p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-500/30 backdrop-blur-xl flex flex-col">
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 mb-3">
-                    <Brain className="w-8 h-8 text-purple-300" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white">مرشدك النفسي</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-white">مرشدك النفسي</h2>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-4 mb-4 scrollbar-thin scrollbar-thumb-purple-500/50 scrollbar-track-transparent">
@@ -339,19 +265,20 @@ const PsychologicalGuide = () => {
                         exit={{ opacity: 0, y: -20 }}
                         className={`flex ${message.role === 'user' ? 'justify-start' : 'justify-end'}`}
                       >
-                        <div className={`max-w-[80%] p-4 rounded-2xl ${
+                        <div className={`max-w-[85%] md:max-w-[80%] p-3 md:p-4 rounded-2xl ${
                           message.role === 'user'
                             ? 'bg-purple-600/30 border border-purple-500/50 text-white'
                             : 'bg-gray-800/50 border border-gray-600/50 text-gray-100'
                         }`}>
-                          <div className="whitespace-pre-wrap text-sm leading-relaxed mb-2">
+                          <div className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed mb-2">
                             {message.content}
                           </div>
 
                           {message.redirectTo && (
                             <Button
                               onClick={() => navigate(message.redirectTo!)}
-                              className="w-full mt-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                              className="w-full mt-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-xs md:text-sm"
+                              size="sm"
                             >
                               {message.redirectMessage}
                             </Button>
@@ -359,7 +286,7 @@ const PsychologicalGuide = () => {
 
                           {message.suggestions && message.suggestions.length > 0 && (
                             <div className="mt-4 space-y-2">
-                              <div className="text-sm font-semibold text-purple-300 mb-2">
+                              <div className="text-xs md:text-sm font-semibold text-purple-300 mb-2">
                                 محتوى مقترح:
                               </div>
                               {message.suggestions.map((suggestion, idx) => (
@@ -368,11 +295,11 @@ const PsychologicalGuide = () => {
                                   href={suggestion.url}
                                   target={suggestion.url.startsWith('http') ? '_blank' : '_self'}
                                   rel="noopener noreferrer"
-                                  className="flex items-center p-3 rounded-lg bg-purple-900/30 hover:bg-purple-900/50 transition-colors border border-purple-500/30"
+                                  className="flex items-center p-2 md:p-3 rounded-lg bg-purple-900/30 hover:bg-purple-900/50 transition-colors border border-purple-500/30"
                                 >
-                                  <span className="text-2xl ml-3">{suggestion.icon}</span>
-                                  <span className="text-sm text-purple-200">{suggestion.title}</span>
-                                  <ExternalLink className="w-4 h-4 mr-auto text-purple-400" />
+                                  <span className="text-xl md:text-2xl ml-2 md:ml-3">{suggestion.icon}</span>
+                                  <span className="text-xs md:text-sm text-purple-200 flex-1">{suggestion.title}</span>
+                                  <ExternalLink className="w-3 h-3 md:w-4 md:h-4 text-purple-400" />
                                 </a>
                               ))}
                             </div>
@@ -388,9 +315,9 @@ const PsychologicalGuide = () => {
                       animate={{ opacity: 1 }}
                       className="flex justify-end"
                     >
-                      <div className="max-w-[80%] p-4 rounded-2xl bg-gray-800/50 border border-gray-600/50 flex items-center">
-                        <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                        <span className="text-sm text-gray-300">جاري التفكير...</span>
+                      <div className="max-w-[80%] p-3 md:p-4 rounded-2xl bg-gray-800/50 border border-gray-600/50 flex items-center">
+                        <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin ml-2" />
+                        <span className="text-xs md:text-sm text-gray-300">جاري التفكير...</span>
                       </div>
                     </motion.div>
                   )}
@@ -401,18 +328,19 @@ const PsychologicalGuide = () => {
                   <Button
                     onClick={sendMessage}
                     disabled={isLoading || !inputText.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 md:px-4"
+                    size="sm"
                   >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {isLoading ? <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" /> : <Send className="w-3 h-3 md:w-4 md:h-4" />}
                   </Button>
                   
                   <Textarea
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="اكتب هنا ما يدور في بالك..."
-                    className="flex-1 min-h-[50px] bg-gray-900/50 border-purple-500/30 text-white placeholder:text-gray-400 resize-none"
-                    rows={2}
+                    placeholder="اكتب رسالتك هنا..."
+                    disabled={isLoading}
+                    className="flex-1 min-h-[44px] max-h-32 bg-white/10 border-white/20 text-white placeholder:text-white/40 resize-none text-sm md:text-base"
                   />
                 </div>
               </Card>

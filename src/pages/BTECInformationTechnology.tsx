@@ -18,7 +18,7 @@ const BTECInformationTechnology = () => {
       description: "مساعد ذكي، تعاريف مهمة، وتحويل العمليات الرياضية إلى كود",
       color: "from-blue-600/20 to-cyan-600/20",
       borderColor: "border-blue-500/30",
-      link: "/btec/it/programming"
+      link: "/btec/programming"
     },
     {
       title: "مشاريع الطلبة",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, Code, Eye, Trash2, Plus, Bot } from 'lucide-react';
+import { Rocket, Code, Eye, Trash2, Plus, Bot, X, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,8 @@ const BuildPlatformTab = () => {
   const [platforms, setPlatforms] = useState<CustomPlatform[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isFullScreenView, setIsFullScreenView] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<CustomPlatform | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -106,6 +108,40 @@ const BuildPlatformTab = () => {
     }
   };
 
+  const handleUpdate = async () => {
+    if (!currentUser || !selectedPlatform) return;
+
+    if (!formData.name || !formData.custom_code) {
+      toast({ title: "تنبيه", description: "الرجاء ملء جميع الحقول المطلوبة", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('btec_custom_platforms')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          language: formData.language,
+          custom_code: formData.custom_code,
+        })
+        .eq('id', selectedPlatform.id)
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+
+      toast({ title: "✅ تم التحديث", description: "تم تحديث المنصة بنجاح" });
+      setIsEditDialogOpen(false);
+      fetchPlatforms();
+    } catch (error: any) {
+      console.error('Error updating platform:', error);
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDelete = async (platformId: string) => {
     if (!currentUser) return;
 
@@ -154,12 +190,23 @@ const BuildPlatformTab = () => {
     }
   };
 
+  const openEditDialog = (platform: CustomPlatform) => {
+    setSelectedPlatform(platform);
+    setFormData({
+      name: platform.name,
+      description: platform.description || '',
+      language: platform.language,
+      custom_code: platform.custom_code,
+    });
+    setIsEditDialogOpen(true);
+  };
+
   const renderPlatform = (platform: CustomPlatform) => {
     if (platform.language === 'HTML' || platform.language === 'CSS') {
       return (
         <iframe
           srcDoc={platform.custom_code}
-          className="w-full h-96 border border-white/10 rounded-lg bg-white"
+          className="w-full h-full border-0 bg-white"
           title={platform.name}
           sandbox="allow-scripts"
         />
@@ -167,7 +214,6 @@ const BuildPlatformTab = () => {
     }
     
     if (platform.language === 'JavaScript') {
-      // Wrap JavaScript code in HTML to execute it
       const htmlWithJs = `
         <!DOCTYPE html>
         <html>
@@ -193,7 +239,6 @@ const BuildPlatformTab = () => {
             <div id="app"></div>
             <div id="output"></div>
             <script>
-              // Override console.log to display in the page
               const output = document.getElementById('output');
               const originalLog = console.log;
               console.log = function(...args) {
@@ -214,16 +259,15 @@ const BuildPlatformTab = () => {
       return (
         <iframe
           srcDoc={htmlWithJs}
-          className="w-full h-96 border border-white/10 rounded-lg"
+          className="w-full h-full border-0"
           title={platform.name}
           sandbox="allow-scripts"
         />
       );
     }
     
-    // For Java and other languages, show the code
     return (
-      <div className="bg-gray-900 rounded-lg p-4 border border-white/10">
+      <div className="bg-gray-900 rounded-lg p-4 border border-white/10 h-full overflow-auto">
         <div className="mb-2 text-yellow-400 text-sm">
           ملاحظة: لا يمكن تشغيل كود {platform.language} في المتصفح. يتم عرض الكود فقط.
         </div>
@@ -330,21 +374,31 @@ const BuildPlatformTab = () => {
                     className="flex-1 gap-2"
                     onClick={() => {
                       setSelectedPlatform(platform);
-                      setIsViewDialogOpen(true);
+                      setIsFullScreenView(true);
                     }}
                   >
                     <Eye className="w-4 h-4" />
                     عرض المنصة
                   </Button>
                   {currentUser && platform.user_id === currentUser.id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 hover:bg-red-500/20"
-                      onClick={() => handleDelete(platform.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 hover:bg-blue-500/20"
+                        onClick={() => openEditDialog(platform)}
+                      >
+                        <Edit className="w-4 h-4 text-blue-400" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 hover:bg-red-500/20"
+                        onClick={() => handleDelete(platform.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
@@ -360,21 +414,69 @@ const BuildPlatformTab = () => {
         </div>
       )}
 
-      {/* View Platform Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-900 to-indigo-900">
+      {/* Full Screen View */}
+      {isFullScreenView && selectedPlatform && (
+        <div className="fixed inset-0 z-50 bg-black">
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              onClick={() => setIsFullScreenView(false)}
+              variant="outline"
+              className="bg-white/10 hover:bg-white/20 border-white/30"
+            >
+              <X className="w-5 h-5 mr-2" />
+              الرجوع إلى المنصة
+            </Button>
+          </div>
+          <div className="w-full h-full pt-16">
+            {renderPlatform(selectedPlatform)}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Platform Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-900 to-indigo-900">
           <DialogHeader>
-            <DialogTitle className="text-2xl">{selectedPlatform?.name}</DialogTitle>
+            <DialogTitle className="text-2xl">تعديل المنصة</DialogTitle>
           </DialogHeader>
-          {selectedPlatform && (
-            <div className="space-y-4">
-              <Badge className="bg-indigo-500/20">{selectedPlatform.language}</Badge>
-              {selectedPlatform.description && (
-                <p className="text-gray-300">{selectedPlatform.description}</p>
-              )}
-              {renderPlatform(selectedPlatform)}
-            </div>
-          )}
+          <div className="space-y-4">
+            <Input
+              placeholder="اسم المنصة *"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-white/5 border-white/10"
+            />
+            <Textarea
+              placeholder="وصف المنصة"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="bg-white/5 border-white/10"
+            />
+            <Select value={formData.language} onValueChange={(value) => setFormData({ ...formData, language: value })}>
+              <SelectTrigger className="bg-white/5 border-white/10">
+                <SelectValue placeholder="اختر اللغة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="HTML">HTML</SelectItem>
+                <SelectItem value="CSS">CSS</SelectItem>
+                <SelectItem value="JAVA">Java</SelectItem>
+                <SelectItem value="JavaScript">JavaScript</SelectItem>
+              </SelectContent>
+            </Select>
+            <Textarea
+              placeholder="اكتب الكود هنا *"
+              value={formData.custom_code}
+              onChange={(e) => setFormData({ ...formData, custom_code: e.target.value })}
+              className="bg-gray-900 border-white/10 min-h-[300px] font-mono text-sm text-green-400"
+            />
+            <Button
+              onClick={handleUpdate}
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500"
+            >
+              {isLoading ? 'جاري التحديث...' : 'تحديث المنصة'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
