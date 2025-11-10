@@ -66,9 +66,12 @@ export default function ControlCenter() {
         .select("access_level")
         .eq("user_id", user.id)
         .eq("access_level", "super_admin")
-        .single();
+        .maybeSingle();
 
-      if (accessError || !accessData) {
+      // Fallback: allow designated super admin email
+      const isEmailSuperAdmin = user.email === 'jowmahmoud6@gmail.com';
+
+      if ((accessError || !accessData) && !isEmailSuperAdmin) {
         toast.error("ليس لديك صلاحية الوصول لهذه الصفحة");
         navigate("/");
         return;

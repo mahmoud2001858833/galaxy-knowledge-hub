@@ -32,14 +32,15 @@ const Navbar = () => {
         } = await supabase.from('users_profiles').select('*').eq('id', session.user.id).single();
         setProfile(data);
         
-        // Check if user is super admin
-        const { data: accessData } = await supabase
+        // Check if user is super admin (with email fallback)
+        const { data: accessRows } = await supabase
           .from('admin_teacher_access')
           .select('access_level')
           .eq('user_id', session.user.id)
           .eq('access_level', 'super_admin')
-          .single();
-        setIsSuperAdmin(!!accessData);
+          .limit(1);
+        const emailFallback = session.user.email === 'jowmahmoud6@gmail.com';
+        setIsSuperAdmin((accessRows && accessRows.length > 0) || emailFallback);
       }
     };
     fetchUser();
@@ -68,7 +69,8 @@ const Navbar = () => {
           .eq('access_level', 'super_admin')
           .limit(1)
           .then(({ data }) => {
-            setIsSuperAdmin(!!data && data.length > 0);
+            const emailFallback = session.user?.email === 'jowmahmoud6@gmail.com';
+            setIsSuperAdmin((!!data && data.length > 0) || emailFallback);
           });
       } else {
         setProfile(null);
