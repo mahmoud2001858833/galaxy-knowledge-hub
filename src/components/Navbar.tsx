@@ -50,13 +50,29 @@ const Navbar = () => {
     } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user || null);
       if (session?.user) {
-        supabase.from('users_profiles').select('*').eq('id', session.user.id).single().then(({
-          data
-        }) => {
-          setProfile(data);
-        });
+        // Refresh profile
+        supabase
+          .from('users_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            setProfile(data);
+          });
+
+        // Refresh super admin status dynamically (no page reload needed)
+        supabase
+          .from('admin_teacher_access')
+          .select('access_level')
+          .eq('user_id', session.user.id)
+          .eq('access_level', 'super_admin')
+          .limit(1)
+          .then(({ data }) => {
+            setIsSuperAdmin(!!data && data.length > 0);
+          });
       } else {
         setProfile(null);
+        setIsSuperAdmin(false);
       }
     });
     return () => subscription.unsubscribe();
