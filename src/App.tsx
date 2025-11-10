@@ -73,6 +73,7 @@ import ParentDashboard from './pages/ParentDashboard';
 import ParentAssignments from './pages/ParentAssignments';
 import ParentNotes from './pages/ParentNotes';
 import ClassChat from './pages/ClassChat';
+import ControlCenter from './pages/ControlCenter';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -399,6 +400,10 @@ const router = createBrowserRouter([
       {
         path: 'parent/chat',
         element: <AuthGuard><ClassChat /></AuthGuard>,
+      },
+      {
+        path: 'control-center',
+        element: <AuthGuard><ControlCenter /></AuthGuard>,
       },
       {
         path: '*',

@@ -16,6 +16,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -30,6 +31,15 @@ const Navbar = () => {
           data
         } = await supabase.from('users_profiles').select('*').eq('id', session.user.id).single();
         setProfile(data);
+        
+        // Check if user is super admin
+        const { data: accessData } = await supabase
+          .from('admin_teacher_access')
+          .select('access_level')
+          .eq('user_id', session.user.id)
+          .eq('access_level', 'super_admin')
+          .single();
+        setIsSuperAdmin(!!accessData);
       }
     };
     fetchUser();
@@ -171,6 +181,15 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
                 
+                {isSuperAdmin && (
+                  <Link to="/control-center">
+                    <DropdownMenuItem className="flex items-center cursor-pointer text-white">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>مركز التحكم</span>
+                    </DropdownMenuItem>
+                  </Link>
+                )}
+                
                 <DropdownMenuItem className="flex items-center cursor-pointer text-white" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>تسجيل الخروج</span>
@@ -221,6 +240,10 @@ const Navbar = () => {
                 <Link to="/chat-rooms" className={`nav-link ${isActive('/chat-rooms')}`}>المحادثات</Link>
                 <Link to="/subject-puzzles" className={`nav-link ${isActive('/subject-puzzles')}`}>الألغاز</Link>
                 <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>الملف الشخصي</Link>
+                
+                {isSuperAdmin && (
+                  <Link to="/control-center" className={`nav-link ${isActive('/control-center')}`}>مركز التحكم</Link>
+                )}
                 
                 {user ? <Button onClick={handleLogout} variant="outline" className="w-full">تسجيل الخروج</Button> : <Link to="/auth">
                     <Button variant="outline" className="w-full">تسجيل الدخول</Button>
