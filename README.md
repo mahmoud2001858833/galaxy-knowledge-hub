@@ -71,3 +71,40 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+---
+
+## 📱 Building Android App
+
+This project is configured to be built as an Android app using Capacitor.
+
+### Prerequisites:
+- Android Studio installed
+- JDK 17 or newer
+- Node.js and npm
+
+### Steps to Build:
+1. **Export to GitHub**: Use the "Export to Github" button in Lovable
+2. **Clone the project**: `git clone <your-repo-url>`
+3. **Navigate to directory**: `cd <project-name>`
+4. **Install dependencies**: `npm install`
+5. **Add Android platform**: `npx cap add android`
+6. **Update platform**: `npx cap update android`
+7. **Build the project**: `npm run build`
+8. **Sync files**: `npx cap sync`
+9. **Open in Android Studio**: `npx cap open android`
+
+### Important Notes:
+- **Hot Reload**: Currently enabled - the app displays content from the live website
+- **For Production**: Disable Hot Reload in `capacitor.config.ts` before publishing to Google Play Store
+- **Icons**: Default icons are included in `public/icons/` - customize them as needed
+- **Testing**: Use Android Studio to run on emulator or physical device
+
+### Useful Commands:
+```bash
+npm run build    # Build the web app
+npx cap sync     # Sync web build to native project
+npx cap open android  # Open project in Android Studio
+```
+
+Read more: [Capacitor Documentation](https://capacitorjs.com/docs)
