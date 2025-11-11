@@ -12,36 +12,12 @@ serve(async (req) => {
 
   try {
     const { imageUrl, description } = await req.json();
-    const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-    if (!GOOGLE_AI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Fetch the image and convert to base64
-    console.log("Fetching image from:", imageUrl);
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      throw new Error("Failed to fetch image");
-    }
-    
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const uint8Array = new Uint8Array(imageBuffer);
-    
-    // Convert to base64 in chunks to avoid stack overflow
-    let binary = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, i + chunkSize);
-      binary += String.fromCharCode.apply(null, Array.from(chunk));
-    }
-    const base64Image = btoa(binary);
-    
-    // Determine mime type from URL or default to jpeg
-    const mimeType = imageUrl.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
-    console.log("Image fetched and converted to base64, mime type:", mimeType);
+    console.log("Processing image from:", imageUrl);
 
     const systemPrompt = `أنت ناقد فني محترف ومعلم فنون متخصص في تقييم وتحليل الأعمال الفنية والتصاميم.
 
@@ -73,48 +49,48 @@ ${description ? `وصف الطالب للعمل: "${description}"` : ""}
 
 قدم التقييم بأسلوب تشجيعي وبناء ومفصل باللغة العربية.`;
 
-    console.log("Sending request to Google AI with image");
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: systemPrompt,
-                },
-                {
-                  inline_data: {
-                    mime_type: mimeType,
-                    data: base64Image,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1500,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: systemPrompt },
+              { type: "image_url", image_url: { url: imageUrl } }
+            ]
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500,
+      }),
+    });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "يرجى إضافة رصيد إلى Lovable AI" }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const errorText = await response.text();
-      console.error("Google AI API error:", response.status, errorText);
+      console.error("Lovable AI API error:", response.status, errorText);
       throw new Error("Failed to get evaluation from AI");
     }
 
     const data = await response.json();
-    const evaluation = data.candidates?.[0]?.content?.parts?.[0]?.text || "عمل فني رائع! لديك موهبة واضحة ومهارات مميزة. استمر في التطوير والإبداع.";
+    const evaluation = data.choices?.[0]?.message?.content || "عمل فني رائع! لديك موهبة واضحة ومهارات مميزة. استمر في التطوير والإبداع.";
 
     return new Response(
       JSON.stringify({ evaluation }),
