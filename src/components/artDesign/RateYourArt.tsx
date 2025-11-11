@@ -51,8 +51,8 @@ const RateYourArt = () => {
   };
 
   const evaluateArt = async () => {
-    if (!uploadedImage || !description.trim()) {
-      toast.error("يرجى رفع العمل وكتابة وصف له");
+    if (!uploadedImage) {
+      toast.error("يرجى رفع العمل أولاً");
       return;
     }
 

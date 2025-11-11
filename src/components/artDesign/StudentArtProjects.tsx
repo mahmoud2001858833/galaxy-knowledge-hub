@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Upload, Search } from "lucide-react";
+import { Heart, MessageCircle, Upload, Search, Cloud } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,14 +150,17 @@ const StudentArtProjects = () => {
 
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Upload className="w-4 h-4" />
+            <Button className="gap-2" size="lg">
+              <Cloud className="w-5 h-5" />
               رفع مشروع جديد
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>رفع مشروع فني جديد</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-primary" />
+                رفع مشروع فني جديد
+              </DialogTitle>
             </DialogHeader>
             <UploadArtProjectForm onSuccess={fetchProjects} />
           </DialogContent>

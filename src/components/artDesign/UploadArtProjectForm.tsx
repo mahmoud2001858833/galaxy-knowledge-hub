@@ -44,13 +44,13 @@ const UploadArtProjectForm = ({ onSuccess }: UploadArtProjectFormProps) => {
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("educational_images")
+        .from("project-images")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("educational_images")
+        .from("project-images")
         .getPublicUrl(filePath);
 
       const { error: insertError } = await supabase.from("art_projects").insert({
