@@ -13,8 +13,8 @@ serve(async (req) => {
   try {
     const { message, mood, conversationHistory } = await req.json();
 
-    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-    if (!GOOGLE_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured', answer: 'عذراً، حدث خطأ في الإعداد.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -51,39 +51,50 @@ serve(async (req) => {
 - اجعل ردودك متوسطة الطول ومتعاطفة`;
 
     const fullConversation = [
-      { role: "user", parts: [{ text: systemPrompt }] },
+      { role: "system", content: systemPrompt },
       ...messages.map((msg: any) => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
       })),
-      { role: "user", parts: [{ text: message }] }
+      { role: "user", content: message }
     ];
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: fullConversation,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500,
-          }
+          model: "google/gemini-2.5-flash",
+          messages: fullConversation,
+          max_tokens: 500,
         })
       }
     );
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً', answer: 'عذراً، تم تجاوز حد الطلبات. حاول مرة أخرى بعد قليل.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'يرجى إضافة رصيد إلى Lovable AI', answer: 'عذراً، حدث خطأ في النظام.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       const errorText = await response.text();
-      console.error('Google API Error:', errorText);
-      throw new Error(`Google API error: ${response.status}`);
+      console.error('Lovable AI API error:', response.status, errorText);
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates[0].content.parts[0].text;
+    const aiResponse = data.choices?.[0]?.message?.content || 'عذراً، لم أتمكن من الإجابة.';
 
     // Analyze response for redirection
     let redirectTo = null;
