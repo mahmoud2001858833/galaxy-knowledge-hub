@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -144,7 +145,10 @@ const TeacherAssignments = () => {
           image_url: imageUrl
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
       toast({
         title: 'تم بنجاح',
@@ -270,23 +274,39 @@ const TeacherAssignments = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-white">{t.communicationBridge.assignments.grade}</Label>
-                        <Input
+                        <Select
                           value={formData.grade}
-                          onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                          className="bg-background/50 border-blue-500/30 text-white"
-                          placeholder="8"
-                          required
-                        />
+                          onValueChange={(value) => setFormData({ ...formData, grade: value })}
+                        >
+                          <SelectTrigger className="bg-background/50 border-blue-500/30 text-white">
+                            <SelectValue placeholder="اختر الصف" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر', 'الحادي عشر', 'الثاني عشر'].map((grade) => (
+                              <SelectItem key={grade} value={grade}>
+                                {grade}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-white">{t.communicationBridge.assignments.section}</Label>
-                        <Input
+                        <Select
                           value={formData.section}
-                          onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                          className="bg-background/50 border-blue-500/30 text-white"
-                          placeholder="أ"
-                          required
-                        />
+                          onValueChange={(value) => setFormData({ ...formData, section: value })}
+                        >
+                          <SelectTrigger className="bg-background/50 border-blue-500/30 text-white">
+                            <SelectValue placeholder="اختر الشعبة" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'].map((section) => (
+                              <SelectItem key={section} value={section}>
+                                {section}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 

@@ -222,13 +222,25 @@ const ParentRegistration = () => {
                 </div>
               </div>
 
-              <AutocompleteInput
-                label={t.communicationBridge.parentForm.schoolName}
-                value={formData.schoolName}
-                onChange={(value) => setFormData({ ...formData, schoolName: value })}
-                suggestions={SCHOOLS}
-                required
-              />
+              <div className="space-y-2">
+                <Label className="text-white text-lg font-semibold">{t.communicationBridge.parentForm.schoolName} *</Label>
+                <Select
+                  value={formData.schoolName}
+                  onValueChange={(value) => setFormData({ ...formData, schoolName: value })}
+                  required
+                >
+                  <SelectTrigger className="bg-background/50 border-teal-500/30 text-white h-12">
+                    <SelectValue placeholder="اختر المدرسة" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {SCHOOLS.map((school) => (
+                      <SelectItem key={school} value={school}>
+                        {school}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <Button
                 type="submit"

@@ -32,10 +32,11 @@ export function SupervisorsSection() {
   };
 
   const handleDeleteImmediate = async (id: string) => {
+    // حذف فوري من القائمة أولاً
+    const originalSupervisors = [...supervisors];
+    setSupervisors(supervisors.filter(s => s.id !== id));
+    
     try {
-      // حذف فوري من القائمة
-      setSupervisors(supervisors.filter(s => s.id !== id));
-      
       // ثم حذف من قاعدة البيانات
       const { error } = await supabase
         .from("admin_teacher_access")
@@ -43,8 +44,8 @@ export function SupervisorsSection() {
         .eq("id", id);
 
       if (error) {
-        // إعادة جلب البيانات في حالة الفشل
-        fetchSupervisors();
+        // إعادة القائمة الأصلية في حالة الفشل
+        setSupervisors(originalSupervisors);
         throw error;
       }
 
