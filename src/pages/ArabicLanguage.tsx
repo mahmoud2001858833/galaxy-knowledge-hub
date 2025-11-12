@@ -101,7 +101,7 @@ const ArabicLanguage = () => {
       case 'grammar':
         return <EnhancedGrammarAssistant />;
       case 'essay':
-        return <ArabicEssayWriter />;
+        return <ArabicEssayWriter language="ar" />;
       case 'questions':
         return <ArabicQuestionBank />;
       default:
