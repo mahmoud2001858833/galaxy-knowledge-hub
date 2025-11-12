@@ -13,7 +13,7 @@ export const SEO = ({
   description, 
   keywords = "ذروة العلم, تعليم, منصة تعليمية",
   canonicalUrl,
-  ogImage = "https://i.postimg.cc/mr48sKY6/image.png"
+  ogImage = "/logo.png"
 }: SEOProps) => {
   const fullTitle = `${title} | ذروة العلم`;
   

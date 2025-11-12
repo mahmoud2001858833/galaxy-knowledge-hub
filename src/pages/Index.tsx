@@ -58,7 +58,7 @@ const Index = () => {
             <div className="w-40 h-40 md:w-44 md:h-44 rounded-full p-2 bg-blue-900/30 backdrop-blur-sm border border-blue-500/30 relative overflow-hidden flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-60"></div>
               <img 
-                src="https://i.postimg.cc/mr48sKY6/image.png" 
+                src="/logo.png" 
                 alt={t.home.title} 
                 className="w-36 h-36 md:w-40 md:h-40 object-contain object-center filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" 
               />

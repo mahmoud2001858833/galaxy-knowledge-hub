@@ -97,10 +97,10 @@ const Navbar = () => {
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
         <div className="hidden md:flex items-center space-x-1 rtl:space-x-reverse">
           <Link to="/" className="flex items-center">
-            <div className="relative h-9 w-9 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center">
-              <img src="https://i.postimg.cc/mr48sKY6/image.png" alt="في فلك المعرفة" className="h-8 w-8 object-contain" />
+            <div className="relative h-9 w-9 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+              <img src="/logo.png" alt="ذروة العلم" className="h-8 w-8 object-contain" />
             </div>
-            <span className="text-xl font-bold mx-2 text-white">فلك المعرفة</span>
+            <span className="text-xl font-bold mx-2 text-white">ذروة العلم</span>
           </Link>
         </div>
         
@@ -231,10 +231,10 @@ const Navbar = () => {
         {/* Mobile logo */}
         <div className="md:hidden flex items-center">
           <Link to="/" className="flex items-center">
-            <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center">
-              <img src="https://i.postimg.cc/mr48sKY6/image.png" alt="في فلك المعرفة" className="h-7 w-7 object-contain" />
+            <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+              <img src="/logo.png" alt="ذروة العلم" className="h-7 w-7 object-contain" />
             </div>
-            <span className="text-lg font-bold mr-2 text-white">فلك المعرفة</span>
+            <span className="text-lg font-bold mr-2 text-white">ذروة العلم</span>
           </Link>
         </div>
         
