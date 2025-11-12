@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { description, grammarRules, questionCount, difficulty } = await req.json()
+    const { description, topics, questionCount, difficulty, subject } = await req.json()
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -27,6 +27,13 @@ serve(async (req) => {
       hard: 'صعب'
     }[difficulty] || 'متوسط'
     
+    const subjectArabic = {
+      chemistry: 'الكيمياء',
+      physics: 'الفيزياء',
+      biology: 'الأحياء',
+      mathematics: 'الرياضيات'
+    }[subject] || subject
+    
     // Split large requests into batches
     const batchSize = 20;
     const batches = Math.ceil(questionCount / batchSize);
@@ -35,26 +42,26 @@ serve(async (req) => {
     for (let batch = 0; batch < batches; batch++) {
       const currentBatchSize = Math.min(batchSize, questionCount - (batch * batchSize));
       
-      const prompt = `أنت خبير في إعداد الأسئلة التعليمية للغة العربية. قم بإنشاء ${currentBatchSize} سؤال وفقاً للمواصفات التالية:
+      const prompt = `أنت خبير في إعداد الأسئلة التعليمية لمادة ${subjectArabic}. قم بإنشاء ${currentBatchSize} سؤال وفقاً للمواصفات التالية:
 
 وصف الأسئلة:
 ${description}
 
-${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRules}` : ''}
+${topics ? `المواضيع المطلوبة:\n${topics}` : ''}
 
 مستوى الصعوبة: ${difficultyArabic}
 
 يجب أن تكون الأسئلة:
-1. واضحة ومحددة
+1. واضحة ومحددة ومناسبة للمنهاج الأردني
 2. تغطي جوانب مختلفة من الموضوع
 3. مناسبة لمستوى الصعوبة المحدد
-4. تحتوي على إجابات نموذجية مفصلة
+4. تحتوي على إجابات نموذجية مفصلة مع الحسابات والخطوات إن وجدت
 5. متنوعة ومختلفة عن بعضها
 
 قدم الأسئلة بالتنسيق التالي بدقة:
 السؤال 1: [نص السؤال]
-الإجابة: [الإجابة النموذجية المفصلة]
-القاعدة: [القاعدة النحوية المرتبطة إن وجدت]
+الإجابة: [الإجابة النموذجية المفصلة مع الخطوات والحسابات]
+الموضوع: [الموضوع المرتبط إن وجد]
 ---
 
 أنشئ الأسئلة الآن:`;
@@ -101,7 +108,7 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
       const lines = block.trim().split('\n')
       let question = ''
       let answer = ''
-      let grammarRule = ''
+      let topic = ''
       
       let currentSection = ''
       lines.forEach(line => {
@@ -111,13 +118,13 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
         } else if (line.startsWith('الإجابة:')) {
           currentSection = 'answer'
           answer = line.replace('الإجابة:', '').trim()
-        } else if (line.startsWith('القاعدة:')) {
-          currentSection = 'rule'
-          grammarRule = line.replace('القاعدة:', '').trim()
+        } else if (line.startsWith('الموضوع:')) {
+          currentSection = 'topic'
+          topic = line.replace('الموضوع:', '').trim()
         } else if (line.trim()) {
           if (currentSection === 'question') question += ' ' + line.trim()
           else if (currentSection === 'answer') answer += '\n' + line.trim()
-          else if (currentSection === 'rule') grammarRule += ' ' + line.trim()
+          else if (currentSection === 'topic') topic += ' ' + line.trim()
         }
       })
       
@@ -125,7 +132,7 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
         question: question.trim(),
         answer: answer.trim(),
         difficulty: difficultyArabic,
-        grammarRule: grammarRule.trim() || undefined
+        topic: topic.trim() || undefined
       }
     }).filter(q => q.question && q.answer)
 

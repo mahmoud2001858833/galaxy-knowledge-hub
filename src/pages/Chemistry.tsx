@@ -11,6 +11,7 @@ import ChemistryAssistant from '@/components/chemistry/ChemistryAssistant';
 import ChemistryCalculations from '@/components/chemistry/ChemistryCalculations';
 import ChemistryScientists from '@/components/chemistry/ChemistryScientists';
 import EnhancedPeriodicTable from '@/components/chemistry/EnhancedPeriodicTable';
+import QuestionBank from '@/components/shared/QuestionBank';
 import { SEO } from '@/components/SEO';
 
 const Chemistry = () => {
@@ -68,6 +69,12 @@ const Chemistry = () => {
       icon: <HelpCircle className="w-12 h-12 text-cyan-400" />,
       color: "from-cyan-400/20 to-blue-600/30",
       tab: "assistant"
+    },
+    {
+      title: "بنك الأسئلة",
+      icon: <FlaskConical className="w-12 h-12 text-cyan-400" />,
+      color: "from-teal-500/20 to-cyan-500/30",
+      tab: "questions"
     }
   ];
   
@@ -273,6 +280,7 @@ const Chemistry = () => {
                   {selectedTab === "calculations" && <ChemistryCalculations />}
                   {selectedTab === "scientists" && <ChemistryScientists />}
                   {selectedTab === "assistant" && <ChemistryAssistant />}
+                  {selectedTab === "questions" && <QuestionBank subject="chemistry" functionName="science-question-bank" />}
                 </motion.div>
               </div>
             )}

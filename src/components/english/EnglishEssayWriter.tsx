@@ -7,38 +7,107 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Send, FileText, Lightbulb, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Send, FileText, Lightbulb, CheckCircle } from 'lucide-react';
 
-type EssayType = 'article' | 'story' | 'descriptive' | 'argumentative' | 'narrative';
-type CorrectionStage = 'all';
+type EssayType = 'essay' | 'story' | 'descriptive' | 'argumentative' | 'narrative';
 
-const ArabicEssayWriter = () => {
+interface EnglishEssayWriterProps {
+  language: 'ar' | 'en';
+}
+
+const EnglishEssayWriter: React.FC<EnglishEssayWriterProps> = ({ language }) => {
   const [mode, setMode] = useState<'practice' | 'generate'>('practice');
   const [essayText, setEssayText] = useState('');
-  const [essayType, setEssayType] = useState<EssayType>('article');
+  const [essayType, setEssayType] = useState<EssayType>('essay');
   const [wordCount, setWordCount] = useState(300);
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [corrections, setCorrections] = useState<{
-    all?: string;
-  }>({});
+  const [correction, setCorrection] = useState('');
   const [generatedEssay, setGeneratedEssay] = useState('');
   const { toast } = useToast();
 
+  const t = {
+    ar: {
+      practiceMode: 'التدريب على التعبير',
+      generateMode: 'مولد التعابير',
+      writeEssay: 'كتابة التعبير',
+      essayType: 'نوع التعبير',
+      uploadImage: 'رفع صورة',
+      imageUploaded: 'تم رفع',
+      essayText: 'نص التعبير',
+      essayPlaceholder: 'اكتب تعبيرك هنا...',
+      generalCorrection: 'تصحيح عام (إملائي وقواعدي ونوع المقالة)',
+      correcting: 'جاري التصحيح...',
+      correctionResults: 'نتائج التصحيح',
+      generateEssay: 'إنشاء تعبير تلقائي',
+      wordCountLabel: 'عدد الكلمات (50-2000)',
+      additionalInfo: 'معلومات إضافية (اختياري)',
+      additionalInfoPlaceholder: 'أضف معلومات إضافية حول الموضوع المطلوب...',
+      generating: 'جاري الإنشاء...',
+      generateButton: 'إنشاء التعبير',
+      generatedEssay: 'التعبير المُنشأ',
+      textExtracted: 'تم استخراج النص',
+      textExtractedDesc: 'تم استخراج النص من الصورة بنجاح',
+      error: 'خطأ',
+      extractError: 'حدث خطأ أثناء استخراج النص من الصورة',
+      enterText: 'الرجاء كتابة أو رفع نص للتصحيح',
+      correctionComplete: 'تم التصحيح',
+      correctionCompleteDesc: 'تم تصحيح التعبير بنجاح',
+      correctionError: 'حدث خطأ أثناء تصحيح التعبير',
+      wordCountError: 'عدد الكلمات يجب أن يكون بين 50 و 2000',
+      essayGenerated: 'تم إنشاء التعبير',
+      essayGeneratedDesc: 'تم إنشاء تعبير متكامل بنجاح',
+      generateError: 'حدث خطأ أثناء إنشاء التعبير'
+    },
+    en: {
+      practiceMode: 'Essay Practice',
+      generateMode: 'Essay Generator',
+      writeEssay: 'Write Essay',
+      essayType: 'Essay Type',
+      uploadImage: 'Upload Image',
+      imageUploaded: 'Uploaded',
+      essayText: 'Essay Text',
+      essayPlaceholder: 'Write your essay here...',
+      generalCorrection: 'General Correction (Spelling, Grammar & Type)',
+      correcting: 'Correcting...',
+      correctionResults: 'Correction Results',
+      generateEssay: 'Auto-Generate Essay',
+      wordCountLabel: 'Word Count (50-2000)',
+      additionalInfo: 'Additional Info (optional)',
+      additionalInfoPlaceholder: 'Add additional information about the required topic...',
+      generating: 'Generating...',
+      generateButton: 'Generate Essay',
+      generatedEssay: 'Generated Essay',
+      textExtracted: 'Text Extracted',
+      textExtractedDesc: 'Text extracted from image successfully',
+      error: 'Error',
+      extractError: 'Error extracting text from image',
+      enterText: 'Please write or upload text to correct',
+      correctionComplete: 'Correction Complete',
+      correctionCompleteDesc: 'Essay corrected successfully',
+      correctionError: 'Error correcting essay',
+      wordCountError: 'Word count must be between 50 and 2000',
+      essayGenerated: 'Essay Generated',
+      essayGeneratedDesc: 'Complete essay generated successfully',
+      generateError: 'Error generating essay'
+    }
+  };
+
+  const content = t[language];
+
   const essayTypes = {
-    article: 'مقالة',
-    story: 'قصة',
-    descriptive: 'وصفي',
-    argumentative: 'حجاجي',
-    narrative: 'سردي'
+    essay: language === 'ar' ? 'مقالة' : 'Essay',
+    story: language === 'ar' ? 'قصة' : 'Story',
+    descriptive: language === 'ar' ? 'وصفي' : 'Descriptive',
+    argumentative: language === 'ar' ? 'حجاجي' : 'Argumentative',
+    narrative: language === 'ar' ? 'سردي' : 'Narrative'
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
-      // Extract text from image using OCR
       extractTextFromImage(file);
     }
   };
@@ -55,18 +124,18 @@ const ArabicEssayWriter = () => {
         });
 
         if (error) throw error;
-        setEssayText(data.arabicText || data.text || '');
+        setEssayText(data.englishText || data.text || '');
         toast({
-          title: "تم استخراج النص",
-          description: "تم استخراج النص من الصورة بنجاح",
+          title: content.textExtracted,
+          description: content.textExtractedDesc,
         });
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error extracting text:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء استخراج النص من الصورة",
+        title: content.error,
+        description: content.extractError,
         variant: "destructive",
       });
     } finally {
@@ -77,8 +146,8 @@ const ArabicEssayWriter = () => {
   const correctEssay = async () => {
     if (!essayText.trim()) {
       toast({
-        title: "خطأ",
-        description: "الرجاء كتابة أو رفع نص للتصحيح",
+        title: content.error,
+        description: content.enterText,
         variant: "destructive",
       });
       return;
@@ -87,29 +156,26 @@ const ArabicEssayWriter = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('arabic-essay-corrector', {
+      const { data, error } = await supabase.functions.invoke('english-essay-corrector', {
         body: {
           text: essayText,
-          essayType,
-          stage: 'all'
+          essayType
         }
       });
 
       if (error) throw error;
 
-      setCorrections({
-        all: data.correction
-      });
+      setCorrection(data.correction);
 
       toast({
-        title: "تم التصحيح",
-        description: "تم تصحيح التعبير بنجاح",
+        title: content.correctionComplete,
+        description: content.correctionCompleteDesc,
       });
     } catch (error) {
       console.error('Error correcting essay:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تصحيح التعبير",
+        title: content.error,
+        description: content.correctionError,
         variant: "destructive",
       });
     } finally {
@@ -120,8 +186,8 @@ const ArabicEssayWriter = () => {
   const generateEssay = async () => {
     if (wordCount < 50 || wordCount > 2000) {
       toast({
-        title: "خطأ",
-        description: "عدد الكلمات يجب أن يكون بين 50 و 2000",
+        title: content.error,
+        description: content.wordCountError,
         variant: "destructive",
       });
       return;
@@ -130,7 +196,7 @@ const ArabicEssayWriter = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('arabic-essay-generator', {
+      const { data, error } = await supabase.functions.invoke('english-essay-generator', {
         body: {
           essayType,
           wordCount,
@@ -142,14 +208,14 @@ const ArabicEssayWriter = () => {
 
       setGeneratedEssay(data.essay);
       toast({
-        title: "تم إنشاء التعبير",
-        description: "تم إنشاء تعبير متكامل بنجاح",
+        title: content.essayGenerated,
+        description: content.essayGeneratedDesc,
       });
     } catch (error) {
       console.error('Error generating essay:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء التعبير",
+        title: content.error,
+        description: content.generateError,
         variant: "destructive",
       });
     } finally {
@@ -166,7 +232,7 @@ const ArabicEssayWriter = () => {
           className="flex-1"
         >
           <FileText className="mr-2 h-5 w-5" />
-          التدريب على التعبير
+          {content.practiceMode}
         </Button>
         <Button
           onClick={() => setMode('generate')}
@@ -174,7 +240,7 @@ const ArabicEssayWriter = () => {
           className="flex-1"
         >
           <Lightbulb className="mr-2 h-5 w-5" />
-          مولد التعابير
+          {content.generateMode}
         </Button>
       </div>
 
@@ -186,12 +252,12 @@ const ArabicEssayWriter = () => {
         >
           <Card className="bg-white/5 backdrop-blur-sm border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">كتابة التعبير</CardTitle>
+              <CardTitle className="text-white">{content.writeEssay}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  نوع التعبير
+                  {content.essayType}
                 </label>
                 <Select value={essayType} onValueChange={(value) => setEssayType(value as EssayType)}>
                   <SelectTrigger>
@@ -209,16 +275,16 @@ const ArabicEssayWriter = () => {
 
               <div className="flex gap-4">
                 <Button
-                  onClick={() => document.getElementById('image-upload')?.click()}
+                  onClick={() => document.getElementById('image-upload-en')?.click()}
                   variant="outline"
                   className="flex-1"
                   disabled={loading}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  رفع صورة
+                  {content.uploadImage}
                 </Button>
                 <input
-                  id="image-upload"
+                  id="image-upload-en"
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
@@ -228,18 +294,18 @@ const ArabicEssayWriter = () => {
 
               {imageFile && (
                 <p className="text-sm text-green-400">
-                  تم رفع: {imageFile.name}
+                  {content.imageUploaded}: {imageFile.name}
                 </p>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  نص التعبير
+                  {content.essayText}
                 </label>
                 <Textarea
                   value={essayText}
                   onChange={(e) => setEssayText(e.target.value)}
-                  placeholder="اكتب تعبيرك هنا..."
+                  placeholder={content.essayPlaceholder}
                   className="min-h-[300px] bg-white/5 border-white/20 text-white"
                   disabled={loading}
                 />
@@ -251,22 +317,18 @@ const ArabicEssayWriter = () => {
                 className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
-                {loading ? 'جاري التصحيح...' : 'تصحيح عام (إملائي وقواعدي ونوع المقالة)'}
+                {loading ? content.correcting : content.generalCorrection}
               </Button>
             </CardContent>
           </Card>
 
-          {Object.keys(corrections).length > 0 && (
+          {correction && (
             <Card className="bg-white/5 backdrop-blur-sm border-white/10">
               <CardHeader>
-                <CardTitle className="text-white">نتائج التصحيح</CardTitle>
+                <CardTitle className="text-white">{content.correctionResults}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {corrections.all && (
-                  <div>
-                    <p className="text-white whitespace-pre-wrap leading-relaxed">{corrections.all}</p>
-                  </div>
-                )}
+              <CardContent>
+                <p className="text-white whitespace-pre-wrap leading-relaxed">{correction}</p>
               </CardContent>
             </Card>
           )}
@@ -279,12 +341,12 @@ const ArabicEssayWriter = () => {
         >
           <Card className="bg-white/5 backdrop-blur-sm border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">إنشاء تعبير تلقائي</CardTitle>
+              <CardTitle className="text-white">{content.generateEssay}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  نوع التعبير
+                  {content.essayType}
                 </label>
                 <Select value={essayType} onValueChange={(value) => setEssayType(value as EssayType)}>
                   <SelectTrigger>
@@ -302,7 +364,7 @@ const ArabicEssayWriter = () => {
 
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  عدد الكلمات (50-2000)
+                  {content.wordCountLabel}
                 </label>
                 <Input
                   type="number"
@@ -316,12 +378,12 @@ const ArabicEssayWriter = () => {
 
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  معلومات إضافية (اختياري)
+                  {content.additionalInfo}
                 </label>
                 <Textarea
                   value={additionalInfo}
                   onChange={(e) => setAdditionalInfo(e.target.value)}
-                  placeholder="أضف معلومات إضافية حول الموضوع المطلوب..."
+                  placeholder={content.additionalInfoPlaceholder}
                   className="min-h-[100px] bg-white/5 border-white/20 text-white"
                 />
               </div>
@@ -332,7 +394,7 @@ const ArabicEssayWriter = () => {
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Send className="mr-2 h-4 w-4" />
-                {loading ? 'جاري الإنشاء...' : 'إنشاء التعبير'}
+                {loading ? content.generating : content.generateButton}
               </Button>
             </CardContent>
           </Card>
@@ -340,7 +402,7 @@ const ArabicEssayWriter = () => {
           {generatedEssay && (
             <Card className="bg-white/5 backdrop-blur-sm border-white/10">
               <CardHeader>
-                <CardTitle className="text-white">التعبير المُنشأ</CardTitle>
+                <CardTitle className="text-white">{content.generatedEssay}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white whitespace-pre-wrap leading-relaxed">
@@ -355,4 +417,4 @@ const ArabicEssayWriter = () => {
   );
 };
 
-export default ArabicEssayWriter;
+export default EnglishEssayWriter;

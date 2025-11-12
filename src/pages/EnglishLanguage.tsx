@@ -9,7 +9,9 @@ import EnhancedEnglishAIAssistant from '@/components/english/EnhancedEnglishAIAs
 import SmartTranslator from '@/components/english/SmartTranslator';
 import EnhancedSpeechAssistant from '@/components/english/EnhancedSpeechAssistant';
 import EnglishScholarsEncyclopedia from '@/components/english/EnglishScholarsEncyclopedia';
-import { ArrowLeft, ArrowRight, Bot, Languages, Globe, Headphones, GraduationCap } from 'lucide-react';
+import EnglishEssayWriter from '@/components/english/EnglishEssayWriter';
+import EnglishQuestionBank from '@/components/english/EnglishQuestionBank';
+import { ArrowLeft, ArrowRight, Bot, Languages, Globe, Headphones, GraduationCap, FileText, FileQuestion } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
 
@@ -37,7 +39,11 @@ const EnglishLanguage = () => {
       speechAssistant: "المساعد الذكي للنطق والتحدث",
       speechAssistantDescription: "طور مهاراتك في النطق والتحدث باللغة الإنجليزية مع تدريبات تفاعلية متقدمة",
       scholarsEncyclopedia: "موسوعة علماء اللغة الإنجليزية",
-      scholarsEncyclopediaDescription: "اكتشف عمالقة اللغة الإنجليزية الذين شكلوا تطورها عبر التاريخ"
+      scholarsEncyclopediaDescription: "اكتشف عمالقة اللغة الإنجليزية الذين شكلوا تطورها عبر التاريخ",
+      essayWriter: "كتابة وتصحيح التعبير",
+      essayWriterDescription: "تدرب على كتابة التعابير مع تصحيح ذكي أو أنشئ تعابير تلقائياً",
+      questionBank: "بنك الأسئلة الذكي",
+      questionBankDescription: "أنشئ أسئلة متنوعة ومخصصة للغة الإنجليزية باستخدام الذكاء الاصطناعي"
     },
     en: {
       title: "Advanced English Language Platform",
@@ -53,7 +59,11 @@ const EnglishLanguage = () => {
       speechAssistant: "Enhanced Speech & Pronunciation Coach",
       speechAssistantDescription: "Master English pronunciation and speaking skills with advanced interactive training",
       scholarsEncyclopedia: "English Language Scholars Encyclopedia",
-      scholarsEncyclopediaDescription: "Discover the giants of English language who shaped its evolution throughout history"
+      scholarsEncyclopediaDescription: "Discover the giants of English language who shaped its evolution throughout history",
+      essayWriter: "Essay Writing & Correction",
+      essayWriterDescription: "Practice writing essays with smart correction or auto-generate essays",
+      questionBank: "Smart Question Bank",
+      questionBankDescription: "Create diverse and customized English language questions using AI"
     }
   };
 
@@ -97,6 +107,24 @@ const EnglishLanguage = () => {
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
       component: "scholars"
+    },
+    {
+      title: currentLang.essayWriter,
+      icon: <FileText className="w-8 h-8" />,
+      description: currentLang.essayWriterDescription,
+      color: "from-rose-600/20 to-pink-600/20",
+      borderColor: "border-rose-500/30",
+      hoverBorderColor: "hover:border-rose-500/50",
+      component: "essay-writer"
+    },
+    {
+      title: currentLang.questionBank,
+      icon: <FileQuestion className="w-8 h-8" />,
+      description: currentLang.questionBankDescription,
+      color: "from-teal-600/20 to-cyan-600/20",
+      borderColor: "border-teal-500/30",
+      hoverBorderColor: "hover:border-teal-500/50",
+      component: "question-bank"
     }
   ];
 
@@ -110,6 +138,10 @@ const EnglishLanguage = () => {
         return <EnhancedSpeechAssistant language={language} />;
       case 'scholars':
         return <EnglishScholarsEncyclopedia language={language} />;
+      case 'essay-writer':
+        return <EnglishEssayWriter language={language} />;
+      case 'question-bank':
+        return <EnglishQuestionBank language={language} />;
       default:
         return null;
     }
@@ -175,7 +207,7 @@ const EnglishLanguage = () => {
 
           {!activeComponent ? (
             /* Features Grid */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}

@@ -21,11 +21,11 @@ serve(async (req) => {
       );
     }
     
-    const difficultyArabic = {
-      easy: 'سهل',
-      medium: 'متوسط',
-      hard: 'صعب'
-    }[difficulty] || 'متوسط'
+    const difficultyEnglish = {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard'
+    }[difficulty] || 'Medium'
     
     // Split large requests into batches
     const batchSize = 20;
@@ -35,29 +35,29 @@ serve(async (req) => {
     for (let batch = 0; batch < batches; batch++) {
       const currentBatchSize = Math.min(batchSize, questionCount - (batch * batchSize));
       
-      const prompt = `أنت خبير في إعداد الأسئلة التعليمية للغة العربية. قم بإنشاء ${currentBatchSize} سؤال وفقاً للمواصفات التالية:
+      const prompt = `You are an expert in preparing educational questions for English language. Create ${currentBatchSize} questions according to the following specifications:
 
-وصف الأسئلة:
+Question description:
 ${description}
 
-${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRules}` : ''}
+${grammarRules ? `Required grammar rules:\n${grammarRules}` : ''}
 
-مستوى الصعوبة: ${difficultyArabic}
+Difficulty level: ${difficultyEnglish}
 
-يجب أن تكون الأسئلة:
-1. واضحة ومحددة
-2. تغطي جوانب مختلفة من الموضوع
-3. مناسبة لمستوى الصعوبة المحدد
-4. تحتوي على إجابات نموذجية مفصلة
-5. متنوعة ومختلفة عن بعضها
+Questions should be:
+1. Clear and specific
+2. Cover different aspects of the topic
+3. Appropriate for the specified difficulty level
+4. Contain detailed model answers
+5. Diverse and different from each other
 
-قدم الأسئلة بالتنسيق التالي بدقة:
-السؤال 1: [نص السؤال]
-الإجابة: [الإجابة النموذجية المفصلة]
-القاعدة: [القاعدة النحوية المرتبطة إن وجدت]
+Present the questions in the following format exactly:
+Question 1: [Question text]
+Answer: [Detailed model answer]
+Rule: [Related grammar rule if any]
 ---
 
-أنشئ الأسئلة الآن:`;
+Create the questions now:`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -77,10 +77,10 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
 
     if (!response.ok) {
       if (response.status === 429) {
-        throw new Error('تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً');
+        throw new Error('Rate limit exceeded, please try again later');
       }
       if (response.status === 402) {
-        throw new Error('يرجى إضافة رصيد إلى Lovable AI');
+        throw new Error('Please add credits to Lovable AI');
       }
       const errorText = await response.text();
       console.error('Lovable AI error:', response.status, errorText);
@@ -105,15 +105,15 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
       
       let currentSection = ''
       lines.forEach(line => {
-        if (line.startsWith('السؤال')) {
+        if (line.startsWith('Question')) {
           currentSection = 'question'
-          question = line.replace(/السؤال \d+:\s*/, '')
-        } else if (line.startsWith('الإجابة:')) {
+          question = line.replace(/Question \d+:\s*/, '')
+        } else if (line.startsWith('Answer:')) {
           currentSection = 'answer'
-          answer = line.replace('الإجابة:', '').trim()
-        } else if (line.startsWith('القاعدة:')) {
+          answer = line.replace('Answer:', '').trim()
+        } else if (line.startsWith('Rule:')) {
           currentSection = 'rule'
-          grammarRule = line.replace('القاعدة:', '').trim()
+          grammarRule = line.replace('Rule:', '').trim()
         } else if (line.trim()) {
           if (currentSection === 'question') question += ' ' + line.trim()
           else if (currentSection === 'answer') answer += '\n' + line.trim()
@@ -124,7 +124,7 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
       return {
         question: question.trim(),
         answer: answer.trim(),
-        difficulty: difficultyArabic,
+        difficulty: difficultyEnglish,
         grammarRule: grammarRule.trim() || undefined
       }
     }).filter(q => q.question && q.answer)
@@ -139,7 +139,7 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: 'حدث خطأ في معالجة الطلب' }),
+      JSON.stringify({ error: 'An error occurred processing the request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

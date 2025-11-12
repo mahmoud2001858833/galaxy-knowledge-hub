@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, essayType, stage } = await req.json()
+    const { essayType, wordCount, additionalInfo } = await req.json()
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -21,44 +21,26 @@ serve(async (req) => {
       );
     }
     
-    const essayTypeArabic = {
-      article: 'مقالة',
-      story: 'قصة',
-      descriptive: 'وصفي',
-      argumentative: 'حجاجي',
-      narrative: 'سردي'
+    const essayTypeEnglish = {
+      essay: 'Essay',
+      story: 'Story',
+      descriptive: 'Descriptive',
+      argumentative: 'Argumentative',
+      narrative: 'Narrative'
     }[essayType] || essayType;
     
-    const prompt = `أنت مصحح لغوي وأدبي محترف متخصص في اللغة العربية. قم بتصحيح النص التالي تصحيحاً كاملاً وشاملاً.
+    const prompt = `You are a professional English writer. Write a complete and high-quality ${essayTypeEnglish} in English with approximately ${wordCount} words.
 
-النص:
-"${text}"
+${additionalInfo ? `Additional Information:\n${additionalInfo}\n\n` : ''}
 
-نوع المقالة: ${essayTypeArabic}
+Requirements:
+1. The text should be appropriate for the ${essayTypeEnglish} type
+2. Use proper grammar and spelling
+3. Make it engaging and well-structured
+4. Include proper paragraphs and transitions
+5. The word count should be close to ${wordCount} words
 
-المطلوب:
-
-**📊 النتيجة الإجمالية:**
-[اكتب هنا تقييم شامل للمقالة من 100 مع ملاحظة عامة]
-
-**1️⃣ التصحيح الإملائي:**
-- [قائمة بالأخطاء الإملائية مع التصحيح]
-- [شرح القواعد الإملائية]
-
-**2️⃣ التصحيح القواعدي والنحوي:**
-- [قائمة بالأخطاء النحوية والقواعدية مع التصحيح]
-- [شرح القواعد النحوية المطبقة]
-
-**3️⃣ التوافق مع نوع المقالة:**
-- [تقييم التوافق مع نوع المقالة]
-- [نقاط القوة والضعف]
-- [اقتراحات محددة للتحسين]
-
-**4️⃣ النص المصحح النهائي:**
-[اكتب النص بعد التصحيح الكامل]
-
----
-يرجى أن يكون التصحيح دقيقاً ومفصلاً وشاملاً لجميع جوانب الكتابة العربية.`;
+Write the complete ${essayTypeEnglish} now:`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -70,7 +52,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
-          messages: [{ role: "user", content: prompt }]
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: Math.max(1500, Math.ceil(wordCount * 2))
         })
       }
     )
@@ -78,13 +61,13 @@ serve(async (req) => {
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً' }),
+          JSON.stringify({ error: 'Rate limit exceeded, please try again later' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'يرجى إضافة رصيد إلى Lovable AI' }),
+          JSON.stringify({ error: 'Please add credits to Lovable AI' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -99,16 +82,16 @@ serve(async (req) => {
       throw new Error('Invalid response from AI API')
     }
     
-    const correction = data.choices[0].message.content
+    const essay = data.choices[0].message.content
 
     return new Response(
-      JSON.stringify({ correction }),
+      JSON.stringify({ essay }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: 'حدث خطأ في معالجة الطلب' }),
+      JSON.stringify({ error: 'An error occurred processing the request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

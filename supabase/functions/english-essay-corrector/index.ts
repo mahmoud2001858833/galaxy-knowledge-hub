@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, essayType, stage } = await req.json()
+    const { text, essayType } = await req.json()
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -21,44 +21,44 @@ serve(async (req) => {
       );
     }
     
-    const essayTypeArabic = {
-      article: 'مقالة',
-      story: 'قصة',
-      descriptive: 'وصفي',
-      argumentative: 'حجاجي',
-      narrative: 'سردي'
+    const essayTypeEnglish = {
+      essay: 'Essay',
+      story: 'Story',
+      descriptive: 'Descriptive',
+      argumentative: 'Argumentative',
+      narrative: 'Narrative'
     }[essayType] || essayType;
     
-    const prompt = `أنت مصحح لغوي وأدبي محترف متخصص في اللغة العربية. قم بتصحيح النص التالي تصحيحاً كاملاً وشاملاً.
+    const prompt = `You are a professional language and literary corrector specialized in English. Perform a complete and comprehensive correction of the following text.
 
-النص:
+Text:
 "${text}"
 
-نوع المقالة: ${essayTypeArabic}
+Essay Type: ${essayTypeEnglish}
 
-المطلوب:
+Required:
 
-**📊 النتيجة الإجمالية:**
-[اكتب هنا تقييم شامل للمقالة من 100 مع ملاحظة عامة]
+**📊 Overall Score:**
+[Write here a comprehensive essay evaluation out of 100 with a general note]
 
-**1️⃣ التصحيح الإملائي:**
-- [قائمة بالأخطاء الإملائية مع التصحيح]
-- [شرح القواعد الإملائية]
+**1️⃣ Spelling Correction:**
+- [List spelling errors with corrections]
+- [Explanation of spelling rules]
 
-**2️⃣ التصحيح القواعدي والنحوي:**
-- [قائمة بالأخطاء النحوية والقواعدية مع التصحيح]
-- [شرح القواعد النحوية المطبقة]
+**2️⃣ Grammar Correction:**
+- [List grammatical errors with corrections]
+- [Explanation of applied grammar rules]
 
-**3️⃣ التوافق مع نوع المقالة:**
-- [تقييم التوافق مع نوع المقالة]
-- [نقاط القوة والضعف]
-- [اقتراحات محددة للتحسين]
+**3️⃣ Essay Type Consistency:**
+- [Evaluation of consistency with essay type]
+- [Strengths and weaknesses]
+- [Specific suggestions for improvement]
 
-**4️⃣ النص المصحح النهائي:**
-[اكتب النص بعد التصحيح الكامل]
+**4️⃣ Final Corrected Text:**
+[Write the text after complete correction]
 
 ---
-يرجى أن يكون التصحيح دقيقاً ومفصلاً وشاملاً لجميع جوانب الكتابة العربية.`;
+Please ensure the correction is accurate, detailed, and comprehensive covering all aspects of English writing.`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -78,13 +78,13 @@ serve(async (req) => {
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً' }),
+          JSON.stringify({ error: 'Rate limit exceeded, please try again later' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'يرجى إضافة رصيد إلى Lovable AI' }),
+          JSON.stringify({ error: 'Please add credits to Lovable AI' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -108,7 +108,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: 'حدث خطأ في معالجة الطلب' }),
+      JSON.stringify({ error: 'An error occurred processing the request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
