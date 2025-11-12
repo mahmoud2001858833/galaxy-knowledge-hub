@@ -97,25 +97,25 @@ const WelcomeGuide = () => {
 
           {/* Guide Card */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-2xl"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[85%] max-w-md"
           >
             <Card className="relative overflow-hidden border-2 border-white/20 bg-gradient-to-br from-blue-950/95 via-purple-950/95 to-blue-950/95 backdrop-blur-xl shadow-2xl">
               {/* Background Pattern */}
               <div className="absolute inset-0 opacity-10">
                 <div className={`absolute inset-0 bg-gradient-to-br ${steps[currentStep].bgGradient}`} />
-                {Array.from({ length: 20 }).map((_, i) => (
+                {Array.from({ length: 15 }).map((_, i) => (
                   <motion.div
                     key={i}
                     className="absolute rounded-full bg-white"
                     style={{
                       top: `${Math.random() * 100}%`,
                       left: `${Math.random() * 100}%`,
-                      width: `${Math.random() * 4 + 1}px`,
-                      height: `${Math.random() * 4 + 1}px`,
+                      width: `${Math.random() * 3 + 1}px`,
+                      height: `${Math.random() * 3 + 1}px`,
                     }}
                     animate={{
                       opacity: [0.2, 0.5, 0.2],
@@ -131,18 +131,18 @@ const WelcomeGuide = () => {
               </div>
 
               {/* Content */}
-              <div className="relative p-8 md:p-12 text-center" dir="rtl">
+              <div className="relative p-6 md:p-8 text-center" dir="rtl">
                 {/* Icon */}
                 <motion.div
                   key={currentStep}
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", damping: 15 }}
-                  className="mb-6 inline-block"
+                  className="mb-4 inline-block"
                 >
-                  <div className={`p-6 rounded-full bg-gradient-to-br ${steps[currentStep].bgGradient} backdrop-blur-sm border-2 border-white/20`}>
+                  <div className={`p-4 rounded-full bg-gradient-to-br ${steps[currentStep].bgGradient} backdrop-blur-sm border-2 border-white/20`}>
                     {React.createElement(steps[currentStep].icon, {
-                      className: `w-16 h-16 ${steps[currentStep].iconColor}`,
+                      className: `w-10 h-10 md:w-12 md:h-12 ${steps[currentStep].iconColor}`,
                     })}
                   </div>
                 </motion.div>
@@ -153,7 +153,7 @@ const WelcomeGuide = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-4xl md:text-5xl font-bold text-white mb-3"
+                  className="text-2xl md:text-3xl font-bold text-white mb-2"
                 >
                   {steps[currentStep].title}
                 </motion.h2>
@@ -164,7 +164,7 @@ const WelcomeGuide = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-6"
+                  className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-4"
                 >
                   {steps[currentStep].subtitle}
                 </motion.h3>
@@ -175,20 +175,20 @@ const WelcomeGuide = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-lg md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto mb-8"
+                  className="text-sm md:text-base text-white/80 leading-relaxed mx-auto mb-6"
                 >
                   {steps[currentStep].description}
                 </motion.p>
 
                 {/* Progress Dots */}
-                <div className="flex justify-center gap-3 mb-8">
+                <div className="flex justify-center gap-2 mb-6">
                   {steps.map((_, index) => (
                     <motion.div
                       key={index}
-                      className={`h-2 rounded-full transition-all duration-300 ${
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
                         index === currentStep 
-                          ? 'w-12 bg-gradient-to-r from-blue-400 to-purple-400' 
-                          : 'w-2 bg-white/30'
+                          ? 'w-8 bg-gradient-to-r from-blue-400 to-purple-400' 
+                          : 'w-1.5 bg-white/30'
                       }`}
                       whileHover={{ scale: 1.2 }}
                     />
@@ -196,15 +196,15 @@ const WelcomeGuide = () => {
                 </div>
 
                 {/* Buttons */}
-                <div className="flex gap-4 justify-center items-center">
+                <div className="flex gap-2 md:gap-3 justify-center items-center flex-wrap">
                   {currentStep > 0 && (
                     <Button
                       onClick={() => setCurrentStep(prev => prev - 1)}
                       variant="outline"
-                      size="lg"
-                      className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      size="sm"
+                      className="gap-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs md:text-sm"
                     >
-                      <ArrowLeft className="w-5 h-5" />
+                      <ArrowLeft className="w-4 h-4" />
                       السابق
                     </Button>
                   )}
@@ -212,20 +212,20 @@ const WelcomeGuide = () => {
                   {currentStep < steps.length - 1 ? (
                     <Button
                       onClick={() => setCurrentStep(prev => prev + 1)}
-                      size="lg"
-                      className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8"
+                      size="sm"
+                      className="gap-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 text-xs md:text-sm"
                     >
                       التالي
-                      <ArrowLeft className="w-5 h-5 rotate-180" />
+                      <ArrowLeft className="w-4 h-4 rotate-180" />
                     </Button>
                   ) : (
                     <Button
                       onClick={handleComplete}
-                      size="lg"
-                      className="gap-2 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8"
+                      size="sm"
+                      className="gap-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 text-xs md:text-sm"
                     >
                       تم، لنبدأ!
-                      <Sparkles className="w-5 h-5" />
+                      <Sparkles className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
@@ -233,7 +233,7 @@ const WelcomeGuide = () => {
                 {/* Skip button */}
                 <button
                   onClick={handleComplete}
-                  className="mt-6 text-white/50 hover:text-white/80 transition-colors text-sm"
+                  className="mt-4 text-white/50 hover:text-white/80 transition-colors text-xs"
                 >
                   تخطي
                 </button>
@@ -255,11 +255,11 @@ const WelcomeGuide = () => {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, type: "spring" }}
-              className="fixed bottom-24 right-24 z-50"
+              className="fixed bottom-20 md:bottom-24 right-4 md:right-24 z-50"
             >
               <motion.div
                 animate={{
-                  y: [0, -10, 0],
+                  y: [0, -8, 0],
                 }}
                 transition={{
                   duration: 1.5,
@@ -269,7 +269,7 @@ const WelcomeGuide = () => {
                 className="relative"
               >
                 <div className="absolute -inset-2 bg-purple-500/50 rounded-full blur-xl animate-pulse" />
-                <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs md:text-sm font-bold shadow-lg">
                   مرشدك الذكي هنا! 👇
                 </div>
               </motion.div>
