@@ -17,6 +17,7 @@ export function NotesSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     teacher_name: "",
+    school_name: "",
     class_section: "",
     student_name: "",
     parent_name: "",
@@ -88,6 +89,7 @@ export function NotesSection() {
       setIsDialogOpen(false);
       setFormData({
         teacher_name: "",
+        school_name: "",
         class_section: "",
         student_name: "",
         parent_name: "",
@@ -134,13 +136,23 @@ export function NotesSection() {
                   />
                 </div>
                 <div>
-                  <Label>الصف والشعبة</Label>
+                  <Label>المدرسة</Label>
                   <Input
-                    value={formData.class_section}
-                    onChange={(e) => setFormData({ ...formData, class_section: e.target.value })}
+                    value={formData.school_name}
+                    onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
                     required
+                    placeholder="مثال: مدرسة عنبة"
                   />
                 </div>
+              </div>
+              <div>
+                <Label>الصف والشعبة</Label>
+                <Input
+                  value={formData.class_section}
+                  onChange={(e) => setFormData({ ...formData, class_section: e.target.value })}
+                  required
+                  placeholder="مثال: العاشر ب"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -182,6 +194,7 @@ export function NotesSection() {
           <TableHeader>
             <TableRow>
               <TableHead>المعلم</TableHead>
+              <TableHead>المدرسة</TableHead>
               <TableHead>الصف/الشعبة</TableHead>
               <TableHead>الطالب</TableHead>
               <TableHead>ولي الأمر</TableHead>
@@ -194,6 +207,7 @@ export function NotesSection() {
             {notes.map((note) => (
               <TableRow key={note.id}>
                 <TableCell>{note.teacher_name}</TableCell>
+                <TableCell className="max-w-xs truncate">{note.school_name}</TableCell>
                 <TableCell>{note.class_section}</TableCell>
                 <TableCell>{note.student_name}</TableCell>
                 <TableCell>{note.parent_name}</TableCell>

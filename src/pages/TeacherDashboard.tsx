@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowRight, FileText, MessageSquare, StickyNote, TrendingUp } from 'lucide-react';
+import { ArrowRight, FileText, StickyNote, TrendingUp } from 'lucide-react';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -91,18 +91,9 @@ const TeacherDashboard = () => {
       link: "/teacher/notes"
     },
     {
-      title: t.communicationBridge.dashboard.chat,
-      icon: <MessageSquare className="w-12 h-12 mb-4" />,
-      description: "الدردشة مع الطلاب وأولياء الأمور",
-      color: "from-teal-600/20 to-emerald-600/20",
-      borderColor: "border-teal-500/30",
-      hoverBorderColor: "hover:border-teal-500/50",
-      link: "/teacher/chat"
-    },
-    {
       title: "الإحصائيات",
       icon: <TrendingUp className="w-12 h-12 mb-4" />,
-      description: "عرض إحصائيات الواجبات والملاحظات والرسائل",
+      description: "عرض إحصائيات الواجبات والملاحظات",
       color: "from-purple-600/20 to-pink-600/20",
       borderColor: "border-purple-500/30",
       hoverBorderColor: "hover:border-purple-500/50",
@@ -162,7 +153,7 @@ const TeacherDashboard = () => {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {dashboardOptions.map((option, index) => (
               <motion.div
                 key={index}

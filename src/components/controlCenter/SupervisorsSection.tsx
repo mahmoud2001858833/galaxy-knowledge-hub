@@ -4,12 +4,11 @@ import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 
 export function SupervisorsSection() {
   const [supervisors, setSupervisors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSupervisors();
@@ -32,18 +31,24 @@ export function SupervisorsSection() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteImmediate = async (id: string) => {
     try {
+      // حذف فوري من القائمة
+      setSupervisors(supervisors.filter(s => s.id !== id));
+      
+      // ثم حذف من قاعدة البيانات
       const { error } = await supabase
         .from("admin_teacher_access")
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        // إعادة جلب البيانات في حالة الفشل
+        fetchSupervisors();
+        throw error;
+      }
 
-      setSupervisors(supervisors.filter(s => s.id !== id));
       toast.success("تم حذف الوصول بنجاح");
-      setDeleteId(null);
     } catch (error) {
       console.error("Error deleting supervisor:", error);
       toast.error("حدث خطأ في حذف الوصول");
@@ -83,7 +88,7 @@ export function SupervisorsSection() {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => setDeleteId(supervisor.id)}
+                    onClick={() => handleDeleteImmediate(supervisor.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -94,22 +99,6 @@ export function SupervisorsSection() {
         </Table>
       )}
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
-              هل أنت متأكد من حذف صلاحية الوصول هذه؟ لا يمكن التراجع عن هذا الإجراء.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && handleDelete(deleteId)}>
-              حذف
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

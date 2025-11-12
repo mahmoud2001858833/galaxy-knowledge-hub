@@ -463,6 +463,7 @@ export type Database = {
           grade: string
           id: string
           image_url: string | null
+          school_name: string
           section: string
           teacher_id: string
           updated_at: string
@@ -474,6 +475,7 @@ export type Database = {
           grade: string
           id?: string
           image_url?: string | null
+          school_name?: string
           section: string
           teacher_id: string
           updated_at?: string
@@ -485,6 +487,7 @@ export type Database = {
           grade?: string
           id?: string
           image_url?: string | null
+          school_name?: string
           section?: string
           teacher_id?: string
           updated_at?: string
@@ -545,6 +548,7 @@ export type Database = {
           description: string
           id: string
           parent_name: string
+          school_name: string
           student_name: string
           teacher_id: string
           teacher_name: string
@@ -556,6 +560,7 @@ export type Database = {
           description: string
           id?: string
           parent_name: string
+          school_name?: string
           student_name: string
           teacher_id: string
           teacher_name: string
@@ -567,6 +572,7 @@ export type Database = {
           description?: string
           id?: string
           parent_name?: string
+          school_name?: string
           student_name?: string
           teacher_id?: string
           teacher_name?: string

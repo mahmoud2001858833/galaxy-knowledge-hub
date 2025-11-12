@@ -12,6 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AutocompleteInput } from '@/components/shared/AutocompleteInput';
+import { SCHOOLS, GRADES, SECTIONS } from '@/data/schoolsAndGrades';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ParentRegistration = () => {
   const navigate = useNavigate();
@@ -183,35 +186,49 @@ const ParentRegistration = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-white">{t.communicationBridge.parentForm.grade}</Label>
-                  <Input
+                  <Select
                     value={formData.grade}
-                    onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                    className="bg-background/50 border-teal-500/30 text-white"
-                    placeholder="8"
-                    required
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, grade: value })}
+                  >
+                    <SelectTrigger className="bg-background/50 border-teal-500/30 text-white">
+                      <SelectValue placeholder="اختر الصف" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRADES.map((grade) => (
+                        <SelectItem key={grade} value={grade}>
+                          {grade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white">{t.communicationBridge.parentForm.section}</Label>
-                  <Input
+                  <Select
                     value={formData.section}
-                    onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                    className="bg-background/50 border-teal-500/30 text-white"
-                    placeholder="أ"
-                    required
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, section: value })}
+                  >
+                    <SelectTrigger className="bg-background/50 border-teal-500/30 text-white">
+                      <SelectValue placeholder="اختر الشعبة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTIONS.map((section) => (
+                        <SelectItem key={section} value={section}>
+                          {section}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-white">{t.communicationBridge.parentForm.schoolName}</Label>
-                <Input
-                  value={formData.schoolName}
-                  onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                  className="bg-background/50 border-teal-500/30 text-white"
-                  required
-                />
-              </div>
+              <AutocompleteInput
+                label={t.communicationBridge.parentForm.schoolName}
+                value={formData.schoolName}
+                onChange={(value) => setFormData({ ...formData, schoolName: value })}
+                suggestions={SCHOOLS}
+                required
+              />
 
               <Button
                 type="submit"

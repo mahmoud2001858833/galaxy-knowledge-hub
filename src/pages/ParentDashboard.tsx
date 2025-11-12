@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowRight, FileText, MessageSquare, StickyNote } from 'lucide-react';
+import { ArrowRight, FileText, StickyNote } from 'lucide-react';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -82,15 +82,6 @@ const ParentDashboard = () => {
       borderColor: "border-yellow-500/30",
       hoverBorderColor: "hover:border-yellow-500/50",
       link: "/parent/notes"
-    },
-    {
-      title: t.communicationBridge.dashboard.chat,
-      icon: <MessageSquare className="w-12 h-12 mb-4" />,
-      description: "الدردشة مع المعلمين وأولياء الأمور",
-      color: "from-teal-600/20 to-emerald-600/20",
-      borderColor: "border-teal-500/30",
-      hoverBorderColor: "hover:border-teal-500/50",
-      link: "/parent/chat"
     }
   ];
 
@@ -145,7 +136,7 @@ const ParentDashboard = () => {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {dashboardOptions.map((option, index) => (
               <motion.div
                 key={index}

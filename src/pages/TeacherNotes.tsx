@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Note {
   id: string;
   teacher_name: string;
+  school_name: string;
   class_section: string;
   student_name: string;
   parent_name: string;
@@ -32,6 +33,7 @@ const TeacherNotes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [teacherId, setTeacherId] = useState<string>('');
+  const [schoolName, setSchoolName] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -67,6 +69,7 @@ const TeacherNotes = () => {
       }
 
       setTeacherId(teacherData.id);
+      setSchoolName(teacherData.school_name);
       setFormData(prev => ({ ...prev, teacherName: teacherData.teacher_name }));
 
       const { data: notesData, error: notesError } = await supabase
@@ -108,6 +111,7 @@ const TeacherNotes = () => {
         .insert({
           teacher_id: teacherId,
           teacher_name: formData.teacherName,
+          school_name: schoolName,
           class_section: formData.classSection,
           student_name: formData.studentName,
           parent_name: formData.parentName,

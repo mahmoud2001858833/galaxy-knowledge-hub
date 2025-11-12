@@ -12,6 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AutocompleteInput } from '@/components/shared/AutocompleteInput';
+import { SCHOOLS, GRADES, SECTIONS } from '@/data/schoolsAndGrades';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const TeacherRegistration = () => {
   const navigate = useNavigate();
@@ -192,15 +195,13 @@ const TeacherRegistration = () => {
             className="bg-background/10 backdrop-blur-sm border border-teal-500/30 rounded-xl p-6 md:p-8"
           >
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-white">{t.communicationBridge.teacherForm.schoolName}</Label>
-                <Input
-                  value={formData.schoolName}
-                  onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                  className="bg-background/50 border-teal-500/30 text-white"
-                  required
-                />
-              </div>
+              <AutocompleteInput
+                label={t.communicationBridge.teacherForm.schoolName}
+                value={formData.schoolName}
+                onChange={(value) => setFormData({ ...formData, schoolName: value })}
+                suggestions={SCHOOLS}
+                required
+              />
 
               <div className="space-y-2">
                 <Label className="text-white">{t.communicationBridge.teacherForm.teacherName}</Label>
@@ -252,21 +253,39 @@ const TeacherRegistration = () => {
                   <div key={index} className="flex gap-3 items-end">
                     <div className="flex-1 space-y-2">
                       <Label className="text-white text-sm">{t.communicationBridge.teacherForm.grade}</Label>
-                      <Input
+                      <Select
                         value={gs.grade}
-                        onChange={(e) => handleGradeSectionChange(index, 'grade', e.target.value)}
-                        className="bg-background/50 border-teal-500/30 text-white"
-                        placeholder="8"
-                      />
+                        onValueChange={(value) => handleGradeSectionChange(index, 'grade', value)}
+                      >
+                        <SelectTrigger className="bg-background/50 border-teal-500/30 text-white">
+                          <SelectValue placeholder="اختر الصف" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRADES.map((grade) => (
+                            <SelectItem key={grade} value={grade}>
+                              {grade}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex-1 space-y-2">
                       <Label className="text-white text-sm">{t.communicationBridge.teacherForm.section}</Label>
-                      <Input
+                      <Select
                         value={gs.section}
-                        onChange={(e) => handleGradeSectionChange(index, 'section', e.target.value)}
-                        className="bg-background/50 border-teal-500/30 text-white"
-                        placeholder="أ"
-                      />
+                        onValueChange={(value) => handleGradeSectionChange(index, 'section', value)}
+                      >
+                        <SelectTrigger className="bg-background/50 border-teal-500/30 text-white">
+                          <SelectValue placeholder="اختر الشعبة" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SECTIONS.map((section) => (
+                            <SelectItem key={section} value={section}>
+                              {section}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     {gradesSections.length > 1 && (
                       <Button

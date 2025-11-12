@@ -19,6 +19,7 @@ export function AssignmentsSection() {
     assignment_name: "",
     grade: "",
     section: "",
+    school_name: "",
     description: "",
     image_url: ""
   });
@@ -90,6 +91,7 @@ export function AssignmentsSection() {
         assignment_name: "",
         grade: "",
         section: "",
+        school_name: "",
         description: "",
         image_url: ""
       });
@@ -132,6 +134,15 @@ export function AssignmentsSection() {
                   required
                 />
               </div>
+              <div>
+                <Label>المدرسة</Label>
+                <Input
+                  value={formData.school_name}
+                  onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
+                  required
+                  placeholder="مثال: مدرسة عنبة"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>الصف</Label>
@@ -139,6 +150,7 @@ export function AssignmentsSection() {
                     value={formData.grade}
                     onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                     required
+                    placeholder="مثال: العاشر"
                   />
                 </div>
                 <div>
@@ -147,6 +159,7 @@ export function AssignmentsSection() {
                     value={formData.section}
                     onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                     required
+                    placeholder="مثال: ب"
                   />
                 </div>
               </div>
@@ -180,6 +193,7 @@ export function AssignmentsSection() {
           <TableHeader>
             <TableRow>
               <TableHead>اسم الواجب</TableHead>
+              <TableHead>المدرسة</TableHead>
               <TableHead>الصف</TableHead>
               <TableHead>الشعبة</TableHead>
               <TableHead>الوصف</TableHead>
@@ -191,6 +205,7 @@ export function AssignmentsSection() {
             {assignments.map((assignment) => (
               <TableRow key={assignment.id}>
                 <TableCell>{assignment.assignment_name}</TableCell>
+                <TableCell className="max-w-xs truncate">{assignment.school_name}</TableCell>
                 <TableCell>{assignment.grade}</TableCell>
                 <TableCell>{assignment.section}</TableCell>
                 <TableCell className="max-w-md truncate">{assignment.description}</TableCell>

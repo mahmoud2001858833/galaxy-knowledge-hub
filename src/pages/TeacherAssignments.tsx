@@ -20,6 +20,7 @@ interface Assignment {
   assignment_name: string;
   grade: string;
   section: string;
+  school_name: string;
   description: string;
   image_url: string | null;
   created_at: string;
@@ -32,6 +33,7 @@ const TeacherAssignments = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [teacherId, setTeacherId] = useState<string>('');
+  const [schoolName, setSchoolName] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -57,7 +59,7 @@ const TeacherAssignments = () => {
 
       const { data: teacherData, error: teacherError } = await supabase
         .from('teachers')
-        .select('id')
+        .select('id, school_name')
         .eq('user_id', user.id)
         .single();
 
@@ -67,6 +69,7 @@ const TeacherAssignments = () => {
       }
 
       setTeacherId(teacherData.id);
+      setSchoolName(teacherData.school_name);
 
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('class_assignments')
@@ -136,6 +139,7 @@ const TeacherAssignments = () => {
           assignment_name: formData.assignmentName,
           grade: formData.grade,
           section: formData.section,
+          school_name: schoolName,
           description: formData.description,
           image_url: imageUrl
         });
