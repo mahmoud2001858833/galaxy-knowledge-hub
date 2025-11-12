@@ -2,48 +2,54 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { Settings, GraduationCap, Brain, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, Settings, GraduationCap, Sparkles } from 'lucide-react';
+import managementBg from '@/assets/management-section.jpg';
+import educationBg from '@/assets/education-section.jpg';
+import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
 
 const PlatformCategories = () => {
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
   
-  const sections = [
+  const categories = [
     {
       id: 'management',
       title: 'قسم الإدارة',
       icon: Settings,
       description: 'إدارة شاملة ومتكاملة للمنصة التعليمية',
-      color: 'from-amber-600/20 to-yellow-600/20',
+      gradient: 'from-amber-600/20 to-yellow-600/20',
       borderColor: 'border-amber-500/30',
+      iconColor: 'text-amber-400',
       glowColor: 'shadow-amber-500/50',
-      iconBg: 'bg-amber-500/20',
       link: '/management-section',
-      platformCount: 2
+      platformsCount: 2,
+      image: managementBg
     },
     {
       id: 'education',
       title: 'قسم التعليم',
       icon: GraduationCap,
       description: 'منصات تعليمية شاملة في جميع المجالات',
-      color: 'from-green-600/20 to-emerald-600/20',
+      gradient: 'from-green-600/20 to-emerald-600/20',
       borderColor: 'border-green-500/30',
+      iconColor: 'text-green-400',
       glowColor: 'shadow-green-500/50',
-      iconBg: 'bg-green-500/20',
       link: '/education-section',
-      platformCount: 4
+      platformsCount: 4,
+      image: educationBg
     },
     {
       id: 'ai-assistant',
       title: 'قسم مساعدك الذكي',
-      icon: Brain,
+      icon: Sparkles,
       description: 'مساعدون أذكياء لدعمك في رحلتك التعليمية',
-      color: 'from-purple-600/20 to-indigo-600/20',
+      gradient: 'from-purple-600/20 to-indigo-600/20',
       borderColor: 'border-purple-500/30',
+      iconColor: 'text-purple-400',
       glowColor: 'shadow-purple-500/50',
-      iconBg: 'bg-purple-500/20',
       link: '/ai-assistant-section',
-      platformCount: 2
+      platformsCount: 2,
+      image: aiAssistantBg
     }
   ];
 
@@ -82,10 +88,10 @@ const PlatformCategories = () => {
   return (
     <motion.section
       id="platform-sections"
-      variants={containerVariants}
-      initial="hidden"
-      whileInView="visible"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
       viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.8 }}
       className="py-20 w-full max-w-7xl mx-auto px-4"
       dir={dir}
     >
@@ -112,115 +118,113 @@ const PlatformCategories = () => {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {sections.map((section, index) => (
-          <motion.div
-            key={section.id}
-            variants={sectionVariants}
-            whileHover={{ 
-              scale: 1.05,
-              rotateY: 5,
-              z: 50
-            }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(section.link)}
-            className={`group relative h-[450px] rounded-3xl overflow-hidden cursor-pointer border-2 ${section.borderColor} transition-all duration-500 hover:shadow-2xl hover:${section.glowColor}`}
-            style={{ 
-              transformStyle: 'preserve-3d',
-              perspective: '1000px'
-            }}
-          >
-            {/* Animated Background */}
+        {categories.map((category, index) => {
+          const IconComponent = category.icon;
+          return (
             <motion.div
-              className={`absolute inset-0 bg-gradient-to-br ${section.color}`}
-              animate={{
-                backgroundPosition: ['0% 0%', '100% 100%', '0% 0%']
+              key={category.id}
+              initial={{ opacity: 0, y: 100 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ 
+                duration: 0.6,
+                delay: index * 0.2,
+                ease: "easeOut"
               }}
-              transition={{
-                duration: 8,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-            />
-            
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-950/95 via-blue-950/60 to-transparent backdrop-blur-sm" />
-            
-            {/* Glow Effect */}
-            <motion.div 
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-              animate={{
-                background: [
-                  'radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%)',
-                  'radial-gradient(circle at 70% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%)',
-                  'radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%)',
-                ]
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity
-              }}
-            />
-
-            {/* Content */}
-            <div className="absolute inset-0 p-8 z-10 flex flex-col items-center justify-center text-center">
-              {/* Icon */}
+              onClick={() => navigate(category.link)}
+              className={`group relative h-[450px] rounded-3xl overflow-hidden cursor-pointer border-2 ${category.borderColor} transition-all duration-300 hover:shadow-2xl ${category.glowColor}`}
+            >
+              {/* Background Image */}
               <motion.div
-                whileHover={{ 
-                  rotate: 360,
-                  scale: 1.2
-                }}
-                transition={{ duration: 0.6 }}
-                className={`mb-8 p-8 rounded-3xl ${section.iconBg} backdrop-blur-md shadow-2xl`}
+                className="absolute inset-0"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.5 }}
               >
-                <section.icon className="w-16 h-16 text-white" />
+                <img 
+                  src={category.image} 
+                  alt={category.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-90`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-950/95 via-blue-950/60 to-transparent" />
               </motion.div>
+              
+              {/* Animated Glow Effect */}
+              <motion.div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                animate={{
+                  background: [
+                    `radial-gradient(circle at 20% 50%, ${category.iconColor.replace('text-', 'rgba(')}, 0.3) 0%, transparent 50%)`,
+                    `radial-gradient(circle at 80% 50%, ${category.iconColor.replace('text-', 'rgba(')}, 0.3) 0%, transparent 50%)`,
+                    `radial-gradient(circle at 20% 50%, ${category.iconColor.replace('text-', 'rgba(')}, 0.3) 0%, transparent 50%)`,
+                  ]
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
 
-              {/* Title */}
-              <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 group-hover:text-blue-300 transition-colors">
-                {section.title}
-              </h3>
+              {/* Content */}
+              <div className="relative z-10 h-full p-8 flex flex-col items-center justify-center text-center">
+                {/* Icon */}
+                <motion.div
+                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ duration: 0.5 }}
+                  className={`mb-6 p-6 rounded-full bg-white/10 backdrop-blur-sm border-2 ${category.borderColor}`}
+                >
+                  <IconComponent className={`w-16 h-16 ${category.iconColor}`} />
+                </motion.div>
 
-              {/* Description */}
-              <p className="text-white/80 text-base leading-relaxed mb-6 max-w-xs">
-                {section.description}
-              </p>
+                {/* Title */}
+                <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 group-hover:scale-105 transition-transform">
+                  {category.title}
+                </h3>
 
-              {/* Platform Count Badge */}
-              <div className="mb-6 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                <span className="text-white/90 text-sm font-semibold">
-                  {section.platformCount} منصات
-                </span>
+                {/* Description */}
+                <p className="text-white/80 text-lg leading-relaxed mb-6 max-w-md">
+                  {category.description}
+                </p>
+
+                {/* Platform Count Badge */}
+                <div className="mb-6 px-6 py-2 rounded-full bg-white/20 backdrop-blur-md border border-white/30">
+                  <span className="text-white font-semibold">
+                    {category.platformsCount} منصات
+                  </span>
+                </div>
+
+                {/* Explore Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1, boxShadow: "0 0 30px rgba(255, 255, 255, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-8 py-3 bg-white/20 hover:bg-white/30 border border-white/40 rounded-full text-white font-bold backdrop-blur-sm transition-all"
+                >
+                  <span>استكشف القسم</span>
+                  <ChevronLeft className="w-5 h-5" />
+                </motion.button>
               </div>
 
-              {/* Button */}
-              <motion.div
-                whileHover={{ scale: 1.1, boxShadow: "0 0 30px rgba(59, 130, 246, 0.5)" }}
-                whileTap={{ scale: 0.9 }}
-                className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-blue-600/50 to-purple-600/50 border border-blue-400/50 rounded-full text-white font-bold backdrop-blur-sm shadow-xl"
-              >
-                <span>استكشف القسم</span>
-                <ArrowLeft className="w-5 h-5" />
-              </motion.div>
-            </div>
-
-            {/* Floating Particles */}
-            <motion.div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none"
-              animate={{
-                background: [
-                  'radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.08) 0%, transparent 15%)',
-                  'radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.08) 0%, transparent 15%)',
-                  'radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.08) 0%, transparent 15%)',
-                ]
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-          </motion.div>
-        ))}
+              {/* Floating Particles */}
+              {[...Array(3)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute w-2 h-2 rounded-full ${category.iconColor.replace('text-', 'bg-')}`}
+                  animate={{
+                    y: [0, -100, 0],
+                    x: [0, Math.random() * 50 - 25, 0],
+                    opacity: [0, 1, 0],
+                  }}
+                  transition={{
+                    duration: 3 + i,
+                    repeat: Infinity,
+                    delay: i * 0.5,
+                  }}
+                  style={{
+                    bottom: '20%',
+                    left: `${30 + i * 20}%`,
+                  }}
+                />
+              ))}
+            </motion.div>
+          );
+        })}
       </div>
     </motion.section>
   );

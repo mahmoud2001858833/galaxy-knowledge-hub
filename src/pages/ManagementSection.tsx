@@ -33,81 +33,53 @@ const ManagementSection = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950">
+    <div className="min-h-screen relative" dir={dir}>
+      {/* Background Image */}
+      <div className="fixed inset-0 z-0">
+        <img 
+          src={managementBg} 
+          alt="Management Section"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-950/90 via-blue-900/85 to-blue-950/90" />
+      </div>
+
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative h-[60vh] overflow-hidden" dir={dir}>
-        <motion.div
-          initial={{ scale: 1.2 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.5 }}
-          className="absolute inset-0"
-        >
-          <img 
-            src={managementBg} 
-            alt="Management Section"
-            className="w-full h-full object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-blue-950/50 to-transparent" />
-        </motion.div>
-
-        <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="inline-block mb-6 p-6 rounded-full bg-amber-500/20 backdrop-blur-sm"
-            >
-              <Settings className="w-16 h-16 text-amber-400" />
-            </motion.div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-              قسم الإدارة
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto mb-8">
-              إدارة شاملة ومتكاملة للمنصة التعليمية
-            </p>
-
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: "12rem" }}
-              transition={{ duration: 1, delay: 0.8 }}
-              className="h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 mx-auto rounded-full"
-            />
-          </motion.div>
-        </div>
-      </section>
 
       {/* Platforms Grid */}
-      <section className="py-20 px-4" dir={dir}>
+      <section className="relative z-10 py-32 px-4">
         <div className="max-w-7xl mx-auto">
+          {/* Section Title */}
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+              قسم الإدارة
+            </h1>
+            <div className="h-1 w-32 bg-gradient-to-r from-amber-500 to-yellow-500 mx-auto rounded-full" />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-8"
           >
             {platforms.map((platform, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, scale: 0.8, rotateY: -45 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ 
-                  duration: 0.8, 
-                  delay: index * 0.2,
-                  type: "spring",
-                  stiffness: 100
+                  duration: 0.5, 
+                  delay: 0.5 + index * 0.15,
                 }}
-                whileHover={{ scale: 1.05, rotateY: 5 }}
+                whileHover={{ y: -10 }}
                 onClick={() => navigate(platform.link)}
-                className={`group relative h-[400px] rounded-3xl overflow-hidden cursor-pointer border-2 ${platform.borderColor} transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/40`}
-                style={{ transformStyle: 'preserve-3d' }}
+                className={`group relative h-[400px] rounded-3xl overflow-hidden cursor-pointer border-2 ${platform.borderColor} transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/40`}
               >
                 {/* Background Image */}
                 <motion.div 

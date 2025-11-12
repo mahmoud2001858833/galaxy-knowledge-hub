@@ -50,10 +50,10 @@ const HeroSection = () => {
           className="flex justify-center lg:justify-end"
         >
           <div className="relative w-[400px] h-[400px]">
-            {/* Central Logo */}
+            {/* Central Logo - Static */}
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
               transition={{ 
                 type: "spring",
                 stiffness: 100,
@@ -62,24 +62,43 @@ const HeroSection = () => {
               }}
               className="absolute inset-0 flex items-center justify-center"
             >
-              <motion.div
-                animate={{ 
-                  rotate: [0, 360],
-                  scale: [1, 1.05, 1]
-                }}
-                transition={{ 
-                  rotate: { duration: 30, repeat: Infinity, ease: "linear" },
-                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-cyan-500/30 blur-3xl rounded-full" />
+              <div className="relative">
+                {/* Outer Circle Border */}
+                <motion.div
+                  animate={{ 
+                    rotate: 360,
+                  }}
+                  transition={{ 
+                    duration: 40,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="absolute inset-0 w-[220px] h-[220px] -left-[10px] -top-[10px]"
+                >
+                  <div className="w-full h-full rounded-full border-2 border-dashed border-blue-400/40" />
+                </motion.div>
+
+                {/* Glowing Background */}
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3]
+                  }}
+                  transition={{ 
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-cyan-500/30 blur-3xl rounded-full"
+                />
+
+                {/* Logo - Static */}
                 <img 
                   src={logo} 
                   alt="ذروة العلم" 
                   className="relative w-48 h-48 object-contain drop-shadow-2xl"
                 />
-              </motion.div>
+              </div>
             </motion.div>
 
             {/* Orbiting Icons */}
@@ -159,12 +178,14 @@ const HeroSection = () => {
               className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-full mb-8 shadow-lg shadow-blue-500/50"
             />
 
-            <p className="text-xl md:text-2xl text-white/90 leading-relaxed mb-6">
-              منصة تعليمية تفاعلية شاملة تجمع بين العلوم والرياضيات واللغات والتكنولوجيا
+            <p className="text-2xl md:text-3xl text-white/95 font-medium leading-relaxed mb-4">
+              منصتك التعليمية الشاملة
             </p>
 
-            <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-8">
-              نقدم لك تجربة تعليمية فريدة بأحدث الأدوات والتقنيات الذكية لمساعدتك على تحقيق أهدافك التعليمية بكل سهولة ومتعة
+            <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+              رحلة تعليمية مبتكرة تجمع العلوم، الرياضيات، اللغات، والتكنولوجيا
+              <br />
+              <span className="text-blue-300">مع مساعد ذكي يرافقك في كل خطوة</span>
             </p>
 
             <motion.div
