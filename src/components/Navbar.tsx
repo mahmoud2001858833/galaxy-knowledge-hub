@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -10,14 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -31,16 +28,13 @@ const Navbar = () => {
           data
         } = await supabase.from('users_profiles').select('*').eq('id', session.user.id).single();
         setProfile(data);
-        
+
         // Check if user is super admin (with email fallback)
-        const { data: accessRows } = await supabase
-          .from('admin_teacher_access')
-          .select('access_level')
-          .eq('user_id', session.user.id)
-          .eq('access_level', 'super_admin')
-          .limit(1);
+        const {
+          data: accessRows
+        } = await supabase.from('admin_teacher_access').select('access_level').eq('user_id', session.user.id).eq('access_level', 'super_admin').limit(1);
         const emailFallback = session.user.email === 'jowmahmoud6@gmail.com';
-        setIsSuperAdmin((accessRows && accessRows.length > 0) || emailFallback);
+        setIsSuperAdmin(accessRows && accessRows.length > 0 || emailFallback);
       }
     };
     fetchUser();
@@ -52,26 +46,19 @@ const Navbar = () => {
       setUser(session?.user || null);
       if (session?.user) {
         // Refresh profile
-        supabase
-          .from('users_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => {
-            setProfile(data);
-          });
+        supabase.from('users_profiles').select('*').eq('id', session.user.id).single().then(({
+          data
+        }) => {
+          setProfile(data);
+        });
 
         // Refresh super admin status dynamically (no page reload needed)
-        supabase
-          .from('admin_teacher_access')
-          .select('access_level')
-          .eq('user_id', session.user.id)
-          .eq('access_level', 'super_admin')
-          .limit(1)
-          .then(({ data }) => {
-            const emailFallback = session.user?.email === 'jowmahmoud6@gmail.com';
-            setIsSuperAdmin((!!data && data.length > 0) || emailFallback);
-          });
+        supabase.from('admin_teacher_access').select('access_level').eq('user_id', session.user.id).eq('access_level', 'super_admin').limit(1).then(({
+          data
+        }) => {
+          const emailFallback = session.user?.email === 'jowmahmoud6@gmail.com';
+          setIsSuperAdmin(!!data && data.length > 0 || emailFallback);
+        });
       } else {
         setProfile(null);
         setIsSuperAdmin(false);
@@ -79,11 +66,9 @@ const Navbar = () => {
     });
     return () => subscription.unsubscribe();
   }, []);
-
   const isActive = (path: string) => {
     return location.pathname === path ? 'active' : '';
   };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -92,7 +77,6 @@ const Navbar = () => {
     });
     navigate('/');
   };
-
   return <nav className="sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
         <div className="hidden md:flex items-center space-x-1 rtl:space-x-reverse">
@@ -100,7 +84,7 @@ const Navbar = () => {
             <div className="relative h-9 w-9 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
               <img src="/logo.png" alt="ذروة العلم" className="h-8 w-8 object-contain" />
             </div>
-            <span className="text-xl font-bold mx-2 text-white">ذروة العلم</span>
+            <span className="text-xl font-bold mx-2 text-white">فلك المعرفه   </span>
           </Link>
         </div>
         
@@ -115,15 +99,13 @@ const Navbar = () => {
                 </Link>
               </NavigationMenuItem>
               
-              {isSuperAdmin && (
-                <NavigationMenuItem>
+              {isSuperAdmin && <NavigationMenuItem>
                   <Link to="/control-center">
                     <NavigationMenuLink className={cn("group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-white/10 data-[state=open]:bg-white/10 text-white", isActive('/control-center') && "bg-white/10")}>
                       مركز التحكم
                     </NavigationMenuLink>
                   </Link>
-                </NavigationMenuItem>
-              )}
+                </NavigationMenuItem>}
               
               <NavigationMenuItem>
                 <Link to="/physics">
@@ -209,14 +191,12 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
                 
-                {isSuperAdmin && (
-                  <Link to="/control-center">
+                {isSuperAdmin && <Link to="/control-center">
                     <DropdownMenuItem className="flex items-center cursor-pointer text-white">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>مركز التحكم</span>
                     </DropdownMenuItem>
-                  </Link>
-                )}
+                  </Link>}
                 
                 <DropdownMenuItem className="flex items-center cursor-pointer text-white" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -269,9 +249,7 @@ const Navbar = () => {
                 <Link to="/subject-puzzles" className={`nav-link ${isActive('/subject-puzzles')}`}>الألغاز</Link>
                 <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>الملف الشخصي</Link>
                 
-                {isSuperAdmin && (
-                  <Link to="/control-center" className={`nav-link ${isActive('/control-center')}`}>مركز التحكم</Link>
-                )}
+                {isSuperAdmin && <Link to="/control-center" className={`nav-link ${isActive('/control-center')}`}>مركز التحكم</Link>}
                 
                 {user ? <Button onClick={handleLogout} variant="outline" className="w-full">تسجيل الخروج</Button> : <Link to="/auth">
                     <Button variant="outline" className="w-full">تسجيل الدخول</Button>
