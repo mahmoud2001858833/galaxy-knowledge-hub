@@ -86,167 +86,102 @@ const WelcomeGuide = () => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Top Banner */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-            onClick={handleComplete}
-          />
-
-          {/* Guide Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[85%] max-w-md"
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            transition={{ type: "spring", damping: 20, stiffness: 200 }}
+            className="fixed top-0 left-0 right-0 z-50 mx-auto max-w-4xl mt-4 px-4"
           >
-            <Card className="relative overflow-hidden border-2 border-white/20 bg-gradient-to-br from-blue-950/95 via-purple-950/95 to-blue-950/95 backdrop-blur-xl shadow-2xl">
+            <div className="relative overflow-hidden rounded-xl border border-white/20 bg-gradient-to-r from-blue-950/95 via-purple-950/95 to-blue-950/95 backdrop-blur-xl shadow-2xl">
               {/* Background Pattern */}
               <div className="absolute inset-0 opacity-10">
-                <div className={`absolute inset-0 bg-gradient-to-br ${steps[currentStep].bgGradient}`} />
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute rounded-full bg-white"
-                    style={{
-                      top: `${Math.random() * 100}%`,
-                      left: `${Math.random() * 100}%`,
-                      width: `${Math.random() * 3 + 1}px`,
-                      height: `${Math.random() * 3 + 1}px`,
-                    }}
-                    animate={{
-                      opacity: [0.2, 0.5, 0.2],
-                      scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                      duration: Math.random() * 3 + 2,
-                      repeat: Infinity,
-                      delay: Math.random() * 2,
-                    }}
-                  />
-                ))}
+                <div className={`absolute inset-0 bg-gradient-to-r ${steps[currentStep].bgGradient}`} />
               </div>
 
               {/* Content */}
-              <div className="relative p-6 md:p-8 text-center" dir="rtl">
-                {/* Icon */}
-                <motion.div
-                  key={currentStep}
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", damping: 15 }}
-                  className="mb-4 inline-block"
-                >
-                  <div className={`p-4 rounded-full bg-gradient-to-br ${steps[currentStep].bgGradient} backdrop-blur-sm border-2 border-white/20`}>
-                    {React.createElement(steps[currentStep].icon, {
-                      className: `w-10 h-10 md:w-12 md:h-12 ${steps[currentStep].iconColor}`,
-                    })}
-                  </div>
-                </motion.div>
+              <div className="relative px-6 py-3 flex items-center justify-between gap-4" dir="rtl">
+                {/* Icon & Text */}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", damping: 15 }}
+                  >
+                    <div className={`p-2 rounded-full bg-gradient-to-br ${steps[currentStep].bgGradient} border border-white/20`}>
+                      {React.createElement(steps[currentStep].icon, {
+                        className: `w-5 h-5 ${steps[currentStep].iconColor}`,
+                      })}
+                    </div>
+                  </motion.div>
 
-                {/* Title */}
-                <motion.h2
-                  key={`title-${currentStep}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-2xl md:text-3xl font-bold text-white mb-2"
-                >
-                  {steps[currentStep].title}
-                </motion.h2>
-
-                {/* Subtitle */}
-                <motion.h3
-                  key={`subtitle-${currentStep}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-4"
-                >
-                  {steps[currentStep].subtitle}
-                </motion.h3>
-
-                {/* Description */}
-                <motion.p
-                  key={`desc-${currentStep}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-sm md:text-base text-white/80 leading-relaxed mx-auto mb-6"
-                >
-                  {steps[currentStep].description}
-                </motion.p>
-
-                {/* Progress Dots */}
-                <div className="flex justify-center gap-2 mb-6">
-                  {steps.map((_, index) => (
+                  <div className="flex-1 min-w-0">
                     <motion.div
-                      key={index}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        index === currentStep 
-                          ? 'w-8 bg-gradient-to-r from-blue-400 to-purple-400' 
-                          : 'w-1.5 bg-white/30'
-                      }`}
-                      whileHover={{ scale: 1.2 }}
-                    />
-                  ))}
+                      key={`content-${currentStep}`}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="flex flex-col"
+                    >
+                      <h3 className="text-sm font-bold text-white truncate">
+                        {steps[currentStep].title} - {steps[currentStep].subtitle}
+                      </h3>
+                      <p className="text-xs text-white/70 truncate">
+                        {steps[currentStep].description}
+                      </p>
+                    </motion.div>
+                  </div>
                 </div>
 
-                {/* Buttons */}
-                <div className="flex gap-2 md:gap-3 justify-center items-center flex-wrap">
-                  {currentStep > 0 && (
-                    <Button
-                      onClick={() => setCurrentStep(prev => prev - 1)}
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs md:text-sm"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      السابق
-                    </Button>
-                  )}
-                  
-                  {currentStep < steps.length - 1 ? (
-                    <Button
-                      onClick={() => setCurrentStep(prev => prev + 1)}
-                      size="sm"
-                      className="gap-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 text-xs md:text-sm"
-                    >
-                      التالي
-                      <ArrowLeft className="w-4 h-4 rotate-180" />
-                    </Button>
-                  ) : (
-                    <Button
+                {/* Progress & Actions */}
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* Progress Dots */}
+                  <div className="hidden sm:flex gap-1.5">
+                    {steps.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          index === currentStep 
+                            ? 'w-6 bg-gradient-to-r from-blue-400 to-purple-400' 
+                            : 'w-1.5 bg-white/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2">
+                    {currentStep < steps.length - 1 ? (
+                      <Button
+                        onClick={() => setCurrentStep(prev => prev + 1)}
+                        size="sm"
+                        className="h-7 px-3 text-xs bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                      >
+                        التالي
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleComplete}
+                        size="sm"
+                        className="h-7 px-3 text-xs bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white gap-1"
+                      >
+                        ابدأ
+                        <Sparkles className="w-3 h-3" />
+                      </Button>
+                    )}
+                    
+                    <button
                       onClick={handleComplete}
-                      size="sm"
-                      className="gap-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 text-xs md:text-sm"
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                     >
-                      تم، لنبدأ!
-                      <Sparkles className="w-4 h-4" />
-                    </Button>
-                  )}
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
                 </div>
-
-                {/* Skip button */}
-                <button
-                  onClick={handleComplete}
-                  className="mt-4 text-white/50 hover:text-white/80 transition-colors text-xs"
-                >
-                  تخطي
-                </button>
               </div>
-
-              {/* Close button */}
-              <button
-                onClick={handleComplete}
-                className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </Card>
+            </div>
           </motion.div>
 
           {/* Guide Pointer - only on last step */}
