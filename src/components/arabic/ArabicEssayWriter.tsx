@@ -3,82 +3,25 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Send, FileText, Lightbulb, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Loader2 } from 'lucide-react';
 
-type EssayType = 'article' | 'story' | 'descriptive' | 'argumentative' | 'narrative';
-type CorrectionStage = 'all';
+interface ArabicEssayWriterProps {
+  language: 'ar' | 'en';
+}
 
-const ArabicEssayWriter = () => {
-  const [mode, setMode] = useState<'practice' | 'generate'>('practice');
+const ArabicEssayWriter: React.FC<ArabicEssayWriterProps> = ({ language }) => {
   const [essayText, setEssayText] = useState('');
-  const [essayType, setEssayType] = useState<EssayType>('article');
-  const [wordCount, setWordCount] = useState(300);
-  const [additionalInfo, setAdditionalInfo] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [corrections, setCorrections] = useState<{
-    all?: string;
-  }>({});
-  const [generatedEssay, setGeneratedEssay] = useState('');
+  const [correction, setCorrection] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const essayTypes = {
-    article: 'مقالة',
-    story: 'قصة',
-    descriptive: 'وصفي',
-    argumentative: 'حجاجي',
-    narrative: 'سردي'
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      // Extract text from image using OCR
-      extractTextFromImage(file);
-    }
-  };
-
-  const extractTextFromImage = async (file: File) => {
-    setLoading(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        
-        const { data, error } = await supabase.functions.invoke('real-ocr-translator', {
-          body: { image: base64 }
-        });
-
-        if (error) throw error;
-        setEssayText(data.arabicText || data.text || '');
-        toast({
-          title: "تم استخراج النص",
-          description: "تم استخراج النص من الصورة بنجاح",
-        });
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Error extracting text:', error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء استخراج النص من الصورة",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const correctEssay = async () => {
     if (!essayText.trim()) {
       toast({
         title: "خطأ",
-        description: "الرجاء كتابة أو رفع نص للتصحيح",
+        description: "الرجاء كتابة نص للتصحيح",
         variant: "destructive",
       });
       return;
@@ -90,16 +33,13 @@ const ArabicEssayWriter = () => {
       const { data, error } = await supabase.functions.invoke('arabic-essay-corrector', {
         body: {
           text: essayText,
-          essayType,
           stage: 'all'
         }
       });
 
       if (error) throw error;
 
-      setCorrections({
-        all: data.correction
-      });
+      setCorrection(data.correction);
 
       toast({
         title: "تم التصحيح",
@@ -117,238 +57,95 @@ const ArabicEssayWriter = () => {
     }
   };
 
-  const generateEssay = async () => {
-    if (wordCount < 50 || wordCount > 2000) {
-      toast({
-        title: "خطأ",
-        description: "عدد الكلمات يجب أن يكون بين 50 و 2000",
-        variant: "destructive",
-      });
-      return;
-    }
+  const exportCorrection = () => {
+    if (!correction) return;
 
-    setLoading(true);
+    const content = `=== تصحيح التعبير ===\n\n${correction}`;
 
-    try {
-      const { data, error } = await supabase.functions.invoke('arabic-essay-generator', {
-        body: {
-          essayType,
-          wordCount,
-          additionalInfo
-        }
-      });
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `correction-${Date.now()}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
 
-      if (error) throw error;
-
-      setGeneratedEssay(data.essay);
-      toast({
-        title: "تم إنشاء التعبير",
-        description: "تم إنشاء تعبير متكامل بنجاح",
-      });
-    } catch (error) {
-      console.error('Error generating essay:', error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء التعبير",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: "تم التصدير",
+      description: "تم تصدير التصحيح بنجاح",
+    });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4 mb-6">
-        <Button
-          onClick={() => setMode('practice')}
-          variant={mode === 'practice' ? 'default' : 'outline'}
-          className="flex-1"
-        >
-          <FileText className="mr-2 h-5 w-5" />
-          التدريب على التعبير
-        </Button>
-        <Button
-          onClick={() => setMode('generate')}
-          variant={mode === 'generate' ? 'default' : 'outline'}
-          className="flex-1"
-        >
-          <Lightbulb className="mr-2 h-5 w-5" />
-          مولد التعابير
-        </Button>
-      </div>
+      <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <FileText className="h-6 w-6" />
+            أداة تصحيح التعبير
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              نص التعبير
+            </label>
+            <Textarea
+              value={essayText}
+              onChange={(e) => setEssayText(e.target.value)}
+              placeholder="اكتب أو الصق نص التعبير هنا..."
+              className="min-h-[300px] bg-white/5 border-white/20 text-white"
+              disabled={loading}
+            />
+          </div>
 
-      {mode === 'practice' ? (
+          <Button
+            onClick={correctEssay}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                جاري التصحيح...
+              </>
+            ) : (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                تصحيح عام (إملائي وقواعدي ونوع المقالة)
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {correction && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-4"
         >
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-white">
+              نتائج التصحيح
+            </h3>
+            <Button
+              onClick={exportCorrection}
+              variant="outline"
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              تصدير التصحيح
+            </Button>
+          </div>
+
           <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-            <CardHeader>
-              <CardTitle className="text-white">كتابة التعبير</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  نوع التعبير
-                </label>
-                <Select value={essayType} onValueChange={(value) => setEssayType(value as EssayType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(essayTypes).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <CardContent className="p-6">
+              <div className="prose prose-invert max-w-none">
+                <div className="text-white whitespace-pre-wrap">{correction}</div>
               </div>
-
-              <div className="flex gap-4">
-                <Button
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                  variant="outline"
-                  className="flex-1"
-                  disabled={loading}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  رفع صورة
-                </Button>
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {imageFile && (
-                <p className="text-sm text-green-400">
-                  تم رفع: {imageFile.name}
-                </p>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  نص التعبير
-                </label>
-                <Textarea
-                  value={essayText}
-                  onChange={(e) => setEssayText(e.target.value)}
-                  placeholder="اكتب تعبيرك هنا..."
-                  className="min-h-[300px] bg-white/5 border-white/20 text-white"
-                  disabled={loading}
-                />
-              </div>
-
-              <Button
-                onClick={correctEssay}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                {loading ? 'جاري التصحيح...' : 'تصحيح عام (إملائي وقواعدي ونوع المقالة)'}
-              </Button>
             </CardContent>
           </Card>
-
-          {Object.keys(corrections).length > 0 && (
-            <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">نتائج التصحيح</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {corrections.all && (
-                  <div>
-                    <p className="text-white whitespace-pre-wrap leading-relaxed">{corrections.all}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-            <CardHeader>
-              <CardTitle className="text-white">إنشاء تعبير تلقائي</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  نوع التعبير
-                </label>
-                <Select value={essayType} onValueChange={(value) => setEssayType(value as EssayType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(essayTypes).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  عدد الكلمات (50-2000)
-                </label>
-                <Input
-                  type="number"
-                  min={50}
-                  max={2000}
-                  value={wordCount}
-                  onChange={(e) => setWordCount(parseInt(e.target.value))}
-                  className="bg-white/5 border-white/20 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  معلومات إضافية (اختياري)
-                </label>
-                <Textarea
-                  value={additionalInfo}
-                  onChange={(e) => setAdditionalInfo(e.target.value)}
-                  placeholder="أضف معلومات إضافية حول الموضوع المطلوب..."
-                  className="min-h-[100px] bg-white/5 border-white/20 text-white"
-                />
-              </div>
-
-              <Button
-                onClick={generateEssay}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                {loading ? 'جاري الإنشاء...' : 'إنشاء التعبير'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {generatedEssay && (
-            <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">التعبير المُنشأ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-white whitespace-pre-wrap leading-relaxed">
-                  {generatedEssay}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </motion.div>
       )}
     </div>

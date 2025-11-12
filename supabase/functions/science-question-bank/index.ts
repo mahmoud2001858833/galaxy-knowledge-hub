@@ -77,7 +77,8 @@ ${topics ? `المواضيع المطلوبة:\n${topics}` : ''}
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [{ role: "user", content: prompt }],
-          max_tokens: 3000
+          max_tokens: 4000,
+          temperature: 0.8
         })
       }
     )

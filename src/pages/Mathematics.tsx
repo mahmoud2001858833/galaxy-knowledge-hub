@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, ChartLine, User, Brain } from "lucide-react";
+import { Calculator, ChartLine, User, Brain, FileQuestion } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
@@ -37,6 +37,13 @@ const Mathematics = () => {
       icon: <Brain className="w-12 h-12 text-purple-400" />,
       description: 'مساعد ذكي لحل المسائل الرياضية والإجابة على الأسئلة',
       path: '/mathematics/ai-assistant'
+    },
+    {
+      title: 'بنك الأسئلة',
+      icon: <FileQuestion className="w-12 h-12 text-purple-400" />,
+      description: 'أنشئ أسئلة رياضية مخصصة مع إجاباتها النموذجية',
+      path: '/mathematics/question-bank',
+      isNew: true
     }
   ];
   
@@ -67,7 +74,7 @@ const Mathematics = () => {
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {cards.map((card, index) => (
             <motion.div
               key={index}

@@ -7,10 +7,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Microscope, Atom, FlaskConical, Magnet, Calculator } from 'lucide-react';
+import { Microscope, Atom, FlaskConical, Magnet, Calculator, FileQuestion } from 'lucide-react';
 import PhysicsScientists from '@/components/physics/PhysicsScientists';
 import PhysicsAIAssistant from '@/components/physics/PhysicsAIAssistant';
 import PhysicsCalculations from '@/components/physics/PhysicsCalculations';
+import QuestionBank from '@/components/shared/QuestionBank';
 import { SEO } from '@/components/SEO';
 
 const Physics = () => {
@@ -36,6 +37,8 @@ const Physics = () => {
         return <PhysicsAIAssistant />;
       case 'scientists':
         return <PhysicsScientists />;
+      case 'questionbank':
+        return <QuestionBank subject="physics" functionName="science-question-bank" />;
       default:
         return null;
     }
@@ -191,7 +194,7 @@ const Physics = () => {
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -253,6 +256,28 @@ const Physics = () => {
                   className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
                 >
                   استكشف العلماء
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: 1.03 }}
+            className="col-span-1"
+            onClick={() => setActiveComponent('questionbank')}
+          >
+            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'questionbank' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
+                <FileQuestion className="h-16 w-16 text-subject-physics-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-glow-purple">بنك الأسئلة</h3>
+                <p className="text-white/70 mb-4">أنشئ أسئلة مخصصة مع إجاباتها النموذجية</p>
+                <Button 
+                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+                >
+                  أنشئ الأسئلة
                 </Button>
               </CardContent>
             </Card>

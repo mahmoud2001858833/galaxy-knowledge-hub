@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { FileQuestion, Download, Loader2 } from 'lucide-react';
+import { FileQuestion, Download, Loader2, Languages } from 'lucide-react';
 
 interface GeneratedQuestion {
   question: string;
@@ -26,6 +26,8 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
+  const [translatedQuestions, setTranslatedQuestions] = useState<{[key: number]: {question: string, answer: string}}>({});
+  const [translatingIndex, setTranslatingIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   const t = {
@@ -134,6 +136,46 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const translateQuestion = async (index: number) => {
+    if (translatedQuestions[index]) {
+      return;
+    }
+
+    setTranslatingIndex(index);
+    try {
+      const { data, error } = await supabase.functions.invoke('smart-translator', {
+        body: {
+          text: `Question: ${questions[index].question}\n\nAnswer: ${questions[index].answer}`,
+          sourceLang: 'en',
+          targetLang: 'ar'
+        }
+      });
+
+      if (error) throw error;
+
+      const lines = data.translatedText.split('\n');
+      const questionLine = lines.find((l: string) => l.includes(':'));
+      const answerStart = lines.findIndex((l: string) => l.toLowerCase().includes('answer') || l.includes('إجابة') || l.includes('الإجابة'));
+      
+      setTranslatedQuestions(prev => ({
+        ...prev,
+        [index]: {
+          question: questionLine ? questionLine.split(':')[1]?.trim() || data.translatedText : data.translatedText,
+          answer: answerStart > 0 ? lines.slice(answerStart + 1).join('\n').trim() : data.translatedText
+        }
+      }));
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast({
+        title: 'خطأ في الترجمة',
+        description: 'حدث خطأ أثناء الترجمة',
+        variant: 'destructive'
+      });
+    } finally {
+      setTranslatingIndex(null);
     }
   };
 
@@ -279,21 +321,43 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
           {questions.map((q, index) => (
             <Card key={index} className="bg-white/5 backdrop-blur-sm border-white/10">
               <CardHeader>
-                <CardTitle className="text-white text-lg">
-                  {content.question} {index + 1}
-                  <span className="text-sm font-normal text-white/70 mr-2">
-                    ({q.difficulty === 'easy' ? content.easy : q.difficulty === 'medium' ? content.medium : content.hard})
+                <CardTitle className="text-white text-lg flex items-center justify-between">
+                  <span>
+                    {content.question} {index + 1}
+                    <span className="text-sm font-normal text-white/70 mr-2">
+                      ({q.difficulty === 'easy' ? content.easy : q.difficulty === 'medium' ? content.medium : content.hard})
+                    </span>
                   </span>
+                  <Button
+                    onClick={() => translateQuestion(index)}
+                    disabled={translatingIndex === index}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {translatingIndex === index ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Languages className="h-4 w-4" />
+                    )}
+                    {language === 'ar' ? 'ترجم للعربية' : 'Translate to Arabic'}
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
                   <p className="font-medium text-blue-300 mb-1">{content.question}:</p>
                   <p className="text-white">{q.question}</p>
+                  {translatedQuestions[index] && (
+                    <p className="text-white/70 mt-2 pr-4 border-r-2 border-blue-300">{translatedQuestions[index].question}</p>
+                  )}
                 </div>
                 <div>
                   <p className="font-medium text-green-300 mb-1">{content.answer}:</p>
                   <p className="text-white whitespace-pre-wrap">{q.answer}</p>
+                  {translatedQuestions[index] && (
+                    <p className="text-white/70 mt-2 pr-4 border-r-2 border-green-300 whitespace-pre-wrap">{translatedQuestions[index].answer}</p>
+                  )}
                 </div>
                 {q.grammarRule && (
                   <div>
