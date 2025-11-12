@@ -11,10 +11,49 @@ const WelcomeGuide = () => {
   const [userName, setUserName] = useState('');
   const [hasSeenGuide, setHasSeenGuide] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasPlayedSound, setHasPlayedSound] = useState(false);
 
   useEffect(() => {
     checkIfNewUser();
   }, []);
+
+  // Play welcome sound when guide opens for the first time
+  useEffect(() => {
+    if (isOpen && !hasPlayedSound && !hasSeenGuide) {
+      playWelcomeSound();
+      setHasPlayedSound(true);
+    }
+  }, [isOpen, hasPlayedSound, hasSeenGuide]);
+
+  const playWelcomeSound = () => {
+    try {
+      // Use Web Speech API for Arabic welcome message
+      const utterance = new SpeechSynthesisUtterance(`أهلاً ${userName}`);
+      utterance.lang = 'ar-SA';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      utterance.volume = 0.8;
+      
+      // Find Arabic voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const arabicVoice = voices.find(voice => voice.lang.startsWith('ar'));
+      if (arabicVoice) {
+        utterance.voice = arabicVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.log('Speech synthesis not supported or failed:', error);
+      // Fallback to notification sound
+      try {
+        const audio = new Audio('/message-notification.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Audio playback failed:', e));
+      } catch (e) {
+        console.log('Audio playback not supported:', e);
+      }
+    }
+  };
 
   const checkIfNewUser = async () => {
     try {
