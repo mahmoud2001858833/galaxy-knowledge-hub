@@ -130,9 +130,12 @@ const PlatformGuideAssistant = () => {
     try {
       const { data, error } = await supabase.functions.invoke('platform-guide-assistant', {
         body: {
-          message: inputMessage,
-          currentPath: location.pathname,
-          userName: userName
+          question: inputMessage,
+          userName: userName || 'صديقي',
+          allMessages: messages.map(m => ({ 
+            role: m.isUser ? 'user' : 'assistant', 
+            content: m.text 
+          }))
         }
       });
 
@@ -140,7 +143,7 @@ const PlatformGuideAssistant = () => {
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.result,
+        text: data.answer,
         isUser: false,
         timestamp: new Date(),
         navigationPath: data.navigationPath
@@ -150,10 +153,13 @@ const PlatformGuideAssistant = () => {
       setShouldAutoScroll(true);
 
       // التنقل التلقائي الفوري
-      if (data.autoNavigate && data.navigationPath) {
+      if (data.navigationPath) {
         setTimeout(() => {
           navigate(data.navigationPath);
-        }, 1000);
+          toast.success('تم التوجيه بنجاح', {
+            description: 'تم الانتقال إلى الصفحة المطلوبة'
+          });
+        }, 1500);
       }
 
     } catch (error) {

@@ -1,251 +1,198 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+
+const platformRoutes = {
+  // العلوم
+  'فيزياء': '/physics',
+  'كيمياء': '/chemistry',
+  'أحياء': '/biology',
+  'رياضيات': '/mathematics',
+  'جدول دوري': '/chemistry',
+  'معادلات': '/mathematics',
+  'حسابات فيزيائية': '/physics',
+  
+  // اللغات
+  'لغة عربية': '/arabic-language',
+  'لغة انجليزية': '/english-language',
+  'انجليزي': '/english-language',
+  'عربي': '/arabic-language',
+  'قواعد': '/arabic-language',
+  'نحو': '/arabic-language',
+  'صرف': '/arabic-language',
+  'grammar': '/english-language',
+  
+  // BTEC
+  'بتك': '/btec',
+  'btec': '/btec',
+  'برمجة': '/btec/it/programming',
+  'تكنولوجيا معلومات': '/btec',
+  'كود': '/btec/it/code-fixer',
+  
+  // الفن
+  'فن': '/art-design',
+  'رسم': '/art-design',
+  'تصميم': '/art-design',
+  
+  // البيئة
+  'بيئة': '/environmental-sustainability',
+  'استدامة': '/environmental-sustainability',
+  'كربون': '/carbon-calculator',
+  
+  // الإدارة
+  'جسر التواصل': '/communication-bridge',
+  'مشرفين': '/admin-teachers',
+  'معلمين': '/admin-teachers',
+  'أولياء أمور': '/communication-bridge',
+  
+  // الذكاء الاصطناعي
+  'مساعد ذكي': '/falak-knowledge-ai',
+  'ذكاء اصطناعي': '/ai-assistant-section',
+  'فلك': '/falak-knowledge-ai',
+  'مرشد نفسي': '/psychological-guide',
+  
+  // أخرى
+  'ألغاز': '/subject-puzzles',
+  'مجلة علمية': '/scientific-journal',
+  'مكتبة بصرية': '/visual-library',
+  'فيديوهات': '/educational-videos',
+  'محاكاة': '/scientific-simulations',
+  'دروس مسجلة': '/educational-videos',
+  'غرف دردشة': '/chat-rooms',
+  'دردشة': '/class-chat',
+  'ملفي': '/profile',
+  'مركز التحكم': '/control-center',
+  'تواصل معنا': '/contact',
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { message, currentPath, userName } = await req.json()
-    
-    if (!message || typeof message !== 'string') {
-      throw new Error('رسالة غير صالحة')
-    }
-    
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ result: 'عذراً، حدث خطأ في الإعداد. يرجى المحاولة مرة أخرى.', navigationPath: '', autoNavigate: false }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    let responseText = ""
-    let navigationPath = ""
-    let autoNavigate = false
-    
-    const lowerMessage = message.toLowerCase()
-    
-    // معالجة طلبات التنقل المباشر والفوري
-    if (lowerMessage.includes('انتقل') || lowerMessage.includes('اذهب') || lowerMessage.includes('افتح') || lowerMessage.includes('خذني') || lowerMessage.includes('روح')) {
-      
-      // تنقل فوري للفيديوهات التعليمية حسب المادة والصف
-      if (lowerMessage.includes('فيديو') || lowerMessage.includes('تعليمي') || lowerMessage.includes('فيدو')) {
-        if (lowerMessage.includes('كيمياء')) {
-          navigationPath = "/educational-videos?subject=chemistry"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى فيديوهات الكيمياء بنجاح!** 🧪`
-          
-        } else if (lowerMessage.includes('فيزياء')) {
-          navigationPath = "/educational-videos?subject=physics"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى فيديوهات الفيزياء بنجاح!** ⚛️`
-          
-        } else if (lowerMessage.includes('أحياء') || lowerMessage.includes('بيولوجي')) {
-          navigationPath = "/educational-videos?subject=biology"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى فيديوهات الأحياء بنجاح!** 🧬`
-          
-        } else if (lowerMessage.includes('رياضيات')) {
-          navigationPath = "/educational-videos?subject=math"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى فيديوهات الرياضيات بنجاح!** 📊`
-        } else {
-          navigationPath = "/educational-videos"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى الفيديوهات التعليمية بنجاح!** 🎥`
-        }
-        
-      } else if (lowerMessage.includes('محاكاة') || lowerMessage.includes('تجارب') || lowerMessage.includes('محاكي') || lowerMessage.includes('علمية')) {
-        if (lowerMessage.includes('اشعاع') || lowerMessage.includes('جسم اسود') || lowerMessage.includes('بلانك') || lowerMessage.includes('فين') || lowerMessage.includes('اسود')) {
-          navigationPath = "/simulation/blackbody-radiation"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى محاكاة إشعاع الجسم الأسود المتطورة بنجاح!** ⚛️🌟 
-          
-المحاكاة تتضمن:
-🔬 الطيف المرئي الملون
-🔍 أدوات تكبير وتصغير متطورة  
-🧮 حاسبات فيزيائية للطول الموجي والتردد
-🤖 مساعد ذكي للفيزياء
-📊 رسوم بيانية تفاعلية متقدمة`
-        } else {
-          navigationPath = "/scientific-simulations"
-          autoNavigate = true
-          responseText = `✅ **تم الانتقال إلى محاكاة التجارب العلمية بنجاح!** 🔬⚗️`
-        }
-        
-      } else if (lowerMessage.includes('اشعاع') || lowerMessage.includes('جسم اسود') || lowerMessage.includes('بلانك') || lowerMessage.includes('فين') || lowerMessage.includes('اسود') || lowerMessage.includes('طيف')) {
-        navigationPath = "/simulation/blackbody-radiation"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى محاكاة إشعاع الجسم الأسود المتطورة بنجاح!** ⚛️🌟
+    const { question, userName = 'صديقي', allMessages = [] } = await req.json();
 
-هذه المحاكاة المتطورة تشمل:
-🌈 **الطيف المرئي الملون** - شاهد الألوان الحقيقية للطيف
-🔍 **أدوات التكبير والتصغير** - تحليل دقيق للمنحنيات  
-🧮 **حاسبات فيزيائية متقدمة** - حساب التردد والطول الموجي والطاقة
-🤖 **مساعد ذكي** - للإجابة على جميع أسئلتك الفيزيائية
-📊 **رسوم بيانية تفاعلية** - مع شبكة ومحاور واضحة
-⚙️ **إعدادات مسبقة** - من الشمس إلى جسم الإنسان
-🎛️ **لوحة تحكم متطورة** - تحكم كامل في جميع المعاملات`
-        
-      } else if (lowerMessage.includes('حاسب') || lowerMessage.includes('آلة') || lowerMessage.includes('كالكوليتر')) {
-        navigationPath = "/mathematics/calculator"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى آلة الحاسبة المتقدمة بنجاح!** 🧮`
-        
-      } else if (lowerMessage.includes('مكتب') || lowerMessage.includes('مرئي') || lowerMessage.includes('صور')) {
-        navigationPath = "/visual-library"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى المكتبة المرئية بنجاح!** 📸`
-        
-      } else if (lowerMessage.includes('إنجليزي') || lowerMessage.includes('انجليزي') || lowerMessage.includes('english')) {
-        navigationPath = "/english-language"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة اللغة الإنجليزية بنجاح!** 🇬🇧`
-        
-      } else if (lowerMessage.includes('عرب') || lowerMessage.includes('لغة عربية') || lowerMessage.includes('arabic')) {
-        navigationPath = "/arabic-language"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة اللغة العربية بنجاح!** 📚`
-        
-      } else if (lowerMessage.includes('كيمياء')) {
-        navigationPath = "/chemistry"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة الكيمياء بنجاح!** 🧪`
-        
-      } else if (lowerMessage.includes('فيزياء')) {
-        navigationPath = "/physics"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة الفيزياء بنجاح!** ⚛️`
-        
-      } else if (lowerMessage.includes('أحياء') || lowerMessage.includes('بيولوجي')) {
-        navigationPath = "/biology"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة الأحياء بنجاح!** 🧬`
-        
-      } else if (lowerMessage.includes('رياضيات')) {
-        navigationPath = "/mathematics"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة الرياضيات بنجاح!** 📊`
-        
-      } else if (lowerMessage.includes('أدبي') || lowerMessage.includes('لغات')) {
-        navigationPath = "/literary-platforms"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى المنصات الأدبية بنجاح!** 📖`
-        
-      } else if (lowerMessage.includes('علمي') || lowerMessage.includes('علوم')) {
-        navigationPath = "/scientific-platforms"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى المنصات العلمية بنجاح!** 🔬`
-        
-      } else if (lowerMessage.includes('برمج') && (lowerMessage.includes('btec') || lowerMessage.includes('بتك') || lowerMessage.includes('تكنولوجيا'))) {
-        navigationPath = "/btec/programming"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة البرمجة المتطورة بنجاح!** 💻`
-      } else if (lowerMessage.includes('بتك') || lowerMessage.includes('btec')) {
-        navigationPath = "/btec"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى منصة بتك BTEC بنجاح!** 🎓`
-      } else if (lowerMessage.includes('مرشد') && lowerMessage.includes('نفس')) {
-        navigationPath = "/psychological-guide"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى المرشد النفسي بنجاح!** 💙`
-      } else if (lowerMessage.includes('استدام') || lowerMessage.includes('بيئ')) {
-        navigationPath = "/environmental-sustainability"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى الاستدامة البيئية بنجاح!** 🌱`
-      } else if (lowerMessage.includes('فلك')) {
-        navigationPath = "/falak-knowledge-ai"
-        autoNavigate = true
-        responseText = `✅ **تم الانتقال إلى فَلَك المعرفة AI بنجاح!** 🌌`
-      }
-    }
-    
-    // إذا لم يكن هناك تنقل محدد، استخدم Gemini للإجابة
-    if (!responseText) {
-      const prompt = `أنت مرشد ذكي لمنصة تعليمية شاملة اسمها "ذروة العلم". عندما يطلب المستخدم الانتقال إلى أي قسم، اشرح له المحتوى وقدم إجابة مفيدة. المنصة تحتوي على:
+    // Build conversation history
+    const conversationHistory = allMessages.map((msg: any) => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
 
-**المنصات التعليمية:**
-- المنصات العلمية: الفيزياء، الكيمياء، الأحياء، الرياضيات (كل منها يحتوي على: حسابات، ألغاز، علماء، مساعد ذكي، فيديوهات تعليمية)
-- المنصات الأدبية: اللغة العربية، اللغة الإنجليزية (مساعد ذكي، شعراء، علماء، قواميس، مترجم ذكي)
-- بتك BTEC - تكنولوجيا المعلومات: البرمجة المتطورة، مساعد البرمجة الذكي، تصليح الكود، بناء منصات مخصصة
-- جسر التواصل: منصة للمعلمين وأولياء الأمور للتواصل والمتابعة
-- الاستدامة البيئية: مشاريع بيئية، حساب البصمة الكربونية، الفهرس الشخصي للاستدامة
-- مرشدك النفسي: دعم نفسي ذكي يساعد في فهم المشاعر والتوجيه
-- فَلَك المعرفة AI: مساعد ذكي شامل للأسئلة العامة
-- المشرفون والمعلمون: لوحة إدارة المشاريع والمتابعة
+    const systemPrompt = `أنت مرشد ذكي لمنصة "ذروة العلم" التعليمية. مهمتك مساعدة ${userName} في التنقل واستخدام المنصة.
 
-**المصادر التعليمية:**
-- تنظيم الدراسة: مؤقت بومودورو، جدول دراسي، فيديوهات استرخاء
-- المجلة العلمية: مقالات وأبحاث علمية
-- المكتبة المرئية: صور وملفات تعليمية
-- الألغاز التعليمية: ألغاز متنوعة في جميع المواد
-- التجارب العلمية: محاكاة تفاعلية (إشعاع الجسم الأسود، بناء الذرة)
-- الدروس المسجلة: فيديوهات من المعلمين
+## أقسام المنصة الرئيسية:
 
-**الفيديوهات التعليمية:**
-- فيديوهات الكيمياء (صفوف: تاسع، عاشر، حادي عشر)
-- فيديوهات الفيزياء
-- فيديوهات الأحياء (صف حادي عشر)
-- فيديوهات الرياضيات
+### 1. قسم الإدارة
+- **جسر التواصل**: للتواصل بين المعلمين وأولياء الأمور، رفع الواجبات والملاحظات
+- **المشرفين والمعلمين**: إدارة الوصول والصلاحيات
 
-**تواصل معنا:**
-- صفحة الاتصال لإرسال الرسائل والاستفسارات
+### 2. قسم التعليم
+- **المنصات العلمية**: 
+  - الفيزياء: حسابات، ألغاز، علماء، مساعد ذكي، فيديوهات تعليمية
+  - الكيمياء: جدول دوري تفاعلي، حسابات، ألغاز، علماء، مساعد ذكي
+  - الأحياء: جسم الإنسان التفاعلي، حسابات، ألغاز، علماء، مساعد ذكي، موسوعة الأمراض
+  - الرياضيات: آلة حاسبة متقدمة، رسم بياني، مساعد ذكي، ألغاز، علماء الرياضيات
 
-السؤال: ${message}
+- **المنصات الأدبية**:
+  - اللغة العربية: قواعد النحو، الصرف، العروض، الشعراء، العلماء، مساعد كتابة المقالات، بنك الأسئلة
+  - اللغة الإنجليزية: قواعد، مساعد كتابة، مترجم ذكي، مساعد النطق، بنك الأسئلة، علماء اللغة
 
-قدم إجابة مفيدة وودودة وأرشد المستخدم للقسم المناسب. استخدم العربية دائماً.`
+- **الاستدامة البيئية**: حاسبة البصمة الكربونية، مشاريع بيئية مدرسية ومنزلية
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+- **BTEC**: 
+  - تكنولوجيا المعلومات: البرمجة، مصلح الأكواد، نصائح التطوير، مشاريع الطلبة
+  - الفن والتصميم: تحديات فنية، معرض الفنانين، تقييم الأعمال الفنية
+
+### 3. قسم المساعد الذكي
+- **فلك - المساعد الذكي الشامل**: يجيب على جميع الأسئلة في كل المواد
+- **المرشد النفسي**: استشارات نفسية وإرشاد
+
+### ميزات إضافية:
+- **المجلة العلمية**: رفع وعرض الأبحاث العلمية
+- **المكتبة البصرية**: صور تعليمية لجميع المواد
+- **الألغاز التعليمية**: ألغاز في جميع المواد مع لوحة المتصدرين
+- **الفيديوهات التعليمية**: دروس مسجلة لجميع المواد
+- **المحاكاة العلمية**: محاكاة ذرة، إشعاع الجسم الأسود
+- **غرف الدردشة**: دردشة جماعية وخاصة
+- **مركز التحكم**: لإدارة المنصة (للمشرفين فقط)
+
+## إرشادات الإجابة:
+1. استخدم أسلوباً ودوداً ومشجعاً
+2. اشرح الميزات بوضوح وبساطة
+3. إذا طلب المستخدم الانتقال لقسم معين، أخبره أنك ستوجهه وقدم مسار التنقل
+4. إذا لم تفهم السؤال، اطلب التوضيح
+5. قدم نصائح عملية لاستخدام المنصة بفعالية
+6. تذكر السياق من المحادثات السابقة
+
+أجب باللغة العربية دائماً بأسلوب محترف ومفيد.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [
             {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
+              role: 'user',
+              parts: [{ text: systemPrompt }]
+            },
+            ...conversationHistory,
+            {
+              role: 'user',
+              parts: [{ text: question }]
             }
-          ]
-        })
-      })
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1000,
+          },
+        }),
+      }
+    );
 
-      const data = await response.json()
-      responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من فهم السؤال. يمكنك السؤال عن أي قسم في المنصة وسأوجهك إليه!"
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Failed to get response from AI');
+    }
+
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 
+                   'عذراً، لم أتمكن من فهم سؤالك. هل يمكنك إعادة صياغته؟';
+
+    // Detect navigation intent
+    let navigationPath = null;
+    const lowerQuestion = question.toLowerCase();
+    
+    for (const [keyword, path] of Object.entries(platformRoutes)) {
+      if (lowerQuestion.includes(keyword.toLowerCase())) {
+        navigationPath = path;
+        break;
+      }
     }
 
     return new Response(
-      JSON.stringify({ 
-        result: responseText,
-        navigationPath: navigationPath || "",
-        autoNavigate: autoNavigate
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
+      JSON.stringify({ answer, navigationPath }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in platform-guide-assistant:', error);
     return new Response(
       JSON.stringify({ 
-        result: 'عذراً، حدث خطأ في معالجة الطلب. يرجى المحاولة مرة أخرى.',
-        navigationPath: "",
-        autoNavigate: false
+        error: error.message,
+        answer: 'عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.'
       }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
   }
-})
+});

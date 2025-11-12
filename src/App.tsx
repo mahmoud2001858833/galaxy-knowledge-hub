@@ -12,6 +12,7 @@ import StudentProgress from './pages/StudentProgress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
+import WelcomeGuide from '@/components/WelcomeGuide';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import Physics from './pages/Physics';
@@ -78,11 +79,12 @@ import ManagementSection from './pages/ManagementSection';
 import EducationSection from './pages/EducationSection';
 import AIAssistantSection from './pages/AIAssistantSection';
 
-// Root layout component that includes the PlatformGuideAssistant
+// Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
 const RootLayout = () => {
   return (
     <>
       <Outlet />
+      <WelcomeGuide />
       <PlatformGuideAssistant />
     </>
   );

@@ -1093,6 +1093,8 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          full_name: string | null
+          has_seen_welcome_guide: boolean | null
           id: string
           score: number | null
           solved_puzzles: number | null
@@ -1102,6 +1104,8 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          full_name?: string | null
+          has_seen_welcome_guide?: boolean | null
           id: string
           score?: number | null
           solved_puzzles?: number | null
@@ -1111,6 +1115,8 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          full_name?: string | null
+          has_seen_welcome_guide?: boolean | null
           id?: string
           score?: number | null
           solved_puzzles?: number | null
