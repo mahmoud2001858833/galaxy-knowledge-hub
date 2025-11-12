@@ -9,47 +9,67 @@ const WelcomeGuide = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [userName, setUserName] = useState('');
-  const [hasSeenGuide, setHasSeenGuide] = useState(true);
+  const [hasSeenGuide, setHasSeenGuide] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkIfNewUser();
   }, []);
 
   const checkIfNewUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      // Get user profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, has_seen_welcome_guide')
-        .eq('id', user.id)
-        .single();
+    try {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Get user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, has_seen_welcome_guide')
+          .eq('id', user.id)
+          .single();
 
-      if (profile) {
-        setUserName(profile.full_name || 'مستخدم');
-        
-        // Show guide if user hasn't seen it
-        if (!profile.has_seen_welcome_guide) {
-          setHasSeenGuide(false);
-          setTimeout(() => setIsOpen(true), 1000);
+        if (profile) {
+          setUserName(profile.full_name || 'مستخدم');
+          
+          // Show guide if user hasn't seen it
+          if (!profile.has_seen_welcome_guide) {
+            setHasSeenGuide(false);
+            setTimeout(() => setIsOpen(true), 1000);
+          } else {
+            setHasSeenGuide(true);
+          }
         }
       }
+    } catch (error) {
+      console.error('Error checking user:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleComplete = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      // Mark guide as seen
-      await supabase
-        .from('profiles')
-        .update({ has_seen_welcome_guide: true })
-        .eq('id', user.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Mark guide as seen
+        const { error } = await supabase
+          .from('profiles')
+          .update({ has_seen_welcome_guide: true })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('Error updating profile:', error);
+        } else {
+          setHasSeenGuide(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleComplete:', error);
+    } finally {
+      setIsOpen(false);
     }
-    
-    setIsOpen(false);
   };
 
   const steps = [
@@ -80,7 +100,7 @@ const WelcomeGuide = () => {
     }
   ];
 
-  if (hasSeenGuide) return null;
+  if (isLoading || hasSeenGuide) return null;
 
   return (
     <AnimatePresence>
@@ -190,7 +210,7 @@ const WelcomeGuide = () => {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, type: "spring" }}
-              className="fixed bottom-20 md:bottom-24 right-4 md:right-24 z-50"
+              className="fixed bottom-6 right-6 z-50"
             >
               <motion.div
                 animate={{
@@ -204,7 +224,7 @@ const WelcomeGuide = () => {
                 className="relative"
               >
                 <div className="absolute -inset-2 bg-purple-500/50 rounded-full blur-xl animate-pulse" />
-                <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs md:text-sm font-bold shadow-lg">
+                <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg whitespace-nowrap">
                   مرشدك الذكي هنا! 👇
                 </div>
               </motion.div>
