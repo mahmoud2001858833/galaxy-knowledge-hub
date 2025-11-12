@@ -74,6 +74,9 @@ import ParentAssignments from './pages/ParentAssignments';
 import ParentNotes from './pages/ParentNotes';
 import ClassChat from './pages/ClassChat';
 import ControlCenter from './pages/ControlCenter';
+import ManagementSection from './pages/ManagementSection';
+import EducationSection from './pages/EducationSection';
+import AIAssistantSection from './pages/AIAssistantSection';
 
 // Root layout component that includes the PlatformGuideAssistant
 const RootLayout = () => {
@@ -404,6 +407,18 @@ const router = createBrowserRouter([
       {
         path: 'control-center',
         element: <AuthGuard><ControlCenter /></AuthGuard>,
+      },
+      {
+        path: 'management-section',
+        element: <PublicRoute><ManagementSection /></PublicRoute>,
+      },
+      {
+        path: 'education-section',
+        element: <PublicRoute><EducationSection /></PublicRoute>,
+      },
+      {
+        path: 'ai-assistant-section',
+        element: <PublicRoute><AIAssistantSection /></PublicRoute>,
       },
       {
         path: '*',
