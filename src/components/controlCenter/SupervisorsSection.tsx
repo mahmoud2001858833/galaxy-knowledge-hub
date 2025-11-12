@@ -31,28 +31,43 @@ export function SupervisorsSection() {
     }
   };
 
-  const handleDeleteImmediate = async (id: string) => {
+  const handleDeleteImmediate = async (record: any) => {
     // حذف فوري من القائمة أولاً
     const originalSupervisors = [...supervisors];
-    setSupervisors(supervisors.filter(s => s.id !== id));
-    
+    setSupervisors(supervisors.filter((s) => s.id !== record.id));
+
+    const targetId = String(record.id);
     try {
-      // ثم حذف من قاعدة البيانات
-      const { error } = await supabase
+      // ثم حذف من قاعدة البيانات — تحقق من عدد الصفوف المحذوفة
+      const { data: deletedById, error: idError } = await supabase
         .from("admin_teacher_access")
         .delete()
-        .eq("id", id);
+        .eq("id", targetId)
+        .select("id");
 
-      if (error) {
-        // إعادة القائمة الأصلية في حالة الفشل
-        setSupervisors(originalSupervisors);
-        throw error;
+      if (idError) throw idError;
+
+      if (!deletedById || deletedById.length === 0) {
+        // احتياط: الحذف بواسطة البريد في حال اختلاف نوع/قيمة المعرّف
+        const { data: deletedByEmail, error: emailError } = await supabase
+          .from("admin_teacher_access")
+          .delete()
+          .eq("email", record.email)
+          .select("id");
+
+        if (emailError) throw emailError;
+        if (!deletedByEmail || deletedByEmail.length === 0) {
+          setSupervisors(originalSupervisors);
+          toast.error("تعذر الحذف: لم يتم العثور على السجل");
+          return;
+        }
       }
 
       toast.success("تم حذف الوصول بنجاح");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting supervisor:", error);
-      toast.error("حدث خطأ في حذف الوصول");
+      setSupervisors(originalSupervisors);
+      toast.error(error?.message || "حدث خطأ في حذف الوصول");
     }
   };
 
@@ -89,7 +104,8 @@ export function SupervisorsSection() {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDeleteImmediate(supervisor.id)}
+                    onClick={() => handleDeleteImmediate(supervisor)}
+                    aria-label="حذف الوصول"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
