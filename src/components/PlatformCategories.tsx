@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -7,8 +7,18 @@ import managementBg from '@/assets/management-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
 
+const clickSound = '/message-notification.mp3';
+
 const PlatformCategories = () => {
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playSound = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
+  };
   const { t, dir } = useLanguage();
   
   const categories = [
@@ -95,6 +105,7 @@ const PlatformCategories = () => {
       className="py-20 w-full max-w-7xl mx-auto px-4"
       dir={dir}
     >
+      <audio ref={audioRef} src={clickSound} preload="auto" />
       <motion.div 
         initial={{ opacity: 0, y: -30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -131,7 +142,10 @@ const PlatformCategories = () => {
                 delay: index * 0.2,
                 ease: "easeOut"
               }}
-              onClick={() => navigate(category.link)}
+              onClick={() => {
+                playSound();
+                navigate(category.link);
+              }}
               className={`group relative h-[450px] rounded-3xl overflow-hidden cursor-pointer border-2 ${category.borderColor} transition-all duration-300 hover:shadow-2xl ${category.glowColor}`}
             >
               {/* Background Image */}

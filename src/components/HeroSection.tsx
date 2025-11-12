@@ -7,16 +7,6 @@ import logo from '@/assets/logo.png';
 const HeroSection = () => {
   const { dir } = useLanguage();
 
-  const orbitingIcons = [
-    { emoji: "🔬", label: "العلوم", delay: 0 },
-    { emoji: "📚", label: "الأدب", delay: 0.5 },
-    { emoji: "💻", label: "البرمجة", delay: 1 },
-    { emoji: "🌱", label: "البيئة", delay: 1.5 },
-    { emoji: "🧮", label: "الرياضيات", delay: 2 },
-    { emoji: "🎨", label: "الفن", delay: 2.5 },
-    { emoji: "🧠", label: "الذكاء", delay: 3 },
-    { emoji: "📖", label: "التعلم", delay: 3.5 }
-  ];
 
   const scrollToSections = () => {
     const element = document.getElementById('platform-sections');
@@ -42,15 +32,15 @@ const HeroSection = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Left Side - Logo with Orbiting Icons */}
+        {/* Left Side - Large Logo with Rotating Circle */}
         <motion.div
-          initial={{ opacity: 0, x: -100 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
           className="flex justify-center lg:justify-end"
         >
-          <div className="relative w-[400px] h-[400px]">
-            {/* Central Logo - Static */}
+          <div className="relative w-full h-[500px] flex items-center justify-center">
+            {/* Central Logo - Large and Static */}
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -60,98 +50,59 @@ const HeroSection = () => {
                 damping: 10,
                 delay: 0.3
               }}
-              className="absolute inset-0 flex items-center justify-center"
+              className="relative z-10"
             >
-              <div className="relative">
-                {/* Outer Circle Border */}
-                <motion.div
-                  animate={{ 
-                    rotate: 360,
-                  }}
-                  transition={{ 
-                    duration: 40,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                  className="absolute inset-0 w-[220px] h-[220px] -left-[10px] -top-[10px]"
-                >
-                  <div className="w-full h-full rounded-full border-2 border-dashed border-blue-400/40" />
-                </motion.div>
+              {/* Glowing Background */}
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.15, 1],
+                  opacity: [0.4, 0.6, 0.4]
+                }}
+                transition={{ 
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="absolute inset-0 bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-cyan-500/40 blur-3xl rounded-full"
+              />
 
-                {/* Glowing Background */}
-                <motion.div
-                  animate={{ 
-                    scale: [1, 1.1, 1],
-                    opacity: [0.3, 0.5, 0.3]
-                  }}
-                  transition={{ 
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-cyan-500/30 blur-3xl rounded-full"
-                />
-
-                {/* Logo - Static */}
-                <img 
-                  src={logo} 
-                  alt="ذروة العلم" 
-                  className="relative w-48 h-48 object-contain drop-shadow-2xl"
-                />
-              </div>
+              {/* Logo - Large and Static */}
+              <img 
+                src={logo} 
+                alt="ذروة العلم" 
+                className="relative w-[400px] h-[400px] object-contain drop-shadow-2xl"
+              />
             </motion.div>
 
-            {/* Orbiting Icons */}
-            {orbitingIcons.map((item, index) => {
-              const angle = (index * 360) / orbitingIcons.length;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ 
-                    opacity: 1, 
-                    scale: 1,
-                    rotate: 360
-                  }}
-                  transition={{
-                    opacity: { delay: 0.5 + item.delay * 0.1 },
-                    scale: { delay: 0.5 + item.delay * 0.1 },
-                    rotate: { 
-                      duration: 20, 
-                      repeat: Infinity, 
-                      ease: "linear",
-                      delay: item.delay
-                    }
-                  }}
-                  className="absolute"
-                  style={{
-                    top: '50%',
-                    left: '50%',
-                    transform: `rotate(${angle}deg) translateX(180px) translateY(-50%)`,
-                    transformOrigin: 'center'
-                  }}
-                >
-                  <motion.div
-                    animate={{ rotate: -360 }}
-                    transition={{ 
-                      duration: 20, 
-                      repeat: Infinity, 
-                      ease: "linear",
-                      delay: item.delay
-                    }}
-                    whileHover={{ scale: 1.3 }}
-                    className="bg-gradient-to-br from-blue-600/30 to-purple-600/30 backdrop-blur-md border border-blue-400/30 rounded-2xl p-3 shadow-lg hover:shadow-blue-500/50 transition-all cursor-pointer"
-                  >
-                    <div className="text-center">
-                      <div className="text-3xl mb-1">{item.emoji}</div>
-                      <div className="text-xs text-white/80 font-semibold whitespace-nowrap">
-                        {item.label}
-                      </div>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              );
-            })}
+            {/* Rotating Circle - No Icons */}
+            <motion.div
+              animate={{ 
+                rotate: 360,
+              }}
+              transition={{ 
+                duration: 30,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="w-[480px] h-[480px] rounded-full border-2 border-dashed border-blue-400/50 shadow-lg shadow-blue-500/30" />
+            </motion.div>
+
+            {/* Second Rotating Circle - Opposite Direction */}
+            <motion.div
+              animate={{ 
+                rotate: -360,
+              }}
+              transition={{ 
+                duration: 45,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="w-[520px] h-[520px] rounded-full border border-dotted border-purple-400/30" />
+            </motion.div>
           </div>
         </motion.div>
 

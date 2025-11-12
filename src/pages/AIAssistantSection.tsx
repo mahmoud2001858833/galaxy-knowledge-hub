@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -7,8 +7,18 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
 
+const clickSound = '/message-notification.mp3';
+
 const AIAssistantSection = () => {
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playSound = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
+  };
   const { t, dir } = useLanguage();
 
   const platforms = [
@@ -45,6 +55,7 @@ const AIAssistantSection = () => {
       </div>
 
       <Navbar />
+      <audio ref={audioRef} src={clickSound} preload="auto" />
 
       {/* Platforms Grid */}
       <section className="relative z-10 py-32 px-4">
@@ -78,7 +89,10 @@ const AIAssistantSection = () => {
                   delay: 0.5 + index * 0.15,
                 }}
                 whileHover={{ y: -10 }}
-                onClick={() => navigate(platform.link)}
+                onClick={() => {
+                  playSound();
+                  navigate(platform.link);
+                }}
                 className={`group relative h-[400px] rounded-3xl overflow-hidden cursor-pointer border-2 ${platform.borderColor} transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/40`}
               >
                 {/* Background Image */}
