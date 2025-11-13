@@ -1,88 +1,91 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-
-const platformRoutes = {
-  // العلوم
-  'فيزياء': '/physics',
-  'كيمياء': '/chemistry',
-  'أحياء': '/biology',
-  'رياضيات': '/mathematics',
-  'جدول دوري': '/chemistry',
-  'معادلات': '/mathematics',
-  'حسابات فيزيائية': '/physics',
-  
-  // اللغات
-  'لغة عربية': '/arabic-language',
-  'لغة انجليزية': '/english-language',
-  'انجليزي': '/english-language',
-  'عربي': '/arabic-language',
-  'قواعد': '/arabic-language',
-  'نحو': '/arabic-language',
-  'صرف': '/arabic-language',
-  'grammar': '/english-language',
-  
-  // BTEC
-  'بتك': '/btec',
-  'btec': '/btec',
-  'برمجة': '/btec/it/programming',
-  'تكنولوجيا معلومات': '/btec',
-  'كود': '/btec/it/code-fixer',
-  
-  // الفن
-  'فن': '/art-design',
-  'رسم': '/art-design',
-  'تصميم': '/art-design',
-  
-  // البيئة
-  'بيئة': '/environmental-sustainability',
-  'استدامة': '/environmental-sustainability',
-  'كربون': '/carbon-calculator',
-  
-  // الإدارة
-  'جسر التواصل': '/communication-bridge',
-  'مشرفين': '/admin-teachers',
-  'معلمين': '/admin-teachers',
-  'أولياء أمور': '/communication-bridge',
-  
-  // الذكاء الاصطناعي
-  'مساعد ذكي': '/falak-knowledge-ai',
-  'ذكاء اصطناعي': '/ai-assistant-section',
-  'فلك': '/falak-knowledge-ai',
-  'مرشد نفسي': '/psychological-guide',
-  
-  // أخرى
-  'ألغاز': '/subject-puzzles',
-  'مجلة علمية': '/scientific-journal',
-  'مكتبة بصرية': '/visual-library',
-  'فيديوهات': '/educational-videos',
-  'محاكاة': '/scientific-simulations',
-  'دروس مسجلة': '/educational-videos',
-  'غرف دردشة': '/chat-rooms',
-  'دردشة': '/class-chat',
-  'ملفي': '/profile',
-  'مركز التحكم': '/control-center',
-  'تواصل معنا': '/contact',
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Keyword → route mapping
+const platformRoutes: Record<string, string> = {
+  // العلوم
+  "فيزياء": "/physics",
+  "كيمياء": "/chemistry",
+  "أحياء": "/biology",
+  "رياضيات": "/mathematics",
+  "جدول دوري": "/chemistry",
+  "معادلات": "/mathematics",
+  "حسابات فيزيائية": "/physics",
+
+  // اللغات
+  "لغة عربية": "/arabic-language",
+  "لغة انجليزية": "/english-language",
+  "انجليزي": "/english-language",
+  "عربي": "/arabic-language",
+  "قواعد": "/arabic-language",
+  "نحو": "/arabic-language",
+  "صرف": "/arabic-language",
+  "grammar": "/english-language",
+
+  // BTEC
+  "بتك": "/btec",
+  "btec": "/btec",
+  "برمجة": "/btec/it/programming",
+  "تكنولوجيا معلومات": "/btec",
+  "كود": "/btec/it/code-fixer",
+
+  // الفن
+  "فن": "/art-design",
+  "رسم": "/art-design",
+  "تصميم": "/art-design",
+
+  // البيئة
+  "بيئة": "/environmental-sustainability",
+  "استدامة": "/environmental-sustainability",
+  "كربون": "/carbon-calculator",
+
+  // الإدارة
+  "جسر التواصل": "/communication-bridge",
+  "مشرفين": "/admin-teachers",
+  "معلمين": "/admin-teachers",
+  "أولياء أمور": "/communication-bridge",
+
+  // الذكاء الاصطناعي
+  "مساعد ذكي": "/falak-knowledge-ai",
+  "ذكاء اصطناعي": "/ai-assistant-section",
+  "فلك": "/falak-knowledge-ai",
+  "مرشد نفسي": "/psychological-guide",
+
+  // أخرى
+  "ألغاز": "/subject-puzzles",
+  "مجلة علمية": "/scientific-journal",
+  "مكتبة بصرية": "/visual-library",
+  "فيديوهات": "/educational-videos",
+  "محاكاة": "/scientific-simulations",
+  "دروس مسجلة": "/educational-videos",
+  "غرف دردشة": "/chat-rooms",
+  "دردشة": "/class-chat",
+  "ملفي": "/profile",
+  "مركز التحكم": "/control-center",
+  "تواصل معنا": "/contact",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { question, userName = 'صديقي', allMessages = [] } = await req.json();
+    const { question, userName = "صديقي", allMessages = [] } = await req.json();
 
-    // Build conversation history
-    const conversationHistory = allMessages.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("platform-guide-assistant: LOVABLE_API_KEY is missing");
+      return new Response(
+        JSON.stringify({ error: "Server is not configured for AI access." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const systemPrompt = `أنت مرشد ذكي لمنصة "ذروة العلم" التعليمية. مهمتك مساعدة ${userName} في التنقل واستخدام المنصة.
 
@@ -132,44 +135,65 @@ serve(async (req) => {
 
 أجب باللغة العربية دائماً بأسلوب محترف ومفيد.`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: systemPrompt }]
-            },
-            ...conversationHistory,
-            {
-              role: 'user',
-              parts: [{ text: question }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          },
-        }),
-      }
-    );
+    // Build chat messages for Lovable AI (OpenAI-compatible format)
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...allMessages.map((m: any) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.content,
+      })),
+      { role: "user", content: question },
+    ];
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Failed to get response from AI');
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages,
+      }),
+    });
+
+    if (!aiResp.ok) {
+      const text = await aiResp.text();
+      console.error("AI gateway error: ", aiResp.status, text);
+
+      if (aiResp.status === 429) {
+        return new Response(
+          JSON.stringify({
+            answer:
+              "لقد وصلت إلى الحد الأقصى للطلبات مؤقتاً. برجاء المحاولة بعد قليل أو تقليل عدد الطلبات المتتابعة.",
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (aiResp.status === 402) {
+        return new Response(
+          JSON.stringify({
+            answer:
+              "الخدمة غير متاحة حالياً بسبب نفاد الرصيد. يرجى إعادة المحاولة لاحقاً.",
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ answer: "عذراً، حدث خطأ في خدمة الذكاء الاصطناعي." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-                   'عذراً، لم أتمكن من فهم سؤالك. هل يمكنك إعادة صياغته؟';
+    const aiJson = await aiResp.json();
+    const answer: string = aiJson?.choices?.[0]?.message?.content ??
+      "عذراً، لم أتمكن من فهم سؤالك. هل يمكنك إعادة صياغته؟";
 
-    // Detect navigation intent
-    let navigationPath = null;
-    const lowerQuestion = question.toLowerCase();
-    
+    // Detect navigation intent from the user's question
+    let navigationPath: string | null = null;
+    const lowerQuestion = String(question || "").toLowerCase();
     for (const [keyword, path] of Object.entries(platformRoutes)) {
       if (lowerQuestion.includes(keyword.toLowerCase())) {
         navigationPath = path;
@@ -179,20 +203,14 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ answer, navigationPath }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
-    console.error('Error in platform-guide-assistant:', error);
+    console.error("Error in platform-guide-assistant:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        answer: 'عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.'
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: message, answer: "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى." }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

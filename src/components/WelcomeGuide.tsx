@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Computer, Sparkles, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -12,7 +12,8 @@ const WelcomeGuide = () => {
   const [hasSeenGuide, setHasSeenGuide] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasPlayedSound, setHasPlayedSound] = useState(false);
-
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
   useEffect(() => {
     checkIfNewUser();
   }, []);
@@ -21,45 +22,93 @@ const WelcomeGuide = () => {
   useEffect(() => {
     if (isOpen && !hasPlayedSound && !hasSeenGuide) {
       playWelcomeSound();
-      setHasPlayedSound(true);
+    } else if (!isOpen && audioRef.current) {
+      // Cleanup any playing audio when guide closes
+      try {
+        audioRef.current.pause();
+        audioRef.current = null;
+      } catch {}
+      if (fadeTimerRef.current) {
+        clearInterval(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
     }
   }, [isOpen, hasPlayedSound, hasSeenGuide]);
 
   const playWelcomeSound = () => {
-    try {
-      // Use Web Speech API for Arabic welcome message
-      const utterance = new SpeechSynthesisUtterance(`أهلاً ${userName}`);
-      utterance.lang = 'ar-SA';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      utterance.volume = 0.8;
-      
-      // Find Arabic voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const arabicVoice = voices.find(voice => voice.lang.startsWith('ar'));
-      if (arabicVoice) {
-        utterance.voice = arabicVoice;
-      }
-      
-      window.speechSynthesis.speak(utterance);
-    } catch (error) {
-      console.log('Speech synthesis not supported or failed:', error);
-      // Fallback to notification sound
+    // Prefer a light music with fade-in; fallback to speech if audio fails
+    const startFadeIn = (audio: HTMLAudioElement) => {
+      let vol = 0;
+      const target = 0.7;
+      const step = 0.05;
+      audio.volume = 0;
+      fadeTimerRef.current = window.setInterval(() => {
+        vol = Math.min(target, vol + step);
+        audio.volume = vol;
+        if (vol >= target && fadeTimerRef.current) {
+          clearInterval(fadeTimerRef.current);
+          fadeTimerRef.current = null;
+        }
+      }, 100);
+    };
+
+    const playSpeechFallback = () => {
       try {
-        const audio = new Audio('/message-notification.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Audio playback failed:', e));
+        const utterance = new SpeechSynthesisUtterance(`أهلاً ${userName}`);
+        utterance.lang = 'ar-SA';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.1;
+        utterance.volume = 0.9;
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find(v => v.lang && v.lang.startsWith('ar'));
+        if (arabicVoice) utterance.voice = arabicVoice;
+        window.speechSynthesis.speak(utterance);
+        setHasPlayedSound(true);
       } catch (e) {
-        console.log('Audio playback not supported:', e);
+        console.log('Speech synthesis not supported or failed:', e);
       }
+    };
+
+    try {
+      const audio = new Audio('/message-notification.mp3');
+      audio.loop = false;
+      audioRef.current = audio;
+
+      const tryPlay = async () => {
+        try {
+          await audio.play();
+          startFadeIn(audio);
+          setHasPlayedSound(true);
+        } catch (err) {
+          // Likely autoplay blocked: play on first user interaction
+          const onInteract = async () => {
+            document.removeEventListener('pointerdown', onInteract);
+            try {
+              await audio.play();
+              startFadeIn(audio);
+              setHasPlayedSound(true);
+            } catch (err2) {
+              console.log('Audio playback failed after interaction:', err2);
+              playSpeechFallback();
+            }
+          };
+          document.addEventListener('pointerdown', onInteract, { once: true });
+        }
+      };
+
+      tryPlay();
+    } catch (error) {
+      console.log('Audio playback not supported:', error);
+      playSpeechFallback();
     }
   };
-
   const checkIfNewUser = async () => {
     try {
       setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       
+      const localSeen = typeof window !== 'undefined' && localStorage.getItem('welcome_guide_seen') === '1';
+
       if (user) {
         // Get user profile
         const { data: profile } = await supabase
@@ -71,13 +120,26 @@ const WelcomeGuide = () => {
         if (profile) {
           setUserName(profile.full_name || 'مستخدم');
           
-          // Show guide if user hasn't seen it
-          if (!profile.has_seen_welcome_guide) {
+          const seenFromDB = !!profile.has_seen_welcome_guide;
+          if (seenFromDB || localSeen) {
+            setHasSeenGuide(true);
+          } else {
             setHasSeenGuide(false);
             setTimeout(() => setIsOpen(true), 1000);
-          } else {
-            setHasSeenGuide(true);
           }
+        } else {
+          // No profile found; rely on local flag only
+          if (localSeen) {
+            setHasSeenGuide(true);
+          } else {
+            setHasSeenGuide(false);
+            setTimeout(() => setIsOpen(true), 1000);
+          }
+        }
+      } else {
+        // Not logged in; rely on local flag and avoid showing repeatedly
+        if (localSeen) {
+          setHasSeenGuide(true);
         }
       }
     } catch (error) {
@@ -91,8 +153,12 @@ const WelcomeGuide = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('welcome_guide_seen', '1');
+      }
+
       if (user) {
-        // Mark guide as seen
+        // Mark guide as seen in DB
         const { error } = await supabase
           .from('profiles')
           .update({ has_seen_welcome_guide: true })
@@ -100,9 +166,8 @@ const WelcomeGuide = () => {
 
         if (error) {
           console.error('Error updating profile:', error);
-        } else {
-          setHasSeenGuide(true);
         }
+        setHasSeenGuide(true);
       }
     } catch (error) {
       console.error('Error in handleComplete:', error);
@@ -110,7 +175,6 @@ const WelcomeGuide = () => {
       setIsOpen(false);
     }
   };
-
   const steps = [
     {
       title: `أهلاً ${userName}`,
