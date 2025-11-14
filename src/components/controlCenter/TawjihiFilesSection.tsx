@@ -17,6 +17,7 @@ interface TawjihiFile {
   subject: string;
   category: string;
   grade: string;
+  teacher_name: string | null;
   created_at: string;
   user_id: string | null;
 }
@@ -48,21 +49,39 @@ export const TawjihiFilesSection = () => {
     }
   };
 
-  const handleDelete = async (fileId: string, fileName: string) => {
-    if (!confirm(`هل أنت متأكد من حذف الملف "${fileName}"؟`)) {
+  const handleDelete = async (fileId: string, fileName: string, fileUrl: string) => {
+    if (!confirm(`هل أنت متأكد من حذف الملف "${fileName}"؟ سيتم حذفه من المنصة بالكامل.`)) {
       return;
     }
 
     try {
       setDeletingId(fileId);
-      const { error } = await supabase
+      
+      // Extract file path from URL
+      const urlParts = fileUrl.split('/tawjihi-files/');
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+        
+        // Delete from storage
+        const { error: storageError } = await supabase.storage
+          .from('tawjihi-files')
+          .remove([filePath]);
+
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+          // Continue even if storage deletion fails
+        }
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
         .from('tawjihi_files')
         .delete()
         .eq('id', fileId);
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
-      toast.success('تم حذف الملف بنجاح');
+      toast.success('تم حذف الملف بنجاح من المنصة بالكامل');
       setFiles(files.filter(f => f.id !== fileId));
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -174,6 +193,12 @@ export const TawjihiFilesSection = () => {
                                 {format(new Date(file.created_at), 'dd MMMM yyyy', { locale: ar })}
                               </span>
                             </div>
+                            {file.teacher_name && (
+                              <div className="flex items-center gap-1 text-blue-500">
+                                <User className="h-3 w-3" />
+                                <span className="font-medium">{file.teacher_name}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -190,7 +215,7 @@ export const TawjihiFilesSection = () => {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleDelete(file.id, file.file_name)}
+                            onClick={() => handleDelete(file.id, file.file_name, file.file_url)}
                             disabled={deletingId === file.id}
                             className="gap-2"
                           >

@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
+import pako from 'pako';
 
 interface TawjihiFileUploadProps {
   subject: string;
@@ -16,18 +18,84 @@ interface TawjihiFileUploadProps {
 const TawjihiFileUpload: React.FC<TawjihiFileUploadProps> = ({ subject, category, grade }) => {
   const [fileName, setFileName] = useState('');
   const [description, setDescription] = useState('');
+  const [teacherName, setTeacherName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressFile = async (file: File): Promise<File> => {
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    
+    if (file.size <= maxSize) {
+      return file;
+    }
+
+    // For images
+    if (file.type.startsWith('image/')) {
+      const options = {
+        maxSizeMB: 45,
+        maxWidthOrHeight: 4096,
+        useWebWorker: true,
+        fileType: file.type
+      };
+      
+      try {
+        const compressedFile = await imageCompression(file, options);
+        toast({
+          title: 'تم ضغط الملف',
+          description: `تم تقليل حجم الملف من ${(file.size / 1024 / 1024).toFixed(2)} MB إلى ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`
+        });
+        return compressedFile;
+      } catch (error) {
+        console.error('Image compression error:', error);
+        return file;
+      }
+    }
+
+    // For PDF and other documents - try basic compression
+    if (file.type === 'application/pdf' || file.type.includes('document')) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const compressed = pako.deflate(uint8Array, { level: 9 });
+        
+        const compressedBlob = new Blob([compressed], { type: file.type });
+        const compressedFile = new File([compressedBlob], file.name, { type: file.type });
+        
+        if (compressedFile.size < file.size) {
+          toast({
+            title: 'تم ضغط الملف',
+            description: `تم تقليل حجم الملف من ${(file.size / 1024 / 1024).toFixed(2)} MB إلى ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`
+          });
+          return compressedFile;
+        }
+      } catch (error) {
+        console.error('File compression error:', error);
+      }
+    }
+
+    return file;
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      
+      // Auto-compress if over 50MB
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        toast({
+          title: 'جاري ضغط الملف',
+          description: 'الملف أكبر من 50 MB، جاري ضغطه...'
+        });
+        const compressed = await compressFile(selectedFile);
+        setFile(compressed);
+      }
     }
   };
 
   const handleUpload = async () => {
-    if (!fileName.trim() || !description.trim() || !file) {
+    if (!fileName.trim() || !description.trim() || !teacherName.trim() || !file) {
       toast({
         title: 'خطأ',
         description: 'يرجى ملء جميع الحقول واختيار ملف',
@@ -66,6 +134,7 @@ const TawjihiFileUpload: React.FC<TawjihiFileUploadProps> = ({ subject, category
           subject,
           category,
           grade,
+          teacher_name: teacherName,
           user_id: user.id
         });
 
@@ -78,6 +147,7 @@ const TawjihiFileUpload: React.FC<TawjihiFileUploadProps> = ({ subject, category
 
       setFileName('');
       setDescription('');
+      setTeacherName('');
       setFile(null);
       
       // Refresh the parent component if needed
@@ -133,7 +203,20 @@ const TawjihiFileUpload: React.FC<TawjihiFileUploadProps> = ({ subject, category
 
         <div>
           <label className="block text-sm font-medium text-white mb-2">
-            اختر الملف
+            اسم الأستاذ/ة
+          </label>
+          <Input
+            value={teacherName}
+            onChange={(e) => setTeacherName(e.target.value)}
+            placeholder="أدخل اسم الأستاذ أو الأستاذة"
+            className="bg-white/5 border-white/20 text-white"
+            disabled={uploading}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">
+            اختر الملف {file && file.size > 50 * 1024 * 1024 && '(سيتم ضغطه تلقائياً)'}
           </label>
           <Input
             type="file"
@@ -142,6 +225,11 @@ const TawjihiFileUpload: React.FC<TawjihiFileUploadProps> = ({ subject, category
             disabled={uploading}
             accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
           />
+          {file && (
+            <p className="text-white/60 text-sm mt-2">
+              حجم الملف: {(file.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+          )}
         </div>
 
         <Button
