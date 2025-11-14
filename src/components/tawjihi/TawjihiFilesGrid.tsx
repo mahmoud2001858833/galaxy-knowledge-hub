@@ -11,6 +11,7 @@ interface TawjihiFile {
   file_name: string;
   description: string;
   file_url: string;
+  teacher_name: string | null;
   created_at: string;
 }
 
@@ -105,9 +106,15 @@ const TawjihiFilesGrid: React.FC<TawjihiFilesGridProps> = ({ subject, category, 
                   <h3 className="text-white font-semibold mb-2 truncate">
                     {file.file_name}
                   </h3>
-                  <p className="text-white/60 text-sm line-clamp-2 mb-4">
+                  <p className="text-white/60 text-sm line-clamp-2 mb-2">
                     {file.description}
                   </p>
+                  {file.teacher_name && (
+                    <p className="text-blue-300 text-xs mb-3 flex items-center gap-1">
+                      <span className="font-semibold">الأستاذ/ة:</span>
+                      <span>{file.teacher_name}</span>
+                    </p>
+                  )}
                   <Button
                     onClick={() => handleDownload(file.file_url, file.file_name)}
                     size="sm"

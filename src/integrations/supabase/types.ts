@@ -1360,6 +1360,7 @@ export type Database = {
           grade: string
           id: string
           subject: string
+          teacher_name: string | null
           user_id: string | null
         }
         Insert: {
@@ -1371,6 +1372,7 @@ export type Database = {
           grade: string
           id?: string
           subject: string
+          teacher_name?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1382,6 +1384,7 @@ export type Database = {
           grade?: string
           id?: string
           subject?: string
+          teacher_name?: string | null
           user_id?: string | null
         }
         Relationships: []
