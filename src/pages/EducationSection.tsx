@@ -58,15 +58,7 @@ const EducationSection = () => {
       borderColor: "border-blue-500/30",
       link: "/scientific-platforms"
     },
-    {
-      title: "التوجيهي الأردني",
-      icon: "🎓",
-      description: "منصة شاملة لطلاب التوجيهي - جميع المواد للصفين الأول والثاني ثانوي",
-      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-      color: "from-indigo-600/20 to-blue-600/20",
-      borderColor: "border-indigo-500/30",
-      link: "/jordan-tawjihi"
-    }
+    // التوجيهي الأردني تم نقله إلى قسم خاص في المنصات التعليمية
   ];
 
   return (

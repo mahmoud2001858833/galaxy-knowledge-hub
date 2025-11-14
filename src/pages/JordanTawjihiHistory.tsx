@@ -1,30 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileText, BookOpen, ClipboardList, FileQuestion } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import TawjihiFileUpload from '@/components/tawjihi/TawjihiFileUpload';
-import TawjihiFilesGrid from '@/components/tawjihi/TawjihiFilesGrid';
+import TawjihiSubjectLayout from '@/components/tawjihi/TawjihiSubjectLayout';
+import { FileQuestion, BookOpen, FileText, ClipboardList } from 'lucide-react';
+import tawjihiLogo from '@/assets/tawjihi-logo.jpg';
 
 const JordanTawjihiHistory = () => {
   const [searchParams] = useSearchParams();
   const grade = searchParams.get('grade') || 'first';
-  const [activeCategory, setActiveCategory] = useState('question-bank');
 
   const categories = [
-    { id: 'question-bank', label: 'بنك أسئلة', icon: FileQuestion },
-    { id: 'review', label: 'مراجعة', icon: BookOpen },
-    { id: 'handouts', label: 'دوسيات', icon: FileText },
-    { id: 'exams', label: 'امتحانات', icon: ClipboardList }
+    { id: 'question-bank', label: 'بنك أسئلة', icon: FileQuestion, gradient: 'from-amber-600/20 to-yellow-600/20', borderColor: 'border-amber-500/30', iconColor: 'text-amber-400' },
+    { id: 'review', label: 'مراجعة', icon: BookOpen, gradient: 'from-blue-600/20 to-cyan-600/20', borderColor: 'border-blue-500/30', iconColor: 'text-blue-400' },
+    { id: 'handouts', label: 'دوسيات', icon: FileText, gradient: 'from-purple-600/20 to-pink-600/20', borderColor: 'border-purple-500/30', iconColor: 'text-purple-400' },
+    { id: 'exams', label: 'امتحانات', icon: ClipboardList, gradient: 'from-green-600/20 to-emerald-600/20', borderColor: 'border-green-500/30', iconColor: 'text-green-400' }
   ];
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-purple-900/40 to-blue-950 bg-fixed" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-amber-900/40 to-blue-950 bg-fixed" dir="rtl">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={300} />
       </div>
@@ -37,7 +33,19 @@ const JordanTawjihiHistory = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-6xl font-bold text-glow-purple mb-4">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="mb-6 flex justify-center"
+          >
+            <img 
+              src={tawjihiLogo} 
+              alt="التوجيهي الأردني" 
+              className="h-24 w-auto rounded-xl shadow-xl shadow-amber-500/50"
+            />
+          </motion.div>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">
             التاريخ - {grade === 'first' ? 'الصف الأول ثانوي' : 'الصف الثاني ثانوي'}
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
@@ -46,33 +54,11 @@ const JordanTawjihiHistory = () => {
         </motion.div>
 
         <div className="max-w-6xl mx-auto">
-          <Tabs value={activeCategory} onValueChange={setActiveCategory} dir="rtl">
-            <TabsList className="grid w-full grid-cols-4 mb-8">
-              {categories.map((cat) => (
-                <TabsTrigger key={cat.id} value={cat.id} className="gap-2">
-                  <cat.icon className="w-4 h-4" />
-                  {cat.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {categories.map((cat) => (
-              <TabsContent key={cat.id} value={cat.id}>
-                <div className="space-y-6">
-                  <TawjihiFileUpload 
-                    subject="history" 
-                    category={cat.id}
-                    grade={grade}
-                  />
-                  <TawjihiFilesGrid 
-                    subject="history" 
-                    category={cat.id}
-                    grade={grade}
-                  />
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+          <TawjihiSubjectLayout
+            subject="history"
+            grade={grade}
+            categories={categories}
+          />
         </div>
       </main>
       
