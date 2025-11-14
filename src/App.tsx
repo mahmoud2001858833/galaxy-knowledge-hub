@@ -64,6 +64,11 @@ import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
 import CommunicationBridge from './pages/CommunicationBridge';
+import JordanTawjihi from './pages/JordanTawjihi';
+import JordanTawjihiHistory from './pages/JordanTawjihiHistory';
+import JordanTawjihiReligion from './pages/JordanTawjihiReligion';
+import JordanTawjihiEnglish from './pages/JordanTawjihiEnglish';
+import JordanTawjihiArabic from './pages/JordanTawjihiArabic';
 import TeacherRegistration from './pages/TeacherRegistration';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherAssignments from './pages/TeacherAssignments';
@@ -169,6 +174,26 @@ const router = createBrowserRouter([
       {
         path: 'literary-platforms',
         element: <PublicRoute><LiteraryPlatforms /></PublicRoute>,
+      },
+      {
+        path: 'jordan-tawjihi',
+        element: <PublicRoute><JordanTawjihi /></PublicRoute>,
+      },
+      {
+        path: 'jordan-tawjihi/history',
+        element: <PublicRoute><JordanTawjihiHistory /></PublicRoute>,
+      },
+      {
+        path: 'jordan-tawjihi/religion',
+        element: <PublicRoute><JordanTawjihiReligion /></PublicRoute>,
+      },
+      {
+        path: 'jordan-tawjihi/english',
+        element: <PublicRoute><JordanTawjihiEnglish /></PublicRoute>,
+      },
+      {
+        path: 'jordan-tawjihi/arabic',
+        element: <PublicRoute><JordanTawjihiArabic /></PublicRoute>,
       },
       {
         path: 'btec',
