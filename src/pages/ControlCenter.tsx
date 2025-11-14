@@ -21,6 +21,7 @@ import { TeachersSection } from "@/components/controlCenter/TeachersSection";
 import { ParentsSection } from "@/components/controlCenter/ParentsSection";
 import { AssignmentsSection } from "@/components/controlCenter/AssignmentsSection";
 import { NotesSection } from "@/components/controlCenter/NotesSection";
+import { TawjihiFilesSection } from "@/components/controlCenter/TawjihiFilesSection";
 
 type Section = 
   | "main"
@@ -37,7 +38,8 @@ type Section =
   | "communication-assignments"
   | "communication-notes"
   | "journals"
-  | "visual-library";
+  | "visual-library"
+  | "tawjihi";
 
 export default function ControlCenter() {
   const navigate = useNavigate();
@@ -123,7 +125,8 @@ export default function ControlCenter() {
     { icon: Users, label: "المشرفون والمعلمون", section: "supervisors" as Section },
     { icon: MessageSquare, label: "جسر التواصل", section: "communication" as Section },
     { icon: BookOpen, label: "المجلات العلمية", section: "journals" as Section },
-    { icon: Image, label: "المكتبة البصرية", section: "visual-library" as Section }
+    { icon: Image, label: "المكتبة البصرية", section: "visual-library" as Section },
+    { icon: BookOpen, label: "ملفات التوجيهي", section: "tawjihi" as Section }
   ];
 
   const yourHomeItems = [
@@ -277,6 +280,7 @@ export default function ControlCenter() {
                 <VisualLibrarySection />
               </Card>
             )}
+            {currentSection === "tawjihi" && <TawjihiFilesSection />}
           </div>
         </motion.div>
       </main>

@@ -77,11 +77,11 @@ const BTECInformationTechnology = () => {
         >
           {/* Back Button */}
           <button
-            onClick={() => navigate('/education-section')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8"
           >
             <ArrowRight size={20} />
-            العودة إلى قسم التعليم
+            العودة لذروة العلم
           </button>
 
           {/* Header */}
