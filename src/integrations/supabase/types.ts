@@ -1350,6 +1350,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tawjihi_files: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          file_name: string
+          file_url: string
+          grade: string
+          id: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          file_name: string
+          file_url: string
+          grade: string
+          id?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          file_name?: string
+          file_url?: string
+          grade?: string
+          id?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       teacher_project_messages: {
         Row: {
           admin_id: string
