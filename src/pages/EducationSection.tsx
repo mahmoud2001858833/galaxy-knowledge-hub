@@ -57,6 +57,15 @@ const EducationSection = () => {
       color: "from-blue-600/20 to-cyan-600/20",
       borderColor: "border-blue-500/30",
       link: "/scientific-platforms"
+    },
+    {
+      title: "التوجيهي الأردني",
+      icon: "🎓",
+      description: "منصة شاملة لطلاب التوجيهي - جميع المواد للصفين الأول والثاني ثانوي",
+      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-indigo-600/20 to-blue-600/20",
+      borderColor: "border-indigo-500/30",
+      link: "/jordan-tawjihi"
     }
   ];
 
@@ -95,7 +104,7 @@ const EducationSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {platforms.map((platform, index) => (
               <motion.div
