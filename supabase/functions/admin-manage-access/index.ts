@@ -107,44 +107,58 @@ serve(async (req) => {
 
     let targetUserId = existingAccess?.user_id || null;
 
-    // If no existing record or no user_id, try to find/create user
     if (!targetUserId) {
       console.log('Looking for user with email:', email);
-      
-      // Search for existing user
-      const { data: authUsers, error: listError } = await service.auth.admin.listUsers();
-      
-      if (listError) {
-        console.error('Error listing users:', listError);
-        throw listError;
+
+      // Try to find existing user (fetch a large page to avoid pagination misses)
+      let foundUserId: string | null = null;
+      try {
+        const { data: authUsers, error: listError } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (listError) {
+          console.error('Error listing users:', listError);
+          throw listError;
+        }
+        const foundUser = authUsers.users.find((u) => (u.email || '').toLowerCase() === email);
+        if (foundUser) {
+          foundUserId = foundUser.id;
+          console.log('Found existing user:', foundUserId);
+        }
+      } catch (e) {
+        console.warn('listUsers failed, will try createUser fallback:', e);
       }
 
-      const foundUser = authUsers.users.find(u => (u.email || '').toLowerCase() === email);
-      
-      if (foundUser) {
-        console.log('Found existing user:', foundUser.id);
-        targetUserId = foundUser.id;
-      } else {
-        console.log('User not found, creating new user...');
-        
-        // Create new user
-        const { data: newUser, error: createErr } = await service.auth.admin.createUser({
-          email,
-          email_confirm: true,
-        });
-
-        if (createErr) {
-          console.error('Error creating user:', createErr);
-          throw createErr;
+      if (!foundUserId) {
+        console.log('User not found, attempting to create...');
+        try {
+          const { data: newUser, error: createErr } = await service.auth.admin.createUser({
+            email,
+            email_confirm: true,
+          });
+          if (createErr) throw createErr;
+          if (!newUser?.user) throw new Error('Failed to create user - no user returned');
+          foundUserId = newUser.user.id;
+          console.log('Created new user:', foundUserId);
+        } catch (createErr: any) {
+          // If the user already exists, fetch again and continue
+          if (createErr?.status === 422 || createErr?.code === 'email_exists') {
+            console.warn('Email already registered, fetching existing user...');
+            const { data: authUsers2, error: listError2 } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
+            if (listError2) throw listError2;
+            const existing = authUsers2.users.find((u) => (u.email || '').toLowerCase() === email);
+            if (existing) {
+              foundUserId = existing.id;
+              console.log('Resolved existing user after email_exists:', foundUserId);
+            } else {
+              throw new Error('Email exists but user lookup failed');
+            }
+          } else {
+            console.error('Error creating user:', createErr);
+            throw createErr;
+          }
         }
-
-        if (!newUser.user) {
-          throw new Error('Failed to create user - no user returned');
-        }
-
-        console.log('Created new user:', newUser.user.id);
-        targetUserId = newUser.user.id;
       }
+
+      targetUserId = foundUserId;
     }
 
     if (!targetUserId) {
