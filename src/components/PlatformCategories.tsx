@@ -6,6 +6,7 @@ import { ChevronLeft, Settings, GraduationCap, Sparkles } from 'lucide-react';
 import managementBg from '@/assets/management-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
+import tawjihiLogo from '@/assets/tawjihi-logo.jpg';
 
 const clickSound = '/message-notification.mp3';
 
@@ -47,6 +48,19 @@ const PlatformCategories = () => {
       link: '/education-section',
       platformsCount: 4,
       image: educationBg
+    },
+    {
+      id: 'tawjihi',
+      title: 'قسم التوجيهي',
+      icon: GraduationCap,
+      description: 'منصة شاملة لطلاب التوجيهي - جميع المواد والصفوف',
+      gradient: 'from-orange-600/20 to-yellow-600/20',
+      borderColor: 'border-orange-500/30',
+      iconColor: 'text-orange-400',
+      glowColor: 'shadow-orange-500/50',
+      link: '/jordan-tawjihi',
+      platformsCount: 4,
+      customImage: true
     },
     {
       id: 'ai-assistant',
@@ -155,7 +169,7 @@ const PlatformCategories = () => {
                 transition={{ duration: 0.5 }}
               >
                 <img 
-                  src={category.image} 
+                  src={category.customImage ? tawjihiLogo : category.image} 
                   alt={category.title}
                   className="w-full h-full object-cover"
                 />
