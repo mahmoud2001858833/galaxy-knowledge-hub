@@ -37,12 +37,12 @@ const ProgrammingSection = () => {
           className="mb-8"
         >
           <Button
-            onClick={() => navigate('/btec/information-technology')}
+            onClick={() => navigate('/')}
             variant="outline"
             className="mb-6 gap-2 bg-white/5 hover:bg-white/10 border-white/20"
           >
             <ArrowLeft className="w-4 h-4" />
-            العودة لتكنولوجيا المعلومات
+            العودة لذروة العلم
           </Button>
 
           <div className="text-center mb-8">
