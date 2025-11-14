@@ -104,7 +104,11 @@ const TawjihiSubjectLayout: React.FC<TawjihiSubjectLayoutProps> = ({
       setUploadCategory('');
       setIsUploadOpen(false);
       
-      window.location.reload();
+      // Trigger refresh for the selected category
+      if (selectedCategory) {
+        setSelectedCategory(null);
+        setTimeout(() => setSelectedCategory(uploadCategory), 100);
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({

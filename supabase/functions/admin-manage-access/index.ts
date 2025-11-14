@@ -164,7 +164,8 @@ serve(async (req) => {
         { 
           email, 
           user_id: targetUserId, 
-          access_level: accessLevel 
+          access_level: accessLevel,
+          created_by: invokerData.user.id
         },
         { 
           onConflict: 'email',
