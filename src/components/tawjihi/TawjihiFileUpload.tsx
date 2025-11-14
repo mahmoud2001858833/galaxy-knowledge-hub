@@ -80,7 +80,10 @@ const TawjihiFileUpload: React.FC<TawjihiFileUploadProps> = ({ subject, category
       setDescription('');
       setFile(null);
       
-      window.location.reload();
+      // Refresh the parent component if needed
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tawjihi-file-uploaded'));
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({
