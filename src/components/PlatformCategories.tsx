@@ -33,7 +33,7 @@ const PlatformCategories = () => {
       iconColor: 'text-amber-400',
       glowColor: 'shadow-amber-500/50',
       link: '/management-section',
-      platformsCount: 2,
+      platformsCount: 3,
       image: managementBg
     },
     {

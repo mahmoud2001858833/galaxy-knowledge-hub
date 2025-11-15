@@ -46,15 +46,6 @@ const EducationalPlatforms = () => {
       link: "/mathematics"
     },
     {
-      title: "مجلة مدرسة عنبه",
-      icon: "📰",
-      image: require("@/assets/school-magazine-logo.png"),
-      color: "from-rose-600/20 to-pink-600/20",
-      borderColor: "border-rose-500/30",
-      hoverBorderColor: "hover:border-rose-500/50",
-      link: "/school-magazine"
-    },
-    {
       title: t.platforms.communicationBridge,
       icon: "🌉",
       image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80",
