@@ -19,6 +19,8 @@ interface SchoolNews {
   created_at: string;
   likes_count: number;
   views_count: number;
+  category: string;
+  is_pinned: boolean;
 }
 
 const SchoolMagazine = () => {
@@ -55,6 +57,7 @@ const SchoolMagazine = () => {
     const { data, error } = await supabase
       .from("school_news")
       .select("*")
+      .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -70,7 +73,7 @@ const SchoolMagazine = () => {
     setLoading(false);
   };
 
-  const handleSearch = (searchTerm: string, dateFilter: string) => {
+  const handleSearch = (searchTerm: string, dateFilter: string, categoryFilter: string) => {
     let filtered = [...news];
 
     // Filter by search term
@@ -81,6 +84,11 @@ const SchoolMagazine = () => {
           item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.author_name.toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
+
+    // Filter by category
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((item) => item.category === categoryFilter);
     }
 
     // Filter by date

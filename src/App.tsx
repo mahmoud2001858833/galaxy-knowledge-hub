@@ -86,6 +86,7 @@ import AIAssistantSection from './pages/AIAssistantSection';
 import JordanianAssistant from './pages/JordanianAssistant';
 import UploadTextbooks from './pages/UploadTextbooks';
 import SchoolMagazine from './pages/SchoolMagazine';
+import NewsDetail from './pages/NewsDetail';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -462,6 +463,10 @@ const router = createBrowserRouter([
       {
         path: 'school-magazine',
         element: <PublicRoute><SchoolMagazine /></PublicRoute>,
+      },
+      {
+        path: 'news/:id',
+        element: <PublicRoute><NewsDetail /></PublicRoute>,
       },
       {
         path: '*',

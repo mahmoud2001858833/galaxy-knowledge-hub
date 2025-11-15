@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EducationalResources from '@/components/EducationalResources';
 import PlatformCategories from '@/components/PlatformCategories';
+import SchoolMagazineSection from '@/components/SchoolMagazineSection';
 import HeroSection from '@/components/HeroSection';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { SEO } from '@/components/SEO';
@@ -29,6 +30,9 @@ const Index = () => {
         
         {/* Platform Categories */}
         <PlatformCategories />
+        
+        {/* School Magazine Section */}
+        <SchoolMagazineSection />
         
         {/* Educational Resources */}
         <EducationalResources />

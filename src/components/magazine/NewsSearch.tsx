@@ -11,15 +11,16 @@ import {
 import { Search } from "lucide-react";
 
 interface NewsSearchProps {
-  onSearch: (searchTerm: string, dateFilter: string) => void;
+  onSearch: (searchTerm: string, dateFilter: string, categoryFilter: string) => void;
 }
 
 export const NewsSearch = ({ onSearch }: NewsSearchProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const handleSearch = () => {
-    onSearch(searchTerm, dateFilter);
+    onSearch(searchTerm, dateFilter, categoryFilter);
   };
 
   return (
@@ -31,16 +32,33 @@ export const NewsSearch = ({ onSearch }: NewsSearchProps) => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              onSearch(e.target.value, dateFilter);
+              onSearch(e.target.value, dateFilter, categoryFilter);
             }}
             className="w-full"
           />
         </div>
         <Select
+          value={categoryFilter}
+          onValueChange={(value) => {
+            setCategoryFilter(value);
+            onSearch(searchTerm, dateFilter, value);
+          }}
+        >
+          <SelectTrigger className="w-full md:w-48">
+            <SelectValue placeholder="التصنيف" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل التصنيفات</SelectItem>
+            <SelectItem value="فعاليات">فعاليات</SelectItem>
+            <SelectItem value="إنجازات">إنجازات</SelectItem>
+            <SelectItem value="إعلانات">إعلانات</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
           value={dateFilter}
           onValueChange={(value) => {
             setDateFilter(value);
-            onSearch(searchTerm, value);
+            onSearch(searchTerm, value, categoryFilter);
           }}
         >
           <SelectTrigger className="w-full md:w-48">
