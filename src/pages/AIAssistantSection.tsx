@@ -1,17 +1,41 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowRight, Brain } from 'lucide-react';
+import { ArrowRight, Brain, Upload } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 
 const clickSound = '/message-notification.mp3';
 
 const AIAssistantSection = () => {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    checkAdminAccess();
+  }, []);
+
+  const checkAdminAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('admin_teacher_access')
+        .select('access_level')
+        .eq('user_id', user.id)
+        .single();
+
+      setIsSuperAdmin(data?.access_level === 'super_admin');
+    } catch (error) {
+      console.error('Error checking admin access:', error);
+    }
+  };
 
   const playSound = () => {
     if (audioRef.current) {
@@ -149,6 +173,20 @@ const AIAssistantSection = () => {
                   <p className="text-white/90 text-lg leading-relaxed mb-6 max-w-md">
                     {platform.description}
                   </p>
+
+                  {/* Admin Upload Button for Jordanian Assistant */}
+                  {index === 0 && isSuperAdmin && (
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/upload-textbooks');
+                      }}
+                      className="mb-4 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Upload className="w-4 h-4 ml-2" />
+                      إدارة ورفع الكتب
+                    </Button>
+                  )}
 
                   <motion.div
                     whileHover={{ scale: 1.1, boxShadow: "0 0 30px rgba(168, 85, 247, 0.6)" }}
