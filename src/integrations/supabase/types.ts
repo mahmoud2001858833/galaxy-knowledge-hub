@@ -1255,10 +1255,12 @@ export type Database = {
         Row: {
           author_id: string
           author_name: string
+          category: string | null
           created_at: string
           description: string
           id: string
           image_url: string | null
+          is_pinned: boolean | null
           likes_count: number | null
           title: string
           updated_at: string
@@ -1268,10 +1270,12 @@ export type Database = {
         Insert: {
           author_id: string
           author_name: string
+          category?: string | null
           created_at?: string
           description: string
           id?: string
           image_url?: string | null
+          is_pinned?: boolean | null
           likes_count?: number | null
           title: string
           updated_at?: string
@@ -1281,10 +1285,12 @@ export type Database = {
         Update: {
           author_id?: string
           author_name?: string
+          category?: string | null
           created_at?: string
           description?: string
           id?: string
           image_url?: string | null
+          is_pinned?: boolean | null
           likes_count?: number | null
           title?: string
           updated_at?: string

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, Eye, Trash2, MessageCircle } from "lucide-react";
+import { Heart, Eye, Trash2, MessageCircle, Pin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
-import { NewsComments } from "./NewsComments";
 
 interface NewsCardProps {
   news: {
@@ -19,11 +19,14 @@ interface NewsCardProps {
     created_at: string;
     likes_count: number;
     views_count: number;
+    category: string;
+    is_pinned: boolean;
   };
   onUpdate: () => void;
 }
 
 export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
   const [localLikesCount, setLocalLikesCount] = useState(news.likes_count);
@@ -150,8 +153,24 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50">
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 cursor-pointer"
+      onClick={() => navigate(`/news/${news.id}`)}
+    >
       <div className="p-6">
+        {/* Category and Pin Badge */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+            {news.category}
+          </span>
+          {news.is_pinned && (
+            <span className="px-3 py-1 bg-yellow-500/10 text-yellow-600 rounded-full text-xs font-medium flex items-center gap-1">
+              <Pin className="h-3 w-3" />
+              مثبت
+            </span>
+          )}
+        </div>
+
         {/* Author Info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -174,7 +193,10 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4" />
@@ -184,8 +206,8 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
 
         {/* Content */}
         <div className="space-y-3">
-          <h3 className="text-xl font-bold text-foreground">{news.title}</h3>
-          <p className="text-muted-foreground leading-relaxed">{news.description}</p>
+          <h3 className="text-xl font-bold text-foreground line-clamp-2">{news.title}</h3>
+          <p className="text-muted-foreground leading-relaxed line-clamp-3">{news.description}</p>
 
           {/* Media */}
           {news.image_url && (
@@ -193,16 +215,7 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
               <img
                 src={news.image_url}
                 alt={news.title}
-                className="w-full h-auto object-cover"
-              />
-            </div>
-          )}
-          {news.video_url && (
-            <div className="rounded-lg overflow-hidden aspect-video">
-              <video
-                src={news.video_url}
-                controls
-                className="w-full h-full object-cover"
+                className="w-full h-48 object-cover"
               />
             </div>
           )}
@@ -213,7 +226,10 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleLike}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLike();
+            }}
             className={`gap-2 hover:bg-red-500/10 ${
               isLiked ? "text-red-500" : "text-muted-foreground"
             }`}
@@ -225,7 +241,9 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowComments(!showComments)}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
             className="gap-2 text-muted-foreground hover:bg-primary/10 hover:text-primary"
           >
             <MessageCircle className="h-5 w-5" />
@@ -237,11 +255,6 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
             <span className="text-sm font-medium">{news.views_count}</span>
           </div>
         </div>
-
-        {/* Comments Section */}
-        {showComments && (
-          <NewsComments newsId={news.id} />
-        )}
       </div>
     </Card>
   );

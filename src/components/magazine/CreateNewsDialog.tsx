@@ -9,6 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Loader2 } from "lucide-react";
@@ -30,6 +38,8 @@ export const CreateNewsDialog = ({
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [category, setCategory] = useState("إعلانات");
+  const [isPinned, setIsPinned] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +101,8 @@ export const CreateNewsDialog = ({
         video_url: videoUrl,
         author_name: profile?.username || "مدير النظام",
         author_id: user.id,
+        category,
+        is_pinned: isPinned,
       });
 
       if (error) throw error;
@@ -105,6 +117,8 @@ export const CreateNewsDialog = ({
       setDescription("");
       setImageFile(null);
       setVideoFile(null);
+      setCategory("إعلانات");
+      setIsPinned(false);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -146,6 +160,31 @@ export const CreateNewsDialog = ({
               placeholder="أدخل تفاصيل الخبر"
               className="min-h-32"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="category">التصنيف *</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="اختر التصنيف" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="فعاليات">فعاليات</SelectItem>
+                <SelectItem value="إنجازات">إنجازات</SelectItem>
+                <SelectItem value="إعلانات">إعلانات</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center space-x-2 space-x-reverse">
+            <Checkbox
+              id="pinned"
+              checked={isPinned}
+              onCheckedChange={(checked) => setIsPinned(checked as boolean)}
+            />
+            <Label htmlFor="pinned" className="cursor-pointer">
+              تثبيت الخبر في الأعلى
+            </Label>
           </div>
 
           <div>
