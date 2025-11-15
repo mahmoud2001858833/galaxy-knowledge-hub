@@ -19,8 +19,15 @@ serve(async (req) => {
 
   try {
     const { question, searchResults, studentName, grade } = await req.json();
+    
+    console.log('Processing question:', { question, studentName, grade, resultsCount: searchResults?.length });
+
+    if (!question || !searchResults || searchResults.length === 0) {
+      throw new Error('السؤال أو نتائج البحث مفقودة');
+    }
 
     // AI #1: Analyze question context
+    console.log('Step 1: Analyzing context...');
     const contextResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${answerKeys[0]}`,
       {
@@ -37,12 +44,20 @@ serve(async (req) => {
       }
     );
 
+    if (!contextResponse.ok) {
+      const errorText = await contextResponse.text();
+      console.error('Context API error:', errorText);
+      throw new Error('فشل تحليل السياق');
+    }
+
     const contextData = await contextResponse.json();
     const context = contextData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('Context analyzed:', context.substring(0, 100));
 
     // AI #2: Formulate main answer
+    console.log('Step 2: Generating answer...');
     const searchContent = searchResults.map((r: any) => 
-      `من كتاب ${r.bookName}:\n${r.content}`
+      `من كتاب ${r.bookName} (${r.subject}):\n${r.content}`
     ).join('\n\n---\n\n');
 
     const answerResponse = await fetch(
@@ -61,10 +76,23 @@ serve(async (req) => {
       }
     );
 
+    if (!answerResponse.ok) {
+      const errorText = await answerResponse.text();
+      console.error('Answer API error:', errorText);
+      throw new Error('فشل توليد الإجابة');
+    }
+
     const answerData = await answerResponse.json();
     const mainAnswer = answerData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    if (!mainAnswer) {
+      throw new Error('لم يتم توليد إجابة');
+    }
+    
+    console.log('Answer generated, length:', mainAnswer.length);
 
     // AI #3: Review and enhance
+    console.log('Step 3: Enhancing answer...');
     const reviewResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${answerKeys[2]}`,
       {
@@ -81,6 +109,16 @@ serve(async (req) => {
       }
     );
 
+    if (!reviewResponse.ok) {
+      console.warn('Review API error, using main answer');
+    } else {
+      const reviewData = await reviewResponse.json();
+      const enhancedAnswer = reviewData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (enhancedAnswer) {
+        console.log('Answer enhanced');
+      }
+    }
+
     const reviewData = await reviewResponse.json();
     const finalAnswer = reviewData.candidates?.[0]?.content?.parts?.[0]?.text || mainAnswer;
 
@@ -92,19 +130,27 @@ serve(async (req) => {
     }));
 
     // Save to database
+    console.log('Step 4: Saving to database...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    await supabase.from('student_assistant_usage').insert({
-      user_id: req.headers.get('x-user-id'),
-      student_name: studentName,
-      grade: grade,
-      question: question,
-      answer: finalAnswer,
-      sources: sources
-    });
+    try {
+      await supabase.from('student_assistant_usage').insert({
+        user_id: req.headers.get('x-user-id'),
+        student_name: studentName,
+        grade: grade,
+        question: question,
+        answer: finalAnswer,
+        sources: sources
+      });
+      console.log('Saved to database successfully');
+    } catch (dbError) {
+      console.error('Database save error:', dbError);
+      // Continue even if DB save fails
+    }
 
+    console.log('Request completed successfully');
     return new Response(
       JSON.stringify({ 
         answer: finalAnswer,
@@ -113,10 +159,13 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('Error:', error);
+  } catch (error: any) {
+    console.error('Error in jordanian-assistant-answer:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'حدث خطأ غير متوقع',
+        details: error.toString()
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
