@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EducationalResources from '@/components/EducationalResources';
 import PlatformCategories from '@/components/PlatformCategories';
-import SchoolMagazineSection from '@/components/SchoolMagazineSection';
 import HeroSection from '@/components/HeroSection';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { SEO } from '@/components/SEO';
@@ -27,13 +26,6 @@ const Index = () => {
       <main className="flex-1">
         {/* Hero Section with Logo and Orbiting Icons */}
         <HeroSection />
-        
-        {/* Hero and Magazine Section Side by Side */}
-        <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 py-8">
-          <div className="order-2 lg:order-1">
-            <SchoolMagazineSection />
-          </div>
-        </div>
         
         {/* Platform Categories */}
         <PlatformCategories />
