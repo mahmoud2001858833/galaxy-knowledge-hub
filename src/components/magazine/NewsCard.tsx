@@ -154,33 +154,33 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
 
   return (
     <Card 
-      className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 cursor-pointer"
+      className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer group"
       onClick={() => navigate(`/news/${news.id}`)}
     >
-      <div className="p-6">
+      <div className="p-6 space-y-4">
         {/* Category and Pin Badge */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="px-3 py-1.5 bg-gradient-to-r from-primary/20 to-primary/10 text-primary rounded-full text-xs font-semibold shadow-sm">
             {news.category}
           </span>
           {news.is_pinned && (
-            <span className="px-3 py-1 bg-yellow-500/10 text-yellow-600 rounded-full text-xs font-medium flex items-center gap-1">
-              <Pin className="h-3 w-3" />
+            <span className="px-3 py-1.5 bg-gradient-to-r from-yellow-500/20 to-yellow-600/10 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+              <Pin className="h-3.5 w-3.5" />
               مثبت
             </span>
           )}
         </div>
 
         {/* Author Info */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-bold">
+            <div className="h-11 w-11 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center ring-2 ring-primary/20">
+              <span className="text-primary font-bold text-lg">
                 {news.author_name.charAt(0)}
               </span>
             </div>
             <div>
-              <p className="font-semibold text-foreground">{news.author_name}</p>
+              <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{news.author_name}</p>
               <p className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(news.created_at), {
                   addSuffix: true,
@@ -206,8 +206,8 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
 
         {/* Content */}
         <div className="space-y-3">
-          <h3 className="text-xl font-bold text-foreground line-clamp-2">{news.title}</h3>
-          <p className="text-muted-foreground leading-relaxed line-clamp-3">{news.description}</p>
+          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">{news.title}</h3>
+          <p className="text-muted-foreground leading-relaxed line-clamp-3 text-sm">{news.description}</p>
 
           {/* Image - Full display */}
           {news.image_url && (
@@ -233,7 +233,7 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-4 border-t mt-4">
+        <div className="flex items-center gap-3 pt-4 border-t border-border/50">
           <Button
             variant="ghost"
             size="sm"
@@ -241,12 +241,14 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
               e.stopPropagation();
               handleLike();
             }}
-            className={`gap-2 hover:bg-red-500/10 ${
-              isLiked ? "text-red-500" : "text-muted-foreground"
+            className={`gap-2 transition-all duration-200 ${
+              isLiked 
+                ? "text-red-500 bg-red-500/10 hover:bg-red-500/20" 
+                : "text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
             }`}
           >
-            <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
-            <span className="font-medium">{localLikesCount}</span>
+            <Heart className={`h-5 w-5 transition-transform ${isLiked ? "fill-current scale-110" : ""}`} />
+            <span className="font-semibold">{localLikesCount}</span>
           </Button>
           
           <Button
@@ -255,15 +257,15 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
             onClick={(e) => {
               e.stopPropagation();
             }}
-            className="gap-2 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+            className="gap-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
           >
             <MessageCircle className="h-5 w-5" />
-            <span className="font-medium">{commentsCount}</span>
+            <span className="font-semibold">{commentsCount}</span>
           </Button>
           
           <div className="flex items-center gap-2 text-muted-foreground mr-auto">
             <Eye className="h-5 w-5" />
-            <span className="text-sm font-medium">{news.views_count}</span>
+            <span className="text-sm font-semibold">{news.views_count}</span>
           </div>
         </div>
       </div>
