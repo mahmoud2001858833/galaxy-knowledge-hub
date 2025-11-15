@@ -10,23 +10,23 @@ const SchoolMagazineSection = () => {
     <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.8, duration: 0.7 }}
-      className="py-16 w-full max-w-7xl mx-auto px-4"
+      transition={{ delay: 0.3, duration: 0.5 }}
+      className="py-8 w-full"
       dir="rtl"
     >
-      <div className="mb-10 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-white to-pink-500">
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-white to-pink-500">
           مجلة مدرسة عنبه
         </h2>
-        <div className="w-16 h-1 bg-rose-500/50 mx-auto mt-4"></div>
+        <div className="w-12 h-1 bg-rose-500/50 mx-auto mt-3"></div>
       </div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.9, duration: 0.5 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
         onClick={() => navigate("/school-magazine")}
-        className="group relative max-w-2xl mx-auto h-[400px] rounded-2xl overflow-hidden cursor-pointer border-2 border-rose-500/30 hover:border-rose-400/60 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-500/20"
+        className="group relative w-full h-[500px] rounded-2xl overflow-hidden cursor-pointer border-2 border-rose-500/30 hover:border-rose-400/60 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/20"
       >
         {/* Background with magazine logo */}
         <div className="absolute inset-0">
@@ -39,22 +39,6 @@ const SchoolMagazineSection = () => {
         </div>
 
         {/* Animated Background Gradient */}
-        <motion.div
-          className="absolute inset-0 opacity-20"
-          animate={{
-            background: [
-              `linear-gradient(135deg, transparent 0%, transparent 100%)`,
-              `linear-gradient(135deg, rgba(244, 63, 94, 0.3) 0%, transparent 100%)`,
-              `linear-gradient(135deg, transparent 0%, rgba(244, 63, 94, 0.3) 100%)`,
-              `linear-gradient(135deg, transparent 0%, transparent 100%)`,
-            ],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
 
         {/* Content Container */}
         <div className="relative h-full p-8 flex flex-col items-center justify-center text-center z-10">
@@ -62,9 +46,8 @@ const SchoolMagazineSection = () => {
           <motion.div
             className="mb-6 p-6 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 shadow-2xl"
             whileHover={{
-              rotate: [0, -10, 10, -10, 0],
-              scale: 1.1,
-              transition: { duration: 0.5 },
+              scale: 1.05,
+              transition: { duration: 0.3 },
             }}
           >
             <Newspaper className="w-12 h-12 text-white" />
@@ -79,20 +62,6 @@ const SchoolMagazineSection = () => {
             في مدرستك
           </p>
 
-          {/* Arrow Indicator */}
-          <motion.div
-            className="absolute bottom-6 left-1/2 transform -translate-x-1/2"
-            animate={{
-              y: [0, 8, 0],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-            <div className="text-rose-400 text-2xl">↓</div>
-          </motion.div>
         </div>
 
         {/* Glow Effect on Hover */}

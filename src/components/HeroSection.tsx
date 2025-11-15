@@ -18,15 +18,14 @@ const HeroSection = () => {
       {/* Animated Background */}
       <div className="absolute inset-0">
         <motion.div
-          animate={{
+          animate={{ 
             background: [
-              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%)',
-              'radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
-              'radial-gradient(circle at 50% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%)',
-              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%)',
+              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
+              'radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
+              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
             ]
           }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
           className="absolute inset-0"
         />
       </div>
@@ -55,15 +54,15 @@ const HeroSection = () => {
               {/* Glowing Background */}
               <motion.div
                 animate={{ 
-                  scale: [1, 1.15, 1],
-                  opacity: [0.4, 0.6, 0.4]
+                  scale: [1, 1.1, 1],
+                  opacity: [0.3, 0.4, 0.3]
                 }}
                 transition={{ 
-                  duration: 4,
+                  duration: 6,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className="absolute inset-0 bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-cyan-500/40 blur-3xl rounded-full"
+                className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-cyan-500/30 blur-3xl rounded-full"
               />
 
               {/* Logo - Large and Static */}
@@ -80,28 +79,13 @@ const HeroSection = () => {
                 rotate: 360,
               }}
               transition={{ 
-                duration: 30,
+                duration: 50,
                 repeat: Infinity,
                 ease: "linear"
               }}
               className="absolute inset-0 flex items-center justify-center"
             >
-              <div className="w-[480px] h-[480px] rounded-full border-2 border-dashed border-blue-400/50 shadow-lg shadow-blue-500/30" />
-            </motion.div>
-
-            {/* Second Rotating Circle - Opposite Direction */}
-            <motion.div
-              animate={{ 
-                rotate: -360,
-              }}
-              transition={{ 
-                duration: 45,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <div className="w-[520px] h-[520px] rounded-full border border-dotted border-purple-400/30" />
+              <div className="w-[480px] h-[480px] rounded-full border border-dashed border-blue-400/30" />
             </motion.div>
           </div>
         </motion.div>
