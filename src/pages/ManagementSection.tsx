@@ -23,6 +23,15 @@ const ManagementSection = () => {
 
   const platforms = [
     {
+      title: "مجلة مدرسة عنبه",
+      icon: "📰",
+      description: "آخر الأخبار والفعاليات والإنجازات المدرسية في مكان واحد",
+      image: require("@/assets/school-magazine-logo.png"),
+      color: "from-rose-600/20 to-pink-600/20",
+      borderColor: "border-rose-500/30",
+      link: "/school-magazine"
+    },
+    {
       title: t.platformCategories.communicationBridge,
       icon: "🌉",
       description: t.platformCategories.communicationBridgeDescription,
@@ -77,7 +86,7 @@ const ManagementSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             {platforms.map((platform, index) => (
               <motion.div
