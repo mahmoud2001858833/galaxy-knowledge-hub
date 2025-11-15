@@ -6,13 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const searchKeys = [
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1')!,
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_2')!,
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_3')!,
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_4')!,
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_5')!,
-];
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -45,49 +39,58 @@ serve(async (req) => {
       ? books.filter(book => book.subject.toLowerCase() === subject.toLowerCase())
       : books;
 
-    // Search in parallel using multiple AI keys
-    const searchPromises = relevantBooks.slice(0, 5).map(async (book, index) => {
-      const apiKey = searchKeys[index % searchKeys.length];
-      
-      try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+// Search in parallel using Lovable AI (Gemini 2.5 Flash)
+const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
+  try {
+    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `ابحث في كتاب ${book.book_name} عن معلومات تجيب على هذا السؤال: "${question}"\n\nقدم:\n1. المعلومات المتعلقة بالسؤال\n2. أرقام الصفحات المحددة\n3. اقتباسات نصية من الكتاب`
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.3,
-                maxOutputTokens: 2000,
-              }
-            })
+            role: 'system',
+            content: 'أنت خبير مناهج أردني. لا تعتمد على أي مصدر خارج الكتب المذكورة. أعِد فقط مقتطفات واقتباسات مباشرة من الكتاب مع أرقام الصفحات إن توفّرت. إذا لم تجد معلومة صريحة في الكتاب، أعد كلمة واحدة فقط: NOT_FOUND.',
+          },
+          {
+            role: 'user',
+            content: `السؤال: ${question}\n\nالكتاب: ${book.book_name}\nالمادة: ${book.subject}\nالصف: ${book.grade}\n\nأعد مقطعاً موجزاً يجيب على السؤال باقتباسات نصية من الكتاب فقط مع ذكر أرقام الصفحات بصيغة (ص: 12). لا تضف مقدمات.`,
           }
-        );
-
-        if (!response.ok) {
-          console.error(`Search failed for ${book.book_name}`);
-          return null;
-        }
-
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        return {
-          bookName: book.book_name,
-          subject: book.subject,
-          content: text,
-          bookId: book.id
-        };
-      } catch (error) {
-        console.error(`Error searching ${book.book_name}:`, error);
-        return null;
-      }
+        ],
+        temperature: 0.2,
+        max_tokens: 1200,
+      }),
     });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.error('Lovable AI search error:', t);
+      return null;
+    }
+
+    const data = await resp.json();
+    const text: string = data.choices?.[0]?.message?.content || '';
+
+    if (!text || text.trim() === 'NOT_FOUND') {
+      console.error(`No content found in ${book.book_name}`);
+      return null;
+    }
+
+    return {
+      bookName: book.book_name,
+      subject: book.subject,
+      content: text,
+      bookId: book.id,
+      fileUrl: book.file_url ?? null,
+    };
+  } catch (error) {
+    console.error(`Error searching ${book.book_name}:`, error);
+    return null;
+  }
+});
 
     const results = (await Promise.all(searchPromises)).filter(r => r !== null);
 
