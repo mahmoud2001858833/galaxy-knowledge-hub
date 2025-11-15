@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,9 @@ export default function UploadTextbooks() {
   const navigate = useNavigate();
 
   // Load textbooks on mount
-  useState(() => {
+  useEffect(() => {
     loadTextbooks();
-  });
+  }, []);
 
   const loadTextbooks = async () => {
     try {
