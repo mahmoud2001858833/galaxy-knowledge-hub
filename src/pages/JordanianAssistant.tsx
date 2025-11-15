@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PasswordProtection from "@/components/PasswordProtection";
 import ChatMessage from "@/components/ChatMessage";
+import UploadedSourcesTab from "@/components/UploadedSourcesTab";
 
 interface Message {
   role: "user" | "assistant";
@@ -305,7 +306,7 @@ export default function JordanianAssistant() {
           </Card>
 
           <Tabs defaultValue="questions" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="questions">
                 <FileQuestion className="w-4 h-4 ml-2" />
                 طرح الأسئلة
@@ -313,6 +314,10 @@ export default function JordanianAssistant() {
               <TabsTrigger value="exam">
                 <Sparkles className="w-4 h-4 ml-2" />
                 إنشاء امتحان
+              </TabsTrigger>
+              <TabsTrigger value="sources">
+                <Sparkles className="w-4 h-4 ml-2" />
+                المصادر المرفوعة
               </TabsTrigger>
             </TabsList>
 
@@ -470,6 +475,10 @@ export default function JordanianAssistant() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="sources">
+              <UploadedSourcesTab />
             </TabsContent>
           </Tabs>
         </div>

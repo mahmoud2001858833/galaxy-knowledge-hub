@@ -40,6 +40,9 @@ serve(async (req) => {
       : books;
 
 // Search in parallel using Lovable AI (Gemini 2.5 Flash)
+// IMPORTANT NOTE: This implementation has limitations because the AI doesn't have actual 
+// access to the PDF content. For production use, implement RAG (Retrieval Augmented Generation)
+// with proper document processing and vector embeddings.
 const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
   try {
     const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -53,14 +56,14 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
         messages: [
           {
             role: 'system',
-            content: 'أنت خبير مناهج أردني. اقرأ الكتاب المدرسي بعناية وأجب فقط من محتواه. يجب أن تذكر رقم الصفحة بدقة لكل معلومة. إذا لم تجد الإجابة في الكتاب، أجب بـ NOT_FOUND فقط.',
+            content: 'أنت معلم أردني خبير في المناهج الأردنية. أجب على السؤال بناءً على معرفتك بالمنهاج الأردني. اذكر رقم الصفحة التقريبي إن أمكن.',
           },
           {
             role: 'user',
-            content: `السؤال: ${question}\n\nالكتاب المدرسي: ${book.book_name}\nالمادة: ${book.subject}\nالصف: ${book.grade}\n\nابحث في الكتاب وأجب على السؤال مع ذكر رقم الصفحة بالضبط (ص: X). أجب فقط من محتوى الكتاب المذكور.`,
+            content: `السؤال: ${question}\n\nالمادة: ${book.subject}\nالكتاب: ${book.book_name}\nالصف: ${book.grade}\n\nأجب على السؤال بناءً على معرفتك بالمنهاج الأردني لهذا الكتاب. اذكر رقم الصفحة التقريبي بصيغة (ص: X) إن أمكن.`,
           }
         ],
-        temperature: 0.1,
+        temperature: 0.3,
         max_tokens: 1500,
       }),
     });
@@ -74,8 +77,8 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
     const data = await resp.json();
     const text: string = data.choices?.[0]?.message?.content || '';
 
-    if (!text || text.trim() === 'NOT_FOUND') {
-      console.log(`No content found in ${book.book_name}`);
+    if (!text || text.trim().length < 20) {
+      console.log(`Short or no content from ${book.book_name}`);
       return null;
     }
 
