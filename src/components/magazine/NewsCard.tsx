@@ -209,13 +209,24 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
           <h3 className="text-xl font-bold text-foreground line-clamp-2">{news.title}</h3>
           <p className="text-muted-foreground leading-relaxed line-clamp-3">{news.description}</p>
 
-          {/* Media */}
+          {/* Image - Full display */}
           {news.image_url && (
-            <div className="rounded-lg overflow-hidden">
+            <div className="rounded-lg overflow-hidden -mx-6 -mb-3">
               <img
                 src={news.image_url}
                 alt={news.title}
-                className="w-full h-48 object-cover"
+                className="w-full h-auto object-contain max-h-[600px]"
+              />
+            </div>
+          )}
+
+          {/* Video - Full display */}
+          {news.video_url && (
+            <div className="rounded-lg overflow-hidden -mx-6 -mb-3 aspect-video">
+              <video
+                src={news.video_url}
+                controls
+                className="w-full h-full object-contain"
               />
             </div>
           )}

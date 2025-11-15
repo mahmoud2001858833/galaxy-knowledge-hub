@@ -28,11 +28,15 @@ const Index = () => {
         {/* Hero Section with Logo and Orbiting Icons */}
         <HeroSection />
         
+        {/* Hero and Magazine Section Side by Side */}
+        <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 py-8">
+          <div className="order-2 lg:order-1">
+            <SchoolMagazineSection />
+          </div>
+        </div>
+        
         {/* Platform Categories */}
         <PlatformCategories />
-        
-        {/* School Magazine Section */}
-        <SchoolMagazineSection />
         
         {/* Educational Resources */}
         <EducationalResources />
@@ -40,28 +44,6 @@ const Index = () => {
       
       <Footer />
       
-      {/* Enhanced Starfield Animation with more stars and space elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        {Array.from({ length: 20 }).map((_, index) => (
-          <div
-            key={index}
-            className="absolute rounded-full bg-white opacity-20 animate-pulse"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: `${Math.random() * 4 + 1}px`,
-              height: `${Math.random() * 4 + 1}px`,
-              animationDuration: `${Math.random() * 5 + 3}s`,
-              animationDelay: `${Math.random() * 2}s`
-            }}
-          />
-        ))}
-        
-        {/* Add some nebula-like elements */}
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-blue-500/5 blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/5 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl" />
-        <div className="absolute top-2/3 right-1/4 w-48 h-48 rounded-full bg-cyan-500/5 blur-3xl" />
-      </div>
     </div>
   );
 };

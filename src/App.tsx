@@ -87,6 +87,8 @@ import JordanianAssistant from './pages/JordanianAssistant';
 import UploadTextbooks from './pages/UploadTextbooks';
 import SchoolMagazine from './pages/SchoolMagazine';
 import NewsDetail from './pages/NewsDetail';
+import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
+import ProtectedArabicLanguagePlatform from './pages/ProtectedArabicLanguagePlatform';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -234,7 +236,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'arabic-platform',
-        element: <AuthGuard><ArabicLanguagePlatform /></AuthGuard>,
+        element: <PublicRoute><ProtectedArabicLanguagePlatform /></PublicRoute>,
       },
       {
         path: 'english-language',
@@ -267,6 +269,10 @@ const router = createBrowserRouter([
       {
         path: 'mathematics/ai-assistant',
         element: <AuthGuard><MathAIAssistantPage /></AuthGuard>,
+      },
+      {
+        path: 'mathematics/question-bank',
+        element: <AuthGuard><MathematicsQuestionBank /></AuthGuard>,
       },
       {
         path: 'biology',
