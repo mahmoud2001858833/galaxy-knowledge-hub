@@ -53,15 +53,15 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
         messages: [
           {
             role: 'system',
-            content: 'أنت خبير مناهج أردني. لا تعتمد على أي مصدر خارج الكتب المذكورة. أعِد فقط مقتطفات واقتباسات مباشرة من الكتاب مع أرقام الصفحات إن توفّرت. إذا لم تجد معلومة صريحة في الكتاب، أعد كلمة واحدة فقط: NOT_FOUND.',
+            content: 'أنت خبير مناهج أردني. اقرأ الكتاب المدرسي بعناية وأجب فقط من محتواه. يجب أن تذكر رقم الصفحة بدقة لكل معلومة. إذا لم تجد الإجابة في الكتاب، أجب بـ NOT_FOUND فقط.',
           },
           {
             role: 'user',
-            content: `السؤال: ${question}\n\nالكتاب: ${book.book_name}\nالمادة: ${book.subject}\nالصف: ${book.grade}\n\nأعد مقطعاً موجزاً يجيب على السؤال باقتباسات نصية من الكتاب فقط مع ذكر أرقام الصفحات بصيغة (ص: 12). لا تضف مقدمات.`,
+            content: `السؤال: ${question}\n\nالكتاب المدرسي: ${book.book_name}\nالمادة: ${book.subject}\nالصف: ${book.grade}\n\nابحث في الكتاب وأجب على السؤال مع ذكر رقم الصفحة بالضبط (ص: X). أجب فقط من محتوى الكتاب المذكور.`,
           }
         ],
-        temperature: 0.2,
-        max_tokens: 1200,
+        temperature: 0.1,
+        max_tokens: 1500,
       }),
     });
 
@@ -75,9 +75,13 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
     const text: string = data.choices?.[0]?.message?.content || '';
 
     if (!text || text.trim() === 'NOT_FOUND') {
-      console.error(`No content found in ${book.book_name}`);
+      console.log(`No content found in ${book.book_name}`);
       return null;
     }
+
+    // Extract page number from response
+    const pageMatch = text.match(/ص:?\s*(\d+)/);
+    const pageNumber = pageMatch ? pageMatch[1] : undefined;
 
     return {
       bookName: book.book_name,
@@ -85,6 +89,7 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
       content: text,
       bookId: book.id,
       fileUrl: book.file_url ?? null,
+      pageNumber: pageNumber,
     };
   } catch (error) {
     console.error(`Error searching ${book.book_name}:`, error);
