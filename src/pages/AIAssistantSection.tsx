@@ -23,6 +23,15 @@ const AIAssistantSection = () => {
 
   const platforms = [
     {
+      title: "🇯🇴 مساعدك الأردني",
+      icon: "🇯🇴",
+      description: "مساعد ذكي متخصص في المنهاج الأردني - يجيب من الكتب المدرسية حصرياً",
+      image: aiAssistantBg,
+      color: "from-green-600/20 to-red-600/20",
+      borderColor: "border-green-500/30",
+      link: "/jordanian-assistant"
+    },
+    {
       title: "مرشدك النفسي",
       icon: "💙",
       description: "دعم نفسي ذكي يساعدك في فهم مشاعرك ويوجهك للقسم المناسب",
