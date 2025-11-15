@@ -85,6 +85,7 @@ import EducationSection from './pages/EducationSection';
 import AIAssistantSection from './pages/AIAssistantSection';
 import JordanianAssistant from './pages/JordanianAssistant';
 import UploadTextbooks from './pages/UploadTextbooks';
+import SchoolMagazine from './pages/SchoolMagazine';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -457,6 +458,10 @@ const router = createBrowserRouter([
       {
         path: 'upload-textbooks',
         element: <AuthGuard><UploadTextbooks /></AuthGuard>,
+      },
+      {
+        path: 'school-magazine',
+        element: <PublicRoute><SchoolMagazine /></PublicRoute>,
       },
       {
         path: '*',
