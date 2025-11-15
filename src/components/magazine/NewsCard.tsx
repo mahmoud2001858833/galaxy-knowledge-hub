@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, Eye, Calendar, User, Trash2 } from "lucide-react";
+import { Heart, Eye, Trash2, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { NewsComments } from "./NewsComments";
 
 interface NewsCardProps {
   news: {
@@ -27,12 +28,24 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [localLikesCount, setLocalLikesCount] = useState(news.likes_count);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(0);
 
   useEffect(() => {
     checkIfLiked();
     checkAdminStatus();
     incrementViews();
+    fetchCommentsCount();
   }, []);
+
+  const fetchCommentsCount = async () => {
+    const { count } = await supabase
+      .from("school_news_comments")
+      .select("*", { count: "exact", head: true })
+      .eq("news_id", news.id);
+    
+    setCommentsCount(count || 0);
+  };
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -137,79 +150,98 @@ export const NewsCard = ({ news, onUpdate }: NewsCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="h-5 w-5 text-primary" />
+    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50">
+      <div className="p-6">
+        {/* Author Info */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-primary font-bold">
+                {news.author_name.charAt(0)}
+              </span>
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">{news.author_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(news.created_at), {
+                  addSuffix: true,
+                  locale: ar,
+                })}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold text-foreground">{news.author_name}</p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {format(new Date(news.created_at), "d MMMM yyyy", { locale: ar })}
-            </p>
-          </div>
+          {isSuperAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-        {isSuperAdmin && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
 
-      {/* Content */}
-      <div className="p-4">
-        <h2 className="text-xl font-bold mb-2 text-foreground">{news.title}</h2>
-        <p className="text-muted-foreground whitespace-pre-wrap mb-4">
-          {news.description}
-        </p>
+        {/* Content */}
+        <div className="space-y-3">
+          <h3 className="text-xl font-bold text-foreground">{news.title}</h3>
+          <p className="text-muted-foreground leading-relaxed">{news.description}</p>
 
-        {/* Media */}
-        {news.image_url && (
-          <img
-            src={news.image_url}
-            alt={news.title}
-            className="w-full rounded-lg mb-4 object-cover max-h-96"
-          />
-        )}
+          {/* Media */}
+          {news.image_url && (
+            <div className="rounded-lg overflow-hidden">
+              <img
+                src={news.image_url}
+                alt={news.title}
+                className="w-full h-auto object-cover"
+              />
+            </div>
+          )}
+          {news.video_url && (
+            <div className="rounded-lg overflow-hidden aspect-video">
+              <video
+                src={news.video_url}
+                controls
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+        </div>
 
-        {news.video_url && (
-          <video
-            src={news.video_url}
-            controls
-            className="w-full rounded-lg mb-4"
-          />
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="px-4 py-3 border-t flex items-center justify-between bg-muted/20">
-        <div className="flex items-center gap-4">
+        {/* Actions */}
+        <div className="flex items-center gap-2 pt-4 border-t mt-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleLike}
-            className={`gap-2 ${
-              isLiked
-                ? "text-red-500 hover:text-red-600"
-                : "text-muted-foreground hover:text-red-500"
+            className={`gap-2 hover:bg-red-500/10 ${
+              isLiked ? "text-red-500" : "text-muted-foreground"
             }`}
           >
-            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-            <span>{localLikesCount}</span>
+            <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
+            <span className="font-medium">{localLikesCount}</span>
           </Button>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Eye className="h-4 w-4" />
-            <span>{news.views_count}</span>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowComments(!showComments)}
+            className="gap-2 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+          >
+            <MessageCircle className="h-5 w-5" />
+            <span className="font-medium">{commentsCount}</span>
+          </Button>
+          
+          <div className="flex items-center gap-2 text-muted-foreground mr-auto">
+            <Eye className="h-5 w-5" />
+            <span className="text-sm font-medium">{news.views_count}</span>
           </div>
         </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <NewsComments newsId={news.id} />
+        )}
       </div>
     </Card>
   );

@@ -1293,6 +1293,44 @@ export type Database = {
         }
         Relationships: []
       }
+      school_news_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          id: string
+          news_id: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          id?: string
+          news_id: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          id?: string
+          news_id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_news_comments_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "school_news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_news_likes: {
         Row: {
           created_at: string

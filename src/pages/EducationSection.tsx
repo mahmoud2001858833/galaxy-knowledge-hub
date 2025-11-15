@@ -58,15 +58,6 @@ const EducationSection = () => {
       borderColor: "border-blue-500/30",
       link: "/scientific-platforms"
     },
-    {
-      title: "مجلة مدرسة عنبه",
-      icon: "📰",
-      description: "آخر أخبار وفعاليات مدرسة عنبه الثانوية الشاملة للبنين",
-      image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-      color: "from-rose-600/20 to-pink-600/20",
-      borderColor: "border-rose-500/30",
-      link: "/school-magazine"
-    },
     // التوجيهي الأردني تم نقله إلى قسم خاص في المنصات التعليمية
   ];
 
