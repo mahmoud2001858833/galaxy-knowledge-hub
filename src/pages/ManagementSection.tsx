@@ -6,6 +6,7 @@ import { ArrowRight, Settings } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import managementBg from '@/assets/management-section.jpg';
+import schoolMagazineLogo from '@/assets/school-magazine-logo.png';
 
 const clickSound = '/message-notification.mp3';
 
@@ -26,7 +27,7 @@ const ManagementSection = () => {
       title: "مجلة مدرسة عنبه",
       icon: "📰",
       description: "آخر الأخبار والفعاليات والإنجازات المدرسية في مكان واحد",
-      image: require("@/assets/school-magazine-logo.png"),
+      image: schoolMagazineLogo,
       color: "from-rose-600/20 to-pink-600/20",
       borderColor: "border-rose-500/30",
       link: "/school-magazine"
