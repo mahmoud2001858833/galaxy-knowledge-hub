@@ -6,10 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const questionKeys = [
-  Deno.env.get('JORDANIAN_AI_QUESTION_GEN_KEY_1')!,
-  Deno.env.get('JORDANIAN_AI_QUESTION_GEN_KEY_2')!,
-];
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -45,20 +42,27 @@ serve(async (req) => {
     
     console.log('Found textbook:', books[0].book_name);
 
-    // AI #1: Generate questions
+    // AI #1: Generate questions using Lovable AI
     console.log('Step 1: Generating questions...');
     const generateResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${questionKeys[0]}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `أنشئ ${questionCount} سؤال من نوع: ${questionTypes}\nالمادة: ${subject}\nالصف: ${grade}\nالمحتوى: ${contentRange}\n\nمتطلبات الأسئلة:\n1. متنوعة في الصعوبة\n2. تغطي المحتوى المحدد\n3. واضحة ومباشرة\n4. تتبع معايير الامتحانات الأردنية\n\nقدم الأسئلة بتنسيق واضح مع الإجابات النموذجية`
-            }]
+          model: 'google/gemini-2.5-flash',
+          messages: [{
+            role: 'system',
+            content: 'أنت خبير في إنشاء الأسئلة الامتحانية للمنهاج الأردني'
+          }, {
+            role: 'user',
+            content: `أنشئ ${questionCount} سؤال من نوع: ${questionTypes}\nالمادة: ${subject}\nالصف: ${grade}\nالمحتوى: ${contentRange}\n\nمتطلبات الأسئلة:\n1. متنوعة في الصعوبة\n2. تغطي المحتوى المحدد\n3. واضحة ومباشرة\n4. تتبع معايير الامتحانات الأردنية\n\nقدم الأسئلة بتنسيق واضح مع الإجابات النموذجية`
           }],
-          generationConfig: { temperature: 0.5, maxOutputTokens: 4000 }
+          temperature: 0.5,
+          max_tokens: 4000
         })
       }
     );
@@ -70,7 +74,7 @@ serve(async (req) => {
     }
 
     const generateData = await generateResponse.json();
-    const questions = generateData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const questions = generateData.choices?.[0]?.message?.content || '';
     
     if (!questions) {
       throw new Error('لم يتم توليد أسئلة');
@@ -78,20 +82,24 @@ serve(async (req) => {
     
     console.log('Questions generated, length:', questions.length);
 
-    // AI #2: Format as exam paper
+    // AI #2: Format as exam paper using Lovable AI
     console.log('Step 2: Formatting exam...');
     const formatResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${questionKeys[1]}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `نسّق هذه الأسئلة كورقة امتحانية رسمية:\n\n${questions}\n\nالتنسيق المطلوب:\n- ترويسة: المادة، الصف، التاريخ\n- تعليمات الامتحان\n- الأسئلة مرقمة ومنظمة\n- مساحات للإجابة\n- العلامات لكل سؤال\n- صفحة منفصلة للإجابات النموذجية\n\nاستخدم تنسيق Markdown للطباعة`
-            }]
+          model: 'google/gemini-2.5-flash',
+          messages: [{
+            role: 'user',
+            content: `نسّق هذه الأسئلة كورقة امتحانية رسمية:\n\n${questions}\n\nالتنسيق المطلوب:\n- ترويسة: المادة، الصف، التاريخ\n- تعليمات الامتحان\n- الأسئلة مرقمة ومنظمة\n- مساحات للإجابة\n- العلامات لكل سؤال\n- صفحة منفصلة للإجابات النموذجية\n\nاستخدم تنسيق Markdown للطباعة`
           }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 3000 }
+          temperature: 0.2,
+          max_tokens: 3000
         })
       }
     );
@@ -103,7 +111,7 @@ serve(async (req) => {
     }
 
     const formatData = await formatResponse.json();
-    const examPaper = formatData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const examPaper = formatData.choices?.[0]?.message?.content || '';
     
     if (!examPaper) {
       throw new Error('لم يتم تنسيق الورقة الامتحانية');

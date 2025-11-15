@@ -6,11 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const answerKeys = [
-  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1')!,
-  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_2')!,
-  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_3')!,
-];
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,20 +22,24 @@ serve(async (req) => {
       throw new Error('السؤال أو نتائج البحث مفقودة');
     }
 
-    // AI #1: Analyze question context
+    // AI #1: Analyze question context using Lovable AI
     console.log('Step 1: Analyzing context...');
     const contextResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${answerKeys[0]}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `حلل هذا السؤال وحدد: ${question}\n\n1. الموضوع الرئيسي\n2. المفاهيم المطلوبة\n3. مستوى التفصيل المناسب`
-            }]
+          model: 'google/gemini-2.5-flash',
+          messages: [{
+            role: 'user',
+            content: `حلل هذا السؤال وحدد: ${question}\n\n1. الموضوع الرئيسي\n2. المفاهيم المطلوبة\n3. مستوى التفصيل المناسب`
           }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+          temperature: 0.2,
+          max_tokens: 500
         })
       }
     );
@@ -51,27 +51,34 @@ serve(async (req) => {
     }
 
     const contextData = await contextResponse.json();
-    const context = contextData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const context = contextData.choices?.[0]?.message?.content || '';
     console.log('Context analyzed:', context.substring(0, 100));
 
-    // AI #2: Formulate main answer
+    // AI #2: Formulate main answer using Lovable AI
     console.log('Step 2: Generating answer...');
     const searchContent = searchResults.map((r: any) => 
       `من كتاب ${r.bookName} (${r.subject}):\n${r.content}`
     ).join('\n\n---\n\n');
 
     const answerResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${answerKeys[1]}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `أنت معلم أردني متخصص. باستخدام المعلومات التالية من الكتب المدرسية، أجب على سؤال الطالب ${studentName} من الصف ${grade}.\n\nالسؤال: ${question}\n\nالسياق: ${context}\n\nالمحتوى من الكتب:\n${searchContent}\n\nقدم إجابة تفصيلية وواضحة مع:\n1. شرح المفهوم بطريقة سهلة\n2. أمثلة توضيحية\n3. ذكر المصادر وأرقام الصفحات بدقة`
-            }]
+          model: 'google/gemini-2.5-flash',
+          messages: [{
+            role: 'system',
+            content: 'أنت معلم أردني متخصص تساعد الطلاب في فهم المنهاج الأردني'
+          }, {
+            role: 'user',
+            content: `باستخدام المعلومات التالية من الكتب المدرسية، أجب على سؤال الطالب ${studentName} من الصف ${grade}.\n\nالسؤال: ${question}\n\nالسياق: ${context}\n\nالمحتوى من الكتب:\n${searchContent}\n\nقدم إجابة تفصيلية وواضحة مع:\n1. شرح المفهوم بطريقة سهلة\n2. أمثلة توضيحية\n3. ذكر المصادر وأرقام الصفحات بدقة`
           }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 3000 }
+          temperature: 0.4,
+          max_tokens: 3000
         })
       }
     );
@@ -83,7 +90,7 @@ serve(async (req) => {
     }
 
     const answerData = await answerResponse.json();
-    const mainAnswer = answerData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const mainAnswer = answerData.choices?.[0]?.message?.content || '';
     
     if (!mainAnswer) {
       throw new Error('لم يتم توليد إجابة');
@@ -91,36 +98,39 @@ serve(async (req) => {
     
     console.log('Answer generated, length:', mainAnswer.length);
 
-    // AI #3: Review and enhance
+    // AI #3: Review and enhance using Lovable AI
     console.log('Step 3: Enhancing answer...');
     const reviewResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${answerKeys[2]}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `راجع هذه الإجابة وحسّنها بإضافة:\n1. نصائح دراسية\n2. أسئلة تفكيرية\n3. تأكد من دقة المعلومات\n\nالإجابة:\n${mainAnswer}`
-            }]
+          model: 'google/gemini-2.5-flash',
+          messages: [{
+            role: 'user',
+            content: `راجع هذه الإجابة وحسّنها بإضافة:\n1. نصائح دراسية\n2. أسئلة تفكيرية\n3. تأكد من دقة المعلومات\n\nالإجابة:\n${mainAnswer}`
           }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
+          temperature: 0.3,
+          max_tokens: 1500
         })
       }
     );
 
-    if (!reviewResponse.ok) {
-      console.warn('Review API error, using main answer');
-    } else {
+    let finalAnswer = mainAnswer;
+    if (reviewResponse.ok) {
       const reviewData = await reviewResponse.json();
-      const enhancedAnswer = reviewData.candidates?.[0]?.content?.parts?.[0]?.text;
+      const enhancedAnswer = reviewData.choices?.[0]?.message?.content;
       if (enhancedAnswer) {
+        finalAnswer = enhancedAnswer;
         console.log('Answer enhanced');
       }
+    } else {
+      console.warn('Review API error, using main answer');
     }
-
-    const reviewData = await reviewResponse.json();
-    const finalAnswer = reviewData.candidates?.[0]?.content?.parts?.[0]?.text || mainAnswer;
 
     // Extract sources
     const sources = searchResults.map((r: any) => ({
