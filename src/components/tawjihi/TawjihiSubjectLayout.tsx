@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, FileQuestion, BookOpen, FileText, ClipboardList, X, LucideIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -206,7 +207,7 @@ const TawjihiSubjectLayout: React.FC<TawjihiSubjectLayoutProps> = ({
               <Upload className="h-8 w-8" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-lg bg-gradient-to-br from-blue-950/95 to-purple-950/95 border-blue-500/30 text-white" dir="rtl">
+          <SheetContent side="right" className="w-full sm:max-w-lg bg-gradient-to-br from-blue-950/95 to-purple-950/95 border-blue-500/30 text-white overflow-y-auto" dir="rtl">
             <SheetHeader>
               <SheetTitle className="text-2xl font-bold text-white flex items-center gap-2">
                 <Upload className="h-6 w-6 text-orange-400" />
@@ -214,7 +215,8 @@ const TawjihiSubjectLayout: React.FC<TawjihiSubjectLayoutProps> = ({
               </SheetTitle>
             </SheetHeader>
             
-            <div className="mt-8 space-y-6">
+            <ScrollArea className="h-[calc(100vh-100px)] mt-8 pr-4">
+              <div className="space-y-6 pb-8">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
                   اختر القسم
@@ -314,7 +316,8 @@ const TawjihiSubjectLayout: React.FC<TawjihiSubjectLayoutProps> = ({
                   </>
                 )}
               </Button>
-            </div>
+              </div>
+            </ScrollArea>
           </SheetContent>
         </Sheet>
       </motion.div>
