@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Image as ImageIcon, FileQuestion, Sparkles } from "lucide-react";
+import { Loader2, Send, Image as ImageIcon, FileQuestion, Sparkles, BookOpen, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function JordanianAssistant() {
   const [studentName, setStudentName] = useState("");
@@ -22,6 +24,7 @@ export default function JordanianAssistant() {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   
   // Exam generation
   const [examSubject, setExamSubject] = useState("");
@@ -36,9 +39,9 @@ export default function JordanianAssistant() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load student info from session
-    const savedName = sessionStorage.getItem('student_name');
-    const savedGrade = sessionStorage.getItem('student_grade');
+    // Load student info from localStorage (permanent storage)
+    const savedName = localStorage.getItem('jordanian_assistant_student_name');
+    const savedGrade = localStorage.getItem('jordanian_assistant_student_grade');
     if (savedName) setStudentName(savedName);
     if (savedGrade) setGrade(savedGrade);
   }, []);
@@ -51,10 +54,10 @@ export default function JordanianAssistant() {
       });
       return;
     }
-    sessionStorage.setItem('student_name', studentName);
-    sessionStorage.setItem('student_grade', grade);
+    localStorage.setItem('jordanian_assistant_student_name', studentName);
+    localStorage.setItem('jordanian_assistant_student_grade', grade);
     toast({
-      title: "تم حفظ معلوماتك",
+      title: "✅ تم حفظ معلوماتك للأبد",
       description: "يمكنك الآن بدء طرح الأسئلة",
     });
   };
@@ -98,6 +101,7 @@ export default function JordanianAssistant() {
       // If there's an image, analyze it first
       let questionText = question;
       if (imageFile) {
+        console.log('Analyzing image...');
         const reader = new FileReader();
         const imageBase64 = await new Promise<string>((resolve) => {
           reader.onloadend = () => {
@@ -114,11 +118,16 @@ export default function JordanianAssistant() {
           }
         );
 
-        if (analysisError) throw analysisError;
+        if (analysisError) {
+          console.error('Image analysis error:', analysisError);
+          throw new Error('فشل تحليل الصورة: ' + analysisError.message);
+        }
         questionText = analysisData.analysis + "\n\n" + questionText;
+        console.log('Image analyzed successfully');
       }
 
       // Search for relevant content
+      console.log('Searching textbooks...');
       const { data: searchData, error: searchError } = await supabase.functions.invoke(
         'jordanian-assistant-search',
         {
@@ -126,13 +135,19 @@ export default function JordanianAssistant() {
         }
       );
 
-      if (searchError) throw searchError;
+      if (searchError) {
+        console.error('Search error:', searchError);
+        throw new Error('فشل البحث في الكتب: ' + searchError.message);
+      }
 
       if (!searchData.results || searchData.results.length === 0) {
         throw new Error('لم يتم العثور على محتوى مناسب في الكتب المدرسية');
       }
 
+      console.log('Found results:', searchData.results.length);
+
       // Generate answer
+      console.log('Getting answer from AI...');
       const { data: answerData, error: answerError } = await supabase.functions.invoke(
         'jordanian-assistant-answer',
         {
@@ -148,22 +163,33 @@ export default function JordanianAssistant() {
         }
       );
 
-      if (answerError) throw answerError;
+      if (answerError) {
+        console.error('Answer error:', answerError);
+        throw new Error('فشل الحصول على الإجابة: ' + answerError.message);
+      }
 
+      if (!answerData?.answer) {
+        throw new Error('لم يتم الحصول على إجابة من الذكاء الاصطناعي');
+      }
+
+      console.log('Answer received successfully');
       setAnswer(answerData.answer);
-      setSources(answerData.sources);
+      setSources(answerData.sources || []);
 
       toast({
-        title: "تم الإجابة على سؤالك",
+        title: "✅ تم الإجابة على سؤالك",
+        description: "يمكنك الاطلاع على المصادر بالضغط على زر 'المصادر'",
       });
 
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Error in handleAskQuestion:', error);
       toast({
-        title: "خطأ في الإجابة",
-        description: error.message,
+        title: "❌ خطأ في الإجابة",
+        description: error.message || "يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
+      setAnswer("");
+      setSources([]);
     } finally {
       setLoading(false);
     }
@@ -182,6 +208,7 @@ export default function JordanianAssistant() {
     setGeneratedExam("");
 
     try {
+      console.log('Generating exam questions...');
       const { data, error } = await supabase.functions.invoke('generate-exam-questions', {
         body: {
           subject: examSubject,
@@ -192,20 +219,31 @@ export default function JordanianAssistant() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Exam generation error:', error);
+        throw new Error('فشل إنشاء الورقة الامتحانية: ' + error.message);
+      }
 
+      if (!data?.examPaper) {
+        throw new Error('لم يتم إنشاء الورقة الامتحانية');
+      }
+
+      console.log('Exam generated successfully');
       setGeneratedExam(data.examPaper);
 
       toast({
-        title: "تم إنشاء ورقة الامتحان",
+        title: "✅ تم إنشاء الورقة الامتحانية",
+        description: "يمكنك تحميلها أو طباعتها الآن",
       });
 
     } catch (error: any) {
+      console.error('Error in generateExamQuestions:', error);
       toast({
-        title: "خطأ في إنشاء الأسئلة",
-        description: error.message,
+        title: "❌ خطأ في إنشاء الورقة",
+        description: error.message || "يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
+      setGeneratedExam("");
     } finally {
       setGeneratingExam(false);
     }
@@ -339,29 +377,65 @@ export default function JordanianAssistant() {
 
               {/* Answer Display */}
               {answer && (
-                <Card>
+                <Card className="mt-6 border-primary/20">
                   <CardHeader>
-                    <CardTitle>الإجابة</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="prose prose-sm max-w-none">
-                      <div className="whitespace-pre-wrap">{answer}</div>
-                    </div>
-
-                    {sources.length > 0 && (
-                      <div className="border-t pt-4">
-                        <h3 className="font-semibold mb-2">📚 المصادر:</h3>
-                        <div className="space-y-2">
-                          {sources.map((source, index) => (
-                            <Card key={index} className="p-3">
-                              <p className="text-sm">
-                                • {source.bookName} - {source.subject}
-                              </p>
-                            </Card>
-                          ))}
-                        </div>
+                    <CardTitle className="flex items-center gap-2 justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        الإجابة
                       </div>
-                    )}
+                      {sources.length > 0 && (
+                        <Dialog open={showSourcesDialog} onOpenChange={setShowSourcesDialog}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-2">
+                              <BookOpen className="h-4 w-4" />
+                              المصادر ({sources.length})
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle className="flex items-center gap-2">
+                                <BookOpen className="h-5 w-5 text-primary" />
+                                مصادر الإجابة
+                              </DialogTitle>
+                              <DialogDescription>
+                                الكتب المدرسية التي تم الاستعانة بها في الإجابة
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 mt-4">
+                              {sources.map((source, idx) => (
+                                <Card key={idx} className="border-primary/20">
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-start gap-3">
+                                      <div className="bg-primary/10 p-2 rounded-lg">
+                                        <BookOpen className="h-6 w-6 text-primary" />
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <h4 className="font-semibold text-lg">{source.bookName}</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                          <Badge variant="secondary">{source.subject}</Badge>
+                                          <Badge variant="outline">{source.grade || grade}</Badge>
+                                        </div>
+                                        {source.pageNumber && (
+                                          <p className="text-sm text-muted-foreground">
+                                            الصفحة: {source.pageNumber}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap bg-muted/30 p-4 rounded-lg">
+                      {answer}
+                    </div>
                   </CardContent>
                 </Card>
               )}
