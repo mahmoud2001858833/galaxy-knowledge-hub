@@ -61,12 +61,6 @@ verify_jwt = false
 [functions.arabic-prosody-ocr]
 verify_jwt = false
 
-[functions.arabic-prosody-analyzer]
-verify_jwt = false
-
-[functions.arabic-prosody-ocr]
-verify_jwt = false
-
 [functions.morphology-derivatives]
 verify_jwt = false
 
@@ -92,4 +86,22 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.rate-your-art]
+verify_jwt = false
+
+[functions.upload-textbook-to-gemini]
+verify_jwt = false
+
+[functions.jordanian-assistant-search]
+verify_jwt = false
+
+[functions.jordanian-assistant-answer]
+verify_jwt = false
+
+[functions.generate-exam-questions]
+verify_jwt = false
+
+[functions.jordanian-assistant-analyze-image]
+verify_jwt = false
+
+[functions.generate-educational-image]
 verify_jwt = false

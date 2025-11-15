@@ -904,6 +904,54 @@ export type Database = {
           },
         ]
       }
+      jordanian_textbooks: {
+        Row: {
+          book_name: string
+          created_at: string | null
+          created_by: string | null
+          file_size_mb: number | null
+          file_url: string
+          gemini_file_name: string | null
+          gemini_file_uri: string | null
+          grade: string
+          id: string
+          is_active: boolean | null
+          page_count: number | null
+          semester: string
+          subject: string
+        }
+        Insert: {
+          book_name: string
+          created_at?: string | null
+          created_by?: string | null
+          file_size_mb?: number | null
+          file_url: string
+          gemini_file_name?: string | null
+          gemini_file_uri?: string | null
+          grade: string
+          id?: string
+          is_active?: boolean | null
+          page_count?: number | null
+          semester: string
+          subject: string
+        }
+        Update: {
+          book_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          file_size_mb?: number | null
+          file_url?: string
+          gemini_file_name?: string | null
+          gemini_file_uri?: string | null
+          grade?: string
+          id?: string
+          is_active?: boolean | null
+          page_count?: number | null
+          semester?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -1236,6 +1284,42 @@ export type Database = {
           pdf_url?: string
           subject?: string
           title?: string
+        }
+        Relationships: []
+      }
+      student_assistant_usage: {
+        Row: {
+          answer: string | null
+          created_at: string | null
+          grade: string
+          id: string
+          question: string
+          sources: Json | null
+          student_name: string
+          subject_detected: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answer?: string | null
+          created_at?: string | null
+          grade: string
+          id?: string
+          question: string
+          sources?: Json | null
+          student_name: string
+          subject_detected?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string | null
+          created_at?: string | null
+          grade?: string
+          id?: string
+          question?: string
+          sources?: Json | null
+          student_name?: string
+          subject_detected?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

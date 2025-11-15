@@ -83,6 +83,9 @@ import ControlCenter from './pages/ControlCenter';
 import ManagementSection from './pages/ManagementSection';
 import EducationSection from './pages/EducationSection';
 import AIAssistantSection from './pages/AIAssistantSection';
+import JordanianAssistant from './pages/JordanianAssistant';
+import UploadTextbooks from './pages/UploadTextbooks';
+import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
 const RootLayout = () => {
@@ -446,6 +449,14 @@ const router = createBrowserRouter([
       {
         path: 'ai-assistant-section',
         element: <PublicRoute><AIAssistantSection /></PublicRoute>,
+      },
+      {
+        path: 'jordanian-assistant',
+        element: <AuthGuard><JordanianAssistant /></AuthGuard>,
+      },
+      {
+        path: 'upload-textbooks',
+        element: <AuthGuard><UploadTextbooks /></AuthGuard>,
       },
       {
         path: '*',
