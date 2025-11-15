@@ -39,7 +39,8 @@ type Section =
   | "communication-notes"
   | "journals"
   | "visual-library"
-  | "tawjihi";
+  | "tawjihi"
+  | "school-magazine";
 
 export default function ControlCenter() {
   const navigate = useNavigate();
@@ -88,6 +89,12 @@ export default function ControlCenter() {
   };
 
   const navigateToSection = (section: Section, label: string) => {
+    // Navigate to external page for school magazine
+    if (section === "school-magazine") {
+      navigate("/school-magazine");
+      return;
+    }
+    
     setCurrentSection(section);
     const newBreadcrumb = [...breadcrumb];
     const existingIndex = newBreadcrumb.findIndex(b => b.section === section);
@@ -126,7 +133,8 @@ export default function ControlCenter() {
     { icon: MessageSquare, label: "جسر التواصل", section: "communication" as Section },
     { icon: BookOpen, label: "المجلات العلمية", section: "journals" as Section },
     { icon: Image, label: "المكتبة البصرية", section: "visual-library" as Section },
-    { icon: BookOpen, label: "ملفات التوجيهي", section: "tawjihi" as Section }
+    { icon: BookOpen, label: "ملفات التوجيهي", section: "tawjihi" as Section },
+    { icon: BookOpen, label: "مجلة مدرسة عنبه", section: "school-magazine" as Section }
   ];
 
   const yourHomeItems = [

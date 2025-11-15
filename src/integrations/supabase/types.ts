@@ -1251,6 +1251,77 @@ export type Database = {
         }
         Relationships: []
       }
+      school_news: {
+        Row: {
+          author_id: string
+          author_name: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          likes_count: number | null
+          title: string
+          updated_at: string
+          video_url: string | null
+          views_count: number | null
+        }
+        Insert: {
+          author_id: string
+          author_name: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number | null
+          title: string
+          updated_at?: string
+          video_url?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          author_id?: string
+          author_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number | null
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+          views_count?: number | null
+        }
+        Relationships: []
+      }
+      school_news_likes: {
+        Row: {
+          created_at: string
+          id: string
+          news_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          news_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          news_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_news_likes_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "school_news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scientific_journals: {
         Row: {
           author: string | null
@@ -1724,6 +1795,10 @@ export type Database = {
     Functions: {
       adjust_art_project_likes: {
         Args: { increment: number; project_id: string }
+        Returns: undefined
+      }
+      adjust_school_news_likes: {
+        Args: { increment_param: number; news_id_param: string }
         Returns: undefined
       }
       adjust_user_score: {
