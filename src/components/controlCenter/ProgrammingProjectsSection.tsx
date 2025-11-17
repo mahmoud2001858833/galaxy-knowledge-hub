@@ -34,6 +34,19 @@ export function ProgrammingProjectsSection() {
 
   const handleDelete = async (id: string) => {
     try {
+      // Delete associated comments first
+      await supabase
+        .from("btec_project_comments")
+        .delete()
+        .eq("project_id", id);
+
+      // Delete associated likes
+      await supabase
+        .from("btec_project_likes")
+        .delete()
+        .eq("project_id", id);
+
+      // Delete the project
       const { error } = await supabase
         .from("btec_student_projects")
         .delete()
