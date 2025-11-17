@@ -1,10 +1,7 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-
 const Footer = () => {
-  return (
-    <footer className="bg-blue-950/30 backdrop-filter backdrop-blur-lg border-t border-blue-800/20 mt-auto">
+  return <footer className="bg-blue-950/30 backdrop-filter backdrop-blur-lg border-t border-blue-800/20 mt-auto">
       <div className="container mx-auto py-6 px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex flex-col items-center md:items-end mb-4 md:mb-0">
@@ -21,9 +18,7 @@ const Footer = () => {
               تواصل معنا
             </Link>
             <span className="text-white/30">•</span>
-            <Link to="/chat-rooms" className="text-blue-400 hover:text-blue-300 text-sm">
-              المحادثات
-            </Link>
+            
             <span className="text-white/30">•</span>
             <Link to="/" className="text-blue-400 hover:text-blue-300 text-sm">
               الرئيسية
@@ -32,13 +27,9 @@ const Footer = () => {
         </div>
         
         <div className="mt-6 pt-4 border-t border-blue-900/50 text-center">
-          <p className="text-white/40 text-xs">
-            © {new Date().getFullYear()} فلك المعرفة. جميع الحقوق محفوظة.
-          </p>
+          
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
