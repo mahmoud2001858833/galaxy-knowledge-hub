@@ -74,6 +74,9 @@ const StarField: React.FC<StarFieldProps> = ({
     // Lower FPS for better performance on lower-end devices
     const fps = window.innerWidth < 768 ? 20 : 30;
     const fpsInterval = 1000 / fps;
+    // إيقاف الحركة على الأجهزة المحمولة
+    const isMobile = window.innerWidth < 768;
+    const actualSpeed = isMobile ? 0 : speed;
     
     const animate = (currentTime: number) => {
       animationFrameId = requestAnimationFrame(animate);
@@ -91,8 +94,8 @@ const StarField: React.FC<StarFieldProps> = ({
           star.brightness * 
           (0.5 + 0.5 * Math.sin(Date.now() * 0.0005 * star.twinkleSpeed + star.twinklePhase));
         
-        // Update position - slower for less CPU usage
-        star.y += speed / (star.radius * 0.7);
+        // Update position - slower for less CPU usage (إيقاف الحركة على الهاتف)
+        star.y += actualSpeed / (star.radius * 0.7);
         
         // Reset position if star goes off screen
         if (star.y > canvas.height) {

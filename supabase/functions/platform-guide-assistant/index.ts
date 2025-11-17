@@ -45,8 +45,12 @@ const platformRoutes: Record<string, string> = {
 
   // الإدارة
   "جسر التواصل": "/communication-bridge",
-  "مشرفين": "/admin-teachers",
-  "معلمين": "/admin-teachers",
+  "مشرفين": "/administrators-teachers",
+  "معلمين": "/administrators-teachers",
+  "المشرفون والمعلمون": "/administrators-teachers",
+  "المشرفين والمعلمين": "/administrators-teachers",
+  "مشرفون": "/administrators-teachers",
+  "معلمون": "/administrators-teachers",
   "أولياء أمور": "/communication-bridge",
 
   // الذكاء الاصطناعي
