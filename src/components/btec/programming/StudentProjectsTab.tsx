@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Heart, ExternalLink, Search, Plus, Image as ImageIcon, X } from 'lucide-react';
+import { Upload, Heart, ExternalLink, Search, Plus, Image as ImageIcon, X, MessageCircle, Link as LinkIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import BTECProjectComments from '../BTECProjectComments';
 
 interface Project {
   id: string;
@@ -43,15 +44,39 @@ const StudentProjectsTab = () => {
   
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchProjects();
     checkUser();
+    fetchUserLikes();
   }, []);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUser(user);
+  };
+
+  const fetchUserLikes = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('btec_project_likes')
+        .select('project_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      const likedProjects = new Set(data?.map(like => like.project_id) || []);
+      setUserLikes(likedProjects);
+    } catch (error: any) {
+      console.error('Error fetching user likes:', error);
+    }
   };
 
   const fetchProjects = async () => {
@@ -105,6 +130,17 @@ const StudentProjectsTab = () => {
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddImageUrl = () => {
+    if (!imageUrl.trim()) {
+      toast({ title: "تنبيه", description: "الرجاء إدخال رابط الصورة", variant: "destructive" });
+      return;
+    }
+    
+    setUploadedImages(prev => [...prev, imageUrl]);
+    setImageUrl('');
+    toast({ title: "✅ نجح", description: "تم إضافة رابط الصورة" });
   };
 
   const handleSubmit = async () => {
@@ -162,39 +198,56 @@ const StudentProjectsTab = () => {
     }
 
     try {
-      // Check if already liked
-      const { data: existingLike } = await supabase
-        .from('btec_project_likes')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('user_id', currentUser.id)
-        .single();
+      const isLiked = userLikes.has(projectId);
 
-      if (existingLike) {
-        toast({ title: "تنبيه", description: "لقد أعجبت بهذا المشروع من قبل" });
-        return;
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('btec_project_likes')
+          .delete()
+          .eq('project_id', projectId)
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+          await supabase
+            .from('btec_student_projects')
+            .update({ likes_count: Math.max(0, project.likes_count - 1) })
+            .eq('id', projectId);
+        }
+
+        setUserLikes(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(projectId);
+          return newSet;
+        });
+
+        toast({ title: "تم إلغاء الإعجاب" });
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('btec_project_likes')
+          .insert([{ project_id: projectId, user_id: currentUser.id }]);
+
+        if (error) throw error;
+
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+          await supabase
+            .from('btec_student_projects')
+            .update({ likes_count: project.likes_count + 1 })
+            .eq('id', projectId);
+        }
+
+        setUserLikes(prev => new Set(prev).add(projectId));
+        toast({ title: "✅ شكراً", description: "تم تسجيل إعجابك" });
       }
 
-      // Add like
-      const { error } = await supabase
-        .from('btec_project_likes')
-        .insert([{ project_id: projectId, user_id: currentUser.id }]);
-
-      if (error) throw error;
-
-      // Update likes count
-      const project = projects.find(p => p.id === projectId);
-      if (project) {
-        await supabase
-          .from('btec_student_projects')
-          .update({ likes_count: project.likes_count + 1 })
-          .eq('id', projectId);
-      }
-
-      toast({ title: "✅ شكراً", description: "تم تسجيل إعجابك" });
       fetchProjects();
     } catch (error: any) {
-      console.error('Error liking project:', error);
+      console.error('Error toggling like:', error);
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     }
   };
@@ -287,6 +340,24 @@ const StudentProjectsTab = () => {
                   />
                   {uploading && <span className="text-sm text-gray-400">جاري الرفع...</span>}
                 </div>
+                
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="أو أضف رابط الصورة..."
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="bg-white/5 border-white/10"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddImageUrl}
+                    className="gap-2 whitespace-nowrap"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    إضافة
+                  </Button>
+                </div>
                 {uploadedImages.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {uploadedImages.map((url, idx) => (
@@ -348,14 +419,26 @@ const StudentProjectsTab = () => {
                 </div>
                 
                 {project.project_images && project.project_images.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto">
-                    {project.project_images.map((img, i) => (
-                      <img 
+                  <div className="grid grid-cols-2 gap-2">
+                    {project.project_images.slice(0, 4).map((img, i) => (
+                      <div 
                         key={i} 
-                        src={img} 
-                        alt={`صورة ${i + 1}`}
-                        className="h-20 w-20 object-cover rounded border border-white/20"
-                      />
+                        className="relative aspect-square rounded-lg overflow-hidden border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setSelectedImage(img)}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`صورة ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {i === 3 && project.project_images.length > 4 && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-white text-2xl font-bold">
+                              +{project.project_images.length - 4}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -365,16 +448,31 @@ const StudentProjectsTab = () => {
                     <Badge key={i} variant="outline" className="text-xs">{lang}</Badge>
                   ))}
                 </div>
-                <div className="flex items-center justify-between pt-2">
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    className="gap-2 hover:bg-red-500/20"
-                    onClick={() => handleLike(project.id)}
-                  >
-                    <Heart className="w-6 h-6 text-red-400" />
-                    <span className="text-lg font-bold">{project.likes_count || 0}</span>
-                  </Button>
+                <div className="flex items-center justify-between pt-2 gap-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className={`gap-2 ${userLikes.has(project.id) ? 'bg-red-500/20 hover:bg-red-500/30' : 'hover:bg-red-500/20'}`}
+                      onClick={() => handleLike(project.id)}
+                    >
+                      <Heart className={`w-6 h-6 ${userLikes.has(project.id) ? 'fill-red-400 text-red-400' : 'text-red-400'}`} />
+                      <span className="text-lg font-bold">{project.likes_count || 0}</span>
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="gap-2 hover:bg-green-500/20"
+                      onClick={() => {
+                        setSelectedProject(project.id);
+                        setCommentsOpen(true);
+                      }}
+                    >
+                      <MessageCircle className="w-6 h-6 text-green-400" />
+                    </Button>
+                  </div>
+                  
                   {project.project_link && (
                     <Button
                       variant="outline"
@@ -384,7 +482,7 @@ const StudentProjectsTab = () => {
                     >
                       <a href={project.project_link} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="w-4 h-4" />
-                        رابط المشروع
+                        رابط
                       </a>
                     </Button>
                   )}
@@ -401,6 +499,27 @@ const StudentProjectsTab = () => {
           <p className="text-lg">لا توجد مشاريع حالياً. كن أول من يضيف مشروعاً!</p>
         </div>
       )}
+
+      {/* Comments Dialog */}
+      <Dialog open={commentsOpen} onOpenChange={setCommentsOpen}>
+        <DialogContent className="max-w-2xl bg-gradient-to-br from-slate-900 to-green-900">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">التعليقات</DialogTitle>
+          </DialogHeader>
+          {selectedProject && <BTECProjectComments projectId={selectedProject} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl bg-black/95 border-none">
+          <img 
+            src={selectedImage || ''} 
+            alt="معاينة الصورة" 
+            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

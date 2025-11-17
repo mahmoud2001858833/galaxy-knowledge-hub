@@ -342,6 +342,41 @@ export type Database = {
         }
         Relationships: []
       }
+      btec_project_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          project_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          project_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "btec_project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "btec_student_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       btec_project_likes: {
         Row: {
           created_at: string | null
