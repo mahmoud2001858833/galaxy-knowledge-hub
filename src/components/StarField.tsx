@@ -43,17 +43,13 @@ const StarField: React.FC<StarFieldProps> = ({
     const initStars = () => {
       stars = [];
       
-      // Adjust star count based on screen size and device performance
-      const devicePixelRatio = window.devicePixelRatio || 1;
-      const isLowPerformanceDevice = devicePixelRatio < 1.5;
-      const finalStarCount = isLowPerformanceDevice ? 
-        Math.min(starCount, window.innerWidth < 768 ? 100 : 150) : 
-        window.innerWidth < 768 ? Math.min(starCount, 150) : starCount;
+      // تقليل عدد النجوم بشكل كبير على الموبايل
+      const isMobile = window.innerWidth < 768;
+      const finalStarCount = isMobile ? 50 : starCount; // 50 نجمة فقط على الموبايل
       
       for (let i = 0; i < finalStarCount; i++) {
         const radius = Math.random() * (maxSize - minSize) + minSize;
         const brightness = 0.2 + Math.random() * 0.8;
-        // Reduced animation complexity for better performance
         const twinkleSpeed = 0.3 + Math.random() * 1.5;
         const twinklePhase = Math.random() * Math.PI * 2;
         
@@ -72,10 +68,9 @@ const StarField: React.FC<StarFieldProps> = ({
     let animationFrameId: number;
     let lastFrameTime = 0;
     // Lower FPS for better performance on lower-end devices
-    const fps = window.innerWidth < 768 ? 20 : 30;
-    const fpsInterval = 1000 / fps;
-    // إيقاف الحركة على الأجهزة المحمولة
     const isMobile = window.innerWidth < 768;
+    const fps = isMobile ? 15 : 30; // FPS أقل على الموبايل
+    const fpsInterval = 1000 / fps;
     const actualSpeed = isMobile ? 0 : speed;
     
     const animate = (currentTime: number) => {

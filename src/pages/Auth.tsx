@@ -53,14 +53,46 @@ const Auth = () => {
         password,
       });
       
-      if (error) throw error;
-      // عدم إظهار رسالة تسجيل الدخول للمستخدمين الجدد المضافين من admin
+      if (error) {
+        // إذا كان الخطأ "Invalid login credentials"، نحاول إنشاء حساب جديد تلقائياً
+        if (error.message.includes('Invalid login credentials')) {
+          // محاولة إنشاء حساب جديد للإيميلات المضافة من admin
+          const { data: createData, error: createError } = await supabase.functions.invoke('auto-create-user', {
+            body: { email, password }
+          });
+          
+          if (createError || createData?.error) {
+            if (createData?.error === 'user_exists') {
+              throw new Error('خطأ في بيانات تسجيل الدخول. يرجى التحقق من كلمة المرور.');
+            } else if (createData?.error === 'Email not authorized') {
+              throw new Error('هذا الإيميل غير مصرح له بالدخول.');
+            }
+            throw createError || new Error(createData?.error);
+          }
+          
+          // إذا تم إنشاء الحساب بنجاح، نسجل الدخول
+          const { error: loginError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (loginError) throw loginError;
+          
+          toast({
+            title: "تم إنشاء حسابك بنجاح",
+            description: "مرحباً بك في المنصة",
+          });
+        } else {
+          throw error;
+        }
+      }
+      
       navigate('/');
     } catch (error: any) {
-      setAuthError(error.error_description || error.message || 'خطأ في تسجيل الدخول');
+      setAuthError(error.message || 'خطأ في تسجيل الدخول');
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: error.error_description || error.message || 'يرجى التحقق من بيانات الدخول والمحاولة مرة أخرى',
+        description: error.message || 'يرجى التحقق من بيانات الدخول والمحاولة مرة أخرى',
         variant: "destructive",
       });
     } finally {
