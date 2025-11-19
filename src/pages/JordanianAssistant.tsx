@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PasswordProtection from "@/components/PasswordProtection";
 import UploadedSourcesTab from "@/components/UploadedSourcesTab";
+import ChatMessage from "@/components/ChatMessage";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
@@ -42,6 +43,9 @@ export default function JordanianAssistant() {
   const [examQuestionCount, setExamQuestionCount] = useState("10");
   const [generatedExam, setGeneratedExam] = useState("");
   const [generatingExam, setGeneratingExam] = useState(false);
+  const [copiedExam, setCopiedExam] = useState(false);
+  const [showSourceDialog, setShowSourceDialog] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<any>(null);
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -76,6 +80,30 @@ export default function JordanianAssistant() {
     sessionStorage.setItem('jordanian_assistant_auth', 'true');
     setIsAuthenticated(true);
     checkOnboarding();
+  };
+
+  const saveStudentInfo = () => {
+    if (!studentName.trim() || !grade) {
+      toast({
+        title: "⚠️ معلومات ناقصة",
+        description: "يرجى إدخال الاسم والصف للمتابعة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    localStorage.setItem('jordanian_assistant_student_name', studentName);
+    localStorage.setItem('jordanian_assistant_student_grade', grade);
+    
+    toast({
+      title: "✅ تم الحفظ",
+      description: "تم حفظ معلوماتك بنجاح",
+    });
+  };
+
+  const handleViewSource = (source: any) => {
+    setSelectedSource(source);
+    setShowSourceDialog(true);
   };
 
   const handleOnboardingComplete = () => {
