@@ -42,16 +42,17 @@ serve(async (req) => {
     }
 
     if (!textbooks || textbooks.length === 0) {
+      console.log('No textbooks found for grade:', grade);
       return new Response(
         JSON.stringify({
-          answer: 'عذراً، لم يتم تزويد النظام بهذا المصدر بعد. يرجى الانتظار والمحاولة في وقت لاحق.',
+          answer: 'عذراً، لم يتم رفع كتب دراسية لهذا الصف بعد. يرجى الانتظار حتى يتم رفع الكتب.',
           sources: []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${textbooks.length} uploaded textbooks for grade ${grade}`);
+    console.log(`Found ${textbooks.length} uploaded textbooks for grade ${grade}:`, textbooks.map(b => b.book_name));
 
     // Prepare file parts for Gemini API
     const fileParts = textbooks.map(book => ({
@@ -79,6 +80,9 @@ ${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
 
     // Call Gemini API with files
     console.log('Step 2: Calling Gemini API with uploaded files...');
+    console.log('File parts:', JSON.stringify(fileParts, null, 2));
+    console.log('Prompt:', prompt);
+    
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -105,8 +109,8 @@ ${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error('فشل الحصول على إجابة من الكتب المرفوعة');
+      console.error('Gemini API error response:', geminiResponse.status, errorText);
+      throw new Error(`فشل الحصول على إجابة: ${geminiResponse.status}`);
     }
 
     const geminiData = await geminiResponse.json();

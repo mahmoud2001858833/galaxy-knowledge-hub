@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,6 +27,7 @@ serve(async (req) => {
       .eq('grade', grade)
       .eq('subject', subject)
       .eq('is_active', true)
+      .not('gemini_file_uri', 'is', null)
       .limit(1);
 
     if (booksError) {
@@ -37,91 +36,146 @@ serve(async (req) => {
     }
 
     if (!books || books.length === 0) {
-      throw new Error('لم يتم العثور على كتاب مدرسي لهذه المادة والصف');
+      throw new Error('لم يتم رفع كتاب دراسي لهذه المادة والصف بعد. يرجى رفع الكتاب أولاً.');
     }
     
-    console.log('Found textbook:', books[0].book_name);
+    console.log('Found textbook:', books[0].book_name, 'with Gemini URI:', books[0].gemini_file_uri);
+    
+    // Use Gemini API directly with the uploaded file
+    const GEMINI_API_KEY = Deno.env.get('JORDANIAN_AI_QUESTION_GEN_KEY_1')!;
+    
+    const filePart = {
+      fileData: {
+        mimeType: 'application/pdf',
+        fileUri: books[0].gemini_file_uri
+      }
+    };
 
-    // AI #1: Generate questions using Lovable AI
-    console.log('Step 1: Generating questions...');
+    // AI #1: Generate questions using Gemini with the uploaded file
+    console.log('Step 1: Generating questions with Gemini...');
+    
+    const questionPrompt = `استخدم الكتاب المرفق لإنشاء ${questionCount} سؤالاً امتحانياً.
+
+المواصفات:
+- نوع الأسئلة: ${questionTypes}
+- المادة: ${subject}
+- الصف: ${grade}
+- نطاق المحتوى: ${contentRange}
+
+قيود صارمة:
+- اقرأ الكتاب المرفق جيداً
+- اعتمد فقط على محتوى الكتاب المرفق - لا تستخدم أي معرفة خارجية
+- اذكر رقم الصفحة لكل سؤال بدقة بصيغة (ص: XX)
+- ابدأ مباشرة بكتابة الأسئلة دون مقدمات
+- تنوّع بالمستوى (سهل، متوسط، صعب)
+- غطِّ فقط النطاق المطلوب من المحتوى
+
+صيغة الإخراج:
+السؤال 1: [نص السؤال] (ص: XX)
+السؤال 2: [نص السؤال] (ص: XX)
+...
+
+ثم اكتب الإجابات النموذجية:
+الإجابة 1: [نص مختصر]
+الإجابة 2: [نص مختصر]
+...`;
+
     const generateResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{
-            role: 'system',
-            content: 'أنت خبير في إنشاء الأسئلة الامتحانية للمنهاج الأردني وتلتزم بالاعتماد على الكتب المدرسية الرسمية فقط.'
-          }, {
-            role: 'user',
-            content: `أنشئ ${questionCount} سؤالاً من نوع: ${questionTypes}\nالمادة: ${subject}\nالصف: ${grade}\nنطاق المحتوى (الوحدات/الدروس): ${contentRange}\n\nقيود صارمة:\n- اعتمد فقط على كتاب: ${books[0].book_name} الخاص بهذه المادة والصف\n- لا تستخدم أي معرفة خارج الكتاب\n- اذكر رقم الصفحة لكل سؤال إن أمكن بصيغة (ص: 12)\n- ابدأ مباشرة بكتابة الأسئلة دون أي مقدمات أو شرح إضافي\n- تنوّع بالمستوى وغطِّ النطاق المطلوب فقط\n\nأخرج الناتج كسرد منسق للأسئلة متبوعاً بإجابات نموذجية مختصرة لكل سؤال`
+          contents: [{
+            parts: [
+              filePart,
+              { text: questionPrompt }
+            ]
           }],
-          temperature: 0.4,
-          max_tokens: 4000
+          generationConfig: {
+            temperature: 0.4,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
+          }
         })
       }
     );
 
     if (!generateResponse.ok) {
       const errorText = await generateResponse.text();
-      console.error('Question generation error:', errorText);
-      throw new Error('فشل توليد الأسئلة');
+      console.error('Question generation error:', generateResponse.status, errorText);
+      throw new Error(`فشل توليد الأسئلة: ${generateResponse.status}`);
     }
 
     const generateData = await generateResponse.json();
-    const questions = generateData.choices?.[0]?.message?.content || '';
+    const questions = generateData.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     if (!questions) {
+      console.error('No questions generated from Gemini');
       throw new Error('لم يتم توليد أسئلة');
     }
     
     console.log('Questions generated, length:', questions.length);
 
-    // AI #2: Format as exam paper using Lovable AI
+    // AI #2: Format as exam paper using Gemini
     console.log('Step 2: Formatting exam...');
+    
+    const formatPrompt = `نسّق الأسئلة التالية على شكل ورقة امتحانية احترافية ومنظمة:
+
+${questions}
+
+متطلبات التنسيق:
+- عنوان واضح للامتحان يتضمن المادة والصف
+- ترقيم منظم ومتسلسل
+- مساحات كافية بعد كل سؤال للإجابة
+- الحفاظ على أرقام الصفحات كما هي
+- إزالة أي نصوص إضافية غير ضرورية
+- تنسيق نظيف وسهل القراءة`;
+
     const formatResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{
-            role: 'user',
-            content: `حوّل هذه الأسئلة إلى قائمة منظمة فقط بدون أي ترويسة أو مقدمة أو تعليمات أو صفحات إجابات منفصلة.\n\n${questions}\n\nالتنسيق المطلوب: أرقام متسلسلة للأسئلة، وكل سؤال تحته مسافة قصيرة للإجابة. لا تضف أي عناصر غير مطلوبة.`
+          contents: [{
+            parts: [{ text: formatPrompt }]
           }],
-          temperature: 0.2,
-          max_tokens: 3000
+          generationConfig: {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 4096,
+          }
         })
       }
     );
 
     if (!formatResponse.ok) {
       const errorText = await formatResponse.text();
-      console.error('Format error:', errorText);
-      throw new Error('فشل تنسيق الورقة الامتحانية');
+      console.error('Formatting error:', formatResponse.status, errorText);
+      console.log('Using unformatted questions as fallback');
+      const examPaper = questions; // Fallback to unformatted
+      return new Response(
+        JSON.stringify({ examPaper, markdown: examPaper }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const formatData = await formatResponse.json();
-    const examPaper = formatData.choices?.[0]?.message?.content || '';
-    
-    if (!examPaper) {
-      throw new Error('لم يتم تنسيق الورقة الامتحانية');
-    }
+    const examPaper = formatData.candidates?.[0]?.content?.parts?.[0]?.text || questions;
 
-    console.log('Exam formatted successfully');
+    console.log('Exam generation completed successfully');
+
     return new Response(
       JSON.stringify({ 
-        examPaper: examPaper,
-        markdown: examPaper
+        examPaper,
+        markdown: examPaper 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -130,10 +184,12 @@ serve(async (req) => {
     console.error('Error in generate-exam-questions:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'حدث خطأ غير متوقع',
-        details: error.toString()
+        error: error.message || 'حدث خطأ أثناء إنشاء الامتحان'
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
     );
   }
 });
