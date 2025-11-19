@@ -6,18 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Prefer the dedicated answer keys, then fall back to generic Google key, then old search key
-const GEMINI_API_KEY =
-  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1') ||
-  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_2') ||
-  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_3') ||
-  Deno.env.get('GOOGLE_AI_API_KEY') ||
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1') ||
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_2') ||
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_3') ||
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_4') ||
-  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_5') ||
-  '';
+// استخدم مفاتيح الإجابة أولاً، ثم المفاتيح العامة، ثم مفاتيح البحث كـ fallback
+const POSSIBLE_KEYS = [
+  'JORDANIAN_AI_ANSWER_KEY_1',
+  'JORDANIAN_AI_ANSWER_KEY_2',
+  'JORDANIAN_AI_ANSWER_KEY_3',
+  'GOOGLE_AI_API_KEY',
+  'JORDANIAN_AI_SEARCH_KEY_1',
+  'JORDANIAN_AI_SEARCH_KEY_2',
+  'JORDANIAN_AI_SEARCH_KEY_3',
+  'JORDANIAN_AI_SEARCH_KEY_4',
+  'JORDANIAN_AI_SEARCH_KEY_5',
+] as const;
+
+// اختر مفتاحاً عشوائياً من المتوفرين لتوزيع الحمل بين أكثر من مشروع/مفتاح
+function pickGeminiApiKey(): string | null {
+  const available = POSSIBLE_KEYS
+    .map((name) => Deno.env.get(name) || '')
+    .filter((v) => !!v);
+
+  if (available.length === 0) return null;
+
+  const index = Math.floor(Math.random() * available.length);
+  return available[index];
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,12 +42,28 @@ serve(async (req) => {
     console.log('Processing question:', { question, studentName, grade });
 
     if (!question) {
-      throw new Error('السؤال مفقود');
+      return new Response(
+        JSON.stringify({
+          answer: null,
+          sources: [],
+          error: 'السؤال مفقود',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
+    const GEMINI_API_KEY = pickGeminiApiKey();
+
     if (!GEMINI_API_KEY) {
-      console.error('Gemini API key is not configured in Supabase secrets');
-      throw new Error('إعدادات الذكاء الاصطناعي غير مكتملة. يرجى التواصل مع المطوّر.');
+      console.error('No Gemini API keys configured in Supabase secrets');
+      return new Response(
+        JSON.stringify({
+          answer: null,
+          sources: [],
+          error: 'إعدادات الذكاء الاصطناعي غير مكتملة. يرجى التواصل مع المطوّر.',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     // Get Supabase client
@@ -54,7 +82,14 @@ serve(async (req) => {
 
     if (textbooksError) {
       console.error('Error fetching textbooks:', textbooksError);
-      throw new Error('فشل جلب الكتب المدرسية');
+      return new Response(
+        JSON.stringify({
+          answer: null,
+          sources: [],
+          error: 'فشل جلب الكتب المدرسية',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     if (!textbooks || textbooks.length === 0) {
@@ -132,18 +167,40 @@ ${textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n')}`;
       const errorText = await geminiResponse.text();
       console.error('Gemini API error response:', geminiResponse.status, errorText);
 
+      // Rate limit / quota exceeded → أعد رسالة مفهومة بدون 500
       if (geminiResponse.status === 429) {
-        throw new Error('تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.');
+        return new Response(
+          JSON.stringify({
+            answer: null,
+            sources: [],
+            error: 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
       }
 
-      throw new Error('فشل الحصول على إجابة من الذكاء الاصطناعي');
+      return new Response(
+        JSON.stringify({
+          answer: null,
+          sources: [],
+          error: 'فشل الحصول على إجابة من الذكاء الاصطناعي',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     const geminiData = await geminiResponse.json();
     const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (!answer) {
-      throw new Error('لم يتم توليد إجابة');
+      return new Response(
+        JSON.stringify({
+          answer: null,
+          sources: [],
+          error: 'لم يتم توليد إجابة',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     console.log('Answer generated from uploaded books, length:', answer.length);
@@ -184,7 +241,11 @@ ${textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n')}`;
   } catch (error: any) {
     console.error('Error in jordanian-assistant-answer:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        answer: null,
+        sources: [],
+        error: error?.message || 'حدث خطأ غير متوقع في الخادم',
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
