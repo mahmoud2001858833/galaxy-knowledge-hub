@@ -70,13 +70,12 @@ export default function UploadedSourcesTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>ملاحظة مهمة:</strong> حالياً، الذكاء الاصطناعي لا يمكنه قراءة محتوى الكتب المرفوعة بشكل مباشر. 
-            النظام يحتاج إلى تطوير إضافي لمعالجة النصوص باستخدام تقنية RAG (Retrieval Augmented Generation).
-            <br /><br />
-            الكتب المعروضة هنا موجودة في قاعدة البيانات ولكن لا يمكن البحث فيها بعد.
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+          <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-900 dark:text-green-200">
+            <strong>✓ النظام يعمل:</strong> الذكاء الاصطناعي الآن يقرأ محتوى الكتب المرفوعة مباشرة باستخدام Google Gemini.
+            <br />
+            جميع الإجابات تأتي فقط من الكتب المرفوعة للصف المحدد.
           </AlertDescription>
         </Alert>
 

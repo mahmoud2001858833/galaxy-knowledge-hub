@@ -108,47 +108,16 @@ export default function JordanianAssistant() {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      console.log('Searching in textbooks...');
-      const { data: searchData, error: searchError } = await supabase.functions.invoke(
-        'jordanian-assistant-search',
-        {
-          body: { 
-            question: currentQuestion,
-            grade: grade,
-          }
-        }
-      );
-
-      if (searchError) {
-        console.error('Search error:', searchError);
-        throw new Error('فشل البحث في الكتب');
-      }
-
-      const searchResults = searchData?.results || [];
-      
-      if (searchResults.length === 0) {
-        const noSourceMessage: Message = {
-          role: "assistant",
-          content: "عذراً، لم يتم تزويد النظام بهذا المصدر بعد. يرجى الانتظار والمحاولة في وقت لاحق. نعمل على إضافة المزيد من الكتب المدرسية.",
-        };
-        setMessages(prev => [...prev, noSourceMessage]);
-        setLoading(false);
-        return;
-      }
-
-      console.log('Generating answer...');
+      // Call the answer function directly - it will handle textbook retrieval
+      console.log('Generating answer from uploaded textbooks...');
       const { data: answerData, error: answerError } = await supabase.functions.invoke(
         'jordanian-assistant-answer',
         {
           body: {
             question: currentQuestion,
-            searchResults: searchResults,
             studentName: studentName,
             grade: grade,
-          },
-          headers: user ? { 'x-user-id': user.id } : {},
+          }
         }
       );
 
