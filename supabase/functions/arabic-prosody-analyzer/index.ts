@@ -60,8 +60,21 @@ ${text}
       }
     );
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
     const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'عذراً، لم أتمكن من معالجة الطلب.';
+    console.log('Gemini response:', JSON.stringify(data, null, 2));
+    
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!reply) {
+      console.error('No reply in response:', data);
+      throw new Error('لم يتم الحصول على رد من الذكاء الاصطناعي');
+    }
 
     return new Response(
       JSON.stringify({ reply }),
