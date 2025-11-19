@@ -14,19 +14,31 @@ const POSSIBLE_KEYS = [
   'JORDANIAN_AI_QUESTION_GEN_KEY_4',
   'JORDANIAN_AI_QUESTION_GEN_KEY_5',
   'JORDANIAN_AI_QUESTION_GEN_KEY_6',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_7',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_8',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_9',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_10',
 ];
 
-function pickGeminiApiKey(): string {
-  const availableKeys = POSSIBLE_KEYS
-    .map(keyName => Deno.env.get(keyName))
-    .filter(key => key !== undefined && key !== null && key !== '');
+function pickGeminiApiKey(): { key: string; keyName: string } {
+  const availableKeysData = POSSIBLE_KEYS
+    .map(keyName => ({ keyName, key: Deno.env.get(keyName) }))
+    .filter(item => item.key !== undefined && item.key !== null && item.key !== '');
   
-  if (availableKeys.length === 0) {
+  console.log(`Available API keys: ${availableKeysData.length} out of ${POSSIBLE_KEYS.length}`);
+  
+  if (availableKeysData.length === 0) {
     throw new Error('No Gemini API keys configured');
   }
   
-  const randomIndex = Math.floor(Math.random() * availableKeys.length);
-  return availableKeys[randomIndex] as string;
+  const randomIndex = Math.floor(Math.random() * availableKeysData.length);
+  const selected = availableKeysData[randomIndex];
+  
+  // Log last 6 characters for tracking (without exposing full key)
+  const keyPreview = selected.key!.slice(-6);
+  console.log(`Selected key: ${selected.keyName} (ending: ...${keyPreview})`);
+  
+  return { key: selected.key!, keyName: selected.keyName };
 }
 
 serve(async (req) => {
@@ -88,8 +100,8 @@ serve(async (req) => {
     console.log('Found textbook:', books[0].book_name, 'with Gemini URI:', books[0].gemini_file_uri);
     
     // Use Gemini API directly with the uploaded file - pick random key
-    const GEMINI_API_KEY = pickGeminiApiKey();
-    console.log('Using API key for question generation');
+    const { key: GEMINI_API_KEY, keyName: SELECTED_KEY_NAME } = pickGeminiApiKey();
+    console.log('Using API key for question generation:', SELECTED_KEY_NAME);
     
     const filePart = {
       fileData: {
@@ -153,10 +165,11 @@ serve(async (req) => {
 
     if (!generateResponse.ok) {
       const errorText = await generateResponse.text();
-      console.error('Question generation error:', generateResponse.status, errorText);
+      console.error(`Question generation error [${SELECTED_KEY_NAME}]:`, generateResponse.status, errorText);
       
       // Handle rate limit error specifically
       if (generateResponse.status === 429) {
+        console.error(`Rate limit hit on key: ${SELECTED_KEY_NAME}`);
         const examPaper = 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.';
         return new Response(
           JSON.stringify({
@@ -218,11 +231,12 @@ ${questions}
 
     if (!formatResponse.ok) {
       const errorText = await formatResponse.text();
-      console.error('Formatting error:', formatResponse.status, errorText);
+      console.error(`Formatting error [${SELECTED_KEY_NAME}]:`, formatResponse.status, errorText);
       
       // Handle rate limit error
       if (formatResponse.status === 429) {
-        console.log('Rate limit during formatting, returning unformatted questions');
+        console.error(`Rate limit hit during formatting on key: ${SELECTED_KEY_NAME}`);
+        console.log('Returning unformatted questions due to rate limit');
         const examPaper = questions; // Use unformatted questions
         return new Response(
           JSON.stringify({ examPaper, markdown: examPaper }),
