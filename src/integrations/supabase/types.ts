@@ -939,6 +939,39 @@ export type Database = {
           },
         ]
       }
+      jordanian_image_analysis: {
+        Row: {
+          analysis_result: string
+          created_at: string | null
+          grade: string
+          id: string
+          image_url: string
+          question: string | null
+          student_name: string
+          user_id: string | null
+        }
+        Insert: {
+          analysis_result: string
+          created_at?: string | null
+          grade: string
+          id?: string
+          image_url: string
+          question?: string | null
+          student_name: string
+          user_id?: string | null
+        }
+        Update: {
+          analysis_result?: string
+          created_at?: string | null
+          grade?: string
+          id?: string
+          image_url?: string
+          question?: string | null
+          student_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       jordanian_textbooks: {
         Row: {
           book_name: string

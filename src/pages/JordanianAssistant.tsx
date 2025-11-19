@@ -7,30 +7,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, FileQuestion, Sparkles, Download, Copy } from "lucide-react";
+import { Loader2, Send, FileQuestion, Sparkles, Download, Copy, ImagePlus, X, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PasswordProtection from "@/components/PasswordProtection";
-import ChatMessage from "@/components/ChatMessage";
 import UploadedSourcesTab from "@/components/UploadedSourcesTab";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   sources?: any[];
+  imageUrl?: string;
 }
 
 export default function JordanianAssistant() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [grade, setGrade] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<any>(null);
-  const [showSourceDialog, setShowSourceDialog] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   // Exam generation
   const [examSubject, setExamSubject] = useState("");
@@ -40,60 +42,95 @@ export default function JordanianAssistant() {
   const [examQuestionCount, setExamQuestionCount] = useState("10");
   const [generatedExam, setGeneratedExam] = useState("");
   const [generatingExam, setGeneratingExam] = useState(false);
-  const [copiedExam, setCopiedExam] = useState(false);
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const auth = sessionStorage.getItem('jordanian_assistant_auth');
     if (auth === 'true') {
       setIsAuthenticated(true);
+      checkOnboarding();
     }
-
-    const savedName = localStorage.getItem('jordanian_assistant_student_name');
-    const savedGrade = localStorage.getItem('jordanian_assistant_student_grade');
-    if (savedName) setStudentName(savedName);
-    if (savedGrade) setGrade(savedGrade);
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const checkOnboarding = () => {
+    const savedName = localStorage.getItem('jordanian_assistant_student_name');
+    const savedGrade = localStorage.getItem('jordanian_assistant_student_grade');
+    
+    if (savedName && savedGrade) {
+      setStudentName(savedName);
+      setGrade(savedGrade);
+      setShowOnboarding(false);
+    } else {
+      setShowOnboarding(true);
+    }
+  };
+
   const handleAuthSuccess = () => {
     sessionStorage.setItem('jordanian_assistant_auth', 'true');
     setIsAuthenticated(true);
+    checkOnboarding();
   };
 
-  const saveStudentInfo = () => {
-    if (!studentName || !grade) {
+  const handleOnboardingComplete = () => {
+    if (!studentName.trim() || !grade) {
       toast({
-        title: "يرجى إدخال الاسم والصف",
+        title: "⚠️ معلومات ناقصة",
+        description: "يرجى إدخال الاسم والصف للمتابعة",
         variant: "destructive",
       });
       return;
     }
+
     localStorage.setItem('jordanian_assistant_student_name', studentName);
     localStorage.setItem('jordanian_assistant_student_grade', grade);
+    setShowOnboarding(false);
+    
     toast({
-      title: "✅ تم حفظ معلوماتك",
-      description: "يمكنك الآن بدء طرح الأسئلة",
+      title: "✅ مرحباً بك!",
+      description: `أهلاً ${studentName}، يمكنك الآن بدء طرح الأسئلة`,
     });
   };
 
-  const handleAskQuestion = async () => {
-    if (!studentName || !grade) {
-      toast({
-        title: "يرجى إدخال معلوماتك أولاً",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "⚠️ حجم الصورة كبير",
+          description: "يرجى اختيار صورة أصغر من 5 ميجابايت",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (!currentQuestion.trim()) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleAskQuestion = async () => {
+    if (!currentQuestion.trim() && !selectedImage) {
       toast({
-        title: "يرجى كتابة سؤال",
+        title: "⚠️ يرجى كتابة سؤال أو إرفاق صورة",
         variant: "destructive",
       });
       return;
@@ -101,7 +138,8 @@ export default function JordanianAssistant() {
 
     const userMessage: Message = {
       role: "user",
-      content: currentQuestion,
+      content: currentQuestion || "ما هو المفهوم في هذه الصورة؟",
+      imageUrl: imagePreview || undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -150,11 +188,6 @@ export default function JordanianAssistant() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleViewSource = (source: any) => {
-    setSelectedSource(source);
-    setShowSourceDialog(true);
   };
 
   const generateExamQuestions = async () => {
