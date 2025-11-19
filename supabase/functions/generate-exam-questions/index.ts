@@ -6,18 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Pick random API key from available keys to distribute load
+// استخدام المفاتيح الجديدة
 const POSSIBLE_KEYS = [
-  'JORDANIAN_AI_QUESTION_GEN_KEY_1',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_2',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_3',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_4',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_5',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_6',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_7',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_8',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_9',
-  'JORDANIAN_AI_QUESTION_GEN_KEY_10',
+  'JORDANIAN_NEW_AI_KEY_1',
+  'JORDANIAN_NEW_AI_KEY_2',
+  'JORDANIAN_NEW_AI_KEY_3',
+  'JORDANIAN_NEW_AI_KEY_4',
+  'JORDANIAN_NEW_AI_KEY_5',
 ];
 
 function pickGeminiApiKey(): { key: string; keyName: string } {

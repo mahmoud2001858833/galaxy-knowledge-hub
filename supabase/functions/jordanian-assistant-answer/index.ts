@@ -6,17 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدم مفاتيح الإجابة أولاً، ثم المفاتيح العامة، ثم مفاتيح البحث كـ fallback
+// استخدام المفاتيح الجديدة من المشروع الجديد
 const POSSIBLE_KEYS = [
-  'JORDANIAN_AI_ANSWER_KEY_1',
-  'JORDANIAN_AI_ANSWER_KEY_2',
-  'JORDANIAN_AI_ANSWER_KEY_3',
-  'GOOGLE_AI_API_KEY',
-  'JORDANIAN_AI_SEARCH_KEY_1',
-  'JORDANIAN_AI_SEARCH_KEY_2',
-  'JORDANIAN_AI_SEARCH_KEY_3',
-  'JORDANIAN_AI_SEARCH_KEY_4',
-  'JORDANIAN_AI_SEARCH_KEY_5',
+  'JORDANIAN_NEW_AI_KEY_1',
+  'JORDANIAN_NEW_AI_KEY_2',
+  'JORDANIAN_NEW_AI_KEY_3',
+  'JORDANIAN_NEW_AI_KEY_4',
+  'JORDANIAN_NEW_AI_KEY_5',
 ] as const;
 
 // اختر مفتاحاً عشوائياً من المتوفرين لتوزيع الحمل بين أكثر من مشروع/مفتاح
