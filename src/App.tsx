@@ -67,6 +67,11 @@ import RecordedLessons from './components/educational/RecordedLessons';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
+import GrammarBasicsSection from "./pages/GrammarBasicsSection";
+import GrammarLibrarySection from "./pages/GrammarLibrarySection";
+import MorphologyBasicsSection from "./pages/MorphologyBasicsSection";
+import MorphologyRootsSection from "./pages/MorphologyRootsSection";
+import MorphologyDerivativesSection from "./pages/MorphologyDerivativesSection";
 import CommunicationBridge from './pages/CommunicationBridge';
 import JordanTawjihi from './pages/JordanTawjihi';
 import JordanTawjihiHistory from './pages/JordanTawjihiHistory';
@@ -257,6 +262,26 @@ const router = createBrowserRouter([
       {
         path: 'arabic-platform/criticism',
         element: <PublicRoute><ArabicCriticismSection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/grammar/basics',
+        element: <PublicRoute><GrammarBasicsSection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/grammar/library',
+        element: <PublicRoute><GrammarLibrarySection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/morphology/basics',
+        element: <PublicRoute><MorphologyBasicsSection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/morphology/roots',
+        element: <PublicRoute><MorphologyRootsSection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/morphology/derivatives',
+        element: <PublicRoute><MorphologyDerivativesSection /></PublicRoute>,
       },
       {
         path: 'english-language',

@@ -1,18 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Book, Pen, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import MorphologyDerivatives from '@/components/arabic/MorphologyDerivatives';
 
-const ArabicMorphologySection = () => {
+const MorphologyDerivativesSection = () => {
   const navigate = useNavigate();
-
-  const morphologyTools = [
-    { id: 'basics', title: 'أساسيات الصرف', icon: Sparkles, description: 'المساعد الذكي للصرف', path: '/arabic-platform/morphology/basics' },
-    { id: 'derivatives', title: 'المشتقات', icon: Book, description: 'اشتقاق الكلمات', path: '/arabic-platform/morphology/derivatives' },
-    { id: 'roots', title: 'الجذور والأوزان', icon: Pen, description: 'تحليل الجذور', path: '/arabic-platform/morphology/roots' },
-  ];
-
-  const floatingChars = ['ا', 'ل', 'ص', 'ر', 'ف'];
+  const floatingChars = ['م', 'ش', 'ت', 'ق', 'ا', 'ت'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-neutral-900 to-stone-900 text-right relative overflow-hidden" dir="rtl">
@@ -71,7 +65,7 @@ const ArabicMorphologySection = () => {
               animate={{ scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              علم الصرف
+              المشتقات
             </motion.h1>
             <motion.div 
               className="w-24 h-1.5 bg-gradient-to-r from-transparent via-teal-500 to-transparent mx-auto mb-6 rounded-full"
@@ -85,7 +79,7 @@ const ArabicMorphologySection = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              تعلم أوزان الكلمات والمشتقات
+              اشتقاق الكلمات وتحليل المشتقات
             </motion.p>
           </motion.div>
 
@@ -93,34 +87,25 @@ const ArabicMorphologySection = () => {
           <motion.button
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => navigate('/arabic-platform')}
+            onClick={() => navigate('/arabic-platform/morphology')}
             className="mb-8 px-8 py-4 elegant-card rounded-xl text-teal-300 hover:text-teal-200 transition-colors flex items-center gap-3 group"
           >
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             <span className="font-semibold">رجوع</span>
           </motion.button>
 
-          {/* الخيارات */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {morphologyTools.map((tool, idx) => (
-              <motion.div
-                key={tool.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + idx * 0.1 }}
-                onClick={() => navigate(tool.path)}
-                className="elegant-card p-8 rounded-xl cursor-pointer group hover:scale-105 transition-all duration-300"
-              >
-                <tool.icon className="w-12 h-12 text-teal-400 mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-2xl font-bold text-teal-300 mb-2">{tool.title}</h3>
-                <p className="text-teal-100/70">{tool.description}</p>
-              </motion.div>
-            ))}
-          </div>
+          {/* Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <MorphologyDerivatives />
+          </motion.div>
         </motion.div>
       </main>
     </div>
   );
 };
 
-export default ArabicMorphologySection;
+export default MorphologyDerivativesSection;
