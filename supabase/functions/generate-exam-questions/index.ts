@@ -20,12 +20,27 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Normalize subject coming from UI (Arabic) to stored subject values
+    const subjectMappings: Record<string, string> = {
+      'اللغه العربيه': 'Arabic',
+      'اللغة العربية': 'Arabic',
+      'اللغة الانجليزية': 'English',
+      'الانجليزيه': 'English',
+      'الرياضيات': 'Math',
+      'الفيزياء': 'Physics',
+      'الكيمياء': 'Chemistry',
+      'الأحياء': 'Biology',
+      'الاحياء': 'Biology',
+    };
+
+    const normalizedSubject = subjectMappings[subject] ?? subject;
+
     // Get relevant textbook
     const { data: books, error: booksError } = await supabase
       .from('jordanian_textbooks')
       .select('*')
       .eq('grade', grade)
-      .eq('subject', subject)
+      .eq('subject', normalizedSubject)
       .eq('is_active', true)
       .not('gemini_file_uri', 'is', null)
       .limit(1);
@@ -36,9 +51,17 @@ serve(async (req) => {
     }
 
     if (!books || books.length === 0) {
-      throw new Error('لم يتم رفع كتاب دراسي لهذه المادة والصف بعد. يرجى رفع الكتاب أولاً.');
+      console.log('No textbooks found for this subject/grade when generating exam:', { subject, normalizedSubject, grade });
+      const examPaper = 'لم يتوفر الكتاب';
+      return new Response(
+        JSON.stringify({
+          examPaper,
+          markdown: examPaper,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-    
+
     console.log('Found textbook:', books[0].book_name, 'with Gemini URI:', books[0].gemini_file_uri);
     
     // Use Gemini API directly with the uploaded file
