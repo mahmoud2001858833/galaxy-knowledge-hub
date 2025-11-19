@@ -6,7 +6,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GEMINI_API_KEY = Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1')!;
+// Prefer the dedicated answer keys, then fall back to generic Google key, then old search key
+const GEMINI_API_KEY =
+  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1') ||
+  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_2') ||
+  Deno.env.get('JORDANIAN_AI_ANSWER_KEY_3') ||
+  Deno.env.get('GOOGLE_AI_API_KEY') ||
+  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1') ||
+  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_2') ||
+  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_3') ||
+  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_4') ||
+  Deno.env.get('JORDANIAN_AI_SEARCH_KEY_5') ||
+  '';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,11 +26,16 @@ serve(async (req) => {
 
   try {
     const { question, studentName, grade } = await req.json();
-    
+
     console.log('Processing question:', { question, studentName, grade });
 
     if (!question) {
       throw new Error('السؤال مفقود');
+    }
+
+    if (!GEMINI_API_KEY) {
+      console.error('Gemini API key is not configured in Supabase secrets');
+      throw new Error('إعدادات الذكاء الاصطناعي غير مكتملة. يرجى التواصل مع المطوّر.');
     }
 
     // Get Supabase client
@@ -45,21 +61,24 @@ serve(async (req) => {
       console.log('No textbooks found for grade:', grade);
       return new Response(
         JSON.stringify({
-          answer: 'عذراً، لم يتم رفع كتب دراسية لهذا الصف بعد. يرجى الانتظار حتى يتم رفع الكتب.',
-          sources: []
+          answer: 'لم يتوفر الكتاب',
+          sources: [],
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    console.log(`Found ${textbooks.length} uploaded textbooks for grade ${grade}:`, textbooks.map(b => b.book_name));
+    console.log(
+      `Found ${textbooks.length} uploaded textbooks for grade ${grade}:`,
+      textbooks.map((b) => b.book_name),
+    );
 
     // Prepare file parts for Gemini API
-    const fileParts = textbooks.map(book => ({
+    const fileParts = textbooks.map((book) => ({
       fileData: {
         mimeType: 'application/pdf',
-        fileUri: book.gemini_file_uri
-      }
+        fileUri: book.gemini_file_uri,
+      },
     }));
 
     // Create the prompt with file context
@@ -76,13 +95,13 @@ serve(async (req) => {
 6. إذا لم تجد الإجابة في الكتب المرفقة، قل: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة"
 
 الكتب المتاحة:
-${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
+${textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n')}`;
 
     // Call Gemini API with files
     console.log('Step 2: Calling Gemini API with uploaded files...');
     console.log('File parts:', JSON.stringify(fileParts, null, 2));
     console.log('Prompt:', prompt);
-    
+
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -91,35 +110,42 @@ ${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              ...fileParts,
-              { text: prompt }
-            ]
-          }],
+          contents: [
+            {
+              parts: [
+                ...fileParts,
+                { text: prompt },
+              ],
+            },
+          ],
           generationConfig: {
             temperature: 0.4,
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 4096,
-          }
-        })
-      }
+          },
+        }),
+      },
     );
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error response:', geminiResponse.status, errorText);
-      throw new Error(`فشل الحصول على إجابة: ${geminiResponse.status}`);
+
+      if (geminiResponse.status === 429) {
+        throw new Error('تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.');
+      }
+
+      throw new Error('فشل الحصول على إجابة من الذكاء الاصطناعي');
     }
 
     const geminiData = await geminiResponse.json();
     const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
+
     if (!answer) {
       throw new Error('لم يتم توليد إجابة');
     }
-    
+
     console.log('Answer generated from uploaded books, length:', answer.length);
 
     // Prepare sources
@@ -127,7 +153,7 @@ ${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
       bookName: book.book_name,
       subject: book.subject,
       fileUrl: book.file_url,
-      pageNumber: null
+      pageNumber: null,
     }));
 
     // Save to database
@@ -139,7 +165,7 @@ ${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
         grade: grade,
         question: question,
         answer: answer,
-        sources: sources
+        sources: sources,
       });
 
     if (insertError) {
@@ -147,23 +173,22 @@ ${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
     }
 
     console.log('Process completed successfully');
-    
+
     return new Response(
       JSON.stringify({
         answer: answer,
-        sources: sources
+        sources: sources,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
-
   } catch (error: any) {
     console.error('Error in jordanian-assistant-answer:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
+        status: 500,
+      },
     );
   }
 });
