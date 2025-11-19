@@ -6,6 +6,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Pick random API key from available keys to distribute load
+const POSSIBLE_KEYS = [
+  'JORDANIAN_AI_QUESTION_GEN_KEY_1',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_2',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_3',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_4',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_5',
+  'JORDANIAN_AI_QUESTION_GEN_KEY_6',
+];
+
+function pickGeminiApiKey(): string {
+  const availableKeys = POSSIBLE_KEYS
+    .map(keyName => Deno.env.get(keyName))
+    .filter(key => key !== undefined && key !== null && key !== '');
+  
+  if (availableKeys.length === 0) {
+    throw new Error('No Gemini API keys configured');
+  }
+  
+  const randomIndex = Math.floor(Math.random() * availableKeys.length);
+  return availableKeys[randomIndex] as string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -64,8 +87,9 @@ serve(async (req) => {
 
     console.log('Found textbook:', books[0].book_name, 'with Gemini URI:', books[0].gemini_file_uri);
     
-    // Use Gemini API directly with the uploaded file
-    const GEMINI_API_KEY = Deno.env.get('JORDANIAN_AI_QUESTION_GEN_KEY_1')!;
+    // Use Gemini API directly with the uploaded file - pick random key
+    const GEMINI_API_KEY = pickGeminiApiKey();
+    console.log('Using API key for question generation');
     
     const filePart = {
       fileData: {
@@ -130,6 +154,19 @@ serve(async (req) => {
     if (!generateResponse.ok) {
       const errorText = await generateResponse.text();
       console.error('Question generation error:', generateResponse.status, errorText);
+      
+      // Handle rate limit error specifically
+      if (generateResponse.status === 429) {
+        const examPaper = 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.';
+        return new Response(
+          JSON.stringify({
+            examPaper,
+            markdown: examPaper,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`فشل توليد الأسئلة: ${generateResponse.status}`);
     }
 
@@ -182,6 +219,17 @@ ${questions}
     if (!formatResponse.ok) {
       const errorText = await formatResponse.text();
       console.error('Formatting error:', formatResponse.status, errorText);
+      
+      // Handle rate limit error
+      if (formatResponse.status === 429) {
+        console.log('Rate limit during formatting, returning unformatted questions');
+        const examPaper = questions; // Use unformatted questions
+        return new Response(
+          JSON.stringify({ examPaper, markdown: examPaper }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       console.log('Using unformatted questions as fallback');
       const examPaper = questions; // Fallback to unformatted
       return new Response(
