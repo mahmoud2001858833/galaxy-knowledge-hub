@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, FileQuestion, Sparkles } from "lucide-react";
+import { Loader2, Send, FileQuestion, Sparkles, Download, Copy } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +40,7 @@ export default function JordanianAssistant() {
   const [examQuestionCount, setExamQuestionCount] = useState("10");
   const [generatedExam, setGeneratedExam] = useState("");
   const [generatingExam, setGeneratingExam] = useState(false);
+  const [copiedExam, setCopiedExam] = useState(false);
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -208,6 +209,26 @@ export default function JordanianAssistant() {
       });
     } finally {
       setGeneratingExam(false);
+    }
+  };
+
+  const copyExam = async () => {
+    if (!generatedExam) return;
+    
+    try {
+      await navigator.clipboard.writeText(generatedExam);
+      setCopiedExam(true);
+      toast({
+        title: "✅ تم النسخ",
+        description: "تم نسخ الامتحان إلى الحافظة",
+      });
+      setTimeout(() => setCopiedExam(false), 2000);
+    } catch (error) {
+      toast({
+        title: "⚠️ فشل النسخ",
+        description: "حدث خطأ أثناء النسخ",
+        variant: "destructive",
+      });
     }
   };
 
@@ -447,9 +468,16 @@ export default function JordanianAssistant() {
                           </div>
                         </CardContent>
                       </Card>
-                      <Button onClick={downloadExam} className="w-full">
-                        تحميل ورقة الامتحان
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={copyExam} className="flex-1" variant="outline">
+                          <Copy className="w-4 h-4 ml-2" />
+                          {copiedExam ? 'تم النسخ ✓' : 'نسخ الامتحان'}
+                        </Button>
+                        <Button onClick={downloadExam} className="flex-1">
+                          <Download className="w-4 h-4 ml-2" />
+                          تحميل الامتحان
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
