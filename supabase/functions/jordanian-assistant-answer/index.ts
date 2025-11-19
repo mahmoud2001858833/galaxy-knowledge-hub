@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
+const GEMINI_API_KEY = Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,156 +14,139 @@ serve(async (req) => {
   }
 
   try {
-    const { question, searchResults, studentName, grade } = await req.json();
+    const { question, studentName, grade } = await req.json();
     
-    console.log('Processing question:', { question, studentName, grade, resultsCount: searchResults?.length });
+    console.log('Processing question:', { question, studentName, grade });
 
-    if (!question || !searchResults || searchResults.length === 0) {
-      throw new Error('السؤال أو نتائج البحث مفقودة');
+    if (!question) {
+      throw new Error('السؤال مفقود');
     }
 
-    // AI #1: Analyze question context using Lovable AI
-    console.log('Step 1: Analyzing context...');
-    const contextResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{
-            role: 'user',
-            content: `حلل هذا السؤال وحدد: ${question}\n\n1. الموضوع الرئيسي\n2. المفاهيم المطلوبة\n3. مستوى التفصيل المناسب`
-          }],
-          temperature: 0.2,
-          max_tokens: 500
-        })
-      }
-    );
-
-    if (!contextResponse.ok) {
-      const errorText = await contextResponse.text();
-      console.error('Context API error:', errorText);
-      throw new Error('فشل تحليل السياق');
-    }
-
-    const contextData = await contextResponse.json();
-    const context = contextData.choices?.[0]?.message?.content || '';
-    console.log('Context analyzed:', context.substring(0, 100));
-
-    // AI #2: Formulate main answer using Lovable AI
-    console.log('Step 2: Generating answer...');
-    const searchContent = searchResults.map((r: any) => 
-      `من كتاب ${r.bookName} (${r.subject}):\n${r.content}`
-    ).join('\n\n---\n\n');
-
-    const answerResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{
-            role: 'system',
-            content: 'أنت معلم أردني متخصص تساعد الطلاب في فهم المنهاج الأردني'
-          }, {
-            role: 'user',
-            content: `باستخدام المعلومات التالية من الكتب المدرسية، أجب على سؤال الطالب ${studentName} من الصف ${grade}.\n\nالسؤال: ${question}\n\nالسياق: ${context}\n\nالمحتوى من الكتب:\n${searchContent}\n\nقدم إجابة تفصيلية وواضحة مع:\n1. شرح المفهوم بطريقة سهلة\n2. أمثلة توضيحية\n3. ذكر المصادر وأرقام الصفحات بدقة`
-          }],
-          temperature: 0.4,
-          max_tokens: 3000
-        })
-      }
-    );
-
-    if (!answerResponse.ok) {
-      const errorText = await answerResponse.text();
-      console.error('Answer API error:', errorText);
-      throw new Error('فشل توليد الإجابة');
-    }
-
-    const answerData = await answerResponse.json();
-    const mainAnswer = answerData.choices?.[0]?.message?.content || '';
-    
-    if (!mainAnswer) {
-      throw new Error('لم يتم توليد إجابة');
-    }
-    
-    console.log('Answer generated, length:', mainAnswer.length);
-
-    // AI #3: Review and enhance using Lovable AI
-    console.log('Step 3: Enhancing answer...');
-    const reviewResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{
-            role: 'user',
-            content: `راجع هذه الإجابة وحسّنها بإضافة:\n1. نصائح دراسية\n2. أسئلة تفكيرية\n3. تأكد من دقة المعلومات\n\nالإجابة:\n${mainAnswer}`
-          }],
-          temperature: 0.3,
-          max_tokens: 1500
-        })
-      }
-    );
-
-    let finalAnswer = mainAnswer;
-    if (reviewResponse.ok) {
-      const reviewData = await reviewResponse.json();
-      const enhancedAnswer = reviewData.choices?.[0]?.message?.content;
-      if (enhancedAnswer) {
-        finalAnswer = enhancedAnswer;
-        console.log('Answer enhanced');
-      }
-    } else {
-      console.warn('Review API error, using main answer');
-    }
-
-    // Extract sources
-    const sources = searchResults.map((r: any) => ({
-      bookName: r.bookName,
-      subject: r.subject,
-      bookId: r.bookId
-    }));
-
-    // Save to database
-    console.log('Step 4: Saving to database...');
+    // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    try {
-      await supabase.from('student_assistant_usage').insert({
-        user_id: req.headers.get('x-user-id'),
+    // Get textbooks for this grade that have been uploaded to Gemini
+    console.log('Step 1: Fetching uploaded textbooks for grade:', grade);
+    const { data: textbooks, error: textbooksError } = await supabase
+      .from('jordanian_textbooks')
+      .select('*')
+      .eq('grade', grade)
+      .eq('is_active', true)
+      .not('gemini_file_uri', 'is', null);
+
+    if (textbooksError) {
+      console.error('Error fetching textbooks:', textbooksError);
+      throw new Error('فشل جلب الكتب المدرسية');
+    }
+
+    if (!textbooks || textbooks.length === 0) {
+      return new Response(
+        JSON.stringify({
+          answer: 'عذراً، لم يتم تزويد النظام بهذا المصدر بعد. يرجى الانتظار والمحاولة في وقت لاحق.',
+          sources: []
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Found ${textbooks.length} uploaded textbooks for grade ${grade}`);
+
+    // Prepare file parts for Gemini API
+    const fileParts = textbooks.map(book => ({
+      fileData: {
+        mimeType: 'application/pdf',
+        fileUri: book.gemini_file_uri
+      }
+    }));
+
+    // Create the prompt with file context
+    const prompt = `أنت معلم أردني متخصص. استخدم الكتب المرفقة للإجابة على سؤال الطالب ${studentName} من الصف ${grade}.
+
+السؤال: ${question}
+
+يجب عليك:
+1. قراءة الكتب المرفقة بعناية
+2. الإجابة فقط من محتوى الكتب المرفقة - لا تستخدم معلومات خارجية
+3. ذكر اسم الكتاب ورقم الصفحة بدقة لكل معلومة
+4. شرح المفهوم بطريقة واضحة ومبسطة
+5. إضافة أمثلة توضيحية من الكتاب
+6. إذا لم تجد الإجابة في الكتب المرفقة، قل: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة"
+
+الكتب المتاحة:
+${textbooks.map(b => `- ${b.book_name} (${b.subject})`).join('\n')}`;
+
+    // Call Gemini API with files
+    console.log('Step 2: Calling Gemini API with uploaded files...');
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              ...fileParts,
+              { text: prompt }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.4,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 4096,
+          }
+        })
+      }
+    );
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', errorText);
+      throw new Error('فشل الحصول على إجابة من الكتب المرفوعة');
+    }
+
+    const geminiData = await geminiResponse.json();
+    const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    if (!answer) {
+      throw new Error('لم يتم توليد إجابة');
+    }
+    
+    console.log('Answer generated from uploaded books, length:', answer.length);
+
+    // Prepare sources
+    const sources = textbooks.map((book: any) => ({
+      bookName: book.book_name,
+      subject: book.subject,
+      fileUrl: book.file_url,
+      pageNumber: null
+    }));
+
+    // Save to database
+    console.log('Step 3: Saving to database...');
+    const { error: insertError } = await supabase
+      .from('student_assistant_usage')
+      .insert({
         student_name: studentName,
         grade: grade,
         question: question,
-        answer: finalAnswer,
+        answer: answer,
         sources: sources
       });
-      console.log('Saved to database successfully');
-    } catch (dbError) {
-      console.error('Database save error:', dbError);
-      // Continue even if DB save fails
+
+    if (insertError) {
+      console.error('Database insert error:', insertError);
     }
 
-    console.log('Request completed successfully');
+    console.log('Process completed successfully');
+    
     return new Response(
-      JSON.stringify({ 
-        answer: finalAnswer,
+      JSON.stringify({
+        answer: answer,
         sources: sources
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -172,11 +155,11 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Error in jordanian-assistant-answer:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'حدث خطأ غير متوقع',
-        details: error.toString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ error: error.message }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
     );
   }
 });
