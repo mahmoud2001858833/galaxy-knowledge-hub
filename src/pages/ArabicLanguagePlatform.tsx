@@ -130,28 +130,72 @@ const ArabicLanguagePlatform = () => {
   const renderContent = () => {
     if (!activeSection) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sections.map((section, index) => (
             <motion.div
               key={section.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
               onClick={() => setActiveSection(section.id)}
-              className={`group relative h-[280px] rounded-xl overflow-hidden cursor-pointer ${section.borderColor} ${section.hoverBorderColor} border transition-all duration-300 hover:shadow-lg hover:scale-105`}
+              className="group relative h-[340px] rounded-2xl overflow-hidden cursor-pointer elegant-card"
             >
+              {/* الخلفية */}
               <div className="absolute inset-0">
-                <div className={`absolute inset-0 bg-gradient-radial ${section.color} opacity-90`}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-amber-950/90 to-transparent"></div>
+                <img 
+                  src={section.bgImage} 
+                  alt={section.title}
+                  className="w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-500"
+                />
+                <div className={`absolute inset-0 bg-gradient-to-br ${section.gradient} backdrop-blur-sm`}></div>
+                <div className={`absolute inset-0 bg-gradient-to-t ${section.gradient} opacity-60`}></div>
               </div>
-              
-              <div className="absolute inset-0 p-6 z-10 flex flex-col justify-center items-center text-center">
-                <div className="text-amber-300 mb-4 group-hover:scale-110 transition-transform">
+
+              {/* إطار متدرج */}
+              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${section.borderGradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-xl`}></div>
+
+              {/* الحروف العائمة */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {section.chars.map((char, idx) => (
+                  <motion.span
+                    key={idx}
+                    className={`absolute text-4xl font-bold ${section.textColor} opacity-30 arabic-float`}
+                    style={{
+                      top: `${Math.random() * 80 + 10}%`,
+                      left: `${Math.random() * 80 + 10}%`,
+                      animationDelay: `${idx * 0.5}s`,
+                      animationDuration: `${6 + Math.random() * 3}s`
+                    }}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </div>
+
+              {/* المحتوى */}
+              <div className="absolute inset-0 p-8 z-10 flex flex-col justify-between">
+                <div className={`${section.textColor} group-hover:scale-110 transition-transform duration-300 self-end`}>
                   {section.icon}
                 </div>
-                <h3 className="text-2xl font-bold text-white group-hover:text-amber-300 transition-colors">
-                  {section.title}
-                </h3>
+                
+                <div className="text-right">
+                  <h3 className={`text-3xl font-bold ${section.textColor} ${section.hoverTextColor} transition-colors duration-300 mb-2 arabic-glow`}>
+                    {section.title}
+                  </h3>
+                  <p className="text-white/70 text-sm">{section.subtitle}</p>
+                  
+                  <motion.div 
+                    className={`mt-4 h-1 bg-gradient-to-l ${section.borderGradient} rounded-full`}
+                    initial={{ width: 0 }}
+                    whileHover={{ width: '100%' }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              </div>
+
+              {/* تأثير التألق عند التمرير */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover:animate-shine" />
               </div>
             </motion.div>
           ))}
@@ -162,17 +206,30 @@ const ArabicLanguagePlatform = () => {
     if (activeSection === 'grammar') {
       if (!activeGrammarTool) {
         return (
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-3xl mx-auto">
             {grammarTools.map((tool, index) => (
               <motion.div
                 key={tool.id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.1, duration: 0.4 }}
                 onClick={() => setActiveGrammarTool(tool.id)}
-                className="p-6 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-xl border border-blue-500/30 hover:border-blue-500/50 cursor-pointer hover:scale-105 transition-all"
+                className="group relative p-8 rounded-2xl cursor-pointer elegant-card overflow-hidden"
               >
-                <h3 className="text-xl font-bold text-blue-300">{tool.title}</h3>
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-900/20 via-yellow-800/10 to-amber-900/20"></div>
+                
+                <div className="relative z-10 flex items-center gap-6">
+                  <div className="flex-shrink-0 p-4 rounded-xl bg-amber-500/20 text-amber-300 group-hover:bg-amber-500/30 group-hover:scale-110 transition-all duration-300">
+                    {tool.icon}
+                  </div>
+                  <div className="flex-1 text-right">
+                    <h3 className="text-2xl font-bold text-amber-200 group-hover:text-amber-100 transition-colors duration-300 mb-1">
+                      {tool.title}
+                    </h3>
+                    <p className="text-white/60 text-sm">{tool.description}</p>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-amber-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300" />
+                </div>
               </motion.div>
             ))}
           </div>
@@ -192,17 +249,30 @@ const ArabicLanguagePlatform = () => {
     if (activeSection === 'morphology') {
       if (!activeMorphologyTool) {
         return (
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-3xl mx-auto">
             {morphologyTools.map((tool, index) => (
               <motion.div
                 key={tool.id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.1, duration: 0.4 }}
                 onClick={() => setActiveMorphologyTool(tool.id)}
-                className="p-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl border border-purple-500/30 hover:border-purple-500/50 cursor-pointer hover:scale-105 transition-all"
+                className="group relative p-8 rounded-2xl cursor-pointer elegant-card overflow-hidden"
               >
-                <h3 className="text-xl font-bold text-purple-300">{tool.title}</h3>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 via-violet-800/10 to-purple-900/20"></div>
+                
+                <div className="relative z-10 flex items-center gap-6">
+                  <div className="flex-shrink-0 p-4 rounded-xl bg-purple-500/20 text-purple-300 group-hover:bg-purple-500/30 group-hover:scale-110 transition-all duration-300">
+                    {tool.icon}
+                  </div>
+                  <div className="flex-1 text-right">
+                    <h3 className="text-2xl font-bold text-purple-200 group-hover:text-purple-100 transition-colors duration-300 mb-1">
+                      {tool.title}
+                    </h3>
+                    <p className="text-white/60 text-sm">{tool.description}</p>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-purple-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300" />
+                </div>
               </motion.div>
             ))}
           </div>
@@ -245,40 +315,90 @@ const ArabicLanguagePlatform = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-900/40 to-amber-950 text-right" dir="rtl">
-      <main className="container mx-auto px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-neutral-900 to-stone-900 text-right relative overflow-hidden" dir="rtl">
+      {/* خلفية متحركة */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(217, 119, 6, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%)',
+        }}></div>
+      </div>
+
+      {/* نقاط متحركة */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {floatingChars.slice(0, 12).map((char, idx) => (
+          <motion.div
+            key={idx}
+            className="absolute text-6xl font-bold text-amber-500/10"
+            initial={{ 
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+              rotate: Math.random() * 360
+            }}
+            animate={{
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+              rotate: Math.random() * 360
+            }}
+            transition={{
+              duration: 20 + Math.random() * 10,
+              repeat: Infinity,
+              repeatType: "reverse",
+              ease: "linear"
+            }}
+          >
+            {char}
+          </motion.div>
+        ))}
+      </div>
+
+      <main className="container mx-auto px-4 py-12 relative z-10">
         <motion.div
-          className="max-w-6xl mx-auto"
+          className="max-w-7xl mx-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
         >
           {/* Header */}
           <motion.div
-            initial={{ y: -20, opacity: 0 }}
+            initial={{ y: -30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7 }}
-            className="mb-10 text-center"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mb-16 text-center"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-white to-amber-500">
+            <motion.h1 
+              className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
               علوم اللغة العربية
-            </h1>
-            <div className="w-16 h-1 bg-amber-500/50 mx-auto mb-4"></div>
-            <p className="text-xl text-white/70 max-w-2xl mx-auto">
+            </motion.h1>
+            <motion.div 
+              className="w-24 h-1.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mb-6 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: 96 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            />
+            <motion.p 
+              className="text-xl md:text-2xl text-amber-100/80 max-w-3xl mx-auto font-light"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
               منصة متكاملة لدراسة وإتقان علوم اللغة العربية
-            </p>
+            </motion.p>
           </motion.div>
 
           {/* Back Button */}
           {(activeSection || activeGrammarTool || activeMorphologyTool) && (
             <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
               onClick={handleBack}
-              className="mb-6 px-6 py-3 bg-amber-600/20 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-600/30 transition-colors flex items-center gap-2"
+              className="mb-8 px-8 py-4 elegant-card rounded-xl text-amber-300 hover:text-amber-200 transition-colors flex items-center gap-3 group"
             >
-              <ArrowRight className="w-5 h-5" />
-              رجوع
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <span className="font-semibold">رجوع</span>
             </motion.button>
           )}
 
