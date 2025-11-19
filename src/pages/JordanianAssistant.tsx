@@ -121,9 +121,14 @@ export default function JordanianAssistant() {
         }
       );
 
+      // Check if the response contains an error message
+      if (answerData?.error) {
+        throw new Error(answerData.error);
+      }
+
       if (answerError) {
         console.error('Answer error:', answerError);
-        throw new Error('فشل توليد الإجابة');
+        throw new Error('فشل الاتصال بالخادم');
       }
 
       const assistantMessage: Message = {
@@ -138,7 +143,7 @@ export default function JordanianAssistant() {
       console.error('Error:', error);
       const errorMessage: Message = {
         role: "assistant",
-        content: `حدث خطأ: ${error.message || 'خطأ غير متوقع'}`,
+        content: `⚠️ ${error.message || 'خطأ غير متوقع'}`,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -168,19 +173,24 @@ export default function JordanianAssistant() {
         body: {
           subject: examSubject,
           grade: examGrade,
-          content: examContent,
+          contentRange: examContent,
           questionTypes: examQuestionTypes || "أسئلة متنوعة",
           questionCount: parseInt(examQuestionCount) || 10,
         }
       });
 
-      if (error) {
-        console.error('Exam generation error:', error);
-        throw new Error(error.message || 'فشل توليد الأسئلة');
+      // Check if the response contains an error message
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
-      if (data?.exam) {
-        setGeneratedExam(data.exam);
+      if (error) {
+        console.error('Exam generation error:', error);
+        throw new Error('فشل الاتصال بالخادم');
+      }
+
+      if (data?.examPaper) {
+        setGeneratedExam(data.examPaper);
         toast({
           title: "✅ تم إنشاء ورقة الامتحان",
           description: "يمكنك الآن تحميلها أو نسخها",
@@ -192,7 +202,7 @@ export default function JordanianAssistant() {
     } catch (error: any) {
       console.error('Error generating exam:', error);
       toast({
-        title: "خطأ في إنشاء الامتحان",
+        title: "⚠️ خطأ في إنشاء الامتحان",
         description: error.message || "حدث خطأ غير متوقع",
         variant: "destructive",
       });
