@@ -6,35 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام المفاتيح الجديدة
-const POSSIBLE_KEYS = [
-  'JORDANIAN_NEW_AI_KEY_1',
-  'JORDANIAN_NEW_AI_KEY_2',
-  'JORDANIAN_NEW_AI_KEY_3',
-  'JORDANIAN_NEW_AI_KEY_4',
-  'JORDANIAN_NEW_AI_KEY_5',
-];
-
-function pickGeminiApiKey(): { key: string; keyName: string } {
-  const availableKeysData = POSSIBLE_KEYS
-    .map(keyName => ({ keyName, key: Deno.env.get(keyName) }))
-    .filter(item => item.key !== undefined && item.key !== null && item.key !== '');
-  
-  console.log(`Available API keys: ${availableKeysData.length} out of ${POSSIBLE_KEYS.length}`);
-  
-  if (availableKeysData.length === 0) {
-    throw new Error('No Gemini API keys configured');
-  }
-  
-  const randomIndex = Math.floor(Math.random() * availableKeysData.length);
-  const selected = availableKeysData[randomIndex];
-  
-  // Log last 6 characters for tracking (without exposing full key)
-  const keyPreview = selected.key!.slice(-6);
-  console.log(`Selected key: ${selected.keyName} (ending: ...${keyPreview})`);
-  
-  return { key: selected.key!, keyName: selected.keyName };
-}
+// استخدام مفتاح API واحد فقط
+const GEMINI_API_KEY = Deno.env.get('JORDANIAN_NEW_AI_KEY_1');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -94,9 +67,11 @@ serve(async (req) => {
 
     console.log('Found textbook:', books[0].book_name, 'with Gemini URI:', books[0].gemini_file_uri);
     
-    // Use Gemini API directly with the uploaded file - pick random key
-    const { key: GEMINI_API_KEY, keyName: SELECTED_KEY_NAME } = pickGeminiApiKey();
-    console.log('Using API key for question generation:', SELECTED_KEY_NAME);
+    if (!GEMINI_API_KEY) {
+      throw new Error('JORDANIAN_NEW_AI_KEY_1 not configured in Supabase secrets');
+    }
+    
+    console.log('Using JORDANIAN_NEW_AI_KEY_1 for exam generation');
     
     const filePart = {
       fileData: {
@@ -160,11 +135,11 @@ serve(async (req) => {
 
     if (!generateResponse.ok) {
       const errorText = await generateResponse.text();
-      console.error(`Question generation error [${SELECTED_KEY_NAME}]:`, generateResponse.status, errorText);
+      console.error('Question generation error:', generateResponse.status, errorText);
       
       // Handle rate limit error specifically
       if (generateResponse.status === 429) {
-        console.error(`Rate limit hit on key: ${SELECTED_KEY_NAME}`);
+        console.error('⚠️ Rate limit hit on API key');
         const examPaper = 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.';
         return new Response(
           JSON.stringify({
