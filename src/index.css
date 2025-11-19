@@ -115,6 +115,32 @@ body {
   .message-appear {
     animation: message-fade-in 0.5s ease-out;
   }
+  
+  .arabic-float {
+    animation: arabic-float 6s ease-in-out infinite;
+  }
+  
+  .arabic-glow {
+    animation: arabic-glow 3s ease-in-out infinite;
+  }
+  
+  .elegant-card {
+    backdrop-filter: blur(16px);
+    background: rgba(30, 30, 30, 0.4);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .elegant-card:hover {
+    background: rgba(40, 40, 40, 0.5);
+    border-color: rgba(217, 119, 6, 0.5);
+    box-shadow: 0 8px 32px rgba(217, 119, 6, 0.15);
+    transform: translateY(-4px);
+  }
+  
+  .animate-shine {
+    animation: shine 1s;
+  }
 }
 
 @keyframes float {
@@ -135,6 +161,34 @@ body {
   50% { 
     transform: translateY(-20px) rotate(5deg);
     opacity: 0.7;
+  }
+}
+
+@keyframes arabic-float {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+    opacity: 0.4;
+  }
+  25% { 
+    transform: translateY(-15px) translateX(10px) rotate(3deg);
+    opacity: 0.7;
+  }
+  50% { 
+    transform: translateY(-25px) translateX(-5px) rotate(-2deg);
+    opacity: 0.5;
+  }
+  75% { 
+    transform: translateY(-10px) translateX(-12px) rotate(4deg);
+    opacity: 0.8;
+  }
+}
+
+@keyframes arabic-glow {
+  0%, 100% { 
+    text-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+  }
+  50% { 
+    text-shadow: 0 0 20px rgba(217, 119, 6, 0.6), 0 0 30px rgba(217, 119, 6, 0.4);
   }
 }
 

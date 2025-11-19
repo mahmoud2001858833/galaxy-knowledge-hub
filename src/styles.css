@@ -80,22 +80,21 @@
   50% { filter: brightness(1.2); }
 }
 
-@layer utilities {
-  .text-glow-purple {
-    animation: glow 2s ease-in-out infinite;
-  }
-  
-  .text-glow-teal {
-    animation: glow-teal 2s ease-in-out infinite;
-  }
-  
-  .text-glow-violet {
-    animation: glow-purple 2s ease-in-out infinite;
-  }
-  
-  .text-glow-green {
-    animation: glow-green 2s ease-in-out infinite;
-  }
+.text-glow-purple {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.text-glow-teal {
+  animation: glow-teal 2s ease-in-out infinite;
+}
+
+.text-glow-violet {
+  animation: glow-purple 2s ease-in-out infinite;
+}
+
+.text-glow-green {
+  animation: glow-green 2s ease-in-out infinite;
+}
   
   .shadow-glow-sm {
     box-shadow: 0 0 15px -3px rgba(147, 51, 234, 0.3);
@@ -208,10 +207,9 @@
     mix-blend-mode: overlay;
   }
   
-  /* تدرجات حديثة للخلفيات */
-  .bg-anatomy-gradient {
-    background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
-  }
+/* تدرجات حديثة للخلفيات */
+.bg-anatomy-gradient {
+  background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
 }
 
 /* تأثير الزجاج للكروت */

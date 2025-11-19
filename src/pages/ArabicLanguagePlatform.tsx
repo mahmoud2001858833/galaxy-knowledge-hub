@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Sparkles, Music, MessageSquare, Feather, ArrowRight } from 'lucide-react';
+import { BookOpen, Sparkles, Music, MessageSquare, Feather, ArrowRight, Book, Scroll, Pen } from 'lucide-react';
 import ArabicAIAssistant from '@/components/arabic/ArabicAIAssistant';
 import EnhancedGrammarAssistant from '@/components/arabic/EnhancedGrammarAssistant';
 import GrammarFoundation from '@/components/arabic/GrammarFoundation';
@@ -19,59 +19,112 @@ const ArabicLanguagePlatform = () => {
   const [activeGrammarTool, setActiveGrammarTool] = useState<GrammarTool>(null);
   const [activeMorphologyTool, setActiveMorphologyTool] = useState<MorphologyTool>(null);
 
+  // الحروف والكلمات العربية العائمة
+  const floatingChars = ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
+
   const sections = [
     {
       id: 'grammar' as Section,
       title: 'النحو',
-      icon: <BookOpen className="w-8 h-8" />,
-      color: 'from-blue-600/20 to-cyan-600/20',
-      borderColor: 'border-blue-500/30',
-      hoverBorderColor: 'hover:border-blue-500/50'
+      subtitle: 'علم الإعراب والتركيب',
+      icon: <BookOpen className="w-10 h-10" />,
+      gradient: 'from-amber-900/30 via-yellow-800/20 to-amber-700/30',
+      borderGradient: 'from-amber-500 to-yellow-600',
+      textColor: 'text-amber-200',
+      hoverTextColor: 'group-hover:text-amber-100',
+      bgImage: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80',
+      chars: ['ا', 'ل', 'ن', 'ح', 'و']
     },
     {
       id: 'morphology' as Section,
       title: 'الصرف',
-      icon: <Sparkles className="w-8 h-8" />,
-      color: 'from-purple-600/20 to-pink-600/20',
-      borderColor: 'border-purple-500/30',
-      hoverBorderColor: 'hover:border-purple-500/50'
+      subtitle: 'علم بنية الكلمة',
+      icon: <Sparkles className="w-10 h-10" />,
+      gradient: 'from-purple-900/30 via-violet-800/20 to-purple-700/30',
+      borderGradient: 'from-purple-500 to-violet-600',
+      textColor: 'text-purple-200',
+      hoverTextColor: 'group-hover:text-purple-100',
+      bgImage: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80',
+      chars: ['ا', 'ل', 'ص', 'ر', 'ف']
     },
     {
       id: 'prosody' as Section,
       title: 'العروض',
-      icon: <Music className="w-8 h-8" />,
-      color: 'from-green-600/20 to-emerald-600/20',
-      borderColor: 'border-green-500/30',
-      hoverBorderColor: 'hover:border-green-500/50'
+      subtitle: 'علم أوزان الشعر',
+      icon: <Music className="w-10 h-10" />,
+      gradient: 'from-emerald-900/30 via-teal-800/20 to-emerald-700/30',
+      borderGradient: 'from-emerald-500 to-teal-600',
+      textColor: 'text-emerald-200',
+      hoverTextColor: 'group-hover:text-emerald-100',
+      bgImage: 'https://images.unsplash.com/photo-1516414447565-b14be0adf13e?w=800&q=80',
+      chars: ['ا', 'ل', 'ع', 'ر', 'و', 'ض']
     },
     {
       id: 'criticism' as Section,
       title: 'النقد الأدبي',
-      icon: <MessageSquare className="w-8 h-8" />,
-      color: 'from-amber-600/20 to-orange-600/20',
-      borderColor: 'border-amber-500/30',
-      hoverBorderColor: 'hover:border-amber-500/50'
+      subtitle: 'علم تحليل النصوص',
+      icon: <MessageSquare className="w-10 h-10" />,
+      gradient: 'from-rose-900/30 via-pink-800/20 to-rose-700/30',
+      borderGradient: 'from-rose-500 to-pink-600',
+      textColor: 'text-rose-200',
+      hoverTextColor: 'group-hover:text-rose-100',
+      bgImage: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&q=80',
+      chars: ['ا', 'ل', 'ن', 'ق', 'د']
     },
     {
       id: 'rhetoric' as Section,
       title: 'البلاغة',
-      icon: <Feather className="w-8 h-8" />,
-      color: 'from-rose-600/20 to-pink-600/20',
-      borderColor: 'border-rose-500/30',
-      hoverBorderColor: 'hover:border-rose-500/50'
+      subtitle: 'علم الفصاحة والبيان',
+      icon: <Feather className="w-10 h-10" />,
+      gradient: 'from-blue-900/30 via-sky-800/20 to-blue-700/30',
+      borderGradient: 'from-blue-500 to-sky-600',
+      textColor: 'text-blue-200',
+      hoverTextColor: 'group-hover:text-blue-100',
+      bgImage: 'https://images.unsplash.com/photo-1519791883288-dc8bd696e667?w=800&q=80',
+      chars: ['ا', 'ل', 'ب', 'ل', 'ا', 'غ', 'ة']
     }
   ];
 
   const grammarTools = [
-    { id: 'ai-assistant' as GrammarTool, title: 'المساعد الذكي للغة العربية' },
-    { id: 'smart-syntax' as GrammarTool, title: 'المساعد الذكي للإعراب' },
-    { id: 'foundation' as GrammarTool, title: 'أساسيات النحو' }
+    { 
+      id: 'ai-assistant' as GrammarTool, 
+      title: 'المساعد الذكي للغة العربية',
+      icon: <Sparkles className="w-6 h-6" />,
+      description: 'مساعد ذكي لفهم قواعد اللغة العربية'
+    },
+    { 
+      id: 'smart-syntax' as GrammarTool, 
+      title: 'المساعد الذكي للإعراب',
+      icon: <Book className="w-6 h-6" />,
+      description: 'أداة ذكية لإعراب الجمل والكلمات'
+    },
+    { 
+      id: 'foundation' as GrammarTool, 
+      title: 'أساسيات النحو',
+      icon: <Scroll className="w-6 h-6" />,
+      description: 'تعلم أساسيات النحو من الصفر'
+    }
   ];
 
   const morphologyTools = [
-    { id: 'derivatives' as MorphologyTool, title: 'المشتقات' },
-    { id: 'ai' as MorphologyTool, title: 'مساعد الصرف الذكي' },
-    { id: 'root' as MorphologyTool, title: 'أداة الجذور' }
+    { 
+      id: 'derivatives' as MorphologyTool, 
+      title: 'المشتقات',
+      icon: <Sparkles className="w-6 h-6" />,
+      description: 'استكشف المشتقات والأوزان'
+    },
+    { 
+      id: 'ai' as MorphologyTool, 
+      title: 'مساعد الصرف الذكي',
+      icon: <Book className="w-6 h-6" />,
+      description: 'مساعد ذكي لعلم الصرف'
+    },
+    { 
+      id: 'root' as MorphologyTool, 
+      title: 'أداة الجذور',
+      icon: <Pen className="w-6 h-6" />,
+      description: 'اكتشف جذور الكلمات العربية'
+    }
   ];
 
   const renderContent = () => {
