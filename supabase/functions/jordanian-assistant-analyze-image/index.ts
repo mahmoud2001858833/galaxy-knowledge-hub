@@ -5,34 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام المفاتيح الجديدة
-const POSSIBLE_KEYS = [
-  'JORDANIAN_NEW_AI_KEY_1',
-  'JORDANIAN_NEW_AI_KEY_2',
-  'JORDANIAN_NEW_AI_KEY_3',
-  'JORDANIAN_NEW_AI_KEY_4',
-  'JORDANIAN_NEW_AI_KEY_5',
-];
-
-function pickGeminiApiKey(): { key: string; keyName: string } {
-  const availableKeysData = POSSIBLE_KEYS
-    .map(keyName => ({ keyName, key: Deno.env.get(keyName) }))
-    .filter(item => item.key !== undefined && item.key !== null && item.key !== '');
-  
-  console.log(`✅ Available API keys for image analysis: ${availableKeysData.length} out of ${POSSIBLE_KEYS.length}`);
-  
-  if (availableKeysData.length === 0) {
-    throw new Error('No Gemini API keys configured');
-  }
-  
-  const randomIndex = Math.floor(Math.random() * availableKeysData.length);
-  const selected = availableKeysData[randomIndex];
-  
-  const keyPreview = selected.key!.slice(-6);
-  console.log(`🔑 Selected key for image: ${selected.keyName} (ending: ...${keyPreview})`);
-  
-  return { key: selected.key!, keyName: selected.keyName };
-}
+// استخدام مفتاح API واحد فقط
+const GEMINI_API_KEY = Deno.env.get('JORDANIAN_NEW_AI_KEY_1');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -54,8 +28,11 @@ serve(async (req) => {
       );
     }
 
-    const { key: GEMINI_API_KEY, keyName: SELECTED_KEY_NAME } = pickGeminiApiKey();
-    console.log('🤖 Using API key:', SELECTED_KEY_NAME);
+    if (!GEMINI_API_KEY) {
+      throw new Error('JORDANIAN_NEW_AI_KEY_1 not configured in Supabase secrets');
+    }
+    
+    console.log('🤖 Using JORDANIAN_NEW_AI_KEY_1 for image analysis');
 
     // Prompt محسّن لتحليل الصور التعليمية
     const analysisPrompt = `أنت معلم أردني خبير في تحليل الصور التعليمية.
@@ -106,7 +83,7 @@ ${question ? `السؤال: ${question}` : 'حلل هذه الصورة التع�
       console.error(`❌ Gemini API error (${response.status}):`, errorText);
       
       if (response.status === 429) {
-        console.error(`⚠️ Rate limit hit on key: ${SELECTED_KEY_NAME}`);
+        console.error('⚠️ Rate limit hit on API key');
         return new Response(
           JSON.stringify({ 
             analysis: 'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة مرة أخرى بعد قليل.' 
