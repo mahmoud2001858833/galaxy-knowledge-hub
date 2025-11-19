@@ -48,6 +48,10 @@ import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
 import BuildPlatformSection from './components/btec/BuildPlatformSection';
 import ArabicLanguage from './pages/ArabicLanguage';
 import ArabicLanguagePlatform from './pages/ArabicLanguagePlatform';
+import ArabicGrammarSection from './pages/ArabicGrammarSection';
+import ArabicMorphologySection from './pages/ArabicMorphologySection';
+import ArabicProsodySection from './pages/ArabicProsodySection';
+import ArabicCriticismSection from './pages/ArabicCriticismSection';
 import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
 import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
@@ -237,6 +241,22 @@ const router = createBrowserRouter([
       {
         path: 'arabic-platform',
         element: <PublicRoute><ProtectedArabicLanguagePlatform /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/grammar',
+        element: <PublicRoute><ArabicGrammarSection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/morphology',
+        element: <PublicRoute><ArabicMorphologySection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/prosody',
+        element: <PublicRoute><ArabicProsodySection /></PublicRoute>,
+      },
+      {
+        path: 'arabic-platform/criticism',
+        element: <PublicRoute><ArabicCriticismSection /></PublicRoute>,
       },
       {
         path: 'english-language',
