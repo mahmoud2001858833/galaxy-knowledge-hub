@@ -57,11 +57,10 @@ serve(async (req) => {
     const formData = new FormData();
     formData.append('file', pdfBlob, 'textbook.pdf');
     formData.append('apikey', ocrApiKey);
-    formData.append('language', 'ara'); // Arabic language
     formData.append('isOverlayRequired', 'false');
     formData.append('detectOrientation', 'true');
     formData.append('scale', 'true');
-    formData.append('OCREngine', '2'); // Engine 2 is better for Arabic
+    formData.append('OCREngine', '2'); // Engine 2 is better for Arabic and auto-detects language
     formData.append('filetype', 'PDF');
 
     console.log('Sending PDF to OCR.space API...');
