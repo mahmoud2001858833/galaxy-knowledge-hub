@@ -6,8 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام مفتاح API واحد فقط
-const GEMINI_API_KEY = Deno.env.get('JORDANIAN_NEW_AI_KEY_1');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,71 +64,57 @@ serve(async (req) => {
       );
     }
 
-    console.log('Found textbook:', books[0].book_name, 'with Gemini URI:', books[0].gemini_file_uri);
+    console.log('Found textbook:', books[0].book_name);
     
-    if (!GEMINI_API_KEY) {
-      throw new Error('JORDANIAN_NEW_AI_KEY_1 not configured in Supabase secrets');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
     
-    console.log('Using JORDANIAN_NEW_AI_KEY_1 for exam generation');
-    
-    const filePart = {
-      fileData: {
-        mimeType: 'application/pdf',
-        fileUri: books[0].gemini_file_uri
-      }
-    };
+    console.log('Using Lovable AI for exam generation');
 
-    // AI #1: Generate questions using Gemini with the uploaded file
-    console.log('Step 1: Generating questions with Gemini...');
+    // Generate questions using Lovable AI
+    console.log('Step 1: Generating questions with Lovable AI...');
     
-    const questionPrompt = `استخدم الكتاب المرفق لإنشاء ${questionCount} سؤالاً امتحانياً.
+    const systemPrompt = `أنت معلم أردني متخصص في إنشاء الامتحانات للمنهاج الأردني.
 
-المواصفات:
-- نوع الأسئلة: ${questionTypes}
+المعلومات:
 - المادة: ${subject}
 - الصف: ${grade}
+- الكتاب: ${books[0].book_name}
+- نوع الأسئلة: ${questionTypes}
 - نطاق المحتوى: ${contentRange}
+- عدد الأسئلة: ${questionCount}
 
-قيود صارمة:
-- اقرأ الكتاب المرفق جيداً
-- اعتمد فقط على محتوى الكتاب المرفق - لا تستخدم أي معرفة خارجية
-- اذكر رقم الصفحة لكل سؤال بدقة بصيغة (ص: XX)
-- ابدأ مباشرة بكتابة الأسئلة دون مقدمات
-- تنوّع بالمستوى (سهل، متوسط، صعب)
-- غطِّ فقط النطاق المطلوب من المحتوى
+يجب عليك:
+1. إنشاء ${questionCount} سؤالاً امتحانياً احترافياً
+2. التنوع بمستوى الصعوبة (سهل، متوسط، صعب)
+3. تغطية النطاق المطلوب من المحتوى
+4. كتابة الأسئلة بطريقة واضحة ومباشرة
+5. إضافة الإجابات النموذجية في النهاية
 
 صيغة الإخراج:
-السؤال 1: [نص السؤال] (ص: XX)
-السؤال 2: [نص السؤال] (ص: XX)
-...
-
-ثم اكتب الإجابات النموذجية:
-الإجابة 1: [نص مختصر]
-الإجابة 2: [نص مختصر]
-...`;
+- اكتب عنوان الامتحان أولاً (المادة والصف)
+- رقّم الأسئلة بشكل متسلسل
+- اترك مساحة بعد كل سؤال
+- اكتب الإجابات النموذجية في نهاية الامتحان`;
 
     const generateResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              filePart,
-              { text: questionPrompt }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.4,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          }
-        })
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'أنشئ الامتحان الآن' },
+          ],
+          temperature: 0.5,
+          max_tokens: 8192,
+        }),
       }
     );
 
@@ -137,10 +122,20 @@ serve(async (req) => {
       const errorText = await generateResponse.text();
       console.error('Question generation error:', generateResponse.status, errorText);
       
-      // Handle rate limit error specifically
       if (generateResponse.status === 429) {
-        console.error('⚠️ Rate limit hit on API key');
+        console.error('⚠️ Rate limit hit');
         const examPaper = 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.';
+        return new Response(
+          JSON.stringify({
+            examPaper,
+            markdown: examPaper,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (generateResponse.status === 402) {
+        const examPaper = 'يرجى إضافة رصيد لحساب Lovable AI.';
         return new Response(
           JSON.stringify({
             examPaper,
@@ -154,76 +149,14 @@ serve(async (req) => {
     }
 
     const generateData = await generateResponse.json();
-    const questions = generateData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const examPaper = generateData.choices?.[0]?.message?.content || '';
     
-    if (!questions) {
-      console.error('No questions generated from Gemini');
+    if (!examPaper) {
+      console.error('No questions generated');
       throw new Error('لم يتم توليد أسئلة');
     }
     
-    console.log('Questions generated, length:', questions.length);
-
-    // AI #2: Format as exam paper using Gemini
-    console.log('Step 2: Formatting exam...');
-    
-    const formatPrompt = `نسّق الأسئلة التالية على شكل ورقة امتحانية احترافية ومنظمة:
-
-${questions}
-
-متطلبات التنسيق:
-- عنوان واضح للامتحان يتضمن المادة والصف
-- ترقيم منظم ومتسلسل
-- مساحات كافية بعد كل سؤال للإجابة
-- الحفاظ على أرقام الصفحات كما هي
-- إزالة أي نصوص إضافية غير ضرورية
-- تنسيق نظيف وسهل القراءة`;
-
-    const formatResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: formatPrompt }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 4096,
-          }
-        })
-      }
-    );
-
-    if (!formatResponse.ok) {
-      const errorText = await formatResponse.text();
-      console.error(`Formatting error [${SELECTED_KEY_NAME}]:`, formatResponse.status, errorText);
-      
-      // Handle rate limit error
-      if (formatResponse.status === 429) {
-        console.error(`Rate limit hit during formatting on key: ${SELECTED_KEY_NAME}`);
-        console.log('Returning unformatted questions due to rate limit');
-        const examPaper = questions; // Use unformatted questions
-        return new Response(
-          JSON.stringify({ examPaper, markdown: examPaper }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('Using unformatted questions as fallback');
-      const examPaper = questions; // Fallback to unformatted
-      return new Response(
-        JSON.stringify({ examPaper, markdown: examPaper }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const formatData = await formatResponse.json();
-    const examPaper = formatData.candidates?.[0]?.content?.parts?.[0]?.text || questions;
+    console.log('Exam generated, length:', examPaper.length);
 
     console.log('Exam generation completed successfully');
 
