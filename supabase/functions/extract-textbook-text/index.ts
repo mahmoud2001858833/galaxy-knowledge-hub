@@ -22,10 +22,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const ocrServerUrl = Deno.env.get('OCR_SERVER_URL');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!ocrServerUrl) {
-      throw new Error("OCR_SERVER_URL is not configured");
+    if (!lovableApiKey) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -44,33 +44,79 @@ serve(async (req) => {
     console.log(`Processing textbook: ${textbook.book_name}`);
     console.log(`File URL: ${textbook.file_url}`);
 
-    // إرسال URL الملف مباشرة للـ OCR server
-    console.log('Sending file URL to OCR server...');
-    
-    const ocrResponse = await fetch(`${ocrServerUrl}/ocr`, {
+    // Download PDF from Supabase Storage
+    console.log('Downloading PDF from storage...');
+    const fileResponse = await fetch(textbook.file_url);
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to download PDF: ${fileResponse.statusText}`);
+    }
+
+    const pdfArrayBuffer = await fileResponse.arrayBuffer();
+    const pdfBytes = new Uint8Array(pdfArrayBuffer);
+    const fileSizeMB = pdfBytes.length / (1024 * 1024);
+    console.log(`PDF downloaded: ${fileSizeMB.toFixed(2)} MB`);
+
+    // Check file size (Lovable AI has limits)
+    if (fileSizeMB > 20) {
+      throw new Error('الملف كبير جداً (أكثر من 20 ميجابايت). يرجى استخدام ملف أصغر.');
+    }
+
+    // Convert to base64
+    console.log('Converting PDF to base64...');
+    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+
+    // Send to Lovable AI for text extraction
+    console.log('Sending to Lovable AI for text extraction...');
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        file_url: textbook.file_url,
-        filename: textbook.book_name
-      }),
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'استخرج كل النص من هذا الكتاب المدرسي الأردني بشكل دقيق. احتفظ بكل الكلمات والجمل والفقرات كما هي. لا تضيف أي تعليقات أو ملاحظات، فقط النص المستخرج بالكامل.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:application/pdf;base64,${base64Pdf}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 100000
+      })
     });
 
-    if (!ocrResponse.ok) {
-      const errorText = await ocrResponse.text();
-      console.error('OCR Server error:', ocrResponse.status, errorText);
-      throw new Error(`OCR extraction failed: ${ocrResponse.statusText}`);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        throw new Error('تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة لاحقاً.');
+      }
+      if (aiResponse.status === 402) {
+        throw new Error('نفد رصيد Lovable AI. يرجى إضافة رصيد من لوحة التحكم.');
+      }
+      
+      throw new Error(`فشل استخراج النص: ${aiResponse.statusText}`);
     }
 
-    const ocrResult = await ocrResponse.json();
+    const aiResult = await aiResponse.json();
+    const extractedText = aiResult.choices?.[0]?.message?.content;
     
-    if (!ocrResult.success || !ocrResult.text) {
-      throw new Error(ocrResult.error || 'No text could be extracted from PDF');
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new Error('لم يتم استخراج أي نص من الملف');
     }
 
-    const extractedText = ocrResult.text;
     console.log(`Extracted text length: ${extractedText.length} characters`);
 
     // Update textbook with extracted text
@@ -90,7 +136,7 @@ serve(async (req) => {
         success: true,
         message: 'تم استخراج النص من الكتاب بنجاح',
         textLength: extractedText.length,
-        fileSize: ocrResult.file_size_mb
+        fileSize: fileSizeMB.toFixed(2)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
