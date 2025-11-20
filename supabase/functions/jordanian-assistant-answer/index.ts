@@ -48,14 +48,14 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get textbooks for this grade that have been uploaded to Gemini
+    // Get textbooks for this grade that have extracted text
     console.log('Step 1: Fetching uploaded textbooks for grade:', grade);
     const { data: textbooks, error: textbooksError } = await supabase
       .from('jordanian_textbooks')
-      .select('*')
+      .select('id, book_name, subject, extracted_text')
       .eq('grade', grade)
       .eq('is_active', true)
-      .not('gemini_file_uri', 'is', null);
+      .not('extracted_text', 'is', null);
 
     if (textbooksError) {
       console.error('Error fetching textbooks:', textbooksError);
@@ -70,10 +70,10 @@ serve(async (req) => {
     }
 
     if (!textbooks || textbooks.length === 0) {
-      console.log('No textbooks found for grade:', grade);
+      console.log('No textbooks with extracted text found for grade:', grade);
       return new Response(
         JSON.stringify({
-          answer: 'لم يتوفر الكتاب',
+          answer: 'عذراً، لم يتم استخراج نصوص الكتب بعد. يرجى الانتظار حتى يتم معالجة الكتب.',
           sources: [],
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -81,25 +81,32 @@ serve(async (req) => {
     }
 
     console.log(
-      `Found ${textbooks.length} uploaded textbooks for grade ${grade}:`,
+      `Found ${textbooks.length} textbooks with extracted text for grade ${grade}:`,
       textbooks.map((b) => b.book_name),
     );
 
-    // Build context from textbook names
-    const booksContext = textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n');
+    // Build context from extracted textbook content (limit to prevent token overflow)
+    const booksContext = textbooks
+      .map((book) => {
+        const textPreview = book.extracted_text?.substring(0, 8000) || 'لا يوجد نص مستخرج';
+        return `### الكتاب: ${book.book_name} (${book.subject})\nالمحتوى:\n${textPreview}\n`;
+      })
+      .join('\n\n---\n\n');
 
-    // Create the prompt
+    // Create the prompt with actual textbook content
     const systemPrompt = `أنت معلم أردني متخصص في المنهاج الأردني للصف ${grade}. 
 
-الكتب المتاحة للطالب:
+لديك محتوى الكتب التالية:
 ${booksContext}
 
-يجب عليك:
-1. الإجابة بناءً على المنهاج الأردني الرسمي للصف ${grade}
-2. شرح المفهوم بطريقة واضحة ومبسطة ومناسبة لمستوى الطالب
-3. إضافة أمثلة توضيحية عند الحاجة
-4. الإشارة إلى اسم الكتاب المتعلق عند الإمكان
-5. إذا كان السؤال خارج نطاق المنهاج أو غير واضح، اطلب التوضيح`;
+قواعد مهمة جداً:
+1. أجب فقط بناءً على محتوى الكتب المرفقة أعلاه - لا تخترع معلومات
+2. إذا لم تجد الإجابة في محتوى الكتب، قل بوضوح: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
+3. اذكر اسم الكتاب والمادة عند الإجابة
+4. اشرح المفهوم بطريقة واضحة ومبسطة
+5. أضف أمثلة من الكتاب نفسه عند الإمكان
+6. استخدم اللغة العربية الفصحى`;
+
 
     // Call Lovable AI
     console.log('Step 2: Calling Lovable AI...');
