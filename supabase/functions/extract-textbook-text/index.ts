@@ -54,16 +54,22 @@ serve(async (req) => {
     const pdfBytes = new Uint8Array(pdfArrayBuffer);
     console.log(`PDF size: ${pdfBytes.length} bytes`);
 
-    // إرسال الملف لخادم OCR المستقل
+    // إرسال الملف لخادم OCR المستقل كـ base64
     console.log('Sending file to OCR server...');
     
-    const formData = new FormData();
-    const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-    formData.append('file', pdfBlob, textbook.book_name);
-
+    // Convert PDF to base64
+    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    
     const ocrResponse = await fetch(`${ocrServerUrl}/ocr`, {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        file: base64Pdf,
+        filename: textbook.book_name,
+        mimetype: 'application/pdf'
+      }),
     });
 
     if (!ocrResponse.ok) {
