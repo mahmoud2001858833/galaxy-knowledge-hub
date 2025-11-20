@@ -44,21 +44,8 @@ serve(async (req) => {
     console.log(`Processing textbook: ${textbook.book_name}`);
     console.log(`File URL: ${textbook.file_url}`);
 
-    // Download PDF from storage
-    const fileResponse = await fetch(textbook.file_url);
-    if (!fileResponse.ok) {
-      throw new Error(`Failed to download PDF: ${fileResponse.statusText}`);
-    }
-
-    const pdfArrayBuffer = await fileResponse.arrayBuffer();
-    const pdfBytes = new Uint8Array(pdfArrayBuffer);
-    console.log(`PDF size: ${pdfBytes.length} bytes`);
-
-    // إرسال الملف لخادم OCR المستقل كـ base64
-    console.log('Sending file to OCR server...');
-    
-    // Convert PDF to base64
-    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    // إرسال URL الملف مباشرة للـ OCR server
+    console.log('Sending file URL to OCR server...');
     
     const ocrResponse = await fetch(`${ocrServerUrl}/ocr`, {
       method: 'POST',
@@ -66,9 +53,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        file: base64Pdf,
-        filename: textbook.book_name,
-        mimetype: 'application/pdf'
+        file_url: textbook.file_url,
+        filename: textbook.book_name
       }),
     });
 
