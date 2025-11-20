@@ -22,10 +22,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const ocrServerUrl = Deno.env.get('OCR_SERVER_URL');
 
-    if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!ocrServerUrl) {
+      throw new Error("OCR_SERVER_URL is not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -54,55 +54,31 @@ serve(async (req) => {
     const pdfBytes = new Uint8Array(pdfArrayBuffer);
     console.log(`PDF size: ${pdfBytes.length} bytes`);
 
-    // Convert PDF to base64
-    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    // إرسال الملف لخادم OCR المستقل
+    console.log('Sending file to OCR server...');
     
-    console.log('Extracting text using Lovable AI...');
+    const formData = new FormData();
+    const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+    formData.append('file', pdfBlob, textbook.book_name);
 
-    // Use Lovable AI to extract text from PDF
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const ocrResponse = await fetch(`${ocrServerUrl}/ocr`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'استخرج كل النص من هذا الكتاب المدرسي. أعد النص كاملاً بدون أي تلخيص أو اختصار. احتفظ بكل التفاصيل والأمثلة والتمارين.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64Pdf}`
-                }
-              }
-            ]
-          }
-        ],
-        temperature: 0,
-        max_tokens: 100000
-      }),
+      body: formData,
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('Lovable AI error:', aiResponse.status, errorText);
-      throw new Error(`AI extraction failed: ${aiResponse.statusText}`);
+    if (!ocrResponse.ok) {
+      const errorText = await ocrResponse.text();
+      console.error('OCR Server error:', ocrResponse.status, errorText);
+      throw new Error(`OCR extraction failed: ${ocrResponse.statusText}`);
     }
 
-    const aiResult = await aiResponse.json();
-    const extractedText = aiResult.choices?.[0]?.message?.content;
-
-    if (!extractedText || !extractedText.trim()) {
-      throw new Error('No text could be extracted from PDF');
+    const ocrResult = await ocrResponse.json();
+    
+    if (!ocrResult.success || !ocrResult.text) {
+      throw new Error(ocrResult.error || 'No text could be extracted from PDF');
     }
 
+    const extractedText = ocrResult.text;
     console.log(`Extracted text length: ${extractedText.length} characters`);
 
     // Update textbook with extracted text
@@ -121,7 +97,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'تم استخراج النص من الكتاب بنجاح',
-        textLength: extractedText.length
+        textLength: extractedText.length,
+        fileSize: ocrResult.file_size_mb
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
