@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { readPdfPages } from "https://deno.land/x/pdfreader@0.1.3/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,14 +19,14 @@ serve(async (req) => {
       throw new Error("Textbook ID is required");
     }
 
-    console.log(`Starting OCR extraction for textbook: ${textbookId}`);
+    console.log(`Starting text extraction for textbook: ${textbookId}`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const ocrApiKey = Deno.env.get('OCR_SPACE_API_KEY');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!ocrApiKey) {
-      throw new Error("OCR_SPACE_API_KEY is not configured");
+    if (!lovableApiKey) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -50,48 +51,56 @@ serve(async (req) => {
       throw new Error(`Failed to download PDF: ${fileResponse.statusText}`);
     }
 
-    const pdfBlob = await fileResponse.blob();
-    console.log(`PDF size: ${pdfBlob.size} bytes`);
+    const pdfArrayBuffer = await fileResponse.arrayBuffer();
+    const pdfBytes = new Uint8Array(pdfArrayBuffer);
+    console.log(`PDF size: ${pdfBytes.length} bytes`);
 
-    // Prepare form data for OCR.space API
-    const formData = new FormData();
-    formData.append('file', pdfBlob, 'textbook.pdf');
-    formData.append('apikey', ocrApiKey);
-    formData.append('isOverlayRequired', 'false');
-    formData.append('detectOrientation', 'true');
-    formData.append('scale', 'true');
-    formData.append('filetype', 'PDF');
+    // Convert PDF to base64
+    const base64Pdf = btoa(String.fromCharCode(...pdfBytes));
+    
+    console.log('Extracting text using Lovable AI...');
 
-    console.log('Sending PDF to OCR.space API...');
-
-    // Call OCR.space API
-    const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
+    // Use Lovable AI to extract text from PDF
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'استخرج كل النص من هذا الكتاب المدرسي. أعد النص كاملاً بدون أي تلخيص أو اختصار. احتفظ بكل التفاصيل والأمثلة والتمارين.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:application/pdf;base64,${base64Pdf}`
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0,
+        max_tokens: 100000
+      }),
     });
 
-    if (!ocrResponse.ok) {
-      throw new Error(`OCR API request failed: ${ocrResponse.statusText}`);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error:', aiResponse.status, errorText);
+      throw new Error(`AI extraction failed: ${aiResponse.statusText}`);
     }
 
-    const ocrResult = await ocrResponse.json();
-    console.log(`OCR API response status: ${ocrResult.OCRExitCode}`);
+    const aiResult = await aiResponse.json();
+    const extractedText = aiResult.choices?.[0]?.message?.content;
 
-    if (ocrResult.OCRExitCode !== 1) {
-      throw new Error(`OCR processing failed: ${ocrResult.ErrorMessage || 'Unknown error'}`);
-    }
-
-    // Extract text from all pages
-    let extractedText = '';
-    if (ocrResult.ParsedResults && ocrResult.ParsedResults.length > 0) {
-      for (const result of ocrResult.ParsedResults) {
-        if (result.ParsedText) {
-          extractedText += result.ParsedText + '\n\n';
-        }
-      }
-    }
-
-    if (!extractedText.trim()) {
+    if (!extractedText || !extractedText.trim()) {
       throw new Error('No text could be extracted from PDF');
     }
 
