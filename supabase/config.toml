@@ -103,5 +103,8 @@ verify_jwt = false
 [functions.jordanian-assistant-analyze-image]
 verify_jwt = false
 
+[functions.extract-textbook-text]
+verify_jwt = false
+
 [functions.generate-educational-image]
 verify_jwt = false

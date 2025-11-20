@@ -977,6 +977,7 @@ export type Database = {
           book_name: string
           created_at: string | null
           created_by: string | null
+          extracted_text: string | null
           file_size_mb: number | null
           file_url: string
           gemini_file_name: string | null
@@ -992,6 +993,7 @@ export type Database = {
           book_name: string
           created_at?: string | null
           created_by?: string | null
+          extracted_text?: string | null
           file_size_mb?: number | null
           file_url: string
           gemini_file_name?: string | null
@@ -1007,6 +1009,7 @@ export type Database = {
           book_name?: string
           created_at?: string | null
           created_by?: string | null
+          extracted_text?: string | null
           file_size_mb?: number | null
           file_url?: string
           gemini_file_name?: string | null
