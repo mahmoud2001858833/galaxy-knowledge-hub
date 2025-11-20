@@ -6,8 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام مفتاح API واحد فقط
-const GEMINI_API_KEY = Deno.env.get('JORDANIAN_NEW_AI_KEY_1');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,8 +29,8 @@ serve(async (req) => {
       );
     }
 
-    if (!GEMINI_API_KEY) {
-      console.error('JORDANIAN_NEW_AI_KEY_1 not configured in Supabase secrets');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({
           answer: null,
@@ -42,7 +41,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Using JORDANIAN_NEW_AI_KEY_1 for answer generation');
+    console.log('Using Lovable AI for answer generation');
 
     // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -86,73 +85,68 @@ serve(async (req) => {
       textbooks.map((b) => b.book_name),
     );
 
-    // Prepare file parts for Gemini API
-    const fileParts = textbooks.map((book) => ({
-      fileData: {
-        mimeType: 'application/pdf',
-        fileUri: book.gemini_file_uri,
-      },
-    }));
+    // Build context from textbook names
+    const booksContext = textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n');
 
-    // Create the prompt with file context
-    const prompt = `أنت معلم أردني متخصص. استخدم الكتب المرفقة للإجابة على سؤال الطالب ${studentName} من الصف ${grade}.
+    // Create the prompt
+    const systemPrompt = `أنت معلم أردني متخصص في المنهاج الأردني للصف ${grade}. 
 
-السؤال: ${question}
+الكتب المتاحة للطالب:
+${booksContext}
 
 يجب عليك:
-1. قراءة الكتب المرفقة بعناية
-2. الإجابة فقط من محتوى الكتب المرفقة - لا تستخدم معلومات خارجية
-3. ذكر اسم الكتاب ورقم الصفحة بدقة لكل معلومة
-4. شرح المفهوم بطريقة واضحة ومبسطة
-5. إضافة أمثلة توضيحية من الكتاب
-6. إذا لم تجد الإجابة في الكتب المرفقة، قل: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة"
+1. الإجابة بناءً على المنهاج الأردني الرسمي للصف ${grade}
+2. شرح المفهوم بطريقة واضحة ومبسطة ومناسبة لمستوى الطالب
+3. إضافة أمثلة توضيحية عند الحاجة
+4. الإشارة إلى اسم الكتاب المتعلق عند الإمكان
+5. إذا كان السؤال خارج نطاق المنهاج أو غير واضح، اطلب التوضيح`;
 
-الكتب المتاحة:
-${textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n')}`;
+    // Call Lovable AI
+    console.log('Step 2: Calling Lovable AI...');
 
-    // Call Gemini API with files
-    console.log('Step 2: Calling Gemini API with uploaded files...');
-    console.log('File parts:', JSON.stringify(fileParts, null, 2));
-    console.log('Prompt:', prompt);
-
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+    const aiResponse = await fetch(
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                ...fileParts,
-                { text: prompt },
-              ],
-            },
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `السؤال: ${question}` },
           ],
-          generationConfig: {
-            temperature: 0.4,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 4096,
-          },
+          temperature: 0.4,
+          max_tokens: 4096,
         }),
       },
     );
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error response:', geminiResponse.status, errorText);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error response:', aiResponse.status, errorText);
 
-      // Rate limit / quota exceeded → أعد رسالة مفهومة بدون 500
-      if (geminiResponse.status === 429) {
-        console.error('⚠️ Rate limit hit on API key');
+      if (aiResponse.status === 429) {
+        console.error('⚠️ Rate limit hit');
         return new Response(
           JSON.stringify({
             answer: null,
             sources: [],
             error: 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
+      if (aiResponse.status === 402) {
+        console.error('⚠️ Payment required');
+        return new Response(
+          JSON.stringify({
+            answer: null,
+            sources: [],
+            error: 'يرجى إضافة رصيد لحساب Lovable AI.',
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
@@ -168,8 +162,8 @@ ${textbooks.map((b) => `- ${b.book_name} (${b.subject})`).join('\n')}`;
       );
     }
 
-    const geminiData = await geminiResponse.json();
-    const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const aiData = await aiResponse.json();
+    const answer = aiData.choices?.[0]?.message?.content || '';
 
     if (!answer) {
       return new Response(

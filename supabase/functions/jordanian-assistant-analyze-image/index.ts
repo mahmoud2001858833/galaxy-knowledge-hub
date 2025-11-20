@@ -5,8 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام مفتاح API واحد فقط
-const GEMINI_API_KEY = Deno.env.get('JORDANIAN_NEW_AI_KEY_1');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -28,19 +27,13 @@ serve(async (req) => {
       );
     }
 
-    if (!GEMINI_API_KEY) {
-      throw new Error('JORDANIAN_NEW_AI_KEY_1 not configured in Supabase secrets');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
     
-    console.log('🤖 Using JORDANIAN_NEW_AI_KEY_1 for image analysis');
+    console.log('🤖 Using Lovable AI for image analysis');
 
-    // Prompt محسّن لتحليل الصور التعليمية
-    const analysisPrompt = `أنت معلم أردني خبير في تحليل الصور التعليمية.
-
-📸 المهمة:
-${question ? `السؤال: ${question}` : 'حلل هذه الصورة التعليمية'}
-
-الصف: ${grade}
+    const systemPrompt = `أنت معلم أردني خبير في تحليل الصور التعليمية للصف ${grade}.
 
 قدم تحليلاً شاملاً يتضمن:
 1. **وصف محتوى الصورة**: ماذا تحتوي الصورة؟
@@ -51,42 +44,57 @@ ${question ? `السؤال: ${question}` : 'حلل هذه الصورة التع�
 
 استخدم لغة واضحة وبسيطة مناسبة لمستوى الصف ${grade}.`;
 
+    const userMessage = question || 'حلل هذه الصورة التعليمية';
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: analysisPrompt
-              },
-              {
-                inline_data: {
-                  mime_type: "image/jpeg",
-                  data: imageBase64
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { 
+              role: 'user', 
+              content: [
+                { type: 'text', text: userMessage },
+                { 
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${imageBase64}`
+                  }
                 }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048
-          }
+              ]
+            }
+          ],
+          temperature: 0.4,
+          max_tokens: 2048
         })
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ Gemini API error (${response.status}):`, errorText);
+      console.error(`❌ Lovable AI error (${response.status}):`, errorText);
       
       if (response.status === 429) {
-        console.error('⚠️ Rate limit hit on API key');
+        console.error('⚠️ Rate limit hit');
         return new Response(
           JSON.stringify({ 
             analysis: 'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة مرة أخرى بعد قليل.' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            analysis: 'يرجى إضافة رصيد لحساب Lovable AI.' 
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -101,7 +109,7 @@ ${question ? `السؤال: ${question}` : 'حلل هذه الصورة التع�
     }
 
     const data = await response.json();
-    const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || 'لم أتمكن من تحليل الصورة';
+    const analysis = data.choices?.[0]?.message?.content || 'لم أتمكن من تحليل الصورة';
 
     console.log('✅ Image analysis completed');
 
