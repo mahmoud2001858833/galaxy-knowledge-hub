@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BookOpen, ExternalLink, AlertCircle } from "lucide-react";
+import { Loader2, BookOpen, ExternalLink, AlertCircle, FileText, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,11 +16,13 @@ interface Textbook {
   file_url: string;
   is_active: boolean;
   created_at: string;
+  extracted_text: string | null;
 }
 
 export default function UploadedSourcesTab() {
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [loading, setLoading] = useState(true);
+  const [extracting, setExtracting] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function UploadedSourcesTab() {
       setLoading(true);
       const { data, error } = await supabase
         .from('jordanian_textbooks')
-        .select('*')
+        .select('id, book_name, subject, grade, semester, file_url, is_active, created_at, extracted_text')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -48,6 +50,44 @@ export default function UploadedSourcesTab() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const extractText = async (textbookId: string) => {
+    setExtracting(prev => ({ ...prev, [textbookId]: true }));
+    
+    try {
+      toast({
+        title: "جاري استخراج النصوص",
+        description: "قد يستغرق هذا بضع دقائق...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('extract-textbook-text', {
+        body: { textbookId }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "تم استخراج النصوص بنجاح",
+          description: `تم استخراج ${data.textLength} حرف من الكتاب`,
+        });
+        
+        // Reload textbooks to show updated status
+        await loadTextbooks();
+      } else {
+        throw new Error(data.error || 'فشل استخراج النصوص');
+      }
+    } catch (error: any) {
+      console.error('Error extracting text:', error);
+      toast({
+        title: "خطأ في استخراج النصوص",
+        description: error.message || 'حدث خطأ أثناء استخراج النصوص',
+        variant: "destructive",
+      });
+    } finally {
+      setExtracting(prev => ({ ...prev, [textbookId]: false }));
     }
   };
 
@@ -70,12 +110,12 @@ export default function UploadedSourcesTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
-          <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertDescription className="text-green-900 dark:text-green-200">
-            <strong>✓ النظام يعمل:</strong> الذكاء الاصطناعي الآن يقرأ محتوى الكتب المرفوعة مباشرة باستخدام Google Gemini.
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-200">
+            <strong>✓ نظام OCR:</strong> يستخدم المساعد الأردني تقنية OCR لاستخراج النصوص من الكتب المرفوعة.
             <br />
-            جميع الإجابات تأتي فقط من الكتب المرفوعة للصف المحدد.
+            اضغط على زر "استخراج النصوص" لكل كتاب لتفعيل الإجابة الدقيقة من محتوى الكتب.
           </AlertDescription>
         </Alert>
 
@@ -103,17 +143,53 @@ export default function UploadedSourcesTab() {
                       <p className="text-sm text-muted-foreground">
                         تاريخ الإضافة: {new Date(book.created_at).toLocaleDateString('ar')}
                       </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        {book.extracted_text ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">
+                            <Check className="w-3 h-3 ml-1" />
+                            تم استخراج النصوص
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-orange-600 border-orange-600">
+                            <AlertCircle className="w-3 h-3 ml-1" />
+                            لم يتم استخراج النصوص
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    {book.file_url && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => window.open(book.file_url, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 ml-2" />
-                        فتح الكتاب
-                      </Button>
-                    )}
+                    <div className="flex flex-col gap-2">
+                      {book.file_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(book.file_url, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 ml-2" />
+                          فتح الكتاب
+                        </Button>
+                      )}
+                      {!book.extracted_text && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => extractText(book.id)}
+                          disabled={extracting[book.id]}
+                          className="flex items-center gap-2"
+                        >
+                          {extracting[book.id] ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              جاري الاستخراج...
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="w-4 h-4" />
+                              استخراج النصوص
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
