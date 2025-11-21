@@ -36,7 +36,7 @@ const MorphologyRootTool = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-teal-600/20 to-cyan-600/20 rounded-xl p-6 border border-teal-500/30">
+      <div className="bg-gradient-to-br from-cyan-900/30 via-blue-800/20 to-cyan-700/30 rounded-xl p-6 border border-cyan-500/40 backdrop-blur-sm shadow-xl">
         <h3 className="text-2xl font-bold text-teal-300 mb-4 flex items-center gap-2">
           <BookOpen className="w-6 h-6" />
           أداة الجذور والأوزان

@@ -82,13 +82,13 @@ const MorphologyAIAssistant = () => {
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-gradient-to-b from-indigo-900/20 to-indigo-950/20 rounded-xl border border-indigo-500/30">
-      <div className="flex items-center gap-3 p-4 border-b border-indigo-500/20">
-        <div className="w-10 h-10 rounded-full bg-indigo-600/30 flex items-center justify-center">
-          <Bot className="w-6 h-6 text-indigo-300" />
+    <div className="flex flex-col h-[600px] bg-gradient-to-br from-purple-900/30 via-violet-800/20 to-purple-700/30 rounded-xl border border-purple-500/40 backdrop-blur-sm shadow-xl">
+      <div className="flex items-center gap-3 p-4 border-b border-purple-500/30">
+        <div className="w-10 h-10 rounded-full bg-purple-600/30 flex items-center justify-center">
+          <Bot className="w-6 h-6 text-purple-200" />
         </div>
         <div>
-          <h3 className="font-semibold text-indigo-300">مساعد الصرف الذكي</h3>
+          <h3 className="font-semibold text-purple-200">مساعد الصرف الذكي</h3>
           <p className="text-sm text-white/60">متخصص في علم الصرف</p>
         </div>
       </div>
@@ -102,8 +102,8 @@ const MorphologyAIAssistant = () => {
             className={`flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'}`}
           >
             {!message.isUser && (
-              <div className="w-8 h-8 rounded-full bg-indigo-600/30 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4 text-indigo-300" />
+              <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 text-purple-200" />
               </div>
             )}
             
@@ -111,7 +111,7 @@ const MorphologyAIAssistant = () => {
               className={`max-w-[80%] p-3 rounded-lg ${
                 message.isUser
                   ? 'bg-blue-600/30 text-white border border-blue-500/30'
-                  : 'bg-indigo-600/20 text-white border border-indigo-500/30'
+                  : 'bg-purple-600/20 text-white border border-purple-500/30'
               }`}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
@@ -134,12 +134,12 @@ const MorphologyAIAssistant = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex gap-3 justify-start"
           >
-            <div className="w-8 h-8 rounded-full bg-indigo-600/30 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-indigo-300" />
+            <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-purple-200" />
             </div>
-            <div className="bg-indigo-600/20 p-3 rounded-lg border border-indigo-500/30">
+            <div className="bg-purple-600/20 p-3 rounded-lg border border-purple-500/30">
               <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-indigo-300" />
+                <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
                 <span className="text-white/70">يكتب...</span>
               </div>
             </div>
@@ -148,21 +148,21 @@ const MorphologyAIAssistant = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-indigo-500/20">
+      <div className="p-4 border-t border-purple-500/30">
         <div className="flex gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="اسأل عن أي شيء يتعلق بعلم الصرف..."
-            className="flex-1 resize-none bg-white/10 border border-indigo-500/30 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:border-indigo-500/50 min-h-[40px] max-h-[120px]"
+            className="flex-1 resize-none bg-white/10 border border-purple-500/30 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:border-purple-500/50 min-h-[40px] max-h-[120px]"
             rows={1}
             disabled={isLoading}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="px-4 py-2 bg-indigo-600/30 border border-indigo-500/30 rounded-lg text-indigo-300 hover:bg-indigo-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-200 hover:bg-purple-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-5 h-5" />
           </button>

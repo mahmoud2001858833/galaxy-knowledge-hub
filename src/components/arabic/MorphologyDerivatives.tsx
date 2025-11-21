@@ -39,8 +39,8 @@ const MorphologyDerivatives = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-xl p-6 border border-purple-500/30">
-        <h3 className="text-2xl font-bold text-purple-300 mb-4 flex items-center gap-2">
+      <div className="bg-gradient-to-br from-pink-900/30 via-rose-800/20 to-pink-700/30 rounded-xl p-6 border border-pink-500/40 backdrop-blur-sm shadow-xl">
+        <h3 className="text-2xl font-bold text-pink-200 mb-4 flex items-center gap-2">
           <Sparkles className="w-6 h-6" />
           أداة المشتقات الصرفية
         </h3>

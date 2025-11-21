@@ -69,9 +69,11 @@ import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
 import GrammarBasicsSection from "./pages/GrammarBasicsSection";
 import GrammarLibrarySection from "./pages/GrammarLibrarySection";
+import GrammarSubsectionsPage from "./pages/GrammarSubsectionsPage";
 import MorphologyBasicsSection from "./pages/MorphologyBasicsSection";
 import MorphologyRootsSection from "./pages/MorphologyRootsSection";
 import MorphologyDerivativesSection from "./pages/MorphologyDerivativesSection";
+import MorphologySubsectionsPage from "./pages/MorphologySubsectionsPage";
 import CommunicationBridge from './pages/CommunicationBridge';
 import JordanTawjihi from './pages/JordanTawjihi';
 import JordanTawjihiHistory from './pages/JordanTawjihiHistory';
@@ -249,11 +251,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'arabic-platform/grammar',
-        element: <PublicRoute><ArabicGrammarSection /></PublicRoute>,
+        element: <PublicRoute><GrammarSubsectionsPage /></PublicRoute>,
       },
       {
         path: 'arabic-platform/morphology',
-        element: <PublicRoute><ArabicMorphologySection /></PublicRoute>,
+        element: <PublicRoute><MorphologySubsectionsPage /></PublicRoute>,
       },
       {
         path: 'arabic-platform/prosody',

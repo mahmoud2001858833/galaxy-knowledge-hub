@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { message } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    const GEMINI_API_KEY = 'AIzaSyA1l95elLm-B3zvDtcaTolkCKZ-kd1vGPU';
     if (!GEMINI_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),

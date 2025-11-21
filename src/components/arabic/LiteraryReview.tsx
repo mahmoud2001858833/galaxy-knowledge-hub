@@ -54,7 +54,7 @@ const LiteraryReview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-rose-950 via-pink-900 to-purple-950 p-6" dir="rtl">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
