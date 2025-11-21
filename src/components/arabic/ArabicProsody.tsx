@@ -106,7 +106,7 @@ const ArabicProsody = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 p-6" dir="rtl">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -119,9 +119,9 @@ const ArabicProsody = () => {
             transition={{ type: "spring", duration: 0.8 }}
             className="inline-block mb-6"
           >
-            <Music className="w-20 h-20 text-cyan-400 mx-auto drop-shadow-[0_0_25px_rgba(34,211,238,0.5)]" />
+            <Music className="w-20 h-20 text-emerald-400 mx-auto drop-shadow-[0_0_25px_rgba(16,185,129,0.5)]" />
           </motion.div>
-          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
             علم العروض
           </h1>
           <p className="text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">

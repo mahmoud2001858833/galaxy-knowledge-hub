@@ -139,8 +139,8 @@ const GrammarFoundation = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-emerald-600/20 to-teal-600/20 rounded-xl p-6 border border-emerald-500/30">
-        <h3 className="text-2xl font-bold text-emerald-300 mb-4">أساسيات النحو</h3>
+      <div className="bg-gradient-to-br from-emerald-900/30 via-teal-800/20 to-emerald-700/30 rounded-xl p-6 border border-emerald-500/40 backdrop-blur-sm shadow-xl">
+        <h3 className="text-2xl font-bold text-emerald-200 mb-4">مكتبة القواعد النحوية</h3>
         
         <div className="flex gap-4 mb-6">
           <button

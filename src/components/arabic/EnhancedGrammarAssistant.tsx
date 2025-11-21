@@ -138,8 +138,8 @@ const EnhancedGrammarAssistant = () => {
   return (
     <div className="space-y-6">
       {/* Input Section */}
-      <div className="bg-gradient-to-br from-amber-600/20 to-orange-600/20 rounded-xl p-6 border border-amber-500/30">
-        <h3 className="text-xl font-semibold text-amber-300 mb-4 flex items-center gap-2">
+      <div className="bg-gradient-to-br from-amber-900/30 via-yellow-800/20 to-amber-700/30 rounded-xl p-6 border border-amber-500/40 backdrop-blur-sm shadow-xl">
+        <h3 className="text-xl font-semibold text-amber-200 mb-4 flex items-center gap-2">
           <BookOpen className="w-5 h-5" />
           المساعد الذكي للإعراب - تحليل دقيق 100%
         </h3>
