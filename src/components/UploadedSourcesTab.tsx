@@ -1,93 +1,81 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BookOpen, ExternalLink, AlertCircle, FileText, Check } from "lucide-react";
+import { Loader2, BookOpen, AlertCircle, Upload, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface Textbook {
-  id: string;
-  book_name: string;
-  subject: string;
+interface ContentSummary {
   grade: string;
+  subject: string;
   semester: string;
-  file_url: string;
-  is_active: boolean;
-  created_at: string;
-  extracted_text: string | null;
+  units: number;
+  lessons: number;
+  pages: number;
 }
 
 export default function UploadedSourcesTab() {
-  const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [contentSummaries, setContentSummaries] = useState<ContentSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [extracting, setExtracting] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadTextbooks();
+    loadContent();
   }, []);
 
-  const loadTextbooks = async () => {
+  const loadContent = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('jordanian_textbooks')
-        .select('id, book_name, subject, grade, semester, file_url, is_active, created_at, extracted_text')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .from('jordanian_textbook_content')
+        .select('grade, subject, semester, unit_number, lesson_number, page_number');
 
       if (error) throw error;
 
-      setTextbooks(data || []);
+      // Group data by grade, subject, semester
+      const summaryMap = new Map<string, ContentSummary>();
+      
+      (data || []).forEach((row: any) => {
+        const key = `${row.grade}|${row.subject}|${row.semester}`;
+        if (!summaryMap.has(key)) {
+          summaryMap.set(key, {
+            grade: row.grade,
+            subject: row.subject,
+            semester: row.semester,
+            units: new Set<number>(),
+            lessons: new Set<string>(),
+            pages: new Set<number>(),
+          } as any);
+        }
+        
+        const summary = summaryMap.get(key)!;
+        (summary.units as any).add(row.unit_number);
+        (summary.lessons as any).add(`${row.unit_number}-${row.lesson_number}`);
+        (summary.pages as any).add(row.page_number);
+      });
+
+      // Convert Sets to counts
+      const summaries = Array.from(summaryMap.values()).map(s => ({
+        ...s,
+        units: (s.units as any).size,
+        lessons: (s.lessons as any).size,
+        pages: (s.pages as any).size,
+      }));
+
+      setContentSummaries(summaries);
     } catch (error: any) {
-      console.error('Error loading textbooks:', error);
+      console.error('Error loading content:', error);
       toast({
-        title: "خطأ في تحميل المصادر",
+        title: "خطأ في تحميل المحتوى",
         description: error.message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const extractText = async (textbookId: string) => {
-    setExtracting(prev => ({ ...prev, [textbookId]: true }));
-    
-    try {
-      toast({
-        title: "جاري استخراج النصوص",
-        description: "قد يستغرق هذا بضع دقائق...",
-      });
-
-      const { data, error } = await supabase.functions.invoke('extract-textbook-text', {
-        body: { textbookId }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        toast({
-          title: "تم استخراج النصوص بنجاح",
-          description: `تم استخراج ${data.textLength} حرف من الكتاب`,
-        });
-        
-        // Reload textbooks to show updated status
-        await loadTextbooks();
-      } else {
-        throw new Error(data.error || 'فشل استخراج النصوص');
-      }
-    } catch (error: any) {
-      console.error('Error extracting text:', error);
-      toast({
-        title: "خطأ في استخراج النصوص",
-        description: error.message || 'حدث خطأ أثناء استخراج النصوص',
-        variant: "destructive",
-      });
-    } finally {
-      setExtracting(prev => ({ ...prev, [textbookId]: false }));
     }
   };
 
@@ -104,91 +92,68 @@ export default function UploadedSourcesTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>المصادر المرفوعة</CardTitle>
+        <CardTitle>المصادر المتاحة</CardTitle>
         <CardDescription>
-          جميع الكتب المدرسية المتوفرة في النظام
+          المحتوى النصي المتوفر في النظام
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
-          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="text-blue-900 dark:text-blue-200">
-            <strong>✓ نظام OCR:</strong> يستخدم المساعد الأردني تقنية OCR لاستخراج النصوص من الكتب المرفوعة.
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+          <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-900 dark:text-green-200">
+            <strong>✓ نظام جديد:</strong> يستخدم المساعد الأردني الآن نظام رفع نصوص مباشر بدلاً من استخراج النصوص من PDF.
             <br />
-            اضغط على زر "استخراج النصوص" لكل كتاب لتفعيل الإجابة الدقيقة من محتوى الكتب.
+            هذا يضمن دقة عالية في الإجابات مع ذكر رقم الوحدة والدرس والصفحة لكل إجابة.
           </AlertDescription>
         </Alert>
 
-        {textbooks.length === 0 ? (
+        <Button 
+          onClick={() => navigate('/upload-jordanian-content')}
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          size="lg"
+        >
+          <Upload className="w-5 h-5 ml-2" />
+          رفع محتوى جديد
+        </Button>
+
+        {contentSummaries.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>لا توجد كتب مرفوعة حالياً</p>
+            <p>لا يوجد محتوى مرفوع حالياً</p>
+            <p className="text-sm mt-2">استخدم الزر أعلاه لرفع محتوى جديد</p>
           </div>
         ) : (
           <div className="grid gap-4">
-            {textbooks.map((book) => (
-              <Card key={book.id} className="border-2">
+            {contentSummaries.map((content, index) => (
+              <Card key={index} className="border-2 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-2">
                         <BookOpen className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-lg">{book.book_name}</h3>
+                        <h3 className="font-semibold text-lg">{content.subject}</h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline">{book.grade}</Badge>
-                        <Badge variant="outline">{book.subject}</Badge>
-                        <Badge variant="outline">{book.semester}</Badge>
+                        <Badge variant="outline" className="font-semibold">{content.grade}</Badge>
+                        <Badge variant="outline">{content.semester}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        تاريخ الإضافة: {new Date(book.created_at).toLocaleDateString('ar')}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        {book.extracted_text ? (
-                          <Badge className="bg-green-500 hover:bg-green-600">
-                            <Check className="w-3 h-3 ml-1" />
-                            تم استخراج النصوص
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-orange-600 border-orange-600">
-                            <AlertCircle className="w-3 h-3 ml-1" />
-                            لم يتم استخراج النصوص
-                          </Badge>
-                        )}
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div className="flex flex-col items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                          <FileText className="w-4 h-4 mb-1 text-blue-600" />
+                          <span className="font-bold text-lg">{content.units}</span>
+                          <span className="text-xs text-muted-foreground">وحدة</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                          <FileText className="w-4 h-4 mb-1 text-green-600" />
+                          <span className="font-bold text-lg">{content.lessons}</span>
+                          <span className="text-xs text-muted-foreground">درس</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                          <FileText className="w-4 h-4 mb-1 text-purple-600" />
+                          <span className="font-bold text-lg">{content.pages}</span>
+                          <span className="text-xs text-muted-foreground">صفحة</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {book.file_url && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(book.file_url, '_blank')}
-                        >
-                          <ExternalLink className="w-4 h-4 ml-2" />
-                          فتح الكتاب
-                        </Button>
-                      )}
-                      {!book.extracted_text && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => extractText(book.id)}
-                          disabled={extracting[book.id]}
-                          className="flex items-center gap-2"
-                        >
-                          {extracting[book.id] ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              جاري الاستخراج...
-                            </>
-                          ) : (
-                            <>
-                              <FileText className="w-4 h-4" />
-                              استخراج النصوص
-                            </>
-                          )}
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardContent>
