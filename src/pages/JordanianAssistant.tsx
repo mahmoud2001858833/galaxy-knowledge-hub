@@ -175,18 +175,35 @@ export default function JordanianAssistant() {
     setLoading(true);
 
     try {
+      // Prepare the request body
+      const requestBody: any = {
+        question: currentQuestion || "ما هو المفهوم في هذه الصورة؟",
+        studentName: studentName,
+        grade: grade,
+      };
+
+      // If there's an image, convert it to base64
+      if (selectedImage) {
+        const reader = new FileReader();
+        const base64Image = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedImage);
+        });
+        requestBody.image = base64Image;
+      }
+
       // Call the answer function directly - it will handle textbook retrieval
       console.log('Generating answer from uploaded textbooks...');
       const { data: answerData, error: answerError } = await supabase.functions.invoke(
         'jordanian-assistant-answer',
         {
-          body: {
-            question: currentQuestion,
-            studentName: studentName,
-            grade: grade,
-          }
+          body: requestBody
         }
       );
+
+      // Clear the image after sending
+      removeImage();
 
       // Check if the response contains an error message
       if (answerData?.error) {
@@ -412,7 +429,37 @@ export default function JordanianAssistant() {
                     )}
                   </div>
 
+                  {imagePreview && (
+                    <div className="mb-4 relative inline-block">
+                      <img src={imagePreview} alt="Preview" className="max-h-32 rounded-lg border-2 border-primary" />
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={removeImage}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={loading}
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </Button>
                     <Input
                       placeholder="اكتب سؤالك هنا..."
                       value={currentQuestion}
@@ -423,7 +470,7 @@ export default function JordanianAssistant() {
                     />
                     <Button 
                       onClick={handleAskQuestion} 
-                      disabled={loading || !currentQuestion.trim()}
+                      disabled={loading || (!currentQuestion.trim() && !selectedImage)}
                       size="icon"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

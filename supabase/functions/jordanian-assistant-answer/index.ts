@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const { question, studentName, grade } = await req.json();
+    const { question, studentName, grade, image } = await req.json();
 
-    console.log('Processing question:', { question, studentName, grade });
+    console.log('Processing question:', { question, studentName, grade, hasImage: !!image });
 
     if (!question) {
       return new Response(
@@ -128,11 +128,41 @@ ${booksContext}
 9. أضف أمثلة من الكتاب نفسه عند الإمكان
 10. استخدم اللغة العربية الفصحى
 11. في نهاية الإجابة، اكتب المصدر بهذا الشكل:
-    📚 المصدر: [المادة] - الوحدة [رقم]: [اسم الوحدة] - الدرس [رقم]: [اسم الدرس] - صفحة [رقم]`;
+    📚 المصدر: [المادة] - الوحدة [رقم]: [اسم الوحدة] - الدرس [رقم]: [اسم الدرس] - صفحة [رقم]
+12. إذا تم إرفاق صورة مع السؤال، قم بتحليل محتواها واربطها بالمنهاج المدرسي، ثم أجب على السؤال`;
 
 
     // Call Lovable AI
     console.log('Step 2: Calling Lovable AI...');
+
+    // Prepare messages - if there's an image, use multimodal format
+    let messages;
+    if (image) {
+      // Extract base64 content (remove data:image/...;base64, prefix)
+      const base64Content = image.split(',')[1];
+      const imageType = image.split(';')[0].split('/')[1]; // e.g., 'jpeg', 'png'
+      
+      messages = [
+        { role: 'system', content: systemPrompt },
+        { 
+          role: 'user', 
+          content: [
+            { type: 'text', text: `السؤال: ${question}` },
+            { 
+              type: 'image_url', 
+              image_url: { 
+                url: `data:image/${imageType};base64,${base64Content}`
+              } 
+            }
+          ]
+        },
+      ];
+    } else {
+      messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `السؤال: ${question}` },
+      ];
+    }
 
     const aiResponse = await fetch(
       'https://ai.gateway.lovable.dev/v1/chat/completions',
@@ -144,10 +174,7 @@ ${booksContext}
         },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `السؤال: ${question}` },
-          ],
+          messages: messages,
           temperature: 0.4,
           max_tokens: 4096,
         }),
@@ -241,6 +268,25 @@ ${booksContext}
 
     // Save to database
     console.log('Step 3: Saving to database...');
+    
+    // If image analysis was performed, save to jordanian_image_analysis table
+    if (image) {
+      const { error: imageInsertError } = await supabase
+        .from('jordanian_image_analysis')
+        .insert({
+          student_name: studentName,
+          grade: grade,
+          question: question,
+          image_url: image,
+          analysis_result: answer,
+        });
+      
+      if (imageInsertError) {
+        console.error('Image analysis insert error:', imageInsertError);
+      }
+    }
+    
+    // Also save to regular usage table
     const { error: insertError } = await supabase
       .from('student_assistant_usage')
       .insert({
