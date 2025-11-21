@@ -7,11 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, BookOpen, Trash2 } from "lucide-react";
+import { Loader2, Upload, BookOpen, Trash2, FileText } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import imageCompression from "browser-image-compression";
-import pako from "pako";
 
 export default function UploadTextbooks() {
   const [bookName, setBookName] = useState("");
@@ -20,7 +18,7 @@ export default function UploadTextbooks() {
   const [semester, setSemester] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadingToGemini, setUploadingToGemini] = useState(false);
+  const [extractingText, setExtractingText] = useState<string | null>(null);
   const [textbooks, setTextbooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -47,47 +45,44 @@ export default function UploadTextbooks() {
     }
   };
 
-  const compressFile = async (file: File): Promise<File> => {
-    const fileSizeMB = file.size / (1024 * 1024);
+  const extractTextFromBook = async (bookId: string, bookName: string) => {
+    setExtractingText(bookId);
     
-    if (fileSizeMB <= 50) {
-      return file;
-    }
-
-    toast({
-      title: "جاري ضغط الملف...",
-      description: `حجم الملف: ${fileSizeMB.toFixed(2)} MB`,
-    });
-
-    if (file.type.startsWith('image/')) {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 45,
-        maxWidthOrHeight: 4096,
-        useWebWorker: true,
+    try {
+      console.log(`Starting text extraction for book: ${bookName}`);
+      
+      const { data, error } = await supabase.functions.invoke('extract-textbook-text', {
+        body: { textbookId: bookId }
       });
+
+      if (error) {
+        console.error('Extract error:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'فشل استخراج النص');
+      }
+
+      console.log('Text extracted successfully:', data);
       
       toast({
-        title: "تم ضغط الصورة بنجاح",
-        description: `الحجم الجديد: ${(compressed.size / (1024 * 1024)).toFixed(2)} MB`,
+        title: "تم استخراج النص بنجاح",
+        description: `تم استخراج ${data.textLength} حرف من الكتاب`,
       });
-      
-      return compressed;
-    } else if (file.type === 'application/pdf') {
-      const arrayBuffer = await file.arrayBuffer();
-      const compressed = pako.deflate(new Uint8Array(arrayBuffer));
-      const compressedFile = new File([compressed], file.name, { type: file.type });
-      
-      const newSizeMB = compressedFile.size / (1024 * 1024);
-      
-      toast({
-        title: "تم ضغط ملف PDF",
-        description: `الحجم الجديد: ${newSizeMB.toFixed(2)} MB`,
-      });
-      
-      return compressedFile;
-    }
 
-    return file;
+      loadTextbooks();
+
+    } catch (error: any) {
+      console.error('Error extracting text:', error);
+      toast({
+        title: "خطأ في استخراج النص",
+        description: error.message || "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
+    } finally {
+      setExtractingText(null);
+    }
   };
 
   const handleUpload = async () => {
@@ -100,29 +95,54 @@ export default function UploadTextbooks() {
       return;
     }
 
+    // تحقق من حجم الملف (15MB حد أقصى لـ Lovable AI)
+    const fileSizeMB = file.size / (1024 * 1024);
+    if (fileSizeMB > 15) {
+      toast({
+        title: "الملف كبير جداً",
+        description: "الحد الأقصى لحجم الملف هو 15 ميجابايت. يرجى استخدام ملف أصغر.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
+    console.log('Starting upload process...');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
 
-      // Compress file if needed
-      const finalFile = await compressFile(file);
-      const fileSizeMB = finalFile.size / (1024 * 1024);
+      console.log('User authenticated:', user.id);
+      console.log('File size:', fileSizeMB.toFixed(2), 'MB');
 
-      // Upload to Storage
-      const fileName = `${Date.now()}-${finalFile.name}`;
-      const { error: uploadError } = await supabase.storage
+      // رفع الملف إلى Storage
+      const fileName = `${Date.now()}-${file.name}`;
+      console.log('Uploading to storage:', fileName);
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('jordanian-textbooks')
-        .upload(fileName, finalFile);
+        .upload(fileName, file, {
+          contentType: file.type,
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`خطأ في رفع الملف: ${uploadError.message}`);
+      }
+
+      console.log('File uploaded successfully:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('jordanian-textbooks')
         .getPublicUrl(fileName);
 
-      // Save to database
+      console.log('Public URL:', publicUrl);
+
+      // حفظ بيانات الكتاب في قاعدة البيانات
       const { data: book, error: dbError } = await supabase
         .from('jordanian_textbooks')
         .insert({
@@ -133,31 +153,38 @@ export default function UploadTextbooks() {
           file_url: publicUrl,
           file_size_mb: fileSizeMB,
           created_by: user.id,
+          is_active: true,
         })
         .select()
         .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        throw new Error(`خطأ في حفظ بيانات الكتاب: ${dbError.message}`);
+      }
+
+      console.log('Book saved to database:', book);
 
       toast({
-        title: "تم رفع الكتاب بنجاح",
-        description: "يمكنك الآن رفعه إلى Gemini",
+        title: "✅ تم رفع الكتاب بنجاح",
+        description: `الكتاب جاهز. يمكنك الآن استخراج النص منه.`,
       });
 
-      // Reset form
+      // إعادة تعيين النموذج
       setBookName("");
       setSubject("");
       setGrade("");
       setSemester("");
       setFile(null);
       
-      loadTextbooks();
+      // إعادة تحميل قائمة الكتب
+      await loadTextbooks();
 
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Upload error:', error);
       toast({
-        title: "خطأ في رفع الكتاب",
-        description: error.message,
+        title: "❌ خطأ في رفع الكتاب",
+        description: error.message || "حدث خطأ غير متوقع",
         variant: "destructive",
       });
     } finally {
@@ -165,59 +192,45 @@ export default function UploadTextbooks() {
     }
   };
 
-  const uploadToGemini = async (bookId: string) => {
-    setUploadingToGemini(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('upload-textbook-to-gemini', {
-        body: { bookId }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "تم رفع الكتاب إلى Gemini بنجاح",
-        description: "الكتاب جاهز للاستخدام في المساعد الذكي",
-      });
-
-      loadTextbooks();
-
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        title: "خطأ في رفع الكتاب إلى Gemini",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setUploadingToGemini(false);
-    }
-  };
 
   const deleteBook = async (bookId: string, fileUrl: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الكتاب؟')) {
+      return;
+    }
+
     try {
-      const fileName = fileUrl.split('/').pop();
+      console.log('Deleting book:', bookId);
       
-      await supabase.storage
-        .from('jordanian-textbooks')
-        .remove([fileName!]);
+      const fileName = fileUrl.split('/').pop();
+      if (fileName) {
+        console.log('Removing file from storage:', fileName);
+        await supabase.storage
+          .from('jordanian-textbooks')
+          .remove([fileName]);
+      }
 
       const { error } = await supabase
         .from('jordanian_textbooks')
         .delete()
         .eq('id', bookId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+
+      console.log('Book deleted successfully');
 
       toast({
-        title: "تم حذف الكتاب بنجاح",
+        title: "✅ تم حذف الكتاب بنجاح",
       });
 
       loadTextbooks();
 
     } catch (error: any) {
+      console.error('Delete book error:', error);
       toast({
-        title: "خطأ في حذف الكتاب",
+        title: "❌ خطأ في حذف الكتاب",
         description: error.message,
         variant: "destructive",
       });
@@ -304,12 +317,24 @@ export default function UploadTextbooks() {
               </div>
 
               <div>
-                <Label>ملف PDF</Label>
+                <Label>ملف PDF (الحد الأقصى: 15 MB)</Label>
                 <Input
                   type="file"
                   accept=".pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const selectedFile = e.target.files?.[0] || null;
+                    setFile(selectedFile);
+                    if (selectedFile) {
+                      const sizeMB = selectedFile.size / (1024 * 1024);
+                      console.log('File selected:', selectedFile.name, 'Size:', sizeMB.toFixed(2), 'MB');
+                    }
+                  }}
                 />
+                {file && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    الحجم: {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                )}
               </div>
 
               <Button
@@ -359,21 +384,33 @@ export default function UploadTextbooks() {
                           <p>المادة: {book.subject}</p>
                           <p>الصف: {book.grade} - الفصل {book.semester}</p>
                           <p>الحجم: {book.file_size_mb?.toFixed(2)} MB</p>
-                          {book.gemini_file_uri && (
-                            <p className="text-green-600">✓ مرفوع إلى Gemini</p>
+                          {book.extracted_text ? (
+                            <p className="text-green-600 flex items-center gap-1">
+                              <FileText className="w-4 h-4" />
+                              ✓ تم استخراج النص ({book.extracted_text.length} حرف)
+                            </p>
+                          ) : (
+                            <p className="text-orange-600">⚠ لم يتم استخراج النص بعد</p>
                           )}
                         </div>
                         <div className="flex gap-2 mt-2">
-                          {!book.gemini_file_uri && (
+                          {!book.extracted_text && (
                             <Button
-                              onClick={() => uploadToGemini(book.id)}
-                              disabled={uploadingToGemini}
+                              onClick={() => extractTextFromBook(book.id, book.book_name)}
+                              disabled={extractingText === book.id}
                               size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
                             >
-                              {uploadingToGemini ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                              {extractingText === book.id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                  جاري الاستخراج...
+                                </>
                               ) : (
-                                'رفع إلى Gemini'
+                                <>
+                                  <FileText className="w-4 h-4 ml-2" />
+                                  استخراج النص
+                                </>
                               )}
                             </Button>
                           )}
