@@ -17,7 +17,9 @@ const ScientificJournal = () => {
       activeSubject === 'physics' ? 'from-blue-900/40 to-blue-950' :
       activeSubject === 'chemistry' ? 'from-purple-900/40 to-purple-950' :
       activeSubject === 'biology' ? 'from-green-900/40 to-green-950' :
-      'from-cyan-900/40 to-cyan-950'
+      activeSubject === 'mathematics' ? 'from-cyan-900/40 to-cyan-950' :
+      activeSubject === 'arabic' ? 'from-amber-900/40 to-amber-950' :
+      'from-rose-900/40 to-rose-950'
     }`} dir="rtl">
       <StarField />
       <Navbar />
@@ -34,7 +36,9 @@ const ScientificJournal = () => {
               activeSubject === 'physics' ? 'bg-gradient-to-r from-blue-400 via-white to-blue-500' :
               activeSubject === 'chemistry' ? 'bg-gradient-to-r from-purple-400 via-white to-purple-500' :
               activeSubject === 'biology' ? 'bg-gradient-to-r from-green-400 via-white to-green-500' :
-              'bg-gradient-to-r from-cyan-400 via-white to-cyan-500'
+              activeSubject === 'mathematics' ? 'bg-gradient-to-r from-cyan-400 via-white to-cyan-500' :
+              activeSubject === 'arabic' ? 'bg-gradient-to-r from-amber-400 via-white to-amber-500' :
+              'bg-gradient-to-r from-rose-400 via-white to-rose-500'
             }`}>
               المجلة العلمية
             </h1>
@@ -52,11 +56,13 @@ const ScientificJournal = () => {
             value={activeSubject}
             onValueChange={(value) => setActiveSubject(value as SubjectType)}
           >
-            <TabsList className="grid grid-cols-4 mb-8">
+            <TabsList className="grid grid-cols-6 mb-8">
               <TabsTrigger value="physics" className="data-[state=active]:bg-blue-600">الفيزياء</TabsTrigger>
               <TabsTrigger value="chemistry" className="data-[state=active]:bg-purple-600">الكيمياء</TabsTrigger>
               <TabsTrigger value="biology" className="data-[state=active]:bg-green-600">الأحياء</TabsTrigger>
               <TabsTrigger value="mathematics" className="data-[state=active]:bg-cyan-600">الرياضيات</TabsTrigger>
+              <TabsTrigger value="arabic" className="data-[state=active]:bg-amber-600">اللغة العربية</TabsTrigger>
+              <TabsTrigger value="english" className="data-[state=active]:bg-rose-600">اللغة الإنجليزية</TabsTrigger>
             </TabsList>
             
             <TabsContent value="physics">
@@ -73,6 +79,14 @@ const ScientificJournal = () => {
             
             <TabsContent value="mathematics">
               <SubjectJournalsGrid subject="mathematics" />
+            </TabsContent>
+            
+            <TabsContent value="arabic">
+              <SubjectJournalsGrid subject="arabic" />
+            </TabsContent>
+            
+            <TabsContent value="english">
+              <SubjectJournalsGrid subject="english" />
             </TabsContent>
           </Tabs>
         </motion.div>

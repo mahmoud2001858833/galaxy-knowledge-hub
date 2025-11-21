@@ -14,7 +14,7 @@ import { SubjectType } from '@/components/shared/types/educationalContentTypes';
 const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
   description: z.string().optional(),
-  subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics']),
+  subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics', 'arabic', 'english']),
   image: z.instanceof(File).refine(
     (file) => file.size < 5 * 1024 * 1024, // 5MB
     { message: "حجم الملف يجب أن يكون أقل من 5 ميجابايت" }
@@ -114,6 +114,8 @@ const ImageUploadForm = ({ onSubmit, isUploading }: ImageUploadFormProps) => {
                   <SelectItem value="chemistry">الكيمياء</SelectItem>
                   <SelectItem value="biology">الأحياء</SelectItem>
                   <SelectItem value="mathematics">الرياضيات</SelectItem>
+                  <SelectItem value="arabic">اللغة العربية</SelectItem>
+                  <SelectItem value="english">اللغة الإنجليزية</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
