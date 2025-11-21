@@ -38,6 +38,7 @@ export default function ManageJordanianContent() {
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [filterGrade, setFilterGrade] = useState<string>("all");
   const [filterSubject, setFilterSubject] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function ManageJordanianContent() {
 
   useEffect(() => {
     applyFilters();
-  }, [content, filterGrade, filterSubject]);
+  }, [content, filterGrade, filterSubject, searchQuery]);
 
   const loadContent = async () => {
     try {
@@ -83,6 +84,15 @@ export default function ManageJordanianContent() {
     
     if (filterSubject !== "all") {
       filtered = filtered.filter(item => item.subject === filterSubject);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.unit_name.toLowerCase().includes(query) ||
+        item.lesson_name.toLowerCase().includes(query) ||
+        item.page_content.toLowerCase().includes(query)
+      );
     }
     
     setFilteredContent(filtered);
@@ -177,8 +187,19 @@ export default function ManageJordanianContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search and Filters */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-white text-sm">البحث السريع</label>
+                  <Input
+                    placeholder="ابحث في اسم الوحدة، الدرس، أو محتوى الصفحة..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-white text-sm">تصفية حسب الصف</label>
                   <Select value={filterGrade} onValueChange={setFilterGrade}>
@@ -208,6 +229,7 @@ export default function ManageJordanianContent() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
               </div>
 
               {/* Content List */}
