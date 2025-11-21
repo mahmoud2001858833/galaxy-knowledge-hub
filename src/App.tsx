@@ -97,6 +97,7 @@ import AIAssistantSection from './pages/AIAssistantSection';
 import JordanianAssistant from './pages/JordanianAssistant';
 import UploadTextbooks from './pages/UploadTextbooks';
 import UploadJordanianContent from './pages/UploadJordanianContent';
+import ManageJordanianContent from './pages/ManageJordanianContent';
 import SchoolMagazine from './pages/SchoolMagazine';
 import NewsDetail from './pages/NewsDetail';
 import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
@@ -517,6 +518,10 @@ const router = createBrowserRouter([
       {
         path: 'upload-jordanian-content',
         element: <AuthGuard><UploadJordanianContent /></AuthGuard>,
+      },
+      {
+        path: 'manage-jordanian-content',
+        element: <AuthGuard><ManageJordanianContent /></AuthGuard>,
       },
       {
         path: 'school-magazine',
