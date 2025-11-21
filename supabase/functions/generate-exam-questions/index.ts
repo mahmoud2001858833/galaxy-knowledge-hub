@@ -37,23 +37,23 @@ serve(async (req) => {
 
     const normalizedSubject = subjectMappings[subject] ?? subject;
 
-    // Get relevant textbook
-    const { data: books, error: booksError } = await supabase
-      .from('jordanian_textbooks')
+    // Get relevant textbook content from the new text-based system
+    const { data: contentPages, error: contentError } = await supabase
+      .from('jordanian_textbook_content')
       .select('*')
       .eq('grade', grade)
-      .eq('subject', normalizedSubject)
-      .eq('is_active', true)
-      .not('gemini_file_uri', 'is', null)
-      .limit(1);
+      .eq('subject', subject)
+      .order('unit_number', { ascending: true })
+      .order('lesson_number', { ascending: true })
+      .order('page_number', { ascending: true });
 
-    if (booksError) {
-      console.error('Database error:', booksError);
+    if (contentError) {
+      console.error('Database error:', contentError);
       throw new Error('فشل الوصول إلى قاعدة البيانات');
     }
 
-    if (!books || books.length === 0) {
-      console.log('No textbooks found for this subject/grade when generating exam:', { subject, normalizedSubject, grade });
+    if (!contentPages || contentPages.length === 0) {
+      console.log('No content found for this subject/grade when generating exam:', { subject, grade });
       const examPaper = 'لم يتوفر الكتاب';
       return new Response(
         JSON.stringify({
@@ -64,7 +64,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Found textbook:', books[0].book_name);
+    console.log(`Found ${contentPages.length} pages of content for ${subject} - ${grade}`);
     
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
@@ -75,28 +75,39 @@ serve(async (req) => {
     // Generate questions using Lovable AI
     console.log('Step 1: Generating questions with Lovable AI...');
     
+    // Build content context from pages
+    const contentContext = contentPages
+      .map((p: any) => 
+        `[الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}]\n${p.page_content}`
+      )
+      .join('\n\n---\n\n');
+
     const systemPrompt = `أنت معلم أردني متخصص في إنشاء الامتحانات للمنهاج الأردني.
 
 المعلومات:
 - المادة: ${subject}
 - الصف: ${grade}
-- الكتاب: ${books[0].book_name}
 - نوع الأسئلة: ${questionTypes}
 - نطاق المحتوى: ${contentRange}
 - عدد الأسئلة: ${questionCount}
 
+محتوى الكتاب المتاح:
+${contentContext}
+
 يجب عليك:
-1. إنشاء ${questionCount} سؤالاً امتحانياً احترافياً
+1. إنشاء ${questionCount} سؤالاً امتحانياً احترافياً بناءً على المحتوى المتاح أعلاه فقط
 2. التنوع بمستوى الصعوبة (سهل، متوسط، صعب)
 3. تغطية النطاق المطلوب من المحتوى
 4. كتابة الأسئلة بطريقة واضحة ومباشرة
-5. إضافة الإجابات النموذجية في النهاية
+5. بعد كل سؤال، اذكر المصدر: (الوحدة [رقم] - الدرس [رقم] - صفحة [رقم])
+6. إضافة الإجابات النموذجية في النهاية مع ذكر المصادر
 
 صيغة الإخراج:
 - اكتب عنوان الامتحان أولاً (المادة والصف)
 - رقّم الأسئلة بشكل متسلسل
+- اكتب المصدر بعد كل سؤال
 - اترك مساحة بعد كل سؤال
-- اكتب الإجابات النموذجية في نهاية الامتحان`;
+- اكتب الإجابات النموذجية في نهاية الامتحان مع المصادر`;
 
     const generateResponse = await fetch(
       'https://ai.gateway.lovable.dev/v1/chat/completions',

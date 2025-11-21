@@ -48,48 +48,61 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get textbooks for this grade that have extracted text
-    console.log('Step 1: Fetching uploaded textbooks for grade:', grade);
-    const { data: textbooks, error: textbooksError } = await supabase
-      .from('jordanian_textbooks')
-      .select('id, book_name, subject, extracted_text')
+    // Get textbook content for this grade from the new text-based system
+    console.log('Step 1: Fetching textbook content for grade:', grade);
+    const { data: contentPages, error: contentError } = await supabase
+      .from('jordanian_textbook_content')
+      .select('*')
       .eq('grade', grade)
-      .eq('is_active', true)
-      .not('extracted_text', 'is', null);
+      .order('unit_number', { ascending: true })
+      .order('lesson_number', { ascending: true })
+      .order('page_number', { ascending: true });
 
-    if (textbooksError) {
-      console.error('Error fetching textbooks:', textbooksError);
+    if (contentError) {
+      console.error('Error fetching content:', contentError);
       return new Response(
         JSON.stringify({
           answer: null,
           sources: [],
-          error: 'فشل جلب الكتب المدرسية',
+          error: 'فشل جلب المحتوى الدراسي',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    if (!textbooks || textbooks.length === 0) {
-      console.log('No textbooks with extracted text found for grade:', grade);
+    if (!contentPages || contentPages.length === 0) {
+      console.log('No content found for grade:', grade);
       return new Response(
         JSON.stringify({
-          answer: 'عذراً، لم يتم استخراج نصوص الكتب بعد. يرجى الانتظار حتى يتم معالجة الكتب.',
+          answer: 'عذراً، لم يتم تزويد النظام بهذا المصدر بعد. يرجى الانتظار والمحاولة في وقت لاحق',
           sources: [],
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    console.log(
-      `Found ${textbooks.length} textbooks with extracted text for grade ${grade}:`,
-      textbooks.map((b) => b.book_name),
-    );
+    console.log(`Found ${contentPages.length} pages of content for grade ${grade}`);
 
-    // Build context from extracted textbook content (limit to prevent token overflow)
-    const booksContext = textbooks
-      .map((book) => {
-        const textPreview = book.extracted_text?.substring(0, 8000) || 'لا يوجد نص مستخرج';
-        return `### الكتاب: ${book.book_name} (${book.subject})\nالمحتوى:\n${textPreview}\n`;
+    // Build context from textbook content (group by subject for better organization)
+    const contentBySubject = contentPages.reduce((acc: any, page: any) => {
+      if (!acc[page.subject]) {
+        acc[page.subject] = [];
+      }
+      acc[page.subject].push(page);
+      return acc;
+    }, {});
+
+    // Create context with proper structure
+    const booksContext = Object.entries(contentBySubject)
+      .map(([subject, pages]: [string, any[]]) => {
+        const pagesText = pages
+          .slice(0, 20) // Limit pages to prevent token overflow
+          .map((p: any) => 
+            `[الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}]\n${p.page_content}`
+          )
+          .join('\n\n');
+        
+        return `### المادة: ${subject}\n${pagesText}`;
       })
       .join('\n\n---\n\n');
 
@@ -102,10 +115,16 @@ ${booksContext}
 قواعد مهمة جداً:
 1. أجب فقط بناءً على محتوى الكتب المرفقة أعلاه - لا تخترع معلومات
 2. إذا لم تجد الإجابة في محتوى الكتب، قل بوضوح: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
-3. اذكر اسم الكتاب والمادة عند الإجابة
+3. عند الإجابة، اذكر:
+   - رقم الوحدة واسمها
+   - رقم الدرس واسمه
+   - رقم الصفحة
+   - المادة
 4. اشرح المفهوم بطريقة واضحة ومبسطة
 5. أضف أمثلة من الكتاب نفسه عند الإمكان
-6. استخدم اللغة العربية الفصحى`;
+6. استخدم اللغة العربية الفصحى
+7. في نهاية الإجابة، اكتب المصدر بهذا الشكل:
+   المصدر: [المادة] - الوحدة [رقم]: [اسم الوحدة] - الدرس [رقم]: [اسم الدرس] - صفحة [رقم]`;
 
 
     // Call Lovable AI
@@ -183,14 +202,37 @@ ${booksContext}
       );
     }
 
-    console.log('Answer generated from uploaded books, length:', answer.length);
+    console.log('Answer generated from textbook content, length:', answer.length);
 
-    // Prepare sources
-    const sources = textbooks.map((book: any) => ({
-      bookName: book.book_name,
-      subject: book.subject,
-      fileUrl: book.file_url,
-      pageNumber: null,
+    // Extract source information from the content pages used
+    const uniqueSources = Array.from(
+      new Set(contentPages.map((p: any) => `${p.subject}|${p.unit_number}|${p.unit_name}|${p.lesson_number}|${p.lesson_name}`))
+    ).map(key => {
+      const [subject, unitNum, unitName, lessonNum, lessonName] = key.split('|');
+      const relevantPages = contentPages.filter((p: any) => 
+        p.subject === subject && 
+        p.unit_number === parseInt(unitNum) && 
+        p.lesson_number === parseInt(lessonNum)
+      );
+      return {
+        subject,
+        unitNumber: parseInt(unitNum),
+        unitName,
+        lessonNumber: parseInt(lessonNum),
+        lessonName,
+        pageNumbers: relevantPages.map((p: any) => p.page_number).sort((a: number, b: number) => a - b)
+      };
+    });
+
+    const sources = uniqueSources.map((source: any) => ({
+      bookName: `${source.subject} - الوحدة ${source.unitNumber}: ${source.unitName}`,
+      subject: source.subject,
+      unitNumber: source.unitNumber,
+      unitName: source.unitName,
+      lessonNumber: source.lessonNumber,
+      lessonName: source.lessonName,
+      pageNumber: source.pageNumbers.join(', '),
+      fileUrl: null,
     }));
 
     // Save to database

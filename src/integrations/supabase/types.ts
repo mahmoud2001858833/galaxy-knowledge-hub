@@ -972,6 +972,54 @@ export type Database = {
         }
         Relationships: []
       }
+      jordanian_textbook_content: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          grade: string
+          id: string
+          lesson_name: string
+          lesson_number: number
+          page_content: string
+          page_number: number
+          semester: string
+          subject: string
+          unit_name: string
+          unit_number: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          grade: string
+          id?: string
+          lesson_name: string
+          lesson_number: number
+          page_content: string
+          page_number: number
+          semester: string
+          subject: string
+          unit_name: string
+          unit_number: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          grade?: string
+          id?: string
+          lesson_name?: string
+          lesson_number?: number
+          page_content?: string
+          page_number?: number
+          semester?: string
+          subject?: string
+          unit_name?: string
+          unit_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jordanian_textbooks: {
         Row: {
           book_name: string
