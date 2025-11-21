@@ -118,13 +118,13 @@ export default function UploadTextbooks() {
       console.log('User authenticated:', user.id);
       console.log('File size:', fileSizeMB.toFixed(2), 'MB');
 
-      // رفع الملف إلى Storage
-      const fileName = `${Date.now()}-${file.name}`;
-      console.log('Uploading to storage:', fileName);
+      // رفع الملف إلى Storage - استخدام اسم ملف آمن بدون أحرف عربية
+      const safeFileName = `${Date.now()}.pdf`;
+      console.log('Uploading to storage:', safeFileName);
       
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('jordanian-textbooks')
-        .upload(fileName, file, {
+        .upload(safeFileName, file, {
           contentType: file.type,
           upsert: false
         });
@@ -138,7 +138,7 @@ export default function UploadTextbooks() {
 
       const { data: { publicUrl } } = supabase.storage
         .from('jordanian-textbooks')
-        .getPublicUrl(fileName);
+        .getPublicUrl(safeFileName);
 
       console.log('Public URL:', publicUrl);
 
