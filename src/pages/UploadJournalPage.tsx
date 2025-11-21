@@ -22,7 +22,7 @@ const formSchema = z.object({
   title: z.string().min(3, { message: "يجب أن يكون العنوان 3 أحرف على الأقل" }),
   description: z.string().optional(),
   author: z.string().min(3, { message: "يجب أن يكون اسم المؤلف 3 أحرف على الأقل" }),
-  subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics']),
+  subject: z.enum(['physics', 'chemistry', 'biology', 'mathematics', 'arabic', 'english']),
   coverImage: z.instanceof(File).refine(
     (file) => file.size < 100 * 1024 * 1024, // 100MB للصور
     { message: "حجم صورة الغلاف يجب أن يكون أقل من 100 ميجابايت" }
@@ -379,6 +379,8 @@ const UploadJournalPage = () => {
                           <SelectItem value="chemistry">الكيمياء</SelectItem>
                           <SelectItem value="biology">الأحياء</SelectItem>
                           <SelectItem value="mathematics">الرياضيات</SelectItem>
+                          <SelectItem value="arabic">اللغة العربية</SelectItem>
+                          <SelectItem value="english">اللغة الإنجليزية</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
