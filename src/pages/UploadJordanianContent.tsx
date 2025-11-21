@@ -404,7 +404,7 @@ export default function UploadJordanianContent() {
                                     value={page.content}
                                     onChange={(e) => updatePageContent(unitIndex, lessonIndex, pageIndex, e.target.value)}
                                     placeholder="اكتب محتوى الصفحة هنا..."
-                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[150px]"
+                                    className="bg-black/60 border-white/30 text-white placeholder:text-white/50 min-h-[150px]"
                                   />
                                 </div>
                               </motion.div>

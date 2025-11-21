@@ -40,7 +40,8 @@ type Section =
   | "journals"
   | "visual-library"
   | "tawjihi"
-  | "school-magazine";
+  | "school-magazine"
+  | "jordanian-content";
 
 export default function ControlCenter() {
   const navigate = useNavigate();
@@ -89,9 +90,13 @@ export default function ControlCenter() {
   };
 
   const navigateToSection = (section: Section, label: string) => {
-    // Navigate to external page for school magazine
+    // Navigate to external pages
     if (section === "school-magazine") {
       navigate("/school-magazine");
+      return;
+    }
+    if (section === "jordanian-content") {
+      navigate("/manage-jordanian-content");
       return;
     }
     
@@ -134,7 +139,8 @@ export default function ControlCenter() {
     { icon: BookOpen, label: "المجلات العلمية", section: "journals" as Section },
     { icon: Image, label: "المكتبة البصرية", section: "visual-library" as Section },
     { icon: BookOpen, label: "ملفات التوجيهي", section: "tawjihi" as Section },
-    { icon: BookOpen, label: "مجلة مدرسة عنبه", section: "school-magazine" as Section }
+    { icon: BookOpen, label: "مجلة مدرسة عنبه", section: "school-magazine" as Section },
+    { icon: BookOpen, label: "إدارة المحتوى الأردني", section: "jordanian-content" as Section }
   ];
 
   const yourHomeItems = [
