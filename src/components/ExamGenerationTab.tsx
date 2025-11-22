@@ -11,10 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ExamGenerationTabProps {
-  grade: string;
+  initialGrade: string;
 }
 
-export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
+export default function ExamGenerationTab({ initialGrade }: ExamGenerationTabProps) {
+  const [grade, setGrade] = useState(initialGrade);
   const [subject, setSubject] = useState("");
   const [contentType, setContentType] = useState("book"); // book, unit, lesson
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
@@ -162,6 +163,23 @@ export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4">
+        <div className="space-y-2">
+          <Label>الصف</Label>
+          <Select value={grade} onValueChange={setGrade}>
+            <SelectTrigger>
+              <SelectValue placeholder="اختر الصف" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="الصف السابع">الصف السابع</SelectItem>
+              <SelectItem value="الصف الثامن">الصف الثامن</SelectItem>
+              <SelectItem value="الصف التاسع">الصف التاسع</SelectItem>
+              <SelectItem value="الصف العاشر">الصف العاشر</SelectItem>
+              <SelectItem value="الأول ثانوي">الأول ثانوي</SelectItem>
+              <SelectItem value="الثاني ثانوي">الثاني ثانوي</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="space-y-2">
           <Label>المادة</Label>
           <Select value={subject} onValueChange={setSubject}>

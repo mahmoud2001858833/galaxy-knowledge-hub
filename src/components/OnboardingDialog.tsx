@@ -11,12 +11,16 @@ import { motion } from "framer-motion";
 interface OnboardingDialogProps {
   open: boolean;
   onComplete: (name: string, grade: string, semester: string) => void;
+  initialName?: string;
+  initialGrade?: string;
+  initialSemester?: string;
+  isEdit?: boolean;
 }
 
-export default function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
-  const [studentName, setStudentName] = useState("");
-  const [grade, setGrade] = useState("");
-  const [semester, setSemester] = useState("");
+export default function OnboardingDialog({ open, onComplete, initialName = "", initialGrade = "", initialSemester = "", isEdit = false }: OnboardingDialogProps) {
+  const [studentName, setStudentName] = useState(initialName);
+  const [grade, setGrade] = useState(initialGrade);
+  const [semester, setSemester] = useState(initialSemester);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -81,10 +85,10 @@ export default function OnboardingDialog({ open, onComplete }: OnboardingDialogP
             transition={{ duration: 0.3 }}
           >
             <DialogTitle className="text-2xl text-center mb-2">
-              🎓 مرحباً بك في مساعدك الأردني
+              {isEdit ? "⚙️ تعديل المعلومات" : "🎓 مرحباً بك في مساعدك الأردني"}
             </DialogTitle>
             <DialogDescription className="text-center">
-              نسعد بانضمامك! يرجى إدخال معلوماتك لنبدأ رحلتك التعليمية
+              {isEdit ? "قم بتعديل معلوماتك الشخصية" : "نسعد بانضمامك! يرجى إدخال معلوماتك لنبدأ رحلتك التعليمية"}
             </DialogDescription>
           </motion.div>
         </DialogHeader>
@@ -141,7 +145,7 @@ export default function OnboardingDialog({ open, onComplete }: OnboardingDialogP
             className="w-full"
             disabled={loading}
           >
-            {loading ? "جارٍ الحفظ..." : "ابدأ الآن"}
+            {loading ? "جارٍ الحفظ..." : (isEdit ? "حفظ التعديلات" : "ابدأ الآن")}
           </Button>
         </motion.div>
       </DialogContent>

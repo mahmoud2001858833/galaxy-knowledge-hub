@@ -7,6 +7,7 @@ import { Loader2, BookOpen, AlertCircle, Upload, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import PasswordProtection from "./PasswordProtection";
 
 interface ContentSummary {
   grade: string;
@@ -20,8 +21,13 @@ interface ContentSummary {
 export default function UploadedSourcesTab() {
   const [contentSummaries, setContentSummaries] = useState<ContentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  if (!authenticated) {
+    return <PasswordProtection onSuccess={() => setAuthenticated(true)} />;
+  }
 
   useEffect(() => {
     loadContent();

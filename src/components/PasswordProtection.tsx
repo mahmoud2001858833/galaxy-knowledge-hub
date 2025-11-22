@@ -38,7 +38,7 @@ export default function PasswordProtection({ onSuccess }: PasswordProtectionProp
               <Lock className="w-8 h-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">مساعدك الأردني</CardTitle>
+          <CardTitle className="text-2xl">المصادر المرفوعة</CardTitle>
           <CardDescription>
             يرجى إدخال كلمة السر للدخول
           </CardDescription>
