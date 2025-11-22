@@ -491,6 +491,7 @@ export default function JordanianAssistant() {
                             role={msg.role}
                             content={msg.content}
                             sources={msg.sources}
+                            imageUrl={msg.imageUrl}
                             onViewSource={handleViewSource}
                           />
                         ))}
