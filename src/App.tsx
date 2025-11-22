@@ -95,6 +95,7 @@ import ManagementSection from './pages/ManagementSection';
 import EducationSection from './pages/EducationSection';
 import AIAssistantSection from './pages/AIAssistantSection';
 import JordanianAssistant from './pages/JordanianAssistant';
+import ConversationView from './pages/ConversationView';
 import UploadTextbooks from './pages/UploadTextbooks';
 import UploadJordanianContent from './pages/UploadJordanianContent';
 import ManageJordanianContent from './pages/ManageJordanianContent';
@@ -510,6 +511,10 @@ const router = createBrowserRouter([
       {
         path: 'jordanian-assistant',
         element: <AuthGuard><JordanianAssistant /></AuthGuard>,
+      },
+      {
+        path: 'conversation/:conversationId',
+        element: <AuthGuard><ConversationView /></AuthGuard>,
       },
       {
         path: 'upload-textbooks',
