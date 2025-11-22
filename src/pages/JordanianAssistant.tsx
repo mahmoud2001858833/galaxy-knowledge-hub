@@ -48,6 +48,11 @@ export default function JordanianAssistant() {
   const [showSourcesPassword, setShowSourcesPassword] = useState(false);
   const [sourcesPasswordVerified, setSourcesPasswordVerified] = useState(false);
   const [sourcesPasswordInput, setSourcesPasswordInput] = useState("");
+  
+  // Chat history viewer
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [allChatHistory, setAllChatHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -421,6 +426,41 @@ export default function JordanianAssistant() {
     }
   };
 
+  const loadAllChatHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "⚠️ خطأ",
+          description: "يجب تسجيل الدخول أولاً",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('jordanian_assistant_chat_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAllChatHistory(data || []);
+      setShowHistoryDialog(true);
+    } catch (error) {
+      console.error('Error loading history:', error);
+      toast({
+        title: "⚠️ خطأ",
+        description: "حدث خطأ أثناء تحميل المحادثات",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleSourcesTabClick = () => {
     if (!sourcesPasswordVerified) {
       setShowSourcesPassword(true);
@@ -473,6 +513,9 @@ export default function JordanianAssistant() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={loadAllChatHistory} title="المحادثات السابقة" disabled={loadingHistory}>
+                    {loadingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : "📜"}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleNewChat} title="محادثة جديدة">
                     <MessageSquarePlus className="h-4 w-4" />
                   </Button>
@@ -724,6 +767,59 @@ export default function JordanianAssistant() {
             <Button onClick={verifySourcesPassword} className="w-full">
               تحقق
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>📜 سجل المحادثات السابقة</DialogTitle>
+            <DialogDescription>
+              جميع المحادثات السابقة مع المساعد الأردني الذكي
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto space-y-3 p-4">
+            {allChatHistory.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                لا توجد محادثات سابقة
+              </div>
+            ) : (
+              allChatHistory.map((msg, idx) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="space-y-2"
+                >
+                  <Card className={`p-3 ${msg.role === 'user' ? 'bg-primary/10 border-primary/20' : 'bg-secondary/10 border-secondary/20'}`}>
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                      <span className="font-semibold text-sm">
+                        {msg.role === 'user' ? '👤 الطالب' : '🤖 المساعد'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(msg.created_at).toLocaleString('ar-EG', {
+                          dateStyle: 'short',
+                          timeStyle: 'short'
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.image_url && (
+                      <img src={msg.image_url} alt="صورة" className="mt-2 max-w-xs rounded-lg" />
+                    )}
+                    {msg.sources && msg.sources.length > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        📚 المصادر: {msg.sources.length}
+                      </div>
+                    )}
+                  </Card>
+                </motion.div>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>
