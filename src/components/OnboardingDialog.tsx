@@ -11,12 +11,21 @@ import { motion } from "framer-motion";
 interface OnboardingDialogProps {
   open: boolean;
   onComplete: (name: string, grade: string, semester: string) => void;
+  initialName?: string;
+  initialGrade?: string;
+  initialSemester?: string;
 }
 
-export default function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
-  const [studentName, setStudentName] = useState("");
-  const [grade, setGrade] = useState("");
-  const [semester, setSemester] = useState("");
+export default function OnboardingDialog({ 
+  open, 
+  onComplete, 
+  initialName = "", 
+  initialGrade = "", 
+  initialSemester = "" 
+}: OnboardingDialogProps) {
+  const [studentName, setStudentName] = useState(initialName);
+  const [grade, setGrade] = useState(initialGrade);
+  const [semester, setSemester] = useState(initialSemester);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
