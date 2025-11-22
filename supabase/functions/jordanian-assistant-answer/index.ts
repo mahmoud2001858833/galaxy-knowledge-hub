@@ -48,12 +48,12 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get textbook content for this grade from the new text-based system
-    console.log('Step 1: Fetching textbook content for grade:', grade);
+    // Get ALL textbook content from all grades - search comprehensively
+    console.log('Step 1: Fetching ALL textbook content (comprehensive search)');
     const { data: contentPages, error: contentError } = await supabase
       .from('jordanian_textbook_content')
       .select('*')
-      .eq('grade', grade)
+      .order('grade', { ascending: true })
       .order('unit_number', { ascending: true })
       .order('lesson_number', { ascending: true })
       .order('page_number', { ascending: true });
@@ -71,65 +71,86 @@ serve(async (req) => {
     }
 
     if (!contentPages || contentPages.length === 0) {
-      console.log('No content found for grade:', grade);
+      console.log('No content found in system');
       return new Response(
         JSON.stringify({
-          answer: 'عذراً، لم يتم تزويد النظام بهذا المصدر بعد. يرجى الانتظار والمحاولة في وقت لاحق',
+          answer: 'عذراً، لم يتم تزويد النظام بأي محتوى دراسي بعد. يرجى الانتظار والمحاولة في وقت لاحق',
           sources: [],
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    console.log(`Found ${contentPages.length} pages of content for grade ${grade}`);
+    console.log(`Found ${contentPages.length} total pages across all grades`);
 
-    // Build context from textbook content (group by subject for better organization)
-    const contentBySubject = contentPages.reduce((acc: any, page: any) => {
-      if (!acc[page.subject]) {
-        acc[page.subject] = [];
+    // Build context from ALL textbook content - comprehensive search
+    // Group by grade AND subject for better organization
+    const contentByGradeSubject = contentPages.reduce((acc: any, page: any) => {
+      const key = `${page.grade}|||${page.subject}`;
+      if (!acc[key]) {
+        acc[key] = [];
       }
-      acc[page.subject].push(page);
+      acc[key].push(page);
       return acc;
     }, {});
 
-    // Create context with proper structure
-    const booksContext = Object.entries(contentBySubject)
-      .map(([subject, pages]: [string, any[]]) => {
+    // Create comprehensive context - include MORE pages for better search
+    const booksContext = Object.entries(contentByGradeSubject)
+      .map(([key, pages]: [string, any[]]) => {
+        const [gradeKey, subject] = key.split('|||');
         const pagesText = pages
-          .slice(0, 20) // Limit pages to prevent token overflow
+          .slice(0, 40) // Increased from 20 to 40 pages per subject per grade
           .map((p: any) => 
-            `[الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}]\n${p.page_content}`
+            `[الصف: ${p.grade} | المادة: ${p.subject} | الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}]\n${p.page_content}`
           )
           .join('\n\n');
         
-        return `### المادة: ${subject}\n${pagesText}`;
+        return `### الصف ${gradeKey} - المادة: ${subject}\n${pagesText}`;
       })
       .join('\n\n---\n\n');
 
-    // Create the prompt with actual textbook content
-    const systemPrompt = `أنت معلم أردني متخصص في المنهاج الأردني للصف ${grade}. لديك قدرة عالية على فهم الأسئلة المختلفة والربط بين المعاني والمفاهيم المتشابهة.
+    // Create the prompt with actual textbook content - COMPREHENSIVE SEARCH
+    const systemPrompt = `أنت معلم أردني خبير متخصص في المنهاج الأردني لجميع الصفوف. لديك قدرة استثنائية على:
+• فهم الأسئلة بصيغ مختلفة وربط المعاني والمفاهيم المتشابهة
+• البحث الشامل في جميع الكتب المتاحة بغض النظر عن الصف
+• فهم المرادفات واللهجات المختلفة
 
-لديك محتوى الكتب التالية:
+لديك محتوى كامل من جميع الكتب الدراسية:
 ${booksContext}
 
-قواعد مهمة جداً:
-1. أجب فقط بناءً على محتوى الكتب المرفقة أعلاه - لا تخترع معلومات
-2. كن مرناً في فهم الأسئلة: إذا سأل الطالب عن "تعريف" شيء والمحتوى يذكر "معنى" أو "مفهوم" نفس الشيء، فهي نفس المعلومة. تعامل مع الكلمات المترادفة والمفاهيم المتشابهة بذكاء.
-3. افهم السؤال بصيغ مختلفة: "ما هو"، "عرف"، "اشرح"، "وضح"، "ما معنى"، "ما المقصود بـ" - كلها تطلب نفس المعلومة
-4. ابحث في كل المحتوى المتاح بعناية قبل أن تقول أنك لم تجد المعلومة
-5. إذا لم تجد الإجابة الدقيقة ولكن وجدت معلومات ذات صلة، قدمها للطالب
-6. إذا لم تجد المعلومة حقاً بعد البحث الشامل، قل بوضوح: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
-7. عند الإجابة، اذكر:
-   - رقم الوحدة واسمها
-   - رقم الدرس واسمه
-   - رقم الصفحة
-   - المادة
-8. اشرح المفهوم بطريقة واضحة ومبسطة وشاملة
-9. أضف أمثلة من الكتاب نفسه عند الإمكان
-10. استخدم اللغة العربية الفصحى
-11. في نهاية الإجابة، اكتب المصدر بهذا الشكل:
-    📚 المصدر: [المادة] - الوحدة [رقم]: [اسم الوحدة] - الدرس [رقم]: [اسم الدرس] - صفحة [رقم]
-12. إذا تم إرفاق صورة مع السؤال، قم بتحليل محتواها واربطها بالمنهاج المدرسي، ثم أجب على السؤال`;
+📚 قواعد البحث والإجابة الذكية:
+
+1. **البحث الشامل**: ابحث في كل المحتوى المتاح من جميع الصفوف والمواد - لا تقتصر على صف الطالب فقط
+
+2. **المرونة اللغوية الكاملة**: 
+   - "تعريف" = "معنى" = "مفهوم" = "شرح" = "ما هو"
+   - "القتل" = "قتل" = "جريمة القتل" = "جرائم القتل"
+   - "الإسلامية" = "اسلاميه" = "الإسلامية" = "الاسلامية"
+   - تجاهل الفروق الإملائية البسيطة والتشكيل
+   - افهم السياق وليس النص الحرفي فقط
+
+3. **صيغ الأسئلة المتنوعة** (كلها تطلب نفس الشيء):
+   - "عرف القتل" = "ما هو القتل" = "ما معنى القتل" = "اشرح مفهوم القتل" = "وضح القتل"
+
+4. **البحث الذكي**:
+   - ابحث عن الموضوع بكل صيغه وأشكاله
+   - إذا لم تجد الكلمة بالضبط، ابحث عن مرادفاتها
+   - ابحث في المحتوى بالمعنى وليس بالنص فقط
+
+5. **إذا وجدت معلومات ذات صلة**: قدمها للطالب حتى لو لم تكن مطابقة 100%
+
+6. **إذا لم تجد حقاً بعد البحث الشامل**: قل "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
+
+7. **تنسيق الإجابة**:
+   - ابدأ بشرح واضح ومبسط وشامل
+   - أضف أمثلة من الكتاب
+   - اختم بالمصدر: 📚 المصدر: [الصف] - [المادة] - الوحدة [رقم]: [اسم] - الدرس [رقم]: [اسم] - صفحة [رقم]
+
+8. **اللغة**: استخدم العربية الفصحى الواضحة
+
+9. **الصور**: إذا أرفقت صورة، حللها واربطها بالمنهاج ثم أجب
+
+⚠️ مهم جداً: طالب الصف ${grade} يسألك الآن، لكن ابحث في كل الكتب المتاحة لأن المعلومة قد تكون في أي صف!`;
 
 
     // Call Lovable AI
@@ -175,8 +196,8 @@ ${booksContext}
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: messages,
-          temperature: 0.4,
-          max_tokens: 4096,
+          temperature: 0.3, // Lower temperature for more focused, accurate answers
+          max_tokens: 6000, // Increased token limit for comprehensive answers
         }),
       },
     );
