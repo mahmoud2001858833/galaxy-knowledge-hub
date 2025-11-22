@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, ImagePlus, X, Settings } from "lucide-react";
+import { Loader2, Send, Sparkles, ImagePlus, X, Settings, MessageSquarePlus, Trash2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +43,11 @@ export default function JordanianAssistant() {
   
   const [showSourceDialog, setShowSourceDialog] = useState(false);
   const [selectedSource, setSelectedSource] = useState<any>(null);
+  
+  // Sources password protection
+  const [showSourcesPassword, setShowSourcesPassword] = useState(false);
+  const [sourcesPasswordVerified, setSourcesPasswordVerified] = useState(false);
+  const [sourcesPasswordInput, setSourcesPasswordInput] = useState("");
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -186,6 +191,24 @@ export default function JordanianAssistant() {
   const handleSubmit = async () => {
     if (!currentQuestion.trim() && !selectedImage) return;
 
+    // Check if user wants to generate image
+    const imageKeywords = ["أنشئ صورة", "ارسم", "صور لي", "اعمل صورة", "وضح بالصورة", "ارسم لي", "صمم صورة"];
+    const shouldGenerateImage = imageKeywords.some(keyword => currentQuestion.toLowerCase().includes(keyword));
+
+    if (shouldGenerateImage && !selectedImage) {
+      // Extract image description and generate automatically
+      const userMessage: Message = {
+        role: "user",
+        content: currentQuestion,
+      };
+      setMessages(prev => [...prev, userMessage]);
+      saveChatMessage(userMessage);
+      
+      setCurrentQuestion("");
+      await generateEducationalImageFromChat(currentQuestion);
+      return;
+    }
+
     const userMessage: Message = {
       role: "user",
       content: selectedImage 
@@ -201,7 +224,7 @@ export default function JordanianAssistant() {
     try {
       let imageBase64 = imagePreview;
 
-      const { data, error } = await supabase.functions.invoke('jordanian-assistant-chat', {
+      const { data, error } = await supabase.functions.invoke('jordanian-assistant-answer', {
         body: {
           question: currentQuestion || "قم بتحليل هذه الصورة",
           studentName,
@@ -248,6 +271,13 @@ export default function JordanianAssistant() {
     setGeneratingImage(true);
     setShowImageDialog(false);
 
+    // Add loading message
+    const loadingMessage: Message = {
+      role: "assistant",
+      content: "🎨 جاري إنشاء الصورة التعليمية...",
+    };
+    setMessages(prev => [...prev, loadingMessage]);
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-educational-image', {
         body: {
@@ -266,7 +296,12 @@ export default function JordanianAssistant() {
           imageUrl: data.imageBase64,
         };
 
-        setMessages(prev => [...prev, imageMessage]);
+        // Replace loading message with actual image
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = imageMessage;
+          return newMessages;
+        });
         saveChatMessage(imageMessage);
 
         toast({
@@ -279,6 +314,63 @@ export default function JordanianAssistant() {
       setImageSubject("");
     } catch (error: any) {
       console.error('Error generating image:', error);
+      // Remove loading message on error
+      setMessages(prev => prev.slice(0, -1));
+      toast({
+        title: "⚠️ خطأ",
+        description: error.message || "حدث خطأ أثناء إنشاء الصورة",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
+  const generateEducationalImageFromChat = async (prompt: string) => {
+    setGeneratingImage(true);
+
+    // Add loading message
+    const loadingMessage: Message = {
+      role: "assistant",
+      content: "🎨 جاري إنشاء الصورة التعليمية...",
+    };
+    setMessages(prev => [...prev, loadingMessage]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-educational-image', {
+        body: {
+          prompt,
+          subject: "عام",
+          grade,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.imageBase64) {
+        const imageMessage: Message = {
+          role: "assistant",
+          content: `تم إنشاء الصورة التعليمية`,
+          imageUrl: data.imageBase64,
+        };
+
+        // Replace loading message with actual image
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = imageMessage;
+          return newMessages;
+        });
+        saveChatMessage(imageMessage);
+
+        toast({
+          title: "✅ تم إنشاء الصورة",
+          description: "تم إنشاء الصورة التعليمية بنجاح",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error generating image:', error);
+      // Remove loading message on error
+      setMessages(prev => prev.slice(0, -1));
       toast({
         title: "⚠️ خطأ",
         description: error.message || "حدث خطأ أثناء إنشاء الصورة",
@@ -292,6 +384,67 @@ export default function JordanianAssistant() {
   const handleViewSource = (source: any) => {
     setSelectedSource(source);
     setShowSourceDialog(true);
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    toast({
+      title: "✅ محادثة جديدة",
+      description: "تم بدء محادثة جديدة",
+    });
+  };
+
+  const handleClearHistory = async () => {
+    if (!confirm("هل أنت متأكد من حذف سجل المحادثة؟")) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('jordanian_assistant_chat_history')
+          .delete()
+          .eq('user_id', user.id);
+      }
+      
+      setMessages([]);
+      toast({
+        title: "✅ تم المسح",
+        description: "تم مسح سجل المحادثة بنجاح",
+      });
+    } catch (error) {
+      console.error('Error clearing history:', error);
+      toast({
+        title: "⚠️ خطأ",
+        description: "حدث خطأ أثناء مسح السجل",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSourcesTabClick = () => {
+    if (!sourcesPasswordVerified) {
+      setShowSourcesPassword(true);
+      return false;
+    }
+    return true;
+  };
+
+  const verifySourcesPassword = () => {
+    if (sourcesPasswordInput === "mahmoud") {
+      setSourcesPasswordVerified(true);
+      setShowSourcesPassword(false);
+      setSourcesPasswordInput("");
+      toast({
+        title: "✅ تم التحقق",
+        description: "تم فتح المصادر بنجاح",
+      });
+    } else {
+      toast({
+        title: "⚠️ كلمة سر خاطئة",
+        description: "يرجى إدخال كلمة السر الصحيحة",
+        variant: "destructive",
+      });
+    }
   };
 
   if (showOnboarding) {
@@ -319,9 +472,17 @@ export default function JordanianAssistant() {
                     مرحباً {studentName} - {grade} - {semester}
                   </p>
                 </div>
-                <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleNewChat} title="محادثة جديدة">
+                    <MessageSquarePlus className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleClearHistory} title="مسح السجل">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
 
@@ -330,7 +491,16 @@ export default function JordanianAssistant() {
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                   <TabsTrigger value="chat">المساعد الذكي</TabsTrigger>
                   <TabsTrigger value="exam">إنشاء امتحان</TabsTrigger>
-                  <TabsTrigger value="sources">المصادر المتاحة</TabsTrigger>
+                  <TabsTrigger 
+                    value="sources" 
+                    onClick={(e) => {
+                      if (!handleSourcesTabClick()) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    المصادر المتاحة
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="chat" className="space-y-4">
@@ -449,7 +619,13 @@ export default function JordanianAssistant() {
                 </TabsContent>
 
                 <TabsContent value="sources">
-                  <UploadedSourcesTab />
+                  {sourcesPasswordVerified ? (
+                    <UploadedSourcesTab />
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">يرجى إدخال كلمة السر للوصول إلى المصادر</p>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -519,8 +695,36 @@ export default function JordanianAssistant() {
               setSemester(semester);
               setShowSettings(false);
               handleUpdateInfo();
-            }} 
+            }}
+            initialName={studentName}
+            initialGrade={grade}
+            initialSemester={semester}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Sources Password Dialog */}
+      <Dialog open={showSourcesPassword} onOpenChange={setShowSourcesPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>🔒 المصادر محمية</DialogTitle>
+            <DialogDescription>
+              يرجى إدخال كلمة السر للوصول إلى المصادر المتاحة
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              type="password"
+              placeholder="كلمة السر"
+              value={sourcesPasswordInput}
+              onChange={(e) => setSourcesPasswordInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && verifySourcesPassword()}
+            />
+            <Button onClick={verifySourcesPassword} className="w-full">
+              تحقق
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
