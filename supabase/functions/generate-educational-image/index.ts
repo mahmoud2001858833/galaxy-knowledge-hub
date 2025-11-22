@@ -22,18 +22,21 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Create detailed educational prompt
-    const educationalPrompt = `أنشئ صورة تعليمية توضيحية عالية الجودة: ${prompt}
+    // Create detailed educational prompt without text on image
+    const educationalPrompt = `Create a high-quality educational illustration: ${prompt}
 
-المادة: ${subject}
-الصف: ${grade}
+Subject: ${subject}
+Grade: ${grade}
 
-متطلبات الصورة:
-- واضحة وبسيطة ومناسبة للطلاب
-- مناسبة للمنهاج الأردني
-- ذات قيمة تعليمية عالية
-- ملونة وجذابة وسهلة الفهم
-- تحتوي على تفاصيل تعليمية مفيدة`;
+Image Requirements:
+- Clear, simple, and suitable for students
+- Educational and informative
+- Colorful, attractive, and easy to understand
+- Professional illustration
+- NO TEXT, NO LABELS, NO WORDS on the image
+- ONLY pure visual representation
+
+IMPORTANT: Generate ONLY the visual image without any text or writing on it. The image should speak for itself visually.`;
 
     // Generate educational image using Lovable AI
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
