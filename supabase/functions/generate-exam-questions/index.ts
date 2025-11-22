@@ -14,38 +14,67 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, grade, contentRange, questionTypes, questionCount } = await req.json();
+    const { 
+      subject, 
+      grade, 
+      contentRange, 
+      contentType,
+      selectedUnits,
+      selectedLessons,
+      questionTypes, 
+      questionCount 
+    } = await req.json();
     
-    console.log('Generating exam:', { subject, grade, contentRange, questionTypes, questionCount });
+    console.log('Generating exam:', { subject, grade, contentRange, contentType, questionTypes, questionCount });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Normalize subject coming from UI (Arabic) to stored subject values
-    const subjectMappings: Record<string, string> = {
-      'اللغه العربيه': 'Arabic',
-      'اللغة العربية': 'Arabic',
-      'اللغة الانجليزية': 'English',
-      'الانجليزيه': 'English',
-      'الرياضيات': 'Math',
-      'الفيزياء': 'Physics',
-      'الكيمياء': 'Chemistry',
-      'الأحياء': 'Biology',
-      'الاحياء': 'Biology',
-    };
-
-    const normalizedSubject = subjectMappings[subject] ?? subject;
-
-    // Get relevant textbook content from the new text-based system
-    const { data: contentPages, error: contentError } = await supabase
+    // Build query based on content type
+    let query = supabase
       .from('jordanian_textbook_content')
       .select('*')
       .eq('grade', grade)
-      .eq('subject', subject)
+      .eq('subject', subject);
+
+    // Filter by units or lessons if specified
+    if (contentType === 'unit' && selectedUnits && selectedUnits.length > 0) {
+      const unitNumbers = selectedUnits.map((u: string) => {
+        const match = u.match(/\d+/);
+        return match ? parseInt(match[0]) : null;
+      }).filter((n: number | null) => n !== null);
+      
+      if (unitNumbers.length > 0) {
+        query = query.in('unit_number', unitNumbers);
+      }
+    } else if (contentType === 'lesson' && selectedLessons && selectedLessons.length > 0) {
+      // Parse selected lessons (format: "الوحدة X - الدرس Y")
+      const lessonFilters = selectedLessons.map((l: string) => {
+        const unitMatch = l.match(/الوحدة (\d+)/);
+        const lessonMatch = l.match(/الدرس (\d+)/);
+        if (unitMatch && lessonMatch) {
+          return { unit: parseInt(unitMatch[1]), lesson: parseInt(lessonMatch[1]) };
+        }
+        return null;
+      }).filter((f: any) => f !== null);
+
+      if (lessonFilters.length > 0) {
+        // Build OR filter for multiple lessons
+        query = query.or(
+          lessonFilters.map((f: any) => 
+            `and(unit_number.eq.${f.unit},lesson_number.eq.${f.lesson})`
+          ).join(',')
+        );
+      }
+    }
+
+    query = query
       .order('unit_number', { ascending: true })
       .order('lesson_number', { ascending: true })
       .order('page_number', { ascending: true });
+
+    const { data: contentPages, error: contentError } = await query;
 
     if (contentError) {
       console.error('Database error:', contentError);
@@ -89,16 +118,33 @@ serve(async (req) => {
 - الصف: ${grade}
 - نوع الأسئلة: ${questionTypes}
 - نطاق المحتوى: ${contentRange}
-- عدد الأسئلة: ${questionCount}
+- عدد الأسئلة المطلوب: ${questionCount}
 
 محتوى الكتاب المتاح:
 ${contentContext}
 
-يجب عليك:
-1. إنشاء ${questionCount} سؤالاً امتحانياً احترافياً بناءً على المحتوى المتاح أعلاه فقط
+CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أكثر ولا أقل!
+
+التعليمات:
+1. اكتب ${questionCount} سؤالاً امتحانياً بناءً على المحتوى أعلاه فقط
 2. التنوع بمستوى الصعوبة (سهل، متوسط، صعب)
-3. تغطية النطاق المطلوب من المحتوى
-4. كتابة الأسئلة بطريقة واضحة ومباشرة
+3. نص عادي بدون markdown (لا ** ولا ##)
+4. بعد كل سؤال: (الوحدة X - الدرس Y - صفحة Z)
+5. في النهاية: "الإجابات النموذجية" ثم اكتب إجابة كل سؤال
+
+صيغة الإخراج (نص عادي):
+امتحان [المادة] - [الصف]
+
+1. السؤال الأول...
+(الوحدة X - الدرس Y - صفحة Z)
+
+2. السؤال الثاني...
+(الوحدة X - الدرس Y - صفحة Z)
+
+الإجابات النموذجية
+
+1. الإجابة الأولى...
+2. الإجابة الثانية...`;
 5. بعد كل سؤال، اذكر المصدر: (الوحدة [رقم] - الدرس [رقم] - صفحة [رقم])
 6. إضافة الإجابات النموذجية في النهاية مع ذكر المصادر
 

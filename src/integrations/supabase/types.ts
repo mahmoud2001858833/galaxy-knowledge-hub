@@ -939,6 +939,66 @@ export type Database = {
           },
         ]
       }
+      jordanian_assistant_chat_history: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          image_url: string | null
+          role: string
+          sources: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          role: string
+          sources?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          role?: string
+          sources?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      jordanian_assistant_users: {
+        Row: {
+          created_at: string | null
+          grade: string
+          id: string
+          semester: string
+          student_name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          grade: string
+          id?: string
+          semester: string
+          student_name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          grade?: string
+          id?: string
+          semester?: string
+          student_name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       jordanian_image_analysis: {
         Row: {
           analysis_result: string
