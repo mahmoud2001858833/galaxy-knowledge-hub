@@ -44,7 +44,7 @@ export default function OnboardingDialog({
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Save to database
+        // Save to database with conflict resolution on user_id
         const { error } = await supabase
           .from('jordanian_assistant_users')
           .upsert({
@@ -52,6 +52,8 @@ export default function OnboardingDialog({
             student_name: studentName.trim(),
             grade,
             semester,
+          }, {
+            onConflict: 'user_id'
           });
 
         if (error) throw error;
