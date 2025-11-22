@@ -35,6 +35,12 @@ export default function JordanianAssistant() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
+  // Image generation
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [imageSubject, setImageSubject] = useState("");
+  const [generatingImage, setGeneratingImage] = useState(false);
+  
   // Exam generation
   const [examSubject, setExamSubject] = useState("");
   const [examGrade, setExamGrade] = useState("");
@@ -324,6 +330,70 @@ export default function JordanianAssistant() {
     URL.revokeObjectURL(url);
   };
 
+  const generateEducationalImage = async () => {
+    if (!imagePrompt.trim()) {
+      toast({
+        title: "⚠️ يرجى إدخال وصف للصورة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImage(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-educational-image', {
+        body: {
+          prompt: imagePrompt,
+          subject: imageSubject || "عام",
+          grade: grade || "عام",
+        }
+      });
+
+      if (error) {
+        console.error('Image generation error:', error);
+        throw new Error('فشل الاتصال بالخادم');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.imageBase64) {
+        // Add the generated image to chat
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: `🎨 تم إنشاء الصورة التعليمية: ${imagePrompt}`,
+          imageUrl: data.imageBase64,
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        
+        toast({
+          title: "✅ تم إنشاء الصورة",
+          description: "تم إضافة الصورة إلى المحادثة",
+        });
+
+        // Reset and close dialog
+        setImagePrompt("");
+        setImageSubject("");
+        setShowImageDialog(false);
+      } else {
+        throw new Error('لم يتم إرجاع صورة');
+      }
+
+    } catch (error: any) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "⚠️ خطأ في إنشاء الصورة",
+        description: error.message || "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return <PasswordProtection onSuccess={handleAuthSuccess} />;
   }
@@ -457,8 +527,20 @@ export default function JordanianAssistant() {
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={loading}
+                      title="رفع صورة"
                     >
                       <ImagePlus className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowImageDialog(true)}
+                      disabled={loading}
+                      title="إنشاء صورة تعليمية"
+                      className="bg-gradient-to-r from-primary/10 to-secondary/10 hover:from-primary/20 hover:to-secondary/20"
+                    >
+                      <Sparkles className="w-4 h-4" />
                     </Button>
                     <Input
                       placeholder="اكتب سؤالك هنا..."
@@ -622,6 +704,74 @@ export default function JordanianAssistant() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 justify-end">
+              <Sparkles className="w-5 h-5" />
+              إنشاء صورة تعليمية
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              صف الصورة التعليمية التي تريد إنشاءها
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-right block">وصف الصورة المطلوبة</Label>
+              <Textarea
+                placeholder="مثال: صورة توضح دورة الماء في الطبيعة"
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                rows={4}
+                className="text-right resize-none"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-right block">المادة (اختياري)</Label>
+              <Input
+                placeholder="مثال: العلوم، الرياضيات..."
+                value={imageSubject}
+                onChange={(e) => setImageSubject(e.target.value)}
+                className="text-right"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowImageDialog(false);
+                  setImagePrompt("");
+                  setImageSubject("");
+                }}
+                disabled={generatingImage}
+              >
+                إلغاء
+              </Button>
+              <Button
+                onClick={generateEducationalImage}
+                disabled={generatingImage || !imagePrompt.trim()}
+                className="bg-gradient-to-r from-primary to-secondary"
+              >
+                {generatingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري الإنشاء...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 ml-2" />
+                    إنشاء الصورة
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
