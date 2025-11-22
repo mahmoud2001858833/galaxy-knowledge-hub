@@ -942,6 +942,7 @@ export type Database = {
       jordanian_assistant_chat_history: {
         Row: {
           content: string
+          conversation_id: string | null
           created_at: string | null
           id: string
           image_url: string | null
@@ -951,6 +952,7 @@ export type Database = {
         }
         Insert: {
           content: string
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
           image_url?: string | null
@@ -960,6 +962,7 @@ export type Database = {
         }
         Update: {
           content?: string
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
           image_url?: string | null
@@ -967,7 +970,15 @@ export type Database = {
           sources?: Json | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jordanian_assistant_chat_history_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "jordanian_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       jordanian_assistant_users: {
         Row: {
@@ -996,6 +1007,33 @@ export type Database = {
           student_name?: string
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      jordanian_conversations: {
+        Row: {
+          created_at: string
+          first_message: string | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_message?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_message?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

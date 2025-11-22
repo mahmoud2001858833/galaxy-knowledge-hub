@@ -15,6 +15,9 @@ import ChatMessage from "@/components/ChatMessage";
 import OnboardingDialog from "@/components/OnboardingDialog";
 import ExamGenerationTab from "@/components/ExamGenerationTab";
 import { motion, AnimatePresence } from "framer-motion";
+import { ConversationsGrid } from "@/components/ConversationsGrid";
+import { useNavigate } from "react-router-dom";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
   role: "user" | "assistant";
@@ -24,6 +27,7 @@ interface Message {
 }
 
 export default function JordanianAssistant() {
+  const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [studentName, setStudentName] = useState("");
@@ -49,10 +53,11 @@ export default function JordanianAssistant() {
   const [sourcesPasswordVerified, setSourcesPasswordVerified] = useState(false);
   const [sourcesPasswordInput, setSourcesPasswordInput] = useState("");
   
-  // Chat history viewer
+  // Conversations management
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [allChatHistory, setAllChatHistory] = useState<any[]>([]);
+  const [allConversations, setAllConversations] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -110,10 +115,45 @@ export default function JordanianAssistant() {
     }
   };
 
+  const createNewConversation = async (firstMessage: string): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const title = firstMessage.length > 50 
+        ? firstMessage.substring(0, 50) + '...' 
+        : firstMessage;
+
+      const { data, error } = await supabase
+        .from('jordanian_conversations')
+        .insert({
+          user_id: user.id,
+          title,
+          first_message: firstMessage,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data.id;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      return null;
+    }
+  };
+
   const saveChatMessage = async (message: Message) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Create new conversation if this is the first user message
+      if (!currentConversationId && message.role === 'user') {
+        const newConvId = await createNewConversation(message.content);
+        if (newConvId) {
+          setCurrentConversationId(newConvId);
+        }
+      }
 
       await supabase
         .from('jordanian_assistant_chat_history')
@@ -123,7 +163,16 @@ export default function JordanianAssistant() {
           content: message.content,
           image_url: message.imageUrl,
           sources: message.sources,
+          conversation_id: currentConversationId,
         });
+
+      // Update conversation timestamp
+      if (currentConversationId) {
+        await supabase
+          .from('jordanian_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', currentConversationId);
+      }
     } catch (error) {
       console.error('Error saving chat message:', error);
     }
@@ -393,6 +442,7 @@ export default function JordanianAssistant() {
 
   const handleNewChat = () => {
     setMessages([]);
+    setCurrentConversationId(null);
     toast({
       title: "✅ محادثة جديدة",
       description: "تم بدء محادثة جديدة",
@@ -400,33 +450,35 @@ export default function JordanianAssistant() {
   };
 
   const handleClearHistory = async () => {
-    if (!confirm("هل أنت متأكد من حذف سجل المحادثة؟")) return;
+    if (!confirm("هل أنت متأكد من حذف جميع المحادثات؟")) return;
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Delete all conversations (cascade will delete messages)
         await supabase
-          .from('jordanian_assistant_chat_history')
+          .from('jordanian_conversations')
           .delete()
           .eq('user_id', user.id);
       }
       
       setMessages([]);
+      setCurrentConversationId(null);
       toast({
         title: "✅ تم المسح",
-        description: "تم مسح سجل المحادثة بنجاح",
+        description: "تم مسح جميع المحادثات بنجاح",
       });
     } catch (error) {
       console.error('Error clearing history:', error);
       toast({
         title: "⚠️ خطأ",
-        description: "حدث خطأ أثناء مسح السجل",
+        description: "حدث خطأ أثناء مسح المحادثات",
         variant: "destructive",
       });
     }
   };
 
-  const loadAllChatHistory = async () => {
+  const loadAllConversations = async () => {
     setLoadingHistory(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -440,17 +492,17 @@ export default function JordanianAssistant() {
       }
 
       const { data, error } = await supabase
-        .from('jordanian_assistant_chat_history')
+        .from('jordanian_conversations')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
-      setAllChatHistory(data || []);
+      setAllConversations(data || []);
       setShowHistoryDialog(true);
     } catch (error) {
-      console.error('Error loading history:', error);
+      console.error('Error loading conversations:', error);
       toast({
         title: "⚠️ خطأ",
         description: "حدث خطأ أثناء تحميل المحادثات",
@@ -513,7 +565,7 @@ export default function JordanianAssistant() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={loadAllChatHistory} title="المحادثات السابقة" disabled={loadingHistory}>
+                  <Button variant="outline" size="sm" onClick={loadAllConversations} title="المحادثات السابقة" disabled={loadingHistory}>
                     {loadingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : "📜"}
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleNewChat} title="محادثة جديدة">
@@ -771,56 +823,35 @@ export default function JordanianAssistant() {
         </DialogContent>
       </Dialog>
 
-      {/* Chat History Dialog */}
+      {/* Conversations History Dialog */}
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-6xl max-h-[85vh]" dir="rtl">
           <DialogHeader>
-            <DialogTitle>📜 سجل المحادثات السابقة</DialogTitle>
+            <DialogTitle className="text-2xl">📜 سجل المحادثات السابقة</DialogTitle>
             <DialogDescription>
-              جميع المحادثات السابقة مع المساعد الأردني الذكي
+              اختر محادثة لعرض تفاصيلها
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex-1 overflow-y-auto space-y-3 p-4">
-            {allChatHistory.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                لا توجد محادثات سابقة
-              </div>
-            ) : (
-              allChatHistory.map((msg, idx) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="space-y-2"
-                >
-                  <Card className={`p-3 ${msg.role === 'user' ? 'bg-primary/10 border-primary/20' : 'bg-secondary/10 border-secondary/20'}`}>
-                    <div className="flex justify-between items-start gap-2 mb-2">
-                      <span className="font-semibold text-sm">
-                        {msg.role === 'user' ? '👤 الطالب' : '🤖 المساعد'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(msg.created_at).toLocaleString('ar-EG', {
-                          dateStyle: 'short',
-                          timeStyle: 'short'
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    {msg.image_url && (
-                      <img src={msg.image_url} alt="صورة" className="mt-2 max-w-xs rounded-lg" />
-                    )}
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        📚 المصادر: {msg.sources.length}
-                      </div>
-                    )}
-                  </Card>
-                </motion.div>
-              ))
-            )}
-          </div>
+          {loadingHistory ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : allConversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <MessageSquarePlus className="h-16 w-16 mb-4 opacity-20" />
+              <p>لا توجد محادثات سابقة</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[60vh]">
+              <ConversationsGrid
+                conversations={allConversations}
+                onConversationClick={(conversationId) => {
+                  setShowHistoryDialog(false);
+                  navigate(`/conversation/${conversationId}`);
+                }}
+              />
+            </ScrollArea>
+          )}
         </DialogContent>
       </Dialog>
 
