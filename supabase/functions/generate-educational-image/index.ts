@@ -13,34 +13,63 @@ serve(async (req) => {
   try {
     const { prompt, subject, grade } = await req.json();
     
-    const geminiApiKey = Deno.env.get('JORDANIAN_AI_IMAGE_KEY')!;
+    console.log('Generating educational image with Lovable AI');
+    console.log('Prompt:', prompt);
+    console.log('Subject:', subject, 'Grade:', grade);
+    
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
 
-    // Generate educational image
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `أنشئ صورة تعليمية توضيحية: ${prompt}\n\nالمادة: ${subject}\nالصف: ${grade}\n\nالصورة يجب أن تكون:\n- واضحة وبسيطة\n- مناسبة للمنهاج الأردني\n- ذات قيمة تعليمية\n- ملونة وجذابة`
-            }]
-          }],
-          modalities: ["image", "text"],
-          generationConfig: {
-            temperature: 0.7
-          }
-        })
-      }
-    );
+    // Create detailed educational prompt
+    const educationalPrompt = `أنشئ صورة تعليمية توضيحية عالية الجودة: ${prompt}
+
+المادة: ${subject}
+الصف: ${grade}
+
+متطلبات الصورة:
+- واضحة وبسيطة ومناسبة للطلاب
+- مناسبة للمنهاج الأردني
+- ذات قيمة تعليمية عالية
+- ملونة وجذابة وسهلة الفهم
+- تحتوي على تفاصيل تعليمية مفيدة`;
+
+    // Generate educational image using Lovable AI
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [{
+          role: 'user',
+          content: educationalPrompt
+        }],
+        modalities: ['image', 'text']
+      })
+    });
 
     if (!response.ok) {
-      throw new Error('Failed to generate image');
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      throw new Error(`Failed to generate image: ${response.status}`);
     }
 
     const data = await response.json();
-    const imageBase64 = data.candidates?.[0]?.message?.images?.[0]?.image_url?.url || '';
+    console.log('Lovable AI response received');
+    
+    // Extract base64 image from response
+    const imageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url || '';
+    
+    if (!imageBase64) {
+      console.error('No image in response:', JSON.stringify(data));
+      throw new Error('No image generated');
+    }
+
+    console.log('Image generated successfully');
 
     return new Response(
       JSON.stringify({ imageBase64 }),
@@ -48,9 +77,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error generating educational image:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Failed to generate image' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
