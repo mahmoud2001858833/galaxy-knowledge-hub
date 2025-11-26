@@ -11,6 +11,7 @@ interface ReactionVisualizationProps {
   reaction: ChemicalReaction;
   isPlaying: boolean;
   speed: number;
+  showGeometry?: boolean;
   onStageChange?: (stage: ReactionStage) => void;
 }
 
@@ -18,10 +19,12 @@ export const ReactionVisualization = ({
   reaction, 
   isPlaying, 
   speed,
+  showGeometry = false,
   onStageChange 
 }: ReactionVisualizationProps) => {
   const [stage, setStage] = useState<ReactionStage>('reactants');
   const [progress, setProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
@@ -50,9 +53,7 @@ export const ReactionVisualization = ({
   };
 
   useEffect(() => {
-    if (!isPlaying) {
-      setProgress(0);
-      setStage('reactants');
+    if (!isPlaying || isComplete) {
       return;
     }
 
@@ -61,7 +62,8 @@ export const ReactionVisualization = ({
         const newProgress = prev + (0.01 * speed);
         
         if (newProgress >= 1) {
-          return 0;
+          setIsComplete(true);
+          return 1;
         }
 
         // Stage transitions
@@ -108,7 +110,17 @@ export const ReactionVisualization = ({
     }, 50);
 
     return () => clearInterval(interval);
-  }, [isPlaying, speed, stage, reaction.energyChange, onStageChange]);
+  }, [isPlaying, speed, stage, reaction.energyChange, onStageChange, isComplete]);
+
+  const handleReset = () => {
+    setProgress(0);
+    setStage('reactants');
+    setIsComplete(false);
+  };
+
+  useEffect(() => {
+    handleReset();
+  }, [reaction]);
 
   const calculateMoleculePosition = (index: number, total: number, stageProgress: number): [number, number, number] => {
     const baseSpacing = 4;
@@ -181,6 +193,7 @@ export const ReactionVisualization = ({
               showLabels={true}
               animate={stage === 'breaking'}
               glowIntensity={getGlowIntensity()}
+              showGeometry={false}
             />
           );
         })}
@@ -194,42 +207,109 @@ export const ReactionVisualization = ({
             showLabels={true}
             animate={stage === 'forming'}
             glowIntensity={getGlowIntensity()}
+            showGeometry={showGeometry && stage === 'products'}
           />
         ))}
 
+        {/* Energy burst effect at reaction moment */}
+        {stage === 'rearrange' && (
+          <>
+            {/* Central energy burst */}
+            <mesh>
+              <sphereGeometry args={[1.5 + Math.sin(progress * 20) * 0.5, 32, 32]} />
+              <meshBasicMaterial
+                color={reaction.energyChange === 'exothermic' ? '#ff4444' : '#44aaff'}
+                transparent
+                opacity={0.4}
+              />
+            </mesh>
+            {/* Energy particles */}
+            {[...Array(12)].map((_, i) => {
+              const angle = (i / 12) * Math.PI * 2;
+              const radius = 2 + progress * 5;
+              return (
+                <mesh
+                  key={i}
+                  position={[
+                    Math.cos(angle) * radius,
+                    Math.sin(angle) * radius * 0.5,
+                    Math.sin(angle) * radius
+                  ]}
+                >
+                  <sphereGeometry args={[0.2, 16, 16]} />
+                  <meshBasicMaterial
+                    color={reaction.energyChange === 'exothermic' ? '#ffaa00' : '#00aaff'}
+                    transparent
+                    opacity={0.8 * (1 - progress)}
+                  />
+                </mesh>
+              );
+            })}
+          </>
+        )}
+
         {/* Energy wave effect */}
         {(stage === 'forming' || stage === 'products') && (
-          <mesh>
-            <sphereGeometry args={[2 + progress * 3, 32, 32]} />
-            <meshBasicMaterial
-              color={reaction.energyChange === 'exothermic' ? '#ff6b6b' : '#4dabf7'}
-              transparent
-              opacity={0.1 * (1 - progress)}
-              wireframe
-            />
-          </mesh>
+          <>
+            <mesh>
+              <sphereGeometry args={[2 + progress * 3, 32, 32]} />
+              <meshBasicMaterial
+                color={reaction.energyChange === 'exothermic' ? '#ff6b6b' : '#4dabf7'}
+                transparent
+                opacity={0.1 * (1 - progress)}
+                wireframe
+              />
+            </mesh>
+            {/* Secondary energy ring */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[2.5, 0.2, 16, 100]} />
+              <meshBasicMaterial
+                color={reaction.energyChange === 'exothermic' ? '#ff8800' : '#0088ff'}
+                transparent
+                opacity={0.3 * (1 - progress)}
+              />
+            </mesh>
+          </>
         )}
       </Canvas>
 
       {/* Stage indicator */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-sm px-6 py-3 rounded-full text-white">
         <div className="flex items-center gap-4">
-          <div className="text-sm">
+          <div className="text-sm font-semibold">
             {stage === 'reactants' && 'المواد المتفاعلة'}
-            {stage === 'approach' && 'الاقتراب'}
-            {stage === 'breaking' && 'كسر الروابط'}
-            {stage === 'rearrange' && 'إعادة الترتيب'}
-            {stage === 'forming' && 'تكوين الروابط'}
-            {stage === 'products' && 'النواتج'}
+            {stage === 'approach' && 'الاقتراب والتصادم'}
+            {stage === 'breaking' && 'كسر الروابط القديمة'}
+            {stage === 'rearrange' && 'لحظة التفاعل - إطلاق الطاقة ⚡'}
+            {stage === 'forming' && 'تكوين الروابط الجديدة'}
+            {stage === 'products' && 'النواتج النهائية ✓'}
           </div>
           <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 transition-all duration-300"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
         </div>
       </div>
+
+      {/* Completion badge */}
+      {isComplete && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500/90 backdrop-blur-sm px-6 py-2 rounded-full text-white font-semibold animate-fade-in">
+          ✓ اكتمل التفاعل
+        </div>
+      )}
+
+      {/* Energy indicator */}
+      {(stage === 'rearrange' || stage === 'forming') && (
+        <div className={`absolute top-4 right-4 px-4 py-2 rounded-lg backdrop-blur-sm font-semibold animate-pulse ${
+          reaction.energyChange === 'exothermic' 
+            ? 'bg-orange-500/90 text-white' 
+            : 'bg-blue-500/90 text-white'
+        }`}>
+          {reaction.energyChange === 'exothermic' ? '🔥 طارد للحرارة' : '❄️ ماص للحرارة'}
+        </div>
+      )}
     </div>
   );
 };
