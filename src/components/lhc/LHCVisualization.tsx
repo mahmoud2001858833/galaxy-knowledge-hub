@@ -104,8 +104,8 @@ export const LHCVisualization = ({
 
       // Draw detectors with enhanced design
       const detectorPositions = [
-        { angle: 0, name: 'ATLAS', color: 'hsl(210, 100%, 60%)', color2: 'hsl(210, 100%, 75%)' },
-        { angle: Math.PI, name: 'CMS', color: 'hsl(30, 100%, 60%)', color2: 'hsl(30, 100%, 75%)' }
+        { angle: 0, name: 'ATLAS', color: 'hsl(210, 100%, 60%)', color2: 'hsl(210, 100%, 75%)', alpha: 0.8 },
+        { angle: Math.PI, name: 'CMS', color: 'hsl(30, 100%, 60%)', color2: 'hsl(30, 100%, 75%)', alpha: 0.8 }
       ];
 
       detectorPositions.forEach(detector => {
@@ -116,8 +116,8 @@ export const LHCVisualization = ({
         ctx.beginPath();
         ctx.arc(x, y, 25, 0, Math.PI * 2);
         const detectorGlow = ctx.createRadialGradient(x, y, 0, x, y, 25);
-        detectorGlow.addColorStop(0, detector.color + 'cc');
-        detectorGlow.addColorStop(1, detector.color + '00');
+        detectorGlow.addColorStop(0, detector.color.replace('hsl', 'hsla').replace(')', `, ${detector.alpha})`));
+        detectorGlow.addColorStop(1, detector.color.replace('hsl', 'hsla').replace(')', ', 0)'));
         ctx.fillStyle = detectorGlow;
         ctx.fill();
         
