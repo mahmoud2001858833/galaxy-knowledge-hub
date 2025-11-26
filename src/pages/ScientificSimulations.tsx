@@ -1,13 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, FlaskConical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import ScientificSimulationsPassword from '@/components/ScientificSimulationsPassword';
 
 const ScientificSimulations = () => {
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  if (!isAuthenticated) {
+    return <ScientificSimulationsPassword onSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   const simulations = [
     {
