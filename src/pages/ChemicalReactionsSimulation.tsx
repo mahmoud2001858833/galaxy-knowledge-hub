@@ -12,6 +12,7 @@ const ChemicalReactionsSimulation = () => {
   const [selectedReaction, setSelectedReaction] = useState(chemicalReactions[0]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [showGeometry, setShowGeometry] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-chemistry-50/20 dark:to-chemistry-900/10 py-8">
@@ -53,6 +54,7 @@ const ChemicalReactionsSimulation = () => {
                       reaction={selectedReaction}
                       isPlaying={isPlaying}
                       speed={speed}
+                      showGeometry={showGeometry}
                     />
                   </Suspense>
                 </div>
@@ -62,11 +64,13 @@ const ChemicalReactionsSimulation = () => {
                 <ReactionControls
                   isPlaying={isPlaying}
                   speed={speed}
+                  showGeometry={showGeometry}
                   onPlayPause={() => setIsPlaying(!isPlaying)}
                   onReset={() => {
                     setIsPlaying(false);
                   }}
                   onSpeedChange={setSpeed}
+                  onToggleGeometry={() => setShowGeometry(!showGeometry)}
                 />
                 <ReactionInfo reaction={selectedReaction} />
               </div>

@@ -563,4 +563,244 @@ export const chemicalReactions: ChemicalReaction[] = [
       },
     ],
   },
+  {
+    id: 'sulfuric-acid-formation',
+    nameAr: 'تكوين حمض الكبريتيك',
+    nameEn: 'Sulfuric Acid Formation',
+    equation: 'SO₃ + H₂O → H₂SO₄',
+    complexity: 'medium',
+    category: 'تفاعلات متوسطة',
+    energyChange: 'exothermic',
+    description: 'تفاعل ثالث أكسيد الكبريت مع الماء لتكوين حمض الكبريتيك',
+    educationalNotes: 'أهم حمض صناعي في العالم - تفاعل عنيف',
+    reactants: [
+      {
+        formula: 'SO₃',
+        atoms: [
+          { element: 'Sulfur', symbol: 'S', color: ELEMENT_COLORS.S, position: [-2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-3, 0.8, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-1, 0.8, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-2, -1, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'double' },
+          { from: 0, to: 2, type: 'double' },
+          { from: 0, to: 3, type: 'double' },
+        ],
+      },
+      {
+        formula: 'H₂O',
+        atoms: [
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [2, 0, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [1.5, 0.5, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [2.5, 0.5, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'single' },
+          { from: 0, to: 2, type: 'single' },
+        ],
+      },
+    ],
+    products: [
+      {
+        formula: 'H₂SO₄',
+        atoms: [
+          { element: 'Sulfur', symbol: 'S', color: ELEMENT_COLORS.S, position: [0, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-1, 0.8, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [1, 0.8, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-0.7, -0.9, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [0.7, -0.9, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-1.3, -1.4, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [1.3, -1.4, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'double' },
+          { from: 0, to: 2, type: 'double' },
+          { from: 0, to: 3, type: 'single' },
+          { from: 0, to: 4, type: 'single' },
+          { from: 3, to: 5, type: 'single' },
+          { from: 4, to: 6, type: 'single' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'calcium-carbonate-formation',
+    nameAr: 'تكوين كربونات الكالسيوم',
+    nameEn: 'Calcium Carbonate Formation',
+    equation: 'CaO + CO₂ → CaCO₃',
+    complexity: 'medium',
+    category: 'تفاعلات متوسطة',
+    energyChange: 'exothermic',
+    description: 'تفاعل أكسيد الكالسيوم مع ثاني أكسيد الكربون',
+    educationalNotes: 'ينتج الحجر الجيري (الكالسايت) - مكون الرخام',
+    reactants: [
+      {
+        formula: 'CaO',
+        atoms: [
+          { element: 'Calcium', symbol: 'Ca', color: ELEMENT_COLORS.Ca, position: [-2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-1, 0, 0] },
+        ],
+        bonds: [{ from: 0, to: 1, type: 'double' }],
+      },
+      {
+        formula: 'CO₂',
+        atoms: [
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [1, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [3, 0, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'double' },
+          { from: 0, to: 2, type: 'double' },
+        ],
+      },
+    ],
+    products: [
+      {
+        formula: 'CaCO₃',
+        atoms: [
+          { element: 'Calcium', symbol: 'Ca', color: ELEMENT_COLORS.Ca, position: [0, 0, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [1.2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [1.2, 1, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [2, -0.5, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [0.4, -0.5, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'single' },
+          { from: 1, to: 2, type: 'double' },
+          { from: 1, to: 3, type: 'single' },
+          { from: 1, to: 4, type: 'single' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'acetic-acid-formation',
+    nameAr: 'تكوين حمض الأسيتيك',
+    nameEn: 'Acetic Acid Formation',
+    equation: 'CH₃OH + CO → CH₃COOH',
+    complexity: 'medium',
+    category: 'تفاعلات متوسطة',
+    energyChange: 'exothermic',
+    description: 'تفاعل الميثانول مع أول أكسيد الكربون',
+    educationalNotes: 'ينتج الخل (حمض الأسيتيك) - مركب عضوي مهم',
+    reactants: [
+      {
+        formula: 'CH₃OH',
+        atoms: [
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [-2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [-1, 0, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-2.5, 0.5, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-2.5, -0.5, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-2, 0, 0.7] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-0.5, 0.5, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'single' },
+          { from: 0, to: 2, type: 'single' },
+          { from: 0, to: 3, type: 'single' },
+          { from: 0, to: 4, type: 'single' },
+          { from: 1, to: 5, type: 'single' },
+        ],
+      },
+      {
+        formula: 'CO',
+        atoms: [
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [3, 0, 0] },
+        ],
+        bonds: [{ from: 0, to: 1, type: 'triple' }],
+      },
+    ],
+    products: [
+      {
+        formula: 'CH₃COOH',
+        atoms: [
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [0, 0, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [1.2, 0, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [2, 0.5, 0] },
+          { element: 'Oxygen', symbol: 'O', color: ELEMENT_COLORS.O, position: [1.5, -1, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-0.5, 0.5, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-0.5, -0.5, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [0, 0, 0.7] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [2.5, 0.8, 0] },
+        ],
+        bonds: [
+          { from: 0, to: 1, type: 'single' },
+          { from: 1, to: 2, type: 'double' },
+          { from: 1, to: 3, type: 'single' },
+          { from: 0, to: 4, type: 'single' },
+          { from: 0, to: 5, type: 'single' },
+          { from: 0, to: 6, type: 'single' },
+          { from: 3, to: 7, type: 'single' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'benzene-structure',
+    nameAr: 'بنية البنزين',
+    nameEn: 'Benzene Structure',
+    equation: '6C + 3H₂ → C₆H₆',
+    complexity: 'complex',
+    category: 'تفاعلات معقدة',
+    energyChange: 'exothermic',
+    description: 'تكوين حلقة البنزين العطرية',
+    educationalNotes: 'أساس الكيمياء العضوية العطرية - حلقة سداسية مستقرة',
+    reactants: [
+      {
+        formula: 'C',
+        atoms: [
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [-2, 0, 0] },
+        ],
+        bonds: [],
+      },
+      {
+        formula: 'H₂',
+        atoms: [
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [2, 0, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [3, 0, 0] },
+        ],
+        bonds: [{ from: 0, to: 1, type: 'single' }],
+      },
+    ],
+    products: [
+      {
+        formula: 'C₆H₆',
+        atoms: [
+          // Hexagonal ring of carbons
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [0, 1, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [0.866, 0.5, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [0.866, -0.5, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [0, -1, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [-0.866, -0.5, 0] },
+          { element: 'Carbon', symbol: 'C', color: ELEMENT_COLORS.C, position: [-0.866, 0.5, 0] },
+          // Hydrogens
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [0, 1.6, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [1.4, 0.8, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [1.4, -0.8, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [0, -1.6, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-1.4, -0.8, 0] },
+          { element: 'Hydrogen', symbol: 'H', color: ELEMENT_COLORS.H, position: [-1.4, 0.8, 0] },
+        ],
+        bonds: [
+          // Ring bonds (alternating single/double)
+          { from: 0, to: 1, type: 'single' },
+          { from: 1, to: 2, type: 'double' },
+          { from: 2, to: 3, type: 'single' },
+          { from: 3, to: 4, type: 'double' },
+          { from: 4, to: 5, type: 'single' },
+          { from: 5, to: 0, type: 'double' },
+          // Hydrogen bonds
+          { from: 0, to: 6, type: 'single' },
+          { from: 1, to: 7, type: 'single' },
+          { from: 2, to: 8, type: 'single' },
+          { from: 3, to: 9, type: 'single' },
+          { from: 4, to: 10, type: 'single' },
+          { from: 5, to: 11, type: 'single' },
+        ],
+      },
+    ],
+  },
 ];
