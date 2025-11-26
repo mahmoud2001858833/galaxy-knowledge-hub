@@ -3,7 +3,7 @@ import { Nucleus } from '@/data/nuclear-data';
 
 interface NucleusVisualizationProps {
   nucleus: Nucleus;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | number;
   animated?: boolean;
   showLabel?: boolean;
 }
@@ -20,9 +20,8 @@ export const NucleusVisualization = ({
     large: 150
   };
   
-  const diameter = sizeMap[size];
-  const protonSize = diameter / 8;
-  const neutronSize = diameter / 8;
+  const diameter = typeof size === 'number' ? size : sizeMap[size];
+  const particleSize = diameter / 6;
 
   // توزيع البروتونات والنيوترونات في دوائر متحدة المركز
   const particlePositions = () => {
@@ -93,18 +92,20 @@ export const NucleusVisualization = ({
             key={index}
             className="absolute rounded-full"
             style={{
-              width: pos.isProton ? protonSize : neutronSize,
-              height: pos.isProton ? protonSize : neutronSize,
+              width: particleSize,
+              height: particleSize,
               left: '50%',
               top: '50%',
-              backgroundColor: pos.isProton ? '#ef4444' : '#3b82f6',
+              background: pos.isProton 
+                ? 'radial-gradient(circle, #fca5a5, #ef4444)' 
+                : 'radial-gradient(circle, #93c5fd, #3b82f6)',
               boxShadow: pos.isProton 
-                ? '0 0 15px #ef4444, inset 0 0 10px rgba(255,255,255,0.3)'
-                : '0 0 15px #3b82f6, inset 0 0 10px rgba(255,255,255,0.3)',
+                ? '0 0 20px #ef4444, 0 0 40px #ef4444, inset 0 0 15px rgba(255,255,255,0.4)'
+                : '0 0 20px #3b82f6, 0 0 40px #3b82f6, inset 0 0 15px rgba(255,255,255,0.4)',
               transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`
             }}
             animate={animated ? {
-              scale: [1, 1.1, 1],
+              scale: [1, 1.15, 1],
             } : {}}
             transition={{
               duration: 1 + Math.random(),
@@ -129,11 +130,11 @@ export const NucleusVisualization = ({
           className="absolute inset-[35%] rounded-full"
           style={{
             background: `radial-gradient(circle, ${nucleus.color}, ${nucleus.glowColor})`,
-            boxShadow: `0 0 30px ${nucleus.glowColor}, inset 0 0 20px rgba(255,255,255,0.3)`
+            boxShadow: `0 0 40px ${nucleus.glowColor}, 0 0 60px ${nucleus.glowColor}, inset 0 0 30px rgba(255,255,255,0.4)`
           }}
           animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.8, 1, 0.8]
+            scale: [1, 1.15, 1],
+            opacity: [0.9, 1, 0.9]
           }}
           transition={{
             duration: 1.5,
