@@ -3,16 +3,18 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Flame, Thermometer, Gauge, Play, Pause, RotateCcw } from 'lucide-react';
+import { Flame, Thermometer, Gauge, RotateCcw, Microwave } from 'lucide-react';
 
 interface EnvironmentControlsProps {
   temperature: number;
   pressure: number;
   burnerOn: boolean;
+  ovenOn?: boolean;
   flameIntensity: number;
   onTemperatureChange: (value: number) => void;
   onPressureChange: (value: number) => void;
   onBurnerToggle: () => void;
+  onOvenToggle?: () => void;
   onFlameIntensityChange: (value: number) => void;
   onReset: () => void;
 }
@@ -21,10 +23,12 @@ export const EnvironmentControls = ({
   temperature,
   pressure,
   burnerOn,
+  ovenOn = false,
   flameIntensity,
   onTemperatureChange,
   onPressureChange,
   onBurnerToggle,
+  onOvenToggle,
   onFlameIntensityChange,
   onReset
 }: EnvironmentControlsProps) => {
@@ -134,6 +138,32 @@ export const EnvironmentControls = ({
             </div>
           )}
         </div>
+
+        {/* Oven Control */}
+        {onOvenToggle && (
+          <div className="space-y-3 p-4 rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Microwave className="w-4 h-4" />
+                الفرن الكهربائي
+              </Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {ovenOn ? 'يعمل' : 'متوقف'}
+                </span>
+                <Switch
+                  checked={ovenOn}
+                  onCheckedChange={onOvenToggle}
+                />
+              </div>
+            </div>
+            {ovenOn && (
+              <div className="text-xs text-muted-foreground animate-fade-in">
+                الفرن يعمل حالياً - درجة الحرارة: {temperature}°C
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-2 pt-2">
