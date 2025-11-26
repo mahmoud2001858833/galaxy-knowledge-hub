@@ -19,6 +19,7 @@ const VirtualChemistryLab = () => {
   const [temperature, setTemperature] = useState(25);
   const [pressure, setPressure] = useState(1.0);
   const [burnerOn, setBurnerOn] = useState(false);
+  const [ovenOn, setOvenOn] = useState(false);
   const [flameIntensity, setFlameIntensity] = useState(0.5);
   const [isReacting, setIsReacting] = useState(false);
   const [currentReaction, setCurrentReaction] = useState<Reaction | null>(null);
@@ -131,6 +132,7 @@ const VirtualChemistryLab = () => {
     setTemperature(25);
     setPressure(1.0);
     setBurnerOn(false);
+    setOvenOn(false);
     setFlameIntensity(0.5);
     toast.success('تم إعادة تعيين الإعدادات');
   };
@@ -225,10 +227,12 @@ const VirtualChemistryLab = () => {
               temperature={temperature}
               pressure={pressure}
               burnerOn={burnerOn}
+              ovenOn={ovenOn}
               flameIntensity={flameIntensity}
               onTemperatureChange={setTemperature}
               onPressureChange={setPressure}
               onBurnerToggle={() => setBurnerOn(!burnerOn)}
+              onOvenToggle={() => setOvenOn(!ovenOn)}
               onFlameIntensityChange={setFlameIntensity}
               onReset={handleReset}
             />
