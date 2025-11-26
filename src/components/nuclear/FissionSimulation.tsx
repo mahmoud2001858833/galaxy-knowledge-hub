@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { NucleusVisualization } from './NucleusVisualization';
@@ -6,27 +6,96 @@ import { NUCLEAR_ELEMENTS, FISSION_REACTIONS } from '@/data/nuclear-data';
 import { Zap, Play, RotateCcw } from 'lucide-react';
 
 export const FissionSimulation = () => {
-  const [stage, setStage] = useState<'initial' | 'neutron' | 'excited' | 'split' | 'products'>('initial');
+  const [stage, setStage] = useState<'initial' | 'neutron' | 'excited' | 'split' | 'products' | 'chain'>('initial');
   const [energyReleased, setEnergyReleased] = useState(0);
   const [neutronsReleased, setNeutronsReleased] = useState(0);
+  const [chainElements, setChainElements] = useState<Array<{element: any, x: number, y: number, generation: number}>>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const reaction = FISSION_REACTIONS[0];
+
+  useEffect(() => {
+    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
+
+  const playExplosionSound = () => {
+    if (!audioContextRef.current) return;
+    const ctx = audioContextRef.current;
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    oscillator.frequency.setValueAtTime(150, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.5);
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.5);
+  };
 
   const startFission = () => {
     setStage('neutron');
     setTimeout(() => setStage('excited'), 1000);
-    setTimeout(() => setStage('split'), 2000);
+    setTimeout(() => {
+      setStage('split');
+      playExplosionSound();
+    }, 2000);
     setTimeout(() => {
       setStage('products');
       setEnergyReleased(reaction.products.energyMeV);
       setNeutronsReleased(reaction.products.neutrons);
     }, 3000);
+    setTimeout(() => startChainReaction(), 4000);
+  };
+
+  const startChainReaction = () => {
+    setStage('chain');
+    const elements = [
+      NUCLEAR_ELEMENTS.strontium,
+      NUCLEAR_ELEMENTS.xenon,
+      NUCLEAR_ELEMENTS.rubidium,
+      NUCLEAR_ELEMENTS.cesium,
+      NUCLEAR_ELEMENTS.yttrium,
+      NUCLEAR_ELEMENTS.zirconium,
+      NUCLEAR_ELEMENTS.tellurium,
+      NUCLEAR_ELEMENTS.barium,
+      NUCLEAR_ELEMENTS.krypton,
+      NUCLEAR_ELEMENTS.xenon,
+      NUCLEAR_ELEMENTS.rubidium,
+      NUCLEAR_ELEMENTS.cesium,
+      NUCLEAR_ELEMENTS.strontium
+    ];
+
+    elements.forEach((element, index) => {
+      setTimeout(() => {
+        playExplosionSound();
+        setChainElements(prev => [
+          ...prev,
+          {
+            element,
+            x: (Math.random() - 0.5) * 400,
+            y: (Math.random() - 0.5) * 300,
+            generation: index
+          }
+        ]);
+        setEnergyReleased(prev => prev + 50);
+        setNeutronsReleased(prev => prev + 2);
+      }, index * 300);
+    });
   };
 
   const reset = () => {
     setStage('initial');
     setEnergyReleased(0);
     setNeutronsReleased(0);
+    setChainElements([]);
   };
 
   return (
@@ -55,7 +124,7 @@ export const FissionSimulation = () => {
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="flex flex-col items-center gap-4"
               >
-                <NucleusVisualization nucleus={NUCLEAR_ELEMENTS.uranium235} size="large" />
+                <NucleusVisualization nucleus={NUCLEAR_ELEMENTS.uranium235} size={150} />
                 <div className="text-center">
                   <div className="text-xl font-bold text-green-400">يورانيوم-235</div>
                   <div className="text-sm text-muted-foreground">جاهز للانشطار</div>
@@ -71,13 +140,14 @@ export const FissionSimulation = () => {
                 animate={{ opacity: 1 }}
                 className="relative"
               >
-                <NucleusVisualization nucleus={NUCLEAR_ELEMENTS.uranium235} size="large" />
+                <NucleusVisualization nucleus={NUCLEAR_ELEMENTS.uranium235} size={150} />
                 
                 {/* النيوترون القادم */}
                 <motion.div
-                  className="absolute w-8 h-8 rounded-full bg-blue-500"
+                  className="absolute w-12 h-12 rounded-full"
                   style={{
-                    boxShadow: '0 0 20px #3b82f6',
+                    background: 'radial-gradient(circle, #60a5fa, #3b82f6)',
+                    boxShadow: '0 0 30px #3b82f6, 0 0 60px #3b82f6',
                     left: '-100px',
                     top: '50%'
                   }}
@@ -114,7 +184,7 @@ export const FissionSimulation = () => {
                     repeat: 2
                   }}
                 >
-                  <NucleusVisualization nucleus={NUCLEAR_ELEMENTS.uranium235} size="large" />
+                  <NucleusVisualization nucleus={NUCLEAR_ELEMENTS.uranium235} size={150} />
                 </motion.div>
                 
                 {/* توهج الإثارة */}
@@ -187,7 +257,7 @@ export const FissionSimulation = () => {
                   animate={{ x: -100, y: -30 }}
                   transition={{ duration: 1, ease: 'easeOut' }}
                 >
-                  <NucleusVisualization nucleus={reaction.products.nucleus1} size="medium" />
+                  <NucleusVisualization nucleus={reaction.products.nucleus1} size={120} />
                 </motion.div>
 
                 {/* النواة الثانية */}
@@ -196,15 +266,18 @@ export const FissionSimulation = () => {
                   animate={{ x: 100, y: 30 }}
                   transition={{ duration: 1, ease: 'easeOut' }}
                 >
-                  <NucleusVisualization nucleus={reaction.products.nucleus2} size="medium" />
+                  <NucleusVisualization nucleus={reaction.products.nucleus2} size={120} />
                 </motion.div>
 
                 {/* النيوترونات المنطلقة */}
                 {[...Array(reaction.products.neutrons)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute w-6 h-6 rounded-full bg-blue-400"
-                    style={{ boxShadow: '0 0 15px #60a5fa' }}
+                    className="absolute w-10 h-10 rounded-full"
+                    style={{ 
+                      background: 'radial-gradient(circle, #60a5fa, #3b82f6)',
+                      boxShadow: '0 0 20px #60a5fa, 0 0 40px #3b82f6'
+                    }}
                     initial={{ x: 0, y: 0, scale: 0 }}
                     animate={{
                       x: Math.cos(i * 120) * 150,
@@ -213,6 +286,35 @@ export const FissionSimulation = () => {
                     }}
                     transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
                   />
+                ))}
+              </motion.div>
+            )}
+
+            {/* مرحلة التفاعل المتسلسل */}
+            {stage === 'chain' && (
+              <motion.div
+                key="chain"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="relative"
+              >
+                {chainElements.map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    style={{
+                      position: 'absolute',
+                      left: `calc(50% + ${item.x}px)`,
+                      top: `calc(50% + ${item.y}px)`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    <NucleusVisualization 
+                      nucleus={item.element} 
+                      size={80 - item.generation * 2} 
+                    />
+                  </motion.div>
                 ))}
               </motion.div>
             )}

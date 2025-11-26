@@ -82,6 +82,106 @@ export const NUCLEAR_ELEMENTS: Record<string, Nucleus> = {
     neutrons: 56,
     color: '#14b8a6',
     glowColor: '#2dd4bf'
+  },
+  helium3: {
+    id: 'He-3',
+    element: 'هيليوم-3',
+    symbol: 'He',
+    massNumber: 3,
+    protons: 2,
+    neutrons: 1,
+    color: '#f97316',
+    glowColor: '#fb923c'
+  },
+  strontium: {
+    id: 'Sr-90',
+    element: 'سترونتيوم',
+    symbol: 'Sr',
+    massNumber: 90,
+    protons: 38,
+    neutrons: 52,
+    color: '#06b6d4',
+    glowColor: '#22d3ee'
+  },
+  xenon: {
+    id: 'Xe-140',
+    element: 'زينون',
+    symbol: 'Xe',
+    massNumber: 140,
+    protons: 54,
+    neutrons: 86,
+    color: '#8b5cf6',
+    glowColor: '#a78bfa'
+  },
+  rubidium: {
+    id: 'Rb-93',
+    element: 'روبيديوم',
+    symbol: 'Rb',
+    massNumber: 93,
+    protons: 37,
+    neutrons: 56,
+    color: '#f43f5e',
+    glowColor: '#fb7185'
+  },
+  cesium: {
+    id: 'Cs-137',
+    element: 'سيزيوم',
+    symbol: 'Cs',
+    massNumber: 137,
+    protons: 55,
+    neutrons: 82,
+    color: '#eab308',
+    glowColor: '#facc15'
+  },
+  yttrium: {
+    id: 'Y-93',
+    element: 'إتريوم',
+    symbol: 'Y',
+    massNumber: 93,
+    protons: 39,
+    neutrons: 54,
+    color: '#14b8a6',
+    glowColor: '#2dd4bf'
+  },
+  zirconium: {
+    id: 'Zr-97',
+    element: 'زركونيوم',
+    symbol: 'Zr',
+    massNumber: 97,
+    protons: 40,
+    neutrons: 57,
+    color: '#84cc16',
+    glowColor: '#a3e635'
+  },
+  tellurium: {
+    id: 'Te-134',
+    element: 'تيلوريوم',
+    symbol: 'Te',
+    massNumber: 134,
+    protons: 52,
+    neutrons: 82,
+    color: '#f59e0b',
+    glowColor: '#fbbf24'
+  },
+  lithium: {
+    id: 'Li-7',
+    element: 'ليثيوم',
+    symbol: 'Li',
+    massNumber: 7,
+    protons: 3,
+    neutrons: 4,
+    color: '#6366f1',
+    glowColor: '#818cf8'
+  },
+  beryllium: {
+    id: 'Be-9',
+    element: 'بيريليوم',
+    symbol: 'Be',
+    massNumber: 9,
+    protons: 4,
+    neutrons: 5,
+    color: '#14b8a6',
+    glowColor: '#2dd4bf'
   }
 };
 
@@ -109,6 +209,39 @@ export const FUSION_REACTIONS = [
     product: {
       resultNucleus: NUCLEAR_ELEMENTS.helium,
       energyMeV: 17.6,
+      particles: ['نيوترون']
+    }
+  },
+  {
+    id: 'dd-fusion',
+    name: 'اندماج الديوتيريوم-ديوتيريوم',
+    description: 'اندماج نواتي ديوتيريوم لتكوين الهيليوم-3',
+    reactants: [NUCLEAR_ELEMENTS.deuterium, NUCLEAR_ELEMENTS.deuterium],
+    product: {
+      resultNucleus: NUCLEAR_ELEMENTS.helium3,
+      energyMeV: 3.27,
+      particles: ['نيوترون']
+    }
+  },
+  {
+    id: 'pp-fusion',
+    name: 'سلسلة البروتون-البروتون',
+    description: 'التفاعل الأساسي في نواة الشمس',
+    reactants: [NUCLEAR_ELEMENTS.deuterium, NUCLEAR_ELEMENTS.helium3],
+    product: {
+      resultNucleus: NUCLEAR_ELEMENTS.helium,
+      energyMeV: 12.86,
+      particles: ['بروتونان']
+    }
+  },
+  {
+    id: 'li-fusion',
+    name: 'اندماج الليثيوم',
+    description: 'اندماج الليثيوم مع الديوتيريوم',
+    reactants: [NUCLEAR_ELEMENTS.lithium, NUCLEAR_ELEMENTS.deuterium],
+    product: {
+      resultNucleus: NUCLEAR_ELEMENTS.beryllium,
+      energyMeV: 22.4,
       particles: ['نيوترون']
     }
   }
