@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, FlaskConical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -98,6 +98,24 @@ const ScientificSimulations = () => {
         'تصور تكوين وكسر الروابط الكيميائية',
         'من تكوين الماء إلى جزيئات الجسم المعقدة',
         'اختبارات تفاعلية شاملة'
+      ]
+    },
+    {
+      id: 'virtual-chemistry-lab',
+      title: 'معمل الكيمياء الافتراضي ثلاثي الأبعاد',
+      description: 'خلط المواد الكيميائية بنفسك، تحكم بالحرارة والضغط، شاهد التفاعلات الحقيقية في بيئة آمنة تماماً',
+      icon: <FlaskConical className="w-12 h-12" />,
+      color: 'from-green-500 via-cyan-500 to-blue-600',
+      route: '/virtual-chemistry-lab',
+      features: [
+        'خلط 17+ مادة كيميائية حقيقية (أحماض، قواعد، معادن)',
+        'التحكم بدرجة الحرارة (-20°C إلى 500°C)',
+        'التحكم بالضغط (0.1 إلى 10 atm)',
+        'موقد بنسن تفاعلي مع لهب قابل للتحكم',
+        'تأثيرات بصرية واقعية (فقاعات، بخار، تغير الألوان)',
+        'نظام سلامة شامل مع تحذيرات التفاعلات الخطرة',
+        'عرض نتائج التفاعل مع القيم الحرارية الحقيقية',
+        'بيئة معمل ثلاثية الأبعاد كاملة'
       ]
     }
   ];
