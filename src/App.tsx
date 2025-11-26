@@ -56,6 +56,7 @@ import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
 import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
 import BuildAtomSimulation from './pages/BuildAtomSimulation';
+import LHCSimulation from './pages/LHCSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -387,6 +388,10 @@ const router = createBrowserRouter([
       {
         path: 'simulation/build-atom',
         element: <AuthGuard><BuildAtomSimulation /></AuthGuard>,
+      },
+      {
+        path: 'lhc-simulation',
+        element: <AuthGuard><LHCSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',

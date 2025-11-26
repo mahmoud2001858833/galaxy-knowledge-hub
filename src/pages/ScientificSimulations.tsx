@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -38,6 +38,21 @@ const ScientificSimulations = () => {
         'بناء سريع للعناصر الشائعة',
         'معلومات تفصيلية عن الذرة المبنية',
         'واجهة ثلاثية الأبعاد جذابة'
+      ]
+    },
+    {
+      id: 'lhc-simulation',
+      title: 'مصادم الهدرونات الكبير (LHC)',
+      description: 'محاكاة متقدمة تفاعلية لمصادم الهدرونات الكبير مع تصادمات البروتونات والكشف عن الجسيمات',
+      icon: <Sparkles className="w-12 h-12" />,
+      color: 'from-cyan-500 via-blue-600 to-purple-600',
+      route: '/lhc-simulation',
+      features: [
+        'تسريع الجسيمات إلى سرعة الضوء',
+        'تصادمات عالية الطاقة (13 TeV)',
+        'كشف الجسيمات الناتجة والبوزونات',
+        'مغناطيسات فائقة التوصيل',
+        'سيناريوهات جاهزة واختبارات تفاعلية'
       ]
     }
   ];
