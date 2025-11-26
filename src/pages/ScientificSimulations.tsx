@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -53,6 +53,21 @@ const ScientificSimulations = () => {
         'كشف الجسيمات الناتجة والبوزونات',
         'مغناطيسات فائقة التوصيل',
         'سيناريوهات جاهزة واختبارات تفاعلية'
+      ]
+    },
+    {
+      id: 'electromagnetic-waves',
+      title: 'الموجات الكهرومغناطيسية',
+      description: 'استكشاف الطيف الكهرومغناطيسي الكامل من موجات الراديو إلى أشعة غاما مع تفاعلات حية',
+      icon: <Waves className="w-12 h-12" />,
+      color: 'from-red-500 via-green-500 to-purple-600',
+      route: '/electromagnetic-waves',
+      features: [
+        'عرض الطيف الكامل بالألوان الحقيقية',
+        'التحكم في التردد والطول الموجي',
+        'تطبيقات عملية لكل نوع موجة',
+        'رسوم متحركة للمجالات الكهربائية والمغناطيسية',
+        'اختبارات تفاعلية وحقائق علمية'
       ]
     }
   ];
