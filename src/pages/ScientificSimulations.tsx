@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles, Waves } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -83,6 +83,21 @@ const ScientificSimulations = () => {
         'رسوم متحركة خرافية للجسيمات النووية',
         'مقارنة الطاقة المنطلقة مع التفاعلات الكيميائية',
         'اختبارات تعليمية شاملة'
+      ]
+    },
+    {
+      id: 'chemical-reactions',
+      title: 'التفاعلات الكيميائية ثلاثية الأبعاد',
+      description: 'استكشف عالم الكيمياء من خلال محاكاة تفاعلية ثلاثية الأبعاد تُظهر تكوين الجزيئات والروابط الكيميائية بشكل مرئي',
+      icon: <Beaker className="w-12 h-12" />,
+      color: 'from-chemistry-primary via-purple-500 to-blue-500',
+      route: '/chemical-reactions',
+      features: [
+        '30+ تفاعل كيميائي من البسيط للمعقد',
+        'رسوم متحركة ثلاثية الأبعاد متقدمة',
+        'تصور تكوين وكسر الروابط الكيميائية',
+        'من تكوين الماء إلى جزيئات الجسم المعقدة',
+        'اختبارات تفاعلية شاملة'
       ]
     }
   ];
