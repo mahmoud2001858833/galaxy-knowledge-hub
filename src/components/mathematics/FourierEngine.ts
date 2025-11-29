@@ -104,7 +104,24 @@ export class FourierEngine {
     return { a0, coefficients };
   }
 
-  // توليد المجموع الجزئي لسلسلة فورييه
+  // توليد قيمة المجموع الجزئي لسلسلة فورييه عند نقطة معينة باستخدام معاملات محسوبة مسبقاً
+  static evaluateSeriesAt(
+    a0: number,
+    coefficients: Array<{n: number, an: number, bn: number}>,
+    L: number,
+    x: number
+  ): number {
+    let sum = a0 / 2;
+
+    for (const { n, an, bn } of coefficients) {
+      sum += an * Math.cos((n * Math.PI * x) / L);
+      sum += bn * Math.sin((n * Math.PI * x) / L);
+    }
+
+    return sum;
+  }
+
+  // توليد المجموع الجزئي لسلسلة فورييه مع حساب المعاملات داخلياً (للاستخدامات البسيطة فقط)
   static generateFourierApproximation(
     func: (x: number) => number,
     N: number,
@@ -112,15 +129,7 @@ export class FourierEngine {
     x: number
   ): number {
     const { a0, coefficients } = this.calculateCoefficients(func, N, L);
-    
-    let sum = a0 / 2;
-    
-    for (const { n, an, bn } of coefficients) {
-      sum += an * Math.cos((n * Math.PI * x) / L);
-      sum += bn * Math.sin((n * Math.PI * x) / L);
-    }
-
-    return sum;
+    return this.evaluateSeriesAt(a0, coefficients, L, x);
   }
 
   // اكتشاف نقاط عدم الاستمرار
