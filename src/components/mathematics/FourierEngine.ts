@@ -58,8 +58,8 @@ export class FourierEngine {
     }
   }
 
-  // حساب التكامل العددي باستخدام طريقة سيمبسون
-  static integrate(func: (x: number) => number, a: number, b: number, n: number = 1000): number {
+  // حساب التكامل العددي باستخدام طريقة سيمبسون (محسّن للأداء)
+  static integrate(func: (x: number) => number, a: number, b: number, n: number = 100): number {
     const h = (b - a) / n;
     let sum = func(a) + func(b);
 
@@ -177,11 +177,11 @@ export class FourierEngine {
     return gibbs;
   }
 
-  // توليد نقاط البيانات للرسم
+  // توليد نقاط البيانات للرسم (محسّن للأداء)
   static generateDataPoints(
     func: (x: number) => number,
     L: number,
-    numPoints: number = 500
+    numPoints: number = 150
   ): Array<{x: number, y: number}> {
     const points: Array<{x: number, y: number}> = [];
     const step = (2 * L) / numPoints;
@@ -189,8 +189,8 @@ export class FourierEngine {
     for (let i = 0; i <= numPoints; i++) {
       const x = -L + i * step;
       const y = func(x);
-      if (!isNaN(y) && isFinite(y)) {
-        points.push({ x: parseFloat(x.toFixed(4)), y: parseFloat(y.toFixed(4)) });
+      if (!isNaN(y) && isFinite(y) && Math.abs(y) < 1e6) {
+        points.push({ x: parseFloat(x.toFixed(3)), y: parseFloat(y.toFixed(3)) });
       }
     }
 
