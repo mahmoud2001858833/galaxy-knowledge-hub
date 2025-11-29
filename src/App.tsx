@@ -60,7 +60,6 @@ import LHCSimulation from './pages/LHCSimulation';
 import ElectromagneticWavesSimulation from './pages/ElectromagneticWavesSimulation';
 import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
 import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
-import VirtualChemistryLab from './pages/VirtualChemistryLab';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -408,10 +407,6 @@ const router = createBrowserRouter([
       {
         path: 'chemical-reactions',
         element: <AuthGuard><ChemicalReactionsSimulation /></AuthGuard>,
-      },
-      {
-        path: 'virtual-chemistry-lab',
-        element: <AuthGuard><VirtualChemistryLab /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',
