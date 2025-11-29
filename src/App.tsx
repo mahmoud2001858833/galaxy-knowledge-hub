@@ -61,6 +61,7 @@ import ElectromagneticWavesSimulation from './pages/ElectromagneticWavesSimulati
 import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
 import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
 import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
+import Function3DVisualization from './pages/Function3DVisualization';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -412,6 +413,10 @@ const router = createBrowserRouter([
       {
         path: 'fourier-series',
         element: <AuthGuard><FourierSeriesSimulation /></AuthGuard>,
+      },
+      {
+        path: '3d-function-visualizer',
+        element: <AuthGuard><Function3DVisualization /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',
