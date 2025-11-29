@@ -101,16 +101,16 @@ const FourierControls: React.FC<FourierControlsProps> = ({
             value={[N]}
             onValueChange={(value) => onNChange(value[0])}
             min={1}
-            max={50}
+            max={30}
             step={1}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>1</span>
-            <span>50</span>
+            <span>30</span>
           </div>
           <p className="text-xs text-yellow-500">
-            ⚠️ الحد الأقصى 50 حداً لضمان الأداء السلس
+            ⚠️ الحد الأقصى 30 حداً لضمان الأداء السلس
           </p>
         </div>
 

@@ -25,6 +25,7 @@ const FourierSeriesSimulation = () => {
   const [isPiecewise, setIsPiecewise] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(true);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // البيانات المحسوبة
   const [originalData, setOriginalData] = useState<Array<{x: number, y: number}>>([]);
@@ -64,46 +65,91 @@ const FourierSeriesSimulation = () => {
   // حساب البيانات (محسّن للأداء)
   const calculateData = useCallback(() => {
     try {
-      // استخدام setTimeout لمنع تجميد الواجهة
-      const timeoutId = setTimeout(() => {
-        // البيانات الأصلية
-        const origData = FourierEngine.generateDataPoints(evaluateUserFunction, L);
-        setOriginalData(origData);
+      setIsCalculating(true);
 
-        // حساب المعاملات
-        const coeffs = FourierEngine.calculateCoefficients(evaluateUserFunction, Math.min(N, 50), L);
-        setCoefficients(coeffs);
+      // استخدام setTimeout وتقسيم العملية لمراحل لتجنب تجميد الواجهة
+      let timeoutId: NodeJS.Timeout;
+      let secondTimeoutId: NodeJS.Timeout | undefined;
 
-        // بيانات التقريب
-        const approxData = FourierEngine.generateDataPoints(
-          (x) => FourierEngine.generateFourierApproximation(evaluateUserFunction, Math.min(N, 50), L, x),
-          L
-        );
-        setApproximationData(approxData);
+      timeoutId = setTimeout(() => {
+        try {
+          // البيانات الأصلية
+          const origData = FourierEngine.generateDataPoints(evaluateUserFunction, L);
+          setOriginalData(origData);
 
-        // اكتشاف نقاط عدم الاستمرار
-        const discs = FourierEngine.detectDiscontinuities(evaluateUserFunction, L);
-        setDiscontinuities(discs);
+          // اكتشاف نقاط عدم الاستمرار
+          const discs = FourierEngine.detectDiscontinuities(evaluateUserFunction, L);
+          setDiscontinuities(discs);
 
-        // كشف ظاهرة غيبس
-        const gibbs = FourierEngine.detectGibbsPhenomenon(
-          evaluateUserFunction,
-          (x) => FourierEngine.generateFourierApproximation(evaluateUserFunction, Math.min(N, 50), L, x),
-          discs,
-          L
-        );
-        setGibbsPoints(gibbs);
+          // المرحلة الثانية: حساب المعاملات والتقريب وظاهرة غيبس
+          secondTimeoutId = setTimeout(() => {
+            try {
+              // حساب المعاملات
+              const coeffs = FourierEngine.calculateCoefficients(
+                evaluateUserFunction,
+                Math.min(N, 30),
+                L
+              );
+              setCoefficients(coeffs);
+
+              // بيانات التقريب باستخدام المعاملات المحسوبة مسبقاً
+              const approxFunc = (x: number) =>
+                FourierEngine.evaluateSeriesAt(
+                  coeffs.a0,
+                  coeffs.coefficients,
+                  L,
+                  x
+                );
+
+              const approxData = FourierEngine.generateDataPoints(approxFunc, L);
+              setApproximationData(approxData);
+
+              // كشف ظاهرة غيبس
+              const gibbs = FourierEngine.detectGibbsPhenomenon(
+                evaluateUserFunction,
+                approxFunc,
+                discs,
+                L
+              );
+              setGibbsPoints(gibbs);
+            } catch (error) {
+              console.error(error);
+              toast({
+                title: 'خطأ في الحساب',
+                description: 'تأكد من صحة صيغة الدالة المدخلة',
+                variant: 'destructive',
+              });
+            } finally {
+              setIsCalculating(false);
+            }
+          }, 50);
+        } catch (error) {
+          console.error(error);
+          toast({
+            title: 'خطأ في الحساب',
+            description: 'تأكد من صحة صيغة الدالة المدخلة',
+            variant: 'destructive',
+          });
+          setIsCalculating(false);
+        }
       }, 100);
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        clearTimeout(timeoutId);
+        if (secondTimeoutId) {
+          clearTimeout(secondTimeoutId);
+        }
+      };
     } catch (error) {
+      console.error(error);
       toast({
         title: 'خطأ في الحساب',
         description: 'تأكد من صحة صيغة الدالة المدخلة',
-        variant: 'destructive'
+        variant: 'destructive',
       });
+      setIsCalculating(false);
     }
-  }, [expression, N, L, isPiecewise, evaluateUserFunction, toast]);
+  }, [N, L, evaluateUserFunction, toast]);
 
   // تحديث البيانات عند تغيير المدخلات (مع debounce)
   useEffect(() => {
@@ -120,13 +166,13 @@ const FourierSeriesSimulation = () => {
     if (isAnimating) {
       interval = setInterval(() => {
         setN(prev => {
-          if (prev >= 100) {
+          if (prev >= 30) {
             setIsAnimating(false);
-            return 100;
+            return 30;
           }
           return prev + 1;
         });
-      }, 100);
+      }, 300);
     }
     return () => clearInterval(interval);
   }, [isAnimating]);
@@ -209,8 +255,12 @@ const FourierSeriesSimulation = () => {
 
       {/* المحتوى الرئيسي */}
       <div className="container mx-auto px-4 pb-12 space-y-8">
-        {/* الأمثلة */}
-        <FourierExamples onExampleSelect={handleExampleSelect} />
+        {/* حالة الحساب */}
+        {isCalculating && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm text-muted-foreground animate-pulse">
+            يتم الآن حساب سلسلة فورييه على مراحل لتجنب تعليق الصفحة، يرجى الانتظار لحظات...
+          </div>
+        )}
 
         {/* الرسوم البيانية */}
         <FourierGraphs
@@ -219,6 +269,9 @@ const FourierSeriesSimulation = () => {
           discontinuities={discontinuities}
           gibbsPoints={gibbsPoints}
         />
+
+        {/* الأمثلة */}
+        <FourierExamples onExampleSelect={handleExampleSelect} />
 
         {/* عناصر التحكم */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
