@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, FlaskConical } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -98,6 +98,27 @@ const ScientificSimulations = () => {
         'تصور تكوين وكسر الروابط الكيميائية',
         'من تكوين الماء إلى جزيئات الجسم المعقدة',
         'اختبارات تفاعلية شاملة'
+      ]
+    },
+    {
+      id: 'fourier-series',
+      title: 'سلسلة فورييه التفاعلية',
+      description: 'حساب وتمثيل سلسلة فورييه مع كشف ظاهرة غيبس وتحليل الدوال القطعية',
+      icon: <Activity className="w-12 h-12" />,
+      color: 'from-indigo-500 via-purple-500 to-pink-600',
+      route: '/fourier-series',
+      features: [
+        'إدخال دوال عادية أو قطعية (piecewise)',
+        'لوحة رموز رياضية متقدمة',
+        '10+ أمثلة جاهزة (موجة مربعة، مثلثية، منشارية)',
+        'رسم بياني مقارن: الدالة الأصلية vs التقريب',
+        'حساب تلقائي لمعاملات a₀, aₙ, bₙ',
+        'كشف تلقائي لنقاط عدم الاستمرار',
+        'كشف ظاهرة غيبس مع نسبة التجاوز',
+        'عرض رمزي للصيغة الرياضية',
+        'تحكم بعدد الحدود N (1-100)',
+        'أنيميشن تطور التقريب',
+        'دليل تعليمي شامل'
       ]
     }
   ];
