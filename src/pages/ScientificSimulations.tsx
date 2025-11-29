@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -118,6 +118,25 @@ const ScientificSimulations = () => {
         'عرض رمزي للصيغة الرياضية',
         'تحكم بعدد الحدود N (1-100)',
         'أنيميشن تطور التقريب',
+        'دليل تعليمي شامل'
+      ]
+    },
+    {
+      id: '3d-function-visualizer',
+      title: 'تمثيل الدوال ثلاثي الأبعاد',
+      description: 'تجربة تفاعلية لعرض الدوال الرياضية في الفضاء ثلاثي الأبعاد مع إمكانيات تفاعلية متقدمة',
+      icon: <Box className="w-12 h-12" />,
+      color: 'from-emerald-500 via-teal-500 to-cyan-600',
+      route: '/3d-function-visualizer',
+      features: [
+        'عرض 1D (نقطة)، 2D (منحنى)، 3D (سطح)',
+        'تدوير وتكبير تفاعلي بالماوس',
+        '15+ مثال جاهز متنوع',
+        'مقارنة حتى 5 دوال في نفس المشهد',
+        'ألوان وتدرجات قابلة للتخصيص',
+        'لوحة رموز رياضية متقدمة',
+        'عرض خطوط الكنتور والشبكة',
+        'دعم الدوال البارامترية',
         'دليل تعليمي شامل'
       ]
     }
