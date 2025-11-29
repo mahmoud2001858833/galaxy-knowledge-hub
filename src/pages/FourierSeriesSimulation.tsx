@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2 } from 'lucide-react';
@@ -61,36 +61,41 @@ const FourierSeriesSimulation = () => {
     }
   }, [expression, isPiecewise]);
 
-  // حساب البيانات
+  // حساب البيانات (محسّن للأداء)
   const calculateData = useCallback(() => {
     try {
-      // البيانات الأصلية
-      const origData = FourierEngine.generateDataPoints(evaluateUserFunction, L);
-      setOriginalData(origData);
+      // استخدام setTimeout لمنع تجميد الواجهة
+      const timeoutId = setTimeout(() => {
+        // البيانات الأصلية
+        const origData = FourierEngine.generateDataPoints(evaluateUserFunction, L);
+        setOriginalData(origData);
 
-      // حساب المعاملات
-      const coeffs = FourierEngine.calculateCoefficients(evaluateUserFunction, N, L);
-      setCoefficients(coeffs);
+        // حساب المعاملات
+        const coeffs = FourierEngine.calculateCoefficients(evaluateUserFunction, Math.min(N, 50), L);
+        setCoefficients(coeffs);
 
-      // بيانات التقريب
-      const approxData = FourierEngine.generateDataPoints(
-        (x) => FourierEngine.generateFourierApproximation(evaluateUserFunction, N, L, x),
-        L
-      );
-      setApproximationData(approxData);
+        // بيانات التقريب
+        const approxData = FourierEngine.generateDataPoints(
+          (x) => FourierEngine.generateFourierApproximation(evaluateUserFunction, Math.min(N, 50), L, x),
+          L
+        );
+        setApproximationData(approxData);
 
-      // اكتشاف نقاط عدم الاستمرار
-      const discs = FourierEngine.detectDiscontinuities(evaluateUserFunction, L);
-      setDiscontinuities(discs);
+        // اكتشاف نقاط عدم الاستمرار
+        const discs = FourierEngine.detectDiscontinuities(evaluateUserFunction, L);
+        setDiscontinuities(discs);
 
-      // كشف ظاهرة غيبس
-      const gibbs = FourierEngine.detectGibbsPhenomenon(
-        evaluateUserFunction,
-        (x) => FourierEngine.generateFourierApproximation(evaluateUserFunction, N, L, x),
-        discs,
-        L
-      );
-      setGibbsPoints(gibbs);
+        // كشف ظاهرة غيبس
+        const gibbs = FourierEngine.detectGibbsPhenomenon(
+          evaluateUserFunction,
+          (x) => FourierEngine.generateFourierApproximation(evaluateUserFunction, Math.min(N, 50), L, x),
+          discs,
+          L
+        );
+        setGibbsPoints(gibbs);
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
     } catch (error) {
       toast({
         title: 'خطأ في الحساب',
@@ -100,9 +105,13 @@ const FourierSeriesSimulation = () => {
     }
   }, [expression, N, L, isPiecewise, evaluateUserFunction, toast]);
 
-  // تحديث البيانات عند تغيير المدخلات
+  // تحديث البيانات عند تغيير المدخلات (مع debounce)
   useEffect(() => {
-    calculateData();
+    const timer = setTimeout(() => {
+      calculateData();
+    }, 300);
+    
+    return () => clearTimeout(timer);
   }, [calculateData]);
 
   // الأنيميشن التلقائي
@@ -145,10 +154,14 @@ const FourierSeriesSimulation = () => {
     setExpression(prev => prev + symbol);
   };
 
-  const formulaString = FourierEngine.generateFormulaString(
-    coefficients.a0,
-    coefficients.coefficients,
-    5
+  // استخدام useMemo لتحسين الأداء
+  const formulaString = useMemo(() => 
+    FourierEngine.generateFormulaString(
+      coefficients.a0,
+      coefficients.coefficients,
+      5
+    ),
+    [coefficients]
   );
 
   return (
