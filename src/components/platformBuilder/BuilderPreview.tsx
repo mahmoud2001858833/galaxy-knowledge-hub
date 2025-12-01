@@ -21,14 +21,57 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const generatePreviewHTML = () => {
-    const htmlFile = files.find(f => f.file_name === 'index.html' || f.file_type === 'html');
-    const cssFile = files.find(f => f.file_name === 'style.css' || f.file_type === 'css');
-    const jsFile = files.find(f => f.file_name === 'script.js' || f.file_type === 'js');
+    // البحث عن ملفات HTML
+    const htmlFiles = files.filter(f => f.file_type === 'html');
+    const mainHtml = htmlFiles.find(f => f.file_name === 'index.html') || htmlFiles[0];
 
-    const html = htmlFile?.content || '<div style="padding: 20px; text-align: center;">لم يتم إنشاء أي محتوى بعد</div>';
-    const css = cssFile?.content || '';
-    const js = jsFile?.content || '';
+    // جمع كل ملفات CSS
+    const cssFiles = files.filter(f => f.file_type === 'css');
+    const allCss = cssFiles.map(f => f.content).join('\n\n');
 
+    // جمع كل ملفات JS
+    const jsFiles = files.filter(f => f.file_type === 'js');
+    const allJs = jsFiles.map(f => f.content).join('\n\n');
+
+    if (!mainHtml) {
+      return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+  <div class="text-center p-8">
+    <div class="text-6xl mb-4">🚀</div>
+    <h1 class="text-2xl font-bold text-white mb-2">لم يتم إنشاء أي محتوى بعد</h1>
+    <p class="text-slate-400">ابدأ بالتحدث مع المساعد لإنشاء مشروعك</p>
+  </div>
+</body>
+</html>
+      `;
+    }
+
+    // إذا كان HTML يحتوي بالفعل على doctype و head كاملة
+    if (mainHtml.content.trim().toLowerCase().startsWith('<!doctype')) {
+      // استخراج محتوى head و body من HTML الموجود
+      let htmlContent = mainHtml.content;
+      
+      // إضافة CSS قبل إغلاق head
+      if (allCss) {
+        htmlContent = htmlContent.replace('</head>', `<style>\n${allCss}\n</style>\n</head>`);
+      }
+      
+      // إضافة JS قبل إغلاق body
+      if (allJs) {
+        htmlContent = htmlContent.replace('</body>', `<script>\ntry {\n${allJs}\n} catch (error) { console.error('Script error:', error); }\n</script>\n</body>`);
+      }
+      
+      return htmlContent;
+    }
+
+    // إنشاء HTML كامل من الصفر
     return `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -36,6 +79,7 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       margin: 0;
@@ -45,14 +89,14 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    ${css}
+    ${allCss}
   </style>
 </head>
 <body>
-  ${html}
+  ${mainHtml.content}
   <script>
     try {
-      ${js}
+      ${allJs}
     } catch (error) {
       console.error('Script error:', error);
     }

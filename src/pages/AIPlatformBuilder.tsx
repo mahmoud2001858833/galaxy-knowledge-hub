@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BuilderChat } from "@/components/platformBuilder/BuilderChat";
 import { BuilderPreview } from "@/components/platformBuilder/BuilderPreview";
 import { BuilderCodeView } from "@/components/platformBuilder/BuilderCodeView";
 import { BuilderToolbar } from "@/components/platformBuilder/BuilderToolbar";
+import { BuilderFileTree } from "@/components/platformBuilder/BuilderFileTree";
 import { ProjectsList } from "@/components/platformBuilder/ProjectsList";
-import { MessageSquare, Monitor, Code } from "lucide-react";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Monitor, Code, FolderTree } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StarField from "@/components/StarField";
@@ -33,7 +39,8 @@ export default function AIPlatformBuilder() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'preview' | 'code'>('chat');
+  const [selectedFile, setSelectedFile] = useState<string>("");
+  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'code'>('preview');
 
   useEffect(() => {
     if (projectId) {
@@ -42,6 +49,12 @@ export default function AIPlatformBuilder() {
       loadConversations();
     }
   }, [projectId]);
+
+  useEffect(() => {
+    if (files.length > 0 && !selectedFile) {
+      setSelectedFile(files[0].file_name);
+    }
+  }, [files]);
 
   const loadProject = async () => {
     try {
@@ -112,14 +125,12 @@ export default function AIPlatformBuilder() {
     setIsLoading(true);
 
     try {
-      // حفظ رسالة المستخدم
       await supabase.from('ai_builder_conversations').insert({
         project_id: projectId,
         role: 'user',
         content: message,
       });
 
-      // استدعاء الذكاء الاصطناعي
       const { data, error } = await supabase.functions.invoke('ai-code-generator', {
         body: {
           message,
@@ -143,7 +154,6 @@ export default function AIPlatformBuilder() {
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // حفظ رسالة الذكاء الاصطناعي
       await supabase.from('ai_builder_conversations').insert({
         project_id: projectId,
         role: 'assistant',
@@ -151,18 +161,15 @@ export default function AIPlatformBuilder() {
         code_changes: data.files,
       });
 
-      // تحديث الملفات
       if (data.files && data.files.length > 0) {
         await updateProjectFiles(data.files);
       }
 
-      setActiveTab('preview');
+      setRightPanelTab('preview');
       toast.success("تم تحديث المشروع");
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast.error(error.message || "فشل إرسال الرسالة");
-      
-      // إزالة رسالة المستخدم عند الفشل
       setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
       setIsLoading(false);
@@ -171,13 +178,11 @@ export default function AIPlatformBuilder() {
 
   const updateProjectFiles = async (newFiles: any[]) => {
     try {
-      // حذف الملفات القديمة
       await supabase
         .from('ai_builder_files')
         .delete()
         .eq('project_id', projectId);
 
-      // إضافة الملفات الجديدة
       const filesToInsert = newFiles.map(file => ({
         project_id: projectId,
         file_name: file.file_name,
@@ -191,8 +196,6 @@ export default function AIPlatformBuilder() {
         .insert(filesToInsert);
 
       if (error) throw error;
-
-      // إعادة تحميل الملفات
       await loadFiles();
     } catch (error) {
       console.error('Error updating files:', error);
@@ -278,43 +281,63 @@ export default function AIPlatformBuilder() {
       />
 
       <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full">
-          <TabsList className="w-full justify-start border-b border-border rounded-none bg-card/50 backdrop-blur-sm">
-            <TabsTrigger value="chat" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              <span>الدردشة</span>
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="gap-2">
-              <Monitor className="w-4 h-4" />
-              <span>المعاينة</span>
-            </TabsTrigger>
-            <TabsTrigger value="code" className="gap-2">
-              <Code className="w-4 h-4" />
-              <span>الكود</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="chat" className="h-[calc(100%-3rem)] m-0">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Left Panel - Chat */}
+          <ResizablePanel defaultSize={35} minSize={25}>
             <BuilderChat
               projectId={projectId}
               messages={messages}
               onSendMessage={handleSendMessage}
               isLoading={isLoading}
             />
-          </TabsContent>
+          </ResizablePanel>
 
-          <TabsContent value="preview" className="h-[calc(100%-3rem)] m-0">
-            <BuilderPreview
-              files={files}
-              isPublished={project.is_published}
-              publishUrl={publishUrl}
-            />
-          </TabsContent>
+          <ResizableHandle withHandle className="bg-border/50" />
 
-          <TabsContent value="code" className="h-[calc(100%-3rem)] m-0">
-            <BuilderCodeView files={files} />
-          </TabsContent>
-        </Tabs>
+          {/* Right Panel - Preview & Code */}
+          <ResizablePanel defaultSize={65} minSize={40}>
+            <div className="h-full flex flex-col">
+              <Tabs value={rightPanelTab} onValueChange={(v) => setRightPanelTab(v as any)} className="flex-1 flex flex-col">
+                <TabsList className="w-full justify-start border-b border-border rounded-none bg-card/50 backdrop-blur-sm">
+                  <TabsTrigger value="preview" className="gap-2">
+                    <Monitor className="w-4 h-4" />
+                    <span>المعاينة</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="code" className="gap-2">
+                    <Code className="w-4 h-4" />
+                    <span>الكود</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="preview" className="flex-1 m-0 overflow-hidden">
+                  <BuilderPreview
+                    files={files}
+                    isPublished={project.is_published}
+                    publishUrl={publishUrl}
+                  />
+                </TabsContent>
+
+                <TabsContent value="code" className="flex-1 m-0 overflow-hidden">
+                  <ResizablePanelGroup direction="horizontal" className="h-full">
+                    <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+                      <BuilderFileTree
+                        files={files}
+                        selectedFile={selectedFile}
+                        onSelectFile={setSelectedFile}
+                      />
+                    </ResizablePanel>
+                    
+                    <ResizableHandle className="bg-border/50" />
+                    
+                    <ResizablePanel defaultSize={80}>
+                      <BuilderCodeView files={files} />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
