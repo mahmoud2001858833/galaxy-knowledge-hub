@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url)
-    const slug = url.searchParams.get('slug')
+    // Read slug from request body
+    const { slug } = await req.json()
 
     if (!slug) {
       return new Response(

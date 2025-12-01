@@ -114,3 +114,6 @@ verify_jwt = false
 
 [functions.serve-published-project]
 verify_jwt = false
+
+[functions.execute-code]
+verify_jwt = false
