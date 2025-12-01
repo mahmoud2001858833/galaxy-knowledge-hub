@@ -108,3 +108,9 @@ verify_jwt = false
 
 [functions.generate-educational-image]
 verify_jwt = false
+
+[functions.ai-code-generator]
+verify_jwt = false
+
+[functions.serve-published-project]
+verify_jwt = false

@@ -41,6 +41,118 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_builder_conversations: {
+        Row: {
+          code_changes: Json | null
+          content: string
+          created_at: string | null
+          id: string
+          project_id: string | null
+          role: string
+        }
+        Insert: {
+          code_changes?: Json | null
+          content: string
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          role: string
+        }
+        Update: {
+          code_changes?: Json | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_builder_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_builder_files: {
+        Row: {
+          content: string
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          id?: string
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_builder_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_builder_projects: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_published: boolean | null
+          publish_slug: string | null
+          thumbnail: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          publish_slug?: string | null
+          thumbnail?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          publish_slug?: string | null
+          thumbnail?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       arabic_poets: {
         Row: {
           achievements: string | null
