@@ -109,6 +109,8 @@ import SchoolMagazine from './pages/SchoolMagazine';
 import NewsDetail from './pages/NewsDetail';
 import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
 import ProtectedArabicLanguagePlatform from './pages/ProtectedArabicLanguagePlatform';
+import AIPlatformBuilder from './pages/AIPlatformBuilder';
+import PublishedProject from './pages/PublishedProject';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -565,6 +567,18 @@ const router = createBrowserRouter([
       {
         path: 'news/:id',
         element: <PublicRoute><NewsDetail /></PublicRoute>,
+      },
+      {
+        path: 'ai-platform-builder',
+        element: <AuthGuard><AIPlatformBuilder /></AuthGuard>,
+      },
+      {
+        path: 'ai-platform-builder/:projectId',
+        element: <AuthGuard><AIPlatformBuilder /></AuthGuard>,
+      },
+      {
+        path: 'published/:slug',
+        element: <PublicRoute><PublishedProject /></PublicRoute>,
       },
       {
         path: '*',

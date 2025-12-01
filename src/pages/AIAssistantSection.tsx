@@ -47,6 +47,15 @@ const AIAssistantSection = () => {
 
   const platforms = [
     {
+      title: "🚀 منشئ المنصات الذكي",
+      icon: "🚀",
+      description: "أنشئ موقعك الإلكتروني بالذكاء الاصطناعي - برمجة بدون كود بمساعدة AI متطور",
+      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+      color: "from-cyan-600/20 to-blue-600/20",
+      borderColor: "border-cyan-500/30",
+      link: "/ai-platform-builder"
+    },
+    {
       title: "🇯🇴 مساعدك الأردني",
       icon: "🇯🇴",
       description: "مساعد ذكي متخصص في المنهاج الأردني - يجيب من الكتب المدرسية حصرياً",
@@ -175,7 +184,7 @@ const AIAssistantSection = () => {
                   </p>
 
                   {/* Admin Upload Button for Jordanian Assistant */}
-                  {index === 0 && isSuperAdmin && (
+                  {index === 1 && isSuperAdmin && (
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
