@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Code, Sparkles } from "lucide-react";
+import { Send, Loader2, Code, Sparkles, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -96,14 +97,55 @@ export const BuilderChat = ({ projectId, messages, onSendMessage, isLoading }: B
                       : 'bg-secondary text-secondary-foreground'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  {message.code_changes && (
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-2 text-xs opacity-75">
-                        <Code className="w-3 h-3" />
-                        <span>تم تحديث {message.code_changes.filesCount || 0} ملف</span>
+                  {message.role === 'user' ? (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  ) : (
+                    <>
+                      <div className="prose prose-invert max-w-none text-sm">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
-                    </div>
+                      
+                      {message.code_changes?.files && message.code_changes.files.length > 0 && (
+                        <div className="mt-4 border-t border-border/50 pt-4">
+                          <div className="text-sm font-semibold mb-3 flex items-center gap-2">
+                            <Code className="w-4 h-4" />
+                            <span>الملفات المُنشأة ({message.code_changes.files.length})</span>
+                          </div>
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {message.code_changes.files.map((file: any, i: number) => (
+                              <div key={i} className="bg-black/30 rounded-lg p-3 border border-primary/20">
+                                <div className="flex items-center justify-between text-sm mb-2">
+                                  <span className="text-primary font-mono flex items-center gap-2">
+                                    {file.file_type === 'html' && '📄'}
+                                    {file.file_type === 'css' && '🎨'}
+                                    {file.file_type === 'js' && '⚡'}
+                                    {file.file_type === 'py' && '🐍'}
+                                    {file.file_type === 'cpp' && '⚙️'}
+                                    {file.file_name}
+                                  </span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(file.content);
+                                      toast.success("تم نسخ الكود بنجاح");
+                                    }}
+                                  >
+                                    <Copy className="w-3 h-3 ml-1" />
+                                    نسخ
+                                  </Button>
+                                </div>
+                                <pre className="text-xs overflow-x-auto bg-black/50 p-2 rounded max-h-32">
+                                  <code className="text-muted-foreground">
+                                    {file.content.slice(0, 300)}...
+                                  </code>
+                                </pre>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   <div className="text-xs opacity-50 mt-2">
                     {new Date(message.timestamp).toLocaleTimeString('ar-SA')}

@@ -148,7 +148,10 @@ export default function AIPlatformBuilder() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: data.explanation,
-        code_changes: { filesCount: data.files?.length || 0 },
+        code_changes: { 
+          filesCount: data.files?.length || 0,
+          files: data.files // Save complete files array
+        },
         timestamp: new Date(),
       };
 
@@ -158,7 +161,11 @@ export default function AIPlatformBuilder() {
         project_id: projectId,
         role: 'assistant',
         content: data.explanation,
-        code_changes: data.files,
+        code_changes: { 
+          filesCount: data.files?.length || 0,
+          files: data.files, // Save complete files
+          raw_response: data.raw_response // Save raw AI response
+        },
       });
 
       if (data.files && data.files.length > 0) {
