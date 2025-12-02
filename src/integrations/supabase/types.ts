@@ -49,6 +49,7 @@ export type Database = {
           id: string
           project_id: string | null
           role: string
+          tenant_id: string | null
         }
         Insert: {
           code_changes?: Json | null
@@ -57,6 +58,7 @@ export type Database = {
           id?: string
           project_id?: string | null
           role: string
+          tenant_id?: string | null
         }
         Update: {
           code_changes?: Json | null
@@ -65,6 +67,7 @@ export type Database = {
           id?: string
           project_id?: string | null
           role?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -72,6 +75,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_builder_conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -85,6 +95,7 @@ export type Database = {
           file_type: string
           id: string
           project_id: string | null
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -95,6 +106,7 @@ export type Database = {
           file_type: string
           id?: string
           project_id?: string | null
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -105,6 +117,7 @@ export type Database = {
           file_type?: string
           id?: string
           project_id?: string | null
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -113,6 +126,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_builder_files_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -124,6 +144,7 @@ export type Database = {
           id: string
           is_published: boolean | null
           publish_slug: string | null
+          tenant_id: string | null
           thumbnail: string | null
           title: string
           updated_at: string | null
@@ -135,6 +156,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           publish_slug?: string | null
+          tenant_id?: string | null
           thumbnail?: string | null
           title: string
           updated_at?: string | null
@@ -146,12 +168,21 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           publish_slug?: string | null
+          tenant_id?: string | null
           thumbnail?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_builder_projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       arabic_poets: {
         Row: {
@@ -2021,6 +2052,77 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          permissions: Json | null
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permissions?: Json | null
+          role?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permissions?: Json | null
+          role?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          owner_user_id: string
+          plan: string | null
+          settings: Json | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          owner_user_id: string
+          plan?: string | null
+          settings?: Json | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          owner_user_id?: string
+          plan?: string | null
+          settings?: Json | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2183,12 +2285,21 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
+      get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_admin_teacher_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      user_belongs_to_tenant: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_tenant_role: {
+        Args: { _role: string; _tenant_id: string; _user_id: string }
         Returns: boolean
       }
     }

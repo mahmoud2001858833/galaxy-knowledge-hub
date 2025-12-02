@@ -111,6 +111,7 @@ import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
 import ProtectedArabicLanguagePlatform from './pages/ProtectedArabicLanguagePlatform';
 import AIPlatformBuilder from './pages/AIPlatformBuilder';
 import PublishedProject from './pages/PublishedProject';
+import TenantSettings from './pages/TenantSettings';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -575,6 +576,10 @@ const router = createBrowserRouter([
       {
         path: 'ai-platform-builder/:projectId',
         element: <AuthGuard><AIPlatformBuilder /></AuthGuard>,
+      },
+      {
+        path: 'tenant-settings',
+        element: <AuthGuard><TenantSettings /></AuthGuard>,
       },
       {
         path: 'published/:slug',

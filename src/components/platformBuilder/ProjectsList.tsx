@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, ExternalLink, Calendar } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Calendar, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTenant } from "@/hooks/useTenant";
+import { TenantSwitcher } from "./TenantSwitcher";
 
 interface Project {
   id: string;
@@ -19,18 +21,27 @@ interface Project {
 
 export const ProjectsList = () => {
   const navigate = useNavigate();
+  const { currentTenant, isLoading: tenantLoading } = useTenant();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (currentTenant) {
+      fetchProjects();
+    }
+  }, [currentTenant]);
 
   const fetchProjects = async () => {
+    if (!currentTenant) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('ai_builder_projects')
         .select('*')
+        .eq('tenant_id', currentTenant.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -63,6 +74,11 @@ export const ProjectsList = () => {
   };
 
   const createNewProject = async () => {
+    if (!currentTenant) {
+      toast.error("لا يوجد مساحة عمل نشطة");
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -74,6 +90,7 @@ export const ProjectsList = () => {
         .from('ai_builder_projects')
         .insert({
           user_id: user.id,
+          tenant_id: currentTenant.id,
           title: `مشروع جديد ${new Date().toLocaleDateString('ar-SA')}`,
           description: '',
         })
@@ -117,7 +134,7 @@ export const ProjectsList = () => {
     }
   };
 
-  if (loading) {
+  if (loading || tenantLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -128,11 +145,23 @@ export const ProjectsList = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">مشاريعي</h1>
-        <Button onClick={createNewProject} className="gap-2">
-          <Plus className="w-4 h-4" />
-          مشروع جديد
-        </Button>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold">مشاريعي</h1>
+          <TenantSwitcher />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate('/tenant-settings')}
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
+          <Button onClick={createNewProject} className="gap-2">
+            <Plus className="w-4 h-4" />
+            مشروع جديد
+          </Button>
+        </div>
       </div>
 
       {projects.length === 0 ? (
