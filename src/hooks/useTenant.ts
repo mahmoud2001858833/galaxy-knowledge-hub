@@ -32,7 +32,10 @@ export const useTenant = () => {
   const fetchTenants = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
 
       // Get all tenants user is a member of
       const { data: memberData, error: memberError } = await supabase
@@ -40,7 +43,11 @@ export const useTenant = () => {
         .select('tenant_id')
         .eq('user_id', user.id);
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error('Error fetching tenant members:', memberError);
+        setIsLoading(false);
+        return;
+      }
 
       if (memberData && memberData.length > 0) {
         const tenantIds = memberData.map(m => m.tenant_id);
@@ -51,7 +58,11 @@ export const useTenant = () => {
           .in('id', tenantIds)
           .order('created_at', { ascending: false });
 
-        if (tenantsError) throw tenantsError;
+        if (tenantsError) {
+          console.error('Error fetching tenants:', tenantsError);
+          setIsLoading(false);
+          return;
+        }
 
         setTenants(tenantsData || []);
         
@@ -62,14 +73,13 @@ export const useTenant = () => {
         } else {
           setCurrentTenant(tenantsData?.[0] || null);
         }
+      } else {
+        // No tenants found - this is OK, user will create one
+        setTenants([]);
+        setCurrentTenant(null);
       }
     } catch (error: any) {
       console.error('Error fetching tenants:', error);
-      toast({
-        title: 'خطأ في تحميل المساحات',
-        description: error.message,
-        variant: 'destructive',
-      });
     } finally {
       setIsLoading(false);
     }
