@@ -107,9 +107,34 @@ serve(async (req) => {
       } catch (e) {
         error = `C++ execution error: ${e.message}`
       }
+    } else if (language === 'php') {
+      // Execute PHP code
+      try {
+        const phpProcess = Deno.run({
+          cmd: ['php', '-r', code],
+          stdout: 'piped',
+          stderr: 'piped',
+        })
+
+        const [status, stdout, stderr] = await Promise.all([
+          phpProcess.status(),
+          phpProcess.output(),
+          phpProcess.stderrOutput(),
+        ])
+
+        phpProcess.close()
+
+        if (status.success) {
+          result = new TextDecoder().decode(stdout)
+        } else {
+          error = new TextDecoder().decode(stderr)
+        }
+      } catch (e) {
+        error = `PHP execution error: ${e.message}`
+      }
     } else {
       return new Response(
-        JSON.stringify({ error: 'Unsupported language. Use "python" or "cpp".' }),
+        JSON.stringify({ error: 'Unsupported language. Use "python", "cpp", or "php".' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }

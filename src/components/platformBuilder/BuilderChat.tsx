@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Code, Sparkles, Copy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Send, Loader2, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import ReactMarkdown from 'react-markdown';
@@ -105,44 +106,12 @@ export const BuilderChat = ({ projectId, messages, onSendMessage, isLoading }: B
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                       
-                      {message.code_changes?.files && message.code_changes.files.length > 0 && (
-                        <div className="mt-4 border-t border-border/50 pt-4">
-                          <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-                            <Code className="w-4 h-4" />
-                            <span>الملفات المُنشأة ({message.code_changes.files.length})</span>
-                          </div>
-                          <div className="space-y-2 max-h-96 overflow-y-auto">
-                            {message.code_changes.files.map((file: any, i: number) => (
-                              <div key={i} className="bg-black/30 rounded-lg p-3 border border-primary/20">
-                                <div className="flex items-center justify-between text-sm mb-2">
-                                  <span className="text-primary font-mono flex items-center gap-2">
-                                    {file.file_type === 'html' && '📄'}
-                                    {file.file_type === 'css' && '🎨'}
-                                    {file.file_type === 'js' && '⚡'}
-                                    {file.file_type === 'py' && '🐍'}
-                                    {file.file_type === 'cpp' && '⚙️'}
-                                    {file.file_name}
-                                  </span>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(file.content);
-                                      toast.success("تم نسخ الكود بنجاح");
-                                    }}
-                                  >
-                                    <Copy className="w-3 h-3 ml-1" />
-                                    نسخ
-                                  </Button>
-                                </div>
-                                <pre className="text-xs overflow-x-auto bg-black/50 p-2 rounded max-h-32">
-                                  <code className="text-muted-foreground">
-                                    {file.content.slice(0, 300)}...
-                                  </code>
-                                </pre>
-                              </div>
-                            ))}
-                          </div>
+                      {message.code_changes?.filesCount > 0 && (
+                        <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            📁 {message.code_changes.filesCount} ملف
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">تم الإنشاء</span>
                         </div>
                       )}
                     </>

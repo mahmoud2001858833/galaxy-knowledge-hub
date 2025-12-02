@@ -99,9 +99,22 @@ export const BuilderPublishDialog = ({
               </div>
             </div>
 
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+              <p className="text-xs text-blue-500/90">
+                💡 عند إجراء تعديلات على المشروع، اضغط على "نشر الآن" مرة أخرى لرفع التحديثات
+              </p>
+            </div>
+
             <div className="flex gap-2 pt-4">
               <Button onClick={() => onOpenChange(false)} className="flex-1">
                 تم
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handlePublish}
+                className="flex-1"
+              >
+                🔄 رفع التحديثات
               </Button>
             </div>
           </div>
