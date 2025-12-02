@@ -26,10 +26,12 @@ export const ProjectsList = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (currentTenant) {
+    // بمجرد انتهاء تحميل المساحة (tenant)، نحاول جلب المشاريع
+    // إذا لم يكن هناك مساحة حالياً، ستقوم دالة fetchProjects بإيقاف حالة التحميل
+    if (!tenantLoading) {
       fetchProjects();
     }
-  }, [currentTenant]);
+  }, [currentTenant, tenantLoading]);
 
   const fetchProjects = async () => {
     if (!currentTenant) {
