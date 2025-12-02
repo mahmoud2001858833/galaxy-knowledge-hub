@@ -21,7 +21,7 @@ interface Project {
 
 export const ProjectsList = () => {
   const navigate = useNavigate();
-  const { currentTenant, isLoading: tenantLoading } = useTenant();
+  const { currentTenant, isLoading: tenantLoading, refreshTenants } = useTenant();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,11 +76,6 @@ export const ProjectsList = () => {
   };
 
   const createNewProject = async () => {
-    if (!currentTenant) {
-      toast.error("لا يوجد مساحة عمل نشطة");
-      return;
-    }
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -88,11 +83,38 @@ export const ProjectsList = () => {
         return;
       }
 
+      // إنشاء tenant إذا لم يكن موجوداً
+      let tenantId = currentTenant?.id;
+      if (!tenantId) {
+        const { data: newTenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            owner_user_id: user.id,
+            name: 'مساحة العمل الخاصة بي',
+            slug: `ws-${Date.now().toString(36)}`,
+          })
+          .select()
+          .single();
+
+        if (tenantError) throw tenantError;
+        tenantId = newTenant.id;
+
+        // إضافة المستخدم كعضو owner
+        await supabase.from('tenant_members').insert({
+          tenant_id: tenantId,
+          user_id: user.id,
+          role: 'owner',
+        });
+
+        // تحديث قائمة المساحات
+        await refreshTenants();
+      }
+
       const { data, error } = await supabase
         .from('ai_builder_projects')
         .insert({
           user_id: user.id,
-          tenant_id: currentTenant.id,
+          tenant_id: tenantId,
           title: `مشروع جديد ${new Date().toLocaleDateString('ar-SA')}`,
           description: '',
         })
@@ -105,6 +127,7 @@ export const ProjectsList = () => {
       const defaultFiles = [
         {
           project_id: data.id,
+          tenant_id: tenantId,
           file_name: 'index.html',
           file_path: '/index.html',
           file_type: 'html',
@@ -112,6 +135,7 @@ export const ProjectsList = () => {
         },
         {
           project_id: data.id,
+          tenant_id: tenantId,
           file_name: 'style.css',
           file_path: '/style.css',
           file_type: 'css',
@@ -119,6 +143,7 @@ export const ProjectsList = () => {
         },
         {
           project_id: data.id,
+          tenant_id: tenantId,
           file_name: 'script.js',
           file_path: '/script.js',
           file_type: 'js',
