@@ -143,7 +143,12 @@ export type Database = {
           description: string | null
           id: string
           is_published: boolean | null
+          project_type: string | null
           publish_slug: string | null
+          settings: Json | null
+          supabase_anon_key: string | null
+          supabase_connected: boolean | null
+          supabase_url: string | null
           tenant_id: string | null
           thumbnail: string | null
           title: string
@@ -155,7 +160,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_published?: boolean | null
+          project_type?: string | null
           publish_slug?: string | null
+          settings?: Json | null
+          supabase_anon_key?: string | null
+          supabase_connected?: boolean | null
+          supabase_url?: string | null
           tenant_id?: string | null
           thumbnail?: string | null
           title: string
@@ -167,7 +177,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_published?: boolean | null
+          project_type?: string | null
           publish_slug?: string | null
+          settings?: Json | null
+          supabase_anon_key?: string | null
+          supabase_connected?: boolean | null
+          supabase_url?: string | null
           tenant_id?: string | null
           thumbnail?: string | null
           title?: string
