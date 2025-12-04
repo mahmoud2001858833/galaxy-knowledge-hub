@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// استخدام مفتاح Google AI المخصص لمنشئ المنصات
+const GOOGLE_AI_KEY = Deno.env.get('PLATFORM_BUILDER_AI_KEY');
+
 const ULTRA_ADVANCED_SYSTEM_PROMPT = `أنت مطور ويب خبير جداً ومتقدم للغاية. مهمتك إنشاء تطبيقات ويب متكاملة تعمل فعلياً 100%.
 
 ## 🎯 القاعدة الذهبية - قبل أي كود:
@@ -39,9 +42,9 @@ CREATE POLICY "policy_name" ON public.table_name ...;
 
 ## 🤖 عند طلب ذكاء اصطناعي:
 
-### أنشئ اتصال حقيقي مع AI Gateway:
+### أنشئ اتصال حقيقي مع AI:
 \`\`\`javascript
-// استخدم Lovable AI Gateway
+// استخدم Google Gemini API مباشرة أو Edge Function
 async function askAI(question) {
   const response = await fetch('EDGE_FUNCTION_URL', {
     method: 'POST',
@@ -201,9 +204,8 @@ serve(async (req) => {
       )
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured')
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('PLATFORM_BUILDER_AI_KEY is not configured')
     }
 
     // Build enhanced system prompt with Supabase config
@@ -244,17 +246,15 @@ ${supabaseConfig.serviceKey ? `متاح للاستخدام في Edge Functions` 
 `)
     }
 
-    // Build conversation context
-    const messages = [
-      { role: 'system', content: systemPrompt }
-    ]
+    // Build conversation messages
+    const conversationMessages: Array<{ role: string; parts: Array<{ text: string }> }> = []
 
     // Add conversation history
     if (conversationHistory && conversationHistory.length > 0) {
       conversationHistory.slice(-6).forEach((msg: any) => {
-        messages.push({
-          role: msg.role,
-          content: msg.content
+        conversationMessages.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
         })
       })
     }
@@ -268,27 +268,39 @@ ${supabaseConfig.serviceKey ? `متاح للاستخدام في Edge Functions` 
       userMessage = `الملفات الحالية:\n${filesContext}\n\n---\n\nطلب المستخدم: ${message}`
     }
 
-    messages.push({ role: 'user', content: userMessage })
-
-    console.log('Calling Lovable AI Gateway with advanced prompt...')
+    console.log('Calling Google Gemini AI with advanced prompt...')
     
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-pro', // Using Pro for better quality
-        messages,
-        max_tokens: 32000, // Increased for larger projects
-        temperature: 0.7,
-      }),
-    })
+    // Call Google Gemini API directly
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GOOGLE_AI_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: systemPrompt }]
+            },
+            ...conversationMessages,
+            {
+              role: 'user',
+              parts: [{ text: userMessage }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 32000,
+          },
+        }),
+      }
+    )
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('AI Gateway error:', response.status, errorText)
+      console.error('Google Gemini AI error:', response.status, errorText)
       
       if (response.status === 429) {
         return new Response(
@@ -297,18 +309,11 @@ ${supabaseConfig.serviceKey ? `متاح للاستخدام في Edge Functions` 
         )
       }
       
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'يرجى إضافة رصيد لحسابك' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
-        )
-      }
-      
-      throw new Error(`AI Gateway error: ${response.status}`)
+      throw new Error(`Google Gemini AI error: ${response.status}`)
     }
 
     const aiResponse = await response.json()
-    const generatedContent = aiResponse.choices?.[0]?.message?.content || ''
+    const generatedContent = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
     console.log('AI Response received, parsing...')
 
