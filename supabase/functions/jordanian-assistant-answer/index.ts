@@ -6,7 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+// استخدام مفتاح Google AI المخصص
+const GOOGLE_AI_KEY = Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -29,8 +30,8 @@ serve(async (req) => {
       );
     }
 
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
+    if (!GOOGLE_AI_KEY) {
+      console.error('JORDANIAN_ASSISTANT_AI_KEY not configured');
       return new Response(
         JSON.stringify({
           answer: null,
@@ -41,7 +42,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Using Lovable AI for answer generation');
+    console.log('Using Google Gemini AI for answer generation');
 
     // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -84,7 +85,6 @@ serve(async (req) => {
     console.log(`Found ${contentPages.length} total pages across all grades`);
 
     // Build context from ALL textbook content - comprehensive search
-    // Group by grade AND subject for better organization
     const contentByGradeSubject = contentPages.reduce((acc: any, page: any) => {
       const key = `${page.grade}|||${page.subject}`;
       if (!acc[key]) {
@@ -94,12 +94,12 @@ serve(async (req) => {
       return acc;
     }, {});
 
-    // Create comprehensive context - include MORE pages for better search
+    // Create comprehensive context
     const booksContext = Object.entries(contentByGradeSubject)
       .map(([key, pages]: [string, any[]]) => {
         const [gradeKey, subject] = key.split('|||');
         const pagesText = pages
-          .slice(0, 40) // Increased from 20 to 40 pages per subject per grade
+          .slice(0, 40)
           .map((p: any) => 
             `[الصف: ${p.grade} | المادة: ${p.subject} | الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}]\n${p.page_content}`
           )
@@ -109,7 +109,7 @@ serve(async (req) => {
       })
       .join('\n\n---\n\n');
 
-    // Create the prompt with actual textbook content - COMPREHENSIVE SEARCH
+    // Create the prompt with actual textbook content
     const systemPrompt = `أنت معلم أردني خبير متخصص في المنهاج الأردني لجميع الصفوف. لديك قدرة استثنائية على:
 • فهم الأسئلة بصيغ مختلفة وربط المعاني والمفاهيم المتشابهة
 • البحث الشامل في جميع الكتب المتاحة بغض النظر عن الصف
@@ -152,96 +152,64 @@ ${booksContext}
 
 ⚠️ مهم جداً: طالب الصف ${grade} يسألك الآن، لكن ابحث في كل الكتب المتاحة لأن المعلومة قد تكون في أي صف!`;
 
+    // Call Google Gemini API directly
+    console.log('Step 2: Calling Google Gemini AI...');
 
-    // Call Lovable AI
-    console.log('Step 2: Calling Lovable AI...');
-
-    // Prepare messages - if there's an image, use multimodal format
-    let messages;
+    // Prepare content parts for Gemini
+    let contentParts: any[] = [{ text: `${systemPrompt}\n\nالسؤال: ${question}` }];
+    
     if (image) {
-      // Extract base64 content (remove data:image/...;base64, prefix)
+      // Extract base64 content
       const base64Content = image.split(',')[1];
-      const imageType = image.split(';')[0].split('/')[1]; // e.g., 'jpeg', 'png'
+      const mimeType = image.split(';')[0].split(':')[1] || 'image/jpeg';
       
-      messages = [
-        { role: 'system', content: systemPrompt },
+      contentParts = [
+        { text: systemPrompt },
         { 
-          role: 'user', 
-          content: [
-            { type: 'text', text: `السؤال: ${question}` },
-            { 
-              type: 'image_url', 
-              image_url: { 
-                url: `data:image/${imageType};base64,${base64Content}`
-              } 
-            }
-          ]
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Content
+          }
         },
-      ];
-    } else {
-      messages = [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `السؤال: ${question}` },
+        { text: `السؤال: ${question}` }
       ];
     }
 
-    const aiResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_KEY}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: messages,
-          temperature: 0.3, // Lower temperature for more focused, accurate answers
-          max_tokens: 6000, // Increased token limit for comprehensive answers
+          contents: [{
+            parts: contentParts
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 6000,
+          },
         }),
       },
     );
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('Lovable AI error response:', aiResponse.status, errorText);
-
-      if (aiResponse.status === 429) {
-        console.error('⚠️ Rate limit hit');
-        return new Response(
-          JSON.stringify({
-            answer: null,
-            sources: [],
-            error: 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.',
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
-
-      if (aiResponse.status === 402) {
-        console.error('⚠️ Payment required');
-        return new Response(
-          JSON.stringify({
-            answer: null,
-            sources: [],
-            error: 'يرجى إضافة رصيد لحساب Lovable AI.',
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Google Gemini error response:', geminiResponse.status, errorText);
 
       return new Response(
         JSON.stringify({
           answer: null,
           sources: [],
-          error: 'فشل الحصول على إجابة من الذكاء الاصطناعي',
+          error: 'فشل الحصول على إجابة من الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const aiData = await aiResponse.json();
-    const answer = aiData.choices?.[0]?.message?.content || '';
+    const geminiData = await geminiResponse.json();
+    const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (!answer) {
       return new Response(
@@ -290,7 +258,6 @@ ${booksContext}
     // Save to database
     console.log('Step 3: Saving to database...');
     
-    // If image analysis was performed, save to jordanian_image_analysis table
     if (image) {
       const { error: imageInsertError } = await supabase
         .from('jordanian_image_analysis')
@@ -307,7 +274,6 @@ ${booksContext}
       }
     }
     
-    // Also save to regular usage table
     const { error: insertError } = await supabase
       .from('student_assistant_usage')
       .insert({

@@ -6,7 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+// استخدام مفتاح Google AI المخصص
+const GOOGLE_AI_KEY = Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,11 +22,12 @@ serve(async (req) => {
       contentType,
       selectedUnits,
       selectedLessons,
+      contentDescription, // صندوق الوصف الجديد
       questionTypes, 
       questionCount 
     } = await req.json();
     
-    console.log('Generating exam:', { subject, grade, contentRange, contentType, questionTypes, questionCount });
+    console.log('Generating exam:', { subject, grade, contentRange, contentType, contentDescription, questionTypes, questionCount });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -49,7 +51,6 @@ serve(async (req) => {
         query = query.in('unit_number', unitNumbers);
       }
     } else if (contentType === 'lesson' && selectedLessons && selectedLessons.length > 0) {
-      // Parse selected lessons (format: "الوحدة X - الدرس Y")
       const lessonFilters = selectedLessons.map((l: string) => {
         const unitMatch = l.match(/الوحدة (\d+)/);
         const lessonMatch = l.match(/الدرس (\d+)/);
@@ -60,7 +61,6 @@ serve(async (req) => {
       }).filter((f: any) => f !== null);
 
       if (lessonFilters.length > 0) {
-        // Build OR filter for multiple lessons
         query = query.or(
           lessonFilters.map((f: any) => 
             `and(unit_number.eq.${f.unit},lesson_number.eq.${f.lesson})`
@@ -95,15 +95,12 @@ serve(async (req) => {
 
     console.log(`Found ${contentPages.length} pages of content for ${subject} - ${grade}`);
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!GOOGLE_AI_KEY) {
+      throw new Error('JORDANIAN_ASSISTANT_AI_KEY not configured');
     }
     
-    console.log('Using Lovable AI for exam generation');
+    console.log('Using Google Gemini AI for exam generation');
 
-    // Generate questions using Lovable AI
-    console.log('Step 1: Generating questions with Lovable AI...');
-    
     // Build content context from pages
     const contentContext = contentPages
       .map((p: any) => 
@@ -111,13 +108,18 @@ serve(async (req) => {
       )
       .join('\n\n---\n\n');
 
+    // إضافة وصف المحتوى إذا كان موجوداً
+    const descriptionSection = contentDescription 
+      ? `\n- وصف إضافي من المستخدم: ${contentDescription}` 
+      : '';
+
     const systemPrompt = `أنت معلم أردني متخصص في إنشاء الامتحانات للمنهاج الأردني.
 
 المعلومات:
 - المادة: ${subject}
 - الصف: ${grade}
 - نوع الأسئلة: ${questionTypes}
-- نطاق المحتوى: ${contentRange}
+- نطاق المحتوى: ${contentRange}${descriptionSection}
 - عدد الأسئلة المطلوب: ${questionCount}
 
 محتوى الكتاب المتاح:
@@ -146,58 +148,37 @@ CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أ
 1. الإجابة الأولى...
 2. الإجابة الثانية...`;
 
-    const generateResponse = await fetch(
-      'https://ai.gateway.lovable.dev/v1/chat/completions',
+    // Call Google Gemini API directly
+    console.log('Step 1: Generating questions with Google Gemini AI...');
+
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_KEY}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: 'أنشئ الامتحان الآن' },
-          ],
-          temperature: 0.5,
-          max_tokens: 8192,
+          contents: [{
+            parts: [{ text: `${systemPrompt}\n\nأنشئ الامتحان الآن` }]
+          }],
+          generationConfig: {
+            temperature: 0.5,
+            maxOutputTokens: 8192,
+          },
         }),
       }
     );
 
-    if (!generateResponse.ok) {
-      const errorText = await generateResponse.text();
-      console.error('Question generation error:', generateResponse.status, errorText);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Google Gemini error:', geminiResponse.status, errorText);
       
-      if (generateResponse.status === 429) {
-        console.error('⚠️ Rate limit hit');
-        const examPaper = 'تم تجاوز الحد المسموح لاستخدام الذكاء الاصطناعي حالياً. يرجى المحاولة بعد دقيقة.';
-        return new Response(
-          JSON.stringify({
-            examPaper,
-            markdown: examPaper,
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (generateResponse.status === 402) {
-        const examPaper = 'يرجى إضافة رصيد لحساب Lovable AI.';
-        return new Response(
-          JSON.stringify({
-            examPaper,
-            markdown: examPaper,
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`فشل توليد الأسئلة: ${generateResponse.status}`);
+      throw new Error(`فشل توليد الأسئلة: ${geminiResponse.status}`);
     }
 
-    const generateData = await generateResponse.json();
-    const examPaper = generateData.choices?.[0]?.message?.content || '';
+    const geminiData = await geminiResponse.json();
+    const examPaper = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     if (!examPaper) {
       console.error('No questions generated');
@@ -205,7 +186,6 @@ CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أ
     }
     
     console.log('Exam generated, length:', examPaper.length);
-
     console.log('Exam generation completed successfully');
 
     return new Response(

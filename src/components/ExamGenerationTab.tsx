@@ -17,9 +17,10 @@ interface ExamGenerationTabProps {
 export default function ExamGenerationTab({ grade: defaultGrade }: ExamGenerationTabProps) {
   const [grade, setGrade] = useState(defaultGrade);
   const [subject, setSubject] = useState("");
-  const [contentType, setContentType] = useState("book"); // book, unit, lesson
+  const [contentType, setContentType] = useState("book");
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [selectedLessons, setSelectedLessons] = useState<string[]>([]);
+  const [contentDescription, setContentDescription] = useState(""); // صندوق الوصف الجديد
   const [questionTypes, setQuestionTypes] = useState("");
   const [questionCount, setQuestionCount] = useState("10");
   const [generatedQuestions, setGeneratedQuestions] = useState("");
@@ -116,6 +117,7 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
           contentType,
           selectedUnits: contentType === "unit" ? selectedUnits : undefined,
           selectedLessons: contentType === "lesson" ? selectedLessons : undefined,
+          contentDescription: contentDescription.trim() || undefined, // إرسال الوصف
           questionTypes,
           questionCount: parseInt(questionCount),
         }
@@ -263,6 +265,20 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
             ))}
           </Card>
         )}
+
+        {/* صندوق الوصف الجديد */}
+        <div className="space-y-2">
+          <Label>وصف نطاق المحتوى (اختياري)</Label>
+          <Textarea
+            placeholder="مثال: من الوحدة الأولى للوحدة الثالثة - الفصل الأول، أو من الدرس الأول للدرس الخامس..."
+            value={contentDescription}
+            onChange={(e) => setContentDescription(e.target.value)}
+            className="min-h-[80px]"
+          />
+          <p className="text-xs text-muted-foreground">
+            اكتب هنا تفاصيل إضافية عن نطاق الامتحان مثل: الفصل الدراسي، الوحدات المحددة، أو أي ملاحظات أخرى
+          </p>
+        </div>
 
         <div className="space-y-2">
           <Label>نوع الأسئلة</Label>
