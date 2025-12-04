@@ -152,7 +152,7 @@ CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أ
     console.log('Step 1: Generating questions with Google Gemini AI...');
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_AI_KEY}`,
       {
         method: 'POST',
         headers: {
