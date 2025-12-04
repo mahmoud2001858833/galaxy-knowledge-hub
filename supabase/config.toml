@@ -117,3 +117,6 @@ verify_jwt = false
 
 [functions.execute-code]
 verify_jwt = false
+
+[functions.supabase-manager]
+verify_jwt = false

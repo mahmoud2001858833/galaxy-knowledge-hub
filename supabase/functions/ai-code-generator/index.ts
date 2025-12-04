@@ -5,97 +5,186 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYSTEM_PROMPT = `أنت مطور ويب خبير ومحترف للغاية ومتقدم جداً. مهمتك إنشاء تطبيقات ويب متكاملة وقوية واحترافية.
+const ULTRA_ADVANCED_SYSTEM_PROMPT = `أنت مطور ويب خبير جداً ومتقدم للغاية. مهمتك إنشاء تطبيقات ويب متكاملة تعمل فعلياً 100%.
 
-## 🎯 قبل كتابة الكود:
-اشرح للمستخدم بالتفصيل:
-- 🎯 ماذا ستفعل بالضبط
-- 📁 الملفات التي ستنشئها
-- ✨ الميزات التي ستضيفها
-- 🎨 أسلوب التصميم
+## 🎯 القاعدة الذهبية - قبل أي كود:
+اشرح بالتفصيل في أول ردك:
+1. 📋 **الخطة الكاملة**: ماذا ستبني بالضبط
+2. 🗄️ **قاعدة البيانات**: الجداول التي ستُنشأ وأعمدتها
+3. 🔐 **الأمان**: سياسات RLS المطلوبة
+4. 📁 **الملفات**: قائمة الملفات (15+ ملف)
+5. ✨ **الميزات الإضافية**: ما ستضيفه تلقائياً
 
-## 🌟 قواعد إلزامية:
+## 🗄️ عند طلب مشروع يحتاج قاعدة بيانات:
 
-### 1. تقسيم الكود (10+ ملفات كحد أدنى):
+### أولاً: أعطِ المستخدم Schema SQL الكامل:
+\`\`\`sql
+-- إنشاء الجداول
+CREATE TABLE IF NOT EXISTS public.table_name (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ...
+);
+
+-- تفعيل RLS
+ALTER TABLE public.table_name ENABLE ROW LEVEL SECURITY;
+
+-- إنشاء السياسات
+CREATE POLICY "policy_name" ON public.table_name ...;
+\`\`\`
+
+### ثانياً: أنشئ الكود الذي يتصل بهذه الجداول فعلياً:
+- استخدم مكتبة Supabase JS
+- الكود يجب أن يعمل 100% مع الجداول المُعرَّفة
+- كل العمليات (إضافة، تعديل، حذف، عرض) يجب أن تعمل
+
+## 🤖 عند طلب ذكاء اصطناعي:
+
+### أنشئ اتصال حقيقي مع AI Gateway:
+\`\`\`javascript
+// استخدم Lovable AI Gateway
+async function askAI(question) {
+  const response = await fetch('EDGE_FUNCTION_URL', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: question })
+  });
+  return response.json();
+}
+\`\`\`
+
+أو أنشئ Edge Function كاملة للذكاء الاصطناعي.
+
+## 📁 هيكل الملفات الإلزامي (15+ ملف):
+
+### الملفات الأساسية:
 - index.html
 - styles/main.css
 - styles/components.css
 - styles/animations.css
 - styles/responsive.css
+- styles/dark-mode.css
 - scripts/app.js
 - scripts/utils.js
 - scripts/ui.js
 - scripts/api.js
+- scripts/storage.js
 - config.json
 
-### 2. عند طلب تسجيل دخول أو قاعدة بيانات:
-أضف:
+### عند وجود Supabase:
 - scripts/supabase-client.js
 - scripts/auth.js
+- scripts/database.js
 - pages/login.html
 - pages/register.html
 - pages/dashboard.html
+- pages/admin.html
 
-### 3. الكود يجب أن يكون احترافي:
-✅ أنيميشن متقدمة
-✅ الوضع الداكن والفاتح
-✅ تصميم متجاوب 100%
-✅ Loading Skeletons
-✅ Toast Notifications
-✅ Form Validation
-✅ Hover Effects
-✅ تعليقات شارحة
+### عند طلب ذكاء اصطناعي:
+- scripts/ai-chat.js
+- pages/ai-assistant.html
+- components/chat-widget.html
 
-### 4. لكل طلب، أضف ميزات تلقائياً:
-- نظام تقدم
-- إشعارات
-- حفظ تلقائي
-- بحث وفلترة
+## 🎨 معايير التصميم الإلزامية:
 
-## 📤 صيغة الرد:
+1. **الألوان والتدرجات:**
+   - استخدم CSS Variables
+   - تدرجات جذابة
+   - ألوان متناسقة
 
+2. **الأنيميشن:**
+   - transition لكل hover
+   - keyframes للعناصر الرئيسية
+   - scroll animations
+
+3. **التجاوب:**
+   - Mobile-first
+   - Breakpoints: 480px, 768px, 1024px, 1280px
+
+4. **الوضع الداكن:**
+   - متغيرات CSS للوضع الداكن
+   - زر تبديل
+   - حفظ التفضيل
+
+## ✨ ميزات تُضاف تلقائياً:
+
+1. Loading skeletons/spinners
+2. Toast notifications
+3. Form validation
+4. Error handling
+5. Empty states
+6. Search & filter
+7. Pagination
+8. Keyboard shortcuts
+9. localStorage for preferences
+10. Accessibility (ARIA)
+
+## 📤 صيغة الرد المطلوبة:
+
+### أولاً - الشرح والخطة:
+ابدأ بشرح الخطة الكاملة...
+
+### ثانياً - Schema قاعدة البيانات (إن وُجد):
+---DATABASE_SCHEMA---
+CREATE TABLE...
+---END_DATABASE_SCHEMA---
+
+### ثالثاً - الملفات:
 ---FILE:index.html---
 <!DOCTYPE html>
 ...
 ---END_FILE---
 
 ---FILE:styles/main.css---
-...
+:root {
+  --primary: #6366f1;
+  ...
+}
 ---END_FILE---
 
 [استمر لجميع الملفات]
 
-ثم أضف في النهاية:
+### رابعاً - الملخص:
 ---FEATURES---
-- الميزة 1
-- الميزة 2
+- الميزة 1: شرح
+- الميزة 2: شرح
 ---END_FEATURES---
 
 ---USAGE---
-كيفية استخدام المشروع
+كيفية استخدام المشروع...
 ---END_USAGE---
 
-## 🔐 دعم Supabase:
-عند توفر بيانات Supabase من المستخدم، استخدمها مباشرة:
+## 🔗 بيانات Supabase:
+SUPABASE_CONFIG_PLACEHOLDER
 
-SUPABASE_URL_PLACEHOLDER
-SUPABASE_KEY_PLACEHOLDER
+## ⚠️ قواعد صارمة:
 
-مكتبة Supabase:
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+1. ✅ كل الأكواد يجب أن تعمل فعلياً - لا أكواد وهمية
+2. ✅ كل الروابط يجب أن تعمل - لا صفحات 404
+3. ✅ كل الأزرار يجب أن تفعل شيئاً حقيقياً
+4. ✅ عند طلب حفظ بيانات، يجب أن تُحفظ فعلياً في Supabase
+5. ✅ عند طلب ذكاء اصطناعي، يجب أن يعمل فعلياً
+6. ❌ لا تستخدم console.log كبديل عن الوظائف الحقيقية
+7. ❌ لا تترك أي placeholder أو TODO
+8. ❌ لا تنشئ أقل من 15 ملف
 
-## 🎨 التصميم:
-- استخدم Tailwind CSS
-- تدرجات لونية جذابة
-- CSS Variables للألوان
-- أنيميشن سلسة
-- خطوط عربية: Cairo, Tajawal
+## 📋 أمثلة على المشاريع:
 
-## ⚠️ مهم جداً:
-- لا تكتب أي نص قبل أول ---FILE:
-- اشرح الخطة في بداية index.html كتعليق HTML
-- كل ملف يبدأ بـ ---FILE:path--- وينتهي بـ ---END_FILE---
-- أنشئ 10+ ملفات دائماً`
+### مثال 1: مجلة مدرسية
+الجداول: news, comments, likes, categories
+الملفات: 20+ ملف
+الميزات: إضافة أخبار، تعليقات، إعجابات، بحث، فلترة، لوحة إدارة
+
+### مثال 2: متجر إلكتروني
+الجداول: products, categories, orders, users
+الملفات: 25+ ملف
+الميزات: عرض منتجات، سلة شراء، checkout، لوحة إدارة
+
+### مثال 3: مساعد ذكي
+الجداول: conversations, messages
+الملفات: 18+ ملف
+الميزات: محادثة AI حقيقية، حفظ المحادثات، بحث
+
+الآن، أنشئ المشروع المطلوب بجودة احترافية عالية!`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -117,53 +206,71 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured')
     }
 
-    // Build system prompt with Supabase config if available
-    let enhancedSystemPrompt = SYSTEM_PROMPT
+    // Build enhanced system prompt with Supabase config
+    let systemPrompt = ULTRA_ADVANCED_SYSTEM_PROMPT
     
     if (supabaseConfig?.connected && supabaseConfig?.url && supabaseConfig?.anonKey) {
-      enhancedSystemPrompt = enhancedSystemPrompt
-        .replace('SUPABASE_URL_PLACEHOLDER', `const SUPABASE_URL = '${supabaseConfig.url}';`)
-        .replace('SUPABASE_KEY_PLACEHOLDER', `const SUPABASE_ANON_KEY = '${supabaseConfig.anonKey}';`)
-      
-      enhancedSystemPrompt += `
+      const supabaseInfo = `
+## 🔗 Supabase متصل ومُفعَّل!
 
-## 🔗 Supabase متصل!
-المستخدم ربط Supabase الخاص به. استخدم البيانات التالية في الكود:
-- URL: ${supabaseConfig.url}
-- Anon Key: ${supabaseConfig.anonKey}
+**بيانات الاتصال:**
+\`\`\`javascript
+const SUPABASE_URL = '${supabaseConfig.url}';
+const SUPABASE_ANON_KEY = '${supabaseConfig.anonKey}';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+\`\`\`
 
-أنشئ كود يعمل فعلياً مع قاعدة بيانات المستخدم!
-الكود يجب أن يتضمن:
-- تسجيل دخول/تسجيل جديد يعمل فعلياً
-- حفظ واسترجاع البيانات من الجداول
-- عمليات CRUD كاملة`
+**تعليمات مهمة:**
+1. أنشئ Schema SQL للجداول المطلوبة وأعطها للمستخدم
+2. أنشئ كود JavaScript يتصل فعلياً بهذه الجداول
+3. كل عمليات CRUD يجب أن تعمل مع Supabase
+4. استخدم supabase.auth للمصادقة
+5. استخدم supabase.from('table').select/insert/update/delete
+
+**مكتبة Supabase:**
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+**Service Key للعمليات المتقدمة:**
+${supabaseConfig.serviceKey ? `متاح للاستخدام في Edge Functions` : 'غير متاح - سيحتاج المستخدم لتنفيذ SQL يدوياً'}
+`
+      systemPrompt = systemPrompt.replace('SUPABASE_CONFIG_PLACEHOLDER', supabaseInfo)
     } else {
-      // Default Supabase values for demo
-      enhancedSystemPrompt = enhancedSystemPrompt
-        .replace('SUPABASE_URL_PLACEHOLDER', `const SUPABASE_URL = 'https://your-project.supabase.co'; // استبدل برابطك`)
-        .replace('SUPABASE_KEY_PLACEHOLDER', `const SUPABASE_ANON_KEY = 'your-anon-key'; // استبدل بمفتاحك`)
+      systemPrompt = systemPrompt.replace('SUPABASE_CONFIG_PLACEHOLDER', `
+## ⚠️ Supabase غير متصل
+عند طلب ميزات قاعدة بيانات:
+1. أنشئ Schema SQL كامل يمكن للمستخدم نسخه
+2. أنشئ كود يعمل مع Supabase (سيحتاج المستخدم للربط لاحقاً)
+3. استخدم placeholders واضحة: YOUR_SUPABASE_URL, YOUR_ANON_KEY
+`)
     }
 
-    // Build conversation messages
+    // Build conversation context
     const messages = [
-      { role: 'system', content: enhancedSystemPrompt },
-      ...(conversationHistory || []).map((msg: any) => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: 'user', content: message }
+      { role: 'system', content: systemPrompt }
     ]
 
-    // Add context about current files
-    if (currentFiles && currentFiles.length > 0) {
-      const filesContext = currentFiles.map((f: any) => `${f.file_name}: ${f.content.substring(0, 200)}...`).join('\n')
-      messages.push({
-        role: 'user',
-        content: `الملفات الحالية:\n${filesContext}\n\nالطلب: ${message}`
+    // Add conversation history
+    if (conversationHistory && conversationHistory.length > 0) {
+      conversationHistory.slice(-6).forEach((msg: any) => {
+        messages.push({
+          role: msg.role,
+          content: msg.content
+        })
       })
     }
 
-    console.log('Calling Lovable AI Gateway...')
+    // Add context about current files if they exist
+    let userMessage = message
+    if (currentFiles && currentFiles.length > 0) {
+      const filesContext = currentFiles.map((f: any) => 
+        `📄 ${f.file_name} (${f.file_type})`
+      ).join('\n')
+      userMessage = `الملفات الحالية:\n${filesContext}\n\n---\n\nطلب المستخدم: ${message}`
+    }
+
+    messages.push({ role: 'user', content: userMessage })
+
+    console.log('Calling Lovable AI Gateway with advanced prompt...')
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -172,9 +279,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro', // Using Pro for better quality
         messages,
-        max_tokens: 16000,
+        max_tokens: 32000, // Increased for larger projects
         temperature: 0.7,
       }),
     })
@@ -185,8 +292,15 @@ serve(async (req) => {
       
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'تم تجاوز حد الطلبات. يرجى المحاولة لاحقاً' }),
+          JSON.stringify({ error: 'تم تجاوز حد الطلبات. يرجى المحاولة بعد دقيقة' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        )
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'يرجى إضافة رصيد لحسابك' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
         )
       }
       
@@ -196,9 +310,16 @@ serve(async (req) => {
     const aiResponse = await response.json()
     const generatedContent = aiResponse.choices?.[0]?.message?.content || ''
 
-    console.log('AI Response received, parsing files...')
+    console.log('AI Response received, parsing...')
 
-    // Parse files from response
+    // Parse database schema
+    let databaseSchema = ''
+    const schemaMatch = generatedContent.match(/---DATABASE_SCHEMA---\n([\s\S]*?)---END_DATABASE_SCHEMA---/)
+    if (schemaMatch) {
+      databaseSchema = schemaMatch[1].trim()
+    }
+
+    // Parse files
     const files: Array<{ file_name: string; file_type: string; content: string }> = []
     const fileRegex = /---FILE:(.+?)---\n([\s\S]*?)---END_FILE---/g
     let match
@@ -211,54 +332,85 @@ serve(async (req) => {
       const typeMap: Record<string, string> = {
         'html': 'html',
         'css': 'css',
-        'js': 'js',
+        'js': 'javascript',
         'json': 'json',
-        'py': 'py',
+        'sql': 'sql',
+        'py': 'python',
         'php': 'php',
         'cpp': 'cpp',
+        'ts': 'typescript',
       }
 
       files.push({
         file_name: filePath,
-        file_type: typeMap[extension] || 'txt',
+        file_type: typeMap[extension] || 'text',
         content: content
       })
     }
 
-    // Extract explanation (everything before first ---FILE: or after ---END_FEATURES---)
+    // Extract features and usage
     let explanation = ''
     const featuresMatch = generatedContent.match(/---FEATURES---\n([\s\S]*?)---END_FEATURES---/)
     const usageMatch = generatedContent.match(/---USAGE---\n([\s\S]*?)---END_USAGE---/)
+
+    // Get the explanation before the first ---FILE: or ---DATABASE_SCHEMA---
+    const firstMarker = generatedContent.indexOf('---FILE:')
+    const schemaMarker = generatedContent.indexOf('---DATABASE_SCHEMA---')
+    const explanationEnd = Math.min(
+      firstMarker > 0 ? firstMarker : Infinity,
+      schemaMarker > 0 ? schemaMarker : Infinity
+    )
     
-    if (featuresMatch || usageMatch) {
-      const features = featuresMatch ? featuresMatch[1].trim() : ''
-      const usage = usageMatch ? usageMatch[1].trim() : ''
-      
-      explanation = `✅ تم إنشاء ${files.length} ملف بنجاح!\n\n`
-      
-      if (features) {
-        explanation += `**الميزات:**\n${features}\n\n`
-      }
-      
-      if (usage) {
-        explanation += `**طريقة الاستخدام:**\n${usage}`
-      }
-    } else {
-      // Fallback explanation
-      explanation = `✅ تم إنشاء ${files.length} ملف بنجاح!\n\n`
-      explanation += `**الملفات المُنشأة:**\n`
-      files.forEach(f => {
-        explanation += `- 📄 ${f.file_name}\n`
-      })
+    if (explanationEnd < Infinity) {
+      explanation = generatedContent.substring(0, explanationEnd).trim()
     }
 
-    console.log(`Parsed ${files.length} files`)
+    // Build final explanation
+    let finalExplanation = ''
+    
+    if (explanation) {
+      finalExplanation = explanation + '\n\n'
+    }
+
+    if (databaseSchema) {
+      finalExplanation += `## 🗄️ قاعدة البيانات\n\nيجب تنفيذ هذا الكود في Supabase SQL Editor:\n\n\`\`\`sql\n${databaseSchema}\n\`\`\`\n\n`
+    }
+
+    finalExplanation += `## ✅ الملفات المُنشأة (${files.length} ملف)\n\n`
+    
+    // Group files by folder
+    const folders: Record<string, string[]> = {}
+    files.forEach(f => {
+      const parts = f.file_name.split('/')
+      const folder = parts.length > 1 ? parts[0] : 'root'
+      if (!folders[folder]) folders[folder] = []
+      folders[folder].push(f.file_name)
+    })
+
+    Object.entries(folders).forEach(([folder, fileList]) => {
+      finalExplanation += `📁 **${folder === 'root' ? 'الجذر' : folder}**\n`
+      fileList.forEach(f => {
+        finalExplanation += `   - ${f}\n`
+      })
+      finalExplanation += '\n'
+    })
+
+    if (featuresMatch) {
+      finalExplanation += `## ✨ الميزات\n\n${featuresMatch[1].trim()}\n\n`
+    }
+
+    if (usageMatch) {
+      finalExplanation += `## 📖 طريقة الاستخدام\n\n${usageMatch[1].trim()}`
+    }
+
+    console.log(`Parsed ${files.length} files, schema: ${databaseSchema ? 'yes' : 'no'}`)
 
     return new Response(
       JSON.stringify({ 
-        explanation,
+        explanation: finalExplanation,
         files,
-        raw_response: generatedContent.substring(0, 500) + '...'
+        databaseSchema,
+        raw_response: generatedContent.substring(0, 1000) + '...'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
