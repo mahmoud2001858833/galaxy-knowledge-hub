@@ -184,7 +184,7 @@ export const BuilderToolbar = ({
       <SupabaseConnector
         open={showSupabaseDialog}
         onOpenChange={setShowSupabaseDialog}
-        onConnect={(url, key, tables) => {
+        onConnect={(url, key, serviceKey, tables) => {
           onSupabaseConnect?.(url, key, tables);
         }}
         currentUrl={supabaseUrl}
