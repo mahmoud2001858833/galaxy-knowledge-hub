@@ -272,7 +272,7 @@ ${supabaseConfig.serviceKey ? `متاح للاستخدام في Edge Functions` 
     
     // Call Google Gemini API directly
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GOOGLE_AI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_KEY}`,
       {
         method: 'POST',
         headers: {
