@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BookOpen, Upload, FileText, Plus, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Upload, FileText, BookOpen, ChevronDown, ChevronUp, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ContentSummary {
@@ -21,55 +22,38 @@ interface ContentSummary {
 }
 
 const GRADES = [
-  "الصف الأول",
-  "الصف الثاني", 
-  "الصف الثالث",
-  "الصف الرابع",
-  "الصف الخامس",
-  "الصف السادس",
-  "الصف السابع",
-  "الصف الثامن",
-  "الصف التاسع",
-  "الصف العاشر",
-  "الصف الحادي عشر",
-  "الصف الثاني عشر"
+  "الصف الأول", "الصف الثاني", "الصف الثالث", "الصف الرابع",
+  "الصف الخامس", "الصف السادس", "الصف السابع", "الصف الثامن",
+  "الصف التاسع", "الصف العاشر", "الصف الحادي عشر", "الصف الثاني عشر"
 ];
 
 const SUBJECTS = [
-  "اللغة العربية",
-  "اللغة الإنجليزية",
-  "الرياضيات",
-  "الفيزياء",
-  "الكيمياء",
-  "الأحياء",
-  "علوم الأرض",
-  "التاريخ",
-  "الجغرافيا",
-  "التربية الإسلامية",
-  "التربية الوطنية",
-  "الحاسوب",
-  "الثقافة المالية"
+  "اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "الفيزياء",
+  "الكيمياء", "الأحياء", "علوم الأرض", "التاريخ", "الجغرافيا",
+  "التربية الإسلامية", "التربية الوطنية", "الحاسوب", "الثقافة المالية"
 ];
 
 const SEMESTERS = ["الفصل الأول", "الفصل الثاني"];
 
+type UploadStatus = 'idle' | 'uploading' | 'processing' | 'extracting' | 'saving' | 'success' | 'error';
+
 export default function UploadedSourcesTab() {
   const [contentSummaries, setContentSummaries] = useState<ContentSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [extractedPreview, setExtractedPreview] = useState<string>('');
   const { toast } = useToast();
-
-  // Form state
-  const [grade, setGrade] = useState("");
-  const [subject, setSubject] = useState("");
-  const [semester, setSemester] = useState("");
-  const [unitNumber, setUnitNumber] = useState("");
-  const [unitName, setUnitName] = useState("");
-  const [lessonNumber, setLessonNumber] = useState("");
-  const [lessonName, setLessonName] = useState("");
-  const [pageNumber, setPageNumber] = useState("");
-  const [pageContent, setPageContent] = useState("");
+  
+  const [formData, setFormData] = useState({
+    grade: '',
+    subject: '',
+    semester: ''
+  });
 
   useEffect(() => {
     loadContent();
@@ -125,62 +109,160 @@ export default function UploadedSourcesTab() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!grade || !subject || !semester || !unitNumber || !unitName || !lessonNumber || !lessonName || !pageNumber || !pageContent) {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+      } else {
+        toast({
+          title: "خطأ",
+          description: "يرجى اختيار ملف PDF فقط",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [toast]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+      } else {
+        toast({
+          title: "خطأ",
+          description: "يرجى اختيار ملف PDF فقط",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const processAndUploadPDF = async () => {
+    if (!selectedFile || !formData.grade || !formData.subject || !formData.semester) {
       toast({
         title: "خطأ",
-        description: "يرجى ملء جميع الحقول المطلوبة",
-        variant: "destructive",
+        description: "يرجى ملء جميع الحقول المطلوبة واختيار ملف PDF",
+        variant: "destructive"
       });
       return;
     }
 
+    setIsUploading(true);
+    setUploadStatus('uploading');
+    setUploadProgress(10);
+
     try {
-      setSaving(true);
-      
+      // Step 1: Upload PDF to Supabase Storage
+      const fileName = `${Date.now()}-${selectedFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('jordanian-textbooks')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) throw uploadError;
+      setUploadProgress(30);
+      setUploadStatus('processing');
+
+      // Step 2: Get public URL
+      const { data: urlData } = supabase.storage
+        .from('jordanian-textbooks')
+        .getPublicUrl(fileName);
+
+      // Step 3: Save book record
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase
-        .from('jordanian_textbook_content')
+      const { data: bookRecord, error: bookError } = await supabase
+        .from('jordanian_textbooks')
         .insert({
-          grade,
-          subject,
-          semester,
-          unit_number: parseInt(unitNumber),
-          unit_name: unitName,
-          lesson_number: parseInt(lessonNumber),
-          lesson_name: lessonName,
-          page_number: parseInt(pageNumber),
-          page_content: pageContent,
-          created_by: user?.id || null,
-        });
+          book_name: selectedFile.name.replace('.pdf', ''),
+          grade: formData.grade,
+          subject: formData.subject,
+          semester: formData.semester,
+          file_url: urlData.publicUrl,
+          created_by: user?.id
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (bookError) throw bookError;
+      setUploadProgress(50);
+      setUploadStatus('extracting');
 
-      toast({
-        title: "تم الحفظ",
-        description: "تم رفع المحتوى بنجاح",
+      // Step 4: Extract text using Gemini
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-pdf-content', {
+        body: {
+          bookId: bookRecord.id,
+          fileUrl: urlData.publicUrl,
+          grade: formData.grade,
+          subject: formData.subject,
+          semester: formData.semester
+        }
       });
 
-      // Reset form
-      setUnitNumber("");
-      setUnitName("");
-      setLessonNumber("");
-      setLessonName("");
-      setPageNumber("");
-      setPageContent("");
+      if (extractError) throw extractError;
       
-      // Reload content
-      loadContent();
-    } catch (error: any) {
-      console.error('Error saving content:', error);
+      setUploadProgress(90);
+      setUploadStatus('saving');
+      
+      if (extractData?.extractedText) {
+        setExtractedPreview(extractData.extractedText.substring(0, 500) + '...');
+      }
+
+      setUploadProgress(100);
+      setUploadStatus('success');
+
       toast({
-        title: "خطأ في الحفظ",
-        description: error.message,
-        variant: "destructive",
+        title: "تم بنجاح",
+        description: `تم رفع الكتاب واستخراج ${extractData?.recordsCount || 0} صفحة`
+      });
+
+      // Reset after delay
+      setTimeout(() => {
+        setSelectedFile(null);
+        setFormData({ grade: '', subject: '', semester: '' });
+        setExtractedPreview('');
+        setUploadStatus('idle');
+        setUploadProgress(0);
+        loadContent();
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setUploadStatus('error');
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في رفع الملف",
+        variant: "destructive"
       });
     } finally {
-      setSaving(false);
+      setIsUploading(false);
+    }
+  };
+
+  const getStatusMessage = () => {
+    switch (uploadStatus) {
+      case 'uploading': return 'جاري رفع الملف...';
+      case 'processing': return 'جاري معالجة الملف...';
+      case 'extracting': return 'جاري استخراج النص بالذكاء الاصطناعي...';
+      case 'saving': return 'جاري حفظ المحتوى...';
+      case 'success': return 'تم بنجاح!';
+      case 'error': return 'حدث خطأ';
+      default: return '';
     }
   };
 
@@ -201,12 +283,9 @@ export default function UploadedSourcesTab() {
           <BookOpen className="w-5 h-5" />
           المصادر المتاحة
         </CardTitle>
-        <CardDescription>
-          المحتوى النصي المتوفر في النظام
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Upload Form */}
+        {/* PDF Upload Form */}
         <Collapsible open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <CollapsibleTrigger asChild>
             <Button 
@@ -214,153 +293,192 @@ export default function UploadedSourcesTab() {
               className="w-full justify-between bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 border-primary/20"
             >
               <span className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                رفع محتوى جديد
+                <Upload className="w-4 h-4" />
+                رفع كتاب PDF جديد
               </span>
               {isUploadOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </Button>
           </CollapsibleTrigger>
           
           <CollapsibleContent className="mt-4">
-            <div className="p-4 rounded-lg border border-border bg-card space-y-4">
-              {/* Row 1: Grade, Subject, Semester */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-lg border border-border bg-card space-y-4"
+            >
+              {/* Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="grade">الصف *</Label>
-                  <Select value={grade} onValueChange={setGrade}>
+                  <Label>الصف *</Label>
+                  <Select
+                    value={formData.grade}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, grade: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الصف" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GRADES.map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      {GRADES.map(grade => (
+                        <SelectItem key={grade} value={grade}>{grade}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="subject">المادة *</Label>
-                  <Select value={subject} onValueChange={setSubject}>
+                  <Label>المادة *</Label>
+                  <Select
+                    value={formData.subject}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="اختر المادة" />
                     </SelectTrigger>
                     <SelectContent>
-                      {SUBJECTS.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      {SUBJECTS.map(subject => (
+                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="semester">الفصل *</Label>
-                  <Select value={semester} onValueChange={setSemester}>
+                  <Label>الفصل الدراسي *</Label>
+                  <Select
+                    value={formData.semester}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, semester: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الفصل" />
                     </SelectTrigger>
                     <SelectContent>
-                      {SEMESTERS.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      {SEMESTERS.map(semester => (
+                        <SelectItem key={semester} value={semester}>{semester}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* Row 2: Unit */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="unitNumber">رقم الوحدة *</Label>
-                  <Input 
-                    id="unitNumber"
-                    type="number"
-                    min="1"
-                    value={unitNumber}
-                    onChange={(e) => setUnitNumber(e.target.value)}
-                    placeholder="مثال: 1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="unitName">اسم الوحدة *</Label>
-                  <Input 
-                    id="unitName"
-                    value={unitName}
-                    onChange={(e) => setUnitName(e.target.value)}
-                    placeholder="مثال: الوحدة الأولى"
-                  />
-                </div>
-              </div>
-
-              {/* Row 3: Lesson */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="lessonNumber">رقم الدرس *</Label>
-                  <Input 
-                    id="lessonNumber"
-                    type="number"
-                    min="1"
-                    value={lessonNumber}
-                    onChange={(e) => setLessonNumber(e.target.value)}
-                    placeholder="مثال: 1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lessonName">اسم الدرس *</Label>
-                  <Input 
-                    id="lessonName"
-                    value={lessonName}
-                    onChange={(e) => setLessonName(e.target.value)}
-                    placeholder="مثال: الدرس الأول"
-                  />
-                </div>
-              </div>
-
-              {/* Row 4: Page */}
-              <div className="space-y-2">
-                <Label htmlFor="pageNumber">رقم الصفحة *</Label>
-                <Input 
-                  id="pageNumber"
-                  type="number"
-                  min="1"
-                  value={pageNumber}
-                  onChange={(e) => setPageNumber(e.target.value)}
-                  placeholder="مثال: 15"
-                  className="md:w-1/3"
-                />
-              </div>
-
-              {/* Row 5: Content */}
-              <div className="space-y-2">
-                <Label htmlFor="pageContent">محتوى الصفحة *</Label>
-                <Textarea 
-                  id="pageContent"
-                  value={pageContent}
-                  onChange={(e) => setPageContent(e.target.value)}
-                  placeholder="اكتب أو الصق محتوى الصفحة هنا..."
-                  className="min-h-[200px]"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <Button 
-                onClick={handleSubmit}
-                disabled={saving}
-                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              {/* Drop Zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`
+                  relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
+                  ${isDragging ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-muted-foreground/30 hover:border-primary/50'}
+                  ${selectedFile ? 'bg-green-500/10 border-green-500' : ''}
+                `}
               >
-                {saving ? (
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isUploading}
+                />
+                
+                {selectedFile ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-3 bg-green-500/20 rounded-full">
+                      <FileText className="h-8 w-8 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-600">{selectedFile.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      إزالة
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-4 bg-primary/10 rounded-full">
+                      <Upload className="h-10 w-10 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">اسحب ملف PDF هنا</p>
+                      <p className="text-sm text-muted-foreground">أو اضغط لاختيار ملف</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress */}
+              <AnimatePresence>
+                {uploadStatus !== 'idle' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        {uploadStatus === 'success' ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : uploadStatus === 'error' ? (
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        ) : (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                        {getStatusMessage()}
+                      </span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Extracted Preview */}
+              {extractedPreview && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <Label>معاينة النص المستخرج</Label>
+                  <ScrollArea className="h-32 rounded-md border p-3 bg-muted/50">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {extractedPreview}
+                    </p>
+                  </ScrollArea>
+                </motion.div>
+              )}
+
+              {/* Upload Button */}
+              <Button
+                onClick={processAndUploadPDF}
+                disabled={!selectedFile || isUploading || !formData.grade || !formData.subject || !formData.semester}
+                className="w-full bg-gradient-to-r from-primary to-primary/80"
+                size="lg"
+              >
+                {isUploading ? (
                   <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري الحفظ...
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    جاري المعالجة...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 ml-2" />
-                    حفظ المحتوى
+                    <Upload className="h-4 w-4 mr-2" />
+                    رفع ومعالجة الكتاب
                   </>
                 )}
               </Button>
-            </div>
+            </motion.div>
           </CollapsibleContent>
         </Collapsible>
 
@@ -369,45 +487,49 @@ export default function UploadedSourcesTab() {
           <div className="text-center py-12 text-muted-foreground">
             <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p>لا يوجد محتوى مرفوع حالياً</p>
-            <p className="text-sm mt-2">استخدم النموذج أعلاه لرفع محتوى جديد</p>
+            <p className="text-sm mt-2">استخدم النموذج أعلاه لرفع كتاب PDF</p>
           </div>
         ) : (
           <div className="grid gap-4">
-            <h3 className="text-lg font-semibold text-foreground">المحتوى المتوفر ({contentSummaries.length})</h3>
+            <h3 className="text-lg font-semibold">المحتوى المتوفر ({contentSummaries.length})</h3>
             {contentSummaries.map((content, index) => (
-              <Card key={index} className="border bg-gradient-to-br from-card to-muted/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-lg">{content.subject}</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className="font-semibold">{content.grade}</Badge>
-                        <Badge variant="outline">{content.semester}</Badge>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        <div className="flex flex-col items-center p-2 bg-background/50 rounded-lg">
-                          <FileText className="w-4 h-4 mb-1 text-blue-600" />
-                          <span className="font-bold text-lg">{content.units}</span>
-                          <span className="text-xs text-muted-foreground">وحدة</span>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="border bg-gradient-to-br from-card to-muted/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="w-5 h-5 text-primary" />
+                          <h3 className="font-semibold text-lg">{content.subject}</h3>
                         </div>
-                        <div className="flex flex-col items-center p-2 bg-background/50 rounded-lg">
-                          <FileText className="w-4 h-4 mb-1 text-green-600" />
-                          <span className="font-bold text-lg">{content.lessons}</span>
-                          <span className="text-xs text-muted-foreground">درس</span>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline">{content.grade}</Badge>
+                          <Badge variant="outline">{content.semester}</Badge>
                         </div>
-                        <div className="flex flex-col items-center p-2 bg-background/50 rounded-lg">
-                          <FileText className="w-4 h-4 mb-1 text-purple-600" />
-                          <span className="font-bold text-lg">{content.pages}</span>
-                          <span className="text-xs text-muted-foreground">صفحة</span>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div className="flex flex-col items-center p-2 bg-background/50 rounded-lg">
+                            <span className="font-bold text-lg text-blue-500">{content.units}</span>
+                            <span className="text-xs text-muted-foreground">وحدة</span>
+                          </div>
+                          <div className="flex flex-col items-center p-2 bg-background/50 rounded-lg">
+                            <span className="font-bold text-lg text-green-500">{content.lessons}</span>
+                            <span className="text-xs text-muted-foreground">درس</span>
+                          </div>
+                          <div className="flex flex-col items-center p-2 bg-background/50 rounded-lg">
+                            <span className="font-bold text-lg text-purple-500">{content.pages}</span>
+                            <span className="text-xs text-muted-foreground">صفحة</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         )}

@@ -1,4 +1,3 @@
-
 project_id = "esifpjjehdnpkhyilctv"
 
 [api]
@@ -119,4 +118,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.supabase-manager]
+verify_jwt = false
+
+[functions.extract-pdf-content]
 verify_jwt = false
