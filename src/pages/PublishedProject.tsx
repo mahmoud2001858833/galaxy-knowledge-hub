@@ -32,15 +32,49 @@ export default function PublishedProject() {
       }
 
       const files = data.files || [];
-      const htmlFile = files.find((f: any) => f.file_name === 'index.html' || f.file_type === 'html');
-      const cssFile = files.find((f: any) => f.file_name === 'style.css' || f.file_type === 'css');
-      const jsFile = files.find((f: any) => f.file_name === 'script.js' || f.file_type === 'js');
+      
+      // Find main HTML file
+      const htmlFile = files.find((f: any) => 
+        f.file_name === 'index.html' || 
+        f.file_name.endsWith('/index.html') ||
+        f.file_type === 'html'
+      );
+      
+      // Collect ALL CSS files
+      const cssFiles = files.filter((f: any) => 
+        f.file_type === 'css' || 
+        f.file_name.endsWith('.css')
+      );
+      const allCss = cssFiles.map((f: any) => `/* ${f.file_name} */\n${f.content}`).join('\n\n');
+      
+      // Collect ALL JS files
+      const jsFiles = files.filter((f: any) => 
+        f.file_type === 'js' || 
+        f.file_type === 'javascript' ||
+        f.file_name.endsWith('.js')
+      );
+      const allJs = jsFiles.map((f: any) => `// ${f.file_name}\n${f.content}`).join('\n\n');
 
-      const html = htmlFile?.content || '<div style="padding: 20px; text-align: center;">محتوى غير متوفر</div>';
-      const css = cssFile?.content || '';
-      const js = jsFile?.content || '';
+      const htmlBody = htmlFile?.content || '<div style="padding: 40px; text-align: center; color: #666;">محتوى غير متوفر</div>';
 
-      const fullHTML = `
+      // Check if HTML already has full document structure
+      if (htmlBody.trim().toLowerCase().startsWith('<!doctype')) {
+        let fullHTML = htmlBody;
+        
+        // Inject CSS before </head>
+        if (allCss) {
+          fullHTML = fullHTML.replace('</head>', `<style>\n${allCss}\n</style>\n</head>`);
+        }
+        
+        // Inject JS before </body>
+        if (allJs) {
+          fullHTML = fullHTML.replace('</body>', `<script>\ntry {\n${allJs}\n} catch(e) { console.error('Script error:', e); }\n</script>\n</body>`);
+        }
+        
+        setHtmlContent(fullHTML);
+      } else {
+        // Build complete HTML document
+        const fullHTML = `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -48,32 +82,27 @@ export default function PublishedProject() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${data.project.title}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    ${css}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    ${allCss}
   </style>
 </head>
 <body>
-  ${html}
+  ${htmlBody}
   <script>
     try {
-      ${js}
+      ${allJs}
     } catch (error) {
       console.error('Script error:', error);
     }
   </script>
 </body>
 </html>
-      `;
-
-      setHtmlContent(fullHTML);
+        `;
+        setHtmlContent(fullHTML);
+      }
     } catch (error) {
       console.error('Error loading published project:', error);
       setError("فشل تحميل المشروع");

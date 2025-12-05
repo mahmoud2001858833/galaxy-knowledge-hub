@@ -21,17 +21,27 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const generatePreviewHTML = () => {
-    // البحث عن ملفات HTML
+    // جمع جميع ملفات HTML
     const htmlFiles = files.filter(f => f.file_type === 'html');
-    const mainHtml = htmlFiles.find(f => f.file_name === 'index.html') || htmlFiles[0];
+    const mainHtml = htmlFiles.find(f => 
+      f.file_name === 'index.html' || 
+      f.file_name.endsWith('/index.html')
+    ) || htmlFiles[0];
 
-    // جمع كل ملفات CSS
-    const cssFiles = files.filter(f => f.file_type === 'css');
-    const allCss = cssFiles.map(f => f.content).join('\n\n');
+    // جمع كل ملفات CSS (من أي مجلد)
+    const cssFiles = files.filter(f => 
+      f.file_type === 'css' || 
+      f.file_name.endsWith('.css')
+    );
+    const allCss = cssFiles.map(f => `/* ${f.file_name} */\n${f.content}`).join('\n\n');
 
-    // جمع كل ملفات JS
-    const jsFiles = files.filter(f => f.file_type === 'js');
-    const allJs = jsFiles.map(f => f.content).join('\n\n');
+    // جمع كل ملفات JS (من أي مجلد)
+    const jsFiles = files.filter(f => 
+      f.file_type === 'js' || 
+      f.file_type === 'javascript' || 
+      f.file_name.endsWith('.js')
+    );
+    const allJs = jsFiles.map(f => `// ${f.file_name}\n${f.content}`).join('\n\n');
 
     if (!mainHtml) {
       return `
@@ -41,31 +51,49 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+    }
+    .icon { font-size: 4rem; margin-bottom: 1rem; }
+    h1 { color: white; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: #94a3b8; }
+  </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-  <div class="text-center p-8">
-    <div class="text-6xl mb-4">🚀</div>
-    <h1 class="text-2xl font-bold text-white mb-2">لم يتم إنشاء أي محتوى بعد</h1>
-    <p class="text-slate-400">ابدأ بالتحدث مع المساعد لإنشاء مشروعك</p>
+<body>
+  <div class="container">
+    <div class="icon">🚀</div>
+    <h1>لم يتم إنشاء أي محتوى بعد</h1>
+    <p>ابدأ بالتحدث مع المساعد لإنشاء مشروعك</p>
   </div>
 </body>
 </html>
       `;
     }
 
-    // إذا كان HTML يحتوي بالفعل على doctype و head كاملة
+    // إذا كان HTML يحتوي بالفعل على doctype كامل
     if (mainHtml.content.trim().toLowerCase().startsWith('<!doctype')) {
-      // استخراج محتوى head و body من HTML الموجود
       let htmlContent = mainHtml.content;
       
       // إضافة CSS قبل إغلاق head
       if (allCss) {
-        htmlContent = htmlContent.replace('</head>', `<style>\n${allCss}\n</style>\n</head>`);
+        const cssInjection = `<style>\n${allCss}\n</style>\n</head>`;
+        htmlContent = htmlContent.replace('</head>', cssInjection);
       }
       
       // إضافة JS قبل إغلاق body
       if (allJs) {
-        htmlContent = htmlContent.replace('</body>', `<script>\ntry {\n${allJs}\n} catch (error) { console.error('Script error:', error); }\n</script>\n</body>`);
+        const jsInjection = `<script>\ntry {\n${allJs}\n} catch (e) { console.error('Script error:', e); }\n</script>\n</body>`;
+        htmlContent = htmlContent.replace('</body>', jsInjection);
       }
       
       return htmlContent;
@@ -81,14 +109,8 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     ${allCss}
   </style>
 </head>
