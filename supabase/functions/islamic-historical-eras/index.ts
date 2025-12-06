@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_AI_API_KEY = Deno.env.get('ISLAMIC_ERAS_AI_KEY') || Deno.env.get('GOOGLE_AI_API_KEY');
+// API key is fetched directly in the function to ensure fresh value
 
 const eraNames: Record<string, string> = {
   'pre-prophethood': 'قبل البعثة (الجاهلية)',
@@ -16,8 +16,13 @@ const eraNames: Record<string, string> = {
 };
 
 async function callGeminiAPI(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get('ISLAMIC_ERAS_AI_KEY');
+  if (!apiKey) {
+    throw new Error('ISLAMIC_ERAS_AI_KEY not configured');
+  }
+  
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -48,10 +53,6 @@ serve(async (req) => {
 
   try {
     const { type, eraId, era1, era2 } = await req.json();
-
-    if (!GOOGLE_AI_API_KEY) {
-      throw new Error('API key not configured');
-    }
 
     if (type === 'getEraDetails') {
       const eraName = eraNames[eraId] || eraId;
