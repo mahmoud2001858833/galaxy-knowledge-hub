@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Send, 
   Loader2, 
@@ -12,11 +13,15 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Folder
+  Folder,
+  LayoutTemplate,
+  MessageSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import ReactMarkdown from 'react-markdown';
+import { BuilderTemplates } from "./BuilderTemplates";
+import { SQLPreview } from "./SQLPreview";
 
 interface Message {
   id: string;
@@ -29,6 +34,7 @@ interface Message {
       file_type: string;
       content: string;
     }>;
+    sqlSchema?: string;
   };
   timestamp: Date;
 }
@@ -155,26 +161,34 @@ export const BuilderChat = ({
   };
 
   const suggestions = [
-    "أنشئ منصة تعليمية مع تسجيل دخول",
-    "أنشئ صفحة هبوط عصرية بأنيميشن",
-    "أضف لوحة تحكم مع إحصائيات",
-    "أنشئ نظام إدارة مهام كامل",
-    "أضف مساعد ذكي بالذكاء الاصطناعي",
-    "أنشئ متجر إلكتروني مع سلة شراء",
+    "أنشئ منصة أخبار مع تسجيل دخول ورفع أخبار",
+    "أنشئ متجر إلكتروني مع سلة شراء ودفع",
+    "أنشئ لوحة تحكم إدارية مع إحصائيات",
+    "أنشئ منصة تعليمية مع دورات ودروس",
+    "أنشئ مدونة شخصية مع تعليقات",
+    "أنشئ شبكة اجتماعية مصغرة",
   ];
+  
+  const [activeTab, setActiveTab] = useState<'chat' | 'templates'>('chat');
+  
+  const handleTemplateSelect = (prompt: string) => {
+    setInput(prompt);
+    setActiveTab('chat');
+    toast.success("تم تحديد القالب - اضغط إرسال للبدء");
+  };
 
   return (
     <div className="flex flex-col h-full bg-background/95 backdrop-blur-sm">
-      {/* Header */}
+      {/* Header with Tabs */}
       <div className="p-3 border-b border-border bg-card/50">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">المساعد الذكي</h3>
-              <p className="text-xs text-muted-foreground">أنشئ منصات متكاملة</p>
+              <h3 className="font-semibold text-sm">منشئ المنصات الذكي</h3>
+              <p className="text-xs text-muted-foreground">أنشئ منصات متكاملة مع 15+ ملف</p>
             </div>
           </div>
           {supabaseConnected && (
@@ -183,12 +197,41 @@ export const BuilderChat = ({
             </Badge>
           )}
         </div>
+        
+        {/* Tabs */}
+        <div className="flex gap-2">
+          <Button
+            variant={activeTab === 'chat' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('chat')}
+            className="flex-1 gap-1.5"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            المحادثة
+          </Button>
+          <Button
+            variant={activeTab === 'templates' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('templates')}
+            className="flex-1 gap-1.5"
+          >
+            <LayoutTemplate className="w-3.5 h-3.5" />
+            قوالب جاهزة
+          </Button>
+        </div>
       </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
-        <AnimatePresence>
-          {messages.length === 0 ? (
+      {/* Content Area */}
+      {activeTab === 'templates' ? (
+        <ScrollArea className="flex-1">
+          <BuilderTemplates onSelectTemplate={handleTemplateSelect} />
+        </ScrollArea>
+      ) : (
+        <>
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 p-4">
+            <AnimatePresence>
+              {messages.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -246,24 +289,66 @@ export const BuilderChat = ({
                               </span>
                             </div>
                             
-                            <div className="space-y-2">
-                              {message.code_changes.files.slice(0, 5).map((file, idx) => (
-                                <CodeBlock
-                                  key={idx}
-                                  fileName={file.file_name}
-                                  fileType={file.file_type}
-                                  content={file.content}
-                                />
-                              ))}
+                            {/* Group files by folder */}
+                            <div className="space-y-3">
+                              {/* HTML Files */}
+                              {message.code_changes.files.filter(f => f.file_type === 'html').length > 0 && (
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                                    <span>📄</span> صفحات HTML
+                                  </div>
+                                  <div className="space-y-2">
+                                    {message.code_changes.files.filter(f => f.file_type === 'html').slice(0, 3).map((file, idx) => (
+                                      <CodeBlock key={idx} fileName={file.file_name} fileType={file.file_type} content={file.content} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               
-                              {message.code_changes.files.length > 5 && (
+                              {/* CSS Files */}
+                              {message.code_changes.files.filter(f => f.file_type === 'css').length > 0 && (
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                                    <span>🎨</span> أنماط CSS
+                                  </div>
+                                  <div className="space-y-2">
+                                    {message.code_changes.files.filter(f => f.file_type === 'css').slice(0, 3).map((file, idx) => (
+                                      <CodeBlock key={idx} fileName={file.file_name} fileType={file.file_type} content={file.content} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* JS Files */}
+                              {message.code_changes.files.filter(f => f.file_type === 'javascript' || f.file_type === 'js').length > 0 && (
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                                    <span>⚡</span> سكربتات JavaScript
+                                  </div>
+                                  <div className="space-y-2">
+                                    {message.code_changes.files.filter(f => f.file_type === 'javascript' || f.file_type === 'js').slice(0, 3).map((file, idx) => (
+                                      <CodeBlock key={idx} fileName={file.file_name} fileType={file.file_type} content={file.content} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Show remaining count */}
+                              {message.code_changes.files.length > 9 && (
                                 <div className="text-center py-2">
                                   <Badge variant="secondary" className="text-xs">
-                                    +{message.code_changes.files.length - 5} ملفات أخرى
+                                    +{message.code_changes.files.length - 9} ملفات أخرى (انظر تبويب الكود)
                                   </Badge>
                                 </div>
                               )}
                             </div>
+                          </div>
+                        )}
+                        
+                        {/* SQL Schema Display */}
+                        {message.code_changes?.sqlSchema && (
+                          <div className="mt-4">
+                            <SQLPreview sql={message.code_changes.sqlSchema} />
                           </div>
                         )}
 
@@ -286,12 +371,12 @@ export const BuilderChat = ({
               ))}
             </div>
           )}
-        </AnimatePresence>
-        <div ref={messagesEndRef} />
-      </ScrollArea>
+            </AnimatePresence>
+            <div ref={messagesEndRef} />
+          </ScrollArea>
 
-      {/* Suggestions */}
-      {messages.length === 0 && (
+          {/* Suggestions */}
+          {messages.length === 0 && (
         <div className="px-4 pb-3">
           <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
@@ -313,46 +398,51 @@ export const BuilderChat = ({
         </div>
       )}
 
-      {/* Loading Indicator */}
-      {isLoading && (
-        <div className="px-4 pb-3">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2 text-sm text-muted-foreground"
-          >
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            <span>جاري إنشاء المشروع...</span>
-          </motion.div>
-        </div>
-      )}
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="px-4 pb-3">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm"
+              >
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <div>
+                  <span className="font-medium text-foreground">جاري إنشاء المنصة...</span>
+                  <p className="text-xs text-muted-foreground">يتم إنشاء 15+ ملف مع نظام كامل</p>
+                </div>
+              </motion.div>
+            </div>
+          )}
 
-      {/* Input Area */}
-      <div className="p-3 border-t border-border bg-card/50">
-        <div className="flex gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="صف المشروع الذي تريد إنشاءه... (Shift+Enter للسطر الجديد)"
-            className="min-h-[50px] max-h-[150px] resize-none bg-background/50 text-sm"
-            disabled={isLoading}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className="self-end bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-            size="icon"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
+          {/* Input Area */}
+          <div className="p-3 border-t border-border bg-card/50">
+            <div className="flex gap-2">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="صف المشروع الذي تريد إنشاءه... مثال: أنشئ منصة أخبار مع تسجيل دخول ورفع أخبار"
+                className="min-h-[60px] max-h-[150px] resize-none bg-background/50 text-sm"
+                disabled={isLoading}
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                className="self-end bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 h-12 w-12"
+                size="icon"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
