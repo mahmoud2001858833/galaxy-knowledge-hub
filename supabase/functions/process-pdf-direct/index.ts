@@ -6,168 +6,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Create JWT token from service account
-async function createJWT(serviceAccount: any): Promise<string> {
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iss: serviceAccount.client_email,
-    sub: serviceAccount.client_email,
-    aud: 'https://generativelanguage.googleapis.com/',
-    iat: now,
-    exp: now + 3600,
-    scope: 'https://www.googleapis.com/auth/generative-language https://www.googleapis.com/auth/cloud-platform',
-  };
-
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const signatureInput = `${headerB64}.${payloadB64}`;
-
-  const pemContents = serviceAccount.private_key
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\n/g, '');
-
-  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8', binaryKey,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false, ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, encoder.encode(signatureInput));
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-  return `${signatureInput}.${signatureB64}`;
-}
-
-async function getAccessToken(serviceAccount: any): Promise<string> {
-  const jwt = await createJWT(serviceAccount);
-  const response = await fetch(serviceAccount.token_uri, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt,
-    }),
-  });
-
-  if (!response.ok) throw new Error('Failed to get access token');
-  const data = await response.json();
-  return data.access_token;
-}
-
-// Upload base64 PDF directly to Google File API
-async function uploadBase64ToGoogleFileAPI(
+// Extract content using inline base64 data with API key
+async function extractWithBase64(
   base64Data: string,
-  accessToken: string
-): Promise<{ fileUri: string; displayName: string }> {
-  const displayName = `textbook_${Date.now()}.pdf`;
-  
-  // Decode base64 to binary
-  const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-  const fileSize = binaryData.length;
-  
-  console.log('Starting upload to Google File API, size:', fileSize);
-  
-  // Start resumable upload session
-  const startResponse = await fetch(
-    'https://generativelanguage.googleapis.com/upload/v1beta/files?uploadType=resumable',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'X-Goog-Upload-Protocol': 'resumable',
-        'X-Goog-Upload-Command': 'start',
-        'X-Goog-Upload-Header-Content-Length': fileSize.toString(),
-        'X-Goog-Upload-Header-Content-Type': 'application/pdf',
-      },
-      body: JSON.stringify({
-        file: { displayName }
-      })
-    }
-  );
-
-  if (!startResponse.ok) {
-    const errorText = await startResponse.text();
-    console.error('Start upload error:', errorText);
-    throw new Error(`Failed to start upload: ${startResponse.status}`);
-  }
-
-  const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
-  if (!uploadUrl) throw new Error('No upload URL received');
-
-  console.log('Upload URL obtained, uploading file in chunks...');
-
-  // Upload in chunks
-  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
-  let offset = 0;
-
-  while (offset < fileSize) {
-    const chunkEnd = Math.min(offset + CHUNK_SIZE, fileSize);
-    const chunk = binaryData.slice(offset, chunkEnd);
-    const isLast = chunkEnd >= fileSize;
-    const uploadCommand = isLast ? 'upload, finalize' : 'upload';
-    
-    console.log(`Uploading chunk: ${offset}-${chunkEnd} of ${fileSize} (${isLast ? 'final' : 'partial'})`);
-    
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Length': chunk.length.toString(),
-        'X-Goog-Upload-Offset': offset.toString(),
-        'X-Goog-Upload-Command': uploadCommand,
-      },
-      body: chunk
-    });
-
-    if (isLast) {
-      const fileData = await uploadResponse.json();
-      console.log('File uploaded successfully:', fileData.file?.name);
-      return {
-        fileUri: fileData.file?.uri || '',
-        displayName: fileData.file?.displayName || displayName
-      };
-    }
-    
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error('Chunk upload error:', errorText);
-      throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
-    }
-    
-    offset = chunkEnd;
-  }
-
-  throw new Error('Upload failed - no final response');
-}
-
-// Extract content using File API
-async function extractWithFileAPI(
-  fileUri: string,
-  accessToken: string
+  apiKey: string
 ): Promise<any> {
-  console.log('Extracting content from file:', fileUri);
+  console.log('Extracting content from base64 PDF...');
   
   const response = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         contents: [{
           parts: [
             {
-              fileData: {
+              inlineData: {
                 mimeType: 'application/pdf',
-                fileUri: fileUri
+                data: base64Data
               }
             },
             {
@@ -216,7 +75,7 @@ async function extractWithFileAPI(
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Extraction API error:', errorText);
-    throw new Error(`Extraction failed: ${response.status}`);
+    throw new Error(`Extraction failed: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
@@ -248,7 +107,6 @@ serve(async (req) => {
   }
 
   try {
-    // Accept base64 PDF data directly (NOT from Supabase Storage)
     const { pdfBase64, bookName, grade, subject, semester, fileSizeMB } = await req.json();
     
     console.log('Processing PDF directly to Google:', { bookName, grade, subject, semester, fileSizeMB });
@@ -257,28 +115,26 @@ serve(async (req) => {
       throw new Error('Missing required parameters');
     }
 
+    // Check file size - Gemini inline data limit is ~20MB
+    const estimatedSizeMB = (pdfBase64.length * 0.75) / (1024 * 1024);
+    if (estimatedSizeMB > 20) {
+      throw new Error(`الملف كبير جداً (${estimatedSizeMB.toFixed(1)} ميجابايت). الحد الأقصى 20 ميجابايت.`);
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get service account for Google File API
-    const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
-    if (!serviceAccountJson) {
-      throw new Error('Google Service Account not configured');
+    // Use API key directly (not service account)
+    const apiKey = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
+    if (!apiKey) {
+      throw new Error('Google API Key not configured');
     }
-
-    const serviceAccount = JSON.parse(serviceAccountJson);
-    console.log('Service account loaded for:', serviceAccount.client_email);
     
-    const accessToken = await getAccessToken(serviceAccount);
-    console.log('Access token obtained');
+    console.log('Using Google API Key for extraction');
 
-    // Upload base64 PDF directly to Google File API
-    const { fileUri } = await uploadBase64ToGoogleFileAPI(pdfBase64, accessToken);
-    console.log('File uploaded to Google, URI:', fileUri);
-
-    // Extract content from file
-    const extractedData = await extractWithFileAPI(fileUri, accessToken);
+    // Extract content using inline base64
+    const extractedData = await extractWithBase64(pdfBase64, apiKey);
     console.log('Extraction completed');
 
     if (!extractedData) {
@@ -294,7 +150,7 @@ serve(async (req) => {
       userId = user?.id;
     }
 
-    // Create book record (no file_url since we're not using Supabase Storage)
+    // Create book record
     const { data: bookRecord, error: bookError } = await supabase
       .from('jordanian_textbooks')
       .insert({
@@ -302,11 +158,10 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: `google-file://${fileUri}`, // Reference to Google File API
-        file_size_mb: fileSizeMB || 0,
+        file_url: 'processed-inline',
+        file_size_mb: fileSizeMB || estimatedSizeMB,
         created_by: userId,
-        is_active: true,
-        gemini_file_uri: fileUri
+        is_active: true
       })
       .select()
       .single();
