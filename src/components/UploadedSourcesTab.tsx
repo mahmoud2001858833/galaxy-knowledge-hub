@@ -180,7 +180,7 @@ export default function UploadedSourcesTab() {
     if (fileSizeMB > 50) {
       toast({
         title: "⏳ ملف كبير",
-        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. سيتم رفعه مباشرة لسيرفر Google...`,
+        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. قد تستغرق المعالجة عدة دقائق...`,
       });
     }
 
@@ -196,42 +196,58 @@ export default function UploadedSourcesTab() {
       }
 
       setUploadProgress(10);
-      setUploadStatus('processing');
       
       toast({
-        title: "📤 جاري تحويل الملف",
-        description: "يتم تحضير الملف للإرسال المباشر لسيرفر Google..."
+        title: "📤 جاري رفع الملف",
+        description: "يتم رفع الملف إلى التخزين السحابي..."
       });
 
-      // Step 2: Convert file to base64 (directly, no Supabase Storage)
-      console.log('Converting file to base64...');
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
+      // Step 2: Upload to Supabase Storage first (handles large files)
+      const timestamp = Date.now();
+      const cleanFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${user.id}/${timestamp}-${cleanFileName}`;
       
-      // Convert to base64 in chunks to avoid memory issues
-      let base64 = '';
-      const chunkSize = 32768;
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        const chunk = bytes.slice(i, i + chunkSize);
-        base64 += String.fromCharCode.apply(null, [...chunk]);
+      console.log('Uploading to Supabase Storage:', fileName, 'Size:', selectedFile.size);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('jordanian-textbooks')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`فشل رفع الملف: ${uploadError.message}`);
       }
-      base64 = btoa(base64);
       
-      console.log('File converted to base64, length:', base64.length);
-      setUploadProgress(30);
+      console.log('File uploaded to storage:', uploadData);
+      setUploadProgress(40);
+      setUploadStatus('processing');
+
+      // Step 3: Get public URL
+      const { data: urlData } = supabase.storage
+        .from('jordanian-textbooks')
+        .getPublicUrl(fileName);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('فشل الحصول على رابط الملف');
+      }
+
+      console.log('Public URL:', urlData.publicUrl);
       setUploadStatus('extracting');
 
       toast({
-        title: "🚀 جاري الرفع لسيرفر Google",
-        description: "يتم إرسال الملف مباشرة لـ Google File API للمعالجة..."
+        title: "🚀 جاري الإرسال لسيرفر Google",
+        description: "يتم إرسال الملف لـ Google File API للمعالجة..."
       });
 
-      // Step 3: Send directly to edge function (which uploads to Google)
+      // Step 4: Call edge function with file URL (not base64!)
       const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
       
       const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-direct', {
         body: {
-          pdfBase64: base64,
+          fileUrl: urlData.publicUrl,
           bookName,
           grade: formData.grade,
           subject: formData.subject,
