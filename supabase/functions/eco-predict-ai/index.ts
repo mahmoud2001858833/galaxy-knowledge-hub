@@ -1,0 +1,168 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const GOOGLE_AI_API_KEY = 'AIzaSyDXjgn3W3kAmHkxGnsOokJe7P4oTrfkEAk';
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { consumptionData, location, energySource } = await req.json();
+
+    console.log('Received consumption data:', consumptionData);
+    console.log('Location:', location);
+    console.log('Energy source:', energySource);
+
+    const systemPrompt = `أنت خبير بيئي متخصص في تحليل البصمة الكربونية والتنبؤات البيئية. 
+قم بتحليل بيانات الاستهلاك المقدمة وأنتج تقريراً شاملاً بتنسيق JSON يتضمن:
+
+1. التوقعات الشهرية والسنوية للانبعاثات
+2. ثلاثة سيناريوهات: الاستمرار، التحسين، التدهور
+3. توزيع الانبعاثات حسب الفئات
+4. توصيات للتحسين
+5. مؤشرات الأداء البيئي
+
+أرجع البيانات بتنسيق JSON التالي بالضبط:
+{
+  "currentEmissions": number (طن CO2 سنوياً),
+  "monthlyPredictions": [{"month": string, "emissions": number}] (12 شهر),
+  "scenarios": {
+    "continuation": {"year1": number, "year5": number, "year10": number},
+    "improvement": {"year1": number, "year5": number, "year10": number},
+    "degradation": {"year1": number, "year5": number, "year10": number}
+  },
+  "categoryBreakdown": {
+    "energy": number (نسبة مئوية),
+    "transport": number,
+    "water": number,
+    "waste": number
+  },
+  "metrics": {
+    "averageMonthlyEmission": number,
+    "potentialReduction": number (نسبة مئوية),
+    "sustainabilityScore": number (0-100),
+    "monthlyChangeRate": number (نسبة مئوية)
+  },
+  "regionalComparison": [{"region": string, "emissions": number}],
+  "recommendations": [string],
+  "renewableEnergyPotential": number (نسبة مئوية),
+  "trendAnalysis": string
+}`;
+
+    const userPrompt = `قم بتحليل بيانات الاستهلاك التالية:
+- استهلاك الكهرباء: ${consumptionData.electricity} كيلوواط/شهر
+- استهلاك المياه: ${consumptionData.water} لتر/شهر
+- المسافة المقطوعة بالسيارة: ${consumptionData.transport} كم/شهر
+- نوع الوقود: ${consumptionData.fuelType}
+- النفايات: ${consumptionData.waste} كجم/شهر
+- الموقع: ${location}
+- مصدر الطاقة: ${energySource}
+
+أنتج تحليلاً بيئياً شاملاً مع توقعات مستقبلية.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GOOGLE_AI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4096,
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Google AI API error:', response.status, errorText);
+      throw new Error(`AI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('AI response:', JSON.stringify(data, null, 2));
+
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Extract JSON from response
+    let analysisData;
+    try {
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysisData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found in response');
+      }
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      // Generate fallback data based on inputs
+      const baseEmissions = (consumptionData.electricity * 0.0005) + 
+                           (consumptionData.transport * 0.00021) + 
+                           (consumptionData.waste * 0.001) +
+                           (consumptionData.water * 0.00001);
+      
+      analysisData = {
+        currentEmissions: baseEmissions * 12,
+        monthlyPredictions: Array.from({ length: 12 }, (_, i) => ({
+          month: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 
+                  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'][i],
+          emissions: baseEmissions * (0.9 + Math.random() * 0.2)
+        })),
+        scenarios: {
+          continuation: { year1: baseEmissions * 12, year5: baseEmissions * 12 * 1.1, year10: baseEmissions * 12 * 1.2 },
+          improvement: { year1: baseEmissions * 12 * 0.9, year5: baseEmissions * 12 * 0.7, year10: baseEmissions * 12 * 0.5 },
+          degradation: { year1: baseEmissions * 12 * 1.1, year5: baseEmissions * 12 * 1.4, year10: baseEmissions * 12 * 1.8 }
+        },
+        categoryBreakdown: {
+          energy: 45,
+          transport: 30,
+          water: 10,
+          waste: 15
+        },
+        metrics: {
+          averageMonthlyEmission: baseEmissions,
+          potentialReduction: 35,
+          sustainabilityScore: 65,
+          monthlyChangeRate: 2.5
+        },
+        regionalComparison: [
+          { region: 'الأردن', emissions: baseEmissions * 12 * 0.9 },
+          { region: 'السعودية', emissions: baseEmissions * 12 * 1.3 },
+          { region: 'الإمارات', emissions: baseEmissions * 12 * 1.5 },
+          { region: 'مصر', emissions: baseEmissions * 12 * 0.7 }
+        ],
+        recommendations: [
+          'تركيب ألواح شمسية لتقليل استهلاك الكهرباء',
+          'استخدام وسائل النقل العام أو المشاركة في السيارات',
+          'تقليل استهلاك المياه عبر أنظمة ترشيد',
+          'فرز النفايات وإعادة التدوير',
+          'استخدام أجهزة موفرة للطاقة'
+        ],
+        renewableEnergyPotential: 40,
+        trendAnalysis: 'يُظهر تحليل الاتجاهات إمكانية تحسين كبيرة في البصمة الكربونية من خلال تبني ممارسات مستدامة.'
+      };
+    }
+
+    return new Response(JSON.stringify(analysisData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in eco-predict-ai:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

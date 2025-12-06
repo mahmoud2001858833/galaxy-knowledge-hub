@@ -73,6 +73,7 @@ import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
 import PsychologicalGuide from './pages/PsychologicalGuide';
 import StudentProjects from './components/environmental/StudentProjects';
 import RecyclingProjectAdvisor from './pages/RecyclingProjectAdvisor';
+import EcoPredictDashboard from './pages/EcoPredictDashboard';
 import RecordedLessons from './components/educational/RecordedLessons';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
@@ -479,6 +480,10 @@ const router = createBrowserRouter([
       {
         path: 'environmental/recycling-advisor',
         element: <AuthGuard><RecyclingProjectAdvisor /></AuthGuard>,
+      },
+      {
+        path: 'environmental/eco-predict',
+        element: <AuthGuard><EcoPredictDashboard /></AuthGuard>,
       },
       {
         path: 'recorded-lessons',
