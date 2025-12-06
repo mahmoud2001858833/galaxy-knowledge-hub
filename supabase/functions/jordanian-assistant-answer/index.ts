@@ -6,8 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام مفتاح Google AI المخصص
-const GOOGLE_AI_KEY = Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY');
+// Try multiple API keys
+const getApiKey = () => {
+  const keys = [
+    Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY'),
+    Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1'),
+    Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1'),
+    Deno.env.get('GOOGLE_AI_API_KEY'),
+  ].filter(Boolean);
+  return keys[0] || null;
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,41 +24,30 @@ serve(async (req) => {
 
   try {
     const { question, studentName, grade, image } = await req.json();
-
     console.log('Processing question:', { question, studentName, grade, hasImage: !!image });
 
     if (!question) {
       return new Response(
-        JSON.stringify({
-          answer: null,
-          sources: [],
-          error: 'السؤال مفقود',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ answer: null, sources: [], error: 'السؤال مفقود' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!GOOGLE_AI_KEY) {
-      console.error('JORDANIAN_ASSISTANT_AI_KEY not configured');
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      console.error('No API key configured');
       return new Response(
-        JSON.stringify({
-          answer: null,
-          sources: [],
-          error: 'إعدادات الذكاء الاصطناعي غير مكتملة. يرجى التواصل مع المطوّر.',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ answer: null, sources: [], error: 'إعدادات الذكاء الاصطناعي غير مكتملة' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Using Google Gemini AI for answer generation');
-
-    // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get ALL textbook content from all grades - search comprehensively
-    console.log('Step 1: Fetching ALL textbook content (comprehensive search)');
+    // Get ALL textbook content
+    console.log('Fetching textbook content...');
     const { data: contentPages, error: contentError } = await supabase
       .from('jordanian_textbook_content')
       .select('*')
@@ -60,151 +57,102 @@ serve(async (req) => {
       .order('page_number', { ascending: true });
 
     if (contentError) {
-      console.error('Error fetching content:', contentError);
+      console.error('Content fetch error:', contentError);
       return new Response(
-        JSON.stringify({
-          answer: null,
-          sources: [],
-          error: 'فشل جلب المحتوى الدراسي',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ answer: null, sources: [], error: 'فشل جلب المحتوى الدراسي' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!contentPages || contentPages.length === 0) {
-      console.log('No content found in system');
       return new Response(
         JSON.stringify({
           answer: 'عذراً، لم يتم تزويد النظام بأي محتوى دراسي بعد. يرجى الانتظار والمحاولة في وقت لاحق',
           sources: [],
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${contentPages.length} total pages across all grades`);
+    console.log(`Found ${contentPages.length} pages across all grades`);
 
-    // Build context from ALL textbook content - comprehensive search
-    const contentByGradeSubject = contentPages.reduce((acc: any, page: any) => {
-      const key = `${page.grade}|||${page.subject}`;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(page);
-      return acc;
-    }, {});
+    // Build context with clear source markers
+    const booksContext = contentPages
+      .map((p: any) => 
+        `<<<المصدر: الصف: ${p.grade} | المادة: ${p.subject} | الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}>>>\n${p.page_content}\n<<<نهاية المصدر>>>`
+      )
+      .join('\n\n');
 
-    // Create comprehensive context
-    const booksContext = Object.entries(contentByGradeSubject)
-      .map(([key, pages]: [string, any[]]) => {
-        const [gradeKey, subject] = key.split('|||');
-        const pagesText = pages
-          .slice(0, 40)
-          .map((p: any) => 
-            `[الصف: ${p.grade} | المادة: ${p.subject} | الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}]\n${p.page_content}`
-          )
-          .join('\n\n');
-        
-        return `### الصف ${gradeKey} - المادة: ${subject}\n${pagesText}`;
-      })
-      .join('\n\n---\n\n');
+    const systemPrompt = `أنت معلم أردني خبير متخصص في المنهاج الأردني لجميع الصفوف.
 
-    // Create the prompt with actual textbook content
-    const systemPrompt = `أنت معلم أردني خبير متخصص في المنهاج الأردني لجميع الصفوف. لديك قدرة استثنائية على:
-• فهم الأسئلة بصيغ مختلفة وربط المعاني والمفاهيم المتشابهة
-• البحث الشامل في جميع الكتب المتاحة بغض النظر عن الصف
-• فهم المرادفات واللهجات المختلفة
-
-لديك محتوى كامل من جميع الكتب الدراسية:
+لديك محتوى كامل من الكتب الدراسية:
 ${booksContext}
 
-📚 قواعد البحث والإجابة الذكية:
+📚 قواعد البحث والإجابة:
 
-1. **البحث الشامل**: ابحث في كل المحتوى المتاح من جميع الصفوف والمواد - لا تقتصر على صف الطالب فقط
+1. **البحث الشامل**: ابحث في كل المحتوى من جميع الصفوف والمواد
 
-2. **المرونة اللغوية الكاملة**: 
-   - "تعريف" = "معنى" = "مفهوم" = "شرح" = "ما هو"
-   - "القتل" = "قتل" = "جريمة القتل" = "جرائم القتل"
-   - "الإسلامية" = "اسلاميه" = "الإسلامية" = "الاسلامية"
-   - تجاهل الفروق الإملائية البسيطة والتشكيل
+2. **المرونة اللغوية**: 
+   - "تعريف" = "معنى" = "مفهوم" = "ما هو"
+   - تجاهل الفروق الإملائية
    - افهم السياق وليس النص الحرفي فقط
 
-3. **صيغ الأسئلة المتنوعة** (كلها تطلب نفس الشيء):
-   - "عرف القتل" = "ما هو القتل" = "ما معنى القتل" = "اشرح مفهوم القتل" = "وضح القتل"
+3. **صيغة الإجابة الإلزامية**:
+   - ابدأ بشرح واضح ومفصل للإجابة
+   - أضف أمثلة إذا وجدت
+   - **اختم بالمصدر المحدد فقط** بهذا الشكل:
+   
+   📚 المصدر:
+   - الكتاب: [اسم الكتاب/المادة]
+   - الصف: [الصف]
+   - الوحدة: [رقم]: [اسم الوحدة]
+   - الدرس: [رقم]: [اسم الدرس]
+   - الصفحة: [رقم]
 
-4. **البحث الذكي**:
-   - ابحث عن الموضوع بكل صيغه وأشكاله
-   - إذا لم تجد الكلمة بالضبط، ابحث عن مرادفاتها
-   - ابحث في المحتوى بالمعنى وليس بالنص فقط
+4. **قاعدة المصدر الواحد**: 
+   ⚠️ اذكر فقط الكتاب والصفحة التي أخذت منها المعلومة فعلياً
+   ⚠️ لا تذكر كل الكتب المتاحة - فقط المصدر الذي استخدمته للإجابة
+   ⚠️ إذا استخدمت أكثر من مصدر، اذكر كل مصدر بجانب المعلومة التي أخذتها منه
 
-5. **إذا وجدت معلومات ذات صلة**: قدمها للطالب حتى لو لم تكن مطابقة 100%
+5. إذا لم تجد المعلومة بعد البحث الشامل، قل:
+   "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
 
-6. **إذا لم تجد حقاً بعد البحث الشامل**: قل "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
+6. اللغة: استخدم العربية الفصحى الواضحة
 
-7. **تنسيق الإجابة**:
-   - ابدأ بشرح واضح ومبسط وشامل
-   - أضف أمثلة من الكتاب
-   - اختم بالمصدر: 📚 المصدر: [الصف] - [المادة] - الوحدة [رقم]: [اسم] - الدرس [رقم]: [اسم] - صفحة [رقم]
+طالب الصف ${grade} يسأل: ابحث في كل الكتب للإجابة`;
 
-8. **اللغة**: استخدم العربية الفصحى الواضحة
+    console.log('Calling Gemini API...');
 
-9. **الصور**: إذا أرفقت صورة، حللها واربطها بالمنهاج ثم أجب
-
-⚠️ مهم جداً: طالب الصف ${grade} يسألك الآن، لكن ابحث في كل الكتب المتاحة لأن المعلومة قد تكون في أي صف!`;
-
-    // Call Google Gemini API directly
-    console.log('Step 2: Calling Google Gemini AI...');
-
-    // Prepare content parts for Gemini
     let contentParts: any[] = [{ text: `${systemPrompt}\n\nالسؤال: ${question}` }];
     
     if (image) {
-      // Extract base64 content
       const base64Content = image.split(',')[1];
       const mimeType = image.split(';')[0].split(':')[1] || 'image/jpeg';
-      
       contentParts = [
         { text: systemPrompt },
-        { 
-          inlineData: {
-            mimeType: mimeType,
-            data: base64Content
-          }
-        },
+        { inlineData: { mimeType, data: base64Content } },
         { text: `السؤال: ${question}` }
       ];
     }
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_AI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: contentParts
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 6000,
-          },
+          contents: [{ parts: contentParts }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 8000 },
         }),
-      },
+      }
     );
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('Google Gemini error response:', geminiResponse.status, errorText);
-
+      console.error('Gemini error:', geminiResponse.status, errorText);
       return new Response(
-        JSON.stringify({
-          answer: null,
-          sources: [],
-          error: 'فشل الحصول على إجابة من الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ answer: null, sources: [], error: 'فشل الحصول على إجابة من الذكاء الاصطناعي' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -213,102 +161,72 @@ ${booksContext}
 
     if (!answer) {
       return new Response(
-        JSON.stringify({
-          answer: null,
-          sources: [],
-          error: 'لم يتم توليد إجابة',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ answer: null, sources: [], error: 'لم يتم توليد إجابة' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Answer generated from textbook content, length:', answer.length);
+    console.log('Answer generated, length:', answer.length);
 
-    // Extract source information from the content pages used
-    const uniqueSources = Array.from(
-      new Set(contentPages.map((p: any) => `${p.subject}|${p.unit_number}|${p.unit_name}|${p.lesson_number}|${p.lesson_name}`))
-    ).map(key => {
-      const [subject, unitNum, unitName, lessonNum, lessonName] = key.split('|');
-      const relevantPages = contentPages.filter((p: any) => 
-        p.subject === subject && 
-        p.unit_number === parseInt(unitNum) && 
-        p.lesson_number === parseInt(lessonNum)
-      );
-      return {
-        subject,
-        unitNumber: parseInt(unitNum),
-        unitName,
-        lessonNumber: parseInt(lessonNum),
-        lessonName,
-        pageNumbers: relevantPages.map((p: any) => p.page_number).sort((a: number, b: number) => a - b)
-      };
-    });
-
-    const sources = uniqueSources.map((source: any) => ({
-      bookName: `${source.subject} - الوحدة ${source.unitNumber}: ${source.unitName}`,
-      subject: source.subject,
-      unitNumber: source.unitNumber,
-      unitName: source.unitName,
-      lessonNumber: source.lessonNumber,
-      lessonName: source.lessonName,
-      pageNumber: source.pageNumbers.join(', '),
-      fileUrl: null,
-    }));
-
-    // Save to database
-    console.log('Step 3: Saving to database...');
+    // Extract sources from the answer text
+    const sources: any[] = [];
     
-    if (image) {
-      const { error: imageInsertError } = await supabase
-        .from('jordanian_image_analysis')
-        .insert({
-          student_name: studentName,
-          grade: grade,
-          question: question,
-          image_url: image,
-          analysis_result: answer,
+    // Try to extract source from the answer
+    const sourceMatch = answer.match(/📚\s*المصدر[\s\S]*?(?=\n\n|$)/);
+    if (sourceMatch) {
+      const sourceText = sourceMatch[0];
+      const subjectMatch = sourceText.match(/الكتاب:\s*([^\n]+)/);
+      const gradeMatch = sourceText.match(/الصف:\s*([^\n]+)/);
+      const unitMatch = sourceText.match(/الوحدة:\s*(\d+)[:\s]*([^\n]*)/);
+      const lessonMatch = sourceText.match(/الدرس:\s*(\d+)[:\s]*([^\n]*)/);
+      const pageMatch = sourceText.match(/الصفحة:\s*(\d+)/);
+
+      if (subjectMatch || pageMatch) {
+        sources.push({
+          bookName: subjectMatch?.[1]?.trim() || 'الكتاب',
+          subject: subjectMatch?.[1]?.trim() || '',
+          grade: gradeMatch?.[1]?.trim() || grade,
+          unitNumber: unitMatch ? parseInt(unitMatch[1]) : null,
+          unitName: unitMatch?.[2]?.trim() || '',
+          lessonNumber: lessonMatch ? parseInt(lessonMatch[1]) : null,
+          lessonName: lessonMatch?.[2]?.trim() || '',
+          pageNumber: pageMatch ? pageMatch[1] : null,
+          fileUrl: null,
         });
-      
-      if (imageInsertError) {
-        console.error('Image analysis insert error:', imageInsertError);
       }
     }
-    
-    const { error: insertError } = await supabase
-      .from('student_assistant_usage')
-      .insert({
+
+    // Save to database
+    if (image) {
+      await supabase.from('jordanian_image_analysis').insert({
         student_name: studentName,
         grade: grade,
         question: question,
-        answer: answer,
-        sources: sources,
+        image_url: image,
+        analysis_result: answer,
       });
-
-    if (insertError) {
-      console.error('Database insert error:', insertError);
     }
+    
+    await supabase.from('student_assistant_usage').insert({
+      student_name: studentName,
+      grade: grade,
+      question: question,
+      answer: answer,
+      sources: sources,
+    });
 
-    console.log('Process completed successfully');
+    console.log('Answer saved, sources:', sources.length);
 
     return new Response(
-      JSON.stringify({
-        answer: answer,
-        sources: sources,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ answer, sources }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error: any) {
-    console.error('Error in jordanian-assistant-answer:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({
-        answer: null,
-        sources: [],
-        error: error?.message || 'حدث خطأ غير متوقع في الخادم',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      },
+      JSON.stringify({ answer: null, sources: [], error: error?.message || 'حدث خطأ غير متوقع' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

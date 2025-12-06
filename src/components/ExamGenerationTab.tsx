@@ -20,7 +20,7 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
   const [contentType, setContentType] = useState("book");
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [selectedLessons, setSelectedLessons] = useState<string[]>([]);
-  const [contentDescription, setContentDescription] = useState(""); // صندوق الوصف الجديد
+  const [contentDescription, setContentDescription] = useState("");
   const [questionTypes, setQuestionTypes] = useState("");
   const [questionCount, setQuestionCount] = useState("10");
   const [generatedQuestions, setGeneratedQuestions] = useState("");
@@ -28,7 +28,13 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
   const [generating, setGenerating] = useState(false);
   const [availableUnits, setAvailableUnits] = useState<any[]>([]);
   const [availableLessons, setAvailableLessons] = useState<any[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Fetch available subjects from database
+  useEffect(() => {
+    fetchSubjects();
+  }, [grade]);
 
   useEffect(() => {
     if (subject && contentType === "unit") {
@@ -36,7 +42,19 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
     } else if (subject && contentType === "lesson") {
       fetchLessons();
     }
-  }, [subject, contentType]);
+  }, [subject, contentType, grade]);
+
+  const fetchSubjects = async () => {
+    const { data, error } = await supabase
+      .from('jordanian_textbook_content')
+      .select('subject')
+      .eq('grade', grade);
+
+    if (!error && data) {
+      const uniqueSubjects = [...new Set(data.map(item => item.subject))].filter(Boolean);
+      setAvailableSubjects(uniqueSubjects);
+    }
+  };
 
   const fetchUnits = async () => {
     const { data, error } = await supabase
@@ -100,6 +118,9 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
     }
 
     setGenerating(true);
+    setGeneratedQuestions("");
+    setGeneratedAnswers("");
+
     try {
       let contentRange = "الكتاب كاملاً";
       
@@ -109,15 +130,20 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
         contentRange = `الدروس: ${selectedLessons.join(", ")}`;
       }
 
+      // Merge content description with content range
+      const fullContentRange = contentDescription.trim() 
+        ? `${contentRange} (${contentDescription.trim()})`
+        : contentRange;
+
       const { data, error } = await supabase.functions.invoke('generate-exam-questions', {
         body: {
           subject,
           grade,
-          contentRange,
+          contentRange: fullContentRange,
           contentType,
           selectedUnits: contentType === "unit" ? selectedUnits : undefined,
           selectedLessons: contentType === "lesson" ? selectedLessons : undefined,
-          contentDescription: contentDescription.trim() || undefined, // إرسال الوصف
+          contentDescription: contentDescription.trim() || undefined,
           questionTypes,
           questionCount: parseInt(questionCount),
         }
@@ -138,7 +164,7 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
       } else {
         toast({
           title: "⚠️ لم يتوفر المحتوى",
-          description: data.examPaper || "لم يتم تزويد النظام بهذا المصدر بعد",
+          description: "لم يتم تزويد النظام بهذا الكتاب بعد. يرجى رفع الكتاب أولاً",
           variant: "destructive",
         });
       }
@@ -162,16 +188,31 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
     });
   };
 
+  // Default subjects if none in database
+  const allSubjects = availableSubjects.length > 0 
+    ? availableSubjects 
+    : [
+        "اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "الفيزياء",
+        "الكيمياء", "الأحياء", "التاريخ", "الجغرافيا", "التربية الإسلامية",
+        "الحاسوب", "علوم الأرض", "التربية الوطنية", "الثقافة المالية"
+      ];
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4">
         <div className="space-y-2">
           <Label>الصف</Label>
-          <Select value={grade} onValueChange={setGrade}>
+          <Select value={grade} onValueChange={(v) => { setGrade(v); setSubject(""); }}>
             <SelectTrigger>
               <SelectValue placeholder="اختر الصف" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="الصف الأول">الصف الأول</SelectItem>
+              <SelectItem value="الصف الثاني">الصف الثاني</SelectItem>
+              <SelectItem value="الصف الثالث">الصف الثالث</SelectItem>
+              <SelectItem value="الصف الرابع">الصف الرابع</SelectItem>
+              <SelectItem value="الصف الخامس">الصف الخامس</SelectItem>
+              <SelectItem value="الصف السادس">الصف السادس</SelectItem>
               <SelectItem value="الصف السابع">الصف السابع</SelectItem>
               <SelectItem value="الصف الثامن">الصف الثامن</SelectItem>
               <SelectItem value="الصف التاسع">الصف التاسع</SelectItem>
@@ -189,17 +230,16 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
               <SelectValue placeholder="اختر المادة" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="اللغة العربية">اللغة العربية</SelectItem>
-              <SelectItem value="اللغة الإنجليزية">اللغة الإنجليزية</SelectItem>
-              <SelectItem value="الرياضيات">الرياضيات</SelectItem>
-              <SelectItem value="الفيزياء">الفيزياء</SelectItem>
-              <SelectItem value="الكيمياء">الكيمياء</SelectItem>
-              <SelectItem value="الأحياء">الأحياء</SelectItem>
-              <SelectItem value="التاريخ">التاريخ</SelectItem>
-              <SelectItem value="الجغرافيا">الجغرافيا</SelectItem>
-              <SelectItem value="التربية الإسلامية">التربية الإسلامية</SelectItem>
+              {allSubjects.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {availableSubjects.length > 0 && (
+            <p className="text-xs text-green-600">
+              ✓ {availableSubjects.length} مادة متاحة في قاعدة البيانات
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -266,17 +306,17 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
           </Card>
         )}
 
-        {/* صندوق الوصف الجديد */}
+        {/* صندوق وصف النطاق */}
         <div className="space-y-2">
           <Label>وصف نطاق المحتوى (اختياري)</Label>
           <Textarea
-            placeholder="مثال: من الوحدة الأولى للوحدة الثالثة - الفصل الأول، أو من الدرس الأول للدرس الخامس..."
+            placeholder="مثال: من الوحدة الأولى للوحدة الثالثة - الفصل الأول..."
             value={contentDescription}
             onChange={(e) => setContentDescription(e.target.value)}
             className="min-h-[80px]"
           />
           <p className="text-xs text-muted-foreground">
-            اكتب هنا تفاصيل إضافية عن نطاق الامتحان مثل: الفصل الدراسي، الوحدات المحددة، أو أي ملاحظات أخرى
+            اكتب تفاصيل إضافية: الفصل الدراسي، نطاق الوحدات، أو أي ملاحظات
           </p>
         </div>
 
