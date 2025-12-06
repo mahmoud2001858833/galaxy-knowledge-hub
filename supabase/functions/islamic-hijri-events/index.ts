@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_AI_API_KEY = Deno.env.get('ISLAMIC_HIJRI_AI_KEY') || Deno.env.get('GOOGLE_AI_API_KEY');
+const GOOGLE_AI_API_KEY = 'AIzaSyA-j5x8KlONyULA7cksiWgGhd14ZhfIa84';
 
 async function callGeminiAPI(prompt: string): Promise<string> {
   const response = await fetch(
