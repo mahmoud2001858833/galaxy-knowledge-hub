@@ -5,55 +5,64 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_AI_API_KEY = 'AIzaSyA-j5x8KlONyULA7cksiWgGhd14ZhfIa84';
+async function callLovableAI(prompt: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY not configured');
+  }
 
-async function callGeminiAPI(prompt: string): Promise<string> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GOOGLE_AI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4096,
-        }
-      })
-    }
-  );
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Gemini API error:', response.status, errorText);
+    console.error('Lovable AI error:', response.status, errorText);
     throw new Error(`API error: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 async function generateImage(eventDescription: string, eventTitle: string): Promise<string | null> {
   try {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured for image generation');
+      return null;
+    }
+
     const imagePrompt = `Create a beautiful, artistic historical illustration representing: ${eventTitle}. 
     Scene description: ${eventDescription}
     Style: Elegant Islamic art style with geometric patterns, warm golden and emerald colors, 
     historical Middle Eastern architecture, peaceful atmosphere, no text or letters on the image, 
     just pure visual artistic representation. Ultra high quality, 16:9 aspect ratio.`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: imagePrompt }] }],
-          generationConfig: {
-            responseModalities: ["image", "text"]
-          }
-        })
-      }
-    );
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [
+          { role: 'user', content: imagePrompt }
+        ],
+        modalities: ['image', 'text'],
+      }),
+    });
 
     if (!response.ok) {
       console.error('Image generation error:', await response.text());
@@ -61,10 +70,10 @@ async function generateImage(eventDescription: string, eventTitle: string): Prom
     }
 
     const data = await response.json();
-    const imagePart = data.candidates?.[0]?.content?.parts?.find((p: { inlineData?: { data: string } }) => p.inlineData);
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
-    if (imagePart?.inlineData?.data) {
-      return `data:image/png;base64,${imagePart.inlineData.data}`;
+    if (imageUrl) {
+      return imageUrl;
     }
     
     return null;
@@ -81,10 +90,6 @@ serve(async (req) => {
 
   try {
     const { type, year, eventName, eventDescription, eventTitle } = await req.json();
-
-    if (!GOOGLE_AI_API_KEY) {
-      throw new Error('API key not configured');
-    }
 
     if (type === 'searchByYear') {
       const prompt = `أنت مؤرخ إسلامي متخصص. أعطني قائمة بأهم الأحداث التي وقعت في السنة ${year} الهجرية.
@@ -104,7 +109,7 @@ serve(async (req) => {
 
 إذا لم تكن هناك أحداث معروفة في هذه السنة، أرجع قائمة فارغة.`;
 
-      const result = await callGeminiAPI(prompt);
+      const result = await callLovableAI(prompt);
       
       let events = [];
       try {
@@ -144,7 +149,7 @@ serve(async (req) => {
 
 إذا كان الحدث غير معروف، أرجع null بدلاً من event.`;
 
-      const result = await callGeminiAPI(prompt);
+      const result = await callLovableAI(prompt);
       
       let event = null;
       try {
