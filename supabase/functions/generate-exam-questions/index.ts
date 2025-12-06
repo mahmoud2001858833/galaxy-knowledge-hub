@@ -6,17 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Try multiple API keys
-const getApiKey = () => {
-  const keys = [
-    Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY'),
-    Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1'),
-    Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1'),
-    Deno.env.get('GOOGLE_AI_API_KEY'),
-  ].filter(Boolean);
-  
-  return keys[0] || null;
-};
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,7 +26,11 @@ serve(async (req) => {
       questionCount 
     } = await req.json();
     
-    console.log('Generating exam:', { subject, grade, contentRange, contentType, contentDescription, questionTypes, questionCount });
+    console.log('📝 Generating exam:', { subject, grade, contentRange, contentType, contentDescription, questionTypes, questionCount });
+
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY غير مكون');
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -98,14 +92,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${contentPages.length} pages for ${subject} - ${grade}`);
-    
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      throw new Error('لم يتم تكوين مفتاح API');
-    }
-    
-    console.log('Using Google Gemini AI for exam generation');
+    console.log(`📚 Found ${contentPages.length} pages for ${subject} - ${grade}`);
 
     // Build content context from pages
     const contentContext = contentPages
@@ -157,37 +144,47 @@ ${fullContentScope}
 2. [الإجابة] - المصدر: (الوحدة X - الدرس Y - صفحة Z)
 ...`;
 
-    console.log('Calling Google Gemini API...');
+    console.log('🤖 Calling Lovable AI Gateway...');
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nأنشئ الامتحان الآن` }] }],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 16000,
-          },
-        }),
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: 'أنشئ الامتحان الآن' }
+        ],
+        temperature: 0.5,
+        max_tokens: 16000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('تم تجاوز الحد المسموح، يرجى المحاولة لاحقاً');
       }
-    );
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini error:', geminiResponse.status, errorText);
-      throw new Error(`فشل توليد الأسئلة: ${geminiResponse.status}`);
+      if (response.status === 402) {
+        throw new Error('يرجى إضافة رصيد للحساب');
+      }
+      
+      throw new Error(`فشل توليد الأسئلة: ${response.status}`);
     }
 
-    const geminiData = await geminiResponse.json();
-    const examPaper = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await response.json();
+    const examPaper = data.choices?.[0]?.message?.content || '';
     
     if (!examPaper) {
       throw new Error('لم يتم توليد أسئلة');
     }
     
-    console.log('Exam generated successfully, length:', examPaper.length);
+    console.log('✅ Exam generated successfully, length:', examPaper.length);
 
     return new Response(
       JSON.stringify({ examPaper, markdown: examPaper }),
@@ -195,7 +192,7 @@ ${fullContentScope}
     );
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('❌ Error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'حدث خطأ أثناء إنشاء الامتحان' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }

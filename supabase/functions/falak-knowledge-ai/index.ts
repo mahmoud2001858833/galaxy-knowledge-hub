@@ -5,6 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -13,10 +15,9 @@ serve(async (req) => {
   try {
     const { message, image, userName, hasImage } = await req.json()
     
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-    if (!GEMINI_API_KEY) {
+    if (!LOVABLE_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'API key not configured' }),
+        JSON.stringify({ error: 'LOVABLE_API_KEY غير مكون' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -78,52 +79,67 @@ serve(async (req) => {
 اكتب إجابة واحدة متكاملة ومفصلة (على الأقل 200 كلمة) تتضمن جميع النقاط أعلاه بأسلوب واضح ومتسلسل وسلس.`;
     }
 
-    // Prepare the request body for Gemini API
-    const requestBody: any = {
-      contents: [
-        {
-          parts: [
-            {
-              text: analysisPrompt
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        topP: 0.95,
-        topK: 64,
-        maxOutputTokens: 4096,
-      }
-    };
+    console.log('🤖 Calling Lovable AI Gateway...');
 
-    // Add image to request if provided
+    // Prepare messages for Lovable AI
+    const messages: any[] = [
+      { role: 'system', content: 'أنت مساعد تعليمي ذكي متخصص في المنهاج الأردني.' }
+    ];
+
     if (hasImage && image) {
       const base64Image = image.split(',')[1] || image;
-      requestBody.contents[0].parts.push({
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: base64Image
-        }
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: analysisPrompt },
+          { 
+            type: 'image_url',
+            image_url: { url: `data:image/jpeg;base64,${base64Image}` }
+          }
+        ]
       });
+    } else {
+      messages.push({ role: 'user', content: analysisPrompt });
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages,
+        temperature: 0.9,
+        max_tokens: 4096,
+      }),
     });
 
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error('Gemini API Error:', data.error);
-      throw new Error(data.error.message || 'خطأ في API');
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'تم تجاوز الحد المسموح، يرجى المحاولة لاحقاً' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'يرجى إضافة رصيد للحساب' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`API error: ${response.status}`);
     }
 
-    const fullResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من معالجة طلبك";
+    const data = await response.json();
+    const fullResponse = data.choices?.[0]?.message?.content || "عذراً، لم أتمكن من معالجة طلبك";
+
+    console.log('✅ Response generated successfully');
 
     // Generate embedded video suggestions for the platform
     const videoSuggestions = [
@@ -164,7 +180,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('❌ Error:', error);
     return new Response(
       JSON.stringify({ 
         error: 'حدث خطأ في معالجة الطلب',
