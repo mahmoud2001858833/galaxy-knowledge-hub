@@ -5,12 +5,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, BookOpen, ChevronDown, ChevronUp, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, Upload, FileText, BookOpen, ChevronDown, ChevronUp, X, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ContentSummary {
   grade: string;
@@ -47,6 +58,7 @@ export default function UploadedSourcesTab() {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedPreview, setExtractedPreview] = useState<string>('');
+  const [deletingSource, setDeletingSource] = useState<string | null>(null);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -106,6 +118,52 @@ export default function UploadedSourcesTab() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteSource = async (grade: string, subject: string, semester: string) => {
+    const sourceKey = `${grade}|${subject}|${semester}`;
+    setDeletingSource(sourceKey);
+    
+    try {
+      // Delete from jordanian_textbook_content
+      const { error: contentError } = await supabase
+        .from('jordanian_textbook_content')
+        .delete()
+        .eq('grade', grade)
+        .eq('subject', subject)
+        .eq('semester', semester);
+
+      if (contentError) throw contentError;
+
+      // Delete from jordanian_textbooks
+      const { error: bookError } = await supabase
+        .from('jordanian_textbooks')
+        .delete()
+        .eq('grade', grade)
+        .eq('subject', subject)
+        .eq('semester', semester);
+
+      if (bookError) {
+        console.error('Book delete error:', bookError);
+      }
+
+      toast({
+        title: "تم الحذف",
+        description: `تم حذف ${subject} - ${grade} - ${semester} بنجاح`,
+      });
+
+      // Reload content
+      loadContent();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast({
+        title: "خطأ في الحذف",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingSource(null);
     }
   };
 
@@ -605,6 +663,45 @@ export default function UploadedSourcesTab() {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Delete Button */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={deletingSource === `${content.grade}|${content.subject}|${content.semester}`}
+                          >
+                            {deletingSource === `${content.grade}|${content.subject}|${content.semester}` ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>حذف المصدر التعليمي</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هل أنت متأكد من حذف "{content.subject} - {content.grade} - {content.semester}"؟
+                              <br />
+                              سيتم حذف جميع الوحدات والدروس والصفحات المرتبطة به.
+                              <br />
+                              <strong>هذا الإجراء لا يمكن التراجع عنه.</strong>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="gap-2">
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteSource(content.grade, content.subject, content.semester)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              حذف
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </CardContent>
                 </Card>
