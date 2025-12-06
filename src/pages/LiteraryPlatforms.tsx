@@ -34,6 +34,17 @@ const LiteraryPlatforms = () => {
       description: t.literaryPlatforms.englishDescription,
       link: "/english-language",
       isExternal: false
+    },
+    {
+      title: "التربية الإسلامية",
+      icon: "🕌",
+      image: "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=800&auto=format&fit=crop",
+      color: "from-emerald-600/20 to-teal-600/20",
+      borderColor: "border-emerald-500/30",
+      hoverBorderColor: "hover:border-emerald-500/50",
+      description: "استكشف التاريخ الإسلامي والأحداث الهجرية وقارن بين الفترات التاريخية",
+      link: "/islamic-education",
+      isExternal: false
     }
   ];
 

@@ -39,6 +39,9 @@ import PuzzleDetails from './pages/PuzzleDetails';
 import EducationalVideos from './pages/EducationalVideos';
 import ScientificPlatforms from './pages/ScientificPlatforms';
 import LiteraryPlatforms from './pages/LiteraryPlatforms';
+import IslamicEducation from './pages/IslamicEducation';
+import HijriEventsExplorer from './pages/HijriEventsExplorer';
+import IslamicHistoricalEras from './pages/IslamicHistoricalEras';
 import BTEC from './pages/BTEC';
 import BTECInformationTechnology from './pages/BTECInformationTechnology';
 import ProgrammingSection from './components/btec/ProgrammingSection';
@@ -204,6 +207,18 @@ const router = createBrowserRouter([
       {
         path: 'literary-platforms',
         element: <PublicRoute><LiteraryPlatforms /></PublicRoute>,
+      },
+      {
+        path: 'islamic-education',
+        element: <PublicRoute><IslamicEducation /></PublicRoute>,
+      },
+      {
+        path: 'islamic-education/hijri-events',
+        element: <PublicRoute><HijriEventsExplorer /></PublicRoute>,
+      },
+      {
+        path: 'islamic-education/historical-eras',
+        element: <PublicRoute><IslamicHistoricalEras /></PublicRoute>,
       },
       {
         path: 'jordan-tawjihi',

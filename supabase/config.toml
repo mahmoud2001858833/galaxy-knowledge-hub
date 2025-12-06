@@ -134,3 +134,9 @@ verify_jwt = false
 
 [functions.process-pdf-direct]
 verify_jwt = false
+
+[functions.islamic-hijri-events]
+verify_jwt = false
+
+[functions.islamic-historical-eras]
+verify_jwt = false
