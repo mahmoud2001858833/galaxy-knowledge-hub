@@ -6,15 +6,112 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function for delays
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Upload file to Google using File API
-async function uploadToGoogleFileAPI(
-  fileUrl: string,
-  apiKey: string
-): Promise<string> {
-  console.log('Fetching file from URL...');
+// Get ALL available API keys for maximum rotation
+function getAllApiKeys(): string[] {
+  const keyNames = [
+    'JORDANIAN_NEW_AI_KEY_1',
+    'JORDANIAN_NEW_AI_KEY_2', 
+    'JORDANIAN_NEW_AI_KEY_3',
+    'JORDANIAN_NEW_AI_KEY_4',
+    'JORDANIAN_NEW_AI_KEY_5',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_1',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_2',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_3',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_4',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_5',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_6',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_7',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_8',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_9',
+    'JORDANIAN_AI_QUESTION_GEN_KEY_10',
+    'JORDANIAN_AI_SEARCH_KEY_1',
+    'JORDANIAN_AI_SEARCH_KEY_2',
+    'JORDANIAN_AI_SEARCH_KEY_3',
+    'JORDANIAN_AI_SEARCH_KEY_4',
+    'JORDANIAN_AI_SEARCH_KEY_5',
+    'JORDANIAN_AI_ANSWER_KEY_1',
+    'JORDANIAN_AI_ANSWER_KEY_2',
+    'JORDANIAN_AI_ANSWER_KEY_3',
+    'GOOGLE_AI_API_KEY',
+    'JORDANIAN_ASSISTANT_AI_KEY',
+    'PLATFORM_BUILDER_AI_KEY',
+    'JORDANIAN_AI_IMAGE_KEY',
+  ];
+  
+  return keyNames.map(name => Deno.env.get(name)).filter(Boolean) as string[];
+}
+
+// Smart API call with automatic key rotation on rate limit
+async function callGeminiWithRetry(
+  endpoint: string,
+  body: any,
+  apiKeys: string[],
+  startKeyIndex: number = 0,
+  maxRetries: number = 5
+): Promise<{ data: any; usedKeyIndex: number }> {
+  let keyIndex = startKeyIndex;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const apiKey = apiKeys[keyIndex % apiKeys.length];
+    
+    try {
+      console.log(`Attempt ${attempt + 1}/${maxRetries} using key ${(keyIndex % apiKeys.length) + 1}/${apiKeys.length}`);
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return { data, usedKeyIndex: keyIndex };
+      }
+
+      const errorText = await response.text();
+      console.log(`API response ${response.status}: ${errorText.substring(0, 200)}`);
+
+      // Rate limit - switch key immediately
+      if (response.status === 429) {
+        console.log(`Rate limit hit, switching to next key...`);
+        keyIndex = (keyIndex + 1) % apiKeys.length;
+        
+        // Wait before retrying with new key
+        const waitTime = 5000 + (attempt * 5000); // 5s, 10s, 15s...
+        console.log(`Waiting ${waitTime/1000}s before retry...`);
+        await delay(waitTime);
+        continue;
+      }
+
+      // Other errors - try next key
+      if (response.status >= 500 || response.status === 400) {
+        keyIndex = (keyIndex + 1) % apiKeys.length;
+        await delay(2000);
+        continue;
+      }
+
+      throw new Error(`API error: ${response.status} - ${errorText}`);
+      
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      keyIndex = (keyIndex + 1) % apiKeys.length;
+      await delay(3000);
+    }
+  }
+
+  throw lastError || new Error('All API attempts failed');
+}
+
+// Upload file to Google File API
+async function uploadToGoogleFileAPI(fileUrl: string, apiKey: string): Promise<string> {
+  console.log('Downloading file from URL...');
   
   const fileResponse = await fetch(fileUrl);
   if (!fileResponse.ok) {
@@ -70,254 +167,124 @@ async function uploadToGoogleFileAPI(
   }
 
   const fileData = await uploadResponse.json();
-  console.log('File uploaded, URI:', fileData.file?.uri);
+  console.log('File uploaded to Google, URI:', fileData.file?.uri);
   return fileData.file?.uri || '';
 }
 
-// المرحلة 1: استخراج هيكل الكتاب الكامل
-async function extractBookStructure(
+// Simplified single-pass extraction for entire book
+async function extractAllContent(
   fileUri: string,
-  apiKey: string
-): Promise<{ totalUnits: number; units: Array<{ number: number; name: string; startPage: number; endPage: number }> }> {
-  console.log('Phase 1: Extracting complete book structure...');
+  apiKeys: string[],
+  keyIndex: number
+): Promise<{ data: any; usedKeyIndex: number }> {
+  console.log('Extracting all content in single pass...');
   
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { fileData: { mimeType: 'application/pdf', fileUri } },
-            {
-              text: `أنت خبير في تحليل الكتب المدرسية الأردنية.
+  const body = {
+    contents: [{
+      parts: [
+        { fileData: { mimeType: 'application/pdf', fileUri } },
+        {
+          text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
 
-مهمتك: اقرأ جدول المحتويات وتصفح الكتاب كاملاً لتحديد هيكله بدقة.
-
-اقرأ الكتاب من أوله لآخره واستخرج:
-1. العدد الإجمالي للوحدات في الكتاب
-2. اسم كل وحدة
-3. رقم صفحة بداية ونهاية كل وحدة
-
-أرجع النتيجة بتنسيق JSON:
-{
-  "totalUnits": 3,
-  "units": [
-    { "number": 1, "name": "اسم الوحدة الأولى", "startPage": 5, "endPage": 50 },
-    { "number": 2, "name": "اسم الوحدة الثانية", "startPage": 51, "endPage": 100 },
-    { "number": 3, "name": "اسم الوحدة الثالثة", "startPage": 101, "endPage": 150 }
-  ]
-}
-
-تعليمات مهمة:
-- احسب عدد الوحدات بدقة من جدول المحتويات
-- لا تفوت أي وحدة
-- تأكد من تضمين جميع الوحدات حتى آخر صفحة
-- أرجع JSON فقط`
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 4096,
-        }
-      })
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Structure extraction error:', errorText);
-    throw new Error(`Structure extraction failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  
-  return parseGeminiResponse(text);
-}
-
-// المرحلة 2: استخراج محتوى وحدة واحدة بالتفصيل
-async function extractUnitContent(
-  fileUri: string,
-  apiKey: string,
-  unitNumber: number,
-  unitName: string,
-  startPage: number,
-  endPage: number,
-  retryCount: number = 0
-): Promise<any> {
-  console.log(`Phase 2: Extracting Unit ${unitNumber} (${unitName}), pages ${startPage}-${endPage}`);
-  
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { fileData: { mimeType: 'application/pdf', fileUri } },
-              {
-                text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
-
-مهمتك: استخرج المحتوى الكامل للوحدة رقم ${unitNumber} فقط.
-اسم الوحدة: ${unitName}
-من صفحة ${startPage} إلى صفحة ${endPage}
-
-اقرأ كل صفحة في هذا النطاق واستخرج:
-1. جميع الدروس في هذه الوحدة
-2. محتوى كل صفحة بالكامل
-
-أرجع النتيجة بتنسيق JSON:
-{
-  "unit_number": ${unitNumber},
-  "unit_name": "${unitName}",
-  "lessons": [
-    {
-      "lesson_number": 1,
-      "lesson_name": "اسم الدرس الأول",
-      "pages": [
-        { "page_number": ${startPage}, "content": "كل النص في هذه الصفحة..." },
-        { "page_number": ${startPage + 1}, "content": "..." }
-      ]
-    }
-  ]
-}
-
-تعليمات مهمة:
-- استخرج كل كلمة من كل صفحة بدون اختصار
-- حافظ على أرقام الصفحات الحقيقية
-- اذكر جميع الدروس في هذه الوحدة
-- أرجع JSON فقط`
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 32768,
-          }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      
-      // Handle rate limit with retry
-      if (response.status === 429 && retryCount < 3) {
-        const waitTime = Math.pow(2, retryCount + 1) * 5000; // 10s, 20s, 40s
-        console.log(`Rate limited, waiting ${waitTime/1000}s before retry ${retryCount + 1}...`);
-        await delay(waitTime);
-        return extractUnitContent(fileUri, apiKey, unitNumber, unitName, startPage, endPage, retryCount + 1);
-      }
-      
-      throw new Error(`Unit extraction failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    return parseGeminiResponse(text);
-  } catch (error) {
-    if (retryCount < 3) {
-      console.log(`Error extracting unit ${unitNumber}, retrying in 10s...`);
-      await delay(10000);
-      return extractUnitContent(fileUri, apiKey, unitNumber, unitName, startPage, endPage, retryCount + 1);
-    }
-    throw error;
-  }
-}
-
-// استخراج مباشر للكتب الصغيرة باستخدام base64
-async function extractWithBase64(
-  base64Data: string,
-  apiKey: string
-): Promise<any> {
-  console.log('Extracting content from base64 with enhanced prompt...');
-  
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: 'application/pdf', data: base64Data } },
-            {
-              text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
-
-مهمتك: اقرأ هذا الكتاب كاملاً من أول صفحة لآخر صفحة واستخرج كل المحتوى.
+مهمتك: اقرأ هذا الكتاب كاملاً واستخرج كل المحتوى النصي.
 
 خطوات العمل:
-1. اقرأ جدول المحتويات لمعرفة عدد الوحدات الإجمالي
-2. اقرأ كل وحدة بالترتيب من الأولى للأخيرة
-3. داخل كل وحدة، اقرأ كل درس
-4. استخرج محتوى كل صفحة بالكامل
+1. اقرأ جدول المحتويات لمعرفة هيكل الكتاب
+2. استخرج كل وحدة بالترتيب
+3. داخل كل وحدة استخرج كل درس
+4. استخرج محتوى كل صفحة
 
 أرجع النتيجة بتنسيق JSON:
 {
   "content": [
     {
       "unit_number": 1,
-      "unit_name": "اسم الوحدة الأولى",
+      "unit_name": "اسم الوحدة",
       "lessons": [
         {
           "lesson_number": 1,
-          "lesson_name": "اسم الدرس الأول",
+          "lesson_name": "اسم الدرس",
           "pages": [
-            { "page_number": 1, "content": "كل محتوى الصفحة هنا..." }
+            { "page_number": 1, "content": "النص الكامل للصفحة" }
           ]
         }
       ]
-    },
-    {
-      "unit_number": 2,
-      "unit_name": "اسم الوحدة الثانية",
-      "lessons": [...]
-    },
-    {
-      "unit_number": 3,
-      "unit_name": "اسم الوحدة الثالثة",
-      "lessons": [...]
     }
   ]
 }
 
-تعليمات حاسمة:
-1. استخرج جميع الوحدات (قد يكون 2 أو 3 أو 4 أو أكثر)
-2. لا تتوقف عند الوحدة الأولى - أكمل حتى آخر وحدة
-3. استخرج كل النص من كل صفحة بدون اختصار
-4. أرجع JSON فقط`
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 65536,
+تعليمات مهمة:
+- استخرج جميع الوحدات بدون استثناء
+- استخرج كل النص من كل صفحة
+- حافظ على أرقام الصفحات الحقيقية
+- أرجع JSON فقط بدون أي نص إضافي`
         }
-      })
+      ]
+    }],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 65536,
     }
-  );
+  };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Extraction error:', errorText);
-    throw new Error(`Extraction failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  
-  return parseGeminiResponse(text);
+  return callGeminiWithRetry('generateContent', body, apiKeys, keyIndex);
 }
 
-function parseGeminiResponse(text: string): any {
+// Extract with base64 for small files
+async function extractWithBase64(
+  base64Data: string,
+  apiKeys: string[],
+  keyIndex: number
+): Promise<{ data: any; usedKeyIndex: number }> {
+  console.log('Extracting from base64 data...');
+  
+  const body = {
+    contents: [{
+      parts: [
+        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
+        {
+          text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
+
+مهمتك: اقرأ هذا الكتاب كاملاً واستخرج كل المحتوى النصي.
+
+أرجع النتيجة بتنسيق JSON:
+{
+  "content": [
+    {
+      "unit_number": 1,
+      "unit_name": "اسم الوحدة",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "lesson_name": "اسم الدرس",
+          "pages": [
+            { "page_number": 1, "content": "النص الكامل للصفحة" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+تعليمات: استخرج جميع الوحدات والدروس والصفحات. أرجع JSON فقط.`
+        }
+      ]
+    }],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 65536,
+    }
+  };
+
+  return callGeminiWithRetry('generateContent', body, apiKeys, keyIndex);
+}
+
+function parseGeminiResponse(data: any): any {
   try {
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let jsonStr = text;
+    
+    // Extract JSON from markdown code blocks
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) jsonStr = jsonMatch[1];
     
@@ -328,7 +295,7 @@ function parseGeminiResponse(text: string): any {
     return { rawText: text };
   } catch (e) {
     console.error('JSON parse error:', e);
-    return { rawText: text };
+    return { rawText: data.candidates?.[0]?.content?.parts?.[0]?.text || '' };
   }
 }
 
@@ -341,122 +308,54 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
     
-    console.log('Processing PDF:', { bookName, grade, subject, semester, fileSizeMB, hasBase64: !!pdfBase64, hasUrl: !!pdfUrl });
+    console.log('=== Processing PDF ===');
+    console.log('Book:', bookName);
+    console.log('Grade:', grade, 'Subject:', subject, 'Semester:', semester);
+    console.log('File size:', fileSizeMB, 'MB');
+    console.log('Has URL:', !!pdfUrl, 'Has Base64:', !!pdfBase64);
 
     if ((!pdfBase64 && !pdfUrl) || !grade || !subject || !semester) {
       throw new Error('Missing required parameters');
+    }
+
+    // Get all API keys
+    const apiKeys = getAllApiKeys();
+    console.log(`Loaded ${apiKeys.length} API keys for rotation`);
+    
+    if (apiKeys.length === 0) {
+      throw new Error('No Google API Keys configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get API keys - use multiple keys for better rate limit handling
-    const apiKeys = [
-      Deno.env.get('JORDANIAN_NEW_AI_KEY_1'),
-      Deno.env.get('JORDANIAN_NEW_AI_KEY_2'),
-      Deno.env.get('JORDANIAN_NEW_AI_KEY_3'),
-      Deno.env.get('JORDANIAN_NEW_AI_KEY_4'),
-      Deno.env.get('JORDANIAN_NEW_AI_KEY_5'),
-      Deno.env.get('GOOGLE_AI_API_KEY'),
-      Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY'),
-    ].filter(Boolean) as string[];
-    
-    if (apiKeys.length === 0) {
-      throw new Error('No Google API Keys configured');
-    }
-    
-    const primaryKey = apiKeys[0];
-    console.log(`Using ${apiKeys.length} API keys for rotation`);
-    
     let extractedData: any = null;
     let fileUri = '';
+    let currentKeyIndex = 0;
 
-    // For large files: use multi-phase extraction with API key rotation
     if (pdfUrl) {
-      console.log('Processing large file via multi-phase extraction...');
+      // Large file: Upload to Google then extract
+      console.log('=== Phase 1: Uploading to Google ===');
+      fileUri = await uploadToGoogleFileAPI(pdfUrl, apiKeys[0]);
       
-      // Upload to Google
-      fileUri = await uploadToGoogleFileAPI(pdfUrl, primaryKey);
-      console.log('File uploaded, waiting for processing...');
-      await delay(3000); // Wait for file to be processed
+      console.log('Waiting for Google to process file...');
+      await delay(5000);
       
-      // Phase 1: Get book structure
-      const structure = await extractBookStructure(fileUri, primaryKey);
-      console.log('Book structure:', JSON.stringify(structure, null, 2));
-      
-      if (!structure.units || structure.units.length === 0) {
-        throw new Error('لم يتم العثور على وحدات في الكتاب');
-      }
-      
-      console.log(`Found ${structure.units.length} units (total expected: ${structure.totalUnits || structure.units.length})`);
-      
-      // Phase 2: Extract content for each unit with delays and key rotation
-      const allUnits: any[] = [];
-      
-      for (let i = 0; i < structure.units.length; i++) {
-        const unit = structure.units[i];
-        const apiKey = apiKeys[i % apiKeys.length]; // Rotate keys
-        
-        console.log(`Extracting unit ${unit.number} using key ${(i % apiKeys.length) + 1}...`);
-        
-        try {
-          // Wait between units to avoid rate limits
-          if (i > 0) {
-            const waitTime = 5000 + (i * 2000); // 5s + 2s per unit
-            console.log(`Waiting ${waitTime/1000}s before next unit...`);
-            await delay(waitTime);
-          }
-          
-          const unitContent = await extractUnitContent(
-            fileUri, 
-            apiKey, 
-            unit.number, 
-            unit.name,
-            unit.startPage || 1,
-            unit.endPage || 100
-          );
-          
-          if (unitContent && !unitContent.rawText) {
-            allUnits.push(unitContent);
-            console.log(`✓ Unit ${unit.number} extracted successfully`);
-          } else {
-            console.log(`⚠ Unit ${unit.number} returned raw text, adding as fallback`);
-            allUnits.push({
-              unit_number: unit.number,
-              unit_name: unit.name,
-              lessons: [{
-                lesson_number: 1,
-                lesson_name: 'الدرس الأول',
-                pages: [{ page_number: unit.startPage || 1, content: unitContent?.rawText || '' }]
-              }]
-            });
-          }
-        } catch (error) {
-          console.error(`Error extracting unit ${unit.number}:`, error);
-          // Add placeholder for failed unit
-          allUnits.push({
-            unit_number: unit.number,
-            unit_name: unit.name,
-            lessons: [{
-              lesson_number: 1,
-              lesson_name: 'فشل استخراج هذه الوحدة',
-              pages: [{ page_number: unit.startPage || 1, content: 'حدث خطأ أثناء استخراج هذه الوحدة. يرجى المحاولة مرة أخرى.' }]
-            }]
-          });
-        }
-      }
-      
-      extractedData = { content: allUnits };
-      console.log(`Extracted ${allUnits.length} units total`);
+      console.log('=== Phase 2: Extracting Content ===');
+      const result = await extractAllContent(fileUri, apiKeys, currentKeyIndex);
+      extractedData = parseGeminiResponse(result.data);
+      currentKeyIndex = result.usedKeyIndex;
       
     } else if (pdfBase64) {
-      // For small files: direct extraction
-      console.log('Processing small file directly with enhanced prompt...');
-      extractedData = await extractWithBase64(pdfBase64, primaryKey);
+      // Small file: Direct extraction
+      console.log('=== Extracting from Base64 ===');
+      const result = await extractWithBase64(pdfBase64, apiKeys, currentKeyIndex);
+      extractedData = parseGeminiResponse(result.data);
+      currentKeyIndex = result.usedKeyIndex;
     }
-    
-    console.log('Extraction completed');
+
+    console.log('=== Extraction Complete ===');
 
     if (!extractedData) {
       throw new Error('فشل استخراج النص من الملف');
@@ -471,7 +370,7 @@ serve(async (req) => {
       userId = user?.id;
     }
 
-    // Create book record
+    // Create book record (no file stored, only text)
     const { data: bookRecord, error: bookError } = await supabase
       .from('jordanian_textbooks')
       .insert({
@@ -479,7 +378,7 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: pdfUrl || 'processed-inline',
+        file_url: 'text-only', // We only store text, not files
         file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
@@ -534,7 +433,6 @@ serve(async (req) => {
         }
       }
     } else if (extractedData.rawText) {
-      // Fallback: save as single page
       fullText = extractedData.rawText;
       records.push({
         grade,
@@ -564,6 +462,8 @@ serve(async (req) => {
       
       if (insertError) {
         console.error('Batch insert error:', insertError);
+      } else {
+        console.log(`Inserted batch ${Math.floor(i/BATCH_SIZE) + 1}`);
       }
     }
 
@@ -576,11 +476,12 @@ serve(async (req) => {
       })
       .eq('id', bookRecord.id);
 
-    console.log(`Success: ${unitsSet.size} units, ${lessonsSet.size} lessons, ${totalPages} pages`);
+    console.log(`=== SUCCESS ===`);
+    console.log(`Units: ${unitsSet.size}, Lessons: ${lessonsSet.size}, Pages: ${totalPages}`);
 
     return new Response(JSON.stringify({
       success: true,
-      message: `تم استخراج ${unitsSet.size} وحدات و ${lessonsSet.size} دروس و ${totalPages} صفحة`,
+      message: `تم استخراج ${unitsSet.size} وحدات و ${lessonsSet.size} دروس و ${totalPages} صفحة بنجاح`,
       recordsCount: records.length,
       extractedText: fullText.substring(0, 500),
       stats: {
@@ -593,10 +494,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('=== ERROR ===', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Unknown error'
+      error: error.message || 'حدث خطأ غير متوقع'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
