@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { BuilderChat } from "@/components/platformBuilder/BuilderChat";
 import { BuilderPreview } from "@/components/platformBuilder/BuilderPreview";
 import { BuilderCodeView } from "@/components/platformBuilder/BuilderCodeView";
@@ -12,10 +12,11 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Monitor, Code, FolderTree, Terminal } from "lucide-react";
+import { Monitor, Code, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StarField from "@/components/StarField";
+import { Button } from "@/components/ui/button";
 
 interface ProjectFile {
   id: string;
@@ -56,6 +57,7 @@ interface Project {
 
 export default function AIPlatformBuilder() {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -63,14 +65,50 @@ export default function AIPlatformBuilder() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'code'>('preview');
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+
+  // Check supervisor access
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setIsAuthorized(false);
+          setCheckingAccess(false);
+          return;
+        }
+
+        // Check if user has admin/supervisor access
+        const { data: accessLevel } = await supabase.rpc('get_admin_teacher_access_level', {
+          user_uuid: user.id
+        });
+
+        const authorized = accessLevel === 'admin' || accessLevel === 'super_admin';
+        setIsAuthorized(authorized);
+        
+        if (!authorized) {
+          toast.error("هذه الصفحة متاحة للمشرفين فقط");
+        }
+      } catch (error) {
+        console.error('Error checking access:', error);
+        setIsAuthorized(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, []);
 
   useEffect(() => {
-    if (projectId) {
+    if (projectId && isAuthorized) {
       loadProject();
       loadFiles();
       loadConversations();
     }
-  }, [projectId]);
+  }, [projectId, isAuthorized]);
 
   useEffect(() => {
     if (files.length > 0 && !selectedFile) {
@@ -347,6 +385,37 @@ export default function AIPlatformBuilder() {
       toast.error("فشل حفظ إعدادات Supabase");
     }
   };
+
+  // Check access first
+  if (checkingAccess) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">جاري التحقق من الصلاحيات...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthorized access
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+        <StarField />
+        <div className="flex flex-col items-center gap-6 text-center z-10 p-8 rounded-2xl bg-card/50 backdrop-blur-lg border border-border">
+          <ShieldAlert className="w-20 h-20 text-destructive" />
+          <h1 className="text-2xl font-bold text-white">غير مصرح بالدخول</h1>
+          <p className="text-muted-foreground max-w-md">
+            هذه الصفحة متاحة للمشرفين فقط. إذا كنت تعتقد أن هذا خطأ، يرجى التواصل مع المسؤول.
+          </p>
+          <Button onClick={() => navigate('/')} variant="default" className="mt-4">
+            العودة للرئيسية
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!projectId) {
     return <ProjectsList />;

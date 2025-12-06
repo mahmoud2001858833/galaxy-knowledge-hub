@@ -14,26 +14,39 @@ serve(async (req) => {
   try {
     const { bookId, fileUrl, grade, subject, semester } = await req.json();
 
+    console.log('=== PDF Extraction Started ===');
+    console.log('Input:', { bookId, fileUrl, grade, subject, semester });
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const geminiApiKey = Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1')!;
+    
+    // Use Google Gemini API key
+    const geminiApiKey = Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1');
+    
+    if (!geminiApiKey) {
+      console.error('JORDANIAN_AI_SEARCH_KEY_1 not configured');
+      throw new Error('مفتاح API غير مُعد. يرجى التواصل مع المسؤول.');
+    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Processing PDF:', { bookId, fileUrl, grade, subject, semester });
-
     // Download PDF file
+    console.log('Downloading PDF from:', fileUrl);
     const pdfResponse = await fetch(fileUrl);
+    
     if (!pdfResponse.ok) {
-      throw new Error('Failed to download PDF');
+      console.error('PDF download failed:', pdfResponse.status, pdfResponse.statusText);
+      throw new Error(`فشل تحميل ملف PDF: ${pdfResponse.status}`);
     }
 
     const pdfBuffer = await pdfResponse.arrayBuffer();
     const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+    
+    console.log('PDF downloaded successfully, size:', pdfBuffer.byteLength, 'bytes');
 
-    console.log('PDF downloaded, size:', pdfBuffer.byteLength);
-
-    // Use Gemini to extract and structure content
+    // Use Google Gemini to extract and structure content
+    console.log('Sending to Gemini for extraction...');
+    
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
       {
@@ -52,7 +65,7 @@ serve(async (req) => {
                 text: `أنت خبير في تحليل الكتب المدرسية الأردنية. قم بتحليل هذا الكتاب واستخراج محتواه بشكل منظم.
 
 المطلوب:
-1. استخرج كل النص من الكتاب
+1. استخرج كل النص من الكتاب بدقة عالية
 2. حدد الوحدات (Units) وأرقامها وأسماءها
 3. حدد الدروس (Lessons) داخل كل وحدة
 4. قسم المحتوى إلى صفحات منطقية
@@ -83,8 +96,8 @@ serve(async (req) => {
 مهم جداً:
 - استخرج كل المحتوى النصي بدقة
 - حافظ على التنظيم الأصلي للكتاب
-- إذا لم تتمكن من تحديد الوحدات/الدروس، ضع المحتوى في وحدة واحدة ودرس واحد
-- أعد JSON صالح فقط بدون أي نص إضافي`
+- إذا لم تتمكن من تحديد الوحدات/الدروس بوضوح، قسم المحتوى حسب العناوين الموجودة
+- أعد JSON صالح فقط بدون أي نص إضافي أو markdown`
               }
             ]
           }],
@@ -98,8 +111,8 @@ serve(async (req) => {
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error('Failed to extract content from PDF');
+      console.error('Gemini API error:', geminiResponse.status, errorText);
+      throw new Error(`فشل استخراج المحتوى من PDF: ${geminiResponse.status}`);
     }
 
     const geminiData = await geminiResponse.json();
@@ -107,14 +120,20 @@ serve(async (req) => {
     
     console.log('Gemini response received, length:', extractedContent.length);
 
-    // Try to parse JSON from response
+    if (!extractedContent || extractedContent.length < 50) {
+      console.error('Empty or too short response from Gemini');
+      throw new Error('لم يتم استخراج محتوى كافٍ من الملف');
+    }
+
+    // Parse JSON from response
     let structuredContent;
     try {
       // Clean the response - remove markdown code blocks if present
       extractedContent = extractedContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       structuredContent = JSON.parse(extractedContent);
+      console.log('JSON parsed successfully');
     } catch (parseError) {
-      console.log('Could not parse JSON, using raw text');
+      console.log('Could not parse JSON, creating simple structure');
       // If JSON parsing fails, create a simple structure
       structuredContent = {
         units: [{
@@ -154,6 +173,19 @@ serve(async (req) => {
                   page_content: page.content || ''
                 });
               }
+            } else {
+              // No pages defined, create one from lesson content
+              contentRecords.push({
+                grade,
+                subject,
+                semester,
+                unit_number: unit.unit_number || 1,
+                unit_name: unit.unit_name || 'وحدة غير محددة',
+                lesson_number: lesson.lesson_number || 1,
+                lesson_name: lesson.lesson_name || 'درس غير محدد',
+                page_number: 1,
+                page_content: lesson.content || ''
+              });
             }
           }
         }
@@ -175,7 +207,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Saving', contentRecords.length, 'content records');
+    console.log('Saving', contentRecords.length, 'content records to database');
 
     // Insert content records
     if (contentRecords.length > 0) {
@@ -184,33 +216,48 @@ serve(async (req) => {
         .insert(contentRecords);
 
       if (insertError) {
-        console.error('Insert error:', insertError);
-        throw new Error('Failed to save content');
+        console.error('Database insert error:', insertError);
+        throw new Error(`فشل حفظ المحتوى: ${insertError.message}`);
       }
+      console.log('Content records saved successfully');
     }
 
     // Update book record with extracted text
-    await supabase
+    const fullText = structuredContent.full_text?.substring(0, 50000) || extractedContent.substring(0, 50000);
+    const { error: updateError } = await supabase
       .from('jordanian_textbooks')
       .update({
-        extracted_text: structuredContent.full_text?.substring(0, 50000) || extractedContent.substring(0, 50000),
+        extracted_text: fullText,
         page_count: contentRecords.length
       })
       .eq('id', bookId);
 
+    if (updateError) {
+      console.error('Book update error:', updateError);
+    }
+
+    console.log('=== PDF Extraction Completed Successfully ===');
+
     return new Response(
       JSON.stringify({
         success: true,
-        extractedText: structuredContent.full_text || extractedContent,
-        recordsCount: contentRecords.length
+        extractedText: fullText,
+        recordsCount: contentRecords.length,
+        units: structuredContent.units?.length || 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error processing PDF:', error);
+    console.error('=== PDF Extraction Error ===');
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'حدث خطأ غير متوقع',
+        details: error.stack
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
