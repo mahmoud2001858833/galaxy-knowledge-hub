@@ -140,3 +140,6 @@ verify_jwt = false
 
 [functions.islamic-historical-eras]
 verify_jwt = false
+
+[functions.math-ai-assistant]
+verify_jwt = false

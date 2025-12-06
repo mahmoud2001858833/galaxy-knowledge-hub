@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
-import Calculator3D from '@/components/mathematics/Calculator';
+import HandheldCalculator from '@/components/mathematics/HandheldCalculator';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const CalculatorPage = () => {
@@ -50,7 +50,7 @@ const CalculatorPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-glow-sm shadow-purple-500/10"
         >
-          <Calculator3D />
+          <HandheldCalculator />
         </motion.div>
       </main>
       
