@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.math-ai-assistant]
 verify_jwt = false
+
+[functions.eco-predict-ai]
+verify_jwt = false

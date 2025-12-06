@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calculator, School, Home, Leaf, BarChart, Users, Recycle } from 'lucide-react';
+import { ArrowLeft, Calculator, School, Home, Leaf, BarChart, Users, Recycle, Brain } from 'lucide-react';
 import sustainabilityBg from '@/assets/sustainability-background.png';
 import heroImage from '@/assets/environmental-hero.jpg';
 
@@ -66,6 +66,15 @@ const EnvironmentalSustainability = () => {
       borderColor: "border-cyan-500/30",
       hoverBorderColor: "hover:border-cyan-500/50",
       link: "/environmental/recycling-advisor"
+    },
+    {
+      title: 'أداة التنبؤ البيئي الذكية',
+      description: 'تحليل بياناتك البيئية وتوقع البصمة الكربونية المستقبلية باستخدام الذكاء الاصطناعي',
+      icon: Brain,
+      color: "from-indigo-600/20 to-purple-600/20",
+      borderColor: "border-indigo-500/30",
+      hoverBorderColor: "hover:border-indigo-500/50",
+      link: "/environmental/eco-predict"
     }
   ];
 
