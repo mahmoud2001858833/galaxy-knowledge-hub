@@ -248,13 +248,13 @@ export default function UploadedSourcesTab() {
       setUploadProgress(50);
       setUploadStatus('extracting');
 
-      // Step 5: Extract text using Gemini
+      // Step 5: Extract text using Service Account
       toast({
         title: "جاري استخراج النص",
         description: "يتم تحليل الكتاب بالذكاء الاصطناعي... قد تستغرق هذه العملية بضع دقائق"
       });
 
-      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-pdf-content', {
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-with-service-account', {
         body: {
           bookId: bookRecord.id,
           fileUrl: urlData.publicUrl,
