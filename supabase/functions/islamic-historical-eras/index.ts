@@ -5,8 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// API key is fetched directly in the function to ensure fresh value
-
 const eraNames: Record<string, string> = {
   'pre-prophethood': 'قبل البعثة (الجاهلية)',
   'post-prophethood-pre-hijra': 'بعد البعثة - قبل الهجرة',
@@ -15,35 +13,34 @@ const eraNames: Record<string, string> = {
   'modern': 'العصر الحديث'
 };
 
-async function callGeminiAPI(prompt: string): Promise<string> {
-  const apiKey = Deno.env.get('ISLAMIC_ERAS_AI_KEY');
-  if (!apiKey) {
-    throw new Error('ISLAMIC_ERAS_AI_KEY not configured');
+async function callLovableAI(prompt: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY not configured');
   }
-  
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        }
-      })
-    }
-  );
+
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Gemini API error:', response.status, errorText);
+    console.error('Lovable AI error:', response.status, errorText);
     throw new Error(`API error: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 serve(async (req) => {
@@ -89,7 +86,7 @@ serve(async (req) => {
   }
 }`;
 
-      const result = await callGeminiAPI(prompt);
+      const result = await callLovableAI(prompt);
       
       let era = null;
       try {
@@ -164,7 +161,7 @@ serve(async (req) => {
   }
 }`;
 
-      const result = await callGeminiAPI(prompt);
+      const result = await callLovableAI(prompt);
       
       let comparison = null;
       try {
