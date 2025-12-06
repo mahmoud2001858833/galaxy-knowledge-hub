@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calculator, School, Home, Leaf, BarChart, Users } from 'lucide-react';
+import { ArrowLeft, Calculator, School, Home, Leaf, BarChart, Users, Recycle } from 'lucide-react';
 import sustainabilityBg from '@/assets/sustainability-background.png';
 import heroImage from '@/assets/environmental-hero.jpg';
 
@@ -57,6 +57,15 @@ const EnvironmentalSustainability = () => {
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
       link: "/environmental/student-projects"
+    },
+    {
+      title: 'خبير إعادة التدوير الذكي',
+      description: 'حوّل نفاياتك إلى مشاريع إبداعية مع الذكاء الاصطناعي',
+      icon: Recycle,
+      color: "from-cyan-600/20 to-teal-600/20",
+      borderColor: "border-cyan-500/30",
+      hoverBorderColor: "hover:border-cyan-500/50",
+      link: "/environmental/recycling-advisor"
     }
   ];
 

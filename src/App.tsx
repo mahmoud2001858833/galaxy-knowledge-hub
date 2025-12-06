@@ -69,6 +69,7 @@ import HomeProjects from './pages/HomeProjects';
 import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
 import PsychologicalGuide from './pages/PsychologicalGuide';
 import StudentProjects from './components/environmental/StudentProjects';
+import RecyclingProjectAdvisor from './pages/RecyclingProjectAdvisor';
 import RecordedLessons from './components/educational/RecordedLessons';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
@@ -459,6 +460,10 @@ const router = createBrowserRouter([
       {
         path: 'environmental/student-projects',
         element: <AuthGuard><StudentProjects /></AuthGuard>,
+      },
+      {
+        path: 'environmental/recycling-advisor',
+        element: <AuthGuard><RecyclingProjectAdvisor /></AuthGuard>,
       },
       {
         path: 'recorded-lessons',

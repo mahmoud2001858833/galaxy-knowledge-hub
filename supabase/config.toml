@@ -125,3 +125,6 @@ verify_jwt = false
 
 [functions.process-pdf-with-service-account]
 verify_jwt = false
+
+[functions.recycling-project-advisor]
+verify_jwt = false
