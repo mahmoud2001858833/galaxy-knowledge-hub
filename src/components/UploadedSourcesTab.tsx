@@ -163,47 +163,97 @@ export default function UploadedSourcesTab() {
       return;
     }
 
+    // Check file size
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (selectedFile.size > maxSize) {
+      toast({
+        title: "خطأ",
+        description: "حجم الملف كبير جداً. الحد الأقصى هو 20 ميجابايت",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsUploading(true);
     setUploadStatus('uploading');
-    setUploadProgress(10);
+    setUploadProgress(5);
 
     try {
-      // Step 1: Upload PDF to Supabase Storage
-      const fileName = `${Date.now()}-${selectedFile.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('jordanian-textbooks')
-        .upload(fileName, selectedFile);
+      // Step 1: Get user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
 
-      if (uploadError) throw uploadError;
+      setUploadProgress(10);
+
+      // Step 2: Upload PDF to Supabase Storage
+      const timestamp = Date.now();
+      const cleanFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${user.id}/${timestamp}-${cleanFileName}`;
+      
+      console.log('Uploading file:', fileName, 'Size:', selectedFile.size);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('jordanian-textbooks')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`فشل رفع الملف: ${uploadError.message}`);
+      }
+      
+      console.log('File uploaded successfully:', uploadData);
       setUploadProgress(30);
       setUploadStatus('processing');
 
-      // Step 2: Get public URL
+      // Step 3: Get public URL
       const { data: urlData } = supabase.storage
         .from('jordanian-textbooks')
         .getPublicUrl(fileName);
 
-      // Step 3: Save book record
-      const { data: { user } } = await supabase.auth.getUser();
+      if (!urlData?.publicUrl) {
+        throw new Error('فشل الحصول على رابط الملف');
+      }
+
+      console.log('Public URL:', urlData.publicUrl);
+
+      // Step 4: Save book record
+      const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
       
       const { data: bookRecord, error: bookError } = await supabase
         .from('jordanian_textbooks')
         .insert({
-          book_name: selectedFile.name.replace('.pdf', ''),
+          book_name: bookName,
           grade: formData.grade,
           subject: formData.subject,
           semester: formData.semester,
           file_url: urlData.publicUrl,
-          created_by: user?.id
+          file_size_mb: selectedFile.size / 1024 / 1024,
+          created_by: user.id,
+          is_active: false
         })
         .select()
         .single();
 
-      if (bookError) throw bookError;
+      if (bookError) {
+        console.error('Database insert error:', bookError);
+        throw new Error(`فشل حفظ بيانات الكتاب: ${bookError.message}`);
+      }
+      
+      console.log('Book record created:', bookRecord.id);
       setUploadProgress(50);
       setUploadStatus('extracting');
 
-      // Step 4: Extract text using Gemini
+      // Step 5: Extract text using Gemini
+      toast({
+        title: "جاري استخراج النص",
+        description: "يتم تحليل الكتاب بالذكاء الاصطناعي... قد تستغرق هذه العملية بضع دقائق"
+      });
+
       const { data: extractData, error: extractError } = await supabase.functions.invoke('extract-pdf-content', {
         body: {
           bookId: bookRecord.id,
@@ -214,7 +264,17 @@ export default function UploadedSourcesTab() {
         }
       });
 
-      if (extractError) throw extractError;
+      console.log('Extract response:', extractData, extractError);
+
+      if (extractError) {
+        console.error('Extract function error:', extractError);
+        throw new Error(extractError.message || 'فشل استخراج النص من الملف');
+      }
+
+      if (extractData?.error) {
+        console.error('Extract data error:', extractData.error);
+        throw new Error(extractData.error);
+      }
       
       setUploadProgress(90);
       setUploadStatus('saving');
@@ -227,8 +287,8 @@ export default function UploadedSourcesTab() {
       setUploadStatus('success');
 
       toast({
-        title: "تم بنجاح",
-        description: `تم رفع الكتاب واستخراج ${extractData?.recordsCount || 0} صفحة`
+        title: "تم بنجاح!",
+        description: extractData?.message || `تم رفع الكتاب واستخراج ${extractData?.recordsCount || 0} صفحة`
       });
 
       // Reset after delay
@@ -238,15 +298,16 @@ export default function UploadedSourcesTab() {
         setExtractedPreview('');
         setUploadStatus('idle');
         setUploadProgress(0);
+        setIsUploadOpen(false);
         loadContent();
-      }, 2000);
+      }, 3000);
 
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error('Upload process error:', error);
       setUploadStatus('error');
       toast({
-        title: "خطأ",
-        description: error.message || "فشل في رفع الملف",
+        title: "حدث خطأ",
+        description: error.message || "فشل في رفع ومعالجة الملف",
         variant: "destructive"
       });
     } finally {
