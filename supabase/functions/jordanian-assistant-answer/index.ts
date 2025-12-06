@@ -6,16 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Try multiple API keys
-const getApiKey = () => {
-  const keys = [
-    Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY'),
-    Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1'),
-    Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1'),
-    Deno.env.get('GOOGLE_AI_API_KEY'),
-  ].filter(Boolean);
-  return keys[0] || null;
-};
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -24,7 +15,7 @@ serve(async (req) => {
 
   try {
     const { question, studentName, grade, image } = await req.json();
-    console.log('Processing question:', { question, studentName, grade, hasImage: !!image });
+    console.log('🎓 Processing question:', { question, studentName, grade, hasImage: !!image });
 
     if (!question) {
       return new Response(
@@ -33,9 +24,8 @@ serve(async (req) => {
       );
     }
 
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      console.error('No API key configured');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({ answer: null, sources: [], error: 'إعدادات الذكاء الاصطناعي غير مكتملة' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -47,7 +37,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get ALL textbook content
-    console.log('Fetching textbook content...');
+    console.log('📚 Fetching textbook content...');
     const { data: contentPages, error: contentError } = await supabase
       .from('jordanian_textbook_content')
       .select('*')
@@ -74,7 +64,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${contentPages.length} pages across all grades`);
+    console.log(`📖 Found ${contentPages.length} pages across all grades`);
 
     // Build context with clear source markers
     const booksContext = contentPages
@@ -121,43 +111,68 @@ ${booksContext}
 
 طالب الصف ${grade} يسأل: ابحث في كل الكتب للإجابة`;
 
-    console.log('Calling Gemini API...');
+    console.log('🤖 Calling Lovable AI Gateway...');
 
-    let contentParts: any[] = [{ text: `${systemPrompt}\n\nالسؤال: ${question}` }];
-    
+    // Prepare messages for Lovable AI
+    const messages: any[] = [
+      { role: 'system', content: systemPrompt },
+    ];
+
     if (image) {
-      const base64Content = image.split(',')[1];
-      const mimeType = image.split(';')[0].split(':')[1] || 'image/jpeg';
-      contentParts = [
-        { text: systemPrompt },
-        { inlineData: { mimeType, data: base64Content } },
-        { text: `السؤال: ${question}` }
-      ];
+      const base64Content = image.split(',')[1] || image;
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: `السؤال: ${question}` },
+          { 
+            type: 'image_url',
+            image_url: { url: `data:image/jpeg;base64,${base64Content}` }
+          }
+        ]
+      });
+    } else {
+      messages.push({ role: 'user', content: `السؤال: ${question}` });
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: contentParts }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 8000 },
-        }),
-      }
-    );
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages,
+        temperature: 0.3,
+        max_tokens: 8000,
+      }),
+    });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini error:', geminiResponse.status, errorText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ answer: null, sources: [], error: 'تم تجاوز الحد المسموح، يرجى المحاولة لاحقاً' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ answer: null, sources: [], error: 'يرجى إضافة رصيد للحساب' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ answer: null, sources: [], error: 'فشل الحصول على إجابة من الذكاء الاصطناعي' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const geminiData = await geminiResponse.json();
-    const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await response.json();
+    const answer = data.choices?.[0]?.message?.content || '';
 
     if (!answer) {
       return new Response(
@@ -166,12 +181,11 @@ ${booksContext}
       );
     }
 
-    console.log('Answer generated, length:', answer.length);
+    console.log('✅ Answer generated, length:', answer.length);
 
     // Extract sources from the answer text
     const sources: any[] = [];
     
-    // Try to extract source from the answer
     const sourceMatch = answer.match(/📚\s*المصدر[\s\S]*?(?=\n\n|$)/);
     if (sourceMatch) {
       const sourceText = sourceMatch[0];
@@ -215,7 +229,7 @@ ${booksContext}
       sources: sources,
     });
 
-    console.log('Answer saved, sources:', sources.length);
+    console.log('💾 Answer saved, sources:', sources.length);
 
     return new Response(
       JSON.stringify({ answer, sources }),
@@ -223,7 +237,7 @@ ${booksContext}
     );
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('❌ Error:', error);
     return new Response(
       JSON.stringify({ answer: null, sources: [], error: error?.message || 'حدث خطأ غير متوقع' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
