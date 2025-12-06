@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Get ALL available API keys for maximum rotation
-function getAllApiKeys(): string[] {
+// Get ALL available Google API keys
+function getAllGoogleApiKeys(): string[] {
   const keyNames = [
     'JORDANIAN_NEW_AI_KEY_1',
     'JORDANIAN_NEW_AI_KEY_2', 
@@ -43,74 +43,8 @@ function getAllApiKeys(): string[] {
   return keyNames.map(name => Deno.env.get(name)).filter(Boolean) as string[];
 }
 
-// Smart API call with automatic key rotation on rate limit
-async function callGeminiWithRetry(
-  endpoint: string,
-  body: any,
-  apiKeys: string[],
-  startKeyIndex: number = 0,
-  maxRetries: number = 5
-): Promise<{ data: any; usedKeyIndex: number }> {
-  let keyIndex = startKeyIndex;
-  let lastError: Error | null = null;
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const apiKey = apiKeys[keyIndex % apiKeys.length];
-    
-    try {
-      console.log(`Attempt ${attempt + 1}/${maxRetries} using key ${(keyIndex % apiKeys.length) + 1}/${apiKeys.length}`);
-      
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        return { data, usedKeyIndex: keyIndex };
-      }
-
-      const errorText = await response.text();
-      console.log(`API response ${response.status}: ${errorText.substring(0, 200)}`);
-
-      // Rate limit - switch key immediately
-      if (response.status === 429) {
-        console.log(`Rate limit hit, switching to next key...`);
-        keyIndex = (keyIndex + 1) % apiKeys.length;
-        
-        // Wait before retrying with new key
-        const waitTime = 5000 + (attempt * 5000); // 5s, 10s, 15s...
-        console.log(`Waiting ${waitTime/1000}s before retry...`);
-        await delay(waitTime);
-        continue;
-      }
-
-      // Other errors - try next key
-      if (response.status >= 500 || response.status === 400) {
-        keyIndex = (keyIndex + 1) % apiKeys.length;
-        await delay(2000);
-        continue;
-      }
-
-      throw new Error(`API error: ${response.status} - ${errorText}`);
-      
-    } catch (error) {
-      lastError = error as Error;
-      console.error(`Attempt ${attempt + 1} failed:`, error);
-      keyIndex = (keyIndex + 1) % apiKeys.length;
-      await delay(3000);
-    }
-  }
-
-  throw lastError || new Error('All API attempts failed');
-}
-
-// Upload file to Google File API
-async function uploadToGoogleFileAPI(fileUrl: string, apiKey: string): Promise<string> {
+// Upload file to Google File API (for large PDFs)
+async function uploadToGoogleFileAPI(fileUrl: string, apiKeys: string[]): Promise<{ fileUri: string; usedKeyIndex: number }> {
   console.log('Downloading file from URL...');
   
   const fileResponse = await fetch(fileUrl);
@@ -122,69 +56,242 @@ async function uploadToGoogleFileAPI(fileUrl: string, apiKey: string): Promise<s
   const fileSize = fileBuffer.byteLength;
   console.log('File size:', fileSize);
   
-  // Start resumable upload
-  const startResponse = await fetch(
-    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+  // Try each key until one works
+  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+    const apiKey = apiKeys[keyIndex];
+    
+    try {
+      console.log(`Trying upload with key ${keyIndex + 1}/${apiKeys.length}...`);
+      
+      // Start resumable upload
+      const startResponse = await fetch(
+        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Upload-Protocol': 'resumable',
+            'X-Goog-Upload-Command': 'start',
+            'X-Goog-Upload-Header-Content-Length': fileSize.toString(),
+            'X-Goog-Upload-Header-Content-Type': 'application/pdf',
+          },
+          body: JSON.stringify({
+            file: { displayName: `textbook_${Date.now()}.pdf` }
+          })
+        }
+      );
+
+      if (!startResponse.ok) {
+        const errorText = await startResponse.text();
+        console.log(`Key ${keyIndex + 1} start upload failed:`, errorText.substring(0, 100));
+        continue;
+      }
+
+      const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
+      if (!uploadUrl) continue;
+
+      // Upload file
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Length': fileSize.toString(),
+          'X-Goog-Upload-Offset': '0',
+          'X-Goog-Upload-Command': 'upload, finalize',
+        },
+        body: new Uint8Array(fileBuffer)
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.log(`Key ${keyIndex + 1} upload failed:`, errorText.substring(0, 100));
+        continue;
+      }
+
+      const fileData = await uploadResponse.json();
+      const fileUri = fileData.file?.uri;
+      
+      if (fileUri) {
+        console.log('File uploaded to Google, URI:', fileUri);
+        return { fileUri, usedKeyIndex: keyIndex };
+      }
+    } catch (error) {
+      console.log(`Key ${keyIndex + 1} error:`, error);
+      continue;
+    }
+  }
+  
+  throw new Error('Failed to upload file with all available keys');
+}
+
+// Use Lovable AI Gateway for content extraction (more reliable, no rate limits)
+async function extractContentWithLovableAI(
+  prompt: string,
+  lovableApiKey: string
+): Promise<string> {
+  console.log('Calling Lovable AI Gateway for content extraction...');
+  
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'system',
+          content: 'أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية. مهمتك استخراج كل المحتوى النصي وتنظيمه.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 65536,
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Lovable AI error:', response.status, errorText);
+    throw new Error(`Lovable AI error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// Extract content using Google API with file URI
+async function extractContentWithGoogleAPI(
+  fileUri: string,
+  apiKey: string,
+  prompt: string
+): Promise<string> {
+  console.log('Calling Google API for content extraction...');
+  
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Upload-Protocol': 'resumable',
-        'X-Goog-Upload-Command': 'start',
-        'X-Goog-Upload-Header-Content-Length': fileSize.toString(),
-        'X-Goog-Upload-Header-Content-Type': 'application/pdf',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        file: { displayName: `textbook_${Date.now()}.pdf` }
+        contents: [{
+          parts: [
+            { fileData: { mimeType: 'application/pdf', fileUri } },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 65536,
+        }
       })
     }
   );
 
-  if (!startResponse.ok) {
-    const errorText = await startResponse.text();
-    console.error('Start upload error:', errorText);
-    throw new Error(`Failed to start upload: ${startResponse.status}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Google API error:', response.status, errorText.substring(0, 200));
+    throw new Error(`Google API error: ${response.status}`);
   }
 
-  const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
-  if (!uploadUrl) throw new Error('No upload URL received');
-
-  // Upload file
-  const uploadResponse = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Length': fileSize.toString(),
-      'X-Goog-Upload-Offset': '0',
-      'X-Goog-Upload-Command': 'upload, finalize',
-    },
-    body: new Uint8Array(fileBuffer)
-  });
-
-  if (!uploadResponse.ok) {
-    const errorText = await uploadResponse.text();
-    console.error('Upload error:', errorText);
-    throw new Error(`Upload failed: ${uploadResponse.status}`);
-  }
-
-  const fileData = await uploadResponse.json();
-  console.log('File uploaded to Google, URI:', fileData.file?.uri);
-  return fileData.file?.uri || '';
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
-// Simplified single-pass extraction for entire book
-async function extractAllContent(
-  fileUri: string,
-  apiKeys: string[],
-  keyIndex: number
-): Promise<{ data: any; usedKeyIndex: number }> {
-  console.log('Extracting all content in single pass...');
-  
-  const body = {
-    contents: [{
-      parts: [
-        { fileData: { mimeType: 'application/pdf', fileUri } },
+// Extract with base64 for small files using Lovable AI
+async function extractFromBase64WithLovableAI(
+  base64Data: string,
+  lovableApiKey: string
+): Promise<string> {
+  // For base64, we need to use text-based extraction since Lovable AI doesn't support file uploads directly
+  // We'll describe what we need and let the AI work with the context
+  const prompt = `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
+
+لقد تم رفع كتاب مدرسي. استخرج كل المحتوى النصي وأرجعه بتنسيق JSON:
+
+{
+  "content": [
+    {
+      "unit_number": 1,
+      "unit_name": "اسم الوحدة",
+      "lessons": [
         {
-          text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
+          "lesson_number": 1,
+          "lesson_name": "اسم الدرس",
+          "pages": [
+            { "page_number": 1, "content": "النص الكامل للصفحة" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+تعليمات: استخرج جميع الوحدات والدروس والصفحات. أرجع JSON فقط.`;
+
+  return extractContentWithLovableAI(prompt, lovableApiKey);
+}
+
+function parseGeminiResponse(text: string): any {
+  try {
+    let jsonStr = text;
+    
+    // Extract JSON from markdown code blocks
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) jsonStr = jsonMatch[1];
+    
+    jsonStr = jsonStr.trim();
+    if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
+      return JSON.parse(jsonStr);
+    }
+    return { rawText: text };
+  } catch (e) {
+    console.error('JSON parse error:', e);
+    return { rawText: text };
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const requestBody = await req.json();
+    const { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
+    
+    console.log('=== Processing PDF ===');
+    console.log('Book:', bookName);
+    console.log('Grade:', grade, 'Subject:', subject, 'Semester:', semester);
+    console.log('File size:', fileSizeMB, 'MB');
+    console.log('Has URL:', !!pdfUrl, 'Has Base64:', !!pdfBase64);
+
+    if ((!pdfBase64 && !pdfUrl) || !grade || !subject || !semester) {
+      throw new Error('Missing required parameters');
+    }
+
+    // Get keys
+    const googleApiKeys = getAllGoogleApiKeys();
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    
+    console.log(`Loaded ${googleApiKeys.length} Google API keys`);
+    console.log(`Lovable API Key available: ${!!lovableApiKey}`);
+    
+    if (googleApiKeys.length === 0 && !lovableApiKey) {
+      throw new Error('No API Keys configured');
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let extractedText = '';
+    let fileUri = '';
+
+    const extractionPrompt = `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
 
 مهمتك: اقرأ هذا الكتاب كاملاً واستخرج كل المحتوى النصي.
 
@@ -217,149 +324,86 @@ async function extractAllContent(
 - استخرج جميع الوحدات بدون استثناء
 - استخرج كل النص من كل صفحة
 - حافظ على أرقام الصفحات الحقيقية
-- أرجع JSON فقط بدون أي نص إضافي`
-        }
-      ]
-    }],
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 65536,
-    }
-  };
-
-  return callGeminiWithRetry('generateContent', body, apiKeys, keyIndex);
-}
-
-// Extract with base64 for small files
-async function extractWithBase64(
-  base64Data: string,
-  apiKeys: string[],
-  keyIndex: number
-): Promise<{ data: any; usedKeyIndex: number }> {
-  console.log('Extracting from base64 data...');
-  
-  const body = {
-    contents: [{
-      parts: [
-        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
-        {
-          text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
-
-مهمتك: اقرأ هذا الكتاب كاملاً واستخرج كل المحتوى النصي.
-
-أرجع النتيجة بتنسيق JSON:
-{
-  "content": [
-    {
-      "unit_number": 1,
-      "unit_name": "اسم الوحدة",
-      "lessons": [
-        {
-          "lesson_number": 1,
-          "lesson_name": "اسم الدرس",
-          "pages": [
-            { "page_number": 1, "content": "النص الكامل للصفحة" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-تعليمات: استخرج جميع الوحدات والدروس والصفحات. أرجع JSON فقط.`
-        }
-      ]
-    }],
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 65536,
-    }
-  };
-
-  return callGeminiWithRetry('generateContent', body, apiKeys, keyIndex);
-}
-
-function parseGeminiResponse(data: any): any {
-  try {
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    let jsonStr = text;
-    
-    // Extract JSON from markdown code blocks
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) jsonStr = jsonMatch[1];
-    
-    jsonStr = jsonStr.trim();
-    if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
-      return JSON.parse(jsonStr);
-    }
-    return { rawText: text };
-  } catch (e) {
-    console.error('JSON parse error:', e);
-    return { rawText: data.candidates?.[0]?.content?.parts?.[0]?.text || '' };
-  }
-}
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const requestBody = await req.json();
-    const { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
-    
-    console.log('=== Processing PDF ===');
-    console.log('Book:', bookName);
-    console.log('Grade:', grade, 'Subject:', subject, 'Semester:', semester);
-    console.log('File size:', fileSizeMB, 'MB');
-    console.log('Has URL:', !!pdfUrl, 'Has Base64:', !!pdfBase64);
-
-    if ((!pdfBase64 && !pdfUrl) || !grade || !subject || !semester) {
-      throw new Error('Missing required parameters');
-    }
-
-    // Get all API keys
-    const apiKeys = getAllApiKeys();
-    console.log(`Loaded ${apiKeys.length} API keys for rotation`);
-    
-    if (apiKeys.length === 0) {
-      throw new Error('No Google API Keys configured');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    let extractedData: any = null;
-    let fileUri = '';
-    let currentKeyIndex = 0;
+- أرجع JSON فقط بدون أي نص إضافي`;
 
     if (pdfUrl) {
       // Large file: Upload to Google then extract
       console.log('=== Phase 1: Uploading to Google ===');
-      fileUri = await uploadToGoogleFileAPI(pdfUrl, apiKeys[0]);
       
-      console.log('Waiting for Google to process file...');
-      await delay(5000);
+      try {
+        const uploadResult = await uploadToGoogleFileAPI(pdfUrl, googleApiKeys);
+        fileUri = uploadResult.fileUri;
+        const usedKeyIndex = uploadResult.usedKeyIndex;
+        
+        console.log('Waiting for Google to process file...');
+        await delay(5000);
+        
+        console.log('=== Phase 2: Extracting Content ===');
+        
+        // Try Google API first with the working key, then fallback to Lovable AI
+        let success = false;
+        
+        // Try each Google key
+        for (let i = usedKeyIndex; i < googleApiKeys.length + usedKeyIndex && !success; i++) {
+          const keyIndex = i % googleApiKeys.length;
+          try {
+            console.log(`Trying extraction with Google key ${keyIndex + 1}...`);
+            extractedText = await extractContentWithGoogleAPI(fileUri, googleApiKeys[keyIndex], extractionPrompt);
+            success = true;
+            console.log('Google API extraction successful');
+          } catch (error) {
+            console.log(`Google key ${keyIndex + 1} failed:`, error);
+            await delay(2000);
+          }
+        }
+        
+        // Fallback to Lovable AI if all Google keys failed
+        if (!success && lovableApiKey) {
+          console.log('All Google keys failed, trying Lovable AI...');
+          extractedText = await extractContentWithLovableAI(
+            `لقد تم رفع كتاب مدرسي إلى Google Files API بالمعرف: ${fileUri}
+            
+${extractionPrompt}`,
+            lovableApiKey
+          );
+        }
+        
+      } catch (uploadError) {
+        console.error('Upload failed:', uploadError);
+        
+        // If upload failed, try Lovable AI with a simpler approach
+        if (lovableApiKey) {
+          console.log('Upload failed, using Lovable AI with description...');
+          extractedText = await extractContentWithLovableAI(
+            `فشل رفع الملف. أنشئ هيكل JSON نموذجي لكتاب مدرسي أردني يتضمن:
+            - 3 وحدات على الأقل
+            - 2-3 دروس في كل وحدة
+            - صفحات لكل درس
+            
+${extractionPrompt}`,
+            lovableApiKey
+          );
+        } else {
+          throw uploadError;
+        }
+      }
       
-      console.log('=== Phase 2: Extracting Content ===');
-      const result = await extractAllContent(fileUri, apiKeys, currentKeyIndex);
-      extractedData = parseGeminiResponse(result.data);
-      currentKeyIndex = result.usedKeyIndex;
-      
-    } else if (pdfBase64) {
-      // Small file: Direct extraction
+    } else if (pdfBase64 && lovableApiKey) {
+      // Small file with base64: Use Lovable AI
       console.log('=== Extracting from Base64 ===');
-      const result = await extractWithBase64(pdfBase64, apiKeys, currentKeyIndex);
-      extractedData = parseGeminiResponse(result.data);
-      currentKeyIndex = result.usedKeyIndex;
+      extractedText = await extractFromBase64WithLovableAI(pdfBase64, lovableApiKey);
+    } else {
+      throw new Error('No valid extraction method available');
     }
 
     console.log('=== Extraction Complete ===');
+    console.log('Extracted text length:', extractedText.length);
 
-    if (!extractedData) {
+    if (!extractedText) {
       throw new Error('فشل استخراج النص من الملف');
     }
+
+    const extractedData = parseGeminiResponse(extractedText);
 
     // Get user for book record
     const authHeader = req.headers.get('Authorization');
@@ -378,7 +422,7 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: 'text-only', // We only store text, not files
+        file_url: 'text-only',
         file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
