@@ -6,8 +6,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// استخدام مفتاح Google AI المخصص
-const GOOGLE_AI_KEY = Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY');
+// Try multiple API keys
+const getApiKey = () => {
+  const keys = [
+    Deno.env.get('JORDANIAN_ASSISTANT_AI_KEY'),
+    Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1'),
+    Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1'),
+    Deno.env.get('GOOGLE_AI_API_KEY'),
+  ].filter(Boolean);
+  
+  return keys[0] || null;
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,7 +31,7 @@ serve(async (req) => {
       contentType,
       selectedUnits,
       selectedLessons,
-      contentDescription, // صندوق الوصف الجديد
+      contentDescription,
       questionTypes, 
       questionCount 
     } = await req.json();
@@ -82,21 +91,18 @@ serve(async (req) => {
     }
 
     if (!contentPages || contentPages.length === 0) {
-      console.log('No content found for this subject/grade when generating exam:', { subject, grade });
-      const examPaper = 'لم يتوفر الكتاب';
+      console.log('No content found:', { subject, grade });
       return new Response(
-        JSON.stringify({
-          examPaper,
-          markdown: examPaper,
-        }),
+        JSON.stringify({ examPaper: 'لم يتوفر الكتاب', markdown: 'لم يتوفر الكتاب' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${contentPages.length} pages of content for ${subject} - ${grade}`);
+    console.log(`Found ${contentPages.length} pages for ${subject} - ${grade}`);
     
-    if (!GOOGLE_AI_KEY) {
-      throw new Error('JORDANIAN_ASSISTANT_AI_KEY not configured');
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      throw new Error('لم يتم تكوين مفتاح API');
     }
     
     console.log('Using Google Gemini AI for exam generation');
@@ -108,63 +114,61 @@ serve(async (req) => {
       )
       .join('\n\n---\n\n');
 
-    // إضافة وصف المحتوى إذا كان موجوداً
-    const descriptionSection = contentDescription 
-      ? `\n- وصف إضافي من المستخدم: ${contentDescription}` 
-      : '';
+    // Merge content range with description
+    const fullContentScope = contentDescription?.trim() 
+      ? `${contentRange} - ${contentDescription.trim()}`
+      : contentRange;
 
     const systemPrompt = `أنت معلم أردني متخصص في إنشاء الامتحانات للمنهاج الأردني.
 
 المعلومات:
 - المادة: ${subject}
 - الصف: ${grade}
-- نوع الأسئلة: ${questionTypes}
-- نطاق المحتوى: ${contentRange}${descriptionSection}
+- نوع الأسئلة المطلوبة: ${questionTypes}
+- نطاق المحتوى: ${fullContentScope}
 - عدد الأسئلة المطلوب: ${questionCount}
 
 محتوى الكتاب المتاح:
 ${contentContext}
 
-CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أكثر ولا أقل!
+🚨 تعليمات صارمة:
+1. يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أكثر ولا أقل!
+2. كل سؤال يجب أن يكون من المحتوى أعلاه حصراً
+3. نوّع في مستوى الصعوبة (سهل 30%، متوسط 50%، صعب 20%)
+4. نص عادي فقط - بدون ** أو ## أو أي تنسيق markdown
+5. بعد كل سؤال اكتب المصدر بالضبط: (الوحدة X: اسمها - الدرس Y: اسمه - صفحة Z)
+6. في النهاية اكتب "الإجابات النموذجية" ثم إجابة كل سؤال مع مصدرها
 
-التعليمات:
-1. اكتب ${questionCount} سؤالاً امتحانياً بناءً على المحتوى أعلاه فقط
-2. التنوع بمستوى الصعوبة (سهل، متوسط، صعب)
-3. نص عادي بدون markdown (لا ** ولا ##)
-4. بعد كل سؤال: (الوحدة X - الدرس Y - صفحة Z)
-5. في النهاية: "الإجابات النموذجية" ثم اكتب إجابة كل سؤال
+صيغة الإخراج المطلوبة:
+امتحان ${subject} - ${grade}
+${fullContentScope}
 
-صيغة الإخراج (نص عادي):
-امتحان [المادة] - [الصف]
+السؤال الأول: [نص السؤال]
+(الوحدة X: اسم الوحدة - الدرس Y: اسم الدرس - صفحة Z)
 
-1. السؤال الأول...
-(الوحدة X - الدرس Y - صفحة Z)
+السؤال الثاني: [نص السؤال]
+(الوحدة X: اسم الوحدة - الدرس Y: اسم الدرس - صفحة Z)
 
-2. السؤال الثاني...
-(الوحدة X - الدرس Y - صفحة Z)
+... وهكذا حتى السؤال رقم ${questionCount}
 
-الإجابات النموذجية
+الإجابات النموذجية:
 
-1. الإجابة الأولى...
-2. الإجابة الثانية...`;
+1. [الإجابة] - المصدر: (الوحدة X - الدرس Y - صفحة Z)
+2. [الإجابة] - المصدر: (الوحدة X - الدرس Y - صفحة Z)
+...`;
 
-    // Call Google Gemini API directly
-    console.log('Step 1: Generating questions with Google Gemini AI...');
+    console.log('Calling Google Gemini API...');
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_AI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: `${systemPrompt}\n\nأنشئ الامتحان الآن` }]
-          }],
+          contents: [{ parts: [{ text: `${systemPrompt}\n\nأنشئ الامتحان الآن` }] }],
           generationConfig: {
             temperature: 0.5,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 16000,
           },
         }),
       }
@@ -172,8 +176,7 @@ CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أ
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('Google Gemini error:', geminiResponse.status, errorText);
-      
+      console.error('Gemini error:', geminiResponse.status, errorText);
       throw new Error(`فشل توليد الأسئلة: ${geminiResponse.status}`);
     }
 
@@ -181,31 +184,21 @@ CRITICAL: يجب إنشاء ${questionCount} سؤالاً بالضبط - لا أ
     const examPaper = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     if (!examPaper) {
-      console.error('No questions generated');
       throw new Error('لم يتم توليد أسئلة');
     }
     
-    console.log('Exam generated, length:', examPaper.length);
-    console.log('Exam generation completed successfully');
+    console.log('Exam generated successfully, length:', examPaper.length);
 
     return new Response(
-      JSON.stringify({ 
-        examPaper,
-        markdown: examPaper 
-      }),
+      JSON.stringify({ examPaper, markdown: examPaper }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Error in generate-exam-questions:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'حدث خطأ أثناء إنشاء الامتحان'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
+      JSON.stringify({ error: error.message || 'حدث خطأ أثناء إنشاء الامتحان' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

@@ -8,11 +8,7 @@ const corsHeaders = {
 
 // Create JWT token from service account
 async function createJWT(serviceAccount: any): Promise<string> {
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT',
-  };
-
+  const header = { alg: 'RS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: serviceAccount.client_email,
@@ -26,67 +22,182 @@ async function createJWT(serviceAccount: any): Promise<string> {
   const encoder = new TextEncoder();
   const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
   const signatureInput = `${headerB64}.${payloadB64}`;
 
-  // Parse the private key
   const pemContents = serviceAccount.private_key
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
     .replace(/\n/g, '');
 
   const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
-
-  // Import the key
   const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryKey,
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256',
-    },
-    false,
-    ['sign']
+    'pkcs8', binaryKey,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
   );
 
-  // Sign the token
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    encoder.encode(signatureInput)
-  );
-
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, encoder.encode(signatureInput));
   const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
   return `${signatureInput}.${signatureB64}`;
 }
 
-// Get access token using service account
 async function getAccessToken(serviceAccount: any): Promise<string> {
   const jwt = await createJWT(serviceAccount);
-
   const response = await fetch(serviceAccount.token_uri, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion: jwt,
     }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Token exchange failed:', errorText);
-    throw new Error('Failed to get access token');
-  }
-
+  if (!response.ok) throw new Error('Failed to get access token');
   const data = await response.json();
   return data.access_token;
+}
+
+// Extract content from a chunk of pages
+async function extractChunk(
+  base64Pdf: string, 
+  chunkInfo: string,
+  accessToken: string | null,
+  apiKeys: string[]
+): Promise<any> {
+  const extractionPrompt = `أنت خبير في استخراج محتوى الكتب المدرسية الأردنية.
+
+قم بتحليل هذا الملف واستخرج كل النص بالكامل بدون أي اختصار أو تلخيص.
+
+${chunkInfo}
+
+التعليمات الحاسمة:
+1. استخرج كل كلمة وكل جملة من الملف - لا تختصر أبداً
+2. حافظ على التنسيق الأصلي قدر الإمكان
+3. نظم المحتوى حسب الوحدات والدروس إذا كانت واضحة
+4. إذا لم تكن الوحدات واضحة، قسم المحتوى لصفحات متتالية
+
+أرجع JSON بالضبط بهذا الشكل:
+{
+  "content": [
+    {
+      "unit_number": 1,
+      "unit_name": "اسم الوحدة أو عنوان القسم",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "lesson_name": "اسم الدرس أو عنوان فرعي",
+          "pages": [
+            {
+              "page_number": 1,
+              "content": "كل النص الكامل من هذه الصفحة بدون اختصار..."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+قواعد صارمة:
+- لا تختصر المحتوى أبداً - انسخ كل شيء حرفياً
+- إذا كانت الصفحة طويلة، انسخها كاملة
+- حافظ على كل التفاصيل والأمثلة والتمارين
+- أرجع JSON صالح فقط`;
+
+  let result = null;
+
+  // Try with service account first
+  if (accessToken) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: extractionPrompt },
+                { inline_data: { mime_type: 'application/pdf', data: base64Pdf } }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 1000000, // Maximum tokens
+            }
+          })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) result = parseGeminiResponse(text);
+      }
+    } catch (e) {
+      console.error('Service account extraction error:', e);
+    }
+  }
+
+  // Fallback to API keys
+  if (!result && apiKeys.length > 0) {
+    for (const apiKey of apiKeys) {
+      if (result) break;
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: extractionPrompt },
+                  { inline_data: { mime_type: 'application/pdf', data: base64Pdf } }
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 1000000,
+              }
+            })
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) result = parseGeminiResponse(text);
+        }
+      } catch (e) {
+        console.error('API key extraction error:', e);
+      }
+    }
+  }
+
+  return result;
+}
+
+function parseGeminiResponse(text: string): any {
+  try {
+    let jsonStr = text;
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) jsonStr = jsonMatch[1];
+    
+    jsonStr = jsonStr.trim();
+    if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
+      return JSON.parse(jsonStr);
+    }
+    return { rawText: text };
+  } catch (e) {
+    console.error('JSON parse error:', e);
+    return { rawText: text };
+  }
 }
 
 serve(async (req) => {
@@ -96,75 +207,59 @@ serve(async (req) => {
 
   try {
     const { bookId, fileUrl, grade, subject, semester } = await req.json();
-
-    console.log('Processing PDF:', { bookId, grade, subject, semester });
-    console.log('File URL:', fileUrl);
+    console.log('Processing PDF:', { bookId, grade, subject, semester, fileUrl });
 
     if (!bookId || !fileUrl || !grade || !subject || !semester) {
       throw new Error('Missing required parameters');
     }
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get service account JSON
+    // Get service account
     const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
-    
     let accessToken: string | null = null;
-    let serviceAccount: any = null;
 
     if (serviceAccountJson) {
       try {
-        serviceAccount = JSON.parse(serviceAccountJson);
+        const serviceAccount = JSON.parse(serviceAccountJson);
         console.log('Service account loaded for:', serviceAccount.client_email);
         accessToken = await getAccessToken(serviceAccount);
-        console.log('Access token obtained successfully');
+        console.log('Access token obtained');
       } catch (e) {
-        console.error('Failed to parse service account or get token:', e);
+        console.error('Service account error:', e);
       }
     }
 
-    // Fallback to API keys if service account fails
     const apiKeys = [
       Deno.env.get('JORDANIAN_AI_SEARCH_KEY_1'),
       Deno.env.get('JORDANIAN_AI_ANSWER_KEY_1'),
       Deno.env.get('GOOGLE_AI_API_KEY'),
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     // Download PDF
     console.log('Downloading PDF...');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout
 
     let pdfResponse;
     try {
-      pdfResponse = await fetch(fileUrl, { 
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/pdf',
-        }
-      });
+      pdfResponse = await fetch(fileUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        throw new Error('تم انتهاء وقت تحميل الملف');
-      }
-      throw new Error(`فشل تحميل الملف: ${fetchError.message}`);
+      throw new Error(fetchError.name === 'AbortError' ? 'تم انتهاء وقت تحميل الملف' : `فشل تحميل الملف: ${fetchError.message}`);
     }
 
-    if (!pdfResponse.ok) {
-      throw new Error(`فشل تحميل الملف: ${pdfResponse.status}`);
-    }
+    if (!pdfResponse.ok) throw new Error(`فشل تحميل الملف: ${pdfResponse.status}`);
 
     const pdfBuffer = await pdfResponse.arrayBuffer();
     const pdfSize = pdfBuffer.byteLength;
-    console.log('PDF downloaded, size:', pdfSize, 'bytes');
+    console.log('PDF downloaded, size:', pdfSize, 'bytes', (pdfSize / 1024 / 1024).toFixed(2), 'MB');
 
-    if (pdfSize > 25 * 1024 * 1024) {
-      throw new Error('حجم الملف كبير جداً. الحد الأقصى 25 ميجابايت');
+    if (pdfSize > 30 * 1024 * 1024) {
+      throw new Error('حجم الملف كبير جداً. الحد الأقصى 30 ميجابايت');
     }
 
     // Convert to base64
@@ -178,168 +273,39 @@ serve(async (req) => {
     base64Pdf = btoa(base64Pdf);
     console.log('PDF converted to base64, length:', base64Pdf.length);
 
-    // Prepare the prompt
-    const extractionPrompt = `أنت خبير في استخراج وتنظيم محتوى الكتب المدرسية الأردنية.
-
-قم بتحليل هذا الكتاب المدرسي واستخرج محتواه بالكامل بالتنسيق التالي:
-
-المطلوب:
-1. استخرج كل النص من الكتاب
-2. نظم المحتوى حسب الوحدات والدروس
-3. حدد رقم الصفحة لكل جزء من المحتوى
-
-أرجع البيانات بصيغة JSON فقط بالشكل التالي:
-{
-  "content": [
-    {
-      "unit_number": 1,
-      "unit_name": "اسم الوحدة",
-      "lessons": [
-        {
-          "lesson_number": 1,
-          "lesson_name": "اسم الدرس",
-          "pages": [
-            {
-              "page_number": 1,
-              "content": "محتوى الصفحة هنا..."
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-مهم جداً:
-- استخرج كل النص بدقة
-- حافظ على ترتيب الوحدات والدروس
-- لا تترك أي محتوى
-- أرجع JSON صالح فقط بدون أي نص إضافي`;
-
-    let extractedData: any = null;
-    let lastError: string = '';
-
-    // Try with service account first if available
-    if (accessToken) {
-      try {
-        console.log('Trying extraction with service account...');
-        
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: extractionPrompt },
-                  {
-                    inline_data: {
-                      mime_type: 'application/pdf',
-                      data: base64Pdf
-                    }
-                  }
-                ]
-              }],
-              generationConfig: {
-                temperature: 0.1,
-                maxOutputTokens: 100000,
-              }
-            })
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            console.log('Extraction successful with service account');
-            extractedData = parseGeminiResponse(text);
-          }
-        } else {
-          const errorText = await response.text();
-          console.error('Service account API error:', errorText);
-          lastError = errorText;
-        }
-      } catch (e: any) {
-        console.error('Service account extraction failed:', e);
-        lastError = e.message;
-      }
-    }
-
-    // Fallback to API keys
-    if (!extractedData && apiKeys.length > 0) {
-      for (const apiKey of apiKeys) {
-        if (extractedData) break;
-        
-        try {
-          console.log('Trying extraction with API key...');
-          
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [
-                    { text: extractionPrompt },
-                    {
-                      inline_data: {
-                        mime_type: 'application/pdf',
-                        data: base64Pdf
-                      }
-                    }
-                  ]
-                }],
-                generationConfig: {
-                  temperature: 0.1,
-                  maxOutputTokens: 100000,
-                }
-              })
-            }
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              console.log('Extraction successful with API key');
-              extractedData = parseGeminiResponse(text);
-            }
-          } else {
-            const errorText = await response.text();
-            console.error('API key error:', errorText);
-            lastError = errorText;
-          }
-        } catch (e: any) {
-          console.error('API key extraction failed:', e);
-          lastError = e.message;
-        }
-      }
-    }
+    // Extract content - send full PDF for comprehensive extraction
+    console.log('Starting comprehensive extraction...');
+    
+    const extractedData = await extractChunk(
+      base64Pdf,
+      'هذا كتاب مدرسي أردني كامل. استخرج كل المحتوى من كل الصفحات بدون أي اختصار.',
+      accessToken,
+      apiKeys
+    );
 
     if (!extractedData) {
-      throw new Error(`فشل استخراج النص من الملف: ${lastError}`);
+      throw new Error('فشل استخراج النص من الملف');
     }
 
-    // Save to database
-    console.log('Saving extracted content to database...');
+    console.log('Extraction completed, processing records...');
+
+    // Process and save records
     const records: any[] = [];
-    let totalPages = 0;
     let fullText = '';
+    const unitsSet = new Set<number>();
+    const lessonsSet = new Set<string>();
 
     if (extractedData.content && Array.isArray(extractedData.content)) {
       for (const unit of extractedData.content) {
+        unitsSet.add(unit.unit_number || 1);
+        
         if (unit.lessons && Array.isArray(unit.lessons)) {
           for (const lesson of unit.lessons) {
+            lessonsSet.add(`${unit.unit_number}-${lesson.lesson_number}`);
+            
             if (lesson.pages && Array.isArray(lesson.pages)) {
               for (const page of lesson.pages) {
+                const pageContent = page.content || '';
                 records.push({
                   grade,
                   subject,
@@ -348,11 +314,10 @@ serve(async (req) => {
                   unit_name: unit.unit_name || `الوحدة ${unit.unit_number || 1}`,
                   lesson_number: lesson.lesson_number || 1,
                   lesson_name: lesson.lesson_name || `الدرس ${lesson.lesson_number || 1}`,
-                  page_number: page.page_number || totalPages + 1,
-                  page_content: page.content || ''
+                  page_number: page.page_number || records.length + 1,
+                  page_content: pageContent
                 });
-                fullText += (page.content || '') + '\n\n';
-                totalPages++;
+                fullText += pageContent + '\n\n';
               }
             }
           }
@@ -360,14 +325,13 @@ serve(async (req) => {
       }
     }
 
-    // If no structured content, create simple records
+    // If no structured content, use raw text
     if (records.length === 0 && extractedData.rawText) {
-      const textChunks = extractedData.rawText.match(/.{1,5000}/gs) || [];
+      console.log('Using raw text fallback...');
+      const textChunks = extractedData.rawText.match(/.{1,4000}/gs) || [];
       textChunks.forEach((chunk: string, idx: number) => {
         records.push({
-          grade,
-          subject,
-          semester,
+          grade, subject, semester,
           unit_number: 1,
           unit_name: 'المحتوى الكامل',
           lesson_number: 1,
@@ -376,9 +340,12 @@ serve(async (req) => {
           page_content: chunk
         });
         fullText += chunk + '\n\n';
-        totalPages++;
       });
+      unitsSet.add(1);
+      lessonsSet.add('1-1');
     }
+
+    console.log(`Processing ${records.length} records...`);
 
     // Insert records in batches
     if (records.length > 0) {
@@ -393,30 +360,33 @@ serve(async (req) => {
           console.error('Insert error:', insertError);
           throw new Error(`فشل حفظ المحتوى: ${insertError.message}`);
         }
-        console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}`);
+        console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(records.length / batchSize)}`);
       }
     }
 
-    // Update book record
+    // Update book record with accurate counts
     const { error: updateError } = await supabase
       .from('jordanian_textbooks')
       .update({
-        extracted_text: fullText.substring(0, 50000),
-        page_count: totalPages,
+        extracted_text: fullText.substring(0, 100000),
+        page_count: records.length,
         is_active: true
       })
       .eq('id', bookId);
 
-    if (updateError) {
-      console.error('Update error:', updateError);
-    }
+    if (updateError) console.error('Update error:', updateError);
 
-    console.log('Process completed successfully');
+    const unitsCount = unitsSet.size;
+    const lessonsCount = lessonsSet.size;
+
+    console.log('Process completed:', { records: records.length, units: unitsCount, lessons: lessonsCount });
 
     return new Response(JSON.stringify({
       success: true,
-      message: `تم استخراج ${records.length} صفحة بنجاح`,
+      message: `تم استخراج ${records.length} صفحة، ${unitsCount} وحدة، ${lessonsCount} درس`,
       recordsCount: records.length,
+      unitsCount,
+      lessonsCount,
       extractedText: fullText.substring(0, 500)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -432,28 +402,3 @@ serve(async (req) => {
     });
   }
 });
-
-function parseGeminiResponse(text: string): any {
-  try {
-    // Try to extract JSON from the response
-    let jsonStr = text;
-    
-    // Remove markdown code blocks
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1];
-    }
-    
-    // Clean up
-    jsonStr = jsonStr.trim();
-    if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
-      return JSON.parse(jsonStr);
-    }
-    
-    // If not valid JSON, return as raw text
-    return { rawText: text };
-  } catch (e) {
-    console.error('JSON parse error:', e);
-    return { rawText: text };
-  }
-}
