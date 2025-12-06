@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import arabicCalligraphy from '@/assets/arabic-calligraphy.jpg';
 
 const LiteraryPlatforms = () => {
   const navigate = useNavigate();
@@ -15,12 +16,13 @@ const LiteraryPlatforms = () => {
     {
       title: t.literaryPlatforms.arabic,
       icon: "🎭",
-      image: "https://toutaworld.com/assets/posts/blogs/8896-aanasr-alaaml-aladby/8896-aanasr-alaaml-aladby-1200x630.jpeg",
+      image: arabicCalligraphy,
       color: "from-amber-600/20 to-orange-600/20",
       borderColor: "border-amber-500/30",
       hoverBorderColor: "hover:border-amber-500/50",
       description: t.literaryPlatforms.arabicDescription,
-      link: "/arabic-language"
+      link: "https://alarobh.store/",
+      isExternal: true
     },
     {
       title: t.literaryPlatforms.english,
@@ -30,9 +32,18 @@ const LiteraryPlatforms = () => {
       borderColor: "border-indigo-500/30",
       hoverBorderColor: "hover:border-indigo-500/50",
       description: t.literaryPlatforms.englishDescription,
-      link: "/english-language"
+      link: "/english-language",
+      isExternal: false
     }
   ];
+
+  const handlePlatformClick = (platform: typeof platforms[0]) => {
+    if (platform.isExternal) {
+      window.open(platform.link, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(platform.link);
+    }
+  };
 
   return (
     <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b from-purple-900/40 to-purple-950`} dir={dir}>
@@ -80,7 +91,7 @@ const LiteraryPlatforms = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 + index * 0.2, duration: 0.5 }}
-                onClick={() => navigate(platform.link)}
+                onClick={() => handlePlatformClick(platform)}
                 className={`group relative h-[300px] md:h-[350px] rounded-xl overflow-hidden cursor-pointer ${platform.borderColor} ${platform.hoverBorderColor} border transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 hover:scale-105`}
               >
                 {/* Background Image with Overlay */}

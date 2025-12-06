@@ -128,3 +128,6 @@ verify_jwt = false
 
 [functions.recycling-project-advisor]
 verify_jwt = false
+
+[functions.generate-project-image]
+verify_jwt = false

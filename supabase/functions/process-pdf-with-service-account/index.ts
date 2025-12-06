@@ -59,7 +59,181 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   return data.access_token;
 }
 
-// Extract content from a chunk of pages
+// Upload file to Google File API for large files
+async function uploadToGoogleFileAPI(
+  pdfBuffer: ArrayBuffer,
+  accessToken: string
+): Promise<{ fileUri: string; displayName: string }> {
+  const pdfBytes = new Uint8Array(pdfBuffer);
+  const displayName = `textbook_${Date.now()}.pdf`;
+  
+  console.log('Uploading to Google File API...');
+  
+  // Start resumable upload
+  const startResponse = await fetch(
+    'https://generativelanguage.googleapis.com/upload/v1beta/files?uploadType=resumable',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': pdfBytes.length.toString(),
+        'X-Goog-Upload-Header-Content-Type': 'application/pdf',
+      },
+      body: JSON.stringify({
+        file: { displayName }
+      })
+    }
+  );
+
+  if (!startResponse.ok) {
+    const errorText = await startResponse.text();
+    console.error('Start upload error:', errorText);
+    throw new Error(`Failed to start upload: ${startResponse.status}`);
+  }
+
+  const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
+  if (!uploadUrl) throw new Error('No upload URL received');
+
+  console.log('Upload URL obtained, uploading file...');
+
+  // Upload the file
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Length': pdfBytes.length.toString(),
+      'X-Goog-Upload-Offset': '0',
+      'X-Goog-Upload-Command': 'upload, finalize',
+    },
+    body: pdfBytes,
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    console.error('Upload error:', errorText);
+    throw new Error(`Failed to upload file: ${uploadResponse.status}`);
+  }
+
+  const uploadResult = await uploadResponse.json();
+  console.log('File uploaded:', uploadResult);
+
+  // Wait for file to be processed
+  const fileName = uploadResult.file?.name;
+  if (!fileName) throw new Error('No file name in response');
+
+  // Poll for file status
+  let fileUri = '';
+  for (let i = 0; i < 30; i++) {
+    const statusResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/${fileName}`,
+      {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      }
+    );
+    
+    if (statusResponse.ok) {
+      const fileInfo = await statusResponse.json();
+      if (fileInfo.state === 'ACTIVE') {
+        fileUri = fileInfo.uri;
+        console.log('File is active:', fileUri);
+        break;
+      }
+    }
+    
+    console.log(`Waiting for file processing... attempt ${i + 1}`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+
+  if (!fileUri) throw new Error('File processing timeout');
+
+  return { fileUri, displayName };
+}
+
+// Extract content using file URI (for large files)
+async function extractWithFileAPI(
+  fileUri: string,
+  chunkInfo: string,
+  accessToken: string
+): Promise<any> {
+  const extractionPrompt = `أنت خبير في استخراج محتوى الكتب المدرسية الأردنية.
+
+قم بتحليل هذا الملف واستخرج كل النص بالكامل بدون أي اختصار أو تلخيص.
+
+${chunkInfo}
+
+التعليمات الحاسمة:
+1. استخرج كل كلمة وكل جملة من الملف - لا تختصر أبداً
+2. حافظ على التنسيق الأصلي قدر الإمكان
+3. نظم المحتوى حسب الوحدات والدروس إذا كانت واضحة
+4. إذا لم تكن الوحدات واضحة، قسم المحتوى لصفحات متتالية
+
+أرجع JSON بالضبط بهذا الشكل:
+{
+  "content": [
+    {
+      "unit_number": 1,
+      "unit_name": "اسم الوحدة أو عنوان القسم",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "lesson_name": "اسم الدرس أو عنوان فرعي",
+          "pages": [
+            {
+              "page_number": 1,
+              "content": "كل النص الكامل من هذه الصفحة بدون اختصار..."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+قواعد صارمة:
+- لا تختصر المحتوى أبداً - انسخ كل شيء حرفياً
+- إذا كانت الصفحة طويلة، انسخها كاملة
+- حافظ على كل التفاصيل والأمثلة والتمارين
+- أرجع JSON صالح فقط`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: extractionPrompt },
+            { fileData: { mimeType: 'application/pdf', fileUri } }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1000000,
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Extraction error:', errorText);
+    throw new Error(`Extraction failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('No text in response');
+  
+  return parseGeminiResponse(text);
+}
+
+// Extract content from base64 (for smaller files)
 async function extractChunk(
   base64Pdf: string, 
   chunkInfo: string,
@@ -128,7 +302,7 @@ ${chunkInfo}
             }],
             generationConfig: {
               temperature: 0.1,
-              maxOutputTokens: 1000000, // Maximum tokens
+              maxOutputTokens: 1000000,
             }
           })
         }
@@ -220,10 +394,11 @@ serve(async (req) => {
     // Get service account
     const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
     let accessToken: string | null = null;
+    let serviceAccount: any = null;
 
     if (serviceAccountJson) {
       try {
-        const serviceAccount = JSON.parse(serviceAccountJson);
+        serviceAccount = JSON.parse(serviceAccountJson);
         console.log('Service account loaded for:', serviceAccount.client_email);
         accessToken = await getAccessToken(serviceAccount);
         console.log('Access token obtained');
@@ -238,10 +413,10 @@ serve(async (req) => {
       Deno.env.get('GOOGLE_AI_API_KEY'),
     ].filter(Boolean) as string[];
 
-    // Download PDF
+    // Download PDF with extended timeout for large files
     console.log('Downloading PDF...');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for large files
 
     let pdfResponse;
     try {
@@ -256,32 +431,53 @@ serve(async (req) => {
 
     const pdfBuffer = await pdfResponse.arrayBuffer();
     const pdfSize = pdfBuffer.byteLength;
-    console.log('PDF downloaded, size:', pdfSize, 'bytes', (pdfSize / 1024 / 1024).toFixed(2), 'MB');
+    const pdfSizeMB = pdfSize / 1024 / 1024;
+    console.log('PDF downloaded, size:', pdfSize, 'bytes', pdfSizeMB.toFixed(2), 'MB');
 
-    if (pdfSize > 30 * 1024 * 1024) {
-      throw new Error('حجم الملف كبير جداً. الحد الأقصى 30 ميجابايت');
+    // NEW: Support up to 250MB files
+    if (pdfSize > 250 * 1024 * 1024) {
+      throw new Error('حجم الملف كبير جداً. الحد الأقصى 250 ميجابايت');
     }
 
-    // Convert to base64
-    const pdfBytes = new Uint8Array(pdfBuffer);
-    let base64Pdf = '';
-    const chunkSize = 32768;
-    for (let i = 0; i < pdfBytes.length; i += chunkSize) {
-      const chunk = pdfBytes.slice(i, i + chunkSize);
-      base64Pdf += String.fromCharCode.apply(null, [...chunk]);
-    }
-    base64Pdf = btoa(base64Pdf);
-    console.log('PDF converted to base64, length:', base64Pdf.length);
+    let extractedData: any = null;
 
-    // Extract content - send full PDF for comprehensive extraction
-    console.log('Starting comprehensive extraction...');
-    
-    const extractedData = await extractChunk(
-      base64Pdf,
-      'هذا كتاب مدرسي أردني كامل. استخرج كل المحتوى من كل الصفحات بدون أي اختصار.',
-      accessToken,
-      apiKeys
-    );
+    // For large files (> 20MB), use Google File API
+    if (pdfSizeMB > 20 && accessToken) {
+      console.log('Large file detected, using Google File API...');
+      
+      try {
+        const { fileUri } = await uploadToGoogleFileAPI(pdfBuffer, accessToken);
+        
+        extractedData = await extractWithFileAPI(
+          fileUri,
+          'هذا كتاب مدرسي أردني كامل. استخرج كل المحتوى من كل الصفحات بدون أي اختصار.',
+          accessToken
+        );
+      } catch (e) {
+        console.error('File API error:', e);
+        throw new Error(`فشل معالجة الملف الكبير: ${(e as Error).message}`);
+      }
+    } else {
+      // For smaller files, use base64 method
+      console.log('Using base64 method for smaller file...');
+      
+      const pdfBytes = new Uint8Array(pdfBuffer);
+      let base64Pdf = '';
+      const chunkSize = 32768;
+      for (let i = 0; i < pdfBytes.length; i += chunkSize) {
+        const chunk = pdfBytes.slice(i, i + chunkSize);
+        base64Pdf += String.fromCharCode.apply(null, [...chunk]);
+      }
+      base64Pdf = btoa(base64Pdf);
+      console.log('PDF converted to base64, length:', base64Pdf.length);
+
+      extractedData = await extractChunk(
+        base64Pdf,
+        'هذا كتاب مدرسي أردني كامل. استخرج كل المحتوى من كل الصفحات بدون أي اختصار.',
+        accessToken,
+        apiKeys
+      );
+    }
 
     if (!extractedData) {
       throw new Error('فشل استخراج النص من الملف');
