@@ -178,24 +178,24 @@ export default function UploadedSourcesTab() {
       return;
     }
 
-    // Check file size - support up to 50MB for direct upload
-    const maxSize = 50 * 1024 * 1024; // 50MB max for direct base64 upload
+    // Maximum 100MB
+    const maxSize = 100 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
       toast({
         title: "خطأ",
-        description: "حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت للرفع المباشر",
+        description: "حجم الملف كبير جداً. الحد الأقصى هو 100 ميجابايت",
         variant: "destructive"
       });
       return;
     }
 
     const fileSizeMB = selectedFile.size / (1024 * 1024);
+    const isLargeFile = fileSizeMB > 10; // Files over 10MB use storage + streaming
     
-    // Warning for large files
-    if (fileSizeMB > 20) {
+    if (isLargeFile) {
       toast({
         title: "⏳ ملف كبير",
-        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. قد تستغرق المعالجة عدة دقائق...`,
+        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. سيتم رفعه عبر Supabase Storage أولاً ثم معالجته...`,
       });
     }
 
@@ -212,30 +212,68 @@ export default function UploadedSourcesTab() {
 
       setUploadProgress(10);
       
-      toast({
-        title: "📤 جاري تحويل الملف",
-        description: "يتم تحويل الملف لإرساله مباشرة لـ Google..."
-      });
+      let pdfUrl: string | null = null;
+      let pdfBase64: string | null = null;
+      const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
 
-      // Step 2: Convert file to base64 (NO Supabase Storage!)
-      console.log('Converting file to base64:', selectedFile.name, 'Size:', selectedFile.size);
-      const pdfBase64 = await fileToBase64(selectedFile);
-      
-      console.log('File converted to base64, length:', pdfBase64.length);
-      setUploadProgress(30);
+      if (isLargeFile) {
+        // Large files: Upload to Supabase Storage first, then stream to Google
+        toast({
+          title: "📤 رفع الملف للتخزين المؤقت",
+          description: "يتم رفع الملف للتخزين المؤقت قبل معالجته..."
+        });
+
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.pdf`;
+        const filePath = `temp-pdfs/${user.id}/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('jordanian-textbooks')
+          .upload(filePath, selectedFile, {
+            contentType: 'application/pdf',
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          throw new Error(`فشل رفع الملف: ${uploadError.message}`);
+        }
+
+        console.log('File uploaded to storage:', uploadData.path);
+        setUploadProgress(40);
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('jordanian-textbooks')
+          .getPublicUrl(filePath);
+        
+        pdfUrl = urlData.publicUrl;
+        console.log('File public URL:', pdfUrl);
+
+      } else {
+        // Small files: Convert to base64 and send directly
+        toast({
+          title: "📤 جاري تحويل الملف",
+          description: "يتم تحويل الملف لإرساله مباشرة لـ Google..."
+        });
+
+        pdfBase64 = await fileToBase64(selectedFile);
+        console.log('File converted to base64, length:', pdfBase64.length);
+        setUploadProgress(30);
+      }
+
       setUploadStatus('extracting');
 
       toast({
-        title: "🚀 جاري الإرسال لسيرفر Google",
-        description: "يتم إرسال الملف مباشرة لـ Google File API للمعالجة..."
+        title: "🚀 جاري المعالجة عبر Google AI",
+        description: "يتم إرسال الملف لـ Google Gemini لاستخراج المحتوى..."
       });
 
-      // Step 3: Call edge function with base64 PDF (directly to Google, not Supabase!)
-      const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
-      
+      // Step 3: Call edge function
       const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-direct', {
         body: {
-          pdfBase64, // Send base64 directly, NOT file URL
+          pdfBase64: isLargeFile ? null : pdfBase64,
+          pdfUrl: isLargeFile ? pdfUrl : null,
           bookName,
           grade: formData.grade,
           subject: formData.subject,

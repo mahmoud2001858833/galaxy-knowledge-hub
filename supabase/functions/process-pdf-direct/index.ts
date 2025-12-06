@@ -6,18 +6,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Upload to Google File API using API key (for large files)
-async function uploadToGoogleFileAPI(
-  base64Data: string,
+// Upload to Google File API using resumable upload (streaming from URL)
+async function uploadToGoogleFileAPIFromUrl(
+  fileUrl: string,
   apiKey: string
 ): Promise<string> {
   const displayName = `textbook_${Date.now()}.pdf`;
   
-  // Decode base64 to binary
-  const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-  const fileSize = binaryData.length;
+  console.log('Fetching file from URL for streaming upload...');
   
-  console.log('Starting resumable upload to Google File API, size:', fileSize);
+  // Fetch the file as a stream
+  const fileResponse = await fetch(fileUrl);
+  if (!fileResponse.ok) {
+    throw new Error(`Failed to fetch file: ${fileResponse.status}`);
+  }
+  
+  const contentLength = fileResponse.headers.get('content-length');
+  const fileSize = contentLength ? parseInt(contentLength) : 0;
+  
+  console.log('File size from header:', fileSize);
   
   // Start resumable upload session
   const startResponse = await fetch(
@@ -46,19 +53,41 @@ async function uploadToGoogleFileAPI(
   const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
   if (!uploadUrl) throw new Error('No upload URL received');
 
-  console.log('Upload URL obtained, uploading file in chunks...');
+  console.log('Upload URL obtained, streaming file in chunks...');
 
-  // Upload in chunks (8MB each)
-  const CHUNK_SIZE = 8 * 1024 * 1024;
+  // Read the file in chunks and upload
+  const reader = fileResponse.body?.getReader();
+  if (!reader) throw new Error('Cannot read file stream');
+  
+  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
+  let buffer = new Uint8Array(0);
   let offset = 0;
+  let done = false;
 
-  while (offset < fileSize) {
-    const chunkEnd = Math.min(offset + CHUNK_SIZE, fileSize);
-    const chunk = binaryData.slice(offset, chunkEnd);
-    const isLast = chunkEnd >= fileSize;
+  while (!done) {
+    // Read data into buffer until we have enough for a chunk or file ends
+    while (buffer.length < CHUNK_SIZE && !done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      if (value) {
+        const newBuffer = new Uint8Array(buffer.length + value.length);
+        newBuffer.set(buffer);
+        newBuffer.set(value, buffer.length);
+        buffer = newBuffer;
+      }
+    }
+
+    if (buffer.length === 0) break;
+
+    // Determine chunk to send
+    const chunkSize = done ? buffer.length : Math.min(buffer.length, CHUNK_SIZE);
+    const chunk = buffer.slice(0, chunkSize);
+    buffer = buffer.slice(chunkSize);
+    
+    const isLast = done && buffer.length === 0;
     const uploadCommand = isLast ? 'upload, finalize' : 'upload';
     
-    console.log(`Uploading chunk: ${offset}-${chunkEnd} of ${fileSize}`);
+    console.log(`Uploading chunk: offset=${offset}, size=${chunk.length}, isLast=${isLast}`);
     
     const uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
@@ -87,7 +116,7 @@ async function uploadToGoogleFileAPI(
       throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
     }
     
-    offset = chunkEnd;
+    offset += chunk.length;
   }
 
   throw new Error('Upload failed - no final response');
@@ -171,7 +200,7 @@ async function extractWithFileAPI(
   return parseGeminiResponse(text);
 }
 
-// Extract content using inline base64 (for small files)
+// Extract content using inline base64 (for small files only)
 async function extractWithBase64(
   base64Data: string,
   apiKey: string
@@ -272,11 +301,12 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfBase64, bookName, grade, subject, semester, fileSizeMB } = await req.json();
+    const requestBody = await req.json();
+    const { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
     
-    console.log('Processing PDF:', { bookName, grade, subject, semester, fileSizeMB });
+    console.log('Processing PDF:', { bookName, grade, subject, semester, fileSizeMB, hasBase64: !!pdfBase64, hasUrl: !!pdfUrl });
 
-    if (!pdfBase64 || !grade || !subject || !semester) {
+    if ((!pdfBase64 && !pdfUrl) || !grade || !subject || !semester) {
       throw new Error('Missing required parameters');
     }
 
@@ -290,22 +320,29 @@ serve(async (req) => {
       throw new Error('Google API Key not configured');
     }
     
-    // Calculate file size
-    const estimatedSizeMB = (pdfBase64.length * 0.75) / (1024 * 1024);
-    console.log('Estimated file size:', estimatedSizeMB.toFixed(2), 'MB');
-
     let extractedData;
     let fileUri = '';
 
-    // Use File API for large files (>15MB), inline for smaller
-    if (estimatedSizeMB > 15) {
-      console.log('Using Google File API for large file...');
-      fileUri = await uploadToGoogleFileAPI(pdfBase64, apiKey);
+    // For large files: use URL and stream to Google
+    if (pdfUrl) {
+      console.log('Using URL streaming for large file...');
+      fileUri = await uploadToGoogleFileAPIFromUrl(pdfUrl, apiKey);
       console.log('File uploaded to Google, URI:', fileUri);
       extractedData = await extractWithFileAPI(fileUri, apiKey);
-    } else {
-      console.log('Using inline base64 for small file...');
-      extractedData = await extractWithBase64(pdfBase64, apiKey);
+    } 
+    // For small files: use inline base64
+    else if (pdfBase64) {
+      const estimatedSizeMB = (pdfBase64.length * 0.75) / (1024 * 1024);
+      console.log('Estimated file size:', estimatedSizeMB.toFixed(2), 'MB');
+      
+      // Small files can use inline base64 (< 10MB)
+      if (estimatedSizeMB < 10) {
+        console.log('Using inline base64 for small file...');
+        extractedData = await extractWithBase64(pdfBase64, apiKey);
+      } else {
+        // This shouldn't happen if frontend properly routes large files
+        throw new Error('الملف كبير جداً للمعالجة المباشرة. يرجى المحاولة مرة أخرى.');
+      }
     }
     
     console.log('Extraction completed');
@@ -331,8 +368,8 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: fileUri ? `google-file://${fileUri}` : 'processed-inline',
-        file_size_mb: fileSizeMB || estimatedSizeMB,
+        file_url: pdfUrl || 'processed-inline',
+        file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
         gemini_file_uri: fileUri || null
