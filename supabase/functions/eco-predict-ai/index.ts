@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_AI_API_KEY = 'AIzaSyDXjgn3W3kAmHkxGnsOokJe7P4oTrfkEAk';
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,10 +13,13 @@ serve(async (req) => {
 
   try {
     const { consumptionData, location, energySource } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
+    }
 
     console.log('Received consumption data:', consumptionData);
-    console.log('Location:', location);
-    console.log('Energy source:', energySource);
 
     const systemPrompt = `أنت خبير بيئي متخصص في تحليل البصمة الكربونية والتنبؤات البيئية. 
 قم بتحليل بيانات الاستهلاك المقدمة وأنتج تقريراً شاملاً بتنسيق JSON يتضمن:
@@ -29,30 +30,30 @@ serve(async (req) => {
 4. توصيات للتحسين
 5. مؤشرات الأداء البيئي
 
-أرجع البيانات بتنسيق JSON التالي بالضبط:
+أرجع البيانات بتنسيق JSON التالي بالضبط (بدون أي نص إضافي):
 {
-  "currentEmissions": number (طن CO2 سنوياً),
-  "monthlyPredictions": [{"month": string, "emissions": number}] (12 شهر),
+  "currentEmissions": number,
+  "monthlyPredictions": [{"month": string, "emissions": number}],
   "scenarios": {
     "continuation": {"year1": number, "year5": number, "year10": number},
     "improvement": {"year1": number, "year5": number, "year10": number},
     "degradation": {"year1": number, "year5": number, "year10": number}
   },
   "categoryBreakdown": {
-    "energy": number (نسبة مئوية),
+    "energy": number,
     "transport": number,
     "water": number,
     "waste": number
   },
   "metrics": {
     "averageMonthlyEmission": number,
-    "potentialReduction": number (نسبة مئوية),
-    "sustainabilityScore": number (0-100),
-    "monthlyChangeRate": number (نسبة مئوية)
+    "potentialReduction": number,
+    "sustainabilityScore": number,
+    "monthlyChangeRate": number
   },
   "regionalComparison": [{"region": string, "emissions": number}],
   "recommendations": [string],
-  "renewableEnergyPotential": number (نسبة مئوية),
+  "renewableEnergyPotential": number,
   "trendAnalysis": string
 }`;
 
@@ -65,36 +66,42 @@ serve(async (req) => {
 - الموقع: ${location}
 - مصدر الطاقة: ${energySource}
 
-أنتج تحليلاً بيئياً شاملاً مع توقعات مستقبلية.`;
+أنتج تحليلاً بيئياً شاملاً مع توقعات مستقبلية بتنسيق JSON فقط.`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4096,
-          }
-        })
-      }
-    );
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Google AI API error:', response.status, errorText);
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('AI response:', JSON.stringify(data, null, 2));
-
-    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const aiText = data.choices?.[0]?.message?.content || '';
     
+    console.log('AI response received');
+
     // Extract JSON from response
     let analysisData;
     try {
@@ -105,7 +112,7 @@ serve(async (req) => {
         throw new Error('No JSON found in response');
       }
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
+      console.error('JSON parse error, using fallback:', parseError);
       // Generate fallback data based on inputs
       const baseEmissions = (consumptionData.electricity * 0.0005) + 
                            (consumptionData.transport * 0.00021) + 
@@ -124,12 +131,7 @@ serve(async (req) => {
           improvement: { year1: baseEmissions * 12 * 0.9, year5: baseEmissions * 12 * 0.7, year10: baseEmissions * 12 * 0.5 },
           degradation: { year1: baseEmissions * 12 * 1.1, year5: baseEmissions * 12 * 1.4, year10: baseEmissions * 12 * 1.8 }
         },
-        categoryBreakdown: {
-          energy: 45,
-          transport: 30,
-          water: 10,
-          waste: 15
-        },
+        categoryBreakdown: { energy: 45, transport: 30, water: 10, waste: 15 },
         metrics: {
           averageMonthlyEmission: baseEmissions,
           potentialReduction: 35,
@@ -144,13 +146,13 @@ serve(async (req) => {
         ],
         recommendations: [
           'تركيب ألواح شمسية لتقليل استهلاك الكهرباء',
-          'استخدام وسائل النقل العام أو المشاركة في السيارات',
-          'تقليل استهلاك المياه عبر أنظمة ترشيد',
+          'استخدام وسائل النقل العام',
+          'تقليل استهلاك المياه',
           'فرز النفايات وإعادة التدوير',
           'استخدام أجهزة موفرة للطاقة'
         ],
         renewableEnergyPotential: 40,
-        trendAnalysis: 'يُظهر تحليل الاتجاهات إمكانية تحسين كبيرة في البصمة الكربونية من خلال تبني ممارسات مستدامة.'
+        trendAnalysis: 'يُظهر تحليل الاتجاهات إمكانية تحسين كبيرة في البصمة الكربونية.'
       };
     }
 
