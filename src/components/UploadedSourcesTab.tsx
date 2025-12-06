@@ -174,12 +174,13 @@ export default function UploadedSourcesTab() {
       return;
     }
 
-    // Warning for large files
     const fileSizeMB = selectedFile.size / (1024 * 1024);
+    
+    // Warning for large files
     if (fileSizeMB > 50) {
       toast({
         title: "⏳ ملف كبير",
-        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. قد تستغرق المعالجة عدة دقائق...`,
+        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. سيتم رفعه مباشرة لسيرفر Google...`,
       });
     }
 
@@ -195,81 +196,47 @@ export default function UploadedSourcesTab() {
       }
 
       setUploadProgress(10);
-
-      // Step 2: Upload PDF to Supabase Storage
-      const timestamp = Date.now();
-      const cleanFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const fileName = `${user.id}/${timestamp}-${cleanFileName}`;
-      
-      console.log('Uploading file:', fileName, 'Size:', selectedFile.size);
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('jordanian-textbooks')
-        .upload(fileName, selectedFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw new Error(`فشل رفع الملف: ${uploadError.message}`);
-      }
-      
-      console.log('File uploaded successfully:', uploadData);
-      setUploadProgress(30);
       setUploadStatus('processing');
+      
+      toast({
+        title: "📤 جاري تحويل الملف",
+        description: "يتم تحضير الملف للإرسال المباشر لسيرفر Google..."
+      });
 
-      // Step 3: Get public URL
-      const { data: urlData } = supabase.storage
-        .from('jordanian-textbooks')
-        .getPublicUrl(fileName);
-
-      if (!urlData?.publicUrl) {
-        throw new Error('فشل الحصول على رابط الملف');
+      // Step 2: Convert file to base64 (directly, no Supabase Storage)
+      console.log('Converting file to base64...');
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      
+      // Convert to base64 in chunks to avoid memory issues
+      let base64 = '';
+      const chunkSize = 32768;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.slice(i, i + chunkSize);
+        base64 += String.fromCharCode.apply(null, [...chunk]);
       }
+      base64 = btoa(base64);
+      
+      console.log('File converted to base64, length:', base64.length);
+      setUploadProgress(30);
+      setUploadStatus('extracting');
 
-      console.log('Public URL:', urlData.publicUrl);
+      toast({
+        title: "🚀 جاري الرفع لسيرفر Google",
+        description: "يتم إرسال الملف مباشرة لـ Google File API للمعالجة..."
+      });
 
-      // Step 4: Save book record
+      // Step 3: Send directly to edge function (which uploads to Google)
       const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
       
-      const { data: bookRecord, error: bookError } = await supabase
-        .from('jordanian_textbooks')
-        .insert({
-          book_name: bookName,
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-direct', {
+        body: {
+          pdfBase64: base64,
+          bookName,
           grade: formData.grade,
           subject: formData.subject,
           semester: formData.semester,
-          file_url: urlData.publicUrl,
-          file_size_mb: selectedFile.size / 1024 / 1024,
-          created_by: user.id,
-          is_active: false
-        })
-        .select()
-        .single();
-
-      if (bookError) {
-        console.error('Database insert error:', bookError);
-        throw new Error(`فشل حفظ بيانات الكتاب: ${bookError.message}`);
-      }
-      
-      console.log('Book record created:', bookRecord.id);
-      setUploadProgress(50);
-      setUploadStatus('extracting');
-
-      // Step 5: Extract text using Service Account
-      toast({
-        title: "جاري استخراج النص",
-        description: "يتم تحليل الكتاب بالذكاء الاصطناعي... قد تستغرق هذه العملية بضع دقائق"
-      });
-
-      const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-with-service-account', {
-        body: {
-          bookId: bookRecord.id,
-          fileUrl: urlData.publicUrl,
-          grade: formData.grade,
-          subject: formData.subject,
-          semester: formData.semester
+          fileSizeMB
         }
       });
 
@@ -277,7 +244,7 @@ export default function UploadedSourcesTab() {
 
       if (extractError) {
         console.error('Extract function error:', extractError);
-        throw new Error(extractError.message || 'فشل استخراج النص من الملف');
+        throw new Error(extractError.message || 'فشل معالجة الملف');
       }
 
       if (extractData?.error) {
@@ -296,8 +263,8 @@ export default function UploadedSourcesTab() {
       setUploadStatus('success');
 
       toast({
-        title: "تم بنجاح!",
-        description: extractData?.message || `تم رفع الكتاب واستخراج ${extractData?.recordsCount || 0} صفحة`
+        title: "✅ تم بنجاح!",
+        description: extractData?.message || `تم استخراج ${extractData?.recordsCount || 0} صفحة`
       });
 
       // Reset after delay
