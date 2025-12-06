@@ -59,16 +59,17 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   return data.access_token;
 }
 
-// Upload file directly to Google File API
-async function uploadToGoogleFileAPI(
-  pdfBytes: Uint8Array,
+// Stream upload file to Google File API
+async function uploadToGoogleFileAPIFromUrl(
+  fileUrl: string,
+  fileSize: number,
   accessToken: string
 ): Promise<{ fileUri: string; displayName: string }> {
   const displayName = `textbook_${Date.now()}.pdf`;
   
-  console.log('Uploading directly to Google File API, size:', pdfBytes.length, 'bytes');
+  console.log('Starting resumable upload to Google File API, size:', fileSize);
   
-  // Start resumable upload
+  // Start resumable upload session
   const startResponse = await fetch(
     'https://generativelanguage.googleapis.com/upload/v1beta/files?uploadType=resumable',
     {
@@ -78,7 +79,7 @@ async function uploadToGoogleFileAPI(
         'Content-Type': 'application/json',
         'X-Goog-Upload-Protocol': 'resumable',
         'X-Goog-Upload-Command': 'start',
-        'X-Goog-Upload-Header-Content-Length': pdfBytes.length.toString(),
+        'X-Goog-Upload-Header-Content-Length': fileSize.toString(),
         'X-Goog-Upload-Header-Content-Type': 'application/pdf',
       },
       body: JSON.stringify({
@@ -96,48 +97,71 @@ async function uploadToGoogleFileAPI(
   const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
   if (!uploadUrl) throw new Error('No upload URL received');
 
-  console.log('Upload URL obtained, uploading file chunks...');
+  console.log('Upload URL obtained, downloading and uploading file in chunks...');
 
-  // Upload in chunks for large files
+  // Download file and upload in chunks
+  const fileResponse = await fetch(fileUrl);
+  if (!fileResponse.ok || !fileResponse.body) {
+    throw new Error('Failed to download file');
+  }
+
+  const reader = fileResponse.body.getReader();
   const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
+  let buffer = new Uint8Array(0);
   let offset = 0;
-  
-  while (offset < pdfBytes.length) {
-    const end = Math.min(offset + CHUNK_SIZE, pdfBytes.length);
-    const chunk = pdfBytes.slice(offset, end);
-    const isLast = end === pdfBytes.length;
-    
-    const uploadCommand = isLast ? 'upload, finalize' : 'upload';
-    
-    console.log(`Uploading chunk: ${offset}-${end} of ${pdfBytes.length} (${isLast ? 'final' : 'partial'})`);
-    
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Length': chunk.length.toString(),
-        'X-Goog-Upload-Offset': offset.toString(),
-        'X-Goog-Upload-Command': uploadCommand,
-      },
-      body: chunk
-    });
 
-    if (!uploadResponse.ok && !isLast) {
-      const errorText = await uploadResponse.text();
-      console.error('Chunk upload error:', errorText);
-      throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
+  while (true) {
+    const { done, value } = await reader.read();
+    
+    if (value) {
+      // Append to buffer
+      const newBuffer = new Uint8Array(buffer.length + value.length);
+      newBuffer.set(buffer);
+      newBuffer.set(value, buffer.length);
+      buffer = newBuffer;
     }
     
-    if (isLast) {
-      const fileData = await uploadResponse.json();
-      console.log('File uploaded successfully:', fileData.file?.name);
-      return {
-        fileUri: fileData.file?.uri || '',
-        displayName: fileData.file?.displayName || displayName
-      };
+    // Upload when we have enough data or reached the end
+    while (buffer.length >= CHUNK_SIZE || (done && buffer.length > 0)) {
+      const chunkSize = Math.min(CHUNK_SIZE, buffer.length);
+      const chunk = buffer.slice(0, chunkSize);
+      buffer = buffer.slice(chunkSize);
+      
+      const isLast = done && buffer.length === 0;
+      const uploadCommand = isLast ? 'upload, finalize' : 'upload';
+      
+      console.log(`Uploading chunk: ${offset}-${offset + chunk.length} of ${fileSize} (${isLast ? 'final' : 'partial'})`);
+      
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Length': chunk.length.toString(),
+          'X-Goog-Upload-Offset': offset.toString(),
+          'X-Goog-Upload-Command': uploadCommand,
+        },
+        body: chunk
+      });
+
+      if (!uploadResponse.ok && !isLast) {
+        const errorText = await uploadResponse.text();
+        console.error('Chunk upload error:', errorText);
+        throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
+      }
+      
+      if (isLast) {
+        const fileData = await uploadResponse.json();
+        console.log('File uploaded successfully:', fileData.file?.name);
+        return {
+          fileUri: fileData.file?.uri || '',
+          displayName: fileData.file?.displayName || displayName
+        };
+      }
+      
+      offset += chunk.length;
     }
     
-    offset = end;
+    if (done) break;
   }
 
   throw new Error('Upload failed - no final response');
@@ -245,19 +269,16 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request - expect base64 PDF data directly
-    const { pdfBase64, bookName, grade, subject, semester, fileSizeMB } = await req.json();
+    // Accept file URL instead of base64
+    const { fileUrl, bookName, grade, subject, semester, fileSizeMB } = await req.json();
     
-    console.log('Processing PDF directly:', { bookName, grade, subject, semester, fileSizeMB });
+    console.log('Processing PDF from URL:', { bookName, grade, subject, semester, fileSizeMB });
 
-    if (!pdfBase64 || !grade || !subject || !semester) {
+    if (!fileUrl || !grade || !subject || !semester) {
       throw new Error('Missing required parameters');
     }
 
-    // Validate file size (250MB max)
-    if (fileSizeMB && fileSizeMB > 250) {
-      throw new Error('حجم الملف كبير جداً. الحد الأقصى 250 ميجابايت');
-    }
+    const fileSizeBytes = (fileSizeMB || 50) * 1024 * 1024;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -275,17 +296,8 @@ serve(async (req) => {
     const accessToken = await getAccessToken(serviceAccount);
     console.log('Access token obtained');
 
-    // Convert base64 to bytes
-    console.log('Converting base64 to bytes...');
-    const binaryString = atob(pdfBase64);
-    const pdfBytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      pdfBytes[i] = binaryString.charCodeAt(i);
-    }
-    console.log('PDF bytes ready:', pdfBytes.length);
-
-    // Upload directly to Google File API
-    const { fileUri } = await uploadToGoogleFileAPI(pdfBytes, accessToken);
+    // Upload to Google File API by streaming from URL
+    const { fileUri } = await uploadToGoogleFileAPIFromUrl(fileUrl, fileSizeBytes, accessToken);
     console.log('File uploaded to Google, URI:', fileUri);
 
     // Extract content from file
@@ -305,7 +317,7 @@ serve(async (req) => {
       userId = user?.id;
     }
 
-    // Create book record (without file URL since we're not storing the file)
+    // Create book record
     const { data: bookRecord, error: bookError } = await supabase
       .from('jordanian_textbooks')
       .insert({
@@ -313,7 +325,7 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: `google-file://${fileUri}`, // Reference to Google File API
+        file_url: fileUrl,
         file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
@@ -366,7 +378,6 @@ serve(async (req) => {
         }
       }
     } else if (extractedData.rawText) {
-      // If no structured content, save as single page
       fullText = extractedData.rawText;
       records.push({
         grade,
@@ -395,13 +406,12 @@ serve(async (req) => {
         
         if (insertError) {
           console.error('Insert error:', insertError);
-          // Continue with other batches
         }
         console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}`);
       }
     }
 
-    // Update book record with extracted text summary
+    // Update book record
     await supabase
       .from('jordanian_textbooks')
       .update({
