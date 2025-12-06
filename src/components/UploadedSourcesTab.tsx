@@ -163,15 +163,24 @@ export default function UploadedSourcesTab() {
       return;
     }
 
-    // Check file size
-    const maxSize = 20 * 1024 * 1024; // 20MB
+    // Check file size - support up to 250MB
+    const maxSize = 250 * 1024 * 1024; // 250MB
     if (selectedFile.size > maxSize) {
       toast({
         title: "خطأ",
-        description: "حجم الملف كبير جداً. الحد الأقصى هو 20 ميجابايت",
+        description: "حجم الملف كبير جداً. الحد الأقصى هو 250 ميجابايت",
         variant: "destructive"
       });
       return;
+    }
+
+    // Warning for large files
+    const fileSizeMB = selectedFile.size / (1024 * 1024);
+    if (fileSizeMB > 50) {
+      toast({
+        title: "⏳ ملف كبير",
+        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. قد تستغرق المعالجة عدة دقائق...`,
+      });
     }
 
     setIsUploading(true);

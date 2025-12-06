@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_AI_API_KEY = "AIzaSyBMqKjLqlQGEFQNok0_Cf9uOQqhzb0FAnA";
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,77 +18,88 @@ serve(async (req) => {
       throw new Error('Missing project details');
     }
 
-    console.log('Generating image for project:', projectName);
+    console.log('Generating real AI image for project:', projectName);
 
-    // Create a detailed prompt for image generation
-    const imagePrompt = `Create a clean, professional illustration showing a recycling craft project.
-    
-Project: ${projectName}
-Concept: ${projectIdea}
-Materials: ${projectMaterials || 'recycled materials'}
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
+    }
 
-Requirements:
-- NO TEXT, NO WORDS, NO LETTERS in the image
-- Clean, educational illustration style
-- Show the finished project clearly
-- Use bright, eco-friendly colors (greens, blues, earth tones)
-- Simple, clear composition
-- Suitable for educational purposes
-- Show recycled materials being transformed into something useful
-- Professional quality, like an educational poster`;
+    // Create a detailed, customized prompt for unique image generation
+    const imagePrompt = `Create a stunning, professional educational illustration showing a completed recycling craft project.
 
-    // Use Gemini to generate image (via Imagen integration)
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `You are an expert at describing images for recycling projects. Create a detailed visual description of what an illustration of this recycling project would look like:
+PROJECT DETAILS:
+- Project Name: ${projectName}
+- Project Concept: ${projectIdea}
+- Materials Used: ${projectMaterials || 'recycled materials like bottles, cardboard, plastic'}
 
-Project Name: ${projectName}
-Project Idea: ${projectIdea}
-Materials: ${projectMaterials || 'recycled materials'}
+VISUAL REQUIREMENTS:
+1. Show the FINISHED, completed project prominently in the center
+2. Display the transformation from recycled materials to the final product
+3. Use vibrant, eco-friendly color palette (greens, blues, earth tones, bright accents)
+4. Clean, modern illustration style suitable for educational purposes
+5. Include subtle environmental elements (leaves, recycling symbols as decorations)
+6. Professional quality like a children's educational book illustration
+7. Bright, well-lit scene with soft shadows
+8. Show the project being used or displayed in context
 
-Describe the image in detail, including:
-1. The main elements and composition
-2. Colors and visual style
-3. How the recycled materials are shown
-4. The finished product appearance
-5. Any decorative elements
+CRITICAL RULES:
+- ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS anywhere in the image
+- No watermarks or logos
+- No human faces (can show hands or silhouettes if needed)
+- Focus purely on the craft project and its visual beauty
 
-Remember: The image should have NO TEXT whatsoever.`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          }
-        })
-      }
-    );
+Style: Modern, colorful, clean vector-like illustration with depth and dimension.`;
+
+    // Call Lovable AI Gateway with image generation model
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [{
+          role: "user",
+          content: imagePrompt
+        }],
+        modalities: ["image", "text"]
+      })
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Google AI Error:', errorText);
+      console.error('Lovable AI Error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      if (response.status === 402) {
+        throw new Error('API credits exhausted. Please add credits.');
+      }
       throw new Error(`Image generation failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const imageDescription = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('AI Response received');
 
-    // Since direct image generation may not be available, we'll create a placeholder
-    // that describes what the image should look like
-    // In a real implementation, you would use DALL-E, Imagen, or another image generation API
+    // Extract the generated image (base64)
+    const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const textResponse = data.choices?.[0]?.message?.content || '';
+
+    if (!imageData) {
+      console.error('No image generated, response:', JSON.stringify(data));
+      throw new Error('No image was generated');
+    }
+
+    console.log('Image generated successfully for:', projectName);
 
     return new Response(JSON.stringify({
       success: true,
-      imageDescription,
-      // Placeholder image using a recycling-themed placeholder
-      imageUrl: `https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&h=600&fit=crop&q=80`,
-      message: 'تم إنشاء وصف الصورة بنجاح'
+      imageUrl: imageData, // This is the base64 data URL
+      imageDescription: textResponse,
+      message: 'تم إنشاء الصورة التوضيحية بنجاح'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
