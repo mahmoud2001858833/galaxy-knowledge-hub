@@ -6,12 +6,177 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Extract content using inline base64 data with API key
+// Upload to Google File API using API key (for large files)
+async function uploadToGoogleFileAPI(
+  base64Data: string,
+  apiKey: string
+): Promise<string> {
+  const displayName = `textbook_${Date.now()}.pdf`;
+  
+  // Decode base64 to binary
+  const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+  const fileSize = binaryData.length;
+  
+  console.log('Starting resumable upload to Google File API, size:', fileSize);
+  
+  // Start resumable upload session
+  const startResponse = await fetch(
+    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': fileSize.toString(),
+        'X-Goog-Upload-Header-Content-Type': 'application/pdf',
+      },
+      body: JSON.stringify({
+        file: { displayName }
+      })
+    }
+  );
+
+  if (!startResponse.ok) {
+    const errorText = await startResponse.text();
+    console.error('Start upload error:', errorText);
+    throw new Error(`Failed to start upload: ${startResponse.status}`);
+  }
+
+  const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
+  if (!uploadUrl) throw new Error('No upload URL received');
+
+  console.log('Upload URL obtained, uploading file in chunks...');
+
+  // Upload in chunks (8MB each)
+  const CHUNK_SIZE = 8 * 1024 * 1024;
+  let offset = 0;
+
+  while (offset < fileSize) {
+    const chunkEnd = Math.min(offset + CHUNK_SIZE, fileSize);
+    const chunk = binaryData.slice(offset, chunkEnd);
+    const isLast = chunkEnd >= fileSize;
+    const uploadCommand = isLast ? 'upload, finalize' : 'upload';
+    
+    console.log(`Uploading chunk: ${offset}-${chunkEnd} of ${fileSize}`);
+    
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Length': chunk.length.toString(),
+        'X-Goog-Upload-Offset': offset.toString(),
+        'X-Goog-Upload-Command': uploadCommand,
+      },
+      body: chunk
+    });
+
+    if (isLast) {
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('Final chunk error:', errorText);
+        throw new Error(`Final chunk failed: ${uploadResponse.status}`);
+      }
+      const fileData = await uploadResponse.json();
+      console.log('File uploaded successfully:', fileData.file?.name);
+      return fileData.file?.uri || '';
+    }
+    
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('Chunk upload error:', errorText);
+      throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
+    }
+    
+    offset = chunkEnd;
+  }
+
+  throw new Error('Upload failed - no final response');
+}
+
+// Extract content using File API reference
+async function extractWithFileAPI(
+  fileUri: string,
+  apiKey: string
+): Promise<any> {
+  console.log('Extracting content from file URI:', fileUri);
+  
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              fileData: {
+                mimeType: 'application/pdf',
+                fileUri: fileUri
+              }
+            },
+            {
+              text: `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
+
+مهمتك: استخرج كل محتوى هذا الكتاب وقم بتنظيمه على شكل وحدات ودروس وصفحات.
+
+الرجاء إرجاع النتيجة بتنسيق JSON التالي بالضبط:
+{
+  "content": [
+    {
+      "unit_number": 1,
+      "unit_name": "اسم الوحدة",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "lesson_name": "اسم الدرس",
+          "pages": [
+            {
+              "page_number": 1,
+              "content": "محتوى الصفحة كاملاً..."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+مهم جداً:
+1. استخرج كل النص من كل صفحة بدون اختصار
+2. حافظ على ترتيب الوحدات والدروس
+3. إذا لم تجد تقسيماً واضحاً، أنشئ وحدة واحدة ودرساً واحداً مع كل الصفحات
+4. أرجع JSON فقط بدون أي نص إضافي`
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 100000,
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Extraction API error:', errorText);
+    throw new Error(`Extraction failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  
+  return parseGeminiResponse(text);
+}
+
+// Extract content using inline base64 (for small files)
 async function extractWithBase64(
   base64Data: string,
   apiKey: string
 ): Promise<any> {
-  console.log('Extracting content from base64 PDF...');
+  console.log('Extracting content from inline base64...');
   
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -75,7 +240,7 @@ async function extractWithBase64(
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Extraction API error:', errorText);
-    throw new Error(`Extraction failed: ${response.status} - ${errorText}`);
+    throw new Error(`Extraction failed: ${response.status}`);
   }
 
   const data = await response.json();
@@ -109,32 +274,40 @@ serve(async (req) => {
   try {
     const { pdfBase64, bookName, grade, subject, semester, fileSizeMB } = await req.json();
     
-    console.log('Processing PDF directly to Google:', { bookName, grade, subject, semester, fileSizeMB });
+    console.log('Processing PDF:', { bookName, grade, subject, semester, fileSizeMB });
 
     if (!pdfBase64 || !grade || !subject || !semester) {
       throw new Error('Missing required parameters');
-    }
-
-    // Check file size - Gemini inline data limit is ~20MB
-    const estimatedSizeMB = (pdfBase64.length * 0.75) / (1024 * 1024);
-    if (estimatedSizeMB > 20) {
-      throw new Error(`الملف كبير جداً (${estimatedSizeMB.toFixed(1)} ميجابايت). الحد الأقصى 20 ميجابايت.`);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Use API key directly (not service account)
+    // Use API key
     const apiKey = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
     if (!apiKey) {
       throw new Error('Google API Key not configured');
     }
     
-    console.log('Using Google API Key for extraction');
+    // Calculate file size
+    const estimatedSizeMB = (pdfBase64.length * 0.75) / (1024 * 1024);
+    console.log('Estimated file size:', estimatedSizeMB.toFixed(2), 'MB');
 
-    // Extract content using inline base64
-    const extractedData = await extractWithBase64(pdfBase64, apiKey);
+    let extractedData;
+    let fileUri = '';
+
+    // Use File API for large files (>15MB), inline for smaller
+    if (estimatedSizeMB > 15) {
+      console.log('Using Google File API for large file...');
+      fileUri = await uploadToGoogleFileAPI(pdfBase64, apiKey);
+      console.log('File uploaded to Google, URI:', fileUri);
+      extractedData = await extractWithFileAPI(fileUri, apiKey);
+    } else {
+      console.log('Using inline base64 for small file...');
+      extractedData = await extractWithBase64(pdfBase64, apiKey);
+    }
+    
     console.log('Extraction completed');
 
     if (!extractedData) {
@@ -158,10 +331,11 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: 'processed-inline',
+        file_url: fileUri ? `google-file://${fileUri}` : 'processed-inline',
         file_size_mb: fileSizeMB || estimatedSizeMB,
         created_by: userId,
-        is_active: true
+        is_active: true,
+        gemini_file_uri: fileUri || null
       })
       .select()
       .single();
