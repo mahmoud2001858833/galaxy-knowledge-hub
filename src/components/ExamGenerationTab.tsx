@@ -29,11 +29,19 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
   const [availableUnits, setAvailableUnits] = useState<any[]>([]);
   const [availableLessons, setAvailableLessons] = useState<any[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
+  const [availableGrades, setAvailableGrades] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Fetch available subjects from database
+  // Fetch available grades from database on mount
   useEffect(() => {
-    fetchSubjects();
+    fetchGrades();
+  }, []);
+
+  // Fetch available subjects when grade changes
+  useEffect(() => {
+    if (grade) {
+      fetchSubjects();
+    }
   }, [grade]);
 
   useEffect(() => {
@@ -43,6 +51,21 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
       fetchLessons();
     }
   }, [subject, contentType, grade]);
+
+  const fetchGrades = async () => {
+    const { data, error } = await supabase
+      .from('jordanian_textbook_content')
+      .select('grade');
+
+    if (!error && data) {
+      const uniqueGrades = [...new Set(data.map(item => item.grade))].filter(Boolean);
+      setAvailableGrades(uniqueGrades);
+      // If current grade not in available grades and we have grades, select first one
+      if (uniqueGrades.length > 0 && !uniqueGrades.includes(grade)) {
+        setGrade(uniqueGrades[0]);
+      }
+    }
+  };
 
   const fetchSubjects = async () => {
     const { data, error } = await supabase
@@ -197,6 +220,16 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
         "الحاسوب", "علوم الأرض", "التربية الوطنية", "الثقافة المالية"
       ];
 
+  // Default grades if none in database
+  const defaultGrades = [
+    "الصف الأول", "الصف الثاني", "الصف الثالث", "الصف الرابع",
+    "الصف الخامس", "الصف السادس", "الصف السابع", "الصف الثامن",
+    "الصف التاسع", "الصف العاشر", "الصف الحادي عشر", "الصف الثاني عشر",
+    "الأول ثانوي", "الثاني ثانوي"
+  ];
+  
+  const allGrades = availableGrades.length > 0 ? availableGrades : defaultGrades;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4">
@@ -207,20 +240,16 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
               <SelectValue placeholder="اختر الصف" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="الصف الأول">الصف الأول</SelectItem>
-              <SelectItem value="الصف الثاني">الصف الثاني</SelectItem>
-              <SelectItem value="الصف الثالث">الصف الثالث</SelectItem>
-              <SelectItem value="الصف الرابع">الصف الرابع</SelectItem>
-              <SelectItem value="الصف الخامس">الصف الخامس</SelectItem>
-              <SelectItem value="الصف السادس">الصف السادس</SelectItem>
-              <SelectItem value="الصف السابع">الصف السابع</SelectItem>
-              <SelectItem value="الصف الثامن">الصف الثامن</SelectItem>
-              <SelectItem value="الصف التاسع">الصف التاسع</SelectItem>
-              <SelectItem value="الصف العاشر">الصف العاشر</SelectItem>
-              <SelectItem value="الأول ثانوي">الأول ثانوي</SelectItem>
-              <SelectItem value="الثاني ثانوي">الثاني ثانوي</SelectItem>
+              {allGrades.map((g) => (
+                <SelectItem key={g} value={g}>{g}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {availableGrades.length > 0 && (
+            <p className="text-xs text-green-600">
+              ✓ {availableGrades.length} صف متاح في قاعدة البيانات
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
