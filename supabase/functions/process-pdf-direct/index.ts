@@ -125,7 +125,7 @@ async function extractBookStructure(
   console.log('Phase 1: Extracting book structure...');
   
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-06-05:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -202,7 +202,7 @@ async function extractUnitContent(
   const lessonsList = lessons.map(l => `- الدرس ${l.number}: ${l.name} (صفحات ${l.startPage}-${l.endPage})`).join('\n');
   
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-06-05:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -272,7 +272,7 @@ async function extractWithBase64(
   console.log('Extracting content from inline base64 with enhanced prompt...');
   
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-06-05:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
