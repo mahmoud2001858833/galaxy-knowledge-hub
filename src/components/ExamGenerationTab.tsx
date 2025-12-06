@@ -406,7 +406,8 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
               <Textarea
                 value={generatedQuestions}
                 readOnly
-                className="min-h-[300px] font-mono text-sm"
+                className="min-h-[300px] text-base leading-relaxed"
+                style={{ fontFamily: 'inherit' }}
               />
             </Card>
           )}
@@ -427,7 +428,8 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
               <Textarea
                 value={generatedAnswers}
                 readOnly
-                className="min-h-[200px] font-mono text-sm"
+                className="min-h-[200px] text-base leading-relaxed"
+                style={{ fontFamily: 'inherit' }}
               />
             </Card>
           )}

@@ -14,7 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Recycle, Lightbulb, Camera, Send, Loader2, 
   Clock, AlertTriangle, Leaf, ChevronDown, ChevronUp,
-  Star, Download, Share2, BookOpen, Wrench, Target, Shield
+  Star, Download, Share2, BookOpen, Wrench, Target, Shield,
+  Image, CheckCircle, Trophy, Calculator
 } from 'lucide-react';
 
 interface Project {
@@ -30,6 +31,7 @@ interface Project {
   results: string;
   development: string;
   sustainability: string;
+  generatedImage?: string;
 }
 
 interface Message {
@@ -60,6 +62,12 @@ const RecyclingProjectAdvisor = () => {
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [savedProjects, setSavedProjects] = useState<Project[]>([]);
+  const [generatingImageFor, setGeneratingImageFor] = useState<number | null>(null);
+  const [imageUploaded, setImageUploaded] = useState(false);
+
+  // Environmental impact calculator
+  const [completedProjects, setCompletedProjects] = useState(0);
+  const [environmentalPoints, setEnvironmentalPoints] = useState(0);
 
   const toggleMaterial = (material: string) => {
     setSelectedMaterials(prev => 
@@ -74,6 +82,14 @@ const RecyclingProjectAdvisor = () => {
     if (!file) return;
 
     setIsLoading(true);
+    setImageUploaded(true);
+    
+    // Show upload confirmation toast immediately
+    toast({
+      title: "📸 تم رفع الصورة بنجاح!",
+      description: "جاري تحليل المواد وإنشاء المشاريع...",
+    });
+
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
@@ -93,9 +109,12 @@ const RecyclingProjectAdvisor = () => {
           setProjects(data.projects);
           setFollowUpQuestions(data.followUpQuestions || []);
           toast({
-            title: "تم تحليل الصورة!",
-            description: `تم اقتراح ${data.projects.length} مشاريع`
+            title: "✅ تم تحليل الصورة بنجاح!",
+            description: `تم اقتراح ${data.projects.length} مشاريع إبداعية`,
           });
+          
+          // Add environmental points
+          setEnvironmentalPoints(prev => prev + 10);
         } else {
           throw new Error(data.error);
         }
@@ -109,6 +128,7 @@ const RecyclingProjectAdvisor = () => {
       });
     } finally {
       setIsLoading(false);
+      setImageUploaded(false);
     }
   };
 
@@ -143,9 +163,12 @@ const RecyclingProjectAdvisor = () => {
         setProjects(data.projects);
         setFollowUpQuestions(data.followUpQuestions || []);
         toast({
-          title: "تم إنشاء المشاريع!",
-          description: `تم اقتراح ${data.projects.length} مشاريع لإعادة التدوير`
+          title: "✅ تم إنشاء المشاريع!",
+          description: `تم اقتراح ${data.projects.length} مشاريع إبداعية لإعادة التدوير`
         });
+        
+        // Add environmental points
+        setEnvironmentalPoints(prev => prev + 5);
       } else {
         throw new Error(data.error);
       }
@@ -157,6 +180,50 @@ const RecyclingProjectAdvisor = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const generateProjectImage = async (project: Project, index: number) => {
+    setGeneratingImageFor(index);
+    
+    toast({
+      title: "🎨 جاري إنشاء الصورة التوضيحية...",
+      description: "يرجى الانتظار بضع ثوانٍ",
+    });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-project-image', {
+        body: {
+          projectName: project.name,
+          projectIdea: project.idea,
+          projectMaterials: project.materials
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        // Update project with generated image
+        const updatedProjects = [...projects];
+        updatedProjects[index] = { ...project, generatedImage: data.imageUrl };
+        setProjects(updatedProjects);
+        
+        toast({
+          title: "✅ تم إنشاء الصورة التوضيحية!",
+          description: project.name,
+        });
+        
+        // Add environmental points
+        setEnvironmentalPoints(prev => prev + 3);
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ أثناء إنشاء الصورة",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingImageFor(null);
     }
   };
 
@@ -199,9 +266,32 @@ const RecyclingProjectAdvisor = () => {
         toast({ title: "المشروع محفوظ بالفعل" });
         return prev;
       }
-      toast({ title: "تم حفظ المشروع!", description: project.name });
+      toast({ title: "⭐ تم حفظ المشروع!", description: project.name });
+      setEnvironmentalPoints(prev => prev + 2);
       return [...prev, project];
     });
+  };
+
+  const markProjectCompleted = (project: Project) => {
+    setCompletedProjects(prev => prev + 1);
+    setEnvironmentalPoints(prev => prev + 20);
+    toast({
+      title: "🏆 مبروك! أنجزت مشروعاً جديداً!",
+      description: `+20 نقطة بيئية! إجمالي نقاطك: ${environmentalPoints + 20}`,
+    });
+  };
+
+  const shareProject = (project: Project) => {
+    if (navigator.share) {
+      navigator.share({
+        title: project.name,
+        text: `مشروع إعادة تدوير: ${project.name}\n\n${project.idea}`,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(`مشروع إعادة تدوير: ${project.name}\n\n${project.idea}`);
+      toast({ title: "📋 تم نسخ المشروع للحافظة!" });
+    }
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -209,6 +299,15 @@ const RecyclingProjectAdvisor = () => {
     if (difficulty.includes('متوسط')) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
     return 'bg-red-500/20 text-red-400 border-red-500/30';
   };
+
+  // Calculate environmental impact
+  const calculateImpact = () => {
+    const wasteReduced = completedProjects * 0.5; // 0.5 kg per project
+    const co2Saved = completedProjects * 1.2; // 1.2 kg CO2 per project
+    return { wasteReduced, co2Saved };
+  };
+
+  const impact = calculateImpact();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-950 via-emerald-950 to-teal-950 p-4">
@@ -227,6 +326,18 @@ const RecyclingProjectAdvisor = () => {
             <ArrowLeft className="w-4 h-4" />
             رجوع
           </Button>
+
+          {/* Environmental Points Badge */}
+          <div className="flex items-center gap-4">
+            <Badge className="bg-green-600/30 text-green-300 border-green-500/50 px-4 py-2">
+              <Trophy className="w-4 h-4 ml-2" />
+              {environmentalPoints} نقطة بيئية
+            </Badge>
+            <Badge className="bg-blue-600/30 text-blue-300 border-blue-500/50 px-4 py-2">
+              <CheckCircle className="w-4 h-4 ml-2" />
+              {completedProjects} مشروع منجز
+            </Badge>
+          </div>
         </motion.div>
 
         {/* Title */}
@@ -248,6 +359,33 @@ const RecyclingProjectAdvisor = () => {
           </p>
         </motion.div>
 
+        {/* Environmental Impact Card */}
+        {completedProjects > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8"
+          >
+            <Card className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-center gap-8">
+                  <div className="text-center">
+                    <Calculator className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-green-400">{impact.wasteReduced.toFixed(1)} كغ</p>
+                    <p className="text-white/60 text-sm">نفايات تم إعادة تدويرها</p>
+                  </div>
+                  <div className="h-12 w-px bg-white/20" />
+                  <div className="text-center">
+                    <Leaf className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-emerald-400">{impact.co2Saved.toFixed(1)} كغ</p>
+                    <p className="text-white/60 text-sm">CO₂ تم توفيره</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         <Tabs defaultValue="generator" className="w-full">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8 bg-white/10">
             <TabsTrigger value="generator" className="text-white data-[state=active]:bg-green-600">
@@ -256,7 +394,7 @@ const RecyclingProjectAdvisor = () => {
             </TabsTrigger>
             <TabsTrigger value="saved" className="text-white data-[state=active]:bg-green-600">
               <Star className="w-4 h-4 ml-2" />
-              المحفوظة
+              المحفوظة ({savedProjects.length})
             </TabsTrigger>
             <TabsTrigger value="chat" className="text-white data-[state=active]:bg-green-600">
               <Send className="w-4 h-4 ml-2" />
@@ -362,8 +500,17 @@ const RecyclingProjectAdvisor = () => {
                         className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20"
                         disabled={isLoading}
                       >
-                        <Camera className="w-4 h-4 ml-2" />
-                        أو ارفع صورة للمواد
+                        {imageUploaded ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 ml-2 text-green-400" />
+                            تم رفع الصورة، جاري التحليل...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-4 h-4 ml-2" />
+                            📸 ارفع صورة للمواد
+                          </>
+                        )}
                       </Button>
                     </div>
 
@@ -376,12 +523,12 @@ const RecyclingProjectAdvisor = () => {
                       {isLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                          جاري التحليل...
+                          جاري التحليل والإنشاء...
                         </>
                       ) : (
                         <>
                           <Lightbulb className="w-4 h-4 ml-2" />
-                          اقترح مشاريع
+                          🚀 اقترح مشاريع إبداعية
                         </>
                       )}
                     </Button>
@@ -394,7 +541,7 @@ const RecyclingProjectAdvisor = () => {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <ScrollArea className="h-[600px]">
+                <ScrollArea className="h-[700px]">
                   {projects.length === 0 ? (
                     <Card className="bg-white/5 border-white/10 h-full flex items-center justify-center">
                       <CardContent className="text-center py-20">
@@ -452,12 +599,46 @@ const RecyclingProjectAdvisor = () => {
                                   exit={{ height: 0, opacity: 0 }}
                                 >
                                   <CardContent className="space-y-4 border-t border-white/10 pt-4">
+                                    {/* Generated Image */}
+                                    {project.generatedImage && (
+                                      <div className="rounded-lg overflow-hidden">
+                                        <img 
+                                          src={project.generatedImage} 
+                                          alt={project.name}
+                                          className="w-full h-48 object-cover"
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Generate Image Button */}
+                                    {!project.generatedImage && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => generateProjectImage(project, index)}
+                                        disabled={generatingImageFor === index}
+                                        className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                                      >
+                                        {generatingImageFor === index ? (
+                                          <>
+                                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                            جاري إنشاء الصورة...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Image className="w-4 h-4 ml-2" />
+                                            🎨 إنشاء صورة توضيحية
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
+
                                     {/* Idea */}
                                     <div>
                                       <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
                                         <Target className="w-4 h-4" /> الفكرة
                                       </h4>
-                                      <p className="text-white/80 text-sm">{project.idea}</p>
+                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.idea}</p>
                                     </div>
 
                                     {/* Materials */}
@@ -465,7 +646,7 @@ const RecyclingProjectAdvisor = () => {
                                       <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
                                         <BookOpen className="w-4 h-4" /> المواد المطلوبة
                                       </h4>
-                                      <p className="text-white/80 text-sm">{project.materials}</p>
+                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.materials}</p>
                                     </div>
 
                                     {/* Tools */}
@@ -473,16 +654,24 @@ const RecyclingProjectAdvisor = () => {
                                       <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
                                         <Wrench className="w-4 h-4" /> الأدوات
                                       </h4>
-                                      <p className="text-white/80 text-sm">{project.tools}</p>
+                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.tools}</p>
                                     </div>
 
                                     {/* Steps */}
                                     <div>
-                                      <h4 className="text-green-400 font-semibold mb-2">خطوات العمل</h4>
-                                      <div className="text-white/80 text-sm whitespace-pre-line">
+                                      <h4 className="text-green-400 font-semibold mb-2">📝 خطوات العمل</h4>
+                                      <div className="text-white/80 text-sm whitespace-pre-line bg-white/5 p-3 rounded-lg">
                                         {project.steps}
                                       </div>
                                     </div>
+
+                                    {/* Principle */}
+                                    {project.principle && (
+                                      <div>
+                                        <h4 className="text-blue-400 font-semibold mb-2">🔬 المبدأ العلمي/البيئي</h4>
+                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.principle}</p>
+                                      </div>
+                                    )}
 
                                     {/* Safety */}
                                     {project.safety && (
@@ -490,7 +679,23 @@ const RecyclingProjectAdvisor = () => {
                                         <h4 className="text-red-400 font-semibold mb-2 flex items-center gap-2">
                                           <Shield className="w-4 h-4" /> تحذيرات الأمان
                                         </h4>
-                                        <p className="text-white/80 text-sm">{project.safety}</p>
+                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.safety}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Results */}
+                                    {project.results && (
+                                      <div>
+                                        <h4 className="text-yellow-400 font-semibold mb-2">🎯 النتائج المتوقعة</h4>
+                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.results}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Development Ideas */}
+                                    {project.development && (
+                                      <div>
+                                        <h4 className="text-purple-400 font-semibold mb-2">💡 أفكار للتطوير</h4>
+                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.development}</p>
                                       </div>
                                     )}
 
@@ -499,11 +704,11 @@ const RecyclingProjectAdvisor = () => {
                                       <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
                                         <Leaf className="w-4 h-4" /> الأثر البيئي
                                       </h4>
-                                      <p className="text-white/80 text-sm">{project.sustainability}</p>
+                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.sustainability}</p>
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex gap-2 pt-2">
+                                    <div className="flex flex-wrap gap-2 pt-2">
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -516,10 +721,19 @@ const RecyclingProjectAdvisor = () => {
                                       <Button
                                         size="sm"
                                         variant="outline"
+                                        onClick={() => shareProject(project)}
                                         className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                                       >
                                         <Share2 className="w-4 h-4 ml-1" />
                                         مشاركة
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => markProjectCompleted(project)}
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        <CheckCircle className="w-4 h-4 ml-1" />
+                                        أنجزت المشروع! 🎉
                                       </Button>
                                     </div>
                                   </CardContent>
@@ -534,7 +748,7 @@ const RecyclingProjectAdvisor = () => {
                       {followUpQuestions.length > 0 && (
                         <Card className="bg-blue-500/10 border-blue-500/30">
                           <CardHeader>
-                            <CardTitle className="text-blue-400 text-lg">أسئلة لتخصيص أفضل</CardTitle>
+                            <CardTitle className="text-blue-400 text-lg">💬 أسئلة لتخصيص أفضل</CardTitle>
                           </CardHeader>
                           <CardContent>
                             <ul className="space-y-2">
@@ -558,7 +772,7 @@ const RecyclingProjectAdvisor = () => {
           <TabsContent value="saved">
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
-                <CardTitle className="text-white">المشاريع المحفوظة</CardTitle>
+                <CardTitle className="text-white">⭐ المشاريع المحفوظة</CardTitle>
               </CardHeader>
               <CardContent>
                 {savedProjects.length === 0 ? (
@@ -577,7 +791,26 @@ const RecyclingProjectAdvisor = () => {
                           </Badge>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-white/70 text-sm">{project.idea}</p>
+                          <p className="text-white/70 text-sm whitespace-pre-line">{project.idea}</p>
+                          <div className="flex gap-2 mt-4">
+                            <Button
+                              size="sm"
+                              onClick={() => markProjectCompleted(project)}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="w-4 h-4 ml-1" />
+                              أنجزته!
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => shareProject(project)}
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                            >
+                              <Share2 className="w-4 h-4 ml-1" />
+                              مشاركة
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -605,6 +838,7 @@ const RecyclingProjectAdvisor = () => {
                     <div className="text-center py-10">
                       <Recycle className="w-12 h-12 text-white/20 mx-auto mb-4" />
                       <p className="text-white/50">ابدأ محادثة مع الخبير</p>
+                      <p className="text-white/40 text-sm mt-2">اسأل عن أي مادة أو مشروع أو فكرة بيئية!</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
