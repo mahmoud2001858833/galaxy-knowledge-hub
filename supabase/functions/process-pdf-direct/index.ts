@@ -59,15 +59,18 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   return data.access_token;
 }
 
-// Stream upload file to Google File API
-async function uploadToGoogleFileAPIFromUrl(
-  fileUrl: string,
-  fileSize: number,
+// Upload base64 PDF directly to Google File API
+async function uploadBase64ToGoogleFileAPI(
+  base64Data: string,
   accessToken: string
 ): Promise<{ fileUri: string; displayName: string }> {
   const displayName = `textbook_${Date.now()}.pdf`;
   
-  console.log('Starting resumable upload to Google File API, size:', fileSize);
+  // Decode base64 to binary
+  const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+  const fileSize = binaryData.length;
+  
+  console.log('Starting upload to Google File API, size:', fileSize);
   
   // Start resumable upload session
   const startResponse = await fetch(
@@ -97,71 +100,47 @@ async function uploadToGoogleFileAPIFromUrl(
   const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
   if (!uploadUrl) throw new Error('No upload URL received');
 
-  console.log('Upload URL obtained, downloading and uploading file in chunks...');
+  console.log('Upload URL obtained, uploading file in chunks...');
 
-  // Download file and upload in chunks
-  const fileResponse = await fetch(fileUrl);
-  if (!fileResponse.ok || !fileResponse.body) {
-    throw new Error('Failed to download file');
-  }
-
-  const reader = fileResponse.body.getReader();
+  // Upload in chunks
   const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
-  let buffer = new Uint8Array(0);
   let offset = 0;
 
-  while (true) {
-    const { done, value } = await reader.read();
+  while (offset < fileSize) {
+    const chunkEnd = Math.min(offset + CHUNK_SIZE, fileSize);
+    const chunk = binaryData.slice(offset, chunkEnd);
+    const isLast = chunkEnd >= fileSize;
+    const uploadCommand = isLast ? 'upload, finalize' : 'upload';
     
-    if (value) {
-      // Append to buffer
-      const newBuffer = new Uint8Array(buffer.length + value.length);
-      newBuffer.set(buffer);
-      newBuffer.set(value, buffer.length);
-      buffer = newBuffer;
-    }
+    console.log(`Uploading chunk: ${offset}-${chunkEnd} of ${fileSize} (${isLast ? 'final' : 'partial'})`);
     
-    // Upload when we have enough data or reached the end
-    while (buffer.length >= CHUNK_SIZE || (done && buffer.length > 0)) {
-      const chunkSize = Math.min(CHUNK_SIZE, buffer.length);
-      const chunk = buffer.slice(0, chunkSize);
-      buffer = buffer.slice(chunkSize);
-      
-      const isLast = done && buffer.length === 0;
-      const uploadCommand = isLast ? 'upload, finalize' : 'upload';
-      
-      console.log(`Uploading chunk: ${offset}-${offset + chunk.length} of ${fileSize} (${isLast ? 'final' : 'partial'})`);
-      
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Length': chunk.length.toString(),
-          'X-Goog-Upload-Offset': offset.toString(),
-          'X-Goog-Upload-Command': uploadCommand,
-        },
-        body: chunk
-      });
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Length': chunk.length.toString(),
+        'X-Goog-Upload-Offset': offset.toString(),
+        'X-Goog-Upload-Command': uploadCommand,
+      },
+      body: chunk
+    });
 
-      if (!uploadResponse.ok && !isLast) {
-        const errorText = await uploadResponse.text();
-        console.error('Chunk upload error:', errorText);
-        throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
-      }
-      
-      if (isLast) {
-        const fileData = await uploadResponse.json();
-        console.log('File uploaded successfully:', fileData.file?.name);
-        return {
-          fileUri: fileData.file?.uri || '',
-          displayName: fileData.file?.displayName || displayName
-        };
-      }
-      
-      offset += chunk.length;
+    if (isLast) {
+      const fileData = await uploadResponse.json();
+      console.log('File uploaded successfully:', fileData.file?.name);
+      return {
+        fileUri: fileData.file?.uri || '',
+        displayName: fileData.file?.displayName || displayName
+      };
     }
     
-    if (done) break;
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('Chunk upload error:', errorText);
+      throw new Error(`Chunk upload failed: ${uploadResponse.status}`);
+    }
+    
+    offset = chunkEnd;
   }
 
   throw new Error('Upload failed - no final response');
@@ -269,16 +248,14 @@ serve(async (req) => {
   }
 
   try {
-    // Accept file URL instead of base64
-    const { fileUrl, bookName, grade, subject, semester, fileSizeMB } = await req.json();
+    // Accept base64 PDF data directly (NOT from Supabase Storage)
+    const { pdfBase64, bookName, grade, subject, semester, fileSizeMB } = await req.json();
     
-    console.log('Processing PDF from URL:', { bookName, grade, subject, semester, fileSizeMB });
+    console.log('Processing PDF directly to Google:', { bookName, grade, subject, semester, fileSizeMB });
 
-    if (!fileUrl || !grade || !subject || !semester) {
+    if (!pdfBase64 || !grade || !subject || !semester) {
       throw new Error('Missing required parameters');
     }
-
-    const fileSizeBytes = (fileSizeMB || 50) * 1024 * 1024;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -296,8 +273,8 @@ serve(async (req) => {
     const accessToken = await getAccessToken(serviceAccount);
     console.log('Access token obtained');
 
-    // Upload to Google File API by streaming from URL
-    const { fileUri } = await uploadToGoogleFileAPIFromUrl(fileUrl, fileSizeBytes, accessToken);
+    // Upload base64 PDF directly to Google File API
+    const { fileUri } = await uploadBase64ToGoogleFileAPI(pdfBase64, accessToken);
     console.log('File uploaded to Google, URI:', fileUri);
 
     // Extract content from file
@@ -317,7 +294,7 @@ serve(async (req) => {
       userId = user?.id;
     }
 
-    // Create book record
+    // Create book record (no file_url since we're not using Supabase Storage)
     const { data: bookRecord, error: bookError } = await supabase
       .from('jordanian_textbooks')
       .insert({
@@ -325,7 +302,7 @@ serve(async (req) => {
         grade,
         subject,
         semester,
-        file_url: fileUrl,
+        file_url: `google-file://${fileUri}`, // Reference to Google File API
         file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
