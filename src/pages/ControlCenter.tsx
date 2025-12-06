@@ -96,7 +96,7 @@ export default function ControlCenter() {
       return;
     }
     if (section === "jordanian-content") {
-      navigate("/manage-jordanian-content");
+      navigate("/jordanian-assistant");
       return;
     }
     

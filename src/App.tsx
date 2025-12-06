@@ -102,9 +102,8 @@ import EducationSection from './pages/EducationSection';
 import AIAssistantSection from './pages/AIAssistantSection';
 import JordanianAssistant from './pages/JordanianAssistant';
 import ConversationView from './pages/ConversationView';
-import UploadTextbooks from './pages/UploadTextbooks';
-import UploadJordanianContent from './pages/UploadJordanianContent';
-import ManageJordanianContent from './pages/ManageJordanianContent';
+// Removed: UploadTextbooks, UploadJordanianContent, ManageJordanianContent
+// Now using UploadedSourcesTab inside JordanianAssistant
 import SchoolMagazine from './pages/SchoolMagazine';
 import NewsDetail from './pages/NewsDetail';
 import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
@@ -549,18 +548,8 @@ const router = createBrowserRouter([
         path: 'conversation/:conversationId',
         element: <AuthGuard><ConversationView /></AuthGuard>,
       },
-      {
-        path: 'upload-textbooks',
-        element: <AuthGuard><UploadTextbooks /></AuthGuard>,
-      },
-      {
-        path: 'upload-jordanian-content',
-        element: <AuthGuard><UploadJordanianContent /></AuthGuard>,
-      },
-      {
-        path: 'manage-jordanian-content',
-        element: <AuthGuard><ManageJordanianContent /></AuthGuard>,
-      },
+      // Removed upload-textbooks, upload-jordanian-content, manage-jordanian-content routes
+      // Upload is now only through "المصادر المتاحة" in JordanianAssistant
       {
         path: 'school-magazine',
         element: <PublicRoute><SchoolMagazine /></PublicRoute>,
