@@ -296,8 +296,27 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       throw new Error(`API Error: ${response.status}`)
     }
 
-    const aiResponse = await response.json()
+    // قراءة النص أولاً ثم محاولة تحويله
+    const responseText = await response.text()
+    console.log('Raw response length:', responseText.length)
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('استجابة فارغة من الذكاء الاصطناعي')
+    }
+
+    let aiResponse
+    try {
+      aiResponse = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('JSON parse error, response preview:', responseText.substring(0, 500))
+      throw new Error('فشل في قراءة استجابة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.')
+    }
+
     const generatedContent = aiResponse.choices?.[0]?.message?.content || ''
+    
+    if (!generatedContent || generatedContent.trim().length === 0) {
+      throw new Error('لم يتم إنشاء محتوى. يرجى إعادة صياغة الطلب.')
+    }
 
     console.log('Response length:', generatedContent.length)
 
