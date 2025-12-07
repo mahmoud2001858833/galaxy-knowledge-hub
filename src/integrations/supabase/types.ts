@@ -2212,6 +2212,7 @@ export type Database = {
       user_solved_puzzles: {
         Row: {
           id: string
+          is_correct: boolean | null
           puzzle_id: string
           solved_at: string
           subject: string
@@ -2219,6 +2220,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          is_correct?: boolean | null
           puzzle_id: string
           solved_at?: string
           subject: string
@@ -2226,6 +2228,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          is_correct?: boolean | null
           puzzle_id?: string
           solved_at?: string
           subject?: string
