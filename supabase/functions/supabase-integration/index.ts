@@ -284,7 +284,7 @@ serve(async (req) => {
 
         const { data: connection } = await adminClient
           .from('supabase_connections')
-          .select('supabase_url, anon_key, schema_name, is_active, last_verified_at')
+          .select('supabase_url, anon_key, service_role_key, schema_name, is_active, last_verified_at')
           .eq('project_id', projectId)
           .eq('is_active', true)
           .single()
@@ -293,7 +293,251 @@ serve(async (req) => {
           JSON.stringify({ 
             success: true, 
             connection: connection || null,
-            connected: !!connection
+            connected: !!connection,
+            hasServiceKey: !!connection?.service_role_key
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'create_tables': {
+        // إنشاء الجداول تلقائياً في قاعدة بيانات المستخدم
+        const { sql, tableName } = await req.json().catch(() => ({}))
+        
+        if (!projectId) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'projectId مطلوب' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        if (!sql) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'SQL مطلوب' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        // جلب بيانات الاتصال
+        const { data: conn } = await adminClient
+          .from('supabase_connections')
+          .select('*')
+          .eq('project_id', projectId)
+          .eq('is_active', true)
+          .single()
+
+        if (!conn) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'لا يوجد اتصال Supabase نشط' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        if (!conn.service_role_key) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'مفتاح Service Role مطلوب لإنشاء الجداول',
+              requiresServiceKey: true
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        console.log(`Creating tables in user's Supabase: ${conn.supabase_url}`)
+        console.log('SQL:', sql.substring(0, 200))
+
+        try {
+          // استخدام REST API لتنفيذ SQL
+          const supabaseRef = conn.supabase_url.match(/https:\/\/([^.]+)/)?.[1]
+          if (!supabaseRef) throw new Error('Invalid Supabase URL')
+
+          // تنفيذ SQL عبر REST API
+          const sqlResponse = await fetch(`${conn.supabase_url}/rest/v1/rpc/exec_sql`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${conn.service_role_key}`,
+              'apikey': conn.service_role_key,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ query: sql })
+          })
+
+          // إذا لم تكن exec_sql موجودة، نحاول طريقة أخرى
+          if (!sqlResponse.ok) {
+            // محاولة استخدام pg-sql endpoint
+            const pgSqlResponse = await fetch(`https://${supabaseRef}.supabase.co/pg/sql`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${conn.service_role_key}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ query: sql })
+            })
+
+            if (!pgSqlResponse.ok) {
+              // محاولة أخيرة - REST API مباشرة
+              console.log('Trying alternative SQL execution method...')
+              
+              // تقسيم SQL إلى statements منفصلة
+              const statements = sql.split(';').filter((s: string) => s.trim())
+              const errors: string[] = []
+              
+              for (const stmt of statements) {
+                const trimmedStmt = stmt.trim()
+                if (!trimmedStmt) continue
+                
+                // محاولة تنفيذ كل statement
+                try {
+                  // استخدام supabase-js لإنشاء الجداول
+                  const createClient = (await import('https://esm.sh/@supabase/supabase-js@2')).createClient
+                  const userSupabase = createClient(conn.supabase_url, conn.service_role_key, {
+                    db: { schema: conn.schema_name || 'public' }
+                  })
+                  
+                  // محاولة استخدام RPC أو أي طريقة متاحة
+                  const { error: rpcError } = await userSupabase.rpc('exec_sql', { query: trimmedStmt + ';' })
+                  if (rpcError) {
+                    console.log('RPC not available, SQL needs manual execution')
+                    errors.push(rpcError.message)
+                  }
+                } catch (e) {
+                  console.error('Statement error:', e)
+                }
+              }
+
+              // إذا فشلت كل المحاولات، نرجع SQL للتنفيذ اليدوي
+              if (errors.length > 0) {
+                return new Response(
+                  JSON.stringify({ 
+                    success: false, 
+                    error: 'تعذر تنفيذ SQL تلقائياً. يرجى تنفيذه يدوياً.',
+                    sql,
+                    manualRequired: true,
+                    editorUrl: `https://supabase.com/dashboard/project/${supabaseRef}/sql/new`
+                  }),
+                  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                )
+              }
+            }
+          }
+
+          console.log('Tables created successfully')
+
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: `تم إنشاء ${tableName || 'الجداول'} بنجاح!`,
+              tablesCreated: true
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (sqlError) {
+          console.error('SQL execution error:', sqlError)
+          
+          // إرجاع SQL للتنفيذ اليدوي
+          const supabaseRef = conn.supabase_url.match(/https:\/\/([^.]+)/)?.[1] || ''
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'تعذر تنفيذ SQL تلقائياً',
+              sql,
+              manualRequired: true,
+              editorUrl: `https://supabase.com/dashboard/project/${supabaseRef}/sql/new`
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
+      case 'auto_create_auth_tables': {
+        // إنشاء جداول المصادقة الأساسية تلقائياً
+        if (!projectId) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'projectId مطلوب' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        const { data: conn } = await adminClient
+          .from('supabase_connections')
+          .select('*')
+          .eq('project_id', projectId)
+          .eq('is_active', true)
+          .single()
+
+        if (!conn || !conn.service_role_key) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'مفتاح Service Role مطلوب',
+              requiresServiceKey: true
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        // SQL لإنشاء جداول المصادقة الأساسية
+        const authTablesSql = `
+-- Profiles table for user data
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  username TEXT UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  role TEXT DEFAULT 'user',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Trigger for auto-creating profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, full_name, avatar_url)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data->>'username',
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'avatar_url'
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+`;
+
+        const supabaseRef = conn.supabase_url.match(/https:\/\/([^.]+)/)?.[1] || ''
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'تم تجهيز SQL لجداول المصادقة',
+            sql: authTablesSql,
+            editorUrl: `https://supabase.com/dashboard/project/${supabaseRef}/sql/new`,
+            instructions: 'انسخ SQL وألصقه في محرر Supabase لإنشاء الجداول'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
