@@ -559,7 +559,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'education-section',
-        element: <PublicRoute><EducationSection /></PublicRoute>,
+        element: <AuthGuard><EducationSection /></AuthGuard>,
       },
       {
         path: 'ai-assistant-section',

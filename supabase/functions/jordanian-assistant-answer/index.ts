@@ -36,9 +36,20 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get ALL textbook content
-    console.log('📚 Fetching textbook content...');
-    const { data: contentPages, error: contentError } = await supabase
+    // ✅ تحسين: بحث ذكي في المحتوى باستخدام كلمات مفتاحية
+    console.log('📚 Searching textbook content...');
+    
+    // استخراج كلمات البحث من السؤال
+    const searchKeywords = question
+      .replace(/[؟،.!:]/g, '')
+      .split(/\s+/)
+      .filter((word: string) => word.length > 2)
+      .slice(0, 5);
+    
+    console.log('🔍 Search keywords:', searchKeywords);
+
+    // جلب كل المحتوى مع البحث
+    const { data: allContent, error: contentError } = await supabase
       .from('jordanian_textbook_content')
       .select('*')
       .order('grade', { ascending: true })
@@ -54,7 +65,8 @@ serve(async (req) => {
       );
     }
 
-    if (!contentPages || contentPages.length === 0) {
+    if (!allContent || allContent.length === 0) {
+      console.log('❌ No content found in database');
       return new Response(
         JSON.stringify({
           answer: 'عذراً، لم يتم تزويد النظام بأي محتوى دراسي بعد. يرجى الانتظار والمحاولة في وقت لاحق',
@@ -64,7 +76,44 @@ serve(async (req) => {
       );
     }
 
-    console.log(`📖 Found ${contentPages.length} pages across all grades`);
+    console.log(`📖 Total pages in database: ${allContent.length}`);
+
+    // ✅ تحسين: ترتيب المحتوى حسب الصلة بالسؤال
+    const scoredContent = allContent.map((page: any) => {
+      let score = 0;
+      const pageText = (page.page_content || '').toLowerCase();
+      const lessonName = (page.lesson_name || '').toLowerCase();
+      const unitName = (page.unit_name || '').toLowerCase();
+      
+      for (const keyword of searchKeywords) {
+        const lowerKeyword = keyword.toLowerCase();
+        if (pageText.includes(lowerKeyword)) score += 3;
+        if (lessonName.includes(lowerKeyword)) score += 5;
+        if (unitName.includes(lowerKeyword)) score += 4;
+      }
+      
+      // إعطاء أولوية لصف الطالب
+      if (page.grade === grade) score += 2;
+      
+      return { ...page, relevanceScore: score };
+    });
+
+    // ترتيب حسب الصلة
+    scoredContent.sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
+
+    // أخذ أعلى 50 صفحة ذات صلة + كل المحتوى من صف الطالب
+    const gradeContent = scoredContent.filter((p: any) => p.grade === grade);
+    const relevantContent = scoredContent.filter((p: any) => p.relevanceScore > 0).slice(0, 30);
+    
+    // دمج المحتوى بدون تكرار
+    const contentMap = new Map();
+    [...gradeContent, ...relevantContent].forEach((p: any) => {
+      contentMap.set(p.id, p);
+    });
+    
+    const contentPages = Array.from(contentMap.values());
+    
+    console.log(`📊 Using ${contentPages.length} relevant pages (${gradeContent.length} from student's grade)`);
 
     // Build context with clear source markers
     const booksContext = contentPages
@@ -73,43 +122,49 @@ serve(async (req) => {
       )
       .join('\n\n');
 
-    const systemPrompt = `أنت معلم أردني خبير متخصص في المنهاج الأردني لجميع الصفوف.
+    console.log(`📝 Context size: ${booksContext.length} characters`);
 
-لديك محتوى كامل من الكتب الدراسية:
+    const systemPrompt = `أنت معلم أردني خبير ذو خبرة 30 عاماً في تدريس المنهاج الأردني لجميع الصفوف.
+
+لديك محتوى من الكتب المدرسية الأردنية:
 ${booksContext}
 
-📚 قواعد البحث والإجابة:
+📚 قواعد البحث والإجابة المُحسَّنة:
 
-1. **البحث الشامل**: ابحث في كل المحتوى من جميع الصفوف والمواد
+1. **البحث الشامل والذكي**: 
+   - ابحث في كل المحتوى المتاح بدقة
+   - ابحث عن المفاهيم وليس الكلمات الحرفية فقط
+   - إذا سأل الطالب "ما تعريف X" ابحث عن: "X هو/هي"، "يُعرَّف X"، "X:" إلخ
 
-2. **المرونة اللغوية**: 
-   - "تعريف" = "معنى" = "مفهوم" = "ما هو"
-   - تجاهل الفروق الإملائية
-   - افهم السياق وليس النص الحرفي فقط
+2. **المرونة اللغوية الكاملة**: 
+   - "تعريف" = "معنى" = "مفهوم" = "ما هو" = "ما المقصود بـ"
+   - "أسباب" = "عوامل" = "دوافع" = "لماذا"
+   - "نتائج" = "آثار" = "عواقب" = "ماذا حدث"
+   - تجاهل الفروق الإملائية والهمزات
+   - افهم السياق العام للسؤال
 
-3. **صيغة الإجابة الإلزامية**:
-   - ابدأ بشرح واضح ومفصل للإجابة
-   - أضف أمثلة إذا وجدت
-   - **اختم بالمصدر المحدد فقط** بهذا الشكل:
+3. **إذا وجدت المعلومة - صيغة الإجابة**:
+   ابدأ بشرح واضح ومفصل للإجابة
+   أضف أمثلة من الكتاب إذا وجدت
    
+   ثم اختم بالمصدر المحدد فقط:
    📚 المصدر:
-   - الكتاب: [اسم الكتاب/المادة]
+   - الكتاب: [اسم المادة]
    - الصف: [الصف]
    - الوحدة: [رقم]: [اسم الوحدة]
    - الدرس: [رقم]: [اسم الدرس]
    - الصفحة: [رقم]
 
 4. **قاعدة المصدر الواحد**: 
-   ⚠️ اذكر فقط الكتاب والصفحة التي أخذت منها المعلومة فعلياً
-   ⚠️ لا تذكر كل الكتب المتاحة - فقط المصدر الذي استخدمته للإجابة
-   ⚠️ إذا استخدمت أكثر من مصدر، اذكر كل مصدر بجانب المعلومة التي أخذتها منه
+   ⚠️ اذكر فقط المصدر الذي أخذت منه المعلومة فعلياً
+   ⚠️ لا تسرد كل الكتب المتاحة
 
-5. إذا لم تجد المعلومة بعد البحث الشامل، قل:
-   "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً"
+5. **إذا لم تجد المعلومة بعد البحث الشامل**:
+   قل: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً. قد تكون في كتاب لم يتم رفعه بعد."
 
-6. اللغة: استخدم العربية الفصحى الواضحة
+6. اللغة: استخدم العربية الفصحى الواضحة والبسيطة
 
-طالب الصف ${grade} يسأل: ابحث في كل الكتب للإجابة`;
+الطالب ${studentName} من الصف ${grade} يسأل. ابحث بعناية في كل المحتوى للإجابة.`;
 
     console.log('🤖 Calling Lovable AI Gateway...');
 
