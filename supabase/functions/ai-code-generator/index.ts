@@ -195,7 +195,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, currentFiles, conversationHistory, supabaseConfig } = await req.json()
+    const { message, currentFiles, conversationHistory, supabaseConfig, projectId } = await req.json()
 
     if (!message) {
       return new Response(
@@ -227,6 +227,10 @@ const SUPABASE_ANON_KEY = '${supabaseConfig.anonKey}';
 // إنشاء العميل
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 \`\`\`
+
+## ⚠️ تعليمات مهمة للجداول:
+عند طلب نظام تسجيل دخول أو قاعدة بيانات، يجب تضمين SQL كامل في نهاية ردك.
+سيتم إنشاء الجداول تلقائياً في Supabase المستخدم.
 
 أنشئ نظام مصادقة يعمل مع Supabase Auth ونظام رفع بيانات يحفظ في قاعدة البيانات.`
     }
@@ -351,6 +355,43 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const sqlMatch = generatedContent.match(/```sql\n([\s\S]*?)```/)
     const sqlSchema = sqlMatch ? sqlMatch[1].trim() : null
 
+    // 🔥 إنشاء الجداول تلقائياً إذا كان Supabase متصل ويوجد SQL
+    let tablesCreated = false
+    let tableCreationResult = null
+    
+    if (sqlSchema && supabaseConfig?.connected && projectId) {
+      console.log('Attempting to auto-create tables...')
+      
+      try {
+        // استدعاء supabase-integration لإنشاء الجداول
+        const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+        const createTablesResponse = await fetch(`${SUPABASE_URL}/functions/v1/supabase-integration`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'create_tables',
+            projectId,
+            sql: sqlSchema
+          })
+        })
+
+        const createResult = await createTablesResponse.json()
+        tableCreationResult = createResult
+        
+        if (createResult.success) {
+          tablesCreated = true
+          console.log('Tables created successfully!')
+        } else {
+          console.log('Auto table creation not available:', createResult.error)
+        }
+      } catch (tableError) {
+        console.error('Table creation error:', tableError)
+      }
+    }
+
     // بناء الشرح
     let explanation = `## ✅ تم إنشاء ${files.length} ملف\n\n`
     
@@ -384,14 +425,27 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       explanation += '\n'
     }
 
+    // إضافة معلومات إنشاء الجداول
     if (sqlSchema) {
-      explanation += `\n---\n\n### 🗄️ SQL للجداول المطلوبة\n\n\`\`\`sql\n${sqlSchema}\n\`\`\`\n\n📋 **انسخ هذا الكود وألصقه في** [Supabase SQL Editor](https://supabase.com/dashboard/project/esifpjjehdnpkhyilctv/sql/new)`
+      if (tablesCreated) {
+        explanation += `\n---\n\n### 🗄️ ✅ تم إنشاء الجداول تلقائياً!\n\nتم إنشاء الجداول المطلوبة في قاعدة بيانات Supabase الخاصة بك.\n`
+      } else if (tableCreationResult?.manualRequired) {
+        explanation += `\n---\n\n### 🗄️ SQL للجداول المطلوبة\n\n\`\`\`sql\n${sqlSchema}\n\`\`\`\n\n📋 **انسخ هذا الكود وألصقه في** [Supabase SQL Editor](${tableCreationResult.editorUrl})`
+      } else {
+        explanation += `\n---\n\n### 🗄️ SQL للجداول المطلوبة\n\n\`\`\`sql\n${sqlSchema}\n\`\`\`\n\n📋 **انسخ هذا الكود وألصقه في** [Supabase SQL Editor](https://supabase.com/dashboard/project/esifpjjehdnpkhyilctv/sql/new)`
+      }
     }
 
-    console.log(`Created ${files.length} files`)
+    console.log(`Created ${files.length} files, Tables created: ${tablesCreated}`)
 
     return new Response(
-      JSON.stringify({ explanation, files, sqlSchema }),
+      JSON.stringify({ 
+        explanation, 
+        files, 
+        sqlSchema,
+        tablesCreated,
+        tableCreationResult
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
