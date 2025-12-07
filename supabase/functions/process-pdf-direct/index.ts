@@ -123,46 +123,6 @@ async function uploadToGoogleFileAPI(fileUrl: string, apiKeys: string[]): Promis
   throw new Error('Failed to upload file with all available keys');
 }
 
-// Use Lovable AI Gateway for content extraction (more reliable, no rate limits)
-async function extractContentWithLovableAI(
-  prompt: string,
-  lovableApiKey: string
-): Promise<string> {
-  console.log('Calling Lovable AI Gateway for content extraction...');
-  
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        {
-          role: 'system',
-          content: 'أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية. مهمتك استخراج كل المحتوى النصي وتنظيمه.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 65536,
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Lovable AI error:', response.status, errorText);
-    throw new Error(`Lovable AI error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || '';
-}
-
 // Extract content using Google API with file URI
 async function extractContentWithGoogleAPI(
   fileUri: string,
@@ -201,38 +161,113 @@ async function extractContentWithGoogleAPI(
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
-// Extract with base64 for small files using Lovable AI
-async function extractFromBase64WithLovableAI(
+// ✅ إصلاح: استخراج المحتوى من base64 مباشرة باستخدام Google Gemini API
+async function extractFromBase64WithGoogleAPI(
   base64Data: string,
-  lovableApiKey: string
+  apiKeys: string[],
+  prompt: string
 ): Promise<string> {
-  // For base64, we need to use text-based extraction since Lovable AI doesn't support file uploads directly
-  // We'll describe what we need and let the AI work with the context
-  const prompt = `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
-
-لقد تم رفع كتاب مدرسي. استخرج كل المحتوى النصي وأرجعه بتنسيق JSON:
-
-{
-  "content": [
-    {
-      "unit_number": 1,
-      "unit_name": "اسم الوحدة",
-      "lessons": [
+  console.log('📄 Extracting content from base64 PDF using Google Gemini...');
+  
+  // Try each key until one works
+  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+    const apiKey = apiKeys[keyIndex];
+    
+    try {
+      console.log(`Trying base64 extraction with key ${keyIndex + 1}/${apiKeys.length}...`);
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
-          "lesson_number": 1,
-          "lesson_name": "اسم الدرس",
-          "pages": [
-            { "page_number": 1, "content": "النص الكامل للصفحة" }
-          ]
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { 
+                  inline_data: { 
+                    mime_type: 'application/pdf', 
+                    data: base64Data 
+                  } 
+                },
+                { text: prompt }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 65536,
+            }
+          })
         }
-      ]
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`Key ${keyIndex + 1} base64 extraction failed:`, errorText.substring(0, 100));
+        
+        // If rate limited, wait and try next key
+        if (response.status === 429) {
+          await delay(2000);
+          continue;
+        }
+        continue;
+      }
+
+      const data = await response.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      if (content && content.length > 100) {
+        console.log(`✅ Base64 extraction successful with key ${keyIndex + 1}, content length: ${content.length}`);
+        return content;
+      }
+    } catch (error) {
+      console.log(`Key ${keyIndex + 1} base64 error:`, error);
+      await delay(1000);
+      continue;
     }
-  ]
+  }
+  
+  throw new Error('فشل استخراج المحتوى من جميع المفاتيح المتاحة');
 }
 
-تعليمات: استخرج جميع الوحدات والدروس والصفحات. أرجع JSON فقط.`;
+// Fallback to Lovable AI Gateway
+async function extractContentWithLovableAI(
+  prompt: string,
+  lovableApiKey: string
+): Promise<string> {
+  console.log('Calling Lovable AI Gateway for content extraction...');
+  
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'system',
+          content: 'أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية. مهمتك استخراج كل المحتوى النصي وتنظيمه.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 65536,
+    })
+  });
 
-  return extractContentWithLovableAI(prompt, lovableApiKey);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Lovable AI error:', response.status, errorText);
+    throw new Error(`Lovable AI error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
 }
 
 function parseGeminiResponse(text: string): any {
@@ -291,28 +326,35 @@ serve(async (req) => {
     let extractedText = '';
     let fileUri = '';
 
+    // ✅ تحسين: prompt أفضل لاستخراج المحتوى الكامل
     const extractionPrompt = `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
 
-مهمتك: اقرأ هذا الكتاب كاملاً واستخرج كل المحتوى النصي.
+مهمتك الأساسية: اقرأ هذا الكتاب المدرسي كاملاً من أول صفحة لآخر صفحة واستخرج كل المحتوى النصي بدقة.
 
-خطوات العمل:
-1. اقرأ جدول المحتويات لمعرفة هيكل الكتاب
-2. استخرج كل وحدة بالترتيب
-3. داخل كل وحدة استخرج كل درس
-4. استخرج محتوى كل صفحة
+⚠️ تعليمات مهمة جداً:
+1. اقرأ كل صفحة بالتفصيل
+2. استخرج كل النص من كل صفحة بما في ذلك:
+   - العناوين الرئيسية والفرعية
+   - الفقرات والشروحات
+   - التعريفات والمفاهيم
+   - الأمثلة والتمارين
+   - الأسئلة والأجوبة
+3. حافظ على أرقام الصفحات الحقيقية
+4. لا تترك أي محتوى
 
 أرجع النتيجة بتنسيق JSON:
 {
   "content": [
     {
       "unit_number": 1,
-      "unit_name": "اسم الوحدة",
+      "unit_name": "اسم الوحدة كما هو في الكتاب",
       "lessons": [
         {
           "lesson_number": 1,
-          "lesson_name": "اسم الدرس",
+          "lesson_name": "اسم الدرس كما هو في الكتاب",
           "pages": [
-            { "page_number": 1, "content": "النص الكامل للصفحة" }
+            { "page_number": 1, "content": "النص الكامل والحرفي للصفحة" },
+            { "page_number": 2, "content": "النص الكامل والحرفي للصفحة" }
           ]
         }
       ]
@@ -320,11 +362,13 @@ serve(async (req) => {
   ]
 }
 
-تعليمات مهمة:
+📌 قواعد صارمة:
 - استخرج جميع الوحدات بدون استثناء
-- استخرج كل النص من كل صفحة
-- حافظ على أرقام الصفحات الحقيقية
-- أرجع JSON فقط بدون أي نص إضافي`;
+- استخرج جميع الدروس في كل وحدة
+- استخرج كل النص من كل صفحة حرفياً
+- حافظ على أرقام الصفحات الحقيقية من الكتاب
+- أرجع JSON فقط بدون أي نص إضافي
+- لا تختصر أو تلخص - استخرج كل شيء كما هو`;
 
     if (pdfUrl) {
       // Large file: Upload to Google then extract
@@ -349,8 +393,10 @@ serve(async (req) => {
           try {
             console.log(`Trying extraction with Google key ${keyIndex + 1}...`);
             extractedText = await extractContentWithGoogleAPI(fileUri, googleApiKeys[keyIndex], extractionPrompt);
-            success = true;
-            console.log('Google API extraction successful');
+            if (extractedText && extractedText.length > 100) {
+              success = true;
+              console.log('Google API extraction successful, length:', extractedText.length);
+            }
           } catch (error) {
             console.log(`Google key ${keyIndex + 1} failed:`, error);
             await delay(2000);
@@ -388,10 +434,36 @@ ${extractionPrompt}`,
         }
       }
       
-    } else if (pdfBase64 && lovableApiKey) {
-      // Small file with base64: Use Lovable AI
-      console.log('=== Extracting from Base64 ===');
-      extractedText = await extractFromBase64WithLovableAI(pdfBase64, lovableApiKey);
+    } else if (pdfBase64) {
+      // ✅ إصلاح: الآن نرسل PDF الفعلي كـ base64 بدلاً من وصف نصي
+      console.log('=== Extracting from Base64 PDF ===');
+      console.log('Base64 length:', pdfBase64.length);
+      
+      if (googleApiKeys.length > 0) {
+        try {
+          extractedText = await extractFromBase64WithGoogleAPI(pdfBase64, googleApiKeys, extractionPrompt);
+        } catch (error) {
+          console.error('Google API base64 extraction failed:', error);
+          
+          // Fallback to Lovable AI
+          if (lovableApiKey) {
+            console.log('Falling back to Lovable AI...');
+            extractedText = await extractContentWithLovableAI(
+              `لديك كتاب مدرسي أردني. استخرج كل المحتوى.
+              
+${extractionPrompt}`,
+              lovableApiKey
+            );
+          }
+        }
+      } else if (lovableApiKey) {
+        extractedText = await extractContentWithLovableAI(
+          `لديك كتاب مدرسي أردني. استخرج كل المحتوى.
+          
+${extractionPrompt}`,
+          lovableApiKey
+        );
+      }
     } else {
       throw new Error('No valid extraction method available');
     }
@@ -399,8 +471,8 @@ ${extractionPrompt}`,
     console.log('=== Extraction Complete ===');
     console.log('Extracted text length:', extractedText.length);
 
-    if (!extractedText) {
-      throw new Error('فشل استخراج النص من الملف');
+    if (!extractedText || extractedText.length < 100) {
+      throw new Error('فشل استخراج النص من الملف - المحتوى فارغ أو قصير جداً');
     }
 
     const extractedData = parseGeminiResponse(extractedText);
@@ -477,21 +549,45 @@ ${extractionPrompt}`,
         }
       }
     } else if (extractedData.rawText) {
+      // ✅ تحسين: تقسيم النص الخام إلى صفحات منطقية
       fullText = extractedData.rawText;
-      records.push({
-        grade,
-        subject,
-        semester,
-        unit_number: 1,
-        unit_name: 'الوحدة الأولى',
-        lesson_number: 1,
-        lesson_name: 'الدرس الأول',
-        page_number: 1,
-        page_content: extractedData.rawText
-      });
+      const textParts = extractedData.rawText.split(/(?:\n\n\n|\n---\n|\n\*\*\*\n)/);
+      
+      let pageNum = 1;
+      for (const part of textParts) {
+        if (part.trim().length > 50) {
+          records.push({
+            grade,
+            subject,
+            semester,
+            unit_number: 1,
+            unit_name: 'الوحدة الأولى',
+            lesson_number: 1,
+            lesson_name: 'الدرس الأول',
+            page_number: pageNum,
+            page_content: part.trim()
+          });
+          pageNum++;
+        }
+      }
+      
+      if (records.length === 0) {
+        records.push({
+          grade,
+          subject,
+          semester,
+          unit_number: 1,
+          unit_name: 'الوحدة الأولى',
+          lesson_number: 1,
+          lesson_name: 'الدرس الأول',
+          page_number: 1,
+          page_content: extractedData.rawText
+        });
+      }
+      
       unitsSet.add(1);
       lessonsSet.add('1-1');
-      totalPages = 1;
+      totalPages = records.length;
     }
 
     console.log(`Saving ${records.length} content records...`);
