@@ -1,160 +1,128 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Brain, Trophy, Settings, Star, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import SubjectPuzzlesComponent from '@/components/subjectPuzzles/SubjectPuzzlesComponent';
-import SubjectPuzzleAdmin from '@/components/subjectPuzzles/SubjectPuzzleAdmin';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AllPuzzlesGrid from '@/components/puzzles/AllPuzzlesGrid';
+import LeaderboardPanel from '@/components/puzzles/LeaderboardPanel';
+import AdminPuzzlePanel from '@/components/puzzles/AdminPuzzlePanel';
+
+const ADMIN_EMAILS = ['jowmahmoud6@gmail.com', 'jali53207@gmail.com', 'jo789wmahmoud6@gmail.com'];
 
 const SubjectPuzzles = () => {
+  const [userId, setUserId] = useState<string | undefined>();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userScore, setUserScore] = useState(0);
+  const [activeTab, setActiveTab] = useState('puzzles');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    checkAdminStatus();
+    checkUser();
   }, []);
 
-  const checkAdminStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.email === 'jowmahmoud6@gmail.com') {
-        setIsAdmin(true);
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-    } finally {
-      setIsLoading(false);
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUserId(user.id);
+      setIsAdmin(ADMIN_EMAILS.includes(user.email || ''));
+      const { data: profile } = await supabase.from('profiles').select('score').eq('id', user.id).single();
+      if (profile) setUserScore(profile.score || 0);
     }
-  };
-
-  // Animated background elements
-  const renderAnimatedElements = () => {
-    const elements = [];
-    
-    // Generate circles
-    for (let i = 0; i < 15; i++) {
-      const size = Math.random() * 200 + 50;
-      const posX = Math.random() * 100;
-      const posY = Math.random() * 100;
-      const delay = Math.random() * 5;
-      const duration = Math.random() * 15 + 15;
-      const opacity = Math.random() * 0.1 + 0.05;
-      
-      elements.push(
-        <motion.div
-          key={`circle-${i}`}
-          className="absolute rounded-full bg-gradient-to-br from-purple-500/10 to-blue-500/10"
-          style={{
-            width: size,
-            height: size,
-            left: `${posX}%`,
-            top: `${posY}%`,
-            opacity: opacity
-          }}
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [opacity, opacity * 2, opacity],
-          }}
-          transition={{
-            duration: duration,
-            repeat: Infinity,
-            delay: delay,
-          }}
-        />
-      );
-    }
-    
-    // Generate stars
-    for (let i = 0; i < 50; i++) {
-      const size = Math.random() * 3 + 1;
-      const posX = Math.random() * 100;
-      const posY = Math.random() * 100;
-      const delay = Math.random() * 3;
-      const duration = Math.random() * 3 + 1;
-      
-      elements.push(
-        <motion.div
-          key={`star-${i}`}
-          className="absolute rounded-full bg-white"
-          style={{
-            width: size,
-            height: size,
-            left: `${posX}%`,
-            top: `${posY}%`,
-          }}
-          animate={{
-            opacity: [0.1, 0.8, 0.1],
-            scale: [1, 1.2, 1]
-          }}
-          transition={{
-            duration: duration,
-            repeat: Infinity,
-            delay: delay,
-          }}
-        />
-      );
-    }
-    
-    return elements;
   };
 
   return (
-    <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-[#0c0a20] via-[#1c1248] to-[#0c0a20]" dir="rtl">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden z-0">
-        {renderAnimatedElements()}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0a20] via-transparent to-transparent"></div>
+    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
+        {[...Array(15)].map((_, i) => (
+          <motion.div key={i} className="absolute w-2 h-2 rounded-full bg-primary/20"
+            style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
+            animate={{ y: [0, -30, 0], opacity: [0.2, 0.6, 0.2] }}
+            transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
+          />
+        ))}
+        <motion.div 
+          className="absolute top-20 right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute bottom-20 left-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity, delay: 4 }}
+        />
       </div>
-      
+
       {/* Content */}
-      <div className="container px-4 py-10 mx-auto relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="mb-12"
-        >
-          <div className="flex flex-col items-center text-center mb-10">
-            <motion.div
-              className="mb-6 relative"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ 
-                duration: 0.8, 
-                ease: [0.4, 0, 0.2, 1]
-              }}
+      <div className="relative z-10 container mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div className="text-center mb-8" initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div 
+            className="inline-flex items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 mb-4" 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+          >
+            <Brain className="h-12 w-12 text-primary" />
+          </motion.div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            الألغاز التعليمية
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            اختبر معلوماتك وتنافس مع الآخرين! لديك فرصة واحدة فقط لكل سؤال
+          </p>
+          {userId && (
+            <motion.div 
+              className="flex items-center justify-center gap-4 mt-6"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
             >
-              <div className="absolute -inset-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full blur-xl opacity-30 animate-pulse-glow"></div>
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center relative">
-                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                  <span className="text-3xl">🧩</span>
-                </div>
+              <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+                <Star className="h-5 w-5 text-primary fill-primary" />
+                <span className="font-bold text-primary">{userScore}</span>
+                <span className="text-muted-foreground text-sm">نقطة</span>
               </div>
             </motion.div>
-            
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white">
-              الألغاز التعليمية
-            </h1>
-            
-            <p className="text-lg text-white/80 max-w-xl mb-4">
-              تحدى نفسك بمجموعة متنوعة من الألغاز العلمية في مختلف المواد وبمستويات صعوبة متدرجة
-            </p>
-            
-            <div className="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-          </div>
+          )}
         </motion.div>
-        
-        {isAdmin && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-10"
-          >
-            <SubjectPuzzleAdmin subject="all" />
-          </motion.div>
-        )}
-        
-        <SubjectPuzzlesComponent />
+
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full max-w-md mx-auto ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} bg-card/50 backdrop-blur-sm`}>
+            <TabsTrigger value="puzzles" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Target className="h-4 w-4" />
+              الألغاز
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Trophy className="h-4 w-4" />
+              المتصدرين
+            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="admin" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Settings className="h-4 w-4" />
+                الإدارة
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <TabsContent value="puzzles" className="mt-6">
+            <AllPuzzlesGrid key={refreshKey} userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="leaderboard" className="mt-6">
+            <div className="max-w-2xl mx-auto">
+              <LeaderboardPanel currentUserId={userId} />
+            </div>
+          </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="admin" className="mt-6">
+              <div className="max-w-4xl mx-auto">
+                <AdminPuzzlePanel onPuzzleChange={() => setRefreshKey(k => k + 1)} />
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </div>
   );

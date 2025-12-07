@@ -194,8 +194,8 @@ const PlatformGuideAssistant = () => {
   // اقتراحات سريعة
   const quickSuggestions = [
     { icon: "🧮", text: "آلة حاسبة", action: () => setInputMessage("افتح آلة الحاسبة") },
-    { icon: "📺", text: "فيديوهات كيمياء", action: () => setInputMessage("انتقل لفيديوهات الكيمياء الصف العاشر") },
-    { icon: "🎮", text: "ألغاز علمية", action: () => setInputMessage("أريد حل الألغاز العلمية") },
+    { icon: "🧩", text: "الألغاز التعليمية", action: () => setInputMessage("انتقل للألغاز التعليمية") },
+    { icon: "🏆", text: "قائمة المتصدرين", action: () => setInputMessage("أريد رؤية قائمة المتصدرين") },
     { icon: "🔬", text: "جولة شاملة", action: () => setInputMessage("اعطني جولة شاملة في المنصة") }
   ];
 
