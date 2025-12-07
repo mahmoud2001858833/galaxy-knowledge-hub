@@ -146,3 +146,6 @@ verify_jwt = false
 
 [functions.eco-predict-ai]
 verify_jwt = false
+
+[functions.supabase-integration]
+verify_jwt = false

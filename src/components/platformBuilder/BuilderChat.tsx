@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Send, 
   Loader2, 
@@ -15,13 +14,15 @@ import {
   ChevronUp,
   Folder,
   LayoutTemplate,
-  MessageSquare
+  MessageSquare,
+  Database
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import ReactMarkdown from 'react-markdown';
 import { BuilderTemplates } from "./BuilderTemplates";
 import { SQLPreview } from "./SQLPreview";
+import { SupabaseIntegrationPanel } from "./SupabaseIntegrationPanel";
 
 interface Message {
   id: string;
@@ -169,12 +170,21 @@ export const BuilderChat = ({
     "أنشئ شبكة اجتماعية مصغرة",
   ];
   
-  const [activeTab, setActiveTab] = useState<'chat' | 'templates'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'templates' | 'supabase'>('chat');
+  const [supabaseConfig, setSupabaseConfig] = useState<{ url: string; anonKey: string } | null>(null);
   
   const handleTemplateSelect = (prompt: string) => {
     setInput(prompt);
     setActiveTab('chat');
     toast.success("تم تحديد القالب - اضغط إرسال للبدء");
+  };
+
+  const handleSupabaseConnectionChange = (connected: boolean, config?: { url: string; anonKey: string }) => {
+    if (connected && config) {
+      setSupabaseConfig(config);
+    } else {
+      setSupabaseConfig(null);
+    }
   };
 
   return (
@@ -199,24 +209,33 @@ export const BuilderChat = ({
         </div>
         
         {/* Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant={activeTab === 'chat' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('chat')}
-            className="flex-1 gap-1.5"
+            className="flex-1 gap-1 text-xs px-2"
           >
-            <MessageSquare className="w-3.5 h-3.5" />
+            <MessageSquare className="w-3 h-3" />
             المحادثة
           </Button>
           <Button
             variant={activeTab === 'templates' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('templates')}
-            className="flex-1 gap-1.5"
+            className="flex-1 gap-1 text-xs px-2"
           >
-            <LayoutTemplate className="w-3.5 h-3.5" />
-            قوالب جاهزة
+            <LayoutTemplate className="w-3 h-3" />
+            القوالب
+          </Button>
+          <Button
+            variant={activeTab === 'supabase' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('supabase')}
+            className={`flex-1 gap-1 text-xs px-2 ${supabaseConnected ? 'border-green-500/50' : ''}`}
+          >
+            <Database className="w-3 h-3" />
+            Supabase
           </Button>
         </div>
       </div>
@@ -225,6 +244,13 @@ export const BuilderChat = ({
       {activeTab === 'templates' ? (
         <ScrollArea className="flex-1">
           <BuilderTemplates onSelectTemplate={handleTemplateSelect} />
+        </ScrollArea>
+      ) : activeTab === 'supabase' ? (
+        <ScrollArea className="flex-1">
+          <SupabaseIntegrationPanel 
+            projectId={projectId} 
+            onConnectionChange={handleSupabaseConnectionChange}
+          />
         </ScrollArea>
       ) : (
         <>

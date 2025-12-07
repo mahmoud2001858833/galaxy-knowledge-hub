@@ -1924,6 +1924,56 @@ export type Database = {
         }
         Relationships: []
       }
+      supabase_connections: {
+        Row: {
+          anon_key: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_verified_at: string | null
+          project_id: string | null
+          schema_name: string | null
+          service_role_key: string | null
+          supabase_url: string
+          tables_cache: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          anon_key: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_verified_at?: string | null
+          project_id?: string | null
+          schema_name?: string | null
+          service_role_key?: string | null
+          supabase_url: string
+          tables_cache?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          anon_key?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_verified_at?: string | null
+          project_id?: string | null
+          schema_name?: string | null
+          service_role_key?: string | null
+          supabase_url?: string
+          tables_cache?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supabase_connections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tawjihi_files: {
         Row: {
           category: string
