@@ -182,9 +182,13 @@ const PuzzleDetails = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-card/80 backdrop-blur-xl border-border/50 overflow-hidden">
             {puzzle.image && (
-              <div className="relative h-48 overflow-hidden">
-                <img src={puzzle.image} alt={puzzle.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+              <div className="relative w-full overflow-hidden">
+                <img 
+                  src={puzzle.image} 
+                  alt={puzzle.title} 
+                  className="w-full h-auto max-h-[500px] object-contain bg-black/20" 
+                />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
               </div>
             )}
 

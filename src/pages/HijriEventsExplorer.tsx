@@ -34,6 +34,7 @@ const HijriEventsExplorer = () => {
   const [eventDetails, setEventDetails] = useState<EventData | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('year');
+  const [locationDescription, setLocationDescription] = useState('');
 
   const searchByYear = async () => {
     if (!yearInput.trim()) {
@@ -111,7 +112,8 @@ const HijriEventsExplorer = () => {
         body: { 
           type: 'generateImage',
           eventDescription: eventDetails.description,
-          eventTitle: eventDetails.title
+          eventTitle: eventDetails.title,
+          locationDescription: locationDescription.trim() || undefined
         }
       });
 
@@ -353,6 +355,26 @@ const HijriEventsExplorer = () => {
                             <ImageIcon className="w-5 h-5" />
                             إنشاء صورة توضيحية
                           </h4>
+                          
+                          {/* Location Description Input */}
+                          <div className="mb-4">
+                            <label className="block text-sm text-white/70 mb-2">
+                              وصف المكان/البيئة (اختياري - لصورة أفضل)
+                            </label>
+                            <Input
+                              type="text"
+                              placeholder="مثال: صحراء قاحلة تحت ضوء القمر، مدينة قديمة، جبال..."
+                              value={locationDescription}
+                              onChange={(e) => setLocationDescription(e.target.value)}
+                              className="bg-slate-700/50 border-purple-500/30 text-white placeholder:text-white/40"
+                            />
+                          </div>
+                          
+                          <div className="p-3 bg-amber-600/20 rounded-lg border border-amber-500/30 mb-4">
+                            <p className="text-amber-200 text-sm">
+                              ✨ ملاحظة: الأنبياء والصحابة العشرة المبشرون بالجنة يظهرون كنور إلهي مشع دون إظهار وجوههم احتراماً لمقامهم
+                            </p>
+                          </div>
                           
                           <Button
                             onClick={generateImage}
