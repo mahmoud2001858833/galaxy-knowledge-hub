@@ -35,7 +35,7 @@ async function callLovableAI(prompt: string): Promise<string> {
   return data.choices?.[0]?.message?.content || '';
 }
 
-async function generateImage(eventDescription: string, eventTitle: string): Promise<string | null> {
+async function generateImage(eventDescription: string, eventTitle: string, locationDescription?: string): Promise<string | null> {
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -43,11 +43,47 @@ async function generateImage(eventDescription: string, eventTitle: string): Prom
       return null;
     }
 
+    // قائمة الأنبياء والصحابة العشرة المبشرين بالجنة
+    const prophetsAndCompanions = [
+      'محمد', 'النبي', 'الرسول', 'عيسى', 'موسى', 'إبراهيم', 'نوح', 'آدم', 'داود', 'سليمان',
+      'يوسف', 'يونس', 'إسماعيل', 'إسحاق', 'يعقوب', 'هارون', 'زكريا', 'يحيى', 'إلياس', 'الخضر',
+      'أبو بكر الصديق', 'عمر بن الخطاب', 'عثمان بن عفان', 'علي بن أبي طالب',
+      'طلحة بن عبيد الله', 'الزبير بن العوام', 'عبد الرحمن بن عوف', 'سعد بن أبي وقاص',
+      'سعيد بن زيد', 'أبو عبيدة بن الجراح'
+    ];
+
+    // التحقق من ذكر الأنبياء أو الصحابة
+    const mentionsProphetOrCompanion = prophetsAndCompanions.some(name => 
+      eventTitle.includes(name) || eventDescription.includes(name)
+    );
+
+    let lightInstructions = '';
+    if (mentionsProphetOrCompanion) {
+      lightInstructions = `
+      CRITICAL INSTRUCTION: This event involves prophets or blessed companions.
+      - ANY human figures must be shown ONLY as pure radiant divine light (bright white/golden glow)
+      - ABSOLUTELY NO facial features, body details, or human shapes should be visible
+      - Replace human figures with ethereal light orbs or luminous silhouettes
+      - The light should be majestic, peaceful, and emanating divine blessing
+      - Focus on the spiritual atmosphere rather than physical representations`;
+    }
+
+    const locationInfo = locationDescription ? `Location/Setting: ${locationDescription}.` : '';
+
     const imagePrompt = `Create a beautiful, artistic historical illustration representing: ${eventTitle}. 
     Scene description: ${eventDescription}
-    Style: Elegant Islamic art style with geometric patterns, warm golden and emerald colors, 
-    historical Middle Eastern architecture, peaceful atmosphere, no text or letters on the image, 
-    just pure visual artistic representation. Ultra high quality, 16:9 aspect ratio.`;
+    ${locationInfo}
+    ${lightInstructions}
+    
+    Style Guidelines:
+    - Elegant Islamic art style with intricate geometric patterns
+    - Warm golden, emerald, and deep blue colors
+    - Historical Middle Eastern/Arabian architecture
+    - Peaceful, spiritual atmosphere
+    - NO text, letters, Arabic script, or watermarks on the image
+    - Pure visual artistic representation only
+    - Ultra high quality, cinematic, 16:9 aspect ratio
+    - Dramatic lighting and atmospheric depth`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -168,7 +204,8 @@ serve(async (req) => {
     }
 
     if (type === 'generateImage') {
-      const imageUrl = await generateImage(eventDescription, eventTitle);
+      const { locationDescription } = await req.json().catch(() => ({}));
+      const imageUrl = await generateImage(eventDescription, eventTitle, locationDescription);
       
       return new Response(JSON.stringify({ imageUrl }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
