@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GOOGLE_AI_API_KEY = "AIzaSyD6gX02LaRw12v7-TMX6yd3-y9SVDA7NBk";
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 const SYSTEM_PROMPT = `أنت خبير عالمي ومتميز في الاستدامة البيئية، وإعادة التدوير، والهندسة البسيطة، وصناعة المشاريع العلمية والفنية الإبداعية باستخدام المواد المستعملة.
 
@@ -101,7 +101,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("Received request body:", JSON.stringify(body));
+    console.log("Received request body:", JSON.stringify(body).substring(0, 200));
     
     const { materials, userLevel, projectType, question, conversationHistory, imageBase64 } = body;
 
@@ -120,10 +120,8 @@ serve(async (req) => {
     let userMessage = "";
     
     if (question) {
-      // Follow-up question
       userMessage = question;
     } else if (imageBase64) {
-      // Image analysis request
       userMessage = `📸 تم رفع صورة للمواد المتوفرة!
 
 قم بتحليل هذه الصورة بدقة وتحديد كل المواد المتوفرة فيها، ثم اقترح مشاريع إعادة تدوير مبتكرة ومفصلة.
@@ -133,7 +131,6 @@ serve(async (req) => {
 
 ابدأ بذكر المواد التي تعرفت عليها في الصورة، ثم اقترح المشاريع المناسبة.`;
     } else {
-      // Initial materials request
       const levelText = userLevel === 'child' ? 'طفل (6-12 سنة)' : userLevel === 'teen' ? 'مراهق (13-17 سنة)' : userLevel === 'adult' ? 'بالغ (18+ سنة)' : 'غير محدد';
       const typeText = projectType === 'scientific' ? 'علمي' : projectType === 'artistic' ? 'فني' : projectType === 'practical' ? 'عملي' : projectType === 'group' ? 'جماعي' : 'غير محدد';
       
@@ -147,31 +144,31 @@ serve(async (req) => {
 الرجاء اقتراح مشاريع إعادة تدوير مبتكرة ومفصلة لهذه المواد. كن إبداعياً واقترح مشاريع متنوعة!`;
     }
 
-    const messages = [
-      { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-      { role: "model", parts: [{ text: "فهمت تماماً! 🌱 أنا خبير بيئي متخصص ومتحمس في إعادة التدوير والمشاريع الإبداعية. سأقدم لك مشاريع مفصلة ومبتكرة بالتنسيق المطلوب. دعنا نحول نفاياتك إلى كنوز! ♻️" }] }
+    // Build messages array for Lovable AI
+    const messages: any[] = [
+      { role: "system", content: SYSTEM_PROMPT }
     ];
 
     // Add conversation history if exists
     if (conversationHistory && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
         messages.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }]
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
         });
       }
     }
 
-    // Add current message
+    // Add current message with image if provided
     if (imageBase64) {
       messages.push({
         role: "user",
-        parts: [
-          { text: userMessage },
+        content: [
+          { type: "text", text: userMessage },
           {
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: imageBase64.replace(/^data:image\/\w+;base64,/, '')
+            type: "image_url",
+            image_url: {
+              url: imageBase64
             }
           }
         ]
@@ -179,41 +176,46 @@ serve(async (req) => {
     } else {
       messages.push({
         role: "user",
-        parts: [{ text: userMessage }]
+        content: userMessage
       });
     }
 
-    console.log("Calling Google AI for recycling advice with message:", userMessage.substring(0, 100) + "...");
+    console.log("Calling Lovable AI for recycling advice...");
 
-    const requestBody = {
-      contents: messages,
-      generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 16384,
-      }
-    };
-    
-    console.log("Request to Google AI:", JSON.stringify(requestBody).substring(0, 500) + "...");
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: messages,
+        max_tokens: 16384,
+        temperature: 0.85
+      })
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Error Response:", response.status, errorText);
-      throw new Error(`Google AI API error: ${response.status} - ${errorText}`);
+      console.error("Lovable AI Error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'تم تجاوز حد الطلبات، يرجى المحاولة بعد قليل'
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("Google AI Response received, candidates:", data.candidates?.length);
+    const aiResponse = data.choices?.[0]?.message?.content || "عذراً، لم أتمكن من معالجة الطلب.";
     
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من معالجة الطلب.";
     console.log("AI Response length:", aiResponse.length);
 
     // Parse the response to extract projects
@@ -225,7 +227,6 @@ serve(async (req) => {
         const projectText = match.replace(/---PROJECT_START---|---PROJECT_END---/g, '').trim();
         const project: any = {};
         
-        // Parse each field with improved regex
         const nameMatch = projectText.match(/1\. اسم المشروع:\s*(.+?)(?=\n|$)/);
         const ideaMatch = projectText.match(/2\. فكرة المشروع:\s*([\s\S]+?)(?=3\. المواد المطلوبة)/);
         const materialsMatch = projectText.match(/3\. المواد المطلوبة:\s*([\s\S]+?)(?=4\. الأدوات اللازمة)/);
@@ -266,6 +267,8 @@ serve(async (req) => {
         followUpQuestions = questionLines.map(q => q.replace(/^\d+\.\s*/, '').trim());
       }
     }
+
+    console.log("Parsed projects count:", projects.length);
 
     return new Response(JSON.stringify({
       success: true,
