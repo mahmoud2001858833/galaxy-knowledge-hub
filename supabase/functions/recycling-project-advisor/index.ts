@@ -100,7 +100,22 @@ serve(async (req) => {
   }
 
   try {
-    const { materials, userLevel, projectType, question, conversationHistory, imageBase64 } = await req.json();
+    const body = await req.json();
+    console.log("Received request body:", JSON.stringify(body));
+    
+    const { materials, userLevel, projectType, question, conversationHistory, imageBase64 } = body;
+
+    // Validate materials for non-question requests
+    if (!question && !imageBase64 && (!materials || materials.trim() === '')) {
+      console.error("No materials provided");
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'يرجى إدخال المواد المتوفرة لديك'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     let userMessage = "";
     
@@ -121,6 +136,8 @@ serve(async (req) => {
       // Initial materials request
       const levelText = userLevel === 'child' ? 'طفل (6-12 سنة)' : userLevel === 'teen' ? 'مراهق (13-17 سنة)' : userLevel === 'adult' ? 'بالغ (18+ سنة)' : 'غير محدد';
       const typeText = projectType === 'scientific' ? 'علمي' : projectType === 'artistic' ? 'فني' : projectType === 'practical' ? 'عملي' : projectType === 'group' ? 'جماعي' : 'غير محدد';
+      
+      console.log("Generating projects for materials:", materials);
       
       userMessage = `🔧 المواد المتوفرة: ${materials}
 
@@ -166,31 +183,38 @@ serve(async (req) => {
       });
     }
 
-    console.log("Calling Google AI for recycling advice...");
+    console.log("Calling Google AI for recycling advice with message:", userMessage.substring(0, 100) + "...");
+
+    const requestBody = {
+      contents: messages,
+      generationConfig: {
+        temperature: 0.85,
+        maxOutputTokens: 16384,
+      }
+    };
+    
+    console.log("Request to Google AI:", JSON.stringify(requestBody).substring(0, 500) + "...");
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: messages,
-          generationConfig: {
-            temperature: 0.85,
-            maxOutputTokens: 16384,
-          }
-        })
+        body: JSON.stringify(requestBody)
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google AI Error:", errorText);
-      throw new Error(`Google AI API error: ${response.status}`);
+      console.error("Google AI Error Response:", response.status, errorText);
+      throw new Error(`Google AI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("Google AI Response received, candidates:", data.candidates?.length);
+    
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من معالجة الطلب.";
+    console.log("AI Response length:", aiResponse.length);
 
     // Parse the response to extract projects
     const projects = [];
