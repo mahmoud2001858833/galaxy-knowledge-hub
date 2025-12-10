@@ -554,7 +554,7 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
+    let { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
     
     console.log('=== 🚀 Processing PDF - Enhanced System ===');
     console.log('📚 Book:', bookName);
