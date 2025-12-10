@@ -562,9 +562,13 @@ serve(async (req) => {
     console.log('📊 File size:', fileSizeMB, 'MB');
     console.log('Has Base64:', !!pdfBase64, 'Length:', pdfBase64?.length || 0);
 
-    if (!pdfBase64 || !grade || !subject || !semester) {
+    // Check if we have either pdfBase64 or pdfUrl
+    if ((!pdfBase64 && !pdfUrl) || !grade || !subject || !semester) {
+      console.error('Missing data - pdfBase64:', !!pdfBase64, 'pdfUrl:', !!pdfUrl, 'grade:', grade, 'subject:', subject, 'semester:', semester);
       throw new Error('البيانات المطلوبة غير مكتملة');
     }
+    
+    console.log('📥 Has pdfBase64:', !!pdfBase64, 'Has pdfUrl:', !!pdfUrl);
 
     // Get keys
     const googleApiKeys = getAllGoogleApiKeys();
@@ -584,11 +588,53 @@ serve(async (req) => {
     let allContent: any[] = [];
     let fileUri = '';
 
-    // ✅ تحديد طريقة الاستخراج بناءً على حجم الملف
-    const fileSizeBytes = (pdfBase64.length * 3) / 4;
-    const fileSizeMBCalculated = fileSizeBytes / (1024 * 1024);
+    // ✅ تحديد طريقة الاستخراج بناءً على المدخلات
+    let fileSizeMBCalculated = fileSizeMB || 0;
+    
+    if (pdfBase64) {
+      const fileSizeBytes = (pdfBase64.length * 3) / 4;
+      fileSizeMBCalculated = fileSizeBytes / (1024 * 1024);
+    }
     
     console.log(`📊 Calculated file size: ${fileSizeMBCalculated.toFixed(2)} MB`);
+    console.log(`📥 Processing mode: ${pdfUrl ? 'URL-based' : 'Base64-based'}`);
+
+    // ✅ إذا كان لدينا URL، نحتاج تحميل الملف أولاً
+    if (pdfUrl && !pdfBase64) {
+      console.log('=== 📥 Downloading file from URL ===');
+      console.log('URL:', pdfUrl);
+      
+      try {
+        const downloadResponse = await fetch(pdfUrl);
+        if (!downloadResponse.ok) {
+          throw new Error(`فشل تحميل الملف: ${downloadResponse.status}`);
+        }
+        
+        const arrayBuffer = await downloadResponse.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // Convert to base64
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.slice(i, i + chunkSize);
+          binary += String.fromCharCode(...chunk);
+        }
+        pdfBase64 = btoa(binary);
+        
+        fileSizeMBCalculated = uint8Array.length / (1024 * 1024);
+        console.log(`✅ Downloaded and converted, size: ${fileSizeMBCalculated.toFixed(2)} MB`);
+        
+      } catch (downloadError) {
+        console.error('❌ Download failed:', downloadError);
+        throw new Error('فشل تحميل الملف من الرابط');
+      }
+    }
+
+    // Now we should have pdfBase64
+    if (!pdfBase64) {
+      throw new Error('فشل الحصول على محتوى الملف');
+    }
 
     if (fileSizeMBCalculated > 15) {
       // ✅ ملف كبير: رفع لـ Google File API ثم استخراج تكراري
