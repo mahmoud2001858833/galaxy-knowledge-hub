@@ -477,7 +477,146 @@ async function extractFromBase64Iterative(
   return allContent;
 }
 
-// Fallback to Lovable AI Gateway
+// ✅ NEW: Extract from URL using Lovable AI (no memory issues)
+async function extractFromUrlWithLovableAI(
+  pdfUrl: string,
+  lovableApiKey: string
+): Promise<any[]> {
+  console.log('🤖 Extracting from URL with Lovable AI...');
+  console.log('URL:', pdfUrl);
+  
+  const allContent: any[] = [];
+  let currentPage = 1;
+  const PAGES_PER_REQUEST = 30;
+  let hasMoreContent = true;
+  let retryCount = 0;
+  
+  while (hasMoreContent && retryCount < 10) {
+    const endPage = currentPage + PAGES_PER_REQUEST - 1;
+    console.log(`📖 Extracting pages ${currentPage} to ${endPage} via Lovable AI...`);
+    
+    const prompt = `أنت خبير في استخراج المحتوى من الكتب المدرسية الأردنية.
+
+مهمتك: استخراج الصفحات من ${currentPage} إلى ${endPage} فقط من هذا الكتاب.
+
+⚠️ تعليمات:
+1. اقرأ الصفحات المطلوبة فقط (${currentPage} إلى ${endPage})
+2. استخرج كل النص الموجود بالكامل
+3. حافظ على أرقام الصفحات الحقيقية
+4. إذا لم توجد صفحات، أرجع: {"content": [], "hasMore": false}
+
+أرجع JSON:
+{
+  "content": [
+    {
+      "unit_number": 1,
+      "unit_name": "اسم الوحدة",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "lesson_name": "اسم الدرس",
+          "pages": [
+            { "page_number": ${currentPage}, "content": "النص الكامل للصفحة" }
+          ]
+        }
+      ]
+    }
+  ],
+  "hasMore": true,
+  "lastPageExtracted": ${endPage}
+}`;
+
+    try {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { 
+                  type: 'image_url',
+                  image_url: { url: pdfUrl }
+                }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 65536,
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('❌ Lovable AI error:', response.status, errorText.substring(0, 200));
+        
+        if (response.status === 429) {
+          console.log('⏳ Rate limited, waiting...');
+          await delay(10000);
+        }
+        retryCount++;
+        await delay(3000);
+        continue;
+      }
+
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content || '';
+      
+      if (!text || text.length < 50) {
+        console.log('⚠️ Empty response, assuming end of book');
+        hasMoreContent = false;
+        break;
+      }
+
+      const parsed = parseGeminiResponse(text);
+      
+      if (parsed.content && Array.isArray(parsed.content)) {
+        allContent.push(...parsed.content);
+        console.log(`✅ Lovable AI extracted ${parsed.content.length} units from pages ${currentPage}-${endPage}`);
+        
+        hasMoreContent = parsed.hasMore !== false;
+        currentPage = (parsed.lastPageExtracted || endPage) + 1;
+      } else if (parsed.rawText) {
+        allContent.push({
+          unit_number: Math.ceil(currentPage / 20),
+          unit_name: `الوحدة ${Math.ceil(currentPage / 20)}`,
+          lessons: [{
+            lesson_number: 1,
+            lesson_name: `صفحات ${currentPage}-${endPage}`,
+            pages: [{ page_number: currentPage, content: parsed.rawText }]
+          }]
+        });
+        currentPage = endPage + 1;
+        
+        if (parsed.rawText.length < 500) {
+          hasMoreContent = false;
+        }
+      } else {
+        console.log('⚠️ Could not parse response, trying next batch');
+        currentPage = endPage + 1;
+      }
+      
+      retryCount = 0;
+      await delay(2000);
+      
+    } catch (error) {
+      console.error('❌ Lovable AI error:', error);
+      retryCount++;
+      await delay(3000);
+    }
+  }
+
+  console.log(`📊 Lovable AI total units extracted: ${allContent.length}`);
+  return allContent;
+}
+
+// Fallback to Lovable AI Gateway with base64
 async function extractContentWithLovableAI(
   pdfBase64: string,
   lovableApiKey: string
@@ -632,39 +771,53 @@ serve(async (req) => {
     let allContent: any[] = [];
     let fileUri = '';
 
-    // ✅ NEW: URL-based processing (preferred) - NO memory load
-    if (pdfUrl) {
-      console.log('=== 📤 URL-based processing (streaming to Google) ===');
+    // ✅ Try Lovable AI FIRST (more reliable, no quota issues)
+    if (pdfUrl && lovableApiKey) {
+      console.log('=== 🤖 Using Lovable AI for URL-based extraction ===');
       console.log('URL:', pdfUrl);
       
       try {
-        // Stream directly from URL to Google File API - NO local download
+        allContent = await extractFromUrlWithLovableAI(pdfUrl, lovableApiKey);
+        
+        if (allContent.length > 0) {
+          console.log(`✅ Lovable AI extracted ${allContent.length} units successfully`);
+          
+          // Clean up temp file from storage after successful processing
+          if (storagePath) {
+            console.log('🧹 Cleaning up temp file:', storagePath);
+            await supabase.storage.from('jordanian-textbooks').remove([storagePath]);
+          }
+        }
+      } catch (lovableError) {
+        console.error('❌ Lovable AI extraction failed:', lovableError);
+      }
+    }
+    
+    // Fallback to Google File API if Lovable AI failed
+    if (allContent.length === 0 && pdfUrl && googleApiKeys.length > 0) {
+      console.log('=== 📤 Fallback: URL-based processing via Google ===');
+      console.log('URL:', pdfUrl);
+      
+      try {
         const uploadResult = await uploadToGoogleFileAPIFromUrl(pdfUrl, googleApiKeys);
         fileUri = uploadResult.fileUri;
         
         console.log('⏳ Waiting for Google to process file...');
         await delay(8000);
         
-        // Iterative extraction from uploaded file
         allContent = await iterativeExtraction(fileUri, googleApiKeys, uploadResult.usedKeyIndex);
         
-        // Clean up temp file from storage after successful processing
-        if (storagePath) {
+        if (allContent.length > 0 && storagePath) {
           console.log('🧹 Cleaning up temp file:', storagePath);
           await supabase.storage.from('jordanian-textbooks').remove([storagePath]);
         }
         
       } catch (urlError) {
-        console.error('❌ URL-based processing failed:', urlError);
-        
-        // If URL processing fails and we don't have base64, we need to fail
-        if (!pdfBase64) {
-          throw new Error('فشل معالجة الملف من الرابط. يرجى المحاولة مرة أخرى.');
-        }
+        console.error('❌ Google URL-based processing failed:', urlError);
       }
     }
     
-    // Fallback to base64 if URL failed or not provided
+    // Final fallback to base64 if URL methods failed
     if (allContent.length === 0 && pdfBase64) {
       console.log('=== 📄 Base64-based processing ===');
       
@@ -676,7 +829,7 @@ serve(async (req) => {
         allContent = await extractFromBase64Iterative(pdfBase64, googleApiKeys);
       }
       
-      // Fallback to Lovable AI
+      // Fallback to Lovable AI with base64
       if (allContent.length === 0 && lovableApiKey) {
         console.log('🔄 Falling back to Lovable AI...');
         allContent = await extractContentWithLovableAI(pdfBase64, lovableApiKey);
