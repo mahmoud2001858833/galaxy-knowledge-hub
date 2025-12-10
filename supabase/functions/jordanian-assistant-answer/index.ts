@@ -8,6 +8,97 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
+// ✅ دالة محسنة لاستخراج الكلمات المفتاحية
+function extractKeywords(question: string): string[] {
+  // كلمات التوقف العربية
+  const stopWords = new Set([
+    'من', 'في', 'على', 'إلى', 'عن', 'مع', 'هو', 'هي', 'هذا', 'هذه', 'ذلك', 'تلك',
+    'الذي', 'التي', 'ما', 'ماذا', 'كيف', 'لماذا', 'متى', 'أين', 'هل', 'كم',
+    'و', 'أو', 'ثم', 'لكن', 'أن', 'إن', 'أنه', 'أنها', 'كان', 'كانت', 'يكون',
+    'ال', 'لا', 'نعم', 'قد', 'سوف', 'قبل', 'بعد', 'فوق', 'تحت', 'بين',
+    'كل', 'بعض', 'أي', 'جميع', 'معظم', 'أكثر', 'أقل', 'عند', 'حول',
+  ]);
+  
+  // تنظيف السؤال واستخراج الكلمات
+  const words = question
+    .replace(/[؟،.!:؛'"«»\-\(\)\[\]{}]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 1 && !stopWords.has(word))
+    .map(word => word.replace(/^ال/, '')); // إزالة "ال" التعريف
+  
+  // إضافة أشكال متعددة للكلمات
+  const expandedWords: string[] = [];
+  for (const word of words) {
+    expandedWords.push(word);
+    expandedWords.push(`ال${word}`);
+    
+    // إضافة جذور محتملة (تبسيط)
+    if (word.length > 3) {
+      expandedWords.push(word.substring(0, word.length - 1));
+      expandedWords.push(word.substring(1));
+    }
+  }
+  
+  return [...new Set(expandedWords)];
+}
+
+// ✅ دالة محسنة لحساب درجة الصلة
+function calculateRelevanceScore(
+  page: any,
+  keywords: string[],
+  studentGrade: string
+): number {
+  let score = 0;
+  
+  const pageText = (page.page_content || '').toLowerCase();
+  const lessonName = (page.lesson_name || '').toLowerCase();
+  const unitName = (page.unit_name || '').toLowerCase();
+  const subject = (page.subject || '').toLowerCase();
+  
+  const fullText = `${pageText} ${lessonName} ${unitName}`;
+  
+  for (const keyword of keywords) {
+    const lowerKeyword = keyword.toLowerCase();
+    
+    // تطابق في المحتوى
+    const contentMatches = (pageText.match(new RegExp(lowerKeyword, 'gi')) || []).length;
+    score += contentMatches * 2;
+    
+    // تطابق في اسم الدرس (أولوية عالية)
+    if (lessonName.includes(lowerKeyword)) score += 10;
+    
+    // تطابق في اسم الوحدة
+    if (unitName.includes(lowerKeyword)) score += 8;
+    
+    // تطابق في اسم المادة
+    if (subject.includes(lowerKeyword)) score += 5;
+    
+    // بحث عن تعريفات ومفاهيم
+    const definitionPatterns = [
+      `${lowerKeyword} هو`,
+      `${lowerKeyword} هي`,
+      `تعريف ${lowerKeyword}`,
+      `معنى ${lowerKeyword}`,
+      `مفهوم ${lowerKeyword}`,
+      `يُعرَّف ${lowerKeyword}`,
+      `${lowerKeyword}:`,
+    ];
+    
+    for (const pattern of definitionPatterns) {
+      if (fullText.includes(pattern)) score += 15;
+    }
+  }
+  
+  // أولوية لصف الطالب
+  if (page.grade === studentGrade) score += 5;
+  
+  // أولوية للمحتوى الأطول (أكثر تفصيلاً)
+  if (pageText.length > 500) score += 2;
+  if (pageText.length > 1000) score += 3;
+  
+  return score;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,7 +106,7 @@ serve(async (req) => {
 
   try {
     const { question, studentName, grade, image } = await req.json();
-    console.log('🎓 Processing question:', { question, studentName, grade, hasImage: !!image });
+    console.log('🎓 Processing question:', { question: question?.substring(0, 100), studentName, grade, hasImage: !!image });
 
     if (!question) {
       return new Response(
@@ -25,7 +116,7 @@ serve(async (req) => {
     }
 
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
+      console.error('❌ LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({ answer: null, sources: [], error: 'إعدادات الذكاء الاصطناعي غير مكتملة' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -36,19 +127,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ✅ تحسين: بحث ذكي في المحتوى باستخدام كلمات مفتاحية
-    console.log('📚 Searching textbook content...');
-    
-    // استخراج كلمات البحث من السؤال
-    const searchKeywords = question
-      .replace(/[؟،.!:]/g, '')
-      .split(/\s+/)
-      .filter((word: string) => word.length > 2)
-      .slice(0, 5);
-    
-    console.log('🔍 Search keywords:', searchKeywords);
+    // ✅ استخراج كلمات البحث المحسنة
+    const keywords = extractKeywords(question);
+    console.log('🔍 Search keywords:', keywords.slice(0, 10));
 
-    // جلب كل المحتوى مع البحث
+    // ✅ جلب كل المحتوى من قاعدة البيانات
+    console.log('📚 Fetching all textbook content...');
+    
     const { data: allContent, error: contentError } = await supabase
       .from('jordanian_textbook_content')
       .select('*')
@@ -58,7 +143,7 @@ serve(async (req) => {
       .order('page_number', { ascending: true });
 
     if (contentError) {
-      console.error('Content fetch error:', contentError);
+      console.error('❌ Content fetch error:', contentError);
       return new Response(
         JSON.stringify({ answer: null, sources: [], error: 'فشل جلب المحتوى الدراسي' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -69,7 +154,7 @@ serve(async (req) => {
       console.log('❌ No content found in database');
       return new Response(
         JSON.stringify({
-          answer: 'عذراً، لم يتم تزويد النظام بأي محتوى دراسي بعد. يرجى الانتظار والمحاولة في وقت لاحق',
+          answer: 'عذراً، لم يتم تزويد النظام بأي محتوى دراسي بعد. يرجى رفع الكتب المدرسية أولاً.',
           sources: [],
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,93 +163,105 @@ serve(async (req) => {
 
     console.log(`📖 Total pages in database: ${allContent.length}`);
 
-    // ✅ تحسين: ترتيب المحتوى حسب الصلة بالسؤال
-    const scoredContent = allContent.map((page: any) => {
-      let score = 0;
-      const pageText = (page.page_content || '').toLowerCase();
-      const lessonName = (page.lesson_name || '').toLowerCase();
-      const unitName = (page.unit_name || '').toLowerCase();
-      
-      for (const keyword of searchKeywords) {
-        const lowerKeyword = keyword.toLowerCase();
-        if (pageText.includes(lowerKeyword)) score += 3;
-        if (lessonName.includes(lowerKeyword)) score += 5;
-        if (unitName.includes(lowerKeyword)) score += 4;
-      }
-      
-      // إعطاء أولوية لصف الطالب
-      if (page.grade === grade) score += 2;
-      
-      return { ...page, relevanceScore: score };
-    });
+    // ✅ حساب درجة الصلة لكل صفحة
+    const scoredContent = allContent.map((page: any) => ({
+      ...page,
+      relevanceScore: calculateRelevanceScore(page, keywords, grade)
+    }));
 
     // ترتيب حسب الصلة
     scoredContent.sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
 
-    // أخذ أعلى 50 صفحة ذات صلة + كل المحتوى من صف الطالب
-    const gradeContent = scoredContent.filter((p: any) => p.grade === grade);
-    const relevantContent = scoredContent.filter((p: any) => p.relevanceScore > 0).slice(0, 30);
+    // ✅ اختيار أفضل المحتوى (أعلى 80 صفحة ذات صلة)
+    const topRelevantPages = scoredContent.filter((p: any) => p.relevanceScore > 0).slice(0, 80);
     
-    // دمج المحتوى بدون تكرار
+    // إضافة كل محتوى صف الطالب إذا لم يكن كافياً
+    const gradePages = scoredContent.filter((p: any) => p.grade === grade);
+    
+    // دمج بدون تكرار
     const contentMap = new Map();
-    [...gradeContent, ...relevantContent].forEach((p: any) => {
+    [...topRelevantPages, ...gradePages.slice(0, 50)].forEach((p: any) => {
       contentMap.set(p.id, p);
     });
     
-    const contentPages = Array.from(contentMap.values());
-    
-    console.log(`📊 Using ${contentPages.length} relevant pages (${gradeContent.length} from student's grade)`);
+    const selectedPages = Array.from(contentMap.values())
+      .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 100);
 
-    // Build context with clear source markers
-    const booksContext = contentPages
+    console.log(`📊 Selected ${selectedPages.length} most relevant pages`);
+    console.log(`📈 Top relevance scores: ${selectedPages.slice(0, 5).map((p: any) => p.relevanceScore).join(', ')}`);
+
+    // ✅ بناء السياق مع تنسيق واضح
+    const booksContext = selectedPages
       .map((p: any) => 
-        `<<<المصدر: الصف: ${p.grade} | المادة: ${p.subject} | الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}>>>\n${p.page_content}\n<<<نهاية المصدر>>>`
+        `【المصدر: الصف ${p.grade} | ${p.subject} | الوحدة ${p.unit_number}: ${p.unit_name} | الدرس ${p.lesson_number}: ${p.lesson_name} | صفحة ${p.page_number}】
+${p.page_content}
+【نهاية المصدر】`
       )
-      .join('\n\n');
+      .join('\n\n---\n\n');
 
     console.log(`📝 Context size: ${booksContext.length} characters`);
 
-    const systemPrompt = `أنت معلم أردني خبير ذو خبرة 30 عاماً في تدريس المنهاج الأردني لجميع الصفوف.
+    // ✅ بناء الـ System Prompt المحسن
+    const systemPrompt = `أنت معلم أردني محترف ذو خبرة 30 عاماً في تدريس المنهاج الأردني لجميع المراحل.
+مهمتك الأساسية: الإجابة على أسئلة الطلاب من الكتب المدرسية الأردنية فقط.
 
-لديك محتوى من الكتب المدرسية الأردنية:
+📚 المحتوى المتاح من الكتب:
 ${booksContext}
 
-📚 قواعد البحث والإجابة المُحسَّنة:
+═══════════════════════════════════════════════════════════════════
+📋 قواعد البحث والإجابة:
+═══════════════════════════════════════════════════════════════════
 
-1. **البحث الشامل والذكي**: 
-   - ابحث في كل المحتوى المتاح بدقة
+1. 🔍 البحث الشامل والذكي:
+   - ابحث في كل المحتوى المتاح بدقة عالية
    - ابحث عن المفاهيم وليس الكلمات الحرفية فقط
-   - إذا سأل الطالب "ما تعريف X" ابحث عن: "X هو/هي"، "يُعرَّف X"، "X:" إلخ
+   - إذا سأل الطالب عن "تعريف X" ابحث عن: "X هو/هي"، "يُعرَّف X"، "X:"، "معنى X" إلخ
 
-2. **المرونة اللغوية الكاملة**: 
-   - "تعريف" = "معنى" = "مفهوم" = "ما هو" = "ما المقصود بـ"
+2. 🔄 المرونة اللغوية الكاملة:
+   - "تعريف" = "معنى" = "مفهوم" = "ما هو" = "ما المقصود"
    - "أسباب" = "عوامل" = "دوافع" = "لماذا"
    - "نتائج" = "آثار" = "عواقب" = "ماذا حدث"
-   - تجاهل الفروق الإملائية والهمزات
+   - "أهمية" = "فائدة" = "دور" = "قيمة"
+   - تجاهل الفروق الإملائية البسيطة والهمزات
    - افهم السياق العام للسؤال
 
-3. **إذا وجدت المعلومة - صيغة الإجابة**:
-   ابدأ بشرح واضح ومفصل للإجابة
-   أضف أمثلة من الكتاب إذا وجدت
+3. ✅ إذا وجدت المعلومة - صيغة الإجابة:
    
-   ثم اختم بالمصدر المحدد فقط:
+   ابدأ بإجابة واضحة ومفصلة:
+   - اشرح المفهوم بطريقة سهلة الفهم
+   - أضف أمثلة من الكتاب إذا وجدت
+   - وضح النقاط المهمة
+   
+   ثم اختم بالمصدر الدقيق:
+   ═══════════════════════════
    📚 المصدر:
    - الكتاب: [اسم المادة]
    - الصف: [الصف]
    - الوحدة: [رقم]: [اسم الوحدة]
    - الدرس: [رقم]: [اسم الدرس]
    - الصفحة: [رقم]
+   ═══════════════════════════
 
-4. **قاعدة المصدر الواحد**: 
-   ⚠️ اذكر فقط المصدر الذي أخذت منه المعلومة فعلياً
-   ⚠️ لا تسرد كل الكتب المتاحة
+4. ⚠️ قاعدة المصدر الواحد:
+   - اذكر فقط المصدر الذي أخذت منه المعلومة فعلياً
+   - لا تسرد كل الكتب والمصادر المتاحة
+   - كن دقيقاً في ذكر رقم الصفحة
 
-5. **إذا لم تجد المعلومة بعد البحث الشامل**:
+5. ❌ إذا لم تجد المعلومة بعد البحث الشامل:
    قل: "عذراً، لم أجد هذه المعلومة في الكتب المتاحة حالياً. قد تكون في كتاب لم يتم رفعه بعد."
+   
+   لا تختلق معلومات غير موجودة في الكتب!
 
-6. اللغة: استخدم العربية الفصحى الواضحة والبسيطة
+6. 📝 اللغة والأسلوب:
+   - استخدم العربية الفصحى الواضحة والبسيطة
+   - قسّم الإجابة لفقرات قصيرة
+   - استخدم التعداد للنقاط المتعددة
 
-الطالب ${studentName} من الصف ${grade} يسأل. ابحث بعناية في كل المحتوى للإجابة.`;
+═══════════════════════════════════════════════════════════════════
+الطالب ${studentName} من الصف ${grade} يسأل. 
+ابحث بعناية فائقة في كل المحتوى المتاح للإجابة على سؤاله.
+═══════════════════════════════════════════════════════════════════`;
 
     console.log('🤖 Calling Lovable AI Gateway...');
 
@@ -198,14 +295,14 @@ ${booksContext}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages,
-        temperature: 0.3,
-        max_tokens: 8000,
+        temperature: 0.2,
+        max_tokens: 10000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('❌ Lovable AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -238,16 +335,16 @@ ${booksContext}
 
     console.log('✅ Answer generated, length:', answer.length);
 
-    // Extract sources from the answer text
+    // ✅ استخراج المصادر من الإجابة
     const sources: any[] = [];
     
-    const sourceMatch = answer.match(/📚\s*المصدر[\s\S]*?(?=\n\n|$)/);
+    const sourceMatch = answer.match(/📚\s*المصدر[\s\S]*?(?=═|$)/);
     if (sourceMatch) {
       const sourceText = sourceMatch[0];
-      const subjectMatch = sourceText.match(/الكتاب:\s*([^\n]+)/);
-      const gradeMatch = sourceText.match(/الصف:\s*([^\n]+)/);
-      const unitMatch = sourceText.match(/الوحدة:\s*(\d+)[:\s]*([^\n]*)/);
-      const lessonMatch = sourceText.match(/الدرس:\s*(\d+)[:\s]*([^\n]*)/);
+      const subjectMatch = sourceText.match(/الكتاب:\s*([^\n-]+)/);
+      const gradeMatch = sourceText.match(/الصف:\s*([^\n-]+)/);
+      const unitMatch = sourceText.match(/الوحدة:\s*(\d+)[:\s]*([^\n-]*)/);
+      const lessonMatch = sourceText.match(/الدرس:\s*(\d+)[:\s]*([^\n-]*)/);
       const pageMatch = sourceText.match(/الصفحة:\s*(\d+)/);
 
       if (subjectMatch || pageMatch) {
@@ -265,13 +362,13 @@ ${booksContext}
       }
     }
 
-    // Save to database
+    // ✅ حفظ في قاعدة البيانات
     if (image) {
       await supabase.from('jordanian_image_analysis').insert({
         student_name: studentName,
         grade: grade,
         question: question,
-        image_url: image,
+        image_url: image.substring(0, 200) + '...',
         analysis_result: answer,
       });
     }
