@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, BookOpen, ChevronDown, ChevronUp, X, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, Upload, FileText, BookOpen, ChevronDown, ChevronUp, X, CheckCircle, AlertCircle, Trash2, Link, Globe } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,6 +61,8 @@ export default function UploadedSourcesTab() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedPreview, setExtractedPreview] = useState<string>('');
   const [deletingSource, setDeletingSource] = useState<string | null>(null);
+  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
+  const [urlInput, setUrlInput] = useState('');
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -211,19 +215,125 @@ export default function UploadedSourcesTab() {
     }
   };
 
-  // Convert file to base64 in chunks to avoid memory issues
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove data URL prefix (data:application/pdf;base64,)
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // Convert Google Drive / Dropbox links to direct download URLs
+  const convertToDirectUrl = (url: string): string => {
+    // Google Drive: convert /file/d/ID/view to /uc?export=download&id=ID
+    const gdriveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (gdriveMatch) {
+      return `https://drive.google.com/uc?export=download&id=${gdriveMatch[1]}`;
+    }
+    
+    // Dropbox: change dl=0 to dl=1
+    if (url.includes('dropbox.com')) {
+      return url.replace('dl=0', 'dl=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+    }
+    
+    return url;
+  };
+
+  const processFromUrl = async () => {
+    if (!urlInput || !formData.grade || !formData.subject || !formData.semester) {
+      toast({
+        title: "خطأ",
+        description: "يرجى ملء جميع الحقول المطلوبة وإدخال رابط PDF",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const directUrl = convertToDirectUrl(urlInput.trim());
+    
+    // Extract book name from URL
+    let bookName = 'كتاب';
+    try {
+      const urlPath = new URL(directUrl).pathname;
+      const fileName = urlPath.split('/').pop() || '';
+      if (fileName) {
+        bookName = decodeURIComponent(fileName).replace('.pdf', '').replace(/_/g, ' ');
+      }
+    } catch (e) {
+      console.log('Could not parse book name from URL');
+    }
+
+    toast({
+      title: "⏳ جاري المعالجة",
+      description: "يتم معالجة الرابط المقدم..."
     });
+
+    setIsUploading(true);
+    setUploadStatus('processing');
+    setUploadProgress(20);
+
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
+
+      setUploadProgress(40);
+      setUploadStatus('extracting');
+
+      toast({
+        title: "🚀 جاري المعالجة عبر Google AI",
+        description: "يتم إرسال الرابط لاستخراج المحتوى..."
+      });
+
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-direct', {
+        body: {
+          pdfBase64: null,
+          pdfUrl: directUrl,
+          bookName,
+          grade: formData.grade,
+          subject: formData.subject,
+          semester: formData.semester,
+          fileSizeMB: 0 // Unknown for URL
+        }
+      });
+
+      if (extractError) {
+        throw new Error(extractError.message || 'فشل معالجة الرابط');
+      }
+
+      if (extractData?.error) {
+        throw new Error(extractData.error);
+      }
+
+      setUploadProgress(90);
+      setUploadStatus('saving');
+
+      if (extractData?.extractedText) {
+        setExtractedPreview(extractData.extractedText.substring(0, 500) + '...');
+      }
+
+      setUploadProgress(100);
+      setUploadStatus('success');
+
+      toast({
+        title: "✅ تم بنجاح!",
+        description: extractData?.message || `تم استخراج ${extractData?.recordsCount || 0} صفحة`
+      });
+
+      setTimeout(() => {
+        setUrlInput('');
+        setFormData({ grade: '', subject: '', semester: '' });
+        setExtractedPreview('');
+        setUploadStatus('idle');
+        setUploadProgress(0);
+        setIsUploadOpen(false);
+        loadContent();
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('URL process error:', error);
+      setUploadStatus('error');
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "فشل في معالجة الرابط",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const processAndUploadPDF = async () => {
@@ -480,61 +590,98 @@ export default function UploadedSourcesTab() {
                 </div>
               </div>
 
-              {/* Drop Zone */}
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`
-                  relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
-                  ${isDragging ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-muted-foreground/30 hover:border-primary/50'}
-                  ${selectedFile ? 'bg-green-500/10 border-green-500' : ''}
-                `}
-              >
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  disabled={isUploading}
-                />
-                
-                {selectedFile ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="p-3 bg-green-500/20 rounded-full">
-                      <FileText className="h-8 w-8 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-green-600">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFile(null);
-                      }}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      إزالة
-                    </Button>
+              {/* Upload Mode Tabs */}
+              <Tabs value={uploadMode} onValueChange={(v) => setUploadMode(v as 'file' | 'url')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    رفع ملف
+                  </TabsTrigger>
+                  <TabsTrigger value="url" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    رابط مباشر
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="file" className="mt-4">
+                  {/* Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`
+                      relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
+                      ${isDragging ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-muted-foreground/30 hover:border-primary/50'}
+                      ${selectedFile ? 'bg-green-500/10 border-green-500' : ''}
+                    `}
+                  >
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileSelect}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isUploading}
+                    />
+                    
+                    {selectedFile ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="p-3 bg-green-500/20 rounded-full">
+                          <FileText className="h-8 w-8 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-green-600">{selectedFile.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedFile(null);
+                          }}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          إزالة
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="p-4 bg-primary/10 rounded-full">
+                          <Upload className="h-10 w-10 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">اسحب ملف PDF هنا</p>
+                          <p className="text-sm text-muted-foreground">أو اضغط لاختيار ملف (حتى 100MB)</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="p-4 bg-primary/10 rounded-full">
-                      <Upload className="h-10 w-10 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">اسحب ملف PDF هنا</p>
-                      <p className="text-sm text-muted-foreground">أو اضغط لاختيار ملف</p>
-                    </div>
+                </TabsContent>
+
+                <TabsContent value="url" className="mt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Link className="h-4 w-4" />
+                      رابط ملف PDF
+                    </Label>
+                    <Input
+                      type="url"
+                      placeholder="https://drive.google.com/file/d/... أو رابط مباشر لـ PDF"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      disabled={isUploading}
+                      dir="ltr"
+                      className="text-left"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      يدعم روابط Google Drive و Dropbox والروابط المباشرة لملفات PDF
+                    </p>
                   </div>
-                )}
-              </div>
+                </TabsContent>
+              </Tabs>
 
               {/* Progress */}
               <AnimatePresence>
@@ -580,24 +727,45 @@ export default function UploadedSourcesTab() {
               )}
 
               {/* Upload Button */}
-              <Button
-                onClick={processAndUploadPDF}
-                disabled={!selectedFile || isUploading || !formData.grade || !formData.subject || !formData.semester}
-                className="w-full bg-gradient-to-r from-primary to-primary/80"
-                size="lg"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    جاري المعالجة...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    رفع ومعالجة الكتاب
-                  </>
-                )}
-              </Button>
+              {uploadMode === 'file' ? (
+                <Button
+                  onClick={processAndUploadPDF}
+                  disabled={!selectedFile || isUploading || !formData.grade || !formData.subject || !formData.semester}
+                  className="w-full bg-gradient-to-r from-primary to-primary/80"
+                  size="lg"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      جاري المعالجة...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      رفع ومعالجة الكتاب
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={processFromUrl}
+                  disabled={!urlInput || isUploading || !formData.grade || !formData.subject || !formData.semester}
+                  className="w-full bg-gradient-to-r from-primary to-primary/80"
+                  size="lg"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      جاري المعالجة...
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="h-4 w-4 mr-2" />
+                      معالجة الرابط
+                    </>
+                  )}
+                </Button>
+              )}
             </motion.div>
           </CollapsibleContent>
         </Collapsible>
