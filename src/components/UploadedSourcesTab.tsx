@@ -236,26 +236,23 @@ export default function UploadedSourcesTab() {
       return;
     }
 
-    // Maximum 100MB
-    const maxSize = 100 * 1024 * 1024;
+    // Maximum 20MB - to avoid edge function memory limits
+    const maxSize = 20 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
       toast({
         title: "خطأ",
-        description: "حجم الملف كبير جداً. الحد الأقصى هو 100 ميجابايت",
+        description: "حجم الملف كبير جداً. الحد الأقصى هو 20 ميجابايت. يرجى ضغط الملف أو تقسيمه.",
         variant: "destructive"
       });
       return;
     }
 
     const fileSizeMB = selectedFile.size / (1024 * 1024);
-    const isLargeFile = fileSizeMB > 10; // Files over 10MB use storage + streaming
     
-    if (isLargeFile) {
-      toast({
-        title: "⏳ ملف كبير",
-        description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. سيتم رفعه عبر Supabase Storage أولاً ثم معالجته...`,
-      });
-    }
+    toast({
+      title: "⏳ جاري تجهيز الملف",
+      description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. يتم تحويله للمعالجة...`,
+    });
 
     setIsUploading(true);
     setUploadStatus('uploading');
@@ -270,55 +267,17 @@ export default function UploadedSourcesTab() {
 
       setUploadProgress(10);
       
-      let pdfUrl: string | null = null;
-      let pdfBase64: string | null = null;
       const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
 
-      if (isLargeFile) {
-        // Large files: Upload to Supabase Storage first, then stream to Google
-        toast({
-          title: "📤 رفع الملف للتخزين المؤقت",
-          description: "يتم رفع الملف للتخزين المؤقت قبل معالجته..."
-        });
+      // Always convert to base64 - browser can handle larger files
+      toast({
+        title: "📤 جاري تحويل الملف",
+        description: "يتم تحويل الملف للإرسال..."
+      });
 
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.pdf`;
-        const filePath = `temp-pdfs/${user.id}/${fileName}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('jordanian-textbooks')
-          .upload(filePath, selectedFile, {
-            contentType: 'application/pdf',
-            cacheControl: '3600',
-            upsert: true
-          });
-
-        if (uploadError) {
-          console.error('Storage upload error:', uploadError);
-          throw new Error(`فشل رفع الملف: ${uploadError.message}`);
-        }
-
-        console.log('File uploaded to storage:', uploadData.path);
-        setUploadProgress(40);
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('jordanian-textbooks')
-          .getPublicUrl(filePath);
-        
-        pdfUrl = urlData.publicUrl;
-        console.log('File public URL:', pdfUrl);
-
-      } else {
-        // Small files: Convert to base64 and send directly
-        toast({
-          title: "📤 جاري تحويل الملف",
-          description: "يتم تحويل الملف لإرساله مباشرة لـ Google..."
-        });
-
-        pdfBase64 = await fileToBase64(selectedFile);
-        console.log('File converted to base64, length:', pdfBase64.length);
-        setUploadProgress(30);
-      }
+      const pdfBase64 = await fileToBase64(selectedFile);
+      console.log('File converted to base64, length:', pdfBase64.length);
+      setUploadProgress(30);
 
       setUploadStatus('extracting');
 
@@ -327,11 +286,11 @@ export default function UploadedSourcesTab() {
         description: "يتم إرسال الملف لـ Google Gemini لاستخراج المحتوى..."
       });
 
-      // Step 3: Call edge function
+      // Step 2: Call edge function with base64 directly
       const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-direct', {
         body: {
-          pdfBase64: isLargeFile ? null : pdfBase64,
-          pdfUrl: isLargeFile ? pdfUrl : null,
+          pdfBase64,
+          pdfUrl: null,
           bookName,
           grade: formData.grade,
           subject: formData.subject,
