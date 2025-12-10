@@ -236,12 +236,12 @@ export default function UploadedSourcesTab() {
       return;
     }
 
-    // Maximum 20MB - to avoid edge function memory limits
-    const maxSize = 20 * 1024 * 1024;
+    // Maximum 100MB - using URL-based upload
+    const maxSize = 100 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
       toast({
         title: "خطأ",
-        description: "حجم الملف كبير جداً. الحد الأقصى هو 20 ميجابايت. يرجى ضغط الملف أو تقسيمه.",
+        description: "حجم الملف كبير جداً. الحد الأقصى هو 100 ميجابايت.",
         variant: "destructive"
       });
       return;
@@ -251,7 +251,7 @@ export default function UploadedSourcesTab() {
     
     toast({
       title: "⏳ جاري تجهيز الملف",
-      description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. يتم تحويله للمعالجة...`,
+      description: `حجم الملف ${fileSizeMB.toFixed(1)} ميجابايت. يتم رفعه للتخزين المؤقت...`,
     });
 
     setIsUploading(true);
@@ -269,33 +269,57 @@ export default function UploadedSourcesTab() {
       
       const bookName = selectedFile.name.replace('.pdf', '').replace(/_/g, ' ');
 
-      // Always convert to base64 - browser can handle larger files
+      // Step 2: Upload to Supabase Storage first
       toast({
-        title: "📤 جاري تحويل الملف",
-        description: "يتم تحويل الملف للإرسال..."
+        title: "📤 جاري رفع الملف للتخزين",
+        description: "يتم رفع الملف للتخزين المؤقت قبل معالجته..."
       });
 
-      const pdfBase64 = await fileToBase64(selectedFile);
-      console.log('File converted to base64, length:', pdfBase64.length);
-      setUploadProgress(30);
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.pdf`;
+      const filePath = `temp-pdfs/${user.id}/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('jordanian-textbooks')
+        .upload(filePath, selectedFile, {
+          contentType: 'application/pdf',
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`فشل رفع الملف: ${uploadError.message}`);
+      }
+
+      console.log('File uploaded to storage:', uploadData.path);
+      setUploadProgress(40);
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('jordanian-textbooks')
+        .getPublicUrl(filePath);
+      
+      const pdfUrl = urlData.publicUrl;
+      console.log('File public URL:', pdfUrl);
 
       setUploadStatus('extracting');
 
       toast({
         title: "🚀 جاري المعالجة عبر Google AI",
-        description: "يتم إرسال الملف لـ Google Gemini لاستخراج المحتوى..."
+        description: "يتم إرسال الرابط لـ Google Gemini لاستخراج المحتوى..."
       });
 
-      // Step 2: Call edge function with base64 directly
+      // Step 3: Call edge function with URL (not base64)
       const { data: extractData, error: extractError } = await supabase.functions.invoke('process-pdf-direct', {
         body: {
-          pdfBase64,
-          pdfUrl: null,
+          pdfBase64: null,
+          pdfUrl,
           bookName,
           grade: formData.grade,
           subject: formData.subject,
           semester: formData.semester,
-          fileSizeMB
+          fileSizeMB,
+          storagePath: filePath // For cleanup later
         }
       });
 

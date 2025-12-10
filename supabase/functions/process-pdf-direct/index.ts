@@ -43,19 +43,10 @@ function getAllGoogleApiKeys(): string[] {
   return keyNames.map(name => Deno.env.get(name)).filter(Boolean) as string[];
 }
 
-// Upload file to Google File API (for large PDFs)
-async function uploadToGoogleFileAPI(pdfBase64: string, apiKeys: string[]): Promise<{ fileUri: string; usedKeyIndex: number }> {
-  console.log('📤 Uploading PDF to Google File API...');
-  
-  // Convert base64 to Uint8Array
-  const binaryString = atob(pdfBase64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  
-  const fileSize = bytes.length;
-  console.log('📊 File size:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
+// Upload file to Google File API from URL (streaming - no memory load)
+async function uploadToGoogleFileAPIFromUrl(pdfUrl: string, apiKeys: string[]): Promise<{ fileUri: string; usedKeyIndex: number }> {
+  console.log('📤 Uploading PDF to Google File API from URL (streaming)...');
+  console.log('Source URL:', pdfUrl);
   
   // Try each key until one works
   for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
@@ -63,6 +54,13 @@ async function uploadToGoogleFileAPI(pdfBase64: string, apiKeys: string[]): Prom
     
     try {
       console.log(`🔑 Trying upload with key ${keyIndex + 1}/${apiKeys.length}...`);
+      
+      // First, get the file size using HEAD request
+      const headResponse = await fetch(pdfUrl, { method: 'HEAD' });
+      const contentLength = headResponse.headers.get('content-length');
+      const fileSize = contentLength ? parseInt(contentLength) : 0;
+      
+      console.log('📊 File size from URL:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
       
       // Start resumable upload
       const startResponse = await fetch(
@@ -92,14 +90,44 @@ async function uploadToGoogleFileAPI(pdfBase64: string, apiKeys: string[]): Prom
       const uploadUrl = startResponse.headers.get('X-Goog-Upload-URL');
       if (!uploadUrl) continue;
 
-      // Upload file in chunks for large files
-      const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
-      let offset = 0;
+      console.log('📥 Streaming file from URL to Google...');
       
-      while (offset < fileSize) {
-        const chunk = bytes.slice(offset, Math.min(offset + CHUNK_SIZE, fileSize));
-        const isLast = offset + chunk.length >= fileSize;
-        
+      // Stream the file from URL directly to Google (no local memory)
+      const fileResponse = await fetch(pdfUrl);
+      if (!fileResponse.ok || !fileResponse.body) {
+        console.log('❌ Failed to fetch file from URL');
+        continue;
+      }
+
+      // Read in chunks and upload
+      const reader = fileResponse.body.getReader();
+      const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
+      let buffer = new Uint8Array(0);
+      let offset = 0;
+      let done = false;
+
+      while (!done) {
+        // Read until we have enough for a chunk or end of file
+        while (buffer.length < CHUNK_SIZE && !done) {
+          const { value, done: readerDone } = await reader.read();
+          if (readerDone) {
+            done = true;
+            break;
+          }
+          if (value) {
+            const newBuffer = new Uint8Array(buffer.length + value.length);
+            newBuffer.set(buffer);
+            newBuffer.set(value, buffer.length);
+            buffer = newBuffer;
+          }
+        }
+
+        if (buffer.length === 0) break;
+
+        const chunk = buffer.slice(0, CHUNK_SIZE);
+        buffer = buffer.slice(CHUNK_SIZE);
+        const isLast = done && buffer.length === 0;
+
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
@@ -115,18 +143,36 @@ async function uploadToGoogleFileAPI(pdfBase64: string, apiKeys: string[]): Prom
           break;
         }
 
-        if (isLast) {
-          const fileData = await uploadResponse.json();
-          const fileUri = fileData.file?.uri;
-          
-          if (fileUri) {
-            console.log('✅ File uploaded to Google, URI:', fileUri);
-            return { fileUri, usedKeyIndex: keyIndex };
+        if (isLast || (done && buffer.length === 0)) {
+          // Upload remaining buffer if any
+          if (buffer.length > 0) {
+            const finalResponse = await fetch(uploadUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Length': buffer.length.toString(),
+                'X-Goog-Upload-Offset': (offset + chunk.length).toString(),
+                'X-Goog-Upload-Command': 'upload, finalize',
+              },
+              body: buffer
+            });
+            const fileData = await finalResponse.json();
+            const fileUri = fileData.file?.uri;
+            if (fileUri) {
+              console.log('✅ File uploaded to Google, URI:', fileUri);
+              return { fileUri, usedKeyIndex: keyIndex };
+            }
+          } else {
+            const fileData = await uploadResponse.json();
+            const fileUri = fileData.file?.uri;
+            if (fileUri) {
+              console.log('✅ File uploaded to Google, URI:', fileUri);
+              return { fileUri, usedKeyIndex: keyIndex };
+            }
           }
         }
 
         offset += chunk.length;
-        console.log(`📤 Uploaded ${(offset / 1024 / 1024).toFixed(2)}MB / ${(fileSize / 1024 / 1024).toFixed(2)}MB`);
+        console.log(`📤 Streamed ${(offset / 1024 / 1024).toFixed(2)}MB`);
       }
     } catch (error) {
       console.log(`❌ Key ${keyIndex + 1} error:`, error);
@@ -554,21 +600,19 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    let { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB } = requestBody;
+    const { pdfBase64, pdfUrl, bookName, grade, subject, semester, fileSizeMB, storagePath } = requestBody;
     
-    console.log('=== 🚀 Processing PDF - Enhanced System ===');
+    console.log('=== 🚀 Processing PDF - URL-Based System ===');
     console.log('📚 Book:', bookName);
     console.log('📖 Grade:', grade, 'Subject:', subject, 'Semester:', semester);
     console.log('📊 File size:', fileSizeMB, 'MB');
-    console.log('Has Base64:', !!pdfBase64, 'Length:', pdfBase64?.length || 0);
+    console.log('Has Base64:', !!pdfBase64, 'Has pdfUrl:', !!pdfUrl);
 
     // Check if we have either pdfBase64 or pdfUrl
     if ((!pdfBase64 && !pdfUrl) || !grade || !subject || !semester) {
       console.error('Missing data - pdfBase64:', !!pdfBase64, 'pdfUrl:', !!pdfUrl, 'grade:', grade, 'subject:', subject, 'semester:', semester);
       throw new Error('البيانات المطلوبة غير مكتملة');
     }
-    
-    console.log('📥 Has pdfBase64:', !!pdfBase64, 'Has pdfUrl:', !!pdfUrl);
 
     // Get keys
     const googleApiKeys = getAllGoogleApiKeys();
@@ -588,87 +632,45 @@ serve(async (req) => {
     let allContent: any[] = [];
     let fileUri = '';
 
-    // ✅ تحديد طريقة الاستخراج بناءً على المدخلات
-    let fileSizeMBCalculated = fileSizeMB || 0;
-    
-    if (pdfBase64) {
-      const fileSizeBytes = (pdfBase64.length * 3) / 4;
-      fileSizeMBCalculated = fileSizeBytes / (1024 * 1024);
-    }
-    
-    console.log(`📊 Calculated file size: ${fileSizeMBCalculated.toFixed(2)} MB`);
-    console.log(`📥 Processing mode: ${pdfUrl ? 'URL-based' : 'Base64-based'}`);
-
-    // ✅ إذا كان لدينا URL، نحتاج تحميل الملف أولاً
-    if (pdfUrl && !pdfBase64) {
-      console.log('=== 📥 Downloading file from URL ===');
+    // ✅ NEW: URL-based processing (preferred) - NO memory load
+    if (pdfUrl) {
+      console.log('=== 📤 URL-based processing (streaming to Google) ===');
       console.log('URL:', pdfUrl);
       
       try {
-        const downloadResponse = await fetch(pdfUrl);
-        if (!downloadResponse.ok) {
-          throw new Error(`فشل تحميل الملف: ${downloadResponse.status}`);
-        }
-        
-        const arrayBuffer = await downloadResponse.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        
-        // Convert to base64
-        let binary = '';
-        const chunkSize = 8192;
-        for (let i = 0; i < uint8Array.length; i += chunkSize) {
-          const chunk = uint8Array.slice(i, i + chunkSize);
-          binary += String.fromCharCode(...chunk);
-        }
-        pdfBase64 = btoa(binary);
-        
-        fileSizeMBCalculated = uint8Array.length / (1024 * 1024);
-        console.log(`✅ Downloaded and converted, size: ${fileSizeMBCalculated.toFixed(2)} MB`);
-        
-      } catch (downloadError) {
-        console.error('❌ Download failed:', downloadError);
-        throw new Error('فشل تحميل الملف من الرابط');
-      }
-    }
-
-    // Now we should have pdfBase64
-    if (!pdfBase64) {
-      throw new Error('فشل الحصول على محتوى الملف');
-    }
-
-    if (fileSizeMBCalculated > 15) {
-      // ✅ ملف كبير: رفع لـ Google File API ثم استخراج تكراري
-      console.log('=== 📤 Large file: Using Google File API ===');
-      
-      try {
-        const uploadResult = await uploadToGoogleFileAPI(pdfBase64, googleApiKeys);
+        // Stream directly from URL to Google File API - NO local download
+        const uploadResult = await uploadToGoogleFileAPIFromUrl(pdfUrl, googleApiKeys);
         fileUri = uploadResult.fileUri;
         
         console.log('⏳ Waiting for Google to process file...');
         await delay(8000);
         
-        // استخراج تكراري
+        // Iterative extraction from uploaded file
         allContent = await iterativeExtraction(fileUri, googleApiKeys, uploadResult.usedKeyIndex);
         
-      } catch (uploadError) {
-        console.error('❌ Upload failed:', uploadError);
-        
-        // Fallback to direct base64 extraction
-        if (googleApiKeys.length > 0) {
-          console.log('🔄 Falling back to direct base64 extraction...');
-          allContent = await extractFromBase64Iterative(pdfBase64, googleApiKeys);
+        // Clean up temp file from storage after successful processing
+        if (storagePath) {
+          console.log('🧹 Cleaning up temp file:', storagePath);
+          await supabase.storage.from('jordanian-textbooks').remove([storagePath]);
         }
         
-        // Final fallback to Lovable AI
-        if (allContent.length === 0 && lovableApiKey) {
-          console.log('🔄 Falling back to Lovable AI...');
-          allContent = await extractContentWithLovableAI(pdfBase64, lovableApiKey);
+      } catch (urlError) {
+        console.error('❌ URL-based processing failed:', urlError);
+        
+        // If URL processing fails and we don't have base64, we need to fail
+        if (!pdfBase64) {
+          throw new Error('فشل معالجة الملف من الرابط. يرجى المحاولة مرة أخرى.');
         }
       }
+    }
+    
+    // Fallback to base64 if URL failed or not provided
+    if (allContent.length === 0 && pdfBase64) {
+      console.log('=== 📄 Base64-based processing ===');
       
-    } else {
-      // ✅ ملف صغير/متوسط: استخراج مباشر من base64
-      console.log('=== 📄 Direct base64 extraction ===');
+      const fileSizeBytes = (pdfBase64.length * 3) / 4;
+      const fileSizeMBCalculated = fileSizeBytes / (1024 * 1024);
+      console.log(`📊 File size from base64: ${fileSizeMBCalculated.toFixed(2)} MB`);
       
       if (googleApiKeys.length > 0) {
         allContent = await extractFromBase64Iterative(pdfBase64, googleApiKeys);
