@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, Thermometer } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -133,11 +133,112 @@ const ScientificSimulations = () => {
         'تدوير وتكبير تفاعلي بالماوس',
         '15+ مثال جاهز متنوع',
         'مقارنة حتى 5 دوال في نفس المشهد',
-        'ألوان وتدرجات قابلة للتخصيص',
-        'لوحة رموز رياضية متقدمة',
-        'عرض خطوط الكنتور والشبكة',
-        'دعم الدوال البارامترية',
-        'دليل تعليمي شامل'
+        'ألوان وتدرجات قابلة للتخصيص'
+      ]
+    },
+    {
+      id: 'optics-lab',
+      title: 'مختبر البصريات ثلاثي الأبعاد',
+      description: 'محاكاة تفاعلية للأشعة الضوئية مع العدسات والمرايا والمناشير',
+      icon: <Sun className="w-12 h-12" />,
+      color: 'from-yellow-500 via-orange-500 to-red-500',
+      route: '/simulation/optics-lab',
+      features: [
+        'عدسات محدبة ومقعرة',
+        'مرايا مستوية ومقعرة ومحدبة',
+        'تشتت الضوء عبر المناشير',
+        'قوانين الانعكاس والانكسار',
+        'حساب البعد البؤري والتكبير'
+      ]
+    },
+    {
+      id: 'circuit-builder',
+      title: 'بناء الدوائر الكهربائية',
+      description: 'مختبر افتراضي لبناء الدوائر الكهربائية مع قياسات حية وتحليل شامل',
+      icon: <Cpu className="w-12 h-12" />,
+      color: 'from-blue-500 via-cyan-500 to-teal-500',
+      route: '/simulation/circuit-builder',
+      features: [
+        'مكونات سحب وإفلات',
+        'قياسات الجهد والتيار الحية',
+        'قوانين أوم وكيرشوف',
+        'مقاومات ومكثفات وملفات',
+        'تحليل الدوائر التسلسلية والتوازية'
+      ]
+    },
+    {
+      id: 'projectile-motion',
+      title: 'حركة المقذوفات والبندول',
+      description: 'محاكاة شاملة لحركة المقذوفات والبندول والسقوط الحر مع رسوم بيانية حية',
+      icon: <Target className="w-12 h-12" />,
+      color: 'from-green-500 via-emerald-500 to-teal-500',
+      route: '/simulation/projectile-motion',
+      features: [
+        'حركة المقذوفات بزوايا مختلفة',
+        'محاكاة البندول البسيط',
+        'تأثير مقاومة الهواء',
+        'رسوم بيانية للموقع والسرعة',
+        'معادلات الحركة الكاملة'
+      ]
+    },
+    {
+      id: 'solar-system',
+      title: 'النظام الشمسي ثلاثي الأبعاد',
+      description: 'محاكاة كاملة للنظام الشمسي مع حركة الكواكب وقوانين كيبلر',
+      icon: <Globe className="w-12 h-12" />,
+      color: 'from-indigo-500 via-purple-500 to-pink-500',
+      route: '/simulation/solar-system',
+      features: [
+        'جميع كواكب المجموعة الشمسية',
+        'قوانين كيبلر الثلاثة',
+        'حساب السرعة المدارية',
+        'التحكم في سرعة الزمن',
+        'معلومات تفصيلية عن كل كوكب'
+      ]
+    },
+    {
+      id: 'genetics-lab',
+      title: 'مختبر الوراثة والجينات',
+      description: 'محاكاة تفاعلية لمربع بونيت وتضاعف DNA والطفرات الجينية',
+      icon: <Dna className="w-12 h-12" />,
+      color: 'from-pink-500 via-rose-500 to-red-500',
+      route: '/simulation/genetics-lab',
+      features: [
+        'مربع بونيت التفاعلي',
+        'تضاعف الحمض النووي',
+        'أنواع الطفرات الجينية',
+        'الصفات السائدة والمتنحية',
+        'نسب التوارث المتوقعة'
+      ]
+    },
+    {
+      id: 'ecosystem',
+      title: 'محاكاة النظام البيئي',
+      description: 'نظام بيئي حي مع كائنات متحركة وتوازن السكان والسلسلة الغذائية',
+      icon: <TreeDeciduous className="w-12 h-12" />,
+      color: 'from-green-600 via-lime-500 to-yellow-500',
+      route: '/simulation/ecosystem',
+      features: [
+        'منتجون ومستهلكون ومحللون',
+        'السلسلة الغذائية الكاملة',
+        'رسوم بيانية للتعداد السكاني',
+        'تأثير العوامل البيئية',
+        'محاكاة الكوارث الطبيعية'
+      ]
+    },
+    {
+      id: 'thermodynamics',
+      title: 'مختبر الديناميكا الحرارية',
+      description: 'محاكاة شاملة للغازات المثالية ودورة كارنو وانتقال الحرارة',
+      icon: <Thermometer className="w-12 h-12" />,
+      color: 'from-red-600 via-orange-500 to-yellow-500',
+      route: '/simulation/thermodynamics',
+      features: [
+        'قانون الغاز المثالي PV=nRT',
+        'دورة كارنو الكاملة',
+        'التوصيل والحمل والإشعاع',
+        'حركة جسيمات الغاز',
+        'حساب الكفاءة والشغل'
       ]
     }
   ];
