@@ -65,6 +65,13 @@ import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
 import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
 import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
 import Function3DVisualization from './pages/Function3DVisualization';
+import OpticsLabSimulation from './pages/OpticsLabSimulation';
+import CircuitBuilderSimulation from './pages/CircuitBuilderSimulation';
+import ProjectileMotionSimulation from './pages/ProjectileMotionSimulation';
+import SolarSystemSimulation from './pages/SolarSystemSimulation';
+import GeneticsLabSimulation from './pages/GeneticsLabSimulation';
+import EcosystemSimulation from './pages/EcosystemSimulation';
+import ThermodynamicsLabSimulation from './pages/ThermodynamicsLabSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -436,6 +443,34 @@ const router = createBrowserRouter([
       {
         path: '3d-function-visualizer',
         element: <AuthGuard><Function3DVisualization /></AuthGuard>,
+      },
+      {
+        path: 'simulation/optics-lab',
+        element: <AuthGuard><OpticsLabSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/circuit-builder',
+        element: <AuthGuard><CircuitBuilderSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/projectile-motion',
+        element: <AuthGuard><ProjectileMotionSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/solar-system',
+        element: <AuthGuard><SolarSystemSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/genetics-lab',
+        element: <AuthGuard><GeneticsLabSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/ecosystem',
+        element: <AuthGuard><EcosystemSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/thermodynamics',
+        element: <AuthGuard><ThermodynamicsLabSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',
