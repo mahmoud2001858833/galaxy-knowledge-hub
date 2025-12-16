@@ -535,8 +535,8 @@ export default function CircuitBuilderAdvanced() {
         <div className="col-span-7">
           <Card className="bg-gray-800/80 border-gray-700 p-4 backdrop-blur-sm h-full">
             {/* Toolbar */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex gap-2">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+              <div className="flex flex-wrap gap-2">
                 {isSimulating ? (
                   <Button variant="destructive" onClick={stopSimulation} className="gap-2">
                     <Pause className="w-4 h-4" />
@@ -563,6 +563,25 @@ export default function CircuitBuilderAdvanced() {
                   مسح الكل
                 </Button>
               </div>
+
+              {/* Quick Switch Controls - Always Visible */}
+              {components.filter(c => c.type === 'switch').length > 0 && (
+                <div className="flex items-center gap-2 bg-gray-700/60 rounded-lg px-3 py-2">
+                  <Power className="w-4 h-4 text-yellow-400" />
+                  <span className="text-white text-sm">المفاتيح:</span>
+                  {components.filter(c => c.type === 'switch').map((sw, idx) => (
+                    <Button
+                      key={sw.id}
+                      size="sm"
+                      onClick={() => toggleSwitch(sw.id)}
+                      className={`gap-1 ${sw.isOn ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                    >
+                      {sw.isOn ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                      {idx + 1}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Canvas */}
