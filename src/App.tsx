@@ -67,8 +67,10 @@ import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
 import Function3DVisualization from './pages/Function3DVisualization';
 import OpticsLabSimulation from './pages/OpticsLabSimulation';
 import CircuitBuilderSimulation from './pages/CircuitBuilderSimulation';
+import CircuitBuilderAdvanced from './pages/CircuitBuilderAdvanced';
 import ProjectileMotionSimulation from './pages/ProjectileMotionSimulation';
 import SolarSystemSimulation from './pages/SolarSystemSimulation';
+import SolarSystem3D from './pages/SolarSystem3D';
 import GeneticsLabSimulation from './pages/GeneticsLabSimulation';
 import EcosystemSimulation from './pages/EcosystemSimulation';
 import ThermodynamicsLabSimulation from './pages/ThermodynamicsLabSimulation';
@@ -453,12 +455,20 @@ const router = createBrowserRouter([
         element: <AuthGuard><CircuitBuilderSimulation /></AuthGuard>,
       },
       {
+        path: 'simulation/circuit-builder-advanced',
+        element: <AuthGuard><CircuitBuilderAdvanced /></AuthGuard>,
+      },
+      {
         path: 'simulation/projectile-motion',
         element: <AuthGuard><ProjectileMotionSimulation /></AuthGuard>,
       },
       {
         path: 'simulation/solar-system',
         element: <AuthGuard><SolarSystemSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/solar-system-3d',
+        element: <AuthGuard><SolarSystem3D /></AuthGuard>,
       },
       {
         path: 'simulation/genetics-lab',
