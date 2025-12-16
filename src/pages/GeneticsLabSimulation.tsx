@@ -597,7 +597,7 @@ const GeneticsLabSimulation = () => {
                     <PunnettSquareVisual
                       parent1={state.parent1.genotype}
                       parent2={state.parent2.genotype}
-                      results={state.punnettResults.map(r => r.genotype.join(''))}
+                      results={state.punnettResults.map(r => Array.isArray(r.genotype) ? r.genotype.join('') : r.genotype)}
                       isDarkMode={isDarkMode}
                       currentTrait={currentTrait}
                     />
