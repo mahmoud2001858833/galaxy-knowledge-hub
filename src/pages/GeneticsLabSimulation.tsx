@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import { useGeneticsSimulation, TRAITS, DNA_BASES, MUTATION_TYPES } from '@/hooks/useGeneticsSimulation';
 
-// DNA Helix 3D Animation Component
+// DNA Helix 3D Animation Component - Enhanced
 const DNAHelix = ({ sequence, isReplicating, replicationProgress }: { 
   sequence: string[]; 
   isReplicating: boolean;
@@ -20,104 +20,151 @@ const DNAHelix = ({ sequence, isReplicating, replicationProgress }: {
   };
   const complementary: Record<string, string> = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
 
+  const replicatedIndex = Math.floor((replicationProgress / 100) * sequence.length);
+
   return (
-    <div className="relative h-96 overflow-hidden bg-gradient-to-b from-gray-900 via-purple-900/30 to-gray-900 rounded-xl border border-purple-500/30">
-      {/* Replication fork animation */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400"
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: isReplicating ? replicationProgress / 100 : 0 }}
-        style={{ transformOrigin: 'left' }}
-      />
+    <div className="relative h-[450px] overflow-hidden bg-gradient-to-b from-gray-900 via-purple-900/30 to-gray-900 rounded-xl border border-purple-500/30">
+      {/* Background glow effect */}
+      <div className="absolute inset-0 bg-gradient-radial from-purple-600/10 via-transparent to-transparent" />
       
-      <div className="flex justify-center items-center h-full py-8">
-        <div className="relative">
-          {/* DNA Strands */}
-          {sequence.slice(0, 20).map((base, i) => {
-            const replicated = isReplicating && (i / sequence.length) * 100 <= replicationProgress;
-            const angle = i * 18;
-            const yOffset = i * 18;
+      {/* Progress bar at top */}
+      <div className="absolute top-0 left-0 right-0 h-2 bg-gray-800">
+        <motion.div
+          className="h-full bg-gradient-to-r from-cyan-400 via-green-400 to-cyan-400"
+          style={{ width: `${replicationProgress}%` }}
+          transition={{ duration: 0.1 }}
+        />
+      </div>
+      
+      {/* Replication status */}
+      {isReplicating && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-4 py-2 rounded-full text-sm font-bold z-20 shadow-lg"
+        >
+          🧬 جاري التضاعف... {Math.round(replicationProgress)}%
+        </motion.div>
+      )}
+
+      {replicationProgress >= 100 && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold z-20 shadow-lg"
+        >
+          ✅ اكتمل التضاعف!
+        </motion.div>
+      )}
+      
+      <div className="flex justify-center items-start h-full pt-16 pb-8 overflow-y-auto">
+        <div className="relative flex flex-col gap-1">
+          {sequence.slice(0, 18).map((base, i) => {
+            const isReplicated = i < replicatedIndex;
+            const isCurrentlyReplicating = i === replicatedIndex && isReplicating;
+            const angle = i * 20;
+            const xOffset = Math.sin(angle * Math.PI / 180) * 25;
             
             return (
               <motion.div
                 key={i}
-                className="absolute flex items-center"
-                style={{ top: yOffset }}
-                initial={{ opacity: 0, x: -50 }}
+                className="flex items-center justify-center relative"
+                initial={{ opacity: 0, x: -30 }}
                 animate={{ 
                   opacity: 1, 
-                  x: replicated ? [-10, 0] : 0,
-                  rotateY: angle
+                  x: 0
                 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
+                transition={{ delay: i * 0.03, duration: 0.3 }}
               >
-                {/* Original strand */}
+                {/* New complementary strand (left) - appears during replication */}
+                <AnimatePresence>
+                  {isReplicated && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 30, scale: 0 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg mr-1"
+                      style={{ 
+                        backgroundColor: baseColors[complementary[base]],
+                        boxShadow: `0 0 12px ${baseColors[complementary[base]]}80`
+                      }}
+                    >
+                      {complementary[base]}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Original strand - left base */}
                 <motion.div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg relative"
                   style={{ 
                     backgroundColor: baseColors[base],
-                    boxShadow: `0 0 15px ${baseColors[base]}50`
+                    boxShadow: isCurrentlyReplicating ? `0 0 25px ${baseColors[base]}` : `0 0 12px ${baseColors[base]}60`,
+                    marginLeft: isReplicated ? xOffset - 20 : xOffset
                   }}
                   animate={{ 
-                    x: replicated ? -30 : Math.sin(angle * Math.PI / 180) * 30,
-                    scale: replicated ? 1.1 : 1
+                    scale: isCurrentlyReplicating ? [1, 1.15, 1] : 1,
                   }}
+                  transition={{ duration: 0.3, repeat: isCurrentlyReplicating ? Infinity : 0 }}
                 >
                   {base}
+                  {isCurrentlyReplicating && (
+                    <motion.div 
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full"
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 0.4, repeat: Infinity }}
+                    />
+                  )}
                 </motion.div>
 
                 {/* Hydrogen bonds */}
                 <motion.div 
-                  className="w-16 h-0.5 mx-1 flex items-center justify-center gap-1"
+                  className="w-14 h-1 mx-1 flex items-center justify-center gap-0.5"
                   animate={{ 
-                    opacity: replicated ? 0.3 : 1,
-                    scaleX: replicated ? 1.5 : 1
+                    opacity: isReplicated ? 0.2 : 1,
+                    scaleX: isReplicated ? 0.5 : 1
                   }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <div className="w-1 h-1 rounded-full bg-white/60" />
-                  <div className={`flex-1 h-0.5 ${base === 'A' || base === 'T' ? 'bg-white/40' : 'bg-white/60'}`} />
-                  <div className="w-1 h-1 rounded-full bg-white/60" />
-                  {(base === 'G' || base === 'C') && (
-                    <div className="flex-1 h-0.5 bg-white/60" />
-                  )}
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/70" />
+                  <div className={`flex-1 h-0.5 ${base === 'A' || base === 'T' ? 'bg-white/50' : 'bg-white/70'}`} />
+                  {(base === 'G' || base === 'C') && <div className="flex-1 h-0.5 bg-white/70" />}
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/70" />
                 </motion.div>
 
-                {/* Complementary strand */}
+                {/* Complementary strand - right base */}
                 <motion.div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg"
                   style={{ 
                     backgroundColor: baseColors[complementary[base]],
-                    boxShadow: `0 0 15px ${baseColors[complementary[base]]}50`
+                    boxShadow: isCurrentlyReplicating ? `0 0 25px ${baseColors[complementary[base]]}` : `0 0 12px ${baseColors[complementary[base]]}60`,
+                    marginRight: isReplicated ? -xOffset - 20 : -xOffset
                   }}
                   animate={{ 
-                    x: replicated ? 30 : -Math.sin(angle * Math.PI / 180) * 30,
-                    scale: replicated ? 1.1 : 1
+                    scale: isCurrentlyReplicating ? [1, 1.15, 1] : 1,
                   }}
+                  transition={{ duration: 0.3, repeat: isCurrentlyReplicating ? Infinity : 0 }}
                 >
                   {complementary[base]}
                 </motion.div>
 
-                {/* New replicated strands */}
+                {/* New original strand (right) - appears during replication */}
                 <AnimatePresence>
-                  {replicated && (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0, x: -60 }}
-                        animate={{ opacity: 1, scale: 1, x: -70 }}
-                        className="absolute w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: baseColors[complementary[base]] }}
-                      >
-                        {complementary[base]}
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0, x: 120 }}
-                        animate={{ opacity: 1, scale: 1, x: 130 }}
-                        className="absolute w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: baseColors[base] }}
-                      >
-                        {base}
-                      </motion.div>
-                    </>
+                  {isReplicated && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -30, scale: 0 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ml-1"
+                      style={{ 
+                        backgroundColor: baseColors[base],
+                        boxShadow: `0 0 12px ${baseColors[base]}80`
+                      }}
+                    >
+                      {base}
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
@@ -128,19 +175,19 @@ const DNAHelix = ({ sequence, isReplicating, replicationProgress }: {
 
       {/* Labels */}
       <div className="absolute bottom-4 left-4 right-4 flex justify-between text-xs text-gray-400">
-        <span>5' → 3'</span>
-        <span>3' ← 5'</span>
+        <span>5' → 3' (سلسلة قائدة)</span>
+        <span>3' ← 5' (سلسلة متأخرة)</span>
       </div>
 
-      {/* Enzyme indicator */}
-      {isReplicating && (
+      {/* DNA Polymerase indicator */}
+      {isReplicating && replicationProgress < 100 && (
         <motion.div
-          className="absolute left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold"
-          style={{ top: `${replicationProgress * 3.5}px` }}
-          animate={{ scale: [1, 1.1, 1] }}
+          className="absolute right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+          style={{ top: `${80 + (replicationProgress / 100) * 300}px` }}
+          animate={{ x: [0, 5, 0] }}
           transition={{ repeat: Infinity, duration: 0.5 }}
         >
-          🧬 DNA Polymerase
+          ⚡ DNA Polymerase
         </motion.div>
       )}
     </div>
@@ -413,19 +460,28 @@ const GeneticsLabSimulation = () => {
     if (state.isReplicating) {
       interval = setInterval(() => {
         setReplicationProgress(prev => {
-          if (prev >= 100) {
+          const newProgress = prev + 1.5;
+          if (newProgress >= 100) {
             stopReplication();
-            return 0;
+            return 100;
           }
-          return prev + 2;
+          return newProgress;
         });
         advanceReplication();
-      }, 100);
-    } else {
-      setReplicationProgress(0);
+      }, 80);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [state.isReplicating, advanceReplication, stopReplication]);
+
+  // Reset progress when not replicating
+  useEffect(() => {
+    if (!state.isReplicating && replicationProgress >= 100) {
+      const timeout = setTimeout(() => setReplicationProgress(0), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [state.isReplicating, replicationProgress]);
 
   const baseColors: Record<string, string> = {
     'A': '#FF6B6B', 'T': '#4ECDC4', 'G': '#45B7D1', 'C': '#96CEB4'
@@ -716,11 +772,11 @@ const GeneticsLabSimulation = () => {
               ))}
             </div>
 
-            {mutationComparison && (
+            {mutationComparison && state.mutationType && (
               <MutationVisual
                 original={mutationComparison.original.split('')}
                 mutated={mutationComparison.mutated.split('')}
-                mutationType="substitution"
+                mutationType={state.mutationType}
                 isDarkMode={isDarkMode}
               />
             )}

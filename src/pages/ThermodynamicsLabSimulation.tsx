@@ -125,7 +125,7 @@ const ThermodynamicsLabSimulation = () => {
 
   }, [particles, isDarkMode, volume, temperature, activeTab, state.containerWidth, state.containerHeight]);
 
-  // Draw Carnot cycle
+  // Draw Carnot cycle - Enhanced
   useEffect(() => {
     if (activeTab !== 'carnot') return;
     
@@ -142,75 +142,182 @@ const ThermodynamicsLabSimulation = () => {
     ctx.fillStyle = isDarkMode ? '#1a1a2e' : '#f0f9ff';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw PV diagram
-    const margin = 60;
-    const graphWidth = width - margin * 2;
-    const graphHeight = height - margin * 2;
+    // Draw engine visualization on left side
+    const engineX = 80;
+    const engineY = 80;
+    const engineW = 180;
+    const engineH = 280;
+
+    // Hot reservoir (top)
+    const hotGrad = ctx.createLinearGradient(engineX, engineY, engineX, engineY + 60);
+    hotGrad.addColorStop(0, '#DC2626');
+    hotGrad.addColorStop(1, '#EF4444');
+    ctx.fillStyle = hotGrad;
+    ctx.fillRect(engineX, engineY, engineW, 60);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔥 مستودع ساخن Th', engineX + engineW/2, engineY + 35);
+
+    // Engine cylinder
+    ctx.strokeStyle = '#6B7280';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(engineX + 30, engineY + 70, engineW - 60, 140);
+    
+    // Piston position based on stage
+    const pistonPositions = [0.3, 0.6, 0.7, 0.4];
+    const pistonY = engineY + 80 + pistonPositions[carnotStage] * 100;
+    ctx.fillStyle = '#4B5563';
+    ctx.fillRect(engineX + 35, pistonY, engineW - 70, 20);
+    
+    // Gas particles in cylinder
+    ctx.fillStyle = carnotStage < 2 ? '#EF4444' : '#3B82F6';
+    for (let i = 0; i < 15; i++) {
+      const px = engineX + 50 + Math.random() * (engineW - 100);
+      const py = pistonY + 25 + Math.random() * (engineY + 200 - pistonY);
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Cold reservoir (bottom)
+    const coldGrad = ctx.createLinearGradient(engineX, engineY + engineH - 60, engineX, engineY + engineH);
+    coldGrad.addColorStop(0, '#3B82F6');
+    coldGrad.addColorStop(1, '#1D4ED8');
+    ctx.fillStyle = coldGrad;
+    ctx.fillRect(engineX, engineY + engineH - 60, engineW, 60);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('❄️ مستودع بارد Tc', engineX + engineW/2, engineY + engineH - 25);
+
+    // Heat flow arrows
+    ctx.strokeStyle = '#F59E0B';
+    ctx.lineWidth = 3;
+    if (carnotStage === 0) {
+      // Heat in from hot reservoir
+      ctx.beginPath();
+      ctx.moveTo(engineX + engineW/2, engineY + 60);
+      ctx.lineTo(engineX + engineW/2, engineY + 85);
+      ctx.stroke();
+      ctx.fillStyle = '#F59E0B';
+      ctx.beginPath();
+      ctx.moveTo(engineX + engineW/2 - 8, engineY + 80);
+      ctx.lineTo(engineX + engineW/2 + 8, engineY + 80);
+      ctx.lineTo(engineX + engineW/2, engineY + 95);
+      ctx.fill();
+      ctx.fillText('Qh', engineX + engineW/2 + 20, engineY + 75);
+    }
+    if (carnotStage === 2) {
+      // Heat out to cold reservoir
+      ctx.beginPath();
+      ctx.moveTo(engineX + engineW/2, engineY + engineH - 75);
+      ctx.lineTo(engineX + engineW/2, engineY + engineH - 60);
+      ctx.stroke();
+      ctx.fillStyle = '#3B82F6';
+      ctx.beginPath();
+      ctx.moveTo(engineX + engineW/2 - 8, engineY + engineH - 65);
+      ctx.lineTo(engineX + engineW/2 + 8, engineY + engineH - 65);
+      ctx.lineTo(engineX + engineW/2, engineY + engineH - 55);
+      ctx.fill();
+      ctx.fillText('Qc', engineX + engineW/2 + 20, engineY + engineH - 70);
+    }
+
+    // Work output arrow
+    ctx.strokeStyle = '#22C55E';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(engineX + engineW, engineY + 150);
+    ctx.lineTo(engineX + engineW + 40, engineY + 150);
+    ctx.stroke();
+    ctx.fillStyle = '#22C55E';
+    ctx.beginPath();
+    ctx.moveTo(engineX + engineW + 35, engineY + 145);
+    ctx.lineTo(engineX + engineW + 35, engineY + 155);
+    ctx.lineTo(engineX + engineW + 50, engineY + 150);
+    ctx.fill();
+    ctx.fillText('W', engineX + engineW + 30, engineY + 135);
+
+    // Draw PV diagram on right side
+    const margin = 320;
+    const graphWidth = width - margin - 40;
+    const graphHeight = height - 120;
 
     // Axes
     ctx.strokeStyle = isDarkMode ? '#6B7280' : '#374151';
     ctx.lineWidth = 2;
-    
     ctx.beginPath();
-    ctx.moveTo(margin, margin);
-    ctx.lineTo(margin, height - margin);
+    ctx.moveTo(margin, 60);
+    ctx.lineTo(margin, height - 60);
     ctx.stroke();
-    
     ctx.beginPath();
-    ctx.moveTo(margin, height - margin);
-    ctx.lineTo(width - margin, height - margin);
+    ctx.moveTo(margin, height - 60);
+    ctx.lineTo(width - 20, height - 60);
     ctx.stroke();
 
     // Axis labels
     ctx.fillStyle = isDarkMode ? '#FFFFFF' : '#000000';
-    ctx.font = '14px Arial';
-    ctx.fillText('P (الضغط)', margin - 10, margin - 10);
-    ctx.fillText('V (الحجم)', width - margin - 40, height - margin + 25);
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText('P', margin - 10, 70);
+    ctx.textAlign = 'center';
+    ctx.fillText('V', width - 30, height - 45);
 
-    // Carnot cycle path
+    // Carnot cycle path with curves
     const stages = [
-      { name: 'isothermal_expansion', color: '#EF4444', points: [[100, 300], [200, 200], [300, 150]] },
-      { name: 'adiabatic_expansion', color: '#22C55E', points: [[300, 150], [350, 200], [400, 280]] },
-      { name: 'isothermal_compression', color: '#3B82F6', points: [[400, 280], [300, 350], [200, 380]] },
-      { name: 'adiabatic_compression', color: '#F59E0B', points: [[200, 380], [150, 340], [100, 300]] }
+      { name: 'isothermal_expansion', color: '#EF4444', label: 'تمدد متساوي الحرارة' },
+      { name: 'adiabatic_expansion', color: '#22C55E', label: 'تمدد أديباتي' },
+      { name: 'isothermal_compression', color: '#3B82F6', label: 'انضغاط متساوي الحرارة' },
+      { name: 'adiabatic_compression', color: '#F59E0B', label: 'انضغاط أديباتي' }
     ];
 
-    stages.forEach((stage, idx) => {
-      ctx.strokeStyle = stage.color;
-      ctx.lineWidth = idx <= carnotStage ? 4 : 2;
-      ctx.globalAlpha = idx <= carnotStage ? 1 : 0.3;
-      
+    // Draw filled area for work
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#22C55E';
+    ctx.beginPath();
+    ctx.moveTo(margin + 60, 120);
+    ctx.quadraticCurveTo(margin + 150, 100, margin + 200, 150);
+    ctx.quadraticCurveTo(margin + 250, 200, margin + 280, 280);
+    ctx.quadraticCurveTo(margin + 200, 320, margin + 140, 300);
+    ctx.quadraticCurveTo(margin + 80, 250, margin + 60, 120);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Draw cycle curves
+    const curves = [
+      { start: [60, 120], cp: [150, 100], end: [200, 150], idx: 0 },
+      { start: [200, 150], cp: [250, 200], end: [280, 280], idx: 1 },
+      { start: [280, 280], cp: [200, 320], end: [140, 300], idx: 2 },
+      { start: [140, 300], cp: [80, 250], end: [60, 120], idx: 3 }
+    ];
+
+    curves.forEach((curve, idx) => {
+      ctx.strokeStyle = stages[idx].color;
+      ctx.lineWidth = idx <= carnotStage ? 5 : 2;
+      ctx.globalAlpha = idx <= carnotStage ? 1 : 0.4;
       ctx.beginPath();
-      stage.points.forEach((point, i) => {
-        if (i === 0) ctx.moveTo(margin + point[0] * graphWidth / 500, margin + point[1] * graphHeight / 500);
-        else ctx.lineTo(margin + point[0] * graphWidth / 500, margin + point[1] * graphHeight / 500);
-      });
+      ctx.moveTo(margin + curve.start[0], curve.start[1]);
+      ctx.quadraticCurveTo(margin + curve.cp[0], curve.cp[1], margin + curve.end[0], curve.end[1]);
       ctx.stroke();
       ctx.globalAlpha = 1;
     });
 
-    // Current point indicator
-    const currentStage = stages[carnotStage];
-    if (currentStage) {
-      const lastPoint = currentStage.points[currentStage.points.length - 1];
+    // Current point indicator with glow
+    const currentCurve = curves[carnotStage];
+    if (currentCurve) {
+      ctx.shadowColor = stages[carnotStage].color;
+      ctx.shadowBlur = 20;
       ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = currentStage.color;
-      ctx.shadowBlur = 15;
       ctx.beginPath();
-      ctx.arc(margin + lastPoint[0] * graphWidth / 500, margin + lastPoint[1] * graphHeight / 500, 8, 0, Math.PI * 2);
+      ctx.arc(margin + currentCurve.end[0], currentCurve.end[1], 10, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
     }
 
-    // Legend
-    const legendY = height - 30;
+    // Stage labels
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'left';
     stages.forEach((stage, idx) => {
       ctx.fillStyle = stage.color;
-      ctx.fillRect(margin + idx * 150, legendY, 20, 10);
-      ctx.fillStyle = isDarkMode ? '#FFFFFF' : '#000000';
-      ctx.font = '10px Arial';
-      const labels = ['تمدد متساوي الحرارة', 'تمدد أديباتي', 'انضغاط متساوي الحرارة', 'انضغاط أديباتي'];
-      ctx.fillText(labels[idx], margin + idx * 150 + 25, legendY + 9);
+      ctx.fillRect(margin + 10, height - 50 + idx * 0, 15, 3);
     });
 
   }, [carnotStage, isDarkMode, activeTab]);
@@ -305,48 +412,121 @@ const ThermodynamicsLabSimulation = () => {
 
     } else if (heatTransferMode === 'radiation') {
       const sunX = width / 4;
-      const sunY = height / 2;
-      const sunRadius = 60;
+      const sunY = height / 2 - 30;
+      const sunRadius = 50;
 
-      const sunGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius * 3);
-      sunGradient.addColorStop(0, 'rgba(255, 200, 50, 0.8)');
-      sunGradient.addColorStop(0.3, 'rgba(255, 150, 0, 0.4)');
-      sunGradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+      // Space background
+      ctx.fillStyle = '#0a0a1a';
+      ctx.fillRect(0, 0, width, height);
+
+      // Stars
+      for (let i = 0; i < 50; i++) {
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Sun glow
+      const sunGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius * 4);
+      sunGradient.addColorStop(0, 'rgba(255, 200, 50, 1)');
+      sunGradient.addColorStop(0.2, 'rgba(255, 150, 0, 0.6)');
+      sunGradient.addColorStop(0.5, 'rgba(255, 100, 0, 0.2)');
+      sunGradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
       ctx.fillStyle = sunGradient;
       ctx.beginPath();
-      ctx.arc(sunX, sunY, sunRadius * 3, 0, Math.PI * 2);
+      ctx.arc(sunX, sunY, sunRadius * 4, 0, Math.PI * 2);
       ctx.fill();
 
+      // Sun core
       ctx.fillStyle = '#FCD34D';
       ctx.beginPath();
       ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
       ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.font = '30px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('☀️', sunX, sunY + 10);
 
+      // Radiation waves
       ctx.strokeStyle = '#F59E0B';
       ctx.lineWidth = 2;
-      for (let i = 1; i <= 5; i++) {
-        ctx.globalAlpha = 1 - i * 0.15;
+      for (let i = 1; i <= 6; i++) {
+        ctx.globalAlpha = 1 - i * 0.12;
+        ctx.setLineDash([5, 5]);
         ctx.beginPath();
-        ctx.arc(sunX, sunY, sunRadius + i * 40, -Math.PI / 4, Math.PI / 4);
+        ctx.arc(sunX, sunY, sunRadius + i * 35, -Math.PI / 3, Math.PI / 3);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
 
-      ctx.fillStyle = '#3B82F6';
+      // Earth
+      const earthX = width * 0.72;
+      const earthGrad = ctx.createRadialGradient(earthX - 10, sunY - 10, 5, earthX, sunY, 35);
+      earthGrad.addColorStop(0, '#3B82F6');
+      earthGrad.addColorStop(0.5, '#1D4ED8');
+      earthGrad.addColorStop(1, '#1E3A8A');
+      ctx.fillStyle = earthGrad;
       ctx.beginPath();
-      ctx.arc(width * 0.75, sunY, 40, 0, Math.PI * 2);
+      ctx.arc(earthX, sunY, 35, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Continents
+      ctx.fillStyle = '#22C55E';
+      ctx.beginPath();
+      ctx.ellipse(earthX - 10, sunY - 5, 12, 8, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(earthX + 8, sunY + 10, 8, 6, -0.2, 0, Math.PI * 2);
       ctx.fill();
 
-      const spectrumY = height - 80;
-      const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
-      colors.forEach((color, i) => {
-        ctx.fillStyle = color;
-        ctx.fillRect(50 + i * 100, spectrumY, 90, 30);
-      });
+      // Arrow from sun to earth
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sunX + sunRadius + 20, sunY);
+      ctx.lineTo(earthX - 50, sunY);
+      ctx.stroke();
+      ctx.fillStyle = '#F59E0B';
+      ctx.beginPath();
+      ctx.moveTo(earthX - 55, sunY - 8);
+      ctx.lineTo(earthX - 55, sunY + 8);
+      ctx.lineTo(earthX - 40, sunY);
+      ctx.fill();
+
+      // Electromagnetic spectrum at bottom
+      const spectrumY = height - 70;
+      const spectrumLabels = ['أشعة غاما', 'أشعة X', 'فوق البنفسجية', 'مرئي', 'تحت الحمراء', 'موجات راديو'];
+      const spectrumColors = ['#8B5CF6', '#6366F1', '#3B82F6', 'linear-gradient(90deg, red, orange, yellow, green, blue, purple)', '#EF4444', '#F97316'];
+      
       ctx.fillStyle = isDarkMode ? '#FFFFFF' : '#000000';
-      ctx.font = '12px Arial';
+      ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('الطيف الكهرومغناطيسي', width / 2, spectrumY + 50);
+      ctx.fillText('الطيف الكهرومغناطيسي', width / 2, spectrumY - 15);
+      
+      const boxWidth = (width - 80) / 6;
+      spectrumLabels.forEach((label, i) => {
+        const x = 40 + i * boxWidth;
+        if (i === 3) {
+          // Visible spectrum - rainbow gradient
+          const grad = ctx.createLinearGradient(x, 0, x + boxWidth - 5, 0);
+          grad.addColorStop(0, '#FF0000');
+          grad.addColorStop(0.17, '#FF7F00');
+          grad.addColorStop(0.33, '#FFFF00');
+          grad.addColorStop(0.5, '#00FF00');
+          grad.addColorStop(0.67, '#0000FF');
+          grad.addColorStop(0.83, '#4B0082');
+          grad.addColorStop(1, '#9400D3');
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = ['#8B5CF6', '#6366F1', '#3B82F6', '', '#EF4444', '#F97316'][i];
+        }
+        ctx.fillRect(x, spectrumY, boxWidth - 5, 25);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '9px Arial';
+        ctx.fillText(label, x + boxWidth / 2 - 2, spectrumY + 40);
+      });
     }
 
   }, [heatTransferMode, conductionTemp, isDarkMode, activeTab]);
