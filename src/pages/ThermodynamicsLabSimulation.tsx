@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Play, Pause, RotateCcw, Thermometer, Gauge, Wind, Sun, Moon, Flame, Snowflake, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Play, Pause, RotateCcw, Wind, Sun, Moon, Flame, Gauge, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { useThermodynamicsPhysics, GasParticle } from '@/hooks/useThermodynamicsPhysics';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useThermodynamicsPhysics } from '@/hooks/useThermodynamicsPhysics';
 
 const ThermodynamicsLabSimulation = () => {
   const navigate = useNavigate();
@@ -17,27 +16,26 @@ const ThermodynamicsLabSimulation = () => {
   const [activeTab, setActiveTab] = useState('gas');
 
   const {
-    particles,
-    isRunning,
-    temperature,
-    pressure,
-    volume,
-    carnotStage,
-    carnotEfficiency,
-    heatTransferMode,
-    conductionTemp,
-    setIsRunning,
-    setTemperature,
-    setVolume,
-    reset,
-    nextCarnotStage,
-    setHeatTransferMode,
-    calculateIdealGasValues,
-    getPVData
+    state,
+    gasStats,
+    carnotStats,
+    toggleGasSimulation,
+    setGasTemperature,
+    setGasVolume,
+    advanceCarnotCycle,
+    resetCarnotCycle,
+    setHeatTransferMode
   } = useThermodynamicsPhysics();
 
-  const gasValues = calculateIdealGasValues();
-  const pvData = getPVData();
+  const particles = state.particles;
+  const temperature = state.temperature;
+  const volume = state.volume;
+  const pressure = gasStats.pressure;
+  const isRunning = state.isSimulating;
+  const carnotStage = state.carnot.currentStep;
+  const carnotEfficiency = carnotStats.efficiency;
+  const heatTransferMode = state.heatTransfer.mode;
+  const conductionTemp = state.heatTransfer.temperatures;
 
   // Draw gas particles
   useEffect(() => {
@@ -57,7 +55,8 @@ const ThermodynamicsLabSimulation = () => {
     ctx.fillRect(0, 0, width, height);
 
     // Container walls
-    const containerWidth = width * (volume / 100);
+    const containerVolume = (volume / 0.001) * 100;
+    const containerWidth = width * (containerVolume / 100);
     const containerX = (width - containerWidth) / 2;
     const containerY = 50;
     const containerHeight = height - 100;
@@ -89,12 +88,12 @@ const ThermodynamicsLabSimulation = () => {
 
     // Draw particles
     particles.forEach(particle => {
-      const px = containerX + (particle.x / 100) * containerWidth;
-      const py = containerY + (particle.y / 100) * containerHeight;
+      const px = containerX + (particle.x / state.containerWidth) * containerWidth;
+      const py = containerY + (particle.y / state.containerHeight) * containerHeight;
 
       // Particle glow based on speed
       const speed = Math.sqrt(particle.vx ** 2 + particle.vy ** 2);
-      const hue = Math.min(60, 240 - speed * 20); // Blue to red
+      const hue = Math.min(60, 240 - speed * 20);
       
       ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
       ctx.shadowBlur = 10;
@@ -106,7 +105,7 @@ const ThermodynamicsLabSimulation = () => {
       
       ctx.shadowBlur = 0;
 
-      // Velocity vector (optional)
+      // Velocity vector
       if (speed > 2) {
         ctx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.5)`;
         ctx.lineWidth = 1;
@@ -124,7 +123,7 @@ const ThermodynamicsLabSimulation = () => {
     ctx.strokeStyle = '#9CA3AF';
     ctx.strokeRect(width - 40, containerY, 15, containerHeight);
 
-  }, [particles, isDarkMode, volume, temperature, activeTab]);
+  }, [particles, isDarkMode, volume, temperature, activeTab, state.containerWidth, state.containerHeight]);
 
   // Draw Carnot cycle
   useEffect(() => {
@@ -152,13 +151,11 @@ const ThermodynamicsLabSimulation = () => {
     ctx.strokeStyle = isDarkMode ? '#6B7280' : '#374151';
     ctx.lineWidth = 2;
     
-    // Y axis (P)
     ctx.beginPath();
     ctx.moveTo(margin, margin);
     ctx.lineTo(margin, height - margin);
     ctx.stroke();
     
-    // X axis (V)
     ctx.beginPath();
     ctx.moveTo(margin, height - margin);
     ctx.lineTo(width - margin, height - margin);
@@ -178,12 +175,10 @@ const ThermodynamicsLabSimulation = () => {
       { name: 'adiabatic_compression', color: '#F59E0B', points: [[200, 380], [150, 340], [100, 300]] }
     ];
 
-    const stageIndex = ['isothermal_expansion', 'adiabatic_expansion', 'isothermal_compression', 'adiabatic_compression'].indexOf(carnotStage);
-
     stages.forEach((stage, idx) => {
       ctx.strokeStyle = stage.color;
-      ctx.lineWidth = idx <= stageIndex ? 4 : 2;
-      ctx.globalAlpha = idx <= stageIndex ? 1 : 0.3;
+      ctx.lineWidth = idx <= carnotStage ? 4 : 2;
+      ctx.globalAlpha = idx <= carnotStage ? 1 : 0.3;
       
       ctx.beginPath();
       stage.points.forEach((point, i) => {
@@ -195,7 +190,7 @@ const ThermodynamicsLabSimulation = () => {
     });
 
     // Current point indicator
-    const currentStage = stages[stageIndex];
+    const currentStage = stages[carnotStage];
     if (currentStage) {
       const lastPoint = currentStage.points[currentStage.points.length - 1];
       ctx.fillStyle = '#FFFFFF';
@@ -238,13 +233,11 @@ const ThermodynamicsLabSimulation = () => {
     ctx.fillRect(0, 0, width, height);
 
     if (heatTransferMode === 'conduction') {
-      // Metal bar
       const barWidth = width - 100;
       const barHeight = 60;
       const barX = 50;
       const barY = height / 2 - barHeight / 2;
 
-      // Temperature gradient along bar
       const gradient = ctx.createLinearGradient(barX, 0, barX + barWidth, 0);
       gradient.addColorStop(0, '#EF4444');
       gradient.addColorStop(0.5, '#F59E0B');
@@ -253,7 +246,6 @@ const ThermodynamicsLabSimulation = () => {
       ctx.fillStyle = gradient;
       ctx.fillRect(barX, barY, barWidth, barHeight);
 
-      // Heat source
       ctx.fillStyle = '#DC2626';
       ctx.beginPath();
       ctx.arc(barX, barY + barHeight / 2, 30, 0, Math.PI * 2);
@@ -263,7 +255,6 @@ const ThermodynamicsLabSimulation = () => {
       ctx.textAlign = 'center';
       ctx.fillText('🔥', barX, barY + barHeight / 2 + 7);
 
-      // Cold sink
       ctx.fillStyle = '#2563EB';
       ctx.beginPath();
       ctx.arc(barX + barWidth, barY + barHeight / 2, 30, 0, Math.PI * 2);
@@ -271,7 +262,6 @@ const ThermodynamicsLabSimulation = () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText('❄️', barX + barWidth, barY + barHeight / 2 + 7);
 
-      // Temperature indicators
       conductionTemp.forEach((temp, idx) => {
         const x = barX + (idx / (conductionTemp.length - 1)) * barWidth;
         ctx.fillStyle = isDarkMode ? '#FFFFFF' : '#000000';
@@ -280,21 +270,7 @@ const ThermodynamicsLabSimulation = () => {
         ctx.fillText(`${temp.toFixed(0)}°C`, x, barY + barHeight + 25);
       });
 
-      // Heat flow arrows
-      for (let i = 0; i < 5; i++) {
-        const x = barX + 60 + i * (barWidth - 100) / 4;
-        ctx.strokeStyle = '#F59E0B';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x, barY + barHeight / 2);
-        ctx.lineTo(x + 30, barY + barHeight / 2);
-        ctx.lineTo(x + 25, barY + barHeight / 2 - 5);
-        ctx.moveTo(x + 30, barY + barHeight / 2);
-        ctx.lineTo(x + 25, barY + barHeight / 2 + 5);
-        ctx.stroke();
-      }
     } else if (heatTransferMode === 'convection') {
-      // Convection cell
       const cellX = width / 2 - 150;
       const cellY = 50;
       const cellWidth = 300;
@@ -304,15 +280,12 @@ const ThermodynamicsLabSimulation = () => {
       ctx.lineWidth = 3;
       ctx.strokeRect(cellX, cellY, cellWidth, cellHeight);
 
-      // Heat source at bottom
       ctx.fillStyle = '#DC2626';
       ctx.fillRect(cellX, cellY + cellHeight, cellWidth, 30);
 
-      // Convection arrows
       ctx.strokeStyle = '#F59E0B';
       ctx.lineWidth = 3;
       
-      // Up arrows (hot)
       for (let i = 0; i < 3; i++) {
         const x = cellX + 50 + i * 100;
         ctx.beginPath();
@@ -324,25 +297,17 @@ const ThermodynamicsLabSimulation = () => {
         ctx.stroke();
       }
 
-      // Side arrows
       ctx.strokeStyle = '#3B82F6';
       ctx.beginPath();
       ctx.moveTo(cellX + 50, cellY + 50);
       ctx.quadraticCurveTo(cellX + 150, cellY + 30, cellX + 250, cellY + 50);
       ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(cellX + 250, cellY + cellHeight - 50);
-      ctx.quadraticCurveTo(cellX + 150, cellY + cellHeight - 30, cellX + 50, cellY + cellHeight - 50);
-      ctx.stroke();
-
     } else if (heatTransferMode === 'radiation') {
-      // Radiating body
       const sunX = width / 4;
       const sunY = height / 2;
       const sunRadius = 60;
 
-      // Sun glow
       const sunGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius * 3);
       sunGradient.addColorStop(0, 'rgba(255, 200, 50, 0.8)');
       sunGradient.addColorStop(0.3, 'rgba(255, 150, 0, 0.4)');
@@ -352,13 +317,11 @@ const ThermodynamicsLabSimulation = () => {
       ctx.arc(sunX, sunY, sunRadius * 3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Sun body
       ctx.fillStyle = '#FCD34D';
       ctx.beginPath();
       ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Radiation waves
       ctx.strokeStyle = '#F59E0B';
       ctx.lineWidth = 2;
       for (let i = 1; i <= 5; i++) {
@@ -369,13 +332,11 @@ const ThermodynamicsLabSimulation = () => {
       }
       ctx.globalAlpha = 1;
 
-      // Earth receiving radiation
       ctx.fillStyle = '#3B82F6';
       ctx.beginPath();
       ctx.arc(width * 0.75, sunY, 40, 0, Math.PI * 2);
       ctx.fill();
 
-      // Spectrum
       const spectrumY = height - 80;
       const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
       colors.forEach((color, i) => {
@@ -454,24 +415,24 @@ const ThermodynamicsLabSimulation = () => {
                 {activeTab === 'gas' && (
                   <div className="flex flex-wrap items-center justify-center gap-4 mt-4">
                     <Button
-                      onClick={() => setIsRunning(!isRunning)}
+                      onClick={toggleGasSimulation}
                       className={`${isRunning ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
                     >
                       {isRunning ? <Pause className="w-4 h-4 ml-2" /> : <Play className="w-4 h-4 ml-2" />}
                       {isRunning ? 'إيقاف' : 'تشغيل'}
-                    </Button>
-                    <Button variant="outline" onClick={reset} className={isDarkMode ? 'border-gray-600 text-white' : ''}>
-                      <RotateCcw className="w-4 h-4 ml-2" />
-                      إعادة
                     </Button>
                   </div>
                 )}
 
                 {activeTab === 'carnot' && (
                   <div className="flex flex-wrap items-center justify-center gap-4 mt-4">
-                    <Button onClick={nextCarnotStage} className="bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={advanceCarnotCycle} className="bg-purple-600 hover:bg-purple-700">
                       <ArrowRight className="w-4 h-4 ml-2" />
                       المرحلة التالية
+                    </Button>
+                    <Button variant="outline" onClick={resetCarnotCycle} className={isDarkMode ? 'border-gray-600 text-white' : ''}>
+                      <RotateCcw className="w-4 h-4 ml-2" />
+                      إعادة
                     </Button>
                     <Badge variant="outline" className={isDarkMode ? 'text-yellow-400 border-yellow-400' : ''}>
                       الكفاءة: {(carnotEfficiency * 100).toFixed(1)}%
@@ -489,8 +450,8 @@ const ThermodynamicsLabSimulation = () => {
                       <Button
                         key={mode.id}
                         variant={heatTransferMode === mode.id ? 'default' : 'outline'}
-                        onClick={() => setHeatTransferMode(mode.id as any)}
-                        className={heatTransferMode !== mode.id && isDarkMode ? 'border-gray-600 text-white' : ''}
+                        onClick={() => setHeatTransferMode(mode.id as 'conduction' | 'convection' | 'radiation')}
+                        className={`gap-2 ${isDarkMode && heatTransferMode !== mode.id ? 'border-gray-600 text-white' : ''}`}
                       >
                         {mode.icon} {mode.name}
                       </Button>
@@ -500,130 +461,122 @@ const ThermodynamicsLabSimulation = () => {
               </Card>
             </div>
 
-            {/* Side Panel */}
+            {/* Control Panel */}
             <div>
-              <TabsContent value="gas" className="mt-0">
-                <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-red-500/30' : 'bg-white'}`}>
-                  <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : ''}`}>⚙️ المتغيرات</h3>
-                  
-                  <div className="space-y-4">
+              <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white'}`}>
+                {activeTab === 'gas' && (
+                  <div className="space-y-6">
+                    <h3 className={`font-bold ${isDarkMode ? 'text-white' : ''}`}>⚙️ معادلة الغاز المثالي</h3>
+                    <p className={`text-center font-mono text-lg ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                      PV = nRT
+                    </p>
+
                     <div>
-                      <label className={`text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : ''}`}>
-                        <Thermometer className="w-4 h-4 text-red-500" />
-                        درجة الحرارة: {temperature} K
+                      <label className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        🌡️ درجة الحرارة: {temperature} K
                       </label>
                       <Slider
                         value={[temperature]}
-                        onValueChange={([v]) => setTemperature(v)}
+                        onValueChange={([v]) => setGasTemperature(v)}
                         min={100}
                         max={600}
+                        step={10}
                         className="mt-2"
                       />
                     </div>
 
                     <div>
-                      <label className={`text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : ''}`}>
-                        <Gauge className="w-4 h-4 text-blue-500" />
-                        الحجم: {volume}%
+                      <label className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        📦 الحجم: {(volume * 1000).toFixed(1)} L
                       </label>
                       <Slider
-                        value={[volume]}
-                        onValueChange={([v]) => setVolume(v)}
-                        min={30}
-                        max={100}
+                        value={[volume * 1000]}
+                        onValueChange={([v]) => setGasVolume(v / 1000)}
+                        min={0.3}
+                        max={2}
+                        step={0.1}
                         className="mt-2"
                       />
                     </div>
 
-                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                      <h4 className={`font-bold mb-2 ${isDarkMode ? 'text-white' : ''}`}>📊 القياسات:</h4>
+                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-blue-50'}`}>
+                      <h4 className={`font-bold mb-2 ${isDarkMode ? 'text-white' : ''}`}>📊 القياسات</h4>
                       <div className={`space-y-1 text-sm ${isDarkMode ? 'text-gray-300' : ''}`}>
-                        <p>الضغط (P): {gasValues.pressure.toFixed(2)} atm</p>
-                        <p>الحجم (V): {gasValues.volume.toFixed(2)} L</p>
-                        <p>عدد المولات (n): {gasValues.moles}</p>
-                        <p>الطاقة الحركية: {gasValues.kineticEnergy.toFixed(2)} J</p>
+                        <p>الضغط: {(pressure / 101325).toFixed(2)} atm</p>
+                        <p>عدد الجسيمات: {particles.length}</p>
+                        <p>الطاقة الحركية: {gasStats.averageKE.toExponential(2)} J</p>
+                        <p>سرعة RMS: {gasStats.rmsVelocity.toFixed(2)} m/s</p>
                       </div>
                     </div>
-
-                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
-                      <p className="font-mono text-center text-lg">PV = nRT</p>
-                      <p className={`text-xs text-center mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        قانون الغازات المثالية
-                      </p>
-                    </div>
                   </div>
-                </Card>
-              </TabsContent>
+                )}
 
-              <TabsContent value="carnot" className="mt-0">
-                <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-purple-500/30' : 'bg-white'}`}>
-                  <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : ''}`}>🔄 دورة كارنو</h3>
-                  
-                  <div className="space-y-3">
-                    {[
-                      { id: 'isothermal_expansion', name: 'تمدد متساوي الحرارة', color: 'red', desc: 'الغاز يتمدد ويمتص حرارة' },
-                      { id: 'adiabatic_expansion', name: 'تمدد أديباتي', color: 'green', desc: 'تمدد معزول حرارياً' },
-                      { id: 'isothermal_compression', name: 'انضغاط متساوي الحرارة', color: 'blue', desc: 'الغاز ينضغط ويطرد حرارة' },
-                      { id: 'adiabatic_compression', name: 'انضغاط أديباتي', color: 'yellow', desc: 'انضغاط معزول حرارياً' }
-                    ].map((stage, idx) => (
-                      <div
-                        key={stage.id}
-                        className={`p-2 rounded-lg border-2 transition-all ${
-                          carnotStage === stage.id
-                            ? `border-${stage.color}-500 bg-${stage.color}-500/20`
-                            : isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                        }`}
-                      >
-                        <p className={`font-bold text-sm ${isDarkMode ? 'text-white' : ''}`}>
-                          {idx + 1}. {stage.name}
-                        </p>
-                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {stage.desc}
-                        </p>
+                {activeTab === 'carnot' && (
+                  <div className="space-y-4">
+                    <h3 className={`font-bold ${isDarkMode ? 'text-white' : ''}`}>🔄 دورة كارنو</h3>
+                    
+                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-purple-50'}`}>
+                      <h4 className={`font-bold text-sm mb-2 ${isDarkMode ? 'text-white' : ''}`}>المراحل:</h4>
+                      <div className="space-y-2">
+                        {state.carnot.stepNames.map((stage, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-2 rounded text-sm ${
+                              idx === carnotStage
+                                ? 'bg-purple-600 text-white'
+                                : idx < carnotStage
+                                ? 'bg-green-600/30 text-green-300'
+                                : isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'
+                            }`}
+                          >
+                            {idx + 1}. {stage}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-
-                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
-                      <p className="font-mono text-center">η = 1 - T<sub>c</sub>/T<sub>h</sub></p>
-                      <p className={`text-xs text-center mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        كفاءة محرك كارنو
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="heat" className="mt-0">
-                <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-orange-500/30' : 'bg-white'}`}>
-                  <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : ''}`}>📚 طرق انتقال الحرارة</h3>
-                  
-                  <div className="space-y-3">
-                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-red-900/30' : 'bg-red-50'}`}>
-                      <p className="font-bold text-red-500">🔗 التوصيل</p>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-300' : ''}`}>
-                        انتقال الحرارة عبر المادة الصلبة من جزيء لآخر
-                      </p>
-                      <p className="font-mono text-xs mt-1">Q = kA(ΔT/Δx)</p>
-                    </div>
-
-                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-orange-900/30' : 'bg-orange-50'}`}>
-                      <p className="font-bold text-orange-500">🔄 الحمل</p>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-300' : ''}`}>
-                        انتقال الحرارة عبر حركة السوائل والغازات
-                      </p>
-                      <p className="font-mono text-xs mt-1">Q = hA(T<sub>s</sub> - T<sub>∞</sub>)</p>
                     </div>
 
                     <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'}`}>
-                      <p className="font-bold text-yellow-500">☀️ الإشعاع</p>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-300' : ''}`}>
-                        انتقال الحرارة عبر الموجات الكهرومغناطيسية
+                      <p className={`text-sm ${isDarkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                        <strong>الكفاءة القصوى:</strong>
                       </p>
-                      <p className="font-mono text-xs mt-1">Q = εσAT⁴</p>
+                      <p className="font-mono text-center mt-1">
+                        η = 1 - T<sub>C</sub>/T<sub>H</sub>
+                      </p>
+                    </div>
+
+                    <div className={`text-sm ${isDarkMode ? 'text-gray-300' : ''}`}>
+                      <p>الشغل المبذول: {carnotStats.workDone.toFixed(2)} J</p>
+                      <p>المرحلة الحالية: {carnotStats.stepName}</p>
                     </div>
                   </div>
-                </Card>
-              </TabsContent>
+                )}
+
+                {activeTab === 'heat' && (
+                  <div className="space-y-4">
+                    <h3 className={`font-bold ${isDarkMode ? 'text-white' : ''}`}>🔥 انتقال الحرارة</h3>
+                    
+                    <div className={`space-y-3 ${isDarkMode ? 'text-gray-300' : ''}`}>
+                      <div className={`p-3 rounded-lg ${heatTransferMode === 'conduction' ? 'bg-red-600/30' : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                        <h4 className="font-bold">🔗 التوصيل</h4>
+                        <p className="text-sm mt-1">انتقال الحرارة عبر المادة الصلبة</p>
+                        <p className="text-xs font-mono mt-2">Q = kA(ΔT/Δx)t</p>
+                      </div>
+
+                      <div className={`p-3 rounded-lg ${heatTransferMode === 'convection' ? 'bg-orange-600/30' : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                        <h4 className="font-bold">🔄 الحمل</h4>
+                        <p className="text-sm mt-1">انتقال الحرارة عبر حركة السائل</p>
+                        <p className="text-xs font-mono mt-2">Q = hA(T<sub>s</sub>-T<sub>∞</sub>)</p>
+                      </div>
+
+                      <div className={`p-3 rounded-lg ${heatTransferMode === 'radiation' ? 'bg-yellow-600/30' : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                        <h4 className="font-bold">☀️ الإشعاع</h4>
+                        <p className="text-sm mt-1">انتقال الحرارة عبر الموجات الكهرومغناطيسية</p>
+                        <p className="text-xs font-mono mt-2">Q = εσAT⁴</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Card>
             </div>
           </div>
         </Tabs>
