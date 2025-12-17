@@ -8,18 +8,16 @@ const corsHeaders = {
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const AI_ENDPOINT = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
-// Supabase credentials for generated projects
-const PROJECT_SUPABASE_URL = 'https://esifpjjehdnpkhyilctv.supabase.co';
-const PROJECT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWZwamplaGRucGtoeWlsY3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNzQ5NDYsImV4cCI6MjA2MDc1MDk0Nn0.xfaLcyAgvZx2yKsNAdf94cuNZQfXPGQcAYb1xiSYI7k';
+// Builder Universal API endpoint
+const BUILDER_API_URL = 'https://esifpjjehdnpkhyilctv.supabase.co/functions/v1/builder-universal-api';
 
 // ===== ULTRA PROFESSIONAL SYSTEM PROMPT =====
-const ULTRA_SYSTEM_PROMPT = `أنت مهندس برمجيات محترف بخبرة 15 سنة في تطوير الويب Full-Stack.
-مهمتك إنشاء منصات ويب متكاملة تعمل بشكل حقيقي مع قاعدة بيانات Supabase.
+const getSystemPrompt = (projectId: string) => `أنت مهندس برمجيات محترف بخبرة 15 سنة في تطوير الويب Full-Stack.
+مهمتك إنشاء منصات ويب متكاملة تعمل بشكل حقيقي مع نظام API موحد.
 
 ## ⚠️ قواعد صارمة - اتبعها بدقة:
 
-### 1. عدد الملفات المطلوب: 20-25 ملف كحد أدنى
-لا تنشئ أقل من 20 ملف. المشروع يجب أن يكون متكاملاً.
+### 1. عدد الملفات المطلوب: 15-25 ملف كحد أدنى
 
 ### 2. هيكل الملفات الإلزامي:
 
@@ -30,8 +28,8 @@ const ULTRA_SYSTEM_PROMPT = `أنت مهندس برمجيات محترف بخب�
 ├── pages/register.html (إنشاء حساب)
 ├── pages/dashboard.html (لوحة التحكم)
 ├── pages/profile.html (الملف الشخصي)
-├── pages/admin.html (لوحة الإدارة)
-└── pages/add-content.html (إضافة محتوى)
+├── pages/add-content.html (إضافة محتوى)
+└── pages/content-detail.html (عرض المحتوى)
 
 📁 الأنماط (styles/) - 5 ملفات:
 ├── styles/main.css (المتغيرات والأساسيات)
@@ -40,16 +38,14 @@ const ULTRA_SYSTEM_PROMPT = `أنت مهندس برمجيات محترف بخب�
 ├── styles/dashboard.css (لوحة التحكم)
 └── styles/animations.css (الحركات)
 
-📁 السكربتات (scripts/) - 10 ملفات على الأقل:
+📁 السكربتات (scripts/) - 8 ملفات على الأقل:
 ├── scripts/config.js (إعدادات المشروع)
-├── scripts/supabase-client.js (اتصال Supabase)
-├── scripts/auth.js (نظام المصادقة الكامل)
+├── scripts/api-client.js (Builder API Client)
+├── scripts/auth.js (نظام المصادقة)
 ├── scripts/auth-guard.js (حماية الصفحات)
-├── scripts/storage.js (رفع الملفات)
-├── scripts/crud.js (عمليات CRUD)
+├── scripts/content.js (إدارة المحتوى)
 ├── scripts/ui.js (تفاعلات الواجهة)
 ├── scripts/toast.js (الإشعارات)
-├── scripts/router.js (التنقل بين الصفحات)
 └── scripts/utils.js (دوال مساعدة)
 \`\`\`
 
@@ -59,103 +55,205 @@ const ULTRA_SYSTEM_PROMPT = `أنت مهندس برمجيات محترف بخب�
 الكود هنا...
 ---END_FILE---
 
----FILE:scripts/auth.js---
+---FILE:scripts/api-client.js---
 الكود هنا...
 ---END_FILE---
 
-## 🔐 نظام Supabase المتكامل (إجباري):
+## 🔐 نظام Builder API الموحد (إجباري):
 
-### supabase-client.js:
+### config.js:
 \`\`\`javascript
-// Supabase Configuration
-const SUPABASE_URL = '${PROJECT_SUPABASE_URL}';
-const SUPABASE_KEY = '${PROJECT_SUPABASE_KEY}';
-
-// Initialize Supabase Client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// Export for other scripts
-window.supabaseClient = supabase;
-console.log('✅ Supabase initialized');
+// Project Configuration
+const CONFIG = {
+  PROJECT_ID: '${projectId}',
+  API_URL: '${BUILDER_API_URL}'
+};
+window.CONFIG = CONFIG;
 \`\`\`
 
-### auth.js (نظام مصادقة كامل يعمل فعلاً):
+### api-client.js (API Client الموحد - يعمل فوراً):
 \`\`\`javascript
-const AuthManager = {
-  supabase: window.supabaseClient,
-  
-  // تسجيل حساب جديد
-  async signUp(email, password, fullName) {
-    try {
-      const { data, error } = await this.supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName }
-        }
-      });
-      
-      if (error) throw error;
-      
-      // إنشاء ملف شخصي
-      if (data.user) {
-        await this.supabase.from('builder_profiles').insert({
-          id: data.user.id,
-          email: email,
-          full_name: fullName,
-          role: 'user'
-        });
-      }
-      
-      Toast.success('تم إنشاء الحساب بنجاح! تحقق من بريدك الإلكتروني.');
-      return { success: true, data };
-    } catch (error) {
-      Toast.error(error.message);
-      return { success: false, error };
-    }
-  },
-  
-  // تسجيل الدخول
-  async signIn(email, password) {
-    try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) throw error;
-      
-      Toast.success('مرحباً بك!');
-      window.location.href = 'dashboard.html';
-      return { success: true, data };
-    } catch (error) {
-      Toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
-      return { success: false, error };
-    }
-  },
-  
-  // تسجيل الخروج
-  async signOut() {
-    await this.supabase.auth.signOut();
-    Toast.success('تم تسجيل الخروج');
-    window.location.href = 'login.html';
-  },
-  
-  // الحصول على المستخدم الحالي
-  async getCurrentUser() {
-    const { data: { user } } = await this.supabase.auth.getUser();
-    return user;
-  },
-  
-  // الاستماع لتغييرات الحالة
-  onAuthStateChange(callback) {
-    return this.supabase.auth.onAuthStateChange((event, session) => {
-      callback(event, session);
+// Builder API Client - يتصل بقاعدة البيانات تلقائياً
+const BuilderAPI = {
+  token: localStorage.getItem('builder_token'),
+  user: JSON.parse(localStorage.getItem('builder_user') || 'null'),
+
+  async request(action, data = {}) {
+    const response = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectId: CONFIG.PROJECT_ID,
+        action,
+        data: { ...data, token: this.token }
+      })
     });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Request failed');
+    return result.data;
+  },
+
+  // ========== المصادقة ==========
+  async register(email, password, fullName) {
+    const result = await this.request('register', { email, password, fullName });
+    this.token = result.token;
+    this.user = result.user;
+    localStorage.setItem('builder_token', result.token);
+    localStorage.setItem('builder_user', JSON.stringify(result.user));
+    return result;
+  },
+
+  async login(email, password) {
+    const result = await this.request('login', { email, password });
+    this.token = result.token;
+    this.user = result.user;
+    localStorage.setItem('builder_token', result.token);
+    localStorage.setItem('builder_user', JSON.stringify(result.user));
+    return result;
+  },
+
+  async logout() {
+    await this.request('logout');
+    this.token = null;
+    this.user = null;
+    localStorage.removeItem('builder_token');
+    localStorage.removeItem('builder_user');
+  },
+
+  isAuthenticated() {
+    return !!this.token;
+  },
+
+  getUser() {
+    return this.user;
+  },
+
+  async verifySession() {
+    if (!this.token) return false;
+    try {
+      const result = await this.request('verify_token', { token: this.token });
+      this.user = result.user;
+      localStorage.setItem('builder_user', JSON.stringify(result.user));
+      return true;
+    } catch (e) {
+      this.logout();
+      return false;
+    }
+  },
+
+  // ========== المحتوى ==========
+  async getContent(options = {}) {
+    return this.request('get_content', options);
+  },
+
+  async addContent(data) {
+    return this.request('add_content', data);
+  },
+
+  async updateContent(id, updates) {
+    return this.request('update_content', { id, ...updates });
+  },
+
+  async deleteContent(id) {
+    return this.request('delete_content', { id });
+  },
+
+  // ========== التعليقات ==========
+  async getComments(contentId) {
+    return this.request('get_comments', { contentId });
+  },
+
+  async addComment(contentId, commentText) {
+    return this.request('add_comment', { contentId, commentText });
+  },
+
+  // ========== الإعجابات ==========
+  async toggleLike(contentId) {
+    return this.request('toggle_like', { contentId });
+  },
+
+  // ========== الملفات ==========
+  async uploadFile(file, folder = 'uploads') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result.split(',')[1];
+          const result = await this.request('upload_file', {
+            fileName: file.name,
+            fileBase64: base64,
+            fileType: file.type,
+            folder
+          });
+          resolve(result);
+        } catch (e) { reject(e); }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  },
+
+  async getFiles(folder, limit) {
+    return this.request('get_files', { folder, limit });
+  },
+
+  // ========== الإعدادات والإحصائيات ==========
+  async getSettings() {
+    return this.request('get_settings');
+  },
+
+  async getStats() {
+    return this.request('get_stats');
   }
 };
 
-window.AuthManager = AuthManager;
+window.BuilderAPI = BuilderAPI;
+console.log('✅ Builder API initialized - Database Ready!');
+\`\`\`
+
+### auth.js (نظام مصادقة مبسط):
+\`\`\`javascript
+const Auth = {
+  async register(email, password, fullName) {
+    try {
+      await BuilderAPI.register(email, password, fullName);
+      Toast.success('تم إنشاء الحساب بنجاح!');
+      window.location.href = 'dashboard.html';
+      return true;
+    } catch (error) {
+      Toast.error(error.message || 'فشل إنشاء الحساب');
+      return false;
+    }
+  },
+
+  async login(email, password) {
+    try {
+      await BuilderAPI.login(email, password);
+      Toast.success('مرحباً بك!');
+      window.location.href = 'dashboard.html';
+      return true;
+    } catch (error) {
+      Toast.error(error.message || 'البريد أو كلمة المرور غير صحيحة');
+      return false;
+    }
+  },
+
+  async logout() {
+    await BuilderAPI.logout();
+    Toast.success('تم تسجيل الخروج');
+    window.location.href = 'login.html';
+  },
+
+  isLoggedIn() {
+    return BuilderAPI.isAuthenticated();
+  },
+
+  getUser() {
+    return BuilderAPI.getUser();
+  }
+};
+
+window.Auth = Auth;
 \`\`\`
 
 ### auth-guard.js (حماية الصفحات):
@@ -163,19 +261,21 @@ window.AuthManager = AuthManager;
 const AuthGuard = {
   // حماية صفحة - يجب تسجيل الدخول
   async protectPage() {
-    const user = await AuthManager.getCurrentUser();
-    if (!user) {
+    const isValid = await BuilderAPI.verifySession();
+    if (!isValid) {
       window.location.href = 'login.html';
       return null;
     }
-    return user;
+    return BuilderAPI.getUser();
   },
-  
+
   // للصفحات العامة - إعادة توجيه المسجلين
-  async redirectIfLoggedIn() {
-    const user = await AuthManager.getCurrentUser();
-    if (user) {
-      window.location.href = 'dashboard.html';
+  async redirectIfLoggedIn(redirectTo = 'dashboard.html') {
+    if (BuilderAPI.isAuthenticated()) {
+      const isValid = await BuilderAPI.verifySession();
+      if (isValid) {
+        window.location.href = redirectTo;
+      }
     }
   }
 };
@@ -183,111 +283,52 @@ const AuthGuard = {
 window.AuthGuard = AuthGuard;
 \`\`\`
 
-### storage.js (رفع الملفات):
+### content.js (إدارة المحتوى):
 \`\`\`javascript
-const StorageManager = {
-  supabase: window.supabaseClient,
-  bucket: 'project-images',
-  
-  async uploadFile(file, folder = 'uploads') {
+const ContentManager = {
+  async loadContent(options = {}) {
     try {
-      const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      const filePath = folder + '/' + fileName;
-      
-      const { data, error } = await this.supabase.storage
-        .from(this.bucket)
-        .upload(filePath, file, { cacheControl: '3600' });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = this.supabase.storage
-        .from(this.bucket)
-        .getPublicUrl(filePath);
-      
-      return { success: true, url: urlData.publicUrl, path: filePath };
+      return await BuilderAPI.getContent(options);
     } catch (error) {
-      console.error('Upload error:', error);
-      return { success: false, error: error.message };
+      Toast.error('فشل تحميل المحتوى');
+      return [];
     }
   },
-  
-  async deleteFile(path) {
-    const { error } = await this.supabase.storage
-      .from(this.bucket)
-      .remove([path]);
-    return !error;
+
+  async createContent(data) {
+    try {
+      const result = await BuilderAPI.addContent(data);
+      Toast.success('تم إضافة المحتوى بنجاح!');
+      return result;
+    } catch (error) {
+      Toast.error('فشل إضافة المحتوى');
+      return null;
+    }
+  },
+
+  async deleteContent(id) {
+    if (!confirm('هل أنت متأكد من الحذف؟')) return false;
+    try {
+      await BuilderAPI.deleteContent(id);
+      Toast.success('تم الحذف');
+      return true;
+    } catch (error) {
+      Toast.error('فشل الحذف');
+      return false;
+    }
+  },
+
+  async toggleLike(contentId) {
+    try {
+      return await BuilderAPI.toggleLike(contentId);
+    } catch (error) {
+      Toast.error('يجب تسجيل الدخول أولاً');
+      return null;
+    }
   }
 };
 
-window.StorageManager = StorageManager;
-\`\`\`
-
-### crud.js (عمليات قاعدة البيانات):
-\`\`\`javascript
-const DataManager = {
-  supabase: window.supabaseClient,
-  
-  // إنشاء سجل
-  async create(table, data) {
-    const { data: result, error } = await this.supabase
-      .from(table)
-      .insert(data)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return result;
-  },
-  
-  // قراءة سجلات
-  async read(table, options = {}) {
-    let query = this.supabase.from(table).select(options.select || '*');
-    
-    if (options.filter) {
-      Object.entries(options.filter).forEach(([key, value]) => {
-        query = query.eq(key, value);
-      });
-    }
-    
-    if (options.order) {
-      query = query.order(options.order.column, { ascending: options.order.ascending ?? false });
-    }
-    
-    if (options.limit) {
-      query = query.limit(options.limit);
-    }
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
-  },
-  
-  // تحديث سجل
-  async update(table, id, data) {
-    const { data: result, error } = await this.supabase
-      .from(table)
-      .update(data)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return result;
-  },
-  
-  // حذف سجل
-  async delete(table, id) {
-    const { error } = await this.supabase
-      .from(table)
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    return true;
-  }
-};
-
-window.DataManager = DataManager;
+window.ContentManager = ContentManager;
 \`\`\`
 
 ### toast.js (إشعارات):
@@ -306,29 +347,13 @@ const Toast = {
   
   show(message, type = 'info') {
     this.init();
-    
-    const colors = {
-      success: '#22c55e',
-      error: '#ef4444',
-      warning: '#f59e0b',
-      info: '#3b82f6'
-    };
+    const colors = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
     
     const toast = document.createElement('div');
-    toast.style.cssText = \`
-      background: \${colors[type]};
-      color: white;
-      padding: 14px 24px;
-      border-radius: 10px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-      animation: slideIn 0.3s ease;
-      font-weight: 500;
-      max-width: 350px;
-    \`;
+    toast.style.cssText = \`background:\${colors[type]};color:white;padding:14px 24px;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;font-weight:500;max-width:350px;\`;
     toast.textContent = message;
     
     this.container.appendChild(toast);
-    
     setTimeout(() => {
       toast.style.animation = 'slideOut 0.3s ease';
       setTimeout(() => toast.remove(), 300);
@@ -352,7 +377,7 @@ style.textContent = \`
 document.head.appendChild(style);
 \`\`\`
 
-## 🎨 نظام التصميم (main.css):
+## 🎨 نظام التصميم الاحترافي (main.css):
 
 \`\`\`css
 :root {
@@ -406,7 +431,6 @@ body {
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-/* Buttons */
 .btn {
   padding: 12px 28px;
   border-radius: var(--radius-md);
@@ -431,17 +455,6 @@ body {
   box-shadow: var(--shadow-glow);
 }
 
-.btn-secondary {
-  background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover);
-}
-
-/* Cards */
 .card {
   background: var(--surface);
   border-radius: var(--radius-lg);
@@ -456,7 +469,6 @@ body {
   border-color: var(--primary);
 }
 
-/* Inputs */
 .input {
   width: 100%;
   padding: 14px 18px;
@@ -474,62 +486,6 @@ body {
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-.input::placeholder { color: var(--text-muted); }
-
-/* Form Groups */
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-/* Navigation */
-.navbar {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 16px 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 1px solid var(--border);
-}
-
-.nav-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.nav-logo {
-  font-size: 1.5rem;
-  font-weight: 700;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.nav-links {
-  display: flex;
-  gap: 24px;
-  list-style: none;
-}
-
-.nav-links a {
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: var(--transition);
-}
-
-.nav-links a:hover {
-  color: var(--primary);
-}
-
-/* Grid */
 .grid { display: grid; gap: 24px; }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
@@ -538,171 +494,37 @@ body {
 @media (max-width: 768px) {
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 }
-
-/* Loading */
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Auth Pages */
-.auth-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.auth-card {
-  background: var(--surface);
-  padding: 40px;
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 420px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
-}
-
-.auth-title {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.auth-title h1 {
-  font-size: 2rem;
-  margin-bottom: 8px;
-}
-
-.auth-title p {
-  color: var(--text-muted);
-}
-
-/* Dashboard */
-.dashboard-header {
-  padding: 32px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin: 24px 0;
-}
-
-.stat-card {
-  background: var(--surface);
-  padding: 24px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.stat-label {
-  color: var(--text-muted);
-  margin-top: 4px;
-}
 \`\`\`
 
-## 📋 SQL للجداول (أضفه في نهاية ردك):
+## ⚡ ترتيب تحميل السكربتات في كل صفحة HTML:
 
-\`\`\`sql
--- Profiles table for project users
-CREATE TABLE IF NOT EXISTS builder_profiles (
-  id UUID PRIMARY KEY,
-  email TEXT,
-  full_name TEXT,
-  avatar_url TEXT,
-  role TEXT DEFAULT 'user',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Content table (news, posts, etc.)
-CREATE TABLE IF NOT EXISTS builder_content (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT,
-  image_url TEXT,
-  category TEXT,
-  author_id UUID,
-  is_published BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE builder_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE builder_content ENABLE ROW LEVEL SECURITY;
-
--- Policies
-CREATE POLICY "Public read profiles" ON builder_profiles FOR SELECT USING (true);
-CREATE POLICY "Users update own profile" ON builder_profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users insert own profile" ON builder_profiles FOR INSERT WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Public read content" ON builder_content FOR SELECT USING (is_published = true);
-CREATE POLICY "Authors manage content" ON builder_content FOR ALL USING (auth.uid() = author_id);
+\`\`\`html
+<script src="../scripts/config.js"></script>
+<script src="../scripts/api-client.js"></script>
+<script src="../scripts/toast.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/auth-guard.js"></script>
+<script src="../scripts/content.js"></script>
+<script src="../scripts/ui.js"></script>
 \`\`\`
 
-## ⚡ متطلبات إضافية:
+## 🚨 قواعد مهمة:
+- لا تستخدم Supabase SDK مباشرة
+- استخدم BuilderAPI فقط
+- كل العمليات تتم عبر API موحد
+- قاعدة البيانات جاهزة تلقائياً
+- لا حاجة لأي إعداد من المستخدم
 
-1. **كل صفحة HTML يجب أن تتضمن**:
-   - تحميل Supabase SDK من CDN
-   - تحميل جميع السكربتات بالترتيب الصحيح
-   - تحميل ملفات CSS
-   - تصميم متجاوب
+## 📋 الميزات المطلوبة في كل مشروع:
+1. صفحة رئيسية جذابة
+2. نظام تسجيل دخول/إنشاء حساب
+3. لوحة تحكم مع إحصائيات
+4. إضافة/عرض/حذف محتوى
+5. نظام إعجابات
+6. رفع صور
+7. تصميم متجاوب احترافي
 
-2. **ترتيب تحميل السكربتات**:
-   \`\`\`html
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   <script src="../scripts/config.js"></script>
-   <script src="../scripts/supabase-client.js"></script>
-   <script src="../scripts/toast.js"></script>
-   <script src="../scripts/auth.js"></script>
-   <script src="../scripts/auth-guard.js"></script>
-   <script src="../scripts/storage.js"></script>
-   <script src="../scripts/crud.js"></script>
-   <script src="../scripts/ui.js"></script>
-   \`\`\`
-
-3. **صفحة تسجيل الدخول يجب أن تحتوي**:
-   - فورم مع email وpassword
-   - رابط لإنشاء حساب
-   - معالجة أخطاء
-   - Loading state
-
-4. **لوحة التحكم يجب أن تحتوي**:
-   - إحصائيات
-   - قائمة المحتوى
-   - زر إضافة محتوى
-   - تسجيل الخروج
-
-## 🚨 تذكير نهائي:
-- أنشئ 20-25 ملف
-- كل ملف منفصل بصيغة ---FILE:path---
-- الكود يجب أن يعمل فعلياً مع Supabase
-- تصميم احترافي مع animations
-- ابدأ الآن مباشرة بالكود`;
+ابدأ الآن مباشرة بإنشاء الملفات!`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -710,7 +532,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, currentFiles, conversationHistory, supabaseConfig, projectId } = await req.json()
+    const { message, currentFiles, conversationHistory, projectId } = await req.json()
 
     if (!message) {
       return new Response(
@@ -719,21 +541,19 @@ serve(async (req) => {
       )
     }
 
+    if (!projectId) {
+      return new Response(
+        JSON.stringify({ error: 'Project ID is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured')
     }
 
-    // بناء System Prompt
-    let systemPrompt = ULTRA_SYSTEM_PROMPT;
-    
-    // إذا كان لدى المستخدم Supabase خاص، استخدم credentials الخاصة به
-    if (supabaseConfig?.connected && supabaseConfig?.url && supabaseConfig?.anonKey) {
-      systemPrompt = systemPrompt
-        .replace(PROJECT_SUPABASE_URL, supabaseConfig.url)
-        .replace(PROJECT_SUPABASE_KEY, supabaseConfig.anonKey);
-      
-      systemPrompt += `\n\n## ✅ Supabase متصل:\nURL: ${supabaseConfig.url}\nسيتم استخدام قاعدة بيانات المستخدم.`;
-    }
+    // بناء System Prompt مع project ID
+    const systemPrompt = getSystemPrompt(projectId);
 
     // بناء سجل المحادثة
     const messages: Array<{ role: string; content: string }> = [
@@ -753,14 +573,15 @@ serve(async (req) => {
     let userMessage = message
     if (currentFiles && currentFiles.length > 0) {
       const filesContext = currentFiles.map((f: any) => `- ${f.file_name}`).join('\n')
-      userMessage = `الملفات الحالية:\n${filesContext}\n\nالطلب: ${message}\n\nتذكر: أنشئ 20+ ملف وتأكد من عمل نظام المصادقة والاتصال بـ Supabase.`
+      userMessage = `الملفات الحالية:\n${filesContext}\n\nالطلب: ${message}\n\nتذكر: استخدم BuilderAPI فقط (لا Supabase SDK). قاعدة البيانات جاهزة تلقائياً.`
     } else {
-      userMessage = `${message}\n\nتذكر: أنشئ 20+ ملف متكامل مع نظام مصادقة يعمل فعلياً.`
+      userMessage = `${message}\n\nتذكر: أنشئ 15+ ملف متكامل. استخدم BuilderAPI فقط. قاعدة البيانات جاهزة تلقائياً.`
     }
 
     messages.push({ role: 'user', content: userMessage })
 
-    console.log('Generating professional code...')
+    console.log('Generating code with Builder API...')
+    console.log('Project ID:', projectId)
     console.log('Message:', message.substring(0, 100))
     
     const response = await fetch(AI_ENDPOINT, {
@@ -773,7 +594,7 @@ serve(async (req) => {
         model: 'google/gemini-2.5-flash',
         messages,
         temperature: 0.7,
-        max_tokens: 64000, // زيادة للسماح بمزيد من الملفات
+        max_tokens: 64000,
       }),
     })
 
@@ -785,13 +606,6 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ error: 'تم تجاوز حد الطلبات، يرجى الانتظار دقيقة.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
-        )
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'يرجى إضافة رصيد للاستمرار.' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
         )
       }
       
@@ -870,12 +684,9 @@ serve(async (req) => {
       if (jsMatch) files.push(createFileObject('scripts/app.js', jsMatch[1].trim()))
     }
 
-    // استخراج SQL
-    const sqlMatch = generatedContent.match(/```sql\n([\s\S]*?)```/)
-    const sqlSchema = sqlMatch ? sqlMatch[1].trim() : null
-
     // بناء الشرح
     let explanation = `## ✅ تم إنشاء ${files.length} ملف\n\n`
+    explanation += `### 🗄️ قاعدة البيانات: جاهزة تلقائياً ✓\n\n`
     
     const htmlFiles = files.filter(f => f.file_type === 'html')
     const cssFiles = files.filter(f => f.file_type === 'css')
@@ -899,20 +710,23 @@ serve(async (req) => {
       explanation += '\n'
     }
 
-    if (sqlSchema) {
-      explanation += `\n---\n\n### 🗄️ SQL للجداول\n\n\`\`\`sql\n${sqlSchema}\n\`\`\`\n\n📋 [افتح Supabase SQL Editor](https://supabase.com/dashboard/project/esifpjjehdnpkhyilctv/sql/new)`
-    }
+    explanation += `\n---\n\n### 🚀 الميزات الجاهزة:\n`
+    explanation += `- ✅ قاعدة بيانات متصلة تلقائياً\n`
+    explanation += `- ✅ نظام تسجيل دخول وإنشاء حساب\n`
+    explanation += `- ✅ حماية الصفحات\n`
+    explanation += `- ✅ إدارة المحتوى (إضافة/تعديل/حذف)\n`
+    explanation += `- ✅ نظام إعجابات وتعليقات\n`
+    explanation += `- ✅ رفع الملفات والصور\n`
+    explanation += `- ✅ تصميم متجاوب احترافي\n`
+    explanation += `\n**لا حاجة لأي إعداد - المنصة تعمل فوراً!** 🎉`
 
-    explanation += `\n\n---\n\n### 🚀 الميزات المتضمنة:\n- ✅ نظام تسجيل دخول وإنشاء حساب\n- ✅ حماية الصفحات\n- ✅ اتصال Supabase\n- ✅ رفع الملفات\n- ✅ عمليات CRUD\n- ✅ إشعارات Toast\n- ✅ تصميم متجاوب`
-
-    console.log(`Created ${files.length} files`)
+    console.log(`Created ${files.length} files with Builder API`)
 
     return new Response(
       JSON.stringify({ 
         explanation, 
-        files, 
-        sqlSchema,
-        tablesCreated: false
+        files,
+        databaseReady: true
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
