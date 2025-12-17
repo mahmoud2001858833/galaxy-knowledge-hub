@@ -26,6 +26,245 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
   const SUPABASE_URL = 'https://esifpjjehdnpkhyilctv.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWZwamplaGRucGtoeWlsY3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNzQ5NDYsImV4cCI6MjA2MDc1MDk0Nn0.xfaLcyAgvZx2yKsNAdf94cuNZQfXPGQcAYb1xiSYI7k';
 
+  const generateSampleDataScript = () => {
+    // إضافة بيانات تجريبية للمعاينة
+    return `
+// بيانات تجريبية للمعاينة - يتم تحميلها تلقائياً
+window.SAMPLE_DATA = {
+  products: [
+    { id: '1', title: 'هاتف ذكي', price: 999, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300', category: 'إلكترونيات', description: 'هاتف ذكي بمواصفات عالية', metadata: { price: 999 } },
+    { id: '2', title: 'لابتوب', price: 1999, image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300', category: 'إلكترونيات', description: 'لابتوب للعمل والألعاب', metadata: { price: 1999 } },
+    { id: '3', title: 'سماعات', price: 199, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300', category: 'إلكترونيات', description: 'سماعات لاسلكية', metadata: { price: 199 } },
+    { id: '4', title: 'ساعة ذكية', price: 299, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300', category: 'إلكترونيات', description: 'ساعة ذكية رياضية', metadata: { price: 299 } },
+    { id: '5', title: 'كاميرا', price: 799, image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300', category: 'إلكترونيات', description: 'كاميرا احترافية', metadata: { price: 799 } },
+    { id: '6', title: 'حقيبة', price: 89, image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300', category: 'أزياء', description: 'حقيبة جلدية فاخرة', metadata: { price: 89 } },
+  ],
+  posts: [
+    { id: '1', title: 'مرحباً بالعالم!', content: 'هذا أول منشور في منصتنا الجديدة. شاركونا آراءكم!', author: 'أحمد', likes_count: 42, comments: 5, image_url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400', created_at: new Date().toISOString() },
+    { id: '2', title: 'نصائح للمطورين', content: 'تعرف على أفضل ممارسات البرمجة وكيفية تحسين كودك', author: 'سارة', likes_count: 128, comments: 23, image_url: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400', created_at: new Date().toISOString() },
+    { id: '3', title: 'أخبار التقنية', content: 'آخر التطورات في عالم التكنولوجيا والذكاء الاصطناعي', author: 'محمد', likes_count: 89, comments: 12, image_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400', created_at: new Date().toISOString() },
+    { id: '4', title: 'تصميم واجهات المستخدم', content: 'كيف تصمم واجهات جذابة وسهلة الاستخدام', author: 'نورة', likes_count: 256, comments: 45, image_url: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400', created_at: new Date().toISOString() },
+  ],
+  users: [
+    { id: '1', name: 'أحمد محمد', email: 'ahmad@example.com', avatar: 'https://i.pravatar.cc/100?img=1', role: 'admin' },
+    { id: '2', name: 'سارة علي', email: 'sara@example.com', avatar: 'https://i.pravatar.cc/100?img=5', role: 'user' },
+    { id: '3', name: 'محمد خالد', email: 'mohamed@example.com', avatar: 'https://i.pravatar.cc/100?img=3', role: 'user' },
+  ]
+};
+
+// محاكاة BuilderAPI للمعاينة
+window.BuilderAPI = {
+  token: 'demo_token_' + Date.now(),
+  user: window.SAMPLE_DATA.users[0],
+  
+  isAuthenticated() { return true; },
+  getUser() { return this.user; },
+  
+  async getContent(options = {}) {
+    await new Promise(r => setTimeout(r, 300)); // محاكاة تأخير الشبكة
+    if (options.contentType === 'product') return window.SAMPLE_DATA.products;
+    return window.SAMPLE_DATA.posts;
+  },
+  
+  async addContent(data) {
+    const newItem = { ...data, id: 'new_' + Date.now(), created_at: new Date().toISOString(), likes_count: 0 };
+    if (data.contentType === 'product') window.SAMPLE_DATA.products.unshift(newItem);
+    else window.SAMPLE_DATA.posts.unshift(newItem);
+    return newItem;
+  },
+  
+  async register(email, password, fullName) {
+    const newUser = { id: 'user_' + Date.now(), name: fullName || email.split('@')[0], email, avatar: 'https://i.pravatar.cc/100', role: 'user' };
+    this.user = newUser;
+    this.token = 'token_' + Date.now();
+    localStorage.setItem('builder_token', this.token);
+    localStorage.setItem('builder_user', JSON.stringify(newUser));
+    return { user: newUser, token: this.token };
+  },
+  
+  async login(email, password) {
+    const user = window.SAMPLE_DATA.users.find(u => u.email === email) || window.SAMPLE_DATA.users[0];
+    this.user = user;
+    this.token = 'token_' + Date.now();
+    localStorage.setItem('builder_token', this.token);
+    localStorage.setItem('builder_user', JSON.stringify(user));
+    return { user, token: this.token };
+  },
+  
+  async logout() {
+    this.token = null;
+    this.user = null;
+    localStorage.removeItem('builder_token');
+    localStorage.removeItem('builder_user');
+  },
+  
+  async verifySession() { return true; },
+  
+  async toggleLike(contentId) {
+    const item = [...window.SAMPLE_DATA.posts, ...window.SAMPLE_DATA.products].find(i => i.id === contentId);
+    if (item) item.likes_count = (item.likes_count || 0) + 1;
+    return { liked: true, count: item?.likes_count || 1 };
+  },
+  
+  async getComments(contentId) {
+    return [
+      { id: '1', comment_text: 'تعليق رائع! 👍', user_name: 'محمد', created_at: new Date(Date.now() - 3600000).toISOString() },
+      { id: '2', comment_text: 'شكراً على المشاركة 💖', user_name: 'سارة', created_at: new Date(Date.now() - 7200000).toISOString() },
+      { id: '3', comment_text: 'محتوى مفيد جداً', user_name: 'أحمد', created_at: new Date().toISOString() },
+    ];
+  },
+  
+  async addComment(contentId, text) {
+    return { id: 'comment_' + Date.now(), comment_text: text, user_name: this.user?.name || 'أنت', created_at: new Date().toISOString() };
+  },
+  
+  async getStats() {
+    return { users: 156, content: 89, comments: 342, files: 45 };
+  },
+
+  async request(action, data) {
+    return this[action] ? this[action](data) : null;
+  }
+};
+
+// Cart للمتاجر
+window.Cart = {
+  items: JSON.parse(localStorage.getItem('cart_items') || '[]'),
+  
+  add(product, quantity = 1) {
+    const existing = this.items.find(i => i.id === product.id);
+    if (existing) existing.quantity += quantity;
+    else this.items.push({ ...product, quantity });
+    this.save();
+    this.updateUI();
+    if (window.Toast) Toast.success('تمت الإضافة للسلة ✓');
+  },
+  
+  remove(id) {
+    this.items = this.items.filter(i => i.id !== id);
+    this.save();
+    this.updateUI();
+    if (window.Toast) Toast.info('تمت الإزالة من السلة');
+  },
+  
+  updateQuantity(id, qty) {
+    const item = this.items.find(i => i.id === id);
+    if (item) item.quantity = Math.max(1, qty);
+    this.save();
+  },
+  
+  clear() {
+    this.items = [];
+    this.save();
+    this.updateUI();
+  },
+  
+  getTotal() {
+    return this.items.reduce((sum, i) => sum + ((i.metadata?.price || i.price || 0) * i.quantity), 0);
+  },
+  
+  getCount() {
+    return this.items.reduce((sum, i) => sum + i.quantity, 0);
+  },
+  
+  save() {
+    localStorage.setItem('cart_items', JSON.stringify(this.items));
+  },
+  
+  updateUI() {
+    const countEl = document.querySelector('.cart-count');
+    if (countEl) {
+      countEl.textContent = this.getCount();
+      countEl.style.display = this.getCount() > 0 ? 'flex' : 'none';
+    }
+  }
+};
+
+// Auth helper
+window.Auth = {
+  async register(email, password, fullName) {
+    try {
+      await BuilderAPI.register(email, password, fullName);
+      Toast.success('تم إنشاء الحساب بنجاح!');
+      return true;
+    } catch (e) {
+      Toast.error(e.message || 'فشل إنشاء الحساب');
+      return false;
+    }
+  },
+  async login(email, password) {
+    try {
+      await BuilderAPI.login(email, password);
+      Toast.success('مرحباً بعودتك!');
+      return true;
+    } catch (e) {
+      Toast.error('البريد أو كلمة المرور غير صحيحة');
+      return false;
+    }
+  },
+  async logout() {
+    await BuilderAPI.logout();
+    Toast.success('تم تسجيل الخروج');
+  },
+  isLoggedIn() { return BuilderAPI.isAuthenticated(); },
+  getUser() { return BuilderAPI.getUser(); }
+};
+
+// AuthGuard
+window.AuthGuard = {
+  async protectPage() {
+    return BuilderAPI.getUser();
+  },
+  async redirectIfLoggedIn() {}
+};
+
+// Social helper
+window.Social = {
+  async like(contentId, btn) {
+    const result = await BuilderAPI.toggleLike(contentId);
+    if (btn) {
+      btn.classList.toggle('liked', result.liked);
+      const countEl = btn.querySelector('.like-count');
+      if (countEl) countEl.textContent = result.count;
+    }
+    return result;
+  },
+  async comment(contentId, text, container) {
+    const comment = await BuilderAPI.addComment(contentId, text);
+    Toast.success('تمت إضافة التعليق');
+    return comment;
+  },
+  async loadComments(contentId, container) {
+    const comments = await BuilderAPI.getComments(contentId);
+    if (container) {
+      container.innerHTML = comments.map(c => \`
+        <div class="comment" style="padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <strong>\${c.user_name}</strong>
+            <span style="opacity:0.6;font-size:12px;">\${this.timeAgo(c.created_at)}</span>
+          </div>
+          <p style="margin:0;">\${c.comment_text}</p>
+        </div>
+      \`).join('');
+    }
+    return comments;
+  },
+  timeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'الآن';
+    if (seconds < 3600) return Math.floor(seconds / 60) + ' د';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + ' س';
+    return Math.floor(seconds / 86400) + ' ي';
+  }
+};
+
+console.log('✅ بيانات المعاينة جاهزة');
+console.log('📦 المنتجات:', window.SAMPLE_DATA.products.length);
+console.log('📝 المنشورات:', window.SAMPLE_DATA.posts.length);
+console.log('👥 المستخدمون:', window.SAMPLE_DATA.users.length);
+`;
+  };
+
   const generatePreviewHTML = () => {
     // جمع جميع ملفات HTML
     const htmlFiles = files.filter(f => f.file_type === 'html');
@@ -94,6 +333,91 @@ export const BuilderPreview = ({ files, isPublished, publishUrl }: BuilderPrevie
       `;
     }
 
+    // إضافة بيانات تجريبية للمعاينة
+    const sampleDataScript = `
+<script>
+// بيانات تجريبية للمعاينة - يتم تحميلها تلقائياً
+window.SAMPLE_DATA = {
+  products: [
+    { id: '1', title: 'هاتف ذكي', price: 999, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300', category: 'إلكترونيات', description: 'هاتف ذكي بمواصفات عالية' },
+    { id: '2', title: 'لابتوب', price: 1999, image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300', category: 'إلكترونيات', description: 'لابتوب للعمل والألعاب' },
+    { id: '3', title: 'سماعات', price: 199, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300', category: 'إلكترونيات', description: 'سماعات لاسلكية' },
+    { id: '4', title: 'ساعة ذكية', price: 299, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300', category: 'إلكترونيات', description: 'ساعة ذكية رياضية' },
+  ],
+  posts: [
+    { id: '1', title: 'مرحباً بالعالم!', content: 'هذا أول منشور في منصتنا الجديدة', author: 'أحمد', likes: 42, comments: 5, image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400' },
+    { id: '2', title: 'نصائح للمطورين', content: 'تعرف على أفضل ممارسات البرمجة', author: 'سارة', likes: 128, comments: 23, image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400' },
+    { id: '3', title: 'أخبار التقنية', content: 'آخر التطورات في عالم التكنولوجيا', author: 'محمد', likes: 89, comments: 12, image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400' },
+  ],
+  users: [
+    { id: '1', name: 'أحمد محمد', email: 'ahmad@example.com', avatar: 'https://i.pravatar.cc/100?img=1', role: 'admin' },
+    { id: '2', name: 'سارة علي', email: 'sara@example.com', avatar: 'https://i.pravatar.cc/100?img=2', role: 'user' },
+    { id: '3', name: 'محمد خالد', email: 'mohamed@example.com', avatar: 'https://i.pravatar.cc/100?img=3', role: 'user' },
+  ]
+};
+
+// محاكاة BuilderAPI للمعاينة
+if (!window.BuilderAPI) {
+  window.BuilderAPI = {
+    token: 'demo_token',
+    user: window.SAMPLE_DATA.users[0],
+    isAuthenticated: () => true,
+    getUser: () => window.SAMPLE_DATA.users[0],
+    getContent: async (options) => {
+      if (options?.contentType === 'product') return window.SAMPLE_DATA.products;
+      return window.SAMPLE_DATA.posts;
+    },
+    addContent: async (data) => ({ ...data, id: Date.now().toString() }),
+    register: async () => ({ user: window.SAMPLE_DATA.users[0], token: 'demo_token' }),
+    login: async () => ({ user: window.SAMPLE_DATA.users[0], token: 'demo_token' }),
+    logout: async () => {},
+    verifySession: async () => true,
+    toggleLike: async () => ({ liked: true, count: Math.floor(Math.random() * 100) }),
+    getComments: async () => [
+      { id: '1', comment_text: 'تعليق رائع!', user_name: 'محمد', created_at: new Date().toISOString() },
+      { id: '2', comment_text: 'شكراً على المشاركة', user_name: 'سارة', created_at: new Date().toISOString() },
+    ],
+    addComment: async (contentId, text) => ({ id: Date.now(), comment_text: text, user_name: 'أنت', created_at: new Date().toISOString() }),
+    getStats: async () => ({ users: 156, content: 89, comments: 342, files: 45 }),
+  };
+}
+
+// Cart للمتاجر
+if (!window.Cart) {
+  window.Cart = {
+    items: [],
+    add(product) {
+      const existing = this.items.find(i => i.id === product.id);
+      if (existing) existing.quantity++;
+      else this.items.push({ ...product, quantity: 1 });
+      this.updateUI();
+      if (window.Toast) Toast.success('تمت الإضافة للسلة');
+    },
+    remove(id) {
+      this.items = this.items.filter(i => i.id !== id);
+      this.updateUI();
+    },
+    getTotal() {
+      return this.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    },
+    getCount() {
+      return this.items.reduce((sum, i) => sum + i.quantity, 0);
+    },
+    updateUI() {
+      const countEl = document.querySelector('.cart-count');
+      if (countEl) countEl.textContent = this.getCount();
+    }
+  };
+}
+
+console.log('✅ بيانات تجريبية جاهزة للمعاينة');
+console.log('📦 المنتجات:', window.SAMPLE_DATA.products.length);
+console.log('📝 المنشورات:', window.SAMPLE_DATA.posts.length);
+</script>
+`;
+
+    return sampleDataScript;
+
     // Console override للتقاط الأخطاء
     const consoleOverride = `
 <script>
@@ -146,6 +470,10 @@ ${allCss}
       // إضافة JS مع معالجة الأخطاء
       const jsInjection = `
 <script>
+// Sample Data for Preview
+${generateSampleDataScript()}
+</script>
+<script>
 // Supabase initialization
 const SUPABASE_URL = '${SUPABASE_URL}';
 const SUPABASE_KEY = '${SUPABASE_KEY}';
@@ -197,6 +525,10 @@ ${allJs}
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   ${consoleOverride}
+  <script>
+  // Sample Data for Preview
+  ${generateSampleDataScript()}
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 

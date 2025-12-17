@@ -12,11 +12,12 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Monitor, Code, ShieldAlert } from "lucide-react";
+import { Monitor, Code, ShieldAlert, Database } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StarField from "@/components/StarField";
 import { Button } from "@/components/ui/button";
+import { BuilderDatabasePanel } from "@/components/platformBuilder/BuilderDatabasePanel";
 
 interface ProjectFile {
   id: string;
@@ -64,7 +65,7 @@ export default function AIPlatformBuilder() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("");
-  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'code'>('preview');
+  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'code' | 'database'>('preview');
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
@@ -477,6 +478,10 @@ export default function AIPlatformBuilder() {
                     <Code className="w-4 h-4" />
                     <span>الكود</span>
                   </TabsTrigger>
+                  <TabsTrigger value="database" className="gap-2 data-[state=active]:bg-primary/20">
+                    <Database className="w-4 h-4" />
+                    <span>قاعدة البيانات</span>
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="preview" className="flex-1 m-0 overflow-hidden">
@@ -485,6 +490,10 @@ export default function AIPlatformBuilder() {
                     isPublished={project.is_published}
                     publishUrl={publishUrl}
                   />
+                </TabsContent>
+
+                <TabsContent value="database" className="flex-1 m-0 overflow-hidden">
+                  <BuilderDatabasePanel projectId={projectId} />
                 </TabsContent>
 
                 <TabsContent value="code" className="flex-1 m-0 overflow-hidden">
