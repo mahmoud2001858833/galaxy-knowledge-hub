@@ -205,7 +205,7 @@ export default function AIPlatformBuilder() {
         tenant_id: project.tenant_id,
       });
 
-      // Call AI with Supabase connection info
+      // Call AI with project ID for automatic database
       const { data, error } = await supabase.functions.invoke('ai-code-generator', {
         body: {
           message,
@@ -214,13 +214,7 @@ export default function AIPlatformBuilder() {
             role: m.role,
             content: m.content,
           })),
-          // Pass Supabase connection info if connected
-          supabaseConfig: project.supabase_connected ? {
-            url: project.supabase_url,
-            anonKey: project.supabase_anon_key,
-            connected: true,
-          } : null,
-          projectType: project.project_type,
+          projectId: projectId, // Project ID for automatic database
         },
       });
 

@@ -609,6 +609,366 @@ export type Database = {
         }
         Relationships: []
       }
+      builder_app_comments: {
+        Row: {
+          builder_project_id: string
+          comment_text: string
+          content_id: string | null
+          created_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          builder_project_id: string
+          comment_text: string
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          builder_project_id?: string
+          comment_text?: string
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_comments_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "builder_app_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "builder_app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_app_content: {
+        Row: {
+          author_id: string | null
+          builder_project_id: string
+          category: string | null
+          content: string | null
+          content_type: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean | null
+          likes_count: number | null
+          metadata: Json | null
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          builder_project_id: string
+          category?: string | null
+          content?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          likes_count?: number | null
+          metadata?: Json | null
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          builder_project_id?: string
+          category?: string | null
+          content?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          likes_count?: number | null
+          metadata?: Json | null
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_content_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "builder_app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_content_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_app_files: {
+        Row: {
+          builder_project_id: string
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          folder: string | null
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          builder_project_id: string
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          folder?: string | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          builder_project_id?: string
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          folder?: string | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_files_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "builder_app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_app_likes: {
+        Row: {
+          builder_project_id: string
+          content_id: string | null
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          builder_project_id: string
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          builder_project_id?: string
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_likes_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_likes_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "builder_app_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "builder_app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_app_sessions: {
+        Row: {
+          builder_project_id: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          builder_project_id: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          builder_project_id?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_sessions_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builder_app_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "builder_app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_app_settings: {
+        Row: {
+          builder_project_id: string
+          created_at: string | null
+          custom_css: string | null
+          custom_js: string | null
+          features: Json | null
+          id: string
+          primary_color: string | null
+          secondary_color: string | null
+          site_description: string | null
+          site_logo: string | null
+          site_name: string | null
+          social_links: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          builder_project_id: string
+          created_at?: string | null
+          custom_css?: string | null
+          custom_js?: string | null
+          features?: Json | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          site_description?: string | null
+          site_logo?: string | null
+          site_name?: string | null
+          social_links?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          builder_project_id?: string
+          created_at?: string | null
+          custom_css?: string | null
+          custom_js?: string | null
+          features?: Json | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          site_description?: string | null
+          site_logo?: string | null
+          site_name?: string | null
+          social_links?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_settings_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: true
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_app_users: {
+        Row: {
+          avatar_url: string | null
+          builder_project_id: string
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          last_login: string | null
+          metadata: Json | null
+          password_hash: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          builder_project_id: string
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          last_login?: string | null
+          metadata?: Json | null
+          password_hash: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          builder_project_id?: string
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          last_login?: string | null
+          metadata?: Json | null
+          password_hash?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_app_users_builder_project_id_fkey"
+            columns: ["builder_project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_builder_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chemistry_puzzles: {
         Row: {
           correct_answer: string
