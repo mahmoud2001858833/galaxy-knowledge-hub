@@ -162,12 +162,11 @@ export const BuilderChat = ({
   };
 
   const suggestions = [
-    "أنشئ منصة أخبار مع تسجيل دخول ورفع أخبار",
-    "أنشئ متجر إلكتروني مع سلة شراء ودفع",
-    "أنشئ لوحة تحكم إدارية مع إحصائيات",
-    "أنشئ منصة تعليمية مع دورات ودروس",
-    "أنشئ مدونة شخصية مع تعليقات",
-    "أنشئ شبكة اجتماعية مصغرة",
+    "أنشئ متجر إلكتروني كامل مثل Amazon",
+    "أنشئ شبكة اجتماعية مثل Facebook",
+    "أنشئ مجلة أخبار مثل CNN",
+    "أنشئ منصة تعليمية مثل Udemy",
+    "أنشئ لوحة تحكم إدارية مع Charts",
   ];
   
   const [activeTab, setActiveTab] = useState<'chat' | 'templates' | 'supabase'>('chat');
@@ -193,19 +192,18 @@ export const BuilderChat = ({
       <div className="p-3 border-b border-border bg-card/50">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">منشئ المنصات الذكي</h3>
-              <p className="text-xs text-muted-foreground">أنشئ منصات متكاملة مع 15+ ملف</p>
+              <h3 className="font-bold text-sm">منشئ المنصات الخارق</h3>
+              <p className="text-xs text-muted-foreground">متاجر • شبكات اجتماعية • مدونات</p>
             </div>
           </div>
-          {supabaseConnected && (
-            <Badge className="bg-green-500/20 text-green-500 border-green-500/30 text-xs">
-              Supabase متصل
-            </Badge>
-          )}
+          <Badge className="bg-green-500/20 text-green-500 border-green-500/30 text-xs animate-pulse">
+            <Database className="w-3 h-3 ml-1" />
+            قاعدة بيانات جاهزة
+          </Badge>
         </div>
         
         {/* Tabs */}
