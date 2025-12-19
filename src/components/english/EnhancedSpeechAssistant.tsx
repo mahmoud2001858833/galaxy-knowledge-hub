@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, MicOff, Play, Pause, RotateCcw, Volume2, Award, Target, 
   Timer, Zap, TrendingUp, BookOpen, Users, Star, Trophy, 
-  ChevronRight, Settings, Headphones
+  ChevronRight, Settings, Headphones, Edit3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,9 +12,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { expandedEnglishExamples, getExamplesForMode, getRandomExample } from '@/data/expandedEnglishExamples';
+import { getRandomExercise, getRandomChallengeWord, getTotalExerciseCount, SpeechExercise } from '@/data/speechExercises';
 
 interface EnhancedSpeechAssistantProps {
   language: 'ar' | 'en';
@@ -34,7 +35,7 @@ interface SpeechAnalysis {
 const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ language }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentExample, setCurrentExample] = useState(expandedEnglishExamples[0]);
+  const [currentExample, setCurrentExample] = useState<SpeechExercise | null>(null);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [mode, setMode] = useState('pronunciation');
   const [analysis, setAnalysis] = useState<SpeechAnalysis | null>(null);
@@ -44,6 +45,8 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
   const [streak, setStreak] = useState(0);
   const [voice, setVoice] = useState('');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [customSentence, setCustomSentence] = useState('');
+  const [useCustom, setUseCustom] = useState(false);
   
   // Challenge mode states
   const [challengeMode, setChallengeMode] = useState(false);
