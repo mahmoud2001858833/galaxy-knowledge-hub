@@ -7,9 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
-// Gemini API Key
-const GEMINI_API_KEY = "AIzaSyAdBB8Cvm4l8O9_JqqFvkk2QeQd6BOV9Wo";
-
 const MathAIAssistant = () => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
@@ -24,31 +21,23 @@ const MathAIAssistant = () => {
     setError(null);
     
     try {
-      // Call Gemini API directly
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `كمساعد للرياضيات، قم بالإجابة على السؤال التالي بطريقة تعليمية واضحة: ${prompt}`
-              }]
-            }]
-          })
+      // Call the edge function which uses Lovable AI Gateway
+      const { data, error: funcError } = await supabase.functions.invoke('math-ai-assistant', {
+        body: {
+          question: prompt,
+          currentValue: '0'
         }
-      );
+      });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'خطأ في الاتصال بالمساعد الذكي');
+      if (funcError) {
+        throw new Error(funcError.message || 'خطأ في الاتصال بالمساعد الذكي');
       }
       
-      const data = await response.json();
-      const result = data.candidates[0]?.content?.parts[0]?.text || 'لا يوجد رد من المساعد الذكي';
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const result = data.answer || 'لا يوجد رد من المساعد الذكي';
       
       setResponse(result);
       toast.success('تم استلام الإجابة بنجاح!');
