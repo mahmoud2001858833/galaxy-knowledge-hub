@@ -16,116 +16,129 @@ serve(async (req) => {
     
     console.log('Text generation request:', { topic, style, difficulty, wordCount, language });
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-    if (!GEMINI_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured', success: false }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // بناء البرومبت حسب المعايير المطلوبة
+    // Build style prompt based on requirements
     let stylePrompt = "";
     switch (style) {
       case 'poetic':
-        stylePrompt = "بأسلوب شعري جميل مع استخدام التشبيهات والاستعارات";
+        stylePrompt = "Use a poetic style with metaphors and similes";
         break;
       case 'exaggerated':
-        stylePrompt = "بأسلوب مبالغ فيه ومثير مع كلمات قوية ومؤثرة";
+        stylePrompt = "Use an exaggerated and dramatic style with powerful words";
         break;
       case 'advanced':
-        stylePrompt = "بأسلوب أكاديمي متقدم مع استخدام مفردات معقدة ومتخصصة";
+        stylePrompt = "Use advanced academic style with complex vocabulary";
         break;
       case 'simple':
-        stylePrompt = "بأسلوب بسيط وواضح مع كلمات سهلة الفهم";
+        stylePrompt = "Use simple and clear style with easy words";
         break;
       case 'formal':
-        stylePrompt = "بأسلوب رسمي ومهني";
+        stylePrompt = "Use formal and professional style";
         break;
       case 'narrative':
-        stylePrompt = "بأسلوب سردي شيق";
+        stylePrompt = "Use engaging narrative style";
         break;
       default:
-        stylePrompt = "بأسلوب واضح ومناسب";
+        stylePrompt = "Use clear and appropriate style";
     }
 
     let difficultyPrompt = "";
     switch (difficulty) {
       case 'easy':
-        difficultyPrompt = "مستوى سهل مع كلمات بسيطة وجمل قصيرة";
+        difficultyPrompt = "Easy level with simple vocabulary and short sentences";
         break;
       case 'medium':
-        difficultyPrompt = "مستوى متوسط مع تنويع في المفردات والجمل";
+        difficultyPrompt = "Medium level with varied vocabulary and sentence structures";
         break;
       case 'hard':
-        difficultyPrompt = "مستوى صعب مع مفردات متقدمة وتراكيب معقدة";
+        difficultyPrompt = "Advanced level with complex vocabulary and intricate structures";
         break;
       default:
-        difficultyPrompt = "مستوى متوسط";
+        difficultyPrompt = "Medium level";
     }
 
-    const englishPrompt = `Write a comprehensive ${language === 'en' ? 'English' : 'bilingual'} text about "${topic}".
+    const englishPrompt = `Write a comprehensive English text about "${topic}".
 
-Topic details: ${description}
+${description ? `Topic details: ${description}` : ''}
 
 Requirements:
 - Style: ${stylePrompt}
 - Difficulty: ${difficultyPrompt}
 - Word count: approximately ${wordCount} words
-- Language: ${language === 'both' ? 'Write in English first, then provide Arabic translation' : 'English only'}
+- Create an engaging, well-structured text that covers the topic thoroughly
+- Use proper grammar and punctuation
 
-Please create an engaging, well-structured text that covers the topic thoroughly.`;
+Please write only the English text, no explanations or headers.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    // Use Lovable AI Gateway
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: englishPrompt
-              }
-            ]
-          }
-        ]
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: "You are an expert English text writer. Write high-quality, engaging content based on the given requirements." },
+          { role: "user", content: englishPrompt }
+        ],
+        temperature: 0.8,
+        max_tokens: 2048,
       })
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      throw new Error(`AI service error: ${response.status}`);
+    }
+
     const data = await response.json();
-    let generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'فشل في توليد النص';
+    let generatedText = data.choices?.[0]?.message?.content || '';
     
-    // إذا كان المطلوب كلا اللغتين وليس النص يحتوي على العربية، نترجم
+    if (!generatedText) {
+      throw new Error('No text generated');
+    }
+    
+    // Clean up the text
+    generatedText = generatedText.trim();
+    
+    // If translation to Arabic is requested, translate
     let arabicTranslation = '';
-    if (language === 'both' && !generatedText.includes('العربية') && !generatedText.includes('ترجمة')) {
-      const translationPrompt = `ترجم النص التالي إلى العربية مع المحافظة على نفس الأسلوب والمستوى:
+    if (language === 'both') {
+      const translationPrompt = `Translate the following English text to Arabic. Maintain the same style and tone. Provide only the Arabic translation, no explanations:
 
-"${generatedText}"
+"${generatedText}"`;
 
-يرجى تقديم ترجمة دقيقة وطبيعية باللغة العربية.`;
-
-      const translationResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const translationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: translationPrompt
-                }
-              ]
-            }
-          ]
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "You are an expert translator from English to Arabic. Provide accurate and natural translations." },
+            { role: "user", content: translationPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 2048,
         })
       });
 
-      const translationData = await translationResponse.json();
-      arabicTranslation = translationData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (translationResponse.ok) {
+        const translationData = await translationResponse.json();
+        arabicTranslation = translationData.choices?.[0]?.message?.content?.trim() || '';
+      }
     }
 
     console.log('Text generation completed, length:', generatedText.length);
