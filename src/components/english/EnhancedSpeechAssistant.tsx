@@ -145,6 +145,24 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const textAlign = language === 'ar' ? 'text-right' : 'text-left';
 
+  // Initialize example on mount
+  useEffect(() => {
+    const examples = getExercisesByMode(mode, difficulty);
+    if (examples.length > 0) {
+      const randomExample = examples[Math.floor(Math.random() * examples.length)];
+      setCurrentExample(randomExample);
+    }
+  }, []);
+
+  // Update example when mode or difficulty changes
+  useEffect(() => {
+    const examples = getExercisesByMode(mode, difficulty);
+    if (examples.length > 0) {
+      const randomExample = examples[Math.floor(Math.random() * examples.length)];
+      setCurrentExample(randomExample);
+    }
+  }, [mode, difficulty]);
+
   // Initialize voices
   useEffect(() => {
     const loadVoices = () => {
@@ -176,6 +194,8 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
   };
 
   const playExampleAudio = () => {
+    if (!currentExample) return;
+    
     if (isPlaying) {
       speechSynthesis.cancel();
       setIsPlaying(false);
@@ -522,26 +542,32 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-6 bg-white/10 rounded-lg border border-white/20">
-              <p className="text-2xl font-medium text-white leading-relaxed text-center">
-                {currentExample.text}
-              </p>
-              {currentExample.phonetic && (
-                <p className="text-indigo-300 text-center mt-2 font-mono">
-                  {currentExample.phonetic}
+            {currentExample ? (
+              <div className="p-6 bg-white/10 rounded-lg border border-white/20">
+                <p className="text-2xl font-medium text-white leading-relaxed text-center">
+                  {currentExample.text}
                 </p>
-              )}
-              {currentExample.translation && language === 'ar' && (
-                <p className="text-white/60 text-center mt-2 text-sm">
-                  {currentExample.translation}
-                </p>
-              )}
-            </div>
+                {currentExample.phonetic && (
+                  <p className="text-indigo-300 text-center mt-2 font-mono">
+                    {currentExample.phonetic}
+                  </p>
+                )}
+                {currentExample.translation && language === 'ar' && (
+                  <p className="text-white/60 text-center mt-2 text-sm">
+                    {currentExample.translation}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 bg-white/10 rounded-lg border border-white/20 text-center">
+                <p className="text-white/60">جاري تحميل المثال...</p>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button
                 onClick={playExampleAudio}
-                disabled={voices.length === 0}
+                disabled={voices.length === 0 || !currentExample}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               >
                 {isPlaying ? (
