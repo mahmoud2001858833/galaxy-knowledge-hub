@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getRandomExercise, getRandomChallengeWord, getTotalExerciseCount, SpeechExercise } from '@/data/speechExercises';
+import { getRandomExercise, getRandomChallengeWord, getTotalExerciseCount, getExercisesByMode, SpeechExercise } from '@/data/speechExercises';
 
 interface EnhancedSpeechAssistantProps {
   language: 'ar' | 'en';
@@ -167,9 +167,11 @@ const EnhancedSpeechAssistant: React.FC<EnhancedSpeechAssistantProps> = ({ langu
   }, [voice]);
 
   const getNextExample = () => {
-    const examples = getExamplesForMode(mode, difficulty);
-    const randomExample = examples[Math.floor(Math.random() * examples.length)];
-    setCurrentExample(randomExample);
+    const examples = getExercisesByMode(mode, difficulty);
+    if (examples.length > 0) {
+      const randomExample = examples[Math.floor(Math.random() * examples.length)];
+      setCurrentExample(randomExample);
+    }
     setAnalysis(null);
   };
 
