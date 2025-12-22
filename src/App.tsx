@@ -73,7 +73,11 @@ import SolarSystemSimulation from './pages/SolarSystemSimulation';
 import SolarSystem3D from './pages/SolarSystem3D';
 import GeneticsLabSimulation from './pages/GeneticsLabSimulation';
 import EcosystemSimulation from './pages/EcosystemSimulation';
-import ThermodynamicsLabSimulation from './pages/ThermodynamicsLabSimulation';
+import ElectromagnetismLabSimulation from './pages/ElectromagnetismLabSimulation';
+import WavesAndSoundSimulation from './pages/WavesAndSoundSimulation';
+import StaticElectricitySimulation from './pages/StaticElectricitySimulation';
+import AdvancedAstronomySimulation from './pages/AdvancedAstronomySimulation';
+import QuantumMechanicsSimulation from './pages/QuantumMechanicsSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -479,8 +483,24 @@ const router = createBrowserRouter([
         element: <AuthGuard><EcosystemSimulation /></AuthGuard>,
       },
       {
-        path: 'simulation/thermodynamics',
-        element: <AuthGuard><ThermodynamicsLabSimulation /></AuthGuard>,
+        path: 'simulation/electromagnetism',
+        element: <AuthGuard><ElectromagnetismLabSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/waves-sound',
+        element: <AuthGuard><WavesAndSoundSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/static-electricity',
+        element: <AuthGuard><StaticElectricitySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/advanced-astronomy',
+        element: <AuthGuard><AdvancedAstronomySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/quantum-mechanics',
+        element: <AuthGuard><QuantumMechanicsSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',
