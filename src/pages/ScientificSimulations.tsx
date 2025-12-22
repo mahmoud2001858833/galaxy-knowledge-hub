@@ -227,19 +227,49 @@ const ScientificSimulations = () => {
       ]
     },
     {
-      id: 'thermodynamics',
-      title: 'مختبر الديناميكا الحرارية',
-      description: 'محاكاة شاملة للغازات المثالية ودورة كارنو وانتقال الحرارة',
-      icon: <Thermometer className="w-12 h-12" />,
-      color: 'from-red-600 via-orange-500 to-yellow-500',
-      route: '/simulation/thermodynamics',
-      features: [
-        'قانون الغاز المثالي PV=nRT',
-        'دورة كارنو الكاملة',
-        'التوصيل والحمل والإشعاع',
-        'حركة جسيمات الغاز',
-        'حساب الكفاءة والشغل'
-      ]
+      id: 'electromagnetism',
+      title: 'مختبر الكهرومغناطيسية',
+      description: 'محاكاة المجال المغناطيسي والحث الكهرومغناطيسي والمحركات',
+      icon: <Zap className="w-12 h-12" />,
+      color: 'from-purple-600 via-blue-500 to-cyan-500',
+      route: '/simulation/electromagnetism',
+      features: ['المجال حول الأسلاك', 'الملفات والسولينويد', 'قاعدة اليد اليمنى', 'البوصلات التفاعلية']
+    },
+    {
+      id: 'waves-sound',
+      title: 'مختبر الموجات والصوت',
+      description: 'محاكاة الموجات الصوتية وتأثير دوبلر والتداخل',
+      icon: <Waves className="w-12 h-12" />,
+      color: 'from-green-600 via-teal-500 to-blue-500',
+      route: '/simulation/waves-sound',
+      features: ['أنواع الموجات', 'تأثير دوبلر', 'تداخل الموجات', 'تشغيل الصوت الحقيقي']
+    },
+    {
+      id: 'static-electricity',
+      title: 'محاكاة الكهرباء الساكنة',
+      description: 'قانون كولوم والمجال الكهربائي ومولد فان دي غراف',
+      icon: <Sparkles className="w-12 h-12" />,
+      color: 'from-yellow-600 via-orange-500 to-red-500',
+      route: '/simulation/static-electricity',
+      features: ['قانون كولوم', 'خطوط المجال', 'الكاشف الكهربائي', 'مولد فان دي غراف']
+    },
+    {
+      id: 'advanced-astronomy',
+      title: 'مختبر الفلك المتقدم',
+      description: 'محاكاة الكسوف والخسوف وأطوار القمر والمدارات',
+      icon: <Globe className="w-12 h-12" />,
+      color: 'from-indigo-600 via-purple-500 to-pink-500',
+      route: '/simulation/advanced-astronomy',
+      features: ['كسوف الشمس', 'خسوف القمر', 'أطوار القمر', 'قوانين كبلر']
+    },
+    {
+      id: 'quantum-mechanics',
+      title: 'مختبر ميكانيكا الكم',
+      description: 'تجربة الشق المزدوج والنفق الكمي والتراكب',
+      icon: <Atom className="w-12 h-12" />,
+      color: 'from-pink-600 via-purple-500 to-indigo-500',
+      route: '/simulation/quantum-mechanics',
+      features: ['الشق المزدوج', 'النفق الكمي', 'التراكب الكمي', 'تأثير المراقب']
     }
   ];
 
