@@ -513,6 +513,46 @@ const router = createBrowserRouter([
         element: <AuthGuard><QuantumMechanicsSimulation /></AuthGuard>,
       },
       {
+        path: 'simulation/analytical-chemistry',
+        element: <AuthGuard><AnalyticalChemistrySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/electrochemistry',
+        element: <AuthGuard><ElectrochemistrySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/molecular-biology',
+        element: <AuthGuard><MolecularBiologySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/human-body',
+        element: <AuthGuard><HumanBodySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/advanced-nuclear',
+        element: <AuthGuard><AdvancedNuclearSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/digital-electronics',
+        element: <AuthGuard><DigitalElectronicsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/earth-sciences',
+        element: <AuthGuard><EarthSciencesSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/rocket-science',
+        element: <AuthGuard><RocketScienceSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/advanced-optics',
+        element: <AuthGuard><AdvancedOpticsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/materials-science',
+        element: <AuthGuard><MaterialsScienceSimulation /></AuthGuard>,
+      },
+      {
         path: 'environmental-sustainability',
         element: <AuthGuard><EnvironmentalSustainability /></AuthGuard>,
       },
