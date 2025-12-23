@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, Thermometer } from 'lucide-react';
+import { ArrowLeft, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, Thermometer, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -270,6 +270,96 @@ const ScientificSimulations = () => {
       color: 'from-pink-600 via-purple-500 to-indigo-500',
       route: '/simulation/quantum-mechanics',
       features: ['الشق المزدوج', 'النفق الكمي', 'التراكب الكمي', 'تأثير المراقب']
+    },
+    {
+      id: 'analytical-chemistry',
+      title: 'مختبر الكيمياء التحليلية',
+      description: 'محاكاة متقدمة للمعايرة وقياس pH والكروماتوغرافيا والتحليل الطيفي',
+      icon: <FlaskConical className="w-12 h-12" />,
+      color: 'from-emerald-600 via-green-500 to-teal-500',
+      route: '/simulation/analytical-chemistry',
+      features: ['معايرة حمض-قاعدة', 'قياس الأس الهيدروجيني', 'كروماتوغرافيا الفصل', 'التحليل الطيفي UV-Vis']
+    },
+    {
+      id: 'electrochemistry',
+      title: 'مختبر الكيمياء الكهربائية',
+      description: 'استكشاف الخلايا الجلفانية والتحليل الكهربائي والتآكل وخلايا الوقود',
+      icon: <Battery className="w-12 h-12" />,
+      color: 'from-amber-600 via-orange-500 to-yellow-500',
+      route: '/simulation/electrochemistry',
+      features: ['الخلايا الجلفانية', 'التحليل الكهربائي', 'عملية التآكل', 'خلايا الوقود الهيدروجينية']
+    },
+    {
+      id: 'molecular-biology',
+      title: 'مختبر البيولوجيا الجزيئية',
+      description: 'محاكاة تضاعف DNA والنسخ والترجمة وتفاعل PCR',
+      icon: <Microscope className="w-12 h-12" />,
+      color: 'from-violet-600 via-purple-500 to-fuchsia-500',
+      route: '/simulation/molecular-biology',
+      features: ['تضاعف الحمض النووي', 'عملية النسخ', 'الترجمة وتصنيع البروتين', 'تفاعل البلمرة المتسلسل PCR']
+    },
+    {
+      id: 'human-body',
+      title: 'محاكاة جسم الإنسان',
+      description: 'استكشاف أجهزة الجسم: الدوران، التنفس، العصبي، الهضمي',
+      icon: <Heart className="w-12 h-12" />,
+      color: 'from-red-600 via-rose-500 to-pink-500',
+      route: '/simulation/human-body',
+      features: ['الجهاز الدوري والقلب', 'الجهاز التنفسي', 'الجهاز العصبي', 'الجهاز الهضمي']
+    },
+    {
+      id: 'advanced-nuclear',
+      title: 'الفيزياء النووية المتقدمة',
+      description: 'محاكاة الاضمحلال الإشعاعي والانشطار والاندماج وعمر النصف',
+      icon: <Atom className="w-12 h-12" />,
+      color: 'from-lime-600 via-green-500 to-emerald-500',
+      route: '/simulation/advanced-nuclear',
+      features: ['اضمحلال ألفا وبيتا وغاما', 'الانشطار النووي', 'الاندماج النووي', 'حساب عمر النصف']
+    },
+    {
+      id: 'digital-electronics',
+      title: 'مختبر الإلكترونيات الرقمية',
+      description: 'بوابات المنطق والجامعات والعدادات وخلايا الذاكرة',
+      icon: <Cpu className="w-12 h-12" />,
+      color: 'from-slate-600 via-gray-500 to-zinc-500',
+      route: '/simulation/digital-electronics',
+      features: ['بوابات AND, OR, NOT, XOR', 'الجامع النصفي', 'عداد 8-بت', 'خلية ذاكرة 8-بت']
+    },
+    {
+      id: 'earth-sciences',
+      title: 'مختبر علوم الأرض',
+      description: 'محاكاة الزلازل والبراكين والصفائح التكتونية ودورة الصخور',
+      icon: <Mountain className="w-12 h-12" />,
+      color: 'from-amber-700 via-orange-600 to-red-600',
+      route: '/simulation/earth-sciences',
+      features: ['محاكاة الزلازل', 'ثوران البراكين', 'حركة الصفائح التكتونية', 'دورة الصخور']
+    },
+    {
+      id: 'rocket-science',
+      title: 'علوم الصواريخ والفضاء',
+      description: 'محاكاة إطلاق الصواريخ والمدارات الفضائية وهبوط المركبات',
+      icon: <Rocket className="w-12 h-12" />,
+      color: 'from-sky-600 via-blue-500 to-indigo-500',
+      route: '/simulation/rocket-science',
+      features: ['إطلاق الصاروخ متعدد المراحل', 'المدارات الفضائية', 'هبوط المركبة الفضائية', 'فيزياء الدفع الصاروخي']
+    },
+    {
+      id: 'advanced-optics',
+      title: 'مختبر البصريات المتقدمة',
+      description: 'تشتت المنشور والعدسات والتداخل والاستقطاب',
+      icon: <Eye className="w-12 h-12" />,
+      color: 'from-cyan-600 via-teal-500 to-emerald-500',
+      route: '/simulation/advanced-optics',
+      features: ['تشتت الضوء بالمنشور', 'بؤرة العدسات', 'تداخل الشقين', 'استقطاب الضوء']
+    },
+    {
+      id: 'materials-science',
+      title: 'علوم المواد والسبائك',
+      description: 'البنية البلورية والسبائك واختبارات الإجهاد ومخططات الأطوار',
+      icon: <Layers className="w-12 h-12" />,
+      color: 'from-stone-600 via-neutral-500 to-zinc-500',
+      route: '/simulation/materials-science',
+      features: ['البنية البلورية', 'تكوين السبائك', 'اختبار الإجهاد-الانفعال', 'مخطط أطوار الحديد-كربون']
     }
   ];
 
