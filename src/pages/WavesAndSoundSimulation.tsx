@@ -35,19 +35,19 @@ const WavesAndSoundSimulation = () => {
     {
       question: 'ما هي العلاقة بين التردد والطول الموجي؟',
       options: ['طردية', 'عكسية', 'لا توجد علاقة', 'متساوية'],
-      correctAnswer: 1,
+      correctIndex: 1,
       explanation: 'العلاقة عكسية: كلما زاد التردد قل الطول الموجي والعكس صحيح (λ = v/f)'
     },
     {
       question: 'ماذا يحدث للتردد المسموع عندما يقترب مصدر الصوت؟',
       options: ['يقل', 'يزداد', 'يبقى ثابتاً', 'يختفي'],
-      correctAnswer: 1,
+      correctIndex: 1,
       explanation: 'هذا هو تأثير دوبلر: عند اقتراب المصدر تنضغط الموجات فيزداد التردد المسموع'
     },
     {
       question: 'ما نوع التداخل الذي ينتج عنه زيادة في السعة؟',
       options: ['هدام', 'بناء', 'محايد', 'عشوائي'],
-      correctAnswer: 1,
+      correctIndex: 1,
       explanation: 'التداخل البناء يحدث عندما تتوافق القمم مع القمم فتزداد السعة'
     }
   ];
@@ -395,23 +395,21 @@ const WavesAndSoundSimulation = () => {
             </SimulationControls>
           </SimulationCard>
 
-          <InfoSection
-            title="المعادلات الفيزيائية"
-            icon={Lightbulb}
-            color="green"
-            delay={0.2}
-            items={[
-              { label: 'معادلة الموجة', value: 'v = f × λ' },
-              { label: 'تأثير دوبلر', value: "f' = f × (v ± vo) / (v ∓ vs)" },
-              { label: 'شرط التداخل البناء', value: 'Δx = n × λ' },
-              { label: 'شرط التداخل الهدام', value: 'Δx = (n + 0.5) × λ' }
-            ]}
-            facts={[
-              'سرعة الصوت في الهواء عند 20°C هي 343 م/ث',
-              'الأذن البشرية تسمع ترددات من 20 Hz إلى 20,000 Hz',
-              'الموجات فوق الصوتية تُستخدم في التصوير الطبي'
-            ]}
-          />
+          <SimulationCard title="المعادلات الفيزيائية" icon={Lightbulb} color="green" delay={0.2}>
+            <InfoSection
+              formulas={[
+                { name: 'معادلة الموجة', formula: 'v = f × λ' },
+                { name: 'تأثير دوبلر', formula: "f' = f × (v ± vo) / (v ∓ vs)" },
+                { name: 'شرط التداخل البناء', formula: 'Δx = n × λ' },
+                { name: 'شرط التداخل الهدام', formula: 'Δx = (n + 0.5) × λ' }
+              ]}
+              facts={[
+                'سرعة الصوت في الهواء عند 20°C هي 343 م/ث',
+                'الأذن البشرية تسمع ترددات من 20 Hz إلى 20,000 Hz',
+                'الموجات فوق الصوتية تُستخدم في التصوير الطبي'
+              ]}
+            />
+          </SimulationCard>
         </div>
 
         <div className="space-y-4">
@@ -485,13 +483,9 @@ const WavesAndSoundSimulation = () => {
             </div>
           </SimulationCard>
 
-          <QuizSection
-            title="اختبر معلوماتك"
-            icon={HelpCircle}
-            color="yellow"
-            questions={quizQuestions}
-            delay={0.25}
-          />
+          <SimulationCard title="اختبر معلوماتك" icon={HelpCircle} color="yellow" delay={0.25}>
+            <QuizSection questions={quizQuestions} />
+          </SimulationCard>
         </div>
       </div>
     </div>
