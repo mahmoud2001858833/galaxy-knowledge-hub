@@ -57,6 +57,7 @@ import ArabicProsodySection from './pages/ArabicProsodySection';
 import ArabicCriticismSection from './pages/ArabicCriticismSection';
 import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
+import ScientificSimulationsHub from './pages/ScientificSimulationsHub';
 import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
 import BuildAtomSimulation from './pages/BuildAtomSimulation';
 import LHCSimulation from './pages/LHCSimulation';
@@ -427,6 +428,10 @@ const router = createBrowserRouter([
       {
         path: 'scientific-simulations',
         element: <AuthGuard><ScientificSimulations /></AuthGuard>,
+      },
+      {
+        path: 'scientific-simulations-hub',
+        element: <PublicRoute><ScientificSimulationsHub /></PublicRoute>,
       },
       {
         path: 'simulation/blackbody-radiation',

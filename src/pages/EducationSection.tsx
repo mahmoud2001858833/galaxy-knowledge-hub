@@ -6,6 +6,7 @@ import { ArrowRight, GraduationCap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import educationBg from '@/assets/education-section.jpg';
+import scientificSimulationsImg from '@/assets/scientific-simulations-card.jpg';
 
 const clickSound = '/message-notification.mp3';
 
@@ -58,7 +59,15 @@ const EducationSection = () => {
       borderColor: "border-blue-500/30",
       link: "/scientific-platforms"
     },
-    // التوجيهي الأردني تم نقله إلى قسم خاص في المنصات التعليمية
+    {
+      title: "التجارب العلمية التفاعلية",
+      icon: "🧪",
+      description: "محاكاة تفاعلية ثلاثية الأبعاد للفيزياء والكيمياء والأحياء والفلك",
+      image: scientificSimulationsImg,
+      color: "from-cyan-600/20 to-purple-600/20",
+      borderColor: "border-cyan-500/30",
+      link: "/scientific-simulations-hub"
+    },
   ];
 
   return (
