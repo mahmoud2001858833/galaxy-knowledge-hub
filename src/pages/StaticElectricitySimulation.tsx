@@ -1,23 +1,25 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, RotateCcw, Zap, Circle, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Zap, Settings, Circle, Plus, Minus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import SimulationLayout from '@/components/simulations/SimulationLayout';
+import SimulationCard from '@/components/simulations/SimulationCard';
+import SimulationControls from '@/components/simulations/SimulationControls';
+import InfoSection from '@/components/simulations/InfoSection';
+import QuizSection from '@/components/simulations/QuizSection';
 
 interface Charge {
   id: number;
   x: number;
   y: number;
-  charge: number; // positive or negative
+  charge: number;
   vx: number;
   vy: number;
 }
 
 const StaticElectricitySimulation = () => {
-  const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   
@@ -32,10 +34,70 @@ const StaticElectricitySimulation = () => {
   const [chargeStrength, setChargeStrength] = useState(5);
   const [time, setTime] = useState(0);
 
-  // Coulomb's constant
   const k = 8.99e9;
 
-  // Calculate electric field at a point
+  const quizQuestions = [
+    {
+      question: 'ما نوع القوة بين شحنتين متشابهتين؟',
+      options: ['قوة تجاذب', 'قوة تنافر', 'لا توجد قوة', 'قوة متغيرة'],
+      correctIndex: 1,
+      explanation: 'الشحنات المتشابهة (موجبة-موجبة أو سالبة-سالبة) تتنافر دائماً'
+    },
+    {
+      question: 'ماذا يحدث للقوة الكهربائية إذا تضاعفت المسافة بين شحنتين؟',
+      options: ['تتضاعف', 'تقل للنصف', 'تقل للربع', 'لا تتغير'],
+      correctIndex: 2,
+      explanation: 'حسب قانون كولوم، القوة تتناسب عكسياً مع مربع المسافة، فإذا تضاعفت المسافة تقل القوة للربع'
+    },
+    {
+      question: 'ما هي وحدة قياس الشحنة الكهربائية؟',
+      options: ['الأمبير', 'الفولت', 'الكولوم', 'الأوم'],
+      correctIndex: 2,
+      explanation: 'الكولوم (C) هو وحدة قياس الشحنة الكهربائية في النظام الدولي'
+    },
+    {
+      question: 'كيف يعمل مولد فان دي غراف؟',
+      options: ['بالحث الكهرومغناطيسي', 'بنقل الشحنات عبر حزام متحرك', 'بالتفاعلات الكيميائية', 'بالطاقة الشمسية'],
+      correctIndex: 1,
+      explanation: 'مولد فان دي غراف ينقل الشحنات من القاعدة إلى القبة المعدنية عبر حزام عازل متحرك'
+    },
+    {
+      question: 'ما قيمة ثابت كولوم تقريباً؟',
+      options: ['9 × 10³ N·m²/C²', '9 × 10⁶ N·m²/C²', '9 × 10⁹ N·m²/C²', '9 × 10¹² N·m²/C²'],
+      correctIndex: 2,
+      explanation: 'ثابت كولوم k = 8.99 × 10⁹ N·m²/C² ≈ 9 × 10⁹ N·m²/C²'
+    }
+  ];
+
+  const getFormulas = () => {
+    switch (simulationType) {
+      case 'coulomb':
+        return [
+          { name: 'قانون كولوم', formula: 'F = k × q₁ × q₂ / r²', description: 'القوة بين شحنتين' },
+          { name: 'ثابت كولوم', formula: 'k = 8.99 × 10⁹ N·m²/C²', description: 'ثابت التناسب' },
+          { name: 'المجال الكهربائي', formula: 'E = F / q = k × Q / r²', description: 'القوة لكل وحدة شحنة' }
+        ];
+      case 'electroscope':
+        return [
+          { name: 'الشحن بالتأثير', formula: 'q_induced = -q_external', description: 'الشحنة المستحثة' },
+          { name: 'زاوية الانفراج', formula: 'θ ∝ Q', description: 'تتناسب مع الشحنة' }
+        ];
+      case 'vandegraaff':
+        return [
+          { name: 'الجهد على القبة', formula: 'V = k × Q / R', description: 'R نصف قطر القبة' },
+          { name: 'الشرارة', formula: 'E > 3×10⁶ V/m', description: 'عند انهيار الهواء' }
+        ];
+    }
+  };
+
+  const facts = [
+    'البرق هو تفريغ كهربائي ساكن هائل بين السحب والأرض',
+    'يمكن لمولد فان دي غراف توليد جهد يصل إلى 5 ملايين فولت',
+    'الشحنة الكهربائية محفوظة - لا تُخلق ولا تُفنى',
+    'الإلكترون يحمل أصغر شحنة ممكنة: 1.6 × 10⁻¹⁹ كولوم',
+    'فرك البالون بالشعر يشحنه بالكهرباء الساكنة'
+  ];
+
   const calculateField = useCallback((x: number, y: number): { ex: number; ey: number } => {
     let ex = 0;
     let ey = 0;
@@ -57,7 +119,6 @@ const StaticElectricitySimulation = () => {
     return { ex, ey };
   }, [charges, chargeStrength]);
 
-  // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -71,12 +132,26 @@ const StaticElectricitySimulation = () => {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Clear canvas
-      ctx.fillStyle = '#0f172a';
+      // خلفية متدرجة
+      const bgGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/2);
+      bgGradient.addColorStop(0, '#1a1a2e');
+      bgGradient.addColorStop(1, '#0f0f1a');
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, width, height);
 
+      // نجوم خلفية
+      for (let i = 0; i < 50; i++) {
+        const x = (i * 137.5 + time * 0.2) % width;
+        const y = (i * 73.3) % height;
+        const alpha = 0.2 + Math.sin(time * 2 + i) * 0.15;
+        ctx.fillStyle = `rgba(255, 200, 100, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       if (simulationType === 'coulomb') {
-        // Draw electric field
+        // رسم المجال الكهربائي
         if (showFieldLines) {
           const resolution = 30;
           for (let x = 0; x < width; x += resolution) {
@@ -89,14 +164,13 @@ const StaticElectricitySimulation = () => {
                 const normalizedEy = field.ey / magnitude;
                 const length = Math.min(magnitude * 500, 20);
                 
-                ctx.strokeStyle = `rgba(147, 197, 253, ${Math.min(magnitude * 200, 0.6)})`;
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = `rgba(255, 200, 100, ${Math.min(magnitude * 200, 0.6)})`;
+                ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(x, y);
                 ctx.lineTo(x + normalizedEx * length, y + normalizedEy * length);
                 ctx.stroke();
                 
-                // Arrow head
                 const arrowSize = 4;
                 const angle = Math.atan2(normalizedEy, normalizedEx);
                 ctx.beginPath();
@@ -116,20 +190,20 @@ const StaticElectricitySimulation = () => {
           }
         }
 
-        // Draw field lines from charges
+        // خطوط المجال من الشحنات
         charges.forEach(charge => {
-          const numLines = 12;
+          const numLines = 14;
           for (let i = 0; i < numLines; i++) {
             const startAngle = (i / numLines) * 2 * Math.PI;
-            let x = charge.x + 25 * Math.cos(startAngle);
-            let y = charge.y + 25 * Math.sin(startAngle);
+            let x = charge.x + 28 * Math.cos(startAngle);
+            let y = charge.y + 28 * Math.sin(startAngle);
             
-            ctx.strokeStyle = charge.charge > 0 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)';
+            ctx.strokeStyle = charge.charge > 0 ? 'rgba(255, 100, 100, 0.5)' : 'rgba(100, 150, 255, 0.5)';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(x, y);
             
-            for (let step = 0; step < 100; step++) {
+            for (let step = 0; step < 120; step++) {
               const field = calculateField(x, y);
               const magnitude = Math.sqrt(field.ex * field.ex + field.ey * field.ey);
               
@@ -145,32 +219,39 @@ const StaticElectricitySimulation = () => {
           }
         });
 
-        // Draw charges
+        // رسم الشحنات
         charges.forEach(charge => {
-          // Glow effect
-          const gradient = ctx.createRadialGradient(charge.x, charge.y, 0, charge.x, charge.y, 40);
-          gradient.addColorStop(0, charge.charge > 0 ? 'rgba(239, 68, 68, 0.5)' : 'rgba(59, 130, 246, 0.5)');
+          // توهج
+          ctx.shadowBlur = 35;
+          ctx.shadowColor = charge.charge > 0 ? '#ff6b6b' : '#4ecdc4';
+          
+          const gradient = ctx.createRadialGradient(charge.x, charge.y, 0, charge.x, charge.y, 50);
+          gradient.addColorStop(0, charge.charge > 0 ? 'rgba(255, 100, 100, 0.6)' : 'rgba(100, 200, 220, 0.6)');
           gradient.addColorStop(1, 'transparent');
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(charge.x, charge.y, 40, 0, 2 * Math.PI);
+          ctx.arc(charge.x, charge.y, 50, 0, 2 * Math.PI);
           ctx.fill();
 
-          // Charge circle
-          ctx.fillStyle = charge.charge > 0 ? '#ef4444' : '#3b82f6';
+          // دائرة الشحنة
+          const chargeGradient = ctx.createRadialGradient(charge.x-5, charge.y-5, 0, charge.x, charge.y, 28);
+          chargeGradient.addColorStop(0, charge.charge > 0 ? '#ff8888' : '#88ddee');
+          chargeGradient.addColorStop(1, charge.charge > 0 ? '#cc4444' : '#3399aa');
+          ctx.fillStyle = chargeGradient;
           ctx.beginPath();
-          ctx.arc(charge.x, charge.y, 25, 0, 2 * Math.PI);
+          ctx.arc(charge.x, charge.y, 28, 0, 2 * Math.PI);
           ctx.fill();
+          ctx.shadowBlur = 0;
 
-          // Sign
+          // العلامة
           ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 24px Arial';
+          ctx.font = 'bold 28px Arial';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(charge.charge > 0 ? '+' : '−', charge.x, charge.y);
         });
 
-        // Draw force vectors
+        // متجهات القوة
         if (showForceVectors && charges.length >= 2) {
           for (let i = 0; i < charges.length; i++) {
             for (let j = i + 1; j < charges.length; j++) {
@@ -183,198 +264,219 @@ const StaticElectricitySimulation = () => {
               const F = (k * Math.abs(c1.charge * c2.charge) * chargeStrength * chargeStrength) / (r * r) * 0.0001;
               const isRepulsive = c1.charge * c2.charge > 0;
               
-              // Draw force on charge 1
-              const forceLength = Math.min(F * 100, 80);
+              const forceLength = Math.min(F * 100, 90);
               const angle = Math.atan2(dy, dx);
               const direction = isRepulsive ? -1 : 1;
               
-              ctx.strokeStyle = isRepulsive ? '#ef4444' : '#22c55e';
-              ctx.lineWidth = 3;
+              ctx.strokeStyle = isRepulsive ? '#ff6b6b' : '#2ecc71';
+              ctx.lineWidth = 4;
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = isRepulsive ? '#ff6b6b' : '#2ecc71';
               
-              // Force on c1
               ctx.beginPath();
               ctx.moveTo(c1.x, c1.y);
-              ctx.lineTo(
-                c1.x + direction * forceLength * Math.cos(angle),
-                c1.y + direction * forceLength * Math.sin(angle)
-              );
+              ctx.lineTo(c1.x + direction * forceLength * Math.cos(angle), c1.y + direction * forceLength * Math.sin(angle));
               ctx.stroke();
               
-              // Force on c2
               ctx.beginPath();
               ctx.moveTo(c2.x, c2.y);
-              ctx.lineTo(
-                c2.x - direction * forceLength * Math.cos(angle),
-                c2.y - direction * forceLength * Math.sin(angle)
-              );
+              ctx.lineTo(c2.x - direction * forceLength * Math.cos(angle), c2.y - direction * forceLength * Math.sin(angle));
               ctx.stroke();
+              ctx.shadowBlur = 0;
             }
           }
         }
 
-        // Coulomb's law formula
+        // معادلة كولوم
         if (charges.length >= 2) {
           const dx = charges[1].x - charges[0].x;
           const dy = charges[1].y - charges[0].y;
           const r = Math.sqrt(dx * dx + dy * dy);
           const F = (k * chargeStrength * chargeStrength) / (r * r);
           
-          ctx.fillStyle = '#e2e8f0';
-          ctx.font = '14px Arial';
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 16px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText(`F = k × q₁ × q₂ / r² = ${F.toExponential(2)} N`, width / 2, height - 20);
+          ctx.fillText(`F = k × q₁ × q₂ / r² = ${F.toExponential(2)} N`, width / 2, height - 25);
         }
 
       } else if (simulationType === 'electroscope') {
-        // Electroscope simulation
         const centerX = width / 2;
-        const centerY = height / 2;
 
-        // Draw metal sphere on top
-        ctx.fillStyle = '#a1a1aa';
+        // الكرة المعدنية
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = '#a1a1aa';
+        const sphereGradient = ctx.createRadialGradient(centerX-10, 90, 0, centerX, 100, 45);
+        sphereGradient.addColorStop(0, '#d4d4d8');
+        sphereGradient.addColorStop(1, '#71717a');
+        ctx.fillStyle = sphereGradient;
         ctx.beginPath();
-        ctx.arc(centerX, 100, 40, 0, 2 * Math.PI);
+        ctx.arc(centerX, 100, 45, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // Draw stem
-        ctx.fillStyle = '#71717a';
-        ctx.fillRect(centerX - 5, 140, 10, 150);
+        // الساق
+        const stemGradient = ctx.createLinearGradient(centerX - 6, 145, centerX + 6, 145);
+        stemGradient.addColorStop(0, '#52525b');
+        stemGradient.addColorStop(0.5, '#a1a1aa');
+        stemGradient.addColorStop(1, '#52525b');
+        ctx.fillStyle = stemGradient;
+        ctx.fillRect(centerX - 6, 145, 12, 155);
 
-        // Draw leaves (gold foil)
-        const chargeEffect = chargeStrength * 3;
-        const leafAngle = Math.min(chargeEffect, 45) * (Math.PI / 180);
+        // الورقتان الذهبيتان
+        const chargeEffect = chargeStrength * 3.5;
+        const leafAngle = Math.min(chargeEffect, 50) * (Math.PI / 180);
         
         ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 5;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#fbbf24';
+        ctx.lineCap = 'round';
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX, 300);
+        ctx.lineTo(centerX - Math.sin(leafAngle) * 110, 300 + Math.cos(leafAngle) * 110);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX, 300);
+        ctx.lineTo(centerX + Math.sin(leafAngle) * 110, 300 + Math.cos(leafAngle) * 110);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // الوعاء الزجاجي
+        ctx.strokeStyle = 'rgba(150, 200, 255, 0.5)';
         ctx.lineWidth = 4;
-        
-        // Left leaf
         ctx.beginPath();
-        ctx.moveTo(centerX, 290);
-        ctx.lineTo(
-          centerX - Math.sin(leafAngle) * 100,
-          290 + Math.cos(leafAngle) * 100
-        );
-        ctx.stroke();
-        
-        // Right leaf
-        ctx.beginPath();
-        ctx.moveTo(centerX, 290);
-        ctx.lineTo(
-          centerX + Math.sin(leafAngle) * 100,
-          290 + Math.cos(leafAngle) * 100
-        );
+        ctx.moveTo(centerX - 110, 210);
+        ctx.lineTo(centerX - 110, 460);
+        ctx.lineTo(centerX + 110, 460);
+        ctx.lineTo(centerX + 110, 210);
         ctx.stroke();
 
-        // Glass jar
-        ctx.strokeStyle = 'rgba(147, 197, 253, 0.5)';
-        ctx.lineWidth = 3;
+        // القضيب المشحون
+        const rodX = centerX + 210 + Math.sin(time * 1.5) * 60;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#8b5cf6';
+        const rodGradient = ctx.createLinearGradient(rodX - 65, 80, rodX + 65, 80);
+        rodGradient.addColorStop(0, '#7c3aed');
+        rodGradient.addColorStop(0.5, '#a78bfa');
+        rodGradient.addColorStop(1, '#7c3aed');
+        ctx.fillStyle = rodGradient;
         ctx.beginPath();
-        ctx.moveTo(centerX - 100, 200);
-        ctx.lineTo(centerX - 100, 450);
-        ctx.lineTo(centerX + 100, 450);
-        ctx.lineTo(centerX + 100, 200);
-        ctx.stroke();
-
-        // Charged rod approaching
-        const rodX = centerX + 200 + Math.sin(time) * 50;
-        ctx.fillStyle = '#8b5cf6';
-        ctx.fillRect(rodX - 60, 80, 120, 30);
+        ctx.roundRect(rodX - 65, 75, 130, 35, 8);
+        ctx.fill();
+        ctx.shadowBlur = 0;
         
-        // Show + charges on rod
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
         for (let i = 0; i < 4; i++) {
-          ctx.fillText('+', rodX - 45 + i * 30, 100);
+          ctx.fillText('+', rodX - 48 + i * 32, 98);
         }
 
-        // Labels
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('الكاشف الكهربائي', centerX, 30);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText('الكاشف الكهربائي', centerX, 40);
 
       } else if (simulationType === 'vandegraaff') {
-        // Van de Graaff generator
         const centerX = width / 2;
         const baseY = height - 100;
 
-        // Draw column
-        ctx.fillStyle = '#52525b';
-        ctx.fillRect(centerX - 30, 150, 60, baseY - 150);
+        // العمود
+        const columnGradient = ctx.createLinearGradient(centerX - 35, 150, centerX + 35, 150);
+        columnGradient.addColorStop(0, '#3f3f46');
+        columnGradient.addColorStop(0.5, '#71717a');
+        columnGradient.addColorStop(1, '#3f3f46');
+        ctx.fillStyle = columnGradient;
+        ctx.fillRect(centerX - 35, 160, 70, baseY - 160);
 
-        // Draw dome
-        const gradient = ctx.createRadialGradient(centerX, 100, 0, centerX, 100, 100);
-        gradient.addColorStop(0, '#a1a1aa');
-        gradient.addColorStop(1, '#52525b');
-        ctx.fillStyle = gradient;
+        // القبة
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = '#a1a1aa';
+        const domeGradient = ctx.createRadialGradient(centerX - 20, 80, 0, centerX, 105, 110);
+        domeGradient.addColorStop(0, '#d4d4d8');
+        domeGradient.addColorStop(0.7, '#a1a1aa');
+        domeGradient.addColorStop(1, '#52525b');
+        ctx.fillStyle = domeGradient;
         ctx.beginPath();
-        ctx.arc(centerX, 100, 100, 0, 2 * Math.PI);
+        ctx.arc(centerX, 105, 110, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // Draw belt
+        // الحزام
         ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 8;
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(centerX - 10, 100);
-        ctx.lineTo(centerX - 10, baseY);
+        ctx.moveTo(centerX - 12, 105);
+        ctx.lineTo(centerX - 12, baseY);
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(centerX + 10, 100);
-        ctx.lineTo(centerX + 10, baseY);
+        ctx.moveTo(centerX + 12, 105);
+        ctx.lineTo(centerX + 12, baseY);
         ctx.stroke();
 
-        // Moving charges on belt
-        for (let i = 0; i < 8; i++) {
-          const y = (100 + ((time * 100 + i * 60) % (baseY - 100)));
+        // الشحنات المتحركة على الحزام
+        for (let i = 0; i < 10; i++) {
+          const y = (105 + ((time * 120 + i * 55) % (baseY - 105)));
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = '#fbbf24';
           ctx.fillStyle = '#fbbf24';
-          ctx.font = 'bold 12px Arial';
+          ctx.font = 'bold 14px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText('+', centerX - 10, y);
+          ctx.fillText('+', centerX - 12, y);
+          ctx.shadowBlur = 0;
         }
 
-        // Sparks from dome
+        // الشرارات
         if (chargeStrength > 5) {
           ctx.strokeStyle = '#a855f7';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#a855f7';
           
-          for (let i = 0; i < 5; i++) {
-            const sparkAngle = (i / 5) * Math.PI - Math.PI / 2 + Math.sin(time * 10 + i) * 0.2;
-            const sparkLength = 30 + Math.random() * 50 * (chargeStrength / 10);
+          for (let i = 0; i < 6; i++) {
+            const sparkAngle = (i / 6) * Math.PI - Math.PI / 2 + Math.sin(time * 12 + i) * 0.25;
+            const sparkLength = 40 + Math.random() * 60 * (chargeStrength / 10);
             
             ctx.beginPath();
-            ctx.moveTo(centerX + 100 * Math.cos(sparkAngle), 100 + 100 * Math.sin(sparkAngle));
+            ctx.moveTo(centerX + 110 * Math.cos(sparkAngle), 105 + 110 * Math.sin(sparkAngle));
             
-            let x = centerX + 100 * Math.cos(sparkAngle);
-            let y = 100 + 100 * Math.sin(sparkAngle);
+            let x = centerX + 110 * Math.cos(sparkAngle);
+            let y = 105 + 110 * Math.sin(sparkAngle);
             
-            for (let j = 0; j < 5; j++) {
-              x += (Math.cos(sparkAngle) + (Math.random() - 0.5)) * sparkLength / 5;
-              y += (Math.sin(sparkAngle) + (Math.random() - 0.5)) * sparkLength / 5;
+            for (let j = 0; j < 6; j++) {
+              x += (Math.cos(sparkAngle) + (Math.random() - 0.5)) * sparkLength / 6;
+              y += (Math.sin(sparkAngle) + (Math.random() - 0.5)) * sparkLength / 6;
               ctx.lineTo(x, y);
             }
             ctx.stroke();
           }
+          ctx.shadowBlur = 0;
         }
 
-        // Accumulated charges on dome
+        // الشحنات المتراكمة على القبة
         for (let i = 0; i < chargeStrength; i++) {
-          const angle = (i / chargeStrength) * 2 * Math.PI + time;
-          const chargeX = centerX + 85 * Math.cos(angle);
-          const chargeY = 100 + 85 * Math.sin(angle);
+          const angle = (i / chargeStrength) * 2 * Math.PI + time * 0.5;
+          const chargeX = centerX + 95 * Math.cos(angle);
+          const chargeY = 105 + 95 * Math.sin(angle);
           
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = '#fbbf24';
           ctx.fillStyle = '#fbbf24';
-          ctx.font = 'bold 14px Arial';
+          ctx.font = 'bold 16px Arial';
           ctx.textAlign = 'center';
           ctx.fillText('+', chargeX, chargeY + 5);
+          ctx.shadowBlur = 0;
         }
 
-        // Labels
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('مولد فان دي غراف', centerX, 30);
-        ctx.font = '12px Arial';
-        ctx.fillText(`الشحنة المتراكمة: ${(chargeStrength * 10).toFixed(0)} μC`, centerX, baseY + 50);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText('مولد فان دي غراف', centerX, 40);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`الشحنة المتراكمة: ${(chargeStrength * 10).toFixed(0)} μC`, centerX, baseY + 55);
       }
 
       setTime(prev => prev + 0.016);
@@ -412,170 +514,115 @@ const StaticElectricitySimulation = () => {
     setIsPlaying(true);
   };
 
+  const getExplanation = () => {
+    switch (simulationType) {
+      case 'coulomb': return 'قانون كولوم يصف القوة بين شحنتين كهربائيتين. تتناسب القوة طردياً مع حاصل ضرب الشحنتين وعكسياً مع مربع المسافة بينهما.';
+      case 'electroscope': return 'الكاشف الكهربائي يستخدم للكشف عن الشحنة الكهربائية. عند اقتراب جسم مشحون، تنفصل الورقتان بسبب تنافر الشحنات المتماثلة.';
+      case 'vandegraaff': return 'مولد فان دي غراف يولد شحنات كهربائية عالية جداً عن طريق نقل الشحنات عبر حزام عازل متحرك إلى قبة معدنية.';
+      default: return '';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 text-white p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/scientific-simulations')}
-          className="text-white hover:bg-white/10"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          العودة
-        </Button>
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-yellow-400 to-red-400 bg-clip-text text-transparent">
-          محاكاة الكهرباء الساكنة
-        </h1>
-        <div className="w-24" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Canvas */}
-        <div className="lg:col-span-2">
-          <Card className="bg-slate-800/50 border-yellow-500/30 p-4">
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={500}
-              className="w-full rounded-lg bg-slate-900"
-            />
-            
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
-              <Button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="bg-yellow-600 hover:bg-yellow-700"
-              >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+    <SimulationLayout
+      title="محاكاة الكهرباء الساكنة"
+      titleGradient="from-yellow-400 to-red-400"
+      backgroundGradient="from-slate-900 via-yellow-900/20 to-slate-900"
+    >
+      <div className="grid lg:grid-cols-3 gap-6">
+        <SimulationCard className="lg:col-span-2" color="yellow">
+          <canvas ref={canvasRef} width={800} height={500} className="w-full rounded-lg" />
+          
+          {simulationType === 'coulomb' && (
+            <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+              <Button onClick={() => addCharge(true)} className="bg-red-600 hover:bg-red-700">
+                <Plus className="w-4 h-4 ml-1" /> شحنة موجبة
               </Button>
-              {simulationType === 'coulomb' && (
-                <>
-                  <Button
-                    onClick={() => addCharge(true)}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    + شحنة موجبة
-                  </Button>
-                  <Button
-                    onClick={() => addCharge(false)}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    − شحنة سالبة
-                  </Button>
-                </>
-              )}
-              <Button
-                onClick={resetSimulation}
-                variant="outline"
-                className="border-yellow-500 text-yellow-400"
-              >
-                <RotateCcw className="w-5 h-5" />
+              <Button onClick={() => addCharge(false)} className="bg-blue-600 hover:bg-blue-700">
+                <Minus className="w-4 h-4 ml-1" /> شحنة سالبة
               </Button>
             </div>
-          </Card>
-        </div>
+          )}
+        </SimulationCard>
 
-        {/* Control Panel */}
         <div className="space-y-4">
-          <Card className="bg-slate-800/50 border-yellow-500/30 p-4">
-            <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              لوحة التحكم
-            </h3>
+          <SimulationCard title="لوحة التحكم" icon={Settings} color="yellow">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">نوع المحاكاة</label>
+                <Tabs value={simulationType} onValueChange={(v) => setSimulationType(v as any)}>
+                  <TabsList className="grid grid-cols-3 bg-slate-800/50">
+                    <TabsTrigger value="coulomb" className="text-xs data-[state=active]:bg-yellow-600">كولوم</TabsTrigger>
+                    <TabsTrigger value="electroscope" className="text-xs data-[state=active]:bg-yellow-600">كاشف</TabsTrigger>
+                    <TabsTrigger value="vandegraaff" className="text-xs data-[state=active]:bg-yellow-600">مولد</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-            {/* Simulation Type */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-300 mb-2">نوع المحاكاة</label>
-              <Tabs value={simulationType} onValueChange={(v) => setSimulationType(v as any)}>
-                <TabsList className="grid grid-cols-3 bg-slate-700">
-                  <TabsTrigger value="coulomb" className="text-xs">كولوم</TabsTrigger>
-                  <TabsTrigger value="electroscope" className="text-xs">كاشف</TabsTrigger>
-                  <TabsTrigger value="vandegraaff" className="text-xs">مولد</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {/* Charge Strength */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-300 mb-2">
-                شدة الشحنة: {chargeStrength.toFixed(1)} μC
-              </label>
-              <Slider
-                value={[chargeStrength]}
-                onValueChange={(v) => setChargeStrength(v[0])}
-                min={1}
-                max={10}
-                step={0.1}
-                className="w-full"
-              />
-            </div>
-
-            {simulationType === 'coulomb' && (
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showFieldLines}
-                    onChange={(e) => setShowFieldLines(e.target.checked)}
-                    className="w-4 h-4 rounded"
-                  />
-                  <span className="text-sm text-slate-300">خطوط المجال الكهربائي</span>
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">
+                  شدة الشحنة: <span className="text-yellow-400 font-mono">{chargeStrength.toFixed(1)} μC</span>
                 </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showForceVectors}
-                    onChange={(e) => setShowForceVectors(e.target.checked)}
-                    className="w-4 h-4 rounded"
-                  />
-                  <span className="text-sm text-slate-300">متجهات القوة</span>
-                </label>
+                <Slider
+                  value={[chargeStrength]}
+                  onValueChange={(v) => setChargeStrength(v[0])}
+                  min={1}
+                  max={10}
+                  step={0.1}
+                />
               </div>
-            )}
-          </Card>
 
-          {/* Info Card */}
-          <Card className="bg-slate-800/50 border-red-500/30 p-4">
-            <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5" />
-              المعلومات
-            </h3>
-            
-            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {simulationType === 'coulomb' && 
-                  'قانون كولوم: القوة بين شحنتين تتناسب طردياً مع حاصل ضرب الشحنتين وعكسياً مع مربع المسافة بينهما.'}
-                {simulationType === 'electroscope' && 
-                  'الكاشف الكهربائي: جهاز للكشف عن الشحنة الكهربائية. ينفصل ورقاه عند شحنه بسبب التنافر.'}
-                {simulationType === 'vandegraaff' && 
-                  'مولد فان دي غراف: يولد شحنات كهربائية عالية عن طريق نقل الشحنات عبر حزام متحرك إلى قبة معدنية.'}
-              </p>
+              {simulationType === 'coulomb' && (
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showFieldLines}
+                      onChange={(e) => setShowFieldLines(e.target.checked)}
+                      className="w-4 h-4 rounded accent-yellow-500"
+                    />
+                    <span className="text-sm text-slate-300">خطوط المجال الكهربائي</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showForceVectors}
+                      onChange={(e) => setShowForceVectors(e.target.checked)}
+                      className="w-4 h-4 rounded accent-yellow-500"
+                    />
+                    <span className="text-sm text-slate-300">متجهات القوة</span>
+                  </label>
+                </div>
+              )}
             </div>
-          </Card>
+          </SimulationCard>
 
-          {/* Formulas */}
-          <Card className="bg-slate-800/50 border-blue-500/30 p-4">
-            <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
-              <Circle className="w-5 h-5" />
-              القوانين
-            </h3>
-            
-            <div className="space-y-2 text-sm font-mono">
-              <div className="p-2 bg-slate-700/50 rounded text-center">
-                F = k × q₁ × q₂ / r²
-              </div>
-              <div className="p-2 bg-slate-700/50 rounded text-center">
-                k = 8.99 × 10⁹ N·m²/C²
-              </div>
-              <div className="p-2 bg-slate-700/50 rounded text-center">
-                E = F / q = k × Q / r²
-              </div>
-            </div>
-          </Card>
+          <SimulationControls
+            isPlaying={isPlaying}
+            onTogglePlay={() => setIsPlaying(!isPlaying)}
+            onReset={resetSimulation}
+            primaryColor="yellow"
+          />
+
+          <SimulationCard title="المعلومات العلمية" icon={Zap} color="red" delay={0.2}>
+            <InfoSection
+              explanation={getExplanation()}
+              formulas={getFormulas()}
+              facts={facts}
+            />
+          </SimulationCard>
         </div>
       </div>
-    </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mt-6"
+      >
+        <QuizSection questions={quizQuestions} title="اختبر معلوماتك في الكهرباء الساكنة" />
+      </motion.div>
+    </SimulationLayout>
   );
 };
 
