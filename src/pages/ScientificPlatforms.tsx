@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { SEO } from '@/components/SEO';
+import scientificSimulationsImg from '@/assets/scientific-simulations-card.jpg';
 
 const ScientificPlatforms = () => {
   const navigate = useNavigate();
@@ -49,6 +49,15 @@ const ScientificPlatforms = () => {
       borderColor: "border-yellow-500/30",
       hoverBorderColor: "hover:border-yellow-500/50",
       link: "/mathematics"
+    },
+    {
+      title: "التجارب العلمية التفاعلية",
+      icon: "🔬",
+      image: scientificSimulationsImg,
+      color: "from-cyan-600/20 to-purple-600/20",
+      borderColor: "border-cyan-500/30",
+      hoverBorderColor: "hover:border-cyan-500/50",
+      link: "/scientific-simulations-hub"
     }
   ];
 
@@ -96,7 +105,7 @@ const ScientificPlatforms = () => {
           </motion.div>
 
           {/* Platforms Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {platforms.map((platform, index) => (
               <motion.div
                 key={index}
