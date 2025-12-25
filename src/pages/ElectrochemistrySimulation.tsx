@@ -23,19 +23,19 @@ const ElectrochemistrySimulation = () => {
     {
       question: 'في الخلية الجلفانية، أين يحدث الأكسدة؟',
       options: ['الكاثود', 'الأنود', 'الجسر الملحي', 'المحلول'],
-      correctAnswer: 1,
+      correctIndex: 1,
       explanation: 'الأكسدة تحدث عند الأنود (القطب السالب) حيث تفقد الذرات إلكترونات'
     },
     {
       question: 'ما هو ناتج التحليل الكهربائي للماء؟',
       options: ['أكسجين فقط', 'هيدروجين فقط', 'أكسجين وهيدروجين', 'بخار ماء'],
-      correctAnswer: 2,
+      correctIndex: 2,
       explanation: 'التحليل الكهربائي للماء ينتج غاز الهيدروجين عند الكاثود والأكسجين عند الأنود'
     },
     {
       question: 'ما هي المادة الناتجة من صدأ الحديد؟',
       options: ['Fe₂O₃', 'FeO', 'Fe₃O₄', 'Fe(OH)₂'],
-      correctAnswer: 0,
+      correctIndex: 0,
       explanation: 'الصدأ هو أكسيد الحديد الثلاثي Fe₂O₃ المائي (الصدأ الأحمر)'
     }
   ];
@@ -530,22 +530,20 @@ const ElectrochemistrySimulation = () => {
             />
           </SimulationCard>
 
-          <InfoSection
-            title="المبادئ الكهروكيميائية"
-            icon={Lightbulb}
-            color="yellow"
-            delay={0.2}
-            items={[
-              { label: 'جهد الخلية', value: 'E°cell = E°cathode - E°anode' },
-              { label: 'طاقة جبس الحرة', value: 'ΔG = -nFE' },
-              { label: 'قانون فاراداي', value: 'm = (Q × M) / (n × F)' }
-            ]}
-            facts={[
-              'الخلية الجلفانية تحول الطاقة الكيميائية إلى كهربائية',
-              'التحليل الكهربائي يتطلب طاقة كهربائية لإجراء تفاعل غير تلقائي',
-              'خلايا الوقود تُعتبر مصدر طاقة نظيف للمستقبل'
-            ]}
-          />
+          <SimulationCard title="المبادئ الكهروكيميائية" icon={Lightbulb} color="yellow" delay={0.2}>
+            <InfoSection
+              formulas={[
+                { name: 'جهد الخلية', formula: 'E°cell = E°cathode - E°anode' },
+                { name: 'طاقة جبس الحرة', formula: 'ΔG = -nFE' },
+                { name: 'قانون فاراداي', formula: 'm = (Q × M) / (n × F)' }
+              ]}
+              facts={[
+                'الخلية الجلفانية تحول الطاقة الكيميائية إلى كهربائية',
+                'التحليل الكهربائي يتطلب طاقة كهربائية لإجراء تفاعل غير تلقائي',
+                'خلايا الوقود تُعتبر مصدر طاقة نظيف للمستقبل'
+              ]}
+            />
+          </SimulationCard>
         </div>
 
         <div className="space-y-4">
@@ -577,7 +575,7 @@ const ElectrochemistrySimulation = () => {
             </div>
           </SimulationCard>
 
-          <SimulationCard title="معلومات الخلية" icon={Battery} color="orange" delay={0.2}>
+          <SimulationCard title="معلومات الخلية" icon={Battery} color="yellow" delay={0.2}>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between p-2 bg-slate-700/50 rounded">
                 <span className="text-slate-400">نوع الخلية:</span>
@@ -602,13 +600,9 @@ const ElectrochemistrySimulation = () => {
             </div>
           </SimulationCard>
 
-          <QuizSection
-            title="اختبر معلوماتك"
-            icon={HelpCircle}
-            color="yellow"
-            questions={quizQuestions}
-            delay={0.25}
-          />
+          <SimulationCard title="اختبر معلوماتك" icon={HelpCircle} color="yellow" delay={0.25}>
+            <QuizSection questions={quizQuestions} />
+          </SimulationCard>
         </div>
       </div>
     </div>

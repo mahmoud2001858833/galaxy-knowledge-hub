@@ -23,19 +23,19 @@ const AnalyticalChemistrySimulation = () => {
     {
       question: 'ما هي نقطة التكافؤ في المعايرة؟',
       options: ['نقطة بداية التفاعل', 'نقطة اكتمال التفاعل', 'نقطة تغير اللون', 'نقطة الغليان'],
-      correctAnswer: 1,
+      correctIndex: 1,
       explanation: 'نقطة التكافؤ هي النقطة التي يتم فيها اكتمال التفاعل بين الحمض والقاعدة بنسب متساوية'
     },
     {
       question: 'ما هو Rf في الكروماتوغرافيا؟',
       options: ['تردد الرنين', 'معامل الانكسار', 'نسبة المسافة المقطوعة', 'مقاومة التدفق'],
-      correctAnswer: 2,
+      correctIndex: 2,
       explanation: 'Rf هو نسبة المسافة التي قطعتها المادة إلى المسافة التي قطعها المذيب'
     },
     {
       question: 'ما هو قانون بير-لامبرت؟',
       options: ['A = ε × c × l', 'PV = nRT', 'E = mc²', 'F = ma'],
-      correctAnswer: 0,
+      correctIndex: 0,
       explanation: 'قانون بير-لامبرت يربط الامتصاص بالتركيز وطول المسار ومعامل الامتصاص المولي'
     }
   ];
@@ -513,22 +513,20 @@ const AnalyticalChemistrySimulation = () => {
             />
           </SimulationCard>
 
-          <InfoSection
-            title="المبادئ العلمية"
-            icon={Lightbulb}
-            color="cyan"
-            delay={0.2}
-            items={[
-              { label: 'معادلة المعايرة', value: 'C₁V₁ = C₂V₂' },
-              { label: 'قانون بير-لامبرت', value: 'A = ε × c × l' },
-              { label: 'معامل التوزيع', value: 'Rf = d(مادة) / d(مذيب)' }
-            ]}
-            facts={[
-              'المؤشرات الحمضية-القاعدية تغير لونها عند قيم pH محددة',
-              'الكروماتوغرافيا تفصل المواد حسب قابليتها للذوبان',
-              'التحليل الطيفي يستخدم امتصاص الضوء لتحديد التراكيز'
-            ]}
-          />
+          <SimulationCard title="المبادئ العلمية" icon={Lightbulb} color="cyan" delay={0.2}>
+            <InfoSection
+              formulas={[
+                { name: 'معادلة المعايرة', formula: 'C₁V₁ = C₂V₂' },
+                { name: 'قانون بير-لامبرت', formula: 'A = ε × c × l' },
+                { name: 'معامل التوزيع', formula: 'Rf = d(مادة) / d(مذيب)' }
+              ]}
+              facts={[
+                'المؤشرات الحمضية-القاعدية تغير لونها عند قيم pH محددة',
+                'الكروماتوغرافيا تفصل المواد حسب قابليتها للذوبان',
+                'التحليل الطيفي يستخدم امتصاص الضوء لتحديد التراكيز'
+              ]}
+            />
+          </SimulationCard>
         </div>
 
         <div className="space-y-4">
@@ -590,13 +588,9 @@ const AnalyticalChemistrySimulation = () => {
             </div>
           </SimulationCard>
 
-          <QuizSection
-            title="اختبر معلوماتك"
-            icon={HelpCircle}
-            color="yellow"
-            questions={quizQuestions}
-            delay={0.25}
-          />
+          <SimulationCard title="اختبر معلوماتك" icon={HelpCircle} color="yellow" delay={0.25}>
+            <QuizSection questions={quizQuestions} />
+          </SimulationCard>
         </div>
       </div>
     </div>
