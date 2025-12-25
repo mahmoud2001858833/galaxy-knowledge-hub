@@ -1,11 +1,16 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, RotateCcw, Volume2, Waves, Radio, Settings } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Volume2, Waves, Radio, Settings, Lightbulb, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import StarField from '@/components/StarField';
+import SimulationCard from '@/components/simulations/SimulationCard';
+import SimulationControls from '@/components/simulations/SimulationControls';
+import InfoSection from '@/components/simulations/InfoSection';
+import QuizSection from '@/components/simulations/QuizSection';
 
 const WavesAndSoundSimulation = () => {
   const navigate = useNavigate();
@@ -23,11 +28,30 @@ const WavesAndSoundSimulation = () => {
   const [time, setTime] = useState(0);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
 
-  // Calculate wavelength
-  const speedOfSound = 343; // m/s
+  const speedOfSound = 343;
   const wavelength = speedOfSound / frequency;
 
-  // Play sound
+  const quizQuestions = [
+    {
+      question: 'ما هي العلاقة بين التردد والطول الموجي؟',
+      options: ['طردية', 'عكسية', 'لا توجد علاقة', 'متساوية'],
+      correctAnswer: 1,
+      explanation: 'العلاقة عكسية: كلما زاد التردد قل الطول الموجي والعكس صحيح (λ = v/f)'
+    },
+    {
+      question: 'ماذا يحدث للتردد المسموع عندما يقترب مصدر الصوت؟',
+      options: ['يقل', 'يزداد', 'يبقى ثابتاً', 'يختفي'],
+      correctAnswer: 1,
+      explanation: 'هذا هو تأثير دوبلر: عند اقتراب المصدر تنضغط الموجات فيزداد التردد المسموع'
+    },
+    {
+      question: 'ما نوع التداخل الذي ينتج عنه زيادة في السعة؟',
+      options: ['هدام', 'بناء', 'محايد', 'عشوائي'],
+      correctAnswer: 1,
+      explanation: 'التداخل البناء يحدث عندما تتوافق القمم مع القمم فتزداد السعة'
+    }
+  ];
+
   const toggleSound = useCallback(() => {
     if (isSoundPlaying) {
       oscillatorRef.current?.stop();
@@ -37,24 +61,19 @@ const WavesAndSoundSimulation = () => {
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext();
       }
-      
       const oscillator = audioContextRef.current.createOscillator();
       const gainNode = audioContextRef.current.createGain();
-      
       oscillator.type = waveType;
       oscillator.frequency.value = frequency;
       gainNode.gain.value = 0.1;
-      
       oscillator.connect(gainNode);
       gainNode.connect(audioContextRef.current.destination);
       oscillator.start();
-      
       oscillatorRef.current = oscillator;
       setIsSoundPlaying(true);
     }
   }, [isSoundPlaying, frequency, waveType]);
 
-  // Update oscillator when parameters change
   useEffect(() => {
     if (oscillatorRef.current) {
       oscillatorRef.current.frequency.value = frequency;
@@ -62,7 +81,6 @@ const WavesAndSoundSimulation = () => {
     }
   }, [frequency, waveType]);
 
-  // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       oscillatorRef.current?.stop();
@@ -70,35 +88,35 @@ const WavesAndSoundSimulation = () => {
     };
   }, []);
 
-  // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const animate = () => {
       if (!isPlaying) return;
-
       const width = canvas.width;
       const height = canvas.height;
       const centerY = height / 2;
 
-      // Clear canvas
-      ctx.fillStyle = '#0f172a';
+      // Enhanced background with gradient
+      const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+      bgGradient.addColorStop(0, '#0a1628');
+      bgGradient.addColorStop(1, '#1a2a4a');
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, width, height);
 
-      // Draw grid
+      // Enhanced grid
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.1)';
       ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 50) {
+      for (let x = 0; x < width; x += 40) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
       }
-      for (let y = 0; y < height; y += 50) {
+      for (let y = 0; y < height; y += 40) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
@@ -106,7 +124,9 @@ const WavesAndSoundSimulation = () => {
       }
 
       if (simulationType === 'wave') {
-        // Draw main wave
+        // Enhanced wave with glow effect
+        ctx.shadowColor = '#22c55e';
+        ctx.shadowBlur = 15;
         ctx.strokeStyle = '#22c55e';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -114,184 +134,209 @@ const WavesAndSoundSimulation = () => {
         for (let x = 0; x < width; x++) {
           const phase = (x / 100) * (frequency / 100) - time * 3;
           let y = centerY;
-
           switch (waveType) {
-            case 'sine':
-              y = centerY + amplitude * Math.sin(phase);
-              break;
-            case 'square':
-              y = centerY + amplitude * Math.sign(Math.sin(phase));
-              break;
-            case 'triangle':
-              y = centerY + amplitude * (2 * Math.abs(2 * ((phase / (2 * Math.PI)) % 1) - 1) - 1);
-              break;
-            case 'sawtooth':
-              y = centerY + amplitude * (2 * ((phase / (2 * Math.PI)) % 1) - 1);
-              break;
+            case 'sine': y = centerY + amplitude * Math.sin(phase); break;
+            case 'square': y = centerY + amplitude * Math.sign(Math.sin(phase)); break;
+            case 'triangle': y = centerY + amplitude * (2 * Math.abs(2 * ((phase / (2 * Math.PI)) % 1) - 1) - 1); break;
+            case 'sawtooth': y = centerY + amplitude * (2 * ((phase / (2 * Math.PI)) % 1) - 1); break;
           }
-
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
         ctx.stroke();
+        ctx.shadowBlur = 0;
 
-        // Draw particles moving with wave
-        ctx.fillStyle = '#fbbf24';
+        // Enhanced particles with trails
         for (let x = 50; x < width; x += 80) {
           const phase = (x / 100) * (frequency / 100) - time * 3;
           let y = centerY;
-
           switch (waveType) {
-            case 'sine':
-              y = centerY + amplitude * Math.sin(phase);
-              break;
-            case 'square':
-              y = centerY + amplitude * Math.sign(Math.sin(phase));
-              break;
-            case 'triangle':
-              y = centerY + amplitude * (2 * Math.abs(2 * ((phase / (2 * Math.PI)) % 1) - 1) - 1);
-              break;
-            case 'sawtooth':
-              y = centerY + amplitude * (2 * ((phase / (2 * Math.PI)) % 1) - 1);
-              break;
+            case 'sine': y = centerY + amplitude * Math.sin(phase); break;
+            case 'square': y = centerY + amplitude * Math.sign(Math.sin(phase)); break;
+            case 'triangle': y = centerY + amplitude * (2 * Math.abs(2 * ((phase / (2 * Math.PI)) % 1) - 1) - 1); break;
+            case 'sawtooth': y = centerY + amplitude * (2 * ((phase / (2 * Math.PI)) % 1) - 1); break;
           }
 
+          // Particle glow
+          const particleGradient = ctx.createRadialGradient(x, y, 0, x, y, 15);
+          particleGradient.addColorStop(0, '#fbbf24');
+          particleGradient.addColorStop(1, 'rgba(251, 191, 36, 0)');
+          ctx.fillStyle = particleGradient;
           ctx.beginPath();
-          ctx.arc(x, y, 8, 0, 2 * Math.PI);
+          ctx.arc(x, y, 15, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(x, y, 6, 0, 2 * Math.PI);
           ctx.fill();
         }
 
-        // Labels
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`الموجة ${waveType === 'sine' ? 'الجيبية' : waveType === 'square' ? 'المربعة' : waveType === 'triangle' ? 'المثلثية' : 'المنشارية'}`, width / 2, 30);
+        // Wave info display
+        const waveNames: Record<string, string> = {
+          sine: 'الموجة الجيبية',
+          square: 'الموجة المربعة',
+          triangle: 'الموجة المثلثية',
+          sawtooth: 'الموجة المنشارية'
+        };
 
-        // Draw wavelength indicator
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(waveNames[waveType], width / 2, 35);
+
+        // Wavelength indicator with enhanced styling
         const waveWidth = 100 / (frequency / 440);
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         ctx.beginPath();
-        ctx.moveTo(100, centerY - amplitude - 30);
-        ctx.lineTo(100, centerY + amplitude + 30);
-        ctx.moveTo(100 + waveWidth, centerY - amplitude - 30);
-        ctx.lineTo(100 + waveWidth, centerY + amplitude + 30);
+        ctx.moveTo(100, centerY - amplitude - 25);
+        ctx.lineTo(100, centerY + amplitude + 25);
+        ctx.moveTo(100 + waveWidth, centerY - amplitude - 25);
+        ctx.lineTo(100 + waveWidth, centerY + amplitude + 25);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Wavelength arrow
         ctx.beginPath();
-        ctx.moveTo(100, centerY - amplitude - 20);
-        ctx.lineTo(100 + waveWidth, centerY - amplitude - 20);
+        ctx.moveTo(100, centerY - amplitude - 15);
+        ctx.lineTo(100 + waveWidth, centerY - amplitude - 15);
         ctx.stroke();
+
         ctx.fillStyle = '#ef4444';
-        ctx.font = '14px Arial';
-        ctx.fillText('λ', 100 + waveWidth / 2, centerY - amplitude - 35);
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('λ', 100 + waveWidth / 2, centerY - amplitude - 30);
 
       } else if (simulationType === 'doppler') {
-        // Doppler effect simulation
         const sourceX = width / 2 + Math.sin(time) * 200;
         const sourceY = centerY;
 
-        // Draw sound source (ambulance)
+        // Enhanced ambulance
         ctx.fillStyle = '#ef4444';
-        ctx.fillRect(sourceX - 40, sourceY - 20, 80, 40);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('🚑', sourceX, sourceY + 5);
+        ctx.beginPath();
+        ctx.roundRect(sourceX - 45, sourceY - 25, 90, 50, 8);
+        ctx.fill();
 
-        // Draw expanding circles (sound waves)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚑', sourceX, sourceY + 8);
+
+        // Enhanced sound waves
         const velocity = Math.cos(time) * dopplerSpeed;
-        
-        for (let i = 1; i <= 8; i++) {
-          const baseRadius = i * 40 + (time * 50) % 40;
-          
-          // Waves are compressed in front, stretched behind
+        for (let i = 1; i <= 10; i++) {
+          const baseRadius = i * 35 + (time * 50) % 35;
           const frontRadius = baseRadius - velocity * i * 0.5;
           const backRadius = baseRadius + velocity * i * 0.5;
-          
-          const opacity = Math.max(0, 1 - i / 8);
-          
-          // Front waves (compressed - higher frequency)
-          ctx.strokeStyle = `rgba(239, 68, 68, ${opacity})`;
-          ctx.lineWidth = 2;
+          const opacity = Math.max(0, 1 - i / 10);
+
+          ctx.strokeStyle = `rgba(239, 68, 68, ${opacity * 0.6})`;
+          ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.arc(sourceX + velocity * 3, sourceY, Math.max(10, frontRadius), -Math.PI / 2, Math.PI / 2);
           ctx.stroke();
-          
-          // Back waves (stretched - lower frequency)
-          ctx.strokeStyle = `rgba(59, 130, 246, ${opacity})`;
+
+          ctx.strokeStyle = `rgba(59, 130, 246, ${opacity * 0.6})`;
           ctx.beginPath();
           ctx.arc(sourceX - velocity * 3, sourceY, Math.max(10, backRadius), Math.PI / 2, -Math.PI / 2);
           ctx.stroke();
         }
 
-        // Observer
+        // Observer with glow
+        const observerGradient = ctx.createRadialGradient(100, centerY, 0, 100, centerY, 30);
+        observerGradient.addColorStop(0, '#22c55e');
+        observerGradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+        ctx.fillStyle = observerGradient;
+        ctx.beginPath();
+        ctx.arc(100, centerY, 30, 0, 2 * Math.PI);
+        ctx.fill();
+
         ctx.fillStyle = '#22c55e';
         ctx.beginPath();
         ctx.arc(100, centerY, 20, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '20px Arial';
-        ctx.fillText('👤', 100, centerY + 7);
 
-        // Info
-        const observerFreq = frequency * (speedOfSound / (speedOfSound - velocity));
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('تأثير دوبلر', width / 2, 30);
-        ctx.font = '14px Arial';
-        ctx.fillText(`التردد المصدر: ${frequency} Hz`, width / 2, height - 50);
+        ctx.fillText('👤', 100, centerY + 8);
+
+        // Enhanced info display
+        const observerFreq = frequency * (speedOfSound / (speedOfSound - velocity));
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(width / 2 - 150, height - 80, 300, 60);
+        
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('تأثير دوبلر', width / 2, 35);
+        ctx.font = '16px Arial';
+        ctx.fillText(`التردد الأصلي: ${frequency} Hz`, width / 2, height - 55);
+        ctx.fillStyle = velocity > 0 ? '#ef4444' : '#3b82f6';
         ctx.fillText(`التردد المُلاحظ: ${observerFreq.toFixed(0)} Hz`, width / 2, height - 30);
 
       } else if (simulationType === 'interference') {
-        // Wave interference
         const source1X = width / 3;
         const source2X = (2 * width) / 3;
         const sourceY = height / 2;
 
-        // Draw sources
-        ctx.fillStyle = '#ef4444';
+        // Enhanced sources with glow
+        const source1Gradient = ctx.createRadialGradient(source1X, sourceY, 0, source1X, sourceY, 25);
+        source1Gradient.addColorStop(0, '#ef4444');
+        source1Gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = source1Gradient;
         ctx.beginPath();
-        ctx.arc(source1X, sourceY, 15, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = '#3b82f6';
-        ctx.beginPath();
-        ctx.arc(source2X, sourceY, 15, 0, 2 * Math.PI);
+        ctx.arc(source1X, sourceY, 25, 0, 2 * Math.PI);
         ctx.fill();
 
-        // Calculate interference pattern
-        const resolution = 4;
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(source1X, sourceY, 12, 0, 2 * Math.PI);
+        ctx.fill();
+
+        const source2Gradient = ctx.createRadialGradient(source2X, sourceY, 0, source2X, sourceY, 25);
+        source2Gradient.addColorStop(0, '#3b82f6');
+        source2Gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+        ctx.fillStyle = source2Gradient;
+        ctx.beginPath();
+        ctx.arc(source2X, sourceY, 25, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = '#3b82f6';
+        ctx.beginPath();
+        ctx.arc(source2X, sourceY, 12, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Enhanced interference pattern
+        const resolution = 3;
         for (let x = 0; x < width; x += resolution) {
           for (let y = 0; y < height; y += resolution) {
             const d1 = Math.sqrt((x - source1X) ** 2 + (y - sourceY) ** 2);
             const d2 = Math.sqrt((x - source2X) ** 2 + (y - sourceY) ** 2);
-            
             const wave1 = Math.sin(d1 / 20 - time * 3);
             const wave2 = Math.sin(d2 / 20 - time * 3);
             const combined = (wave1 + wave2) / 2;
-            
             const intensity = Math.abs(combined);
-            const hue = combined > 0 ? 120 : 0; // Green for constructive, red for destructive
-            
-            ctx.fillStyle = `hsla(${hue}, 70%, 50%, ${intensity * 0.5})`;
+            const hue = combined > 0 ? 120 : 0;
+            ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${intensity * 0.6})`;
             ctx.fillRect(x, y, resolution, resolution);
           }
         }
 
         // Labels
         ctx.fillStyle = '#e2e8f0';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('تداخل الموجات', width / 2, 30);
-        ctx.font = '12px Arial';
+        ctx.fillText('تداخل الموجات', width / 2, 35);
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, height - 40, width, 40);
+
+        ctx.font = '14px Arial';
         ctx.fillStyle = '#22c55e';
-        ctx.fillText('أخضر: تداخل بنّاء', 100, height - 20);
+        ctx.fillText('🟢 تداخل بنّاء (تعزيز)', 150, height - 15);
         ctx.fillStyle = '#ef4444';
-        ctx.fillText('أحمر: تداخل هدّام', width - 100, height - 20);
+        ctx.fillText('🔴 تداخل هدّام (إلغاء)', width - 150, height - 15);
       }
 
       setTime(prev => prev + 0.016);
@@ -299,11 +344,8 @@ const WavesAndSoundSimulation = () => {
     };
 
     animate();
-
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [isPlaying, frequency, amplitude, waveType, simulationType, dopplerSpeed, time]);
 
@@ -316,198 +358,140 @@ const WavesAndSoundSimulation = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/scientific-simulations')}
-          className="text-white hover:bg-white/10"
-        >
+      <StarField />
+      
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between mb-6"
+      >
+        <Button variant="ghost" onClick={() => navigate('/scientific-simulations')} className="text-white hover:bg-white/10">
           <ArrowLeft className="w-5 h-5 mr-2" />
           العودة
         </Button>
         <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
-          مختبر الموجات والصوت
+          🔊 مختبر الموجات والصوت
         </h1>
         <div className="w-24" />
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Canvas */}
-        <div className="lg:col-span-2">
-          <Card className="bg-slate-800/50 border-blue-500/30 p-4">
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={500}
-              className="w-full rounded-lg bg-slate-900"
-            />
-            
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <Button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              </Button>
+        <div className="lg:col-span-2 space-y-4">
+          <SimulationCard color="blue" delay={0.1}>
+            <canvas ref={canvasRef} width={800} height={450} className="w-full rounded-lg" />
+            <SimulationControls
+              isPlaying={isPlaying}
+              onTogglePlay={() => setIsPlaying(!isPlaying)}
+              onReset={resetSimulation}
+              primaryColor="blue"
+            >
               <Button
                 onClick={toggleSound}
                 className={isSoundPlaying ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}
               >
                 <Volume2 className="w-5 h-5 mr-2" />
-                {isSoundPlaying ? 'إيقاف الصوت' : 'تشغيل الصوت'}
+                {isSoundPlaying ? 'إيقاف' : 'تشغيل'} الصوت
               </Button>
-              <Button
-                onClick={resetSimulation}
-                variant="outline"
-                className="border-blue-500 text-blue-400"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </Button>
-            </div>
-          </Card>
+            </SimulationControls>
+          </SimulationCard>
+
+          <InfoSection
+            title="المعادلات الفيزيائية"
+            icon={Lightbulb}
+            color="green"
+            delay={0.2}
+            items={[
+              { label: 'معادلة الموجة', value: 'v = f × λ' },
+              { label: 'تأثير دوبلر', value: "f' = f × (v ± vo) / (v ∓ vs)" },
+              { label: 'شرط التداخل البناء', value: 'Δx = n × λ' },
+              { label: 'شرط التداخل الهدام', value: 'Δx = (n + 0.5) × λ' }
+            ]}
+            facts={[
+              'سرعة الصوت في الهواء عند 20°C هي 343 م/ث',
+              'الأذن البشرية تسمع ترددات من 20 Hz إلى 20,000 Hz',
+              'الموجات فوق الصوتية تُستخدم في التصوير الطبي'
+            ]}
+          />
         </div>
 
-        {/* Control Panel */}
         <div className="space-y-4">
-          <Card className="bg-slate-800/50 border-blue-500/30 p-4">
-            <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              لوحة التحكم
-            </h3>
-
-            {/* Simulation Type */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-300 mb-2">نوع المحاكاة</label>
-              <Tabs value={simulationType} onValueChange={(v) => setSimulationType(v as any)}>
-                <TabsList className="grid grid-cols-3 bg-slate-700">
-                  <TabsTrigger value="wave" className="text-xs">موجة</TabsTrigger>
-                  <TabsTrigger value="doppler" className="text-xs">دوبلر</TabsTrigger>
-                  <TabsTrigger value="interference" className="text-xs">تداخل</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {simulationType === 'wave' && (
-              <>
-                {/* Wave Type */}
-                <div className="mb-6">
-                  <label className="block text-sm text-slate-300 mb-2">شكل الموجة</label>
-                  <Tabs value={waveType} onValueChange={(v) => setWaveType(v as any)}>
-                    <TabsList className="grid grid-cols-2 bg-slate-700">
-                      <TabsTrigger value="sine" className="text-xs">جيبية</TabsTrigger>
-                      <TabsTrigger value="square" className="text-xs">مربعة</TabsTrigger>
-                    </TabsList>
-                    <TabsList className="grid grid-cols-2 bg-slate-700 mt-1">
-                      <TabsTrigger value="triangle" className="text-xs">مثلثية</TabsTrigger>
-                      <TabsTrigger value="sawtooth" className="text-xs">منشارية</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-
-                {/* Amplitude */}
-                <div className="mb-6">
-                  <label className="block text-sm text-slate-300 mb-2">
-                    السعة: {amplitude} px
-                  </label>
-                  <Slider
-                    value={[amplitude]}
-                    onValueChange={(v) => setAmplitude(v[0])}
-                    min={10}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Frequency */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-300 mb-2">
-                التردد: {frequency} Hz
-              </label>
-              <Slider
-                value={[frequency]}
-                onValueChange={(v) => setFrequency(v[0])}
-                min={100}
-                max={2000}
-                step={10}
-                className="w-full"
-              />
-            </div>
-
-            {simulationType === 'doppler' && (
-              <div className="mb-6">
-                <label className="block text-sm text-slate-300 mb-2">
-                  سرعة المصدر: {dopplerSpeed} m/s
-                </label>
-                <Slider
-                  value={[dopplerSpeed]}
-                  onValueChange={(v) => setDopplerSpeed(v[0])}
-                  min={5}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
+          <SimulationCard title="لوحة التحكم" icon={Settings} color="blue" delay={0.15}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">نوع المحاكاة</label>
+                <Tabs value={simulationType} onValueChange={(v) => setSimulationType(v as any)}>
+                  <TabsList className="grid grid-cols-3 bg-slate-700">
+                    <TabsTrigger value="wave" className="text-xs">موجة</TabsTrigger>
+                    <TabsTrigger value="doppler" className="text-xs">دوبلر</TabsTrigger>
+                    <TabsTrigger value="interference" className="text-xs">تداخل</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
-            )}
-          </Card>
 
-          {/* Info Card */}
-          <Card className="bg-slate-800/50 border-green-500/30 p-4">
-            <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
-              <Waves className="w-5 h-5" />
-              المعلومات
-            </h3>
-            
+              {simulationType === 'wave' && (
+                <>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-2">شكل الموجة</label>
+                    <Tabs value={waveType} onValueChange={(v) => setWaveType(v as any)}>
+                      <TabsList className="grid grid-cols-2 bg-slate-700">
+                        <TabsTrigger value="sine" className="text-xs">جيبية</TabsTrigger>
+                        <TabsTrigger value="square" className="text-xs">مربعة</TabsTrigger>
+                      </TabsList>
+                      <TabsList className="grid grid-cols-2 bg-slate-700 mt-1">
+                        <TabsTrigger value="triangle" className="text-xs">مثلثية</TabsTrigger>
+                        <TabsTrigger value="sawtooth" className="text-xs">منشارية</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-2">السعة: {amplitude} px</label>
+                    <Slider value={[amplitude]} onValueChange={(v) => setAmplitude(v[0])} min={10} max={100} step={1} />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">التردد: {frequency} Hz</label>
+                <Slider value={[frequency]} onValueChange={(v) => setFrequency(v[0])} min={100} max={2000} step={10} />
+              </div>
+
+              {simulationType === 'doppler' && (
+                <div>
+                  <label className="block text-sm text-slate-300 mb-2">سرعة المصدر: {dopplerSpeed} m/s</label>
+                  <Slider value={[dopplerSpeed]} onValueChange={(v) => setDopplerSpeed(v[0])} min={5} max={100} step={1} />
+                </div>
+              )}
+            </div>
+          </SimulationCard>
+
+          <SimulationCard title="القياسات" icon={Waves} color="green" delay={0.2}>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
+              <div className="flex justify-between p-2 bg-slate-700/50 rounded">
                 <span className="text-slate-400">التردد:</span>
-                <span className="text-green-300">{frequency} Hz</span>
+                <span className="text-green-300 font-bold">{frequency} Hz</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between p-2 bg-slate-700/50 rounded">
                 <span className="text-slate-400">الطول الموجي:</span>
-                <span className="text-blue-300">{wavelength.toFixed(3)} m</span>
+                <span className="text-blue-300 font-bold">{wavelength.toFixed(3)} m</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between p-2 bg-slate-700/50 rounded">
                 <span className="text-slate-400">سرعة الصوت:</span>
-                <span className="text-yellow-300">{speedOfSound} m/s</span>
+                <span className="text-purple-300 font-bold">{speedOfSound} m/s</span>
+              </div>
+              <div className="flex justify-between p-2 bg-slate-700/50 rounded">
+                <span className="text-slate-400">الدورة:</span>
+                <span className="text-yellow-300 font-bold">{(1000 / frequency).toFixed(2)} ms</span>
               </div>
             </div>
+          </SimulationCard>
 
-            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {simulationType === 'wave' && 
-                  'الموجات الصوتية هي اهتزازات ميكانيكية تنتشر في الوسط. تتميز بالتردد والسعة والطول الموجي.'}
-                {simulationType === 'doppler' && 
-                  'تأثير دوبلر: يتغير التردد المُلاحظ عندما يتحرك المصدر أو المراقب. يُضغط أمام المصدر ويتمدد خلفه.'}
-                {simulationType === 'interference' && 
-                  'تداخل الموجات: عندما تلتقي موجتان، تتجمعان (تداخل بنّاء) أو تتلاشيان (تداخل هدّام).'}
-              </p>
-            </div>
-          </Card>
-
-          {/* Formulas */}
-          <Card className="bg-slate-800/50 border-purple-500/30 p-4">
-            <h3 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
-              <Radio className="w-5 h-5" />
-              القوانين
-            </h3>
-            
-            <div className="space-y-2 text-sm font-mono">
-              <div className="p-2 bg-slate-700/50 rounded text-center">
-                v = f × λ
-              </div>
-              <div className="p-2 bg-slate-700/50 rounded text-center">
-                f' = f × (v ± v₀) / (v ∓ vₛ)
-              </div>
-              <div className="p-2 bg-slate-700/50 rounded text-center">
-                y = A × sin(2πft)
-              </div>
-            </div>
-          </Card>
+          <QuizSection
+            title="اختبر معلوماتك"
+            icon={HelpCircle}
+            color="yellow"
+            questions={quizQuestions}
+            delay={0.25}
+          />
         </div>
       </div>
     </div>
