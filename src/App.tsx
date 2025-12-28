@@ -140,6 +140,7 @@ import ProtectedArabicLanguagePlatform from './pages/ProtectedArabicLanguagePlat
 import AIPlatformBuilder from './pages/AIPlatformBuilder';
 import PublishedProject from './pages/PublishedProject';
 import TenantSettings from './pages/TenantSettings';
+import PlatformDocumentation from './pages/PlatformDocumentation';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -714,6 +715,10 @@ const router = createBrowserRouter([
       {
         path: 'tenant-settings',
         element: <AuthGuard><TenantSettings /></AuthGuard>,
+      },
+      {
+        path: 'platform-documentation',
+        element: <PublicRoute><PlatformDocumentation /></PublicRoute>,
       },
       {
         path: 'published/:slug',
