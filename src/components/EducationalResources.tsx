@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
@@ -51,6 +51,13 @@ const EducationalResources = () => {
       description: "دروس مسجلة من المعلمين يمكن مشاهدتها في أي وقت",
       link: '/recorded-lessons',
       gradient: 'from-indigo-500 to-purple-500'
+    },
+    {
+      title: "📄 توثيق المنصة",
+      icon: FileText,
+      description: "دليل شامل لجميع ميزات وأدوات المنصة",
+      link: '/platform-documentation',
+      gradient: 'from-slate-500 to-gray-600'
     },
   ];
 
