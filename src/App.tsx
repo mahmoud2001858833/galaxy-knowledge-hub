@@ -141,6 +141,7 @@ import AIPlatformBuilder from './pages/AIPlatformBuilder';
 import PublishedProject from './pages/PublishedProject';
 import TenantSettings from './pages/TenantSettings';
 import PlatformDocumentation from './pages/PlatformDocumentation';
+import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
@@ -405,6 +406,10 @@ const router = createBrowserRouter([
       {
         path: 'study-organization',
         element: <AuthGuard><StudyOrganization /></AuthGuard>,
+      },
+      {
+        path: 'spaced-repetition',
+        element: <PublicRoute><SpacedRepetitionSystem /></PublicRoute>,
       },
       {
         path: 'chat-rooms',
