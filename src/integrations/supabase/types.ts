@@ -2137,6 +2137,122 @@ export type Database = {
         }
         Relationships: []
       }
+      spaced_lessons: {
+        Row: {
+          created_at: string | null
+          current_review_index: number | null
+          difficulty: string
+          first_study_date: string
+          id: string
+          is_completed: boolean | null
+          lesson_name: string
+          study_duration: number | null
+          subject_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_review_index?: number | null
+          difficulty?: string
+          first_study_date: string
+          id?: string
+          is_completed?: boolean | null
+          lesson_name: string
+          study_duration?: number | null
+          subject_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_review_index?: number | null
+          difficulty?: string
+          first_study_date?: string
+          id?: string
+          is_completed?: boolean | null
+          lesson_name?: string
+          study_duration?: number | null
+          subject_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      spaced_reviews: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          lesson_id: string
+          memory_retention: number | null
+          review_number: number
+          scheduled_date: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          lesson_id: string
+          memory_retention?: number | null
+          review_number: number
+          scheduled_date: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          lesson_id?: string
+          memory_retention?: number | null
+          review_number?: number
+          scheduled_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spaced_reviews_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "spaced_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spaced_stats: {
+        Row: {
+          completed_reviews: number | null
+          created_at: string | null
+          date: string
+          id: string
+          streak_days: number | null
+          total_study_minutes: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_reviews?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          streak_days?: number | null
+          total_study_minutes?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_reviews?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          streak_days?: number | null
+          total_study_minutes?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_assistant_usage: {
         Row: {
           answer: string | null
