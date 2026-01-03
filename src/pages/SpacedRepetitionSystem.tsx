@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Calendar, BarChart3, Target, BookOpen, ArrowRight, Sparkles } from 'lucide-react';
+import { Brain, Calendar, BarChart3, Target, BookOpen, ArrowRight, Sparkles, CalendarDays, Flame } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,9 @@ import ReviewScheduleTable from '@/components/spacedRepetition/ReviewScheduleTab
 import ForgettingCurveChart from '@/components/spacedRepetition/ForgettingCurveChart';
 import TodaysTasks from '@/components/spacedRepetition/TodaysTasks';
 import ProgressAnalytics from '@/components/spacedRepetition/ProgressAnalytics';
+import CalendarScheduleView from '@/components/spacedRepetition/CalendarScheduleView';
+import NotificationSystem from '@/components/spacedRepetition/NotificationSystem';
+import ExportSchedule from '@/components/spacedRepetition/ExportSchedule';
 import { useSpacedRepetition } from '@/hooks/useSpacedRepetition';
 
 const SpacedRepetitionSystem = () => {
@@ -65,17 +68,34 @@ const SpacedRepetitionSystem = () => {
                 </div>
               </div>
             </div>
-            
-            {!user && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl"
-              >
-                <Sparkles className="h-4 w-4 text-amber-400" />
-                <span className="text-amber-400 text-sm">سجّل دخولك لحفظ بياناتك بشكل دائم</span>
-              </motion.div>
-            )}
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Streak Badge */}
+              {streak > 0 && (
+                <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 px-4 py-2 rounded-full border border-orange-500/30">
+                  <Flame className="h-5 w-5 text-orange-400" />
+                  <span className="text-white font-bold">{streak}</span>
+                  <span className="text-orange-400 text-sm">يوم</span>
+                </div>
+              )}
+
+              {/* Notification System */}
+              <NotificationSystem reviews={reviews} lessons={lessons} />
+
+              {/* Export Button */}
+              <ExportSchedule reviews={reviews} lessons={lessons} />
+
+              {!user && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl"
+                >
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  <span className="text-amber-400 text-sm">سجّل دخولك لحفظ بياناتك</span>
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         </div>
       </header>
@@ -99,11 +119,18 @@ const SpacedRepetitionSystem = () => {
               إضافة درس
             </TabsTrigger>
             <TabsTrigger
+              value="calendar"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+            >
+              <CalendarDays className="h-4 w-4 ml-2" />
+              التقويم
+            </TabsTrigger>
+            <TabsTrigger
               value="schedule"
               className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 px-4 py-2 rounded-lg transition-all whitespace-nowrap"
             >
               <Calendar className="h-4 w-4 ml-2" />
-              جدول المراجعة
+              الجدول
             </TabsTrigger>
             <TabsTrigger
               value="curve"
@@ -136,6 +163,15 @@ const SpacedRepetitionSystem = () => {
             <div className="max-w-2xl mx-auto">
               <LessonInputForm onSubmit={addLesson} />
             </div>
+          </TabsContent>
+
+          {/* Calendar View */}
+          <TabsContent value="calendar" className="mt-6">
+            <CalendarScheduleView
+              reviews={reviews}
+              lessons={lessons}
+              onComplete={completeReview}
+            />
           </TabsContent>
 
           {/* Review Schedule */}
