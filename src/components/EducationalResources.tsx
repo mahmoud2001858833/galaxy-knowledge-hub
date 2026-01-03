@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
@@ -10,6 +10,13 @@ const EducationalResources = () => {
   const { t, dir } = useLanguage();
   
   const resources = [
+    {
+      title: '🧠 نظام المراجعة الذكي',
+      icon: Brain,
+      description: 'جدول مراجعة علمي يعتمد على منحنى النسيان',
+      link: '/spaced-repetition',
+      gradient: 'from-indigo-500 to-violet-500'
+    },
     {
       title: t.resources.studyOrganizer,
       icon: CalendarDays,
