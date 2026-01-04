@@ -2137,6 +2137,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sign_language_dictionary: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          sign_gif_url: string | null
+          sign_image_url: string | null
+          sign_video_url: string | null
+          word_arabic: string
+          word_english: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          sign_gif_url?: string | null
+          sign_image_url?: string | null
+          sign_video_url?: string | null
+          word_arabic: string
+          word_english?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          sign_gif_url?: string | null
+          sign_image_url?: string | null
+          sign_video_url?: string | null
+          word_arabic?: string
+          word_english?: string | null
+        }
+        Relationships: []
+      }
       spaced_lessons: {
         Row: {
           created_at: string | null
@@ -2661,6 +2697,57 @@ export type Database = {
           settings?: Json | null
           slug?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_accessibility_settings: {
+        Row: {
+          accessibility_mode: string | null
+          created_at: string | null
+          font_size: string | null
+          high_contrast: boolean | null
+          id: string
+          preferred_voice: string | null
+          reading_speed: number | null
+          reduce_motion: boolean | null
+          screen_reader: boolean | null
+          sign_language: boolean | null
+          text_to_speech: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          voice_input: boolean | null
+        }
+        Insert: {
+          accessibility_mode?: string | null
+          created_at?: string | null
+          font_size?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          preferred_voice?: string | null
+          reading_speed?: number | null
+          reduce_motion?: boolean | null
+          screen_reader?: boolean | null
+          sign_language?: boolean | null
+          text_to_speech?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          voice_input?: boolean | null
+        }
+        Update: {
+          accessibility_mode?: string | null
+          created_at?: string | null
+          font_size?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          preferred_voice?: string | null
+          reading_speed?: number | null
+          reduce_motion?: boolean | null
+          screen_reader?: boolean | null
+          sign_language?: boolean | null
+          text_to_speech?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          voice_input?: boolean | null
         }
         Relationships: []
       }

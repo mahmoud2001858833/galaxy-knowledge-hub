@@ -7,6 +7,8 @@ import {
   useLocation,
   Outlet,
 } from "react-router-dom";
+import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
+import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPanel';
 import StudyScheduleCreator from './pages/StudyScheduleCreator';
 import StudentProgress from './pages/StudentProgress';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,13 +146,14 @@ import PlatformDocumentation from './pages/PlatformDocumentation';
 import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
 import './App.css';
 
-// Root layout component that includes the PlatformGuideAssistant and WelcomeGuide
+// Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
 const RootLayout = () => {
   return (
     <>
       <Outlet />
       <WelcomeGuide />
       <PlatformGuideAssistant />
+      <AccessibilityPanel />
     </>
   );
 };
@@ -738,7 +741,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AccessibilityProvider>
+      <RouterProvider router={router} />
+    </AccessibilityProvider>
+  );
 }
 
 export default App;

@@ -152,3 +152,21 @@ verify_jwt = false
 
 [functions.builder-api]
 verify_jwt = false
+
+[functions.universal-speech-to-text]
+verify_jwt = false
+
+[functions.accessibility-text-to-speech]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.enhanced-text-to-speech]
+verify_jwt = false
+
+[functions.speech-analysis]
+verify_jwt = false
+
+[functions.enhanced-speech-analysis]
+verify_jwt = false

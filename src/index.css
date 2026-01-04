@@ -322,3 +322,101 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(20, 184, 166, 0.2);
 }
+
+/* ==================== إعدادات الوصول الشامل ==================== */
+
+/* التباين العالي */
+.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --primary: 60 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --border: 0 0% 100%;
+}
+
+.high-contrast * {
+  border-color: hsl(0 0% 100% / 0.5) !important;
+}
+
+.high-contrast button,
+.high-contrast a {
+  outline: 2px solid hsl(60 100% 50%) !important;
+  outline-offset: 2px;
+}
+
+/* تقليل الحركة */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* أحجام الخطوط للوصول */
+[data-accessibility-mode="visual"] {
+  font-size: var(--base-font-size, 18px);
+}
+
+[data-accessibility-mode="cognitive"] {
+  --base-font-size: 18px;
+}
+
+[data-accessibility-mode="cognitive"] .prose {
+  line-height: 2;
+  letter-spacing: 0.02em;
+}
+
+/* وضع صعوبات حركية - أزرار أكبر */
+[data-accessibility-mode="motor"] button,
+[data-accessibility-mode="motor"] .btn {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 12px 24px;
+}
+
+[data-accessibility-mode="motor"] input,
+[data-accessibility-mode="motor"] textarea {
+  min-height: 48px;
+  font-size: 18px;
+}
+
+/* تركيز واضح للعناصر */
+*:focus-visible {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* تحسين قابلية القراءة */
+.accessibility-readable {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
+/* مؤشر التسجيل الصوتي */
+@keyframes pulse-recording {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.recording-indicator {
+  animation: pulse-recording 1s ease-in-out infinite;
+}
+
+/* تظليل الكلمة المقروءة */
+.word-highlight {
+  background: linear-gradient(120deg, hsl(var(--primary) / 0.3) 0%, hsl(var(--primary) / 0.3) 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
