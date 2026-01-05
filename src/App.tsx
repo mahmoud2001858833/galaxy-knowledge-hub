@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
 import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPanel';
+import { AutoReadWrapper } from '@/components/accessibility/AutoReadWrapper';
 import StudyScheduleCreator from './pages/StudyScheduleCreator';
 import StudentProgress from './pages/StudentProgress';
 import { supabase } from '@/integrations/supabase/client';
@@ -149,12 +150,12 @@ import './App.css';
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
 const RootLayout = () => {
   return (
-    <>
+    <AutoReadWrapper>
       <Outlet />
       <WelcomeGuide />
       <PlatformGuideAssistant />
       <AccessibilityPanel />
-    </>
+    </AutoReadWrapper>
   );
 };
 

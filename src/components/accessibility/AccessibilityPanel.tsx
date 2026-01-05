@@ -155,27 +155,37 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ classNam
           {/* التبديلات */}
           <div className="space-y-4">
             {/* قراءة النص */}
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2 cursor-pointer">
-                <Volume2 className="h-4 w-4" />
-                قراءة النص تلقائياً
-              </Label>
-              <Switch
-                checked={settings.textToSpeech}
-                onCheckedChange={(checked) => updateSettings({ textToSpeech: checked })}
-              />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 cursor-pointer">
+                  <Volume2 className="h-4 w-4" />
+                  قراءة النص تلقائياً
+                </Label>
+                <Switch
+                  checked={settings.textToSpeech}
+                  onCheckedChange={(checked) => updateSettings({ textToSpeech: checked })}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                عند التفعيل: مرر الماوس على أي كلمة لسماع نطقها
+              </p>
             </div>
 
             {/* الإدخال الصوتي */}
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2 cursor-pointer">
-                <Mic className="h-4 w-4" />
-                الإدخال الصوتي
-              </Label>
-              <Switch
-                checked={settings.voiceInput}
-                onCheckedChange={(checked) => updateSettings({ voiceInput: checked })}
-              />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 cursor-pointer">
+                  <Mic className="h-4 w-4" />
+                  الإدخال الصوتي
+                </Label>
+                <Switch
+                  checked={settings.voiceInput}
+                  onCheckedChange={(checked) => updateSettings({ voiceInput: checked })}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                عند التفعيل: يظهر زر 🎤 في جميع المساعدات الذكية
+              </p>
             </div>
 
             {/* لغة الإشارة */}

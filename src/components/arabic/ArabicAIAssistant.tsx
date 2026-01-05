@@ -1,8 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 
 interface Message {
   id: string;
@@ -12,6 +14,7 @@ interface Message {
 }
 
 const ArabicAIAssistant = () => {
+  const { settings, speakText, stopSpeaking, isSpeaking } = useAccessibility();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -22,6 +25,7 @@ const ArabicAIAssistant = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -31,6 +35,27 @@ const ArabicAIAssistant = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // قراءة رد المساعد تلقائياً
+  useEffect(() => {
+    if (settings.textToSpeech && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (!lastMessage.isUser) {
+        speakText(lastMessage.content);
+        setSpeakingMessageId(lastMessage.id);
+      }
+    }
+  }, [messages]);
+
+  const handleSpeak = (message: Message) => {
+    if (speakingMessageId === message.id) {
+      stopSpeaking();
+      setSpeakingMessageId(null);
+    } else {
+      speakText(message.content);
+      setSpeakingMessageId(message.id);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -82,6 +107,10 @@ const ArabicAIAssistant = () => {
     }
   };
 
+  const handleVoiceTranscript = (text: string) => {
+    setInput(prev => prev + (prev ? ' ' : '') + text);
+  };
+
   return (
     <div className="flex flex-col h-[600px] bg-gradient-to-b from-amber-900/20 to-amber-950/20 rounded-xl border border-amber-500/30">
       {/* Header */}
@@ -118,9 +147,24 @@ const ArabicAIAssistant = () => {
               }`}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
-              <p className="text-xs text-white/50 mt-1">
-                {message.timestamp.toLocaleTimeString('ar-SA')}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-white/50">
+                  {message.timestamp.toLocaleTimeString('ar-SA')}
+                </p>
+                {!message.isUser && settings.textToSpeech && (
+                  <button
+                    onClick={() => handleSpeak(message)}
+                    className="text-amber-300 hover:text-amber-200 transition-colors p-1"
+                    title={speakingMessageId === message.id ? "إيقاف القراءة" : "قراءة النص"}
+                  >
+                    {speakingMessageId === message.id && isSpeaking ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
 
             {message.isUser && (
@@ -153,7 +197,7 @@ const ArabicAIAssistant = () => {
 
       {/* Input */}
       <div className="p-4 border-t border-amber-500/20">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -163,10 +207,18 @@ const ArabicAIAssistant = () => {
             rows={1}
             disabled={isLoading}
           />
+          
+          {/* زر الميكروفون - يظهر فقط عند تفعيل الإدخال الصوتي */}
+          <GlobalVoiceInput 
+            onTranscript={handleVoiceTranscript}
+            disabled={isLoading}
+            size="md"
+          />
+          
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="px-4 py-2 bg-amber-600/30 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-amber-600/30 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-10"
           >
             <Send className="w-5 h-5" />
           </button>
