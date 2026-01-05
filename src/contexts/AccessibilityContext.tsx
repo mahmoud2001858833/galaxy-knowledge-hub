@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AccessibilityMode = 'standard' | 'visual' | 'hearing' | 'motor' | 'cognitive';
@@ -23,6 +23,9 @@ interface AccessibilityContextType {
   updateSettings: (newSettings: Partial<AccessibilitySettings>) => void;
   resetSettings: () => void;
   isLoading: boolean;
+  speakText: (text: string) => void;
+  stopSpeaking: () => void;
+  isSpeaking: boolean;
 }
 
 const defaultSettings: AccessibilitySettings = {
@@ -45,6 +48,7 @@ const STORAGE_KEY = 'accessibility_settings';
 export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AccessibilitySettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // تحميل الإعدادات عند بدء التطبيق
   useEffect(() => {
@@ -166,8 +170,50 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
     saveSettings(defaultSettings);
   };
 
+  // وظيفة قراءة النص العالمية
+  const speakText = useCallback((text: string) => {
+    if (!text || !settings.textToSpeech) return;
+
+    speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    const voices = speechSynthesis.getVoices();
+    const isArabic = settings.preferredVoice.includes('-ar');
+    const voice = voices.find(v => 
+      isArabic ? v.lang.startsWith('ar') : v.lang.startsWith('en')
+    ) || voices[0];
+    
+    if (voice) {
+      utterance.voice = voice;
+    }
+
+    utterance.rate = settings.readingSpeed;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    speechSynthesis.speak(utterance);
+  }, [settings.textToSpeech, settings.readingSpeed, settings.preferredVoice]);
+
+  const stopSpeaking = useCallback(() => {
+    speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, []);
+
   return (
-    <AccessibilityContext.Provider value={{ settings, updateSettings, resetSettings, isLoading }}>
+    <AccessibilityContext.Provider value={{ 
+      settings, 
+      updateSettings, 
+      resetSettings, 
+      isLoading,
+      speakText,
+      stopSpeaking,
+      isSpeaking,
+    }}>
       {children}
     </AccessibilityContext.Provider>
   );
