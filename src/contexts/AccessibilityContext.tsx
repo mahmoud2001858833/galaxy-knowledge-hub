@@ -34,9 +34,9 @@ const defaultSettings: AccessibilitySettings = {
   highContrast: false,
   reduceMotion: false,
   screenReader: false,
-  voiceInput: true,
+  voiceInput: false,
   signLanguage: false,
-  textToSpeech: true,
+  textToSpeech: false,
   readingSpeed: 1.0,
   preferredVoice: 'female-ar',
 };
@@ -170,7 +170,7 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
     saveSettings(defaultSettings);
   };
 
-  // وظيفة قراءة النص العالمية
+  // وظيفة قراءة النص العالمية مع دعم الصوت الأنثوي
   const speakText = useCallback((text: string) => {
     if (!text || !settings.textToSpeech) return;
 
@@ -180,16 +180,35 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
     
     const voices = speechSynthesis.getVoices();
     const isArabic = settings.preferredVoice.includes('-ar');
-    const voice = voices.find(v => 
-      isArabic ? v.lang.startsWith('ar') : v.lang.startsWith('en')
-    ) || voices[0];
+    const isFemale = settings.preferredVoice.includes('female');
+    
+    // قائمة أسماء الأصوات النسائية الشائعة
+    const femaleVoiceNames = ['female', 'woman', 'samira', 'mariam', 'laila', 'hoda', 'maged', 'majida', 'amira', 'fatima', 'zira', 'hedda', 'sabina', 'paulina'];
+    const maleVoiceNames = ['male', 'man', 'maged', 'tarik', 'omar', 'david', 'mark', 'james'];
+    
+    // البحث عن الصوت المناسب
+    const voice = voices.find(v => {
+      const matchesLang = isArabic ? v.lang.startsWith('ar') : v.lang.startsWith('en');
+      if (!matchesLang) return false;
+      
+      const voiceNameLower = v.name.toLowerCase();
+      if (isFemale) {
+        // البحث عن صوت أنثوي
+        return femaleVoiceNames.some(name => voiceNameLower.includes(name)) ||
+               (!maleVoiceNames.some(name => voiceNameLower.includes(name)));
+      } else {
+        // البحث عن صوت ذكوري
+        return maleVoiceNames.some(name => voiceNameLower.includes(name));
+      }
+    }) || voices.find(v => isArabic ? v.lang.startsWith('ar') : v.lang.startsWith('en')) || voices[0];
     
     if (voice) {
       utterance.voice = voice;
+      console.log('Selected voice:', voice.name, 'Lang:', voice.lang);
     }
 
     utterance.rate = settings.readingSpeed;
-    utterance.pitch = 1;
+    utterance.pitch = isFemale ? 1.1 : 0.9; // نغمة أعلى قليلاً للصوت الأنثوي
     utterance.volume = 1;
 
     utterance.onstart = () => setIsSpeaking(true);

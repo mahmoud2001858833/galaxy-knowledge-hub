@@ -29,6 +29,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import SignLanguageGuide from './SignLanguageGuide';
 
 interface AccessibilityPanelProps {
   className?: string;
@@ -37,6 +38,7 @@ interface AccessibilityPanelProps {
 export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ className }) => {
   const { settings, updateSettings, resetSettings } = useAccessibility();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSignLanguageGuide, setShowSignLanguageGuide] = useState(false);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -189,15 +191,33 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ classNam
             </div>
 
             {/* لغة الإشارة */}
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2 cursor-pointer">
-                <Hand className="h-4 w-4" />
-                لغة الإشارة
-              </Label>
-              <Switch
-                checked={settings.signLanguage}
-                onCheckedChange={(checked) => updateSettings({ signLanguage: checked })}
-              />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 cursor-pointer">
+                  <Hand className="h-4 w-4" />
+                  لغة الإشارة
+                </Label>
+                <Switch
+                  checked={settings.signLanguage}
+                  onCheckedChange={(checked) => {
+                    updateSettings({ signLanguage: checked });
+                    if (checked) {
+                      setShowSignLanguageGuide(true);
+                    }
+                  }}
+                />
+              </div>
+              {settings.signLanguage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => setShowSignLanguageGuide(true)}
+                >
+                  <Hand className="h-3 w-3 ml-1" />
+                  عرض دليل لغة الإشارة
+                </Button>
+              )}
             </div>
 
             {/* التباين العالي */}
@@ -237,6 +257,12 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ classNam
           </Button>
         </div>
       </SheetContent>
+
+      {/* دليل لغة الإشارة */}
+      <SignLanguageGuide 
+        isOpen={showSignLanguageGuide} 
+        onClose={() => setShowSignLanguageGuide(false)} 
+      />
     </Sheet>
   );
 };
