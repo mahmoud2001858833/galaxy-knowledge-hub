@@ -170,3 +170,6 @@ verify_jwt = false
 
 [functions.enhanced-speech-analysis]
 verify_jwt = false
+
+[functions.ai-image-generator]
+verify_jwt = false

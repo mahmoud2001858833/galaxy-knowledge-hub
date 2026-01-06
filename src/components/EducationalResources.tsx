@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
@@ -10,6 +10,13 @@ const EducationalResources = () => {
   const { t, dir } = useLanguage();
   
   const resources = [
+    {
+      title: '🎨 إنشاء الصور التعليمية',
+      icon: Sparkles,
+      description: 'أنشئ صوراً تعليمية احترافية بالذكاء الاصطناعي',
+      link: '/ai-image-generator',
+      gradient: 'from-pink-500 to-rose-500'
+    },
     {
       title: '🧠 نظام المراجعة الذكي',
       icon: Brain,

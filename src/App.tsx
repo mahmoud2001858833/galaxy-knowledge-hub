@@ -145,6 +145,7 @@ import PublishedProject from './pages/PublishedProject';
 import TenantSettings from './pages/TenantSettings';
 import PlatformDocumentation from './pages/PlatformDocumentation';
 import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
+import AIImageGenerator from './pages/AIImageGenerator';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -414,6 +415,10 @@ const router = createBrowserRouter([
       {
         path: 'spaced-repetition',
         element: <PublicRoute><SpacedRepetitionSystem /></PublicRoute>,
+      },
+      {
+        path: 'ai-image-generator',
+        element: <PublicRoute><AIImageGenerator /></PublicRoute>,
       },
       {
         path: 'chat-rooms',
