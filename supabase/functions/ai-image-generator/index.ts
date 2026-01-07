@@ -13,15 +13,12 @@ serve(async (req) => {
   try {
     const { prompt, action, imageBase64, style, subject, gradeLevel } = await req.json();
 
-    const API_KEY = Deno.env.get('IMAGE_GENERATOR_API_KEY');
-    if (!API_KEY) {
-      throw new Error('IMAGE_GENERATOR_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // بناء البرومبت المحسن للصور التعليمية
-    let enhancedPrompt = prompt;
-    
-    // إضافة تعليمات لعدم وجود نص على الصورة
     const noTextInstruction = "IMPORTANT: Do not include any text, labels, words, letters, numbers, or writing on the image. The image should be purely visual without any textual elements.";
     
     // إضافة السياق التعليمي
@@ -56,115 +53,106 @@ serve(async (req) => {
     }
 
     // تجميع البرومبت النهائي
-    enhancedPrompt = `${noTextInstruction}\n\nCreate a ${educationalContext} ${styleContext}: ${prompt}`;
+    const enhancedPrompt = `${noTextInstruction}\n\nCreate a ${educationalContext} ${styleContext}: ${prompt}. Ultra high resolution, professional quality.`;
+
+    console.log('Calling Lovable AI Gateway for image generation...');
+    console.log('Enhanced prompt:', enhancedPrompt);
 
     let requestBody: any;
-    let endpoint: string;
 
     if (action === 'edit' && imageBase64) {
       // تعديل صورة موجودة
-      endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
       requestBody = {
-        contents: [{
-          parts: [
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [{
+          role: "user",
+          content: [
             {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: imageBase64.replace(/^data:image\/\w+;base64,/, '')
-              }
+              type: "text",
+              text: `Edit this image based on the following instructions. ${noTextInstruction}\n\nEdit instructions: ${prompt}`
             },
             {
-              text: `Edit this image based on the following instructions. ${noTextInstruction}\n\nEdit instructions: ${prompt}`
+              type: "image_url",
+              image_url: {
+                url: imageBase64
+              }
             }
           ]
         }],
-        generationConfig: {
-          responseModalities: ["image", "text"],
-          responseMimeType: "text/plain"
-        }
+        modalities: ["image", "text"]
       };
     } else {
       // إنشاء صورة جديدة
-      endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
       requestBody = {
-        contents: [{
-          parts: [{
-            text: enhancedPrompt
-          }]
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [{
+          role: "user",
+          content: enhancedPrompt
         }],
-        generationConfig: {
-          responseModalities: ["image", "text"],
-          responseMimeType: "text/plain"
-        }
+        modalities: ["image", "text"]
       };
     }
 
-    console.log('Calling Gemini API for image generation...');
-    console.log('Enhanced prompt:', enhancedPrompt);
-
-    const response = await fetch(endpoint, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'يرجى إضافة رصيد لحسابك' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      console.error('Lovable AI Gateway error:', response.status, errorText);
+      throw new Error(`AI Gateway error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('Gemini API response received');
+    console.log('Lovable AI Gateway response received');
 
     // استخراج الصورة من الرد
     let imageData = null;
     let textResponse = null;
 
-    if (result.candidates && result.candidates[0]?.content?.parts) {
-      for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-          imageData = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        }
-        if (part.text) {
-          textResponse = part.text;
-        }
+    if (result.choices && result.choices[0]?.message) {
+      const message = result.choices[0].message;
+      
+      // استخراج النص
+      if (message.content) {
+        textResponse = message.content;
+      }
+      
+      // استخراج الصورة
+      if (message.images && message.images[0]?.image_url?.url) {
+        imageData = message.images[0].image_url.url;
       }
     }
 
     if (!imageData) {
-      // إذا لم تنجح الطريقة الأولى، جرب Imagen
-      console.log('Trying alternative image generation...');
-      
-      const imagenEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
-      const imagenBody = {
-        instances: [{
-          prompt: enhancedPrompt
-        }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: "1:1",
-          safetyFilterLevel: "BLOCK_MEDIUM_AND_ABOVE",
-          personGeneration: "ALLOW_ADULT"
+      console.error('No image data in response:', JSON.stringify(result));
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'لم يتم إنشاء الصورة. جرب وصفاً مختلفاً.'
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      };
-
-      const imagenResponse = await fetch(imagenEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(imagenBody),
-      });
-
-      if (imagenResponse.ok) {
-        const imagenResult = await imagenResponse.json();
-        if (imagenResult.predictions && imagenResult.predictions[0]?.bytesBase64Encoded) {
-          imageData = `data:image/png;base64,${imagenResult.predictions[0].bytesBase64Encoded}`;
-        }
-      }
+      );
     }
 
     return new Response(
@@ -184,7 +172,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: error instanceof Error ? error.message : 'حدث خطأ غير معروف'
       }),
       { 
         status: 500,

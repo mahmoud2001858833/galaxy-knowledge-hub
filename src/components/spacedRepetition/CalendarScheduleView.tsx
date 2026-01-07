@@ -36,17 +36,20 @@ const CalendarScheduleView: React.FC<CalendarScheduleViewProps> = ({
 
   const weekDays = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 
-  const calendarDays = useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
+  // الشهر الثاني
+  const secondMonth = addMonths(currentMonth, 1);
+
+  const getCalendarDays = (month: Date) => {
+    const start = startOfMonth(month);
+    const end = endOfMonth(month);
     const days = eachDayOfInterval({ start, end });
-    
-    // Add padding for the first week
     const firstDayOfWeek = getDay(start);
     const paddingDays = Array(firstDayOfWeek).fill(null);
-    
     return [...paddingDays, ...days];
-  }, [currentMonth]);
+  };
+
+  const calendarDaysFirst = useMemo(() => getCalendarDays(currentMonth), [currentMonth]);
+  const calendarDaysSecond = useMemo(() => getCalendarDays(secondMonth), [secondMonth]);
 
   const getReviewsForDay = (date: Date) => {
     return reviews.filter(r => isSameDay(new Date(r.scheduled_date), date));
@@ -89,6 +92,69 @@ const CalendarScheduleView: React.FC<CalendarScheduleViewProps> = ({
 
   const selectedDayReviews = selectedDate ? getReviewsForDay(selectedDate) : [];
 
+  const renderCalendarGrid = (days: (Date | null)[], monthDate: Date) => (
+    <div className="flex-1">
+      {/* عنوان الشهر */}
+      <div className="text-center mb-3">
+        <span className="text-white font-medium text-lg">
+          {format(monthDate, 'MMMM yyyy', { locale: ar })}
+        </span>
+      </div>
+
+      {/* أيام الأسبوع */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays.map((day) => (
+          <div key={`${monthDate.toISOString()}-${day}`} className="text-center text-slate-400 text-xs py-1 font-medium">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* شبكة التقويم */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, index) => {
+          if (!day) {
+            return <div key={`empty-${monthDate.toISOString()}-${index}`} className="aspect-square" />;
+          }
+
+          const status = getDayStatus(day);
+          const dayReviews = getReviewsForDay(day);
+          const statusColor = getStatusColor(status);
+          const isCurrentDay = isToday(day);
+
+          return (
+            <motion.button
+              key={day.toISOString()}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.005 }}
+              onClick={() => dayReviews.length > 0 && setSelectedDate(day)}
+              disabled={dayReviews.length === 0}
+              className={`
+                aspect-square p-0.5 rounded-lg border transition-all duration-200
+                ${statusColor}
+                ${dayReviews.length > 0 ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-default'}
+                ${isCurrentDay ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-900' : ''}
+              `}
+            >
+              <div className="h-full flex flex-col items-center justify-center gap-0.5">
+                <span className={`text-xs font-medium ${isCurrentDay ? 'text-amber-400' : ''}`}>
+                  {format(day, 'd')}
+                </span>
+                {dayReviews.length > 0 && (
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-[8px]">{getStatusEmoji(status)}</span>
+                    <span className="text-[8px]">{dayReviews.length}</span>
+                  </div>
+                )}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Card className="bg-gradient-to-br from-slate-900/90 to-indigo-950/90 border-indigo-500/30 backdrop-blur-xl">
@@ -109,8 +175,8 @@ const CalendarScheduleView: React.FC<CalendarScheduleViewProps> = ({
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
-              <span className="text-white font-medium min-w-[120px] text-center">
-                {format(currentMonth, 'MMMM yyyy', { locale: ar })}
+              <span className="text-white font-medium text-sm">
+                تنقل
               </span>
               <Button
                 variant="ghost"
@@ -124,63 +190,14 @@ const CalendarScheduleView: React.FC<CalendarScheduleViewProps> = ({
           </div>
         </CardHeader>
         <CardContent className="p-4">
-          {/* Week days header */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {weekDays.map((day) => (
-              <div key={day} className="text-center text-slate-400 text-sm py-2 font-medium">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-1">
-            <AnimatePresence mode="wait">
-              {calendarDays.map((day, index) => {
-                if (!day) {
-                  return <div key={`empty-${index}`} className="aspect-square" />;
-                }
-
-                const status = getDayStatus(day);
-                const dayReviews = getReviewsForDay(day);
-                const statusColor = getStatusColor(status);
-                const isCurrentDay = isToday(day);
-
-                return (
-                  <motion.button
-                    key={day.toISOString()}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ delay: index * 0.01 }}
-                    onClick={() => dayReviews.length > 0 && setSelectedDate(day)}
-                    disabled={dayReviews.length === 0}
-                    className={`
-                      aspect-square p-1 rounded-lg border transition-all duration-200
-                      ${statusColor}
-                      ${dayReviews.length > 0 ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-default'}
-                      ${isCurrentDay ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}
-                    `}
-                  >
-                    <div className="h-full flex flex-col items-center justify-center gap-0.5">
-                      <span className={`text-sm font-medium ${isCurrentDay ? 'text-amber-400' : ''}`}>
-                        {format(day, 'd')}
-                      </span>
-                      {dayReviews.length > 0 && (
-                        <div className="flex items-center gap-0.5">
-                          <span className="text-xs">{getStatusEmoji(status)}</span>
-                          <span className="text-[10px]">{dayReviews.length}</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </AnimatePresence>
+          {/* عرض شهرين جنباً إلى جنب */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {renderCalendarGrid(calendarDaysFirst, currentMonth)}
+            {renderCalendarGrid(calendarDaysSecond, secondMonth)}
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm border-t border-indigo-500/20 pt-4">
             <div className="flex items-center gap-2">
               <span>✅</span>
               <span className="text-green-400">مكتملة</span>
