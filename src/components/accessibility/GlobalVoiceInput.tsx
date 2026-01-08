@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,6 @@ export const GlobalVoiceInput: React.FC<GlobalVoiceInputProps> = ({
   size = 'md',
   disabled = false,
 }) => {
-  const { settings } = useAccessibility();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -120,7 +118,7 @@ export const GlobalVoiceInput: React.FC<GlobalVoiceInputProps> = ({
     }
   };
 
-  // اختصار لوحة المفاتيح
+  // اختصار لوحة المفاتيح - يعمل دائماً
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl + Shift + V = بدء/إيقاف التسجيل
@@ -130,15 +128,11 @@ export const GlobalVoiceInput: React.FC<GlobalVoiceInputProps> = ({
       }
     };
 
-    if (settings.voiceInput) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [settings.voiceInput, isRecording]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isRecording]);
 
-  if (!settings.voiceInput) {
-    return null;
-  }
+  // المايك يظهر دائماً الآن بدون شرط settings.voiceInput
 
   return (
     <Button

@@ -101,7 +101,7 @@ import PsychologicalGuide from './pages/PsychologicalGuide';
 import StudentProjects from './components/environmental/StudentProjects';
 import RecyclingProjectAdvisor from './pages/RecyclingProjectAdvisor';
 import EcoPredictDashboard from './pages/EcoPredictDashboard';
-import RecordedLessons from './components/educational/RecordedLessons';
+import MedicalAssistant from './pages/MedicalAssistant';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
@@ -621,8 +621,8 @@ const router = createBrowserRouter([
         element: <AuthGuard><EcoPredictDashboard /></AuthGuard>,
       },
       {
-        path: 'recorded-lessons',
-        element: <AuthGuard><RecordedLessons /></AuthGuard>,
+        path: 'medical-assistant',
+        element: <PublicRoute><MedicalAssistant /></PublicRoute>,
       },
       {
         path: 'administrators-teachers',

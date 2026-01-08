@@ -60,11 +60,11 @@ const EducationalResources = () => {
       gradient: 'from-teal-500 to-cyan-500'
     },
     {
-      title: "الدروس المسجلة",
+      title: "🏥 المساعدة الطبية",
       icon: Video,
-      description: "دروس مسجلة من المعلمين يمكن مشاهدتها في أي وقت",
-      link: '/recorded-lessons',
-      gradient: 'from-indigo-500 to-purple-500'
+      description: "دليل شامل للتعامل مع الحالات الطبية الشائعة في المدارس",
+      link: '/medical-assistant',
+      gradient: 'from-emerald-500 to-teal-500'
     },
     {
       title: "📄 توثيق المنصة",
