@@ -169,6 +169,7 @@ import PlatformDocumentation from './pages/PlatformDocumentation';
 import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
 import AIImageGenerator from './pages/AIImageGenerator';
 import SignLanguagePage from './pages/SignLanguagePage';
+import ExamScannerPage from './pages/ExamScannerPage';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -411,6 +412,10 @@ const router = createBrowserRouter([
       {
         path: 'subject-puzzles',
         element: <AuthGuard><SubjectPuzzles /></AuthGuard>,
+      },
+      {
+        path: 'exam-scanner',
+        element: <AuthGuard><ExamScannerPage /></AuthGuard>,
       },
       {
         path: 'puzzle/:puzzleId',

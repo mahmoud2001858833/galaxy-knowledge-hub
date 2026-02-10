@@ -154,6 +154,14 @@ const Navbar = () => {
               </NavigationMenuItem>
 
               <NavigationMenuItem>
+                <Link to="/exam-scanner">
+                  <NavigationMenuLink className={cn("group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-white/10 data-[state=open]:bg-white/10 text-white", isActive('/exam-scanner') && "bg-white/10")}>
+                    الامتحان
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
                 <Link to="/profile">
                   <NavigationMenuLink className={cn("group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-white/10 data-[state=open]:bg-white/10 text-white", isActive('/profile') && "bg-white/10")}>
                     الملف الشخصي
@@ -245,6 +253,7 @@ const Navbar = () => {
                 <Link to="/mathematics" className={`nav-link ${isActive('/mathematics')}`}>الرياضيات</Link>
                 <Link to="/chat-rooms" className={`nav-link ${isActive('/chat-rooms')}`}>المحادثات</Link>
                 <Link to="/subject-puzzles" className={`nav-link ${isActive('/subject-puzzles')}`}>الألغاز</Link>
+                <Link to="/exam-scanner" className={`nav-link ${isActive('/exam-scanner')}`}>الامتحان</Link>
                 <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>الملف الشخصي</Link>
                 
                 {isSuperAdmin && <Link to="/control-center" className={`nav-link ${isActive('/control-center')}`}>مركز التحكم</Link>}
