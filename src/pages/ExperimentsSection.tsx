@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, X, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain, Flame, Droplets, Circle, Clock, Aperture, Orbit, TestTubes, Hexagon, Snowflake, FlaskRound } from 'lucide-react';
+import { ArrowRight, X, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain, Flame, Droplets, Circle, Clock, Aperture, Orbit, TestTubes, Hexagon, Snowflake, FlaskRound, Radiation, Leaf, Scissors, Wind, Shield, Bug, Shapes, Dice1, Bot, Wrench } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
@@ -70,6 +70,16 @@ const ExperimentsSection = () => {
     { id: 'organic-chemistry', title: 'الكيمياء العضوية', description: 'بناء الجزيئات العضوية والمجموعات الوظيفية والتفاعلات', icon: <Hexagon className="w-6 h-6" />, color: 'from-green-500 to-emerald-500', route: '/simulation/organic-chemistry', features: ['بناء الجزيئات', 'المجموعات الوظيفية', 'التفاعلات العضوية'] },
     { id: 'states-of-matter', title: 'حالات المادة والتحولات', description: 'صلب/سائل/غاز والتحولات ومخطط الطور', icon: <Snowflake className="w-6 h-6" />, color: 'from-cyan-500 to-blue-500', route: '/simulation/states-of-matter', features: ['حالات المادة', 'مخطط الطور', 'التحولات'] },
     { id: 'acids-bases', title: 'الأحماض والقواعد', description: 'مقياس pH والمعايرة والمحاليل المنظمة', icon: <FlaskRound className="w-6 h-6" />, color: 'from-yellow-500 to-red-500', route: '/simulation/acids-bases', features: ['مقياس pH', 'المعايرة', 'المحاليل المنظمة'] },
+    { id: 'nuclear-applications', title: 'الكيمياء النووية التطبيقية', description: 'التأريخ بالكربون-14 والطب النووي ومحطات الطاقة', icon: <Radiation className="w-6 h-6" />, color: 'from-lime-500 to-green-600', route: '/simulation/nuclear-applications', features: ['التأريخ بالكربون-14', 'الطب النووي', 'مفاعل نووي'] },
+    { id: 'living-cell', title: 'الخلية الحية', description: 'تركيب الخلية الحيوانية والنباتية والبكتيرية', icon: <Microscope className="w-6 h-6" />, color: 'from-emerald-500 to-teal-500', route: '/simulation/living-cell', features: ['العضيات', 'مقارنة الخلايا', 'الغشاء الخلوي'] },
+    { id: 'cell-division', title: 'الانقسام الخلوي', description: 'الانقسام المتساوي والمنصف بالمراحل', icon: <Scissors className="w-6 h-6" />, color: 'from-violet-500 to-fuchsia-500', route: '/simulation/cell-division', features: ['الانقسام المتساوي', 'الانقسام المنصف', 'الكروموسومات'] },
+    { id: 'photosynthesis-respiration', title: 'التمثيل الضوئي والتنفس', description: 'البناء الضوئي والتنفس الخلوي', icon: <Leaf className="w-6 h-6" />, color: 'from-green-500 to-lime-500', route: '/simulation/photosynthesis-respiration', features: ['دورة كالفن', 'نقل الإلكترون', 'ATP'] },
+    { id: 'immune-system', title: 'الجهاز المناعي', description: 'المناعة الفطرية والمكتسبة واللقاحات', icon: <Shield className="w-6 h-6" />, color: 'from-blue-500 to-indigo-500', route: '/simulation/immune-system', features: ['الأجسام المضادة', 'اللقاحات', 'الذاكرة المناعية'] },
+    { id: 'evolution', title: 'التطور والانتخاب الطبيعي', description: 'محاكاة الانتخاب الطبيعي والتكيف', icon: <Bug className="w-6 h-6" />, color: 'from-amber-500 to-orange-500', route: '/simulation/evolution', features: ['أجيال متعاقبة', 'الطفرات', 'بقاء الأصلح'] },
+    { id: 'spatial-geometry', title: 'الهندسة الفراغية', description: 'أشكال ثلاثية الأبعاد وحساب المساحات والحجوم', icon: <Shapes className="w-6 h-6" />, color: 'from-indigo-500 to-purple-600', route: '/simulation/spatial-geometry', features: ['تدوير الأشكال', 'حساب الحجوم', 'المقاطع'] },
+    { id: 'probability', title: 'نظرية الاحتمالات', description: 'رمي النرد والعملات والتوزيع الطبيعي', icon: <Dice1 className="w-6 h-6" />, color: 'from-green-500 to-cyan-500', route: '/simulation/probability', features: ['رمي النرد', 'التوزيع الطبيعي', 'الأعداد الكبيرة'] },
+    { id: 'robotics', title: 'الروبوتات والتحكم', description: 'برمجة روبوت افتراضي لتنفيذ مهام', icon: <Bot className="w-6 h-6" />, color: 'from-cyan-500 to-blue-500', route: '/simulation/robotics', features: ['تحكم يدوي', 'برمجة أوامر', 'خوارزميات'] },
+    { id: 'mechanical-engineering', title: 'الهندسة الميكانيكية', description: 'التروس والرافعات والبكرات والآلات البسيطة', icon: <Wrench className="w-6 h-6" />, color: 'from-amber-500 to-orange-600', route: '/simulation/mechanical-engineering', features: ['الرافعات', 'البكرات', 'التروس'] },
   ];
 
   return (
