@@ -93,6 +93,11 @@ import EarthSciencesSimulation from './pages/EarthSciencesSimulation';
 import RocketScienceSimulation from './pages/RocketScienceSimulation';
 import AdvancedOpticsSimulation from './pages/AdvancedOpticsSimulation';
 import MaterialsScienceSimulation from './pages/MaterialsScienceSimulation';
+import ThermodynamicsSimulation from './pages/ThermodynamicsSimulation';
+import FluidMechanicsSimulation from './pages/FluidMechanicsSimulation';
+import CircularMotionSimulation from './pages/CircularMotionSimulation';
+import SpecialRelativitySimulation from './pages/SpecialRelativitySimulation';
+import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -576,6 +581,26 @@ const router = createBrowserRouter([
       {
         path: 'simulation/materials-science',
         element: <AuthGuard><MaterialsScienceSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/thermodynamics',
+        element: <AuthGuard><ThermodynamicsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/fluid-mechanics',
+        element: <AuthGuard><FluidMechanicsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/circular-motion',
+        element: <AuthGuard><CircularMotionSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/special-relativity',
+        element: <AuthGuard><SpecialRelativitySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/interference-diffraction',
+        element: <AuthGuard><InterferenceDiffractionSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',

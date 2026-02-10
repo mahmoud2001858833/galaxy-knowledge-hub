@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, X, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain } from 'lucide-react';
+import { ArrowRight, X, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain, Flame, Droplets, Circle, Clock, Aperture } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
@@ -60,6 +60,11 @@ const ExperimentsSection = () => {
     { id: 'rocket-science', title: 'علوم الصواريخ والفضاء', description: 'إطلاق الصواريخ والمدارات الفضائية وهبوط المركبات', icon: <Rocket className="w-6 h-6" />, color: 'from-sky-600 to-indigo-500', route: '/simulation/rocket-science', features: ['إطلاق الصاروخ', 'المدارات الفضائية', 'الهبوط'] },
     { id: 'advanced-optics', title: 'البصريات المتقدمة', description: 'تشتت المنشور والعدسات والتداخل والاستقطاب', icon: <Eye className="w-6 h-6" />, color: 'from-cyan-600 to-emerald-500', route: '/simulation/advanced-optics', features: ['تشتت الضوء', 'تداخل الشقين', 'الاستقطاب'] },
     { id: 'materials-science', title: 'علوم المواد', description: 'البنية البلورية والسبائك واختبارات الإجهاد', icon: <Layers className="w-6 h-6" />, color: 'from-stone-600 to-zinc-500', route: '/simulation/materials-science', features: ['البنية البلورية', 'تكوين السبائك', 'اختبار الإجهاد'] },
+    { id: 'thermodynamics', title: 'الديناميكا الحرارية', description: 'محاكاة الغاز المثالي ومحرك كارنو وانتقال الحرارة', icon: <Flame className="w-6 h-6" />, color: 'from-orange-600 to-red-600', route: '/simulation/thermodynamics', features: ['الغاز المثالي', 'محرك كارنو', 'التوصيل والحمل والإشعاع'] },
+    { id: 'fluid-mechanics', title: 'الموائع وقوى الطفو', description: 'قانون أرخميدس وباسكال وبرنولي مع محاكاة تفاعلية', icon: <Droplets className="w-6 h-6" />, color: 'from-blue-500 to-cyan-500', route: '/simulation/fluid-mechanics', features: ['قانون أرخميدس', 'قانون باسكال', 'معادلة برنولي'] },
+    { id: 'circular-motion', title: 'الحركة الدائرية والجاذبية', description: 'حركة دائرية منتظمة وغير منتظمة ومدارات الأقمار الصناعية', icon: <Circle className="w-6 h-6" />, color: 'from-violet-500 to-purple-600', route: '/simulation/circular-motion', features: ['القوة المركزية', 'الأقمار الصناعية', 'حركة غير منتظمة'] },
+    { id: 'special-relativity', title: 'النسبية الخاصة', description: 'تمدد الزمن وتقلص الطول وتكافؤ الكتلة والطاقة E=mc²', icon: <Clock className="w-6 h-6" />, color: 'from-yellow-500 to-orange-500', route: '/simulation/special-relativity', features: ['تمدد الزمن', 'تقلص الطول', 'E = mc²'] },
+    { id: 'interference-diffraction', title: 'التداخل والحيود', description: 'تجربة يونج وحيود الشق الواحد وحلقات نيوتن', icon: <Aperture className="w-6 h-6" />, color: 'from-indigo-500 to-pink-500', route: '/simulation/interference-diffraction', features: ['الشق المزدوج', 'الشق الواحد', 'حلقات نيوتن'] },
   ];
 
   return (
