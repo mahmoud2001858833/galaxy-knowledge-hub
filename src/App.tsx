@@ -168,6 +168,7 @@ import TenantSettings from './pages/TenantSettings';
 import PlatformDocumentation from './pages/PlatformDocumentation';
 import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
 import AIImageGenerator from './pages/AIImageGenerator';
+import SignLanguagePage from './pages/SignLanguagePage';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -844,6 +845,10 @@ const router = createBrowserRouter([
       {
         path: 'published/:slug',
         element: <PublicRoute><PublishedProject /></PublicRoute>,
+      },
+      {
+        path: 'sign-language',
+        element: <PublicRoute><SignLanguagePage /></PublicRoute>,
       },
       {
         path: '*',

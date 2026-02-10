@@ -29,7 +29,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import SignLanguageGuide from './SignLanguageGuide';
+import { useNavigate } from 'react-router-dom';
 
 interface AccessibilityPanelProps {
   className?: string;
@@ -38,7 +38,7 @@ interface AccessibilityPanelProps {
 export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ className }) => {
   const { settings, updateSettings, resetSettings } = useAccessibility();
   const [isOpen, setIsOpen] = useState(false);
-  const [showSignLanguageGuide, setShowSignLanguageGuide] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -202,7 +202,8 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ classNam
                   onCheckedChange={(checked) => {
                     updateSettings({ signLanguage: checked });
                     if (checked) {
-                      setShowSignLanguageGuide(true);
+                      setIsOpen(false);
+                      navigate('/sign-language');
                     }
                   }}
                 />
@@ -212,10 +213,13 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ classNam
                   variant="outline"
                   size="sm"
                   className="w-full text-xs"
-                  onClick={() => setShowSignLanguageGuide(true)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate('/sign-language');
+                  }}
                 >
                   <Hand className="h-3 w-3 ml-1" />
-                  عرض دليل لغة الإشارة
+                  فتح صفحة لغة الإشارة
                 </Button>
               )}
             </div>
@@ -258,11 +262,6 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ classNam
         </div>
       </SheetContent>
 
-      {/* دليل لغة الإشارة */}
-      <SignLanguageGuide 
-        isOpen={showSignLanguageGuide} 
-        onClose={() => setShowSignLanguageGuide(false)} 
-      />
     </Sheet>
   );
 };
