@@ -98,6 +98,11 @@ import FluidMechanicsSimulation from './pages/FluidMechanicsSimulation';
 import CircularMotionSimulation from './pages/CircularMotionSimulation';
 import SpecialRelativitySimulation from './pages/SpecialRelativitySimulation';
 import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSimulation';
+import PlasmaPhysicsSimulation from './pages/PlasmaPhysicsSimulation';
+import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
+import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
+import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
+import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -601,6 +606,26 @@ const router = createBrowserRouter([
       {
         path: 'simulation/interference-diffraction',
         element: <AuthGuard><InterferenceDiffractionSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/plasma-physics',
+        element: <AuthGuard><PlasmaPhysicsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/chemical-kinetics',
+        element: <AuthGuard><ChemicalKineticsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/organic-chemistry',
+        element: <AuthGuard><OrganicChemistrySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/states-of-matter',
+        element: <AuthGuard><StatesOfMatterSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/acids-bases',
+        element: <AuthGuard><AcidsBasesSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',
