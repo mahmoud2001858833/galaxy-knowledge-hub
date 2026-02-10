@@ -84,7 +84,7 @@ const Navbar = () => {
             <div className="relative h-9 w-9 overflow-hidden rounded-full border-2 border-cyan-500/50 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
               <img src="/logo.png" alt="ذروة العلم" className="h-8 w-8 object-contain" />
             </div>
-            <span className="text-xl font-bold mx-2 text-white">فلك المعرفه   </span>
+            <span className="text-xl font-bold mx-2 text-white">ذروة العلم</span>
           </Link>
         </div>
         
