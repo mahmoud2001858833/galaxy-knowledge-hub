@@ -102,40 +102,55 @@ const ExperimentsSection = () => {
             </p>
           </motion.div>
 
-          {/* Experiments Grid - Small Squares */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {/* Experiments Grid - Premium Squares */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
             {simulations.map((sim, index) => (
               <motion.div
                 key={sim.id}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.03 }}
-                whileHover={{ y: -8, scale: 1.05 }}
-                className="group"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03, type: "spring", stiffness: 120 }}
+                whileHover={{ y: -10, scale: 1.06 }}
+                className="group perspective-1000"
               >
-                <div className={`relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br ${sim.color} p-[2px]`}>
-                  <div className="absolute inset-[2px] bg-slate-900/95 rounded-2xl p-3 flex flex-col items-center justify-center backdrop-blur-sm">
-                    {/* Icon */}
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${sim.color} text-white mb-2 shadow-lg`}>
-                      {sim.icon}
+                <div className={`relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br ${sim.color} p-[1.5px] shadow-lg shadow-black/30 group-hover:shadow-xl group-hover:shadow-cyan-500/20 transition-shadow duration-500`}>
+                  {/* Animated border glow */}
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${sim.color} opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700 -z-10`} />
+                  
+                  <div className="absolute inset-[1.5px] bg-gradient-to-br from-slate-900 via-slate-900/98 to-slate-800/95 rounded-2xl p-3 flex flex-col items-center justify-between backdrop-blur-sm overflow-hidden">
+                    {/* Decorative background pattern */}
+                    <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full -translate-y-10 translate-x-10" />
+                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-white rounded-full translate-y-8 -translate-x-8" />
                     </div>
 
-                    {/* Title */}
-                    <h3 className="text-xs font-bold text-white text-center mb-3 line-clamp-2 group-hover:text-cyan-300 transition-colors leading-relaxed">
-                      {sim.title}
-                    </h3>
+                    {/* Top section - Icon */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative z-10 pt-2">
+                      <motion.div 
+                        className={`p-3 rounded-xl bg-gradient-to-br ${sim.color} text-white mb-3 shadow-lg ring-2 ring-white/10 group-hover:ring-white/25 transition-all duration-300`}
+                        whileHover={{ rotate: [0, -5, 5, 0] }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        {sim.icon}
+                      </motion.div>
 
-                    {/* Action Buttons - Always visible */}
-                    <div className="flex gap-2">
+                      {/* Title */}
+                      <h3 className="text-[11px] font-bold text-white/90 text-center line-clamp-2 group-hover:text-white transition-colors leading-relaxed px-1">
+                        {sim.title}
+                      </h3>
+                    </div>
+
+                    {/* Bottom section - Action Buttons */}
+                    <div className="flex gap-1.5 relative z-10 w-full pb-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           playSound();
                           navigate(sim.route);
                         }}
-                        className="px-2 py-1 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg transition-colors text-[10px] font-semibold flex items-center gap-1"
+                        className="flex-1 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-lg transition-all text-[9px] font-bold flex items-center justify-center gap-1 shadow-md shadow-cyan-500/20 hover:shadow-cyan-400/40"
                       >
-                        <Play className="w-3 h-3" />
+                        <Play className="w-2.5 h-2.5" />
                         استخدم
                       </button>
                       <button
@@ -144,9 +159,9 @@ const ExperimentsSection = () => {
                           playSound();
                           setSelectedSimulation(sim);
                         }}
-                        className="px-2 py-1 bg-purple-500 hover:bg-purple-400 text-white rounded-lg transition-colors text-[10px] font-semibold flex items-center gap-1"
+                        className="flex-1 py-1.5 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white rounded-lg transition-all text-[9px] font-bold flex items-center justify-center gap-1 border border-white/10 hover:border-white/25"
                       >
-                        <Info className="w-3 h-3" />
+                        <Info className="w-2.5 h-2.5" />
                         معلومات
                       </button>
                     </div>
