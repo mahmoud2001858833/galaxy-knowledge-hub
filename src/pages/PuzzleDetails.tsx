@@ -251,7 +251,17 @@ const PuzzleDetails = () => {
                 <img 
                   src={puzzle.image} 
                   alt={puzzle.title} 
-                  className="w-full h-auto max-h-[500px] object-contain bg-black/20" 
+                  className="w-full h-auto max-h-[500px] object-contain bg-black/20"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.crossOrigin = null;
+                    target.onerror = () => {
+                      target.parentElement!.style.display = 'none';
+                    };
+                    target.src = puzzle.image!;
+                  }}
                 />
                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
               </div>

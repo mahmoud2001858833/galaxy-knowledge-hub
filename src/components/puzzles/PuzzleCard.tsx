@@ -117,6 +117,16 @@ const PuzzleCard: React.FC<PuzzleCardProps> = ({
               src={puzzle.image} 
               alt={puzzle.title}
               className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.crossOrigin = null;
+                target.onerror = () => {
+                  target.parentElement!.style.display = 'none';
+                };
+                target.src = puzzle.image!;
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
           </div>
