@@ -12,6 +12,7 @@ import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
 import { supabase } from '@/integrations/supabase/client';
 import { SEO } from '@/components/SEO';
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 interface Message {
   id: string;
   type: 'user' | 'ai' | 'system';
@@ -317,6 +318,12 @@ const FalakKnowledgeAI = () => {
             <Button onClick={sendMessage} disabled={isLoading || !inputText.trim() && !selectedImage} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4">
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
+            
+            <GlobalVoiceInput 
+              onTranscript={(text) => setInputText(prev => prev + (prev ? ' ' : '') + text)}
+              disabled={isLoading}
+              size="md"
+            />
             
             <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30" title="رفع صورة">
               <Upload className="w-4 h-4" />

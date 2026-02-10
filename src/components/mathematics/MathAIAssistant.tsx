@@ -6,6 +6,7 @@ import { ArrowRight, Brain } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 
 const MathAIAssistant = () => {
   const [prompt, setPrompt] = useState('');
@@ -69,11 +70,17 @@ const MathAIAssistant = () => {
               className="bg-white/5 border-white/20 text-white h-40 text-right"
             />
             
-            <Button 
-              type="submit"
-              className="w-full bg-space-deep-purple hover:bg-space-deep-purple/80 text-white flex items-center justify-center gap-2"
-              disabled={isLoading || !prompt.trim()}
-            >
+            <div className="flex gap-2">
+              <GlobalVoiceInput 
+                onTranscript={(text) => setPrompt(prev => prev + (prev ? ' ' : '') + text)}
+                disabled={isLoading}
+                size="md"
+              />
+              <Button 
+                type="submit"
+                className="flex-1 bg-space-deep-purple hover:bg-space-deep-purple/80 text-white flex items-center justify-center gap-2"
+                disabled={isLoading || !prompt.trim()}
+              >
               {isLoading ? (
                 <>
                   <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
@@ -85,7 +92,8 @@ const MathAIAssistant = () => {
                   <ArrowRight className="h-5 w-5" />
                 </>
               )}
-            </Button>
+              </Button>
+            </div>
           </form>
           
           <div className="bg-white/5 p-4 rounded-lg border border-white/10">

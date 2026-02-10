@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Send, Bot, User, Loader2, MessageSquare, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -291,6 +292,11 @@ const EnhancedEnglishAIAssistant: React.FC<EnhancedEnglishAIAssistantProps> = ({
           {/* Input Area */}
           <div className="p-6 border-t border-white/10 bg-white/5 backdrop-blur-sm">
             <div className="flex gap-3">
+              <GlobalVoiceInput 
+                onTranscript={(text) => setCurrentMessage(prev => prev + (prev ? ' ' : '') + text)}
+                disabled={isLoading}
+                size="md"
+              />
               <Input
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
