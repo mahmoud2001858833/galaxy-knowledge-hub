@@ -36,12 +36,17 @@ const ExamScannerPage = () => {
         video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } }
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setCameraReady(true);
-        setPhase('camera');
-      }
+      // Set phase first so video element renders, then attach stream
+      setPhase('camera');
+      // Wait for next frame so video element mounts
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().then(() => {
+            setCameraReady(true);
+          }).catch(console.error);
+        }
+      });
     } catch (err: any) {
       console.error('Camera error:', err);
       toast({ title: 'خطأ في الكاميرا', description: err.name === 'NotAllowedError' ? 'يرجى السماح بالوصول إلى الكاميرا من إعدادات المتصفح' : 'لا يمكن الوصول إلى الكاميرا', variant: 'destructive' });
