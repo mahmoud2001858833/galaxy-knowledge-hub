@@ -59,7 +59,7 @@ const PlatformCategories = () => {
       iconColor: 'text-cyan-400',
       glowColor: 'shadow-cyan-500/50',
       link: '/experiments-section',
-      platformsCount: 29,
+      platformsCount: 49,
       image: educationBg
     },
     {
