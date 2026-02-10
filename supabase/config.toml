@@ -173,3 +173,6 @@ verify_jwt = false
 
 [functions.ai-image-generator]
 verify_jwt = false
+
+[functions.exam-analyzer]
+verify_jwt = false
