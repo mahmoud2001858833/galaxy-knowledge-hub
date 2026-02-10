@@ -6,6 +6,7 @@ import { Camera, X, Check, Trash2, ChevronDown, RotateCcw, Loader2, ScanLine, Sw
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import { useDocumentDetection } from '@/hooks/useDocumentDetection';
 
 interface ExamQuestion {
   question: string;
@@ -25,6 +26,25 @@ const ExamScannerPage = () => {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [cameraReady, setCameraReady] = useState(false);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [autoMode, setAutoMode] = useState(true);
+
+  const handleAutoCapture = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    setCapturedImages(prev => {
+      const next = [...prev, dataUrl];
+      toast({ title: `📸 تم التقاط الصورة ${next.length} تلقائياً` });
+      return next;
+    });
+  }, []);
+
+  const detection = useDocumentDetection(videoRef, cameraReady && phase === 'camera' && autoMode, handleAutoCapture);
 
   const openCamera = useCallback(async (facing: 'environment' | 'user') => {
     try {
@@ -160,19 +180,46 @@ const ExamScannerPage = () => {
             />
             {/* Scan frame overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[85%] max-w-lg aspect-[3/4] border-2 border-cyan-400/60 rounded-xl relative">
-                <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-cyan-400 rounded-tr-xl" />
-                <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-cyan-400 rounded-tl-xl" />
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-cyan-400 rounded-br-xl" />
-                <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-cyan-400 rounded-bl-xl" />
-                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-cyan-400/40 animate-pulse" />
+              <div className={`w-[85%] max-w-lg aspect-[3/4] border-2 rounded-xl relative transition-colors duration-300 ${
+                detection.detected ? 'border-green-400' : 'border-cyan-400/60'
+              }`}>
+                {/* Corner markers */}
+                {(['top-1 right-1 border-t-4 border-r-4 rounded-tr-xl', 'top-1 right-auto left-1 border-t-4 border-l-4 rounded-tl-xl -left-1 -top-1', 'bottom-1 right-1 border-b-4 border-r-4 rounded-br-xl', 'bottom-1 left-1 border-b-4 border-l-4 rounded-bl-xl'] as const).map((_, idx) => {
+                  const positions = [
+                    '-top-1 -right-1 border-t-4 border-r-4 rounded-tr-xl',
+                    '-top-1 -left-1 border-t-4 border-l-4 rounded-tl-xl',
+                    '-bottom-1 -right-1 border-b-4 border-r-4 rounded-br-xl',
+                    '-bottom-1 -left-1 border-b-4 border-l-4 rounded-bl-xl',
+                  ];
+                  return (
+                    <div key={idx} className={`absolute w-8 h-8 ${positions[idx]} transition-colors duration-300 ${
+                      detection.detected ? 'border-green-400' : 'border-cyan-400'
+                    }`} />
+                  );
+                })}
+                <div className={`absolute top-1/2 left-0 right-0 h-0.5 animate-pulse transition-colors duration-300 ${
+                  detection.detected ? 'bg-green-400/60' : 'bg-cyan-400/40'
+                }`} />
+                {/* Stability progress bar */}
+                {autoMode && detection.stability > 0 && (
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-400 rounded-full transition-all duration-300"
+                        style={{ width: `${detection.stability}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {/* Top info */}
             <div className="absolute top-4 left-0 right-0 text-center">
-              <span className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
+              <span className={`backdrop-blur-sm px-4 py-2 rounded-full text-sm transition-colors duration-300 ${
+                detection.detected ? 'bg-green-600/70 text-green-100' : 'bg-black/60'
+              }`}>
                 <ScanLine className="inline h-4 w-4 ml-1" />
-                وجّه الكاميرا نحو ورقة الامتحان
+                {autoMode ? detection.message : 'وجّه الكاميرا والتقط يدوياً'}
               </span>
             </div>
           </div>
@@ -196,27 +243,40 @@ const ExamScannerPage = () => {
           )}
 
           {/* Controls */}
-          <div className="bg-black/90 backdrop-blur-md p-4 flex items-center justify-between gap-3">
-            <Button variant="ghost" size="icon" onClick={flipCamera} className="text-white">
-              <SwitchCamera className="h-6 w-6" />
-            </Button>
+          <div className="bg-black/90 backdrop-blur-md p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <Button variant="ghost" size="icon" onClick={flipCamera} className="text-white">
+                <SwitchCamera className="h-6 w-6" />
+              </Button>
 
+              <button
+                onClick={capturePhoto}
+                disabled={!cameraReady}
+                className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 transition-all disabled:opacity-40"
+              >
+                <Camera className="h-8 w-8 text-white" />
+              </button>
+
+              <Button
+                onClick={analyzeExam}
+                disabled={capturedImages.length === 0}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white px-5 gap-2"
+              >
+                <Check className="h-5 w-5" />
+                تم ({capturedImages.length})
+              </Button>
+            </div>
+            {/* Auto/Manual toggle */}
             <button
-              onClick={capturePhoto}
-              disabled={!cameraReady}
-              className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 transition-all disabled:opacity-40"
+              onClick={() => setAutoMode(prev => !prev)}
+              className={`mx-auto px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                autoMode
+                  ? 'bg-green-600/80 text-green-100'
+                  : 'bg-white/10 text-white/60'
+              }`}
             >
-              <Camera className="h-8 w-8 text-white" />
+              {autoMode ? '🤖 التقاط تلقائي: مفعّل' : '✋ التقاط يدوي'}
             </button>
-
-            <Button
-              onClick={analyzeExam}
-              disabled={capturedImages.length === 0}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white px-5 gap-2"
-            >
-              <Check className="h-5 w-5" />
-              تم ({capturedImages.length})
-            </Button>
           </div>
         </div>
       )}
