@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, BookOpen, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 
 type Message = {
   id: number;
@@ -151,12 +152,18 @@ const ChemistryAssistant = () => {
                   className="resize-none flex-1 bg-blue-950/30 border-cyan-900/30 focus:border-cyan-500 min-h-[200px]"
                 />
                 
-                <Button
-                  onClick={handleSend}
-                  type="submit"
-                  className="mt-4 bg-cyan-600 hover:bg-cyan-700 shadow-glow-sm shadow-cyan-500/20 w-full"
-                  disabled={isLoading || !input.trim()}
-                >
+                <div className="flex gap-2 mt-4">
+                  <GlobalVoiceInput 
+                    onTranscript={(text) => setInput(prev => prev + (prev ? ' ' : '') + text)}
+                    disabled={isLoading}
+                    size="md"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    type="submit"
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-700 shadow-glow-sm shadow-cyan-500/20"
+                    disabled={isLoading || !input.trim()}
+                  >
                   {isLoading ? (
                     <span className="flex items-center">
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" /> جاري معالجة السؤال...
@@ -166,7 +173,8 @@ const ChemistryAssistant = () => {
                       إرسال السؤال <Send className="h-4 w-4 mr-2" />
                     </span>
                   )}
-                </Button>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
             

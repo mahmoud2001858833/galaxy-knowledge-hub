@@ -17,6 +17,7 @@ import {
   Star, Download, Share2, BookOpen, Wrench, Target, Shield,
   Image, CheckCircle, Trophy, Calculator
 } from 'lucide-react';
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 
 interface Project {
   name: string;
@@ -869,6 +870,11 @@ const RecyclingProjectAdvisor = () => {
                   )}
                 </ScrollArea>
                 <div className="flex gap-2">
+                  <GlobalVoiceInput 
+                    onTranscript={(text) => setChatInput(prev => prev + (prev ? ' ' : '') + text)}
+                    disabled={isChatLoading}
+                    size="md"
+                  />
                   <Input
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}

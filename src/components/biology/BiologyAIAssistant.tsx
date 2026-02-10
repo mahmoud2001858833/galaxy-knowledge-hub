@@ -7,13 +7,15 @@ import { Card } from '@/components/ui/card';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 
 interface FormValues {
   question: string;
 }
 
 const BiologyAIAssistant = () => {
-  const { register, handleSubmit, formState: { isSubmitting }, reset } = useForm<FormValues>();
+  const { register, handleSubmit, formState: { isSubmitting }, reset, setValue, watch } = useForm<FormValues>();
+  const questionValue = watch('question');
   const [response, setResponse] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showExampleQuestions, setShowExampleQuestions] = useState(true);
@@ -136,7 +138,15 @@ const BiologyAIAssistant = () => {
                   className="min-h-[120px] bg-white/5 border-subject-biology-primary/30 focus:border-subject-biology-primary focus-visible:ring-subject-biology-primary/20"
                 />
                 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  <GlobalVoiceInput 
+                    onTranscript={(text) => {
+                      const current = questionValue || '';
+                      setValue('question', current + (current ? ' ' : '') + text);
+                    }}
+                    disabled={isLoading}
+                    size="md"
+                  />
                   <Button 
                     type="submit" 
                     disabled={isSubmitting || isLoading}
