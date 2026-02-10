@@ -103,6 +103,16 @@ import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
 import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
+import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
+import LivingCellSimulation from './pages/LivingCellSimulation';
+import CellDivisionSimulation from './pages/CellDivisionSimulation';
+import PhotosynthesisRespirationSimulation from './pages/PhotosynthesisRespirationSimulation';
+import ImmuneSystemSimulation from './pages/ImmuneSystemSimulation';
+import EvolutionSimulation from './pages/EvolutionSimulation';
+import SpatialGeometrySimulation from './pages/SpatialGeometrySimulation';
+import ProbabilitySimulation from './pages/ProbabilitySimulation';
+import RoboticsSimulation from './pages/RoboticsSimulation';
+import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -626,6 +636,46 @@ const router = createBrowserRouter([
       {
         path: 'simulation/acids-bases',
         element: <AuthGuard><AcidsBasesSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/nuclear-applications',
+        element: <AuthGuard><NuclearApplicationsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/living-cell',
+        element: <AuthGuard><LivingCellSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/cell-division',
+        element: <AuthGuard><CellDivisionSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/photosynthesis-respiration',
+        element: <AuthGuard><PhotosynthesisRespirationSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/immune-system',
+        element: <AuthGuard><ImmuneSystemSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/evolution',
+        element: <AuthGuard><EvolutionSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/spatial-geometry',
+        element: <AuthGuard><SpatialGeometrySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/probability',
+        element: <AuthGuard><ProbabilitySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/robotics',
+        element: <AuthGuard><RoboticsSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/mechanical-engineering',
+        element: <AuthGuard><MechanicalEngineeringSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',
