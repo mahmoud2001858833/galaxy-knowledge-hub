@@ -2,7 +2,7 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Camera, X, Check, Trash2, ChevronDown, RotateCcw, Loader2, ScanLine } from 'lucide-react';
+import { Camera, X, Check, Trash2, ChevronDown, RotateCcw, Loader2, ScanLine, SwitchCamera, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
@@ -14,40 +14,48 @@ interface ExamQuestion {
   options?: string[];
 }
 
-type Phase = 'camera' | 'analyzing' | 'results';
+type Phase = 'permission' | 'camera' | 'analyzing' | 'results';
 
 const ExamScannerPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [phase, setPhase] = useState<Phase>('camera');
+  const [phase, setPhase] = useState<Phase>('permission');
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [cameraReady, setCameraReady] = useState(false);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
-  const startCamera = useCallback(async () => {
+  const openCamera = useCallback(async (facing: 'environment' | 'user') => {
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
+      setCameraReady(false);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
+        video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } }
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
         setCameraReady(true);
+        setPhase('camera');
       }
-    } catch {
-      toast({ title: 'خطأ', description: 'لا يمكن الوصول إلى الكاميرا', variant: 'destructive' });
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      toast({ title: 'خطأ في الكاميرا', description: err.name === 'NotAllowedError' ? 'يرجى السماح بالوصول إلى الكاميرا من إعدادات المتصفح' : 'لا يمكن الوصول إلى الكاميرا', variant: 'destructive' });
     }
-  }, [facingMode]);
+  }, []);
 
+  // Cleanup on unmount
   useEffect(() => {
-    if (phase === 'camera') startCamera();
     return () => { streamRef.current?.getTracks().forEach(t => t.stop()); };
-  }, [phase, startCamera]);
+  }, []);
+
+  const handleStartCamera = () => {
+    openCamera(facingMode);
+  };
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -67,7 +75,9 @@ const ExamScannerPage = () => {
   };
 
   const flipCamera = () => {
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    const newMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newMode);
+    openCamera(newMode);
   };
 
   const analyzeExam = async () => {
@@ -96,13 +106,41 @@ const ExamScannerPage = () => {
     setCapturedImages([]);
     setQuestions([]);
     setCameraReady(false);
-    setPhase('camera');
+    setPhase('permission');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-950 via-blue-900 to-black text-white" dir="rtl">
       <Navbar />
       <canvas ref={canvasRef} className="hidden" />
+
+      {phase === 'permission' && (
+        <div className="h-[calc(100vh-4rem)] flex flex-col items-center justify-center gap-6 px-4">
+          <div className="w-28 h-28 rounded-full bg-cyan-600/20 border-2 border-cyan-500/40 flex items-center justify-center">
+            <Camera className="h-14 w-14 text-cyan-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-cyan-300">ماسح الامتحانات الذكي</h2>
+          <p className="text-white/60 text-center max-w-sm">صوّر ورقة الامتحان وسيقوم الذكاء الاصطناعي باستخراج الأسئلة وتقديم الإجابات مع الشرح</p>
+          
+          <div className="flex gap-3">
+            <Button
+              onClick={() => { setFacingMode('environment'); openCamera('environment'); }}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-6 text-lg gap-3"
+            >
+              <Video className="h-6 w-6" />
+              الكاميرا الخلفية
+            </Button>
+            <Button
+              onClick={() => { setFacingMode('user'); openCamera('user'); }}
+              variant="outline"
+              className="px-6 py-6 text-lg gap-3 border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/20"
+            >
+              <SwitchCamera className="h-6 w-6" />
+              الأمامية
+            </Button>
+          </div>
+        </div>
+      )}
 
       {phase === 'camera' && (
         <div className="relative h-[calc(100vh-4rem)] flex flex-col">
@@ -155,7 +193,7 @@ const ExamScannerPage = () => {
           {/* Controls */}
           <div className="bg-black/90 backdrop-blur-md p-4 flex items-center justify-between gap-3">
             <Button variant="ghost" size="icon" onClick={flipCamera} className="text-white">
-              <RotateCcw className="h-6 w-6" />
+              <SwitchCamera className="h-6 w-6" />
             </Button>
 
             <button
