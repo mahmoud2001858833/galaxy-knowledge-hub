@@ -50,6 +50,19 @@ const PlatformCategories = () => {
       image: educationBg
     },
     {
+      id: 'experiments',
+      title: 'قسم التجارب',
+      icon: GraduationCap,
+      description: 'تجارب علمية تفاعلية متطورة في جميع المواد العلمية',
+      gradient: 'from-cyan-600/20 to-purple-600/20',
+      borderColor: 'border-cyan-500/30',
+      iconColor: 'text-cyan-400',
+      glowColor: 'shadow-cyan-500/50',
+      link: '/experiments-section',
+      platformsCount: 29,
+      image: educationBg
+    },
+    {
       id: 'tawjihi',
       title: 'قسم التوجيهي',
       icon: GraduationCap,
