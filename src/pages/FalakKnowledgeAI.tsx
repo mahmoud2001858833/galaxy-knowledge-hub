@@ -66,7 +66,7 @@ const FalakKnowledgeAI = () => {
     setMessages([{
       id: '1',
       type: 'system',
-      content: `🌌 أهلاً وسهلاً بك في فلك المعرفة الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقدم لك إجابات شاملة ومفصلة تتضمن:\n\n📋 تحليل دقيق للسؤال\n📚 شرح تفصيلي كامل مع الأمثلة\n💡 نصائح وإرشادات عملية\n\nيمكنني تحليل الصور والإجابة على أسئلتك. اسأل عن أي موضوع تريد!`,
+      content: `🌌 أهلاً وسهلاً بك في ذروة العلم الذكي!\n\nأنا مساعدك الذكي المتخصص في دعم المنهاج الأردني. سأقدم لك إجابات شاملة ومفصلة تتضمن:\n\n📋 تحليل دقيق للسؤال\n📚 شرح تفصيلي كامل مع الأمثلة\n💡 نصائح وإرشادات عملية\n\nيمكنني تحليل الصور والإجابة على أسئلتك. اسأل عن أي موضوع تريد!`,
       timestamp: new Date()
     }]);
   }, []);
@@ -165,7 +165,7 @@ const FalakKnowledgeAI = () => {
     }
   };
   return <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-indigo-950 via-purple-900 to-black" dir="rtl">
-      <SEO title="فلك المعرفة الذكي - AI Assistant" description="مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات الذكاء الاصطناعي - تحليل الصور، إجابات شاملة، واقتراحات تعليمية متطورة في جميع المواد" keywords="فلك المعرفة الذكي, مساعد ذكي, ذكاء اصطناعي, AI, المنهاج الأردني, تحليل الصور, مساعد تعليمي, chatbot, روبوت محادثة تعليمي" />
+      <SEO title="ذروة العلم الذكي - AI Assistant" description="مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات الذكاء الاصطناعي - تحليل الصور، إجابات شاملة، واقتراحات تعليمية متطورة في جميع المواد" keywords="ذروة العلم الذكي, مساعد ذكي, ذكاء اصطناعي, AI, المنهاج الأردني, تحليل الصور, مساعد تعليمي, chatbot, روبوت محادثة تعليمي" />
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={400} />
         {/* Cosmic nebula effects */}
@@ -206,7 +206,7 @@ const FalakKnowledgeAI = () => {
               <span className="text-4xl">🌌</span>
             </motion.div>
             <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 mb-4">
-              فلك المعرفة الذكي
+              ذروة العلم الذكي
             </h1>
             <p className="text-xl text-white/80 max-w-2xl mx-auto mb-6">
               مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات فضائية حديثة

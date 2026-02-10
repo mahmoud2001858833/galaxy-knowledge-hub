@@ -229,9 +229,6 @@ const Auth = () => {
             }} transition={{
               delay: 0.2
             }}>🌌 ذروة العلم
-
-              <span className="text-4xl mr-2">🌌</span>
-                فلك المعرفة
               </motion.h1>
             </div>
             
