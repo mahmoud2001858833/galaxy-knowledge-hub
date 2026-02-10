@@ -151,7 +151,7 @@ const EnglishLanguage = () => {
     <div className={`min-h-screen flex flex-col ${textAlign} bg-gradient-to-b from-indigo-900/40 to-indigo-950`} dir={dir}>
       <SEO 
         title="منصة اللغة الإنجليزية - Learn English"
-        description="تعلم الإنجليزية مع منصة فلك المعرفة - مساعد ذكي، مترجم ذكي، تدريب النطق، وموسوعة علماء اللغة الإنجليزية"
+        description="تعلم الإنجليزية مع منصة ذروة العلم - مساعد ذكي، مترجم ذكي، تدريب النطق، وموسوعة علماء اللغة الإنجليزية"
         keywords="تعلم الإنجليزية, اللغة الإنجليزية, قواعد الإنجليزية, مترجم عربي انجليزي, تحسين النطق, محادثة إنجليزية, English learning, grammar, translation, speaking"
       />
       <StarField />

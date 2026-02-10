@@ -76,10 +76,10 @@ const UserProfile = () => {
   
   useEffect(() => {
     fetchUserData();
-    document.title = "الملف الشخصي - منصة في فلك المعرفة";
+    document.title = "الملف الشخصي - منصة ذروة العلم";
     
     return () => {
-      document.title = "منصة في فلك المعرفة";
+      document.title = "منصة ذروة العلم";
     };
   }, []);
   
