@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
 import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPanel';
+import ScrollToTop from '@/components/ScrollToTop';
 import { AutoReadWrapper } from '@/components/accessibility/AutoReadWrapper';
 import StudyScheduleCreator from './pages/StudyScheduleCreator';
 import StudentProgress from './pages/StudentProgress';
@@ -173,6 +174,7 @@ import './App.css';
 const RootLayout = () => {
   return (
     <AutoReadWrapper>
+      <ScrollToTop />
       <Outlet />
       <WelcomeGuide />
       <PlatformGuideAssistant />
