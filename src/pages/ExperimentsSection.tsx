@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, X, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain, Flame, Droplets, Circle, Clock, Aperture } from 'lucide-react';
+import { ArrowRight, X, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Eye, Layers, Mountain, Flame, Droplets, Circle, Clock, Aperture, Orbit, TestTubes, Hexagon, Snowflake, FlaskRound } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
@@ -65,6 +65,11 @@ const ExperimentsSection = () => {
     { id: 'circular-motion', title: 'الحركة الدائرية والجاذبية', description: 'حركة دائرية منتظمة وغير منتظمة ومدارات الأقمار الصناعية', icon: <Circle className="w-6 h-6" />, color: 'from-violet-500 to-purple-600', route: '/simulation/circular-motion', features: ['القوة المركزية', 'الأقمار الصناعية', 'حركة غير منتظمة'] },
     { id: 'special-relativity', title: 'النسبية الخاصة', description: 'تمدد الزمن وتقلص الطول وتكافؤ الكتلة والطاقة E=mc²', icon: <Clock className="w-6 h-6" />, color: 'from-yellow-500 to-orange-500', route: '/simulation/special-relativity', features: ['تمدد الزمن', 'تقلص الطول', 'E = mc²'] },
     { id: 'interference-diffraction', title: 'التداخل والحيود', description: 'تجربة يونج وحيود الشق الواحد وحلقات نيوتن', icon: <Aperture className="w-6 h-6" />, color: 'from-indigo-500 to-pink-500', route: '/simulation/interference-diffraction', features: ['الشق المزدوج', 'الشق الواحد', 'حلقات نيوتن'] },
+    { id: 'plasma-physics', title: 'فيزياء البلازما', description: 'الحالة الرابعة للمادة: التأين والحصر المغناطيسي والتطبيقات', icon: <Sparkles className="w-6 h-6" />, color: 'from-purple-500 to-pink-500', route: '/simulation/plasma-physics', features: ['تأين الغازات', 'الحصر المغناطيسي', 'تطبيقات البلازما'] },
+    { id: 'chemical-kinetics', title: 'حركية التفاعلات', description: 'سرعة التفاعل وطاقة التنشيط والعوامل المؤثرة', icon: <FlaskConical className="w-6 h-6" />, color: 'from-blue-500 to-cyan-500', route: '/simulation/chemical-kinetics', features: ['سرعة التفاعل', 'طاقة التنشيط', 'العوامل المساعدة'] },
+    { id: 'organic-chemistry', title: 'الكيمياء العضوية', description: 'بناء الجزيئات العضوية والمجموعات الوظيفية والتفاعلات', icon: <Hexagon className="w-6 h-6" />, color: 'from-green-500 to-emerald-500', route: '/simulation/organic-chemistry', features: ['بناء الجزيئات', 'المجموعات الوظيفية', 'التفاعلات العضوية'] },
+    { id: 'states-of-matter', title: 'حالات المادة والتحولات', description: 'صلب/سائل/غاز والتحولات ومخطط الطور', icon: <Snowflake className="w-6 h-6" />, color: 'from-cyan-500 to-blue-500', route: '/simulation/states-of-matter', features: ['حالات المادة', 'مخطط الطور', 'التحولات'] },
+    { id: 'acids-bases', title: 'الأحماض والقواعد', description: 'مقياس pH والمعايرة والمحاليل المنظمة', icon: <FlaskRound className="w-6 h-6" />, color: 'from-yellow-500 to-red-500', route: '/simulation/acids-bases', features: ['مقياس pH', 'المعايرة', 'المحاليل المنظمة'] },
   ];
 
   return (
