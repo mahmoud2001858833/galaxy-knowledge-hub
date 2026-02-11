@@ -46,6 +46,8 @@ const ExamScannerPage = () => {
 
   const detection = useDocumentDetection(videoRef, cameraReady && phase === 'camera' && autoMode, handleAutoCapture);
 
+  const pendingStreamRef = useRef<MediaStream | null>(null);
+
   const openCamera = useCallback(async (facing: 'environment' | 'user') => {
     try {
       if (streamRef.current) {
@@ -56,22 +58,24 @@ const ExamScannerPage = () => {
         video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } }
       });
       streamRef.current = stream;
-      // Set phase first so video element renders, then attach stream
+      pendingStreamRef.current = stream;
       setPhase('camera');
-      // Wait for next frame so video element mounts
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().then(() => {
-            setCameraReady(true);
-          }).catch(console.error);
-        }
-      });
     } catch (err: any) {
       console.error('Camera error:', err);
       toast({ title: 'خطأ في الكاميرا', description: err.name === 'NotAllowedError' ? 'يرجى السماح بالوصول إلى الكاميرا من إعدادات المتصفح' : 'لا يمكن الوصول إلى الكاميرا', variant: 'destructive' });
     }
   }, []);
+
+  // Attach stream to video element once it's mounted
+  useEffect(() => {
+    if (phase === 'camera' && videoRef.current && pendingStreamRef.current) {
+      const video = videoRef.current;
+      const stream = pendingStreamRef.current;
+      pendingStreamRef.current = null;
+      video.srcObject = stream;
+      video.play().then(() => setCameraReady(true)).catch(console.error);
+    }
+  }, [phase]);
 
   // Cleanup on unmount
   useEffect(() => {
