@@ -70,13 +70,39 @@ serve(async (req) => {
     const result = await response.json();
     const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    // Extract JSON from the response
+    // Extract JSON from the response - clean up common issues
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("لم يتم الحصول على نتائج صالحة");
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let jsonStr = jsonMatch[0];
+    // Fix common JSON issues from AI: trailing commas before ] or }
+    jsonStr = jsonStr.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+    // Fix unescaped newlines inside strings
+    jsonStr = jsonStr.replace(/(?<=":[ ]*"[^"]*)\n(?=[^"]*")/g, '\\n');
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error("JSON parse failed, trying cleanup:", parseErr);
+      // Last resort: try to extract questions array directly
+      const questionsMatch = jsonStr.match(/"questions"\s*:\s*\[([\s\S]*)\]/);
+      if (questionsMatch) {
+        try {
+          // Try parsing individual question objects
+          const rawQuestions = '[' + questionsMatch[1] + ']';
+          const cleanedQuestions = rawQuestions.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+          const questions = JSON.parse(cleanedQuestions);
+          parsed = { questions };
+        } catch {
+          throw new Error("فشل في تحليل نتائج الذكاء الاصطناعي");
+        }
+      } else {
+        throw new Error("فشل في تحليل نتائج الذكاء الاصطناعي");
+      }
+    }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
