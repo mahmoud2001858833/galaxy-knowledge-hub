@@ -127,7 +127,8 @@ const ExamScannerPage = () => {
       setPhase('results');
     } catch (e: any) {
       toast({ title: 'خطأ في التحليل', description: e.message || 'حدث خطأ', variant: 'destructive' });
-      setPhase('camera');
+      // Re-open the camera since we stopped it before analysis
+      openCamera(facingMode);
     }
   };
 
