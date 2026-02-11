@@ -97,22 +97,22 @@ export const useDocumentDetection = (
     // - Paper is typically bright (avgBrightness > 120)
     // - Has text/content (edgeDensity > 0.03)
     // - Is stable (frameDiff < 0.02)
-    const isBright = avgBrightness > 100;
-    const hasContent = edgeDensity > 0.025;
-    const isStable = frameDiff < 0.025;
+    const isBright = avgBrightness > 60;
+    const hasContent = edgeDensity > 0.015;
+    const isStable = frameDiff < 0.04;
     const isDocDetected = isBright && hasContent;
 
     if (isDocDetected && isStable) {
-      stableCountRef.current = Math.min(stableCountRef.current + 1, 6);
+      stableCountRef.current = Math.min(stableCountRef.current + 2, 6);
     } else if (isDocDetected) {
       stableCountRef.current = Math.max(stableCountRef.current - 1, 0);
     } else {
-      stableCountRef.current = Math.max(stableCountRef.current - 2, 0);
+      stableCountRef.current = Math.max(stableCountRef.current - 1, 0);
     }
 
-    const stability = Math.round((stableCountRef.current / 5) * 100);
+    const stability = Math.round((stableCountRef.current / 4) * 100);
 
-    if (stableCountRef.current >= 5) {
+    if (stableCountRef.current >= 4) {
       setDetection({ detected: true, stability: 100, message: '📸 جاري الالتقاط...' });
       // Auto capture
       cooldownRef.current = true;
