@@ -153,10 +153,18 @@ const SpatialGeometrySimulation = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.width = canvas.offsetWidth * 2;
-    canvas.height = canvas.offsetHeight * 2;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.scale(2, 2);
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.scale(dpr, dpr);
+    };
+    resizeCanvas();
+    const observer = new ResizeObserver(resizeCanvas);
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
