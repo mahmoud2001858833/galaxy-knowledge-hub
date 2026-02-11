@@ -33,7 +33,7 @@ const SpatialGeometrySimulation = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const W = canvas.width, H = canvas.height;
+    const W = canvas.offsetWidth, H = canvas.offsetHeight;
     ctx.clearRect(0, 0, W, H);
 
     const cx = W / 2, cy = H / 2;
