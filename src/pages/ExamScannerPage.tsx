@@ -2,7 +2,7 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Camera, X, Check, Trash2, ChevronDown, RotateCcw, Loader2, ScanLine, SwitchCamera, Video } from 'lucide-react';
+import { Camera, X, Check, Trash2, ChevronDown, RotateCcw, Loader2, ScanLine, SwitchCamera, Video, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
@@ -27,6 +27,8 @@ const ExamScannerPage = () => {
   const [cameraReady, setCameraReady] = useState(false);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [autoMode, setAutoMode] = useState(true);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analyzeRetryCount, setAnalyzeRetryCount] = useState(0);
 
   const handleAutoCapture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -66,7 +68,6 @@ const ExamScannerPage = () => {
     }
   }, []);
 
-  // Attach stream to video element once it's mounted
   useEffect(() => {
     if (phase === 'camera' && videoRef.current && pendingStreamRef.current) {
       const video = videoRef.current;
@@ -77,7 +78,6 @@ const ExamScannerPage = () => {
     }
   }, [phase]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => { streamRef.current?.getTracks().forEach(t => t.stop()); };
   }, []);
@@ -116,27 +116,51 @@ const ExamScannerPage = () => {
     }
     streamRef.current?.getTracks().forEach(t => t.stop());
     setPhase('analyzing');
+    setAnalysisError(null);
 
     try {
       const base64Images = capturedImages.map(img => img.split(',')[1]);
       const { data, error } = await supabase.functions.invoke('exam-analyzer', {
         body: { images: base64Images }
       });
-      if (error) throw error;
-      setQuestions(data.questions || []);
+      
+      if (error) {
+        throw new Error(error.message || 'فشل في الاتصال بالخادم');
+      }
+      
+      // Check if response contains an error message
+      if (data?.error && (!data.questions || data.questions.length === 0)) {
+        throw new Error(data.error);
+      }
+      
+      setQuestions(data?.questions || []);
       setPhase('results');
     } catch (e: any) {
-      toast({ title: 'خطأ في التحليل', description: e.message || 'حدث خطأ', variant: 'destructive' });
-      // Re-open the camera since we stopped it before analysis
-      openCamera(facingMode);
+      console.error('Analysis error:', e);
+      setAnalysisError(e.message || 'حدث خطأ أثناء التحليل');
+      setPhase('results'); // Go to results phase to show error, not back to camera
     }
+  };
+
+  const retryAnalysis = () => {
+    setAnalyzeRetryCount(prev => prev + 1);
+    analyzeExam();
   };
 
   const resetScanner = () => {
     setCapturedImages([]);
     setQuestions([]);
     setCameraReady(false);
+    setAnalysisError(null);
+    setAnalyzeRetryCount(0);
     setPhase('permission');
+  };
+
+  const retakePhotos = () => {
+    setQuestions([]);
+    setAnalysisError(null);
+    setAnalyzeRetryCount(0);
+    openCamera(facingMode);
   };
 
   return (
@@ -174,7 +198,6 @@ const ExamScannerPage = () => {
 
       {phase === 'camera' && (
         <div className="relative h-[calc(100vh-4rem)] flex flex-col">
-          {/* Camera view */}
           <div className="flex-1 relative bg-black overflow-hidden">
             <video
               ref={videoRef}
@@ -183,13 +206,11 @@ const ExamScannerPage = () => {
               muted
               className="w-full h-full object-cover"
             />
-            {/* Scan frame overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className={`w-[85%] max-w-lg aspect-[3/4] border-2 rounded-xl relative transition-colors duration-300 ${
                 detection.detected ? 'border-green-400' : 'border-cyan-400/60'
               }`}>
-                {/* Corner markers */}
-                {(['top-1 right-1 border-t-4 border-r-4 rounded-tr-xl', 'top-1 right-auto left-1 border-t-4 border-l-4 rounded-tl-xl -left-1 -top-1', 'bottom-1 right-1 border-b-4 border-r-4 rounded-br-xl', 'bottom-1 left-1 border-b-4 border-l-4 rounded-bl-xl'] as const).map((_, idx) => {
+                {([0,1,2,3]).map((idx) => {
                   const positions = [
                     '-top-1 -right-1 border-t-4 border-r-4 rounded-tr-xl',
                     '-top-1 -left-1 border-t-4 border-l-4 rounded-tl-xl',
@@ -205,7 +226,6 @@ const ExamScannerPage = () => {
                 <div className={`absolute top-1/2 left-0 right-0 h-0.5 animate-pulse transition-colors duration-300 ${
                   detection.detected ? 'bg-green-400/60' : 'bg-cyan-400/40'
                 }`} />
-                {/* Stability progress bar */}
                 {autoMode && detection.stability > 0 && (
                   <div className="absolute bottom-4 left-4 right-4">
                     <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
@@ -218,7 +238,6 @@ const ExamScannerPage = () => {
                 )}
               </div>
             </div>
-            {/* Top info */}
             <div className="absolute top-4 left-0 right-0 text-center">
               <span className={`backdrop-blur-sm px-4 py-2 rounded-full text-sm transition-colors duration-300 ${
                 detection.detected ? 'bg-green-600/70 text-green-100' : 'bg-black/60'
@@ -229,7 +248,6 @@ const ExamScannerPage = () => {
             </div>
           </div>
 
-          {/* Thumbnails strip */}
           {capturedImages.length > 0 && (
             <div className="bg-black/80 backdrop-blur-md p-2 flex gap-2 overflow-x-auto">
               {capturedImages.map((img, i) => (
@@ -247,7 +265,6 @@ const ExamScannerPage = () => {
             </div>
           )}
 
-          {/* Controls */}
           <div className="bg-black/90 backdrop-blur-md p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <Button variant="ghost" size="icon" onClick={flipCamera} className="text-white">
@@ -271,7 +288,6 @@ const ExamScannerPage = () => {
                 تم ({capturedImages.length})
               </Button>
             </div>
-            {/* Auto/Manual toggle */}
             <button
               onClick={() => setAutoMode(prev => !prev)}
               className={`mx-auto px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
@@ -318,7 +334,30 @@ const ExamScannerPage = () => {
             </Button>
           </div>
 
-          <p className="text-white/70 mb-6">تم استخراج {questions.length} سؤال من {capturedImages.length} صفحة</p>
+          {/* Error state */}
+          {analysisError && (
+            <Card className="bg-red-950/30 border-red-500/30 mb-6">
+              <CardContent className="p-6 text-center">
+                <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+                <p className="text-red-300 font-medium text-lg mb-2">فشل في تحليل الامتحان</p>
+                <p className="text-red-400/70 text-sm mb-4">{analysisError}</p>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={retryAnalysis} className="bg-cyan-600 hover:bg-cyan-500 gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    إعادة المحاولة
+                  </Button>
+                  <Button onClick={retakePhotos} variant="outline" className="gap-2 border-cyan-500/30 text-cyan-300">
+                    <Camera className="h-4 w-4" />
+                    إعادة التصوير
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!analysisError && (
+            <p className="text-white/70 mb-6">تم استخراج {questions.length} سؤال من {capturedImages.length} صفحة</p>
+          )}
 
           <div className="space-y-4">
             {questions.map((q, i) => (
@@ -372,12 +411,15 @@ const ExamScannerPage = () => {
             ))}
           </div>
 
-          {questions.length === 0 && (
+          {!analysisError && questions.length === 0 && (
             <div className="text-center py-16">
               <p className="text-white/50 text-lg">لم يتم العثور على أسئلة. جرّب تصوير الورقة بشكل أوضح.</p>
-              <Button onClick={resetScanner} className="mt-4 bg-cyan-600 hover:bg-cyan-500">
-                حاول مرة أخرى
-              </Button>
+              <div className="flex gap-3 justify-center mt-4">
+                <Button onClick={retakePhotos} className="bg-cyan-600 hover:bg-cyan-500 gap-2">
+                  <Camera className="h-4 w-4" />
+                  إعادة التصوير
+                </Button>
+              </div>
             </div>
           )}
         </div>
