@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Puzzle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PuzzleImageUploader from '@/components/shared/PuzzleImageUploader';
 
 // Define form schema with Zod
 const puzzleFormSchema = z.object({
@@ -342,37 +343,12 @@ const SubjectPuzzleForm = ({ subject: defaultSubject, onSuccess }: SubjectPuzzle
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="image"
-                    render={({ field }) => (
-                      <FormItem className="text-right">
-                        <FormLabel className="text-white text-lg mb-2">رابط الصورة (اختياري)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="أدخل رابط الصورة (اختياري)"
-                            className="bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40 hover:border-white/30 transition-colors"
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              handleImageUrlChange(e.target.value);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-400" />
-                        {imagePreview && (
-                          <div className="mt-3 border border-white/20 rounded-md p-2 bg-black/30 backdrop-blur-sm">
-                            <p className="text-xs text-white/60 mb-2">معاينة الصورة:</p>
-                            <img 
-                              src={imagePreview} 
-                              alt="معاينة"
-                              className="max-h-48 object-contain mx-auto rounded-md"
-                              onError={() => setImagePreview(null)}
-                            />
-                          </div>
-                        )}
-                      </FormItem>
-                    )}
+                  <PuzzleImageUploader
+                    currentImageUrl={form.getValues('image')}
+                    onImageUrl={(url) => {
+                      form.setValue('image', url);
+                      setImagePreview(url || null);
+                    }}
                   />
                 </div>
                 
