@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Circle, Minus, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PuzzleImageUploader from '@/components/shared/PuzzleImageUploader';
 
 interface PuzzleFormData {
   title: string;
@@ -233,15 +234,10 @@ const PuzzleForm = ({ onSuccess }: PuzzleFormProps) => {
         </div>
       </div>
       
-      <div>
-        <label className="block mb-1 text-white">رابط الصورة (اختياري)</label>
-        <Input 
-          value={newPuzzle.imageUrl} 
-          onChange={(e) => setNewPuzzle(prev => ({ ...prev, imageUrl: e.target.value }))}
-          className="bg-white/10 border-white/20 text-white"
-          placeholder="https://example.com/image.jpg"
-        />
-      </div>
+      <PuzzleImageUploader
+        currentImageUrl={newPuzzle.imageUrl}
+        onImageUrl={(url) => setNewPuzzle(prev => ({ ...prev, imageUrl: url }))}
+      />
       
       <div>
         <div className="flex justify-between items-center mb-2">
