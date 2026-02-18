@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, X, Upload, Image as ImageIcon, Loader2, CheckCircle2 } from 'lucide-react';
+import PuzzleImageUploader from '@/components/shared/PuzzleImageUploader';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -342,24 +343,11 @@ const AdminPuzzlePanel: React.FC<AdminPuzzlePanelProps> = ({ onPuzzleChange }) =
                 />
               </div>
 
-              {/* Image URL */}
-              <div className="space-y-2">
-                <Label>رابط الصورة (اختياري)</Label>
-                <Input
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  dir="ltr"
-                />
-                {formData.image && (
-                  <img 
-                    src={formData.image} 
-                    alt="Preview" 
-                    className="h-32 object-cover rounded-lg"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
-                  />
-                )}
-              </div>
+              {/* Image Upload */}
+              <PuzzleImageUploader
+                currentImageUrl={formData.image}
+                onImageUrl={(url) => setFormData({ ...formData, image: url })}
+              />
 
               {/* Submit Button */}
               <Button 
