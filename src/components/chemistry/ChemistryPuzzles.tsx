@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChemistryPuzzleType } from '@/types/chemistry';
 import { Loader2, FlaskConical, Award, Lock } from "lucide-react";
+import PuzzleImageUploader from '@/components/shared/PuzzleImageUploader';
 
 const ChemistryPuzzles = () => {
   const [puzzles, setPuzzles] = useState<ChemistryPuzzleType[]>([]);
@@ -291,16 +292,10 @@ const ChemistryPuzzles = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="puzzle-image" className="text-white">رابط الصورة (اختياري)</Label>
-                <Input
-                  id="puzzle-image"
-                  className="bg-blue-950/50 border-cyan-900/30"
-                  placeholder="أدخل رابط الصورة"
-                  value={newPuzzle.image || ""}
-                  onChange={(e) => handleNewPuzzleChange("image", e.target.value)}
-                />
-              </div>
+              <PuzzleImageUploader
+                currentImageUrl={newPuzzle.image || ''}
+                onImageUrl={(url) => handleNewPuzzleChange("image", url)}
+              />
             </CardContent>
             <CardFooter>
               <Button onClick={addNewPuzzle} className="bg-cyan-600 hover:bg-cyan-700">إضافة اللغز</Button>
