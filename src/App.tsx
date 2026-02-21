@@ -170,6 +170,7 @@ import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
 import AIImageGenerator from './pages/AIImageGenerator';
 import SignLanguagePage from './pages/SignLanguagePage';
 import ExamScannerPage from './pages/ExamScannerPage';
+import SmartCityPage from './pages/SmartCityPage';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -854,6 +855,10 @@ const router = createBrowserRouter([
       {
         path: 'sign-language',
         element: <PublicRoute><SignLanguagePage /></PublicRoute>,
+      },
+      {
+        path: 'smart-city',
+        element: <PublicRoute><SmartCityPage /></PublicRoute>,
       },
       {
         path: '*',
