@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ChevronLeft, Settings, GraduationCap, Sparkles, Building2 } from 'lucide-react';
+import { ChevronLeft, Settings, GraduationCap, Sparkles } from 'lucide-react';
 import managementBg from '@/assets/management-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
@@ -74,19 +74,6 @@ const PlatformCategories = () => {
       link: '/jordan-tawjihi',
       platformsCount: 4,
       customImage: true
-    },
-    {
-      id: 'smart-city',
-      title: 'المدينة الحية الذكية',
-      icon: Building2,
-      description: 'محاكاة تفاعلية لمدينة ذكية تتكيف مع البيئة والسكان',
-      gradient: 'from-teal-600/20 to-cyan-600/20',
-      borderColor: 'border-teal-500/30',
-      iconColor: 'text-teal-400',
-      glowColor: 'shadow-teal-500/50',
-      link: '/smart-city',
-      platformsCount: 1,
-      image: aiAssistantBg
     },
     {
       id: 'ai-assistant',
