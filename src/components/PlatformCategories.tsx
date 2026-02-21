@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ChevronLeft, Settings, GraduationCap, Sparkles } from 'lucide-react';
+import { ChevronLeft, Settings, GraduationCap, Sparkles, Building2 } from 'lucide-react';
 import managementBg from '@/assets/management-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
@@ -87,6 +87,19 @@ const PlatformCategories = () => {
       link: '/ai-assistant-section',
       platformsCount: 2,
       image: aiAssistantBg
+    },
+    {
+      id: 'smart-city',
+      title: 'قسم المدينة الذكية',
+      icon: Building2,
+      description: 'منصات معمارية وتصميمية تعتمد على الذكاء الاصطناعي',
+      gradient: 'from-cyan-600/20 to-blue-600/20',
+      borderColor: 'border-cyan-500/30',
+      iconColor: 'text-cyan-400',
+      glowColor: 'shadow-cyan-500/50',
+      link: '/smart-city',
+      platformsCount: 3,
+      image: educationBg
     }
   ];
 

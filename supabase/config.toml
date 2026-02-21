@@ -176,3 +176,6 @@ verify_jwt = false
 
 [functions.exam-analyzer]
 verify_jwt = false
+
+[functions.smart-city-ai]
+verify_jwt = false
