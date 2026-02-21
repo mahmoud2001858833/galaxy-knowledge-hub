@@ -170,6 +170,10 @@ import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
 import AIImageGenerator from './pages/AIImageGenerator';
 import SignLanguagePage from './pages/SignLanguagePage';
 import ExamScannerPage from './pages/ExamScannerPage';
+import SmartCitySection from './pages/SmartCitySection';
+import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
+import RoboticConstruction from './pages/RoboticConstruction';
+import AIInteriorDesign from './pages/AIInteriorDesign';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -854,6 +858,22 @@ const router = createBrowserRouter([
       {
         path: 'sign-language',
         element: <PublicRoute><SignLanguagePage /></PublicRoute>,
+      },
+      {
+        path: 'smart-city',
+        element: <PublicRoute><SmartCitySection /></PublicRoute>,
+      },
+      {
+        path: 'smart-city/architectural-design',
+        element: <PublicRoute><AIArchitecturalDesign /></PublicRoute>,
+      },
+      {
+        path: 'smart-city/robotic-construction',
+        element: <PublicRoute><RoboticConstruction /></PublicRoute>,
+      },
+      {
+        path: 'smart-city/interior-design',
+        element: <PublicRoute><AIInteriorDesign /></PublicRoute>,
       },
       {
         path: '*',
