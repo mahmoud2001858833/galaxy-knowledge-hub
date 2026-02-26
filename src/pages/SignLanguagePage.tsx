@@ -200,10 +200,10 @@ const SignLanguagePage: React.FC = () => {
             delegate: 'GPU'
           },
           runningMode: 'VIDEO',
-          numHands: 1,
-          minHandDetectionConfidence: 0.6,
-          minHandPresenceConfidence: 0.6,
-          minTrackingConfidence: 0.6,
+          numHands: 2,
+          minHandDetectionConfidence: 0.4,
+          minHandPresenceConfidence: 0.4,
+          minTrackingConfidence: 0.4,
         });
       } catch (gpuErr) {
         console.warn('GPU delegate failed, falling back to CPU:', gpuErr);
@@ -214,10 +214,10 @@ const SignLanguagePage: React.FC = () => {
             delegate: 'CPU'
           },
           runningMode: 'VIDEO',
-          numHands: 1,
-          minHandDetectionConfidence: 0.6,
-          minHandPresenceConfidence: 0.6,
-          minTrackingConfidence: 0.6,
+          numHands: 2,
+          minHandDetectionConfidence: 0.4,
+          minHandPresenceConfidence: 0.4,
+          minTrackingConfidence: 0.4,
         });
       }
       
@@ -293,7 +293,7 @@ const SignLanguagePage: React.FC = () => {
             }
             
             const currentTime = Date.now();
-            if (stableGestureRef.current.count >= 3 && currentTime - lastGestureTimeRef.current > 1500) {
+            if (stableGestureRef.current.count >= 2 && currentTime - lastGestureTimeRef.current > 800) {
               handleGestureDetected(gesture);
               lastGestureTimeRef.current = currentTime;
               stableGestureRef.current = { gesture: null, count: 0 };
