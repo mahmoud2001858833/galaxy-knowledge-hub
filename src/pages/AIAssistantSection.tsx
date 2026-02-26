@@ -47,24 +47,6 @@ const AIAssistantSection = () => {
 
   const platforms = [
     {
-      title: "🚀 منشئ المنصات الذكي",
-      icon: "🚀",
-      description: "أنشئ موقعك الإلكتروني بالذكاء الاصطناعي - برمجة بدون كود بمساعدة AI متطور",
-      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-      color: "from-cyan-600/20 to-blue-600/20",
-      borderColor: "border-cyan-500/30",
-      link: "/ai-platform-builder"
-    },
-    {
-      title: "🇯🇴 مساعدك الأردني",
-      icon: "🇯🇴",
-      description: "مساعد ذكي متخصص في المنهاج الأردني - يجيب من الكتب المدرسية حصرياً",
-      image: aiAssistantBg,
-      color: "from-green-600/20 to-red-600/20",
-      borderColor: "border-green-500/30",
-      link: "/jordanian-assistant"
-    },
-    {
       title: "مرشدك النفسي",
       icon: "💙",
       description: "دعم نفسي ذكي يساعدك في فهم مشاعرك ويوجهك للقسم المناسب",
@@ -183,19 +165,6 @@ const AIAssistantSection = () => {
                     {platform.description}
                   </p>
 
-                  {/* Admin Upload Button for Jordanian Assistant */}
-                  {index === 1 && isSuperAdmin && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/upload-textbooks');
-                      }}
-                      className="mb-4 bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Upload className="w-4 h-4 ml-2" />
-                      إدارة ورفع الكتب
-                    </Button>
-                  )}
 
                   <motion.div
                     whileHover={{ scale: 1.1, boxShadow: "0 0 30px rgba(168, 85, 247, 0.6)" }}
