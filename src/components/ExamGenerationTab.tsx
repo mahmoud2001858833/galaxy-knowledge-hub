@@ -187,7 +187,7 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
       } else {
         toast({
           title: "⚠️ لم يتوفر المحتوى",
-          description: "لم يتم تزويد النظام بهذا الكتاب بعد. يرجى رفع الكتاب أولاً",
+          description: `لم يتم تزويد النظام بمحتوى مادة "${subject}" للصف "${grade}" بعد. المواد المتوفرة حالياً: التربية الإسلامية، الحاسوب، اللغة العربية (الصف الحادي عشر فقط)`,
           variant: "destructive",
         });
       }
