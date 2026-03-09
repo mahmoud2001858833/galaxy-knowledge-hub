@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from '@/features/sign-language/camera';
 
 // Extended sign language dictionary
 const signDictionary = [
@@ -120,8 +121,15 @@ const SignLanguagePage: React.FC = () => {
   const [confidence, setConfidence] = useState(0);
   const [fps, setFps] = useState(0);
   const [handsCount, setHandsCount] = useState(0);
+  const [demoMode, setDemoMode] = useState(false);
+  const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
+  const [noCamera, setNoCamera] = useState(false);
 
   const fpsCounterRef = useRef({ frames: 0, lastTime: performance.now() });
+
+  useEffect(() => {
+    getCameraSupport().then(setCameraSupport).catch(() => {});
+  }, []);
 
   const filteredDictionary = signDictionary.filter(item => {
     const matchesSearch = item.word.includes(searchQuery);
@@ -435,43 +443,44 @@ const SignLanguagePage: React.FC = () => {
   const startCamera = useCallback(async () => {
     try {
       setError(null);
+      setNoCamera(false);
+      setDemoMode(false);
       setIsLoading(true);
       setLoadingStep('جاري طلب إذن الكاميرا...');
       setLoadingProgress(10);
-      
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
-      });
+
+      const stream = await getCameraStream();
       streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setCameraActive(true);
-        
-        const handLandmarker = await initializeHandDetection();
-        setLoadingProgress(100);
-        setIsLoading(false);
-        
-        if (handLandmarker) {
-          startDetectionLoop(handLandmarker);
-          toast.success('✅ الكاميرا جاهزة! أظهر يدك للبدء بالتعرف');
-        } else {
-          toast.error('فشل تحميل نموذج التعرف. حاول تحديث الصفحة.');
-          setError('فشل تحميل نموذج الذكاء الاصطناعي.');
-        }
+
+      if (!videoRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        throw new Error('Video element not available');
+      }
+
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setCameraActive(true);
+
+      const handLandmarker = await initializeHandDetection();
+      setLoadingProgress(100);
+      setIsLoading(false);
+
+      if (handLandmarker) {
+        startDetectionLoop(handLandmarker);
+        toast.success('✅ الكاميرا جاهزة! أظهر يدك للبدء بالتعرف');
+      } else {
+        toast.error('فشل تحميل نموذج التعرف. حاول تحديث الصفحة.');
+        setError('فشل تحميل نموذج الذكاء الاصطناعي.');
       }
     } catch (err: any) {
       console.error('Camera error:', err);
-      const msg = err?.name === 'NotAllowedError' 
-        ? 'تم رفض إذن الكاميرا. يرجى السماح بالوصول من إعدادات المتصفح.'
-        : err?.name === 'NotFoundError'
-        ? 'لم يتم العثور على كاميرا.'
-        : 'لم نتمكن من الوصول للكاميرا.';
-      setError(msg);
+      const support = cameraSupport ?? (await getCameraSupport().catch(() => null));
+      if (!cameraSupport && support) setCameraSupport(support);
+      setNoCamera(err?.name === 'NotFoundError' || (support?.videoInputs ?? 1) === 0);
+      setError(mapCameraError(err, support));
       setIsLoading(false);
     }
-  }, [initializeHandDetection, startDetectionLoop]);
+  }, [initializeHandDetection, startDetectionLoop, cameraSupport]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -556,7 +565,7 @@ const SignLanguagePage: React.FC = () => {
               <div className="space-y-4">
                 <Card className="bg-slate-900/60 border-indigo-500/20 overflow-hidden">
                   <div className="relative aspect-video bg-slate-800">
-                    {!cameraActive && !isLoading && !error && (
+                    {!cameraActive && !isLoading && !error && !demoMode && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
                           <div className="relative mx-auto mb-6">
@@ -571,10 +580,47 @@ const SignLanguagePage: React.FC = () => {
                           </div>
                           <p className="text-slate-300 text-lg mb-2 font-medium">مترجم لغة الإشارة بالذكاء الاصطناعي</p>
                           <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">يدعم 12 إشارة مختلفة مع تعرف فوري ونطق تلقائي</p>
-                          <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
-                            <Camera className="ml-2 h-5 w-5" />
-                            تشغيل الكاميرا
-                          </Button>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                              <Camera className="ml-2 h-5 w-5" />
+                              تشغيل الكاميرا
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              className="border-indigo-500/30 text-slate-200"
+                              onClick={() => {
+                                setError(null);
+                                setNoCamera(false);
+                                setDemoMode(true);
+                              }}
+                            >
+                              جرّب بدون كاميرا
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {demoMode && !cameraActive && !isLoading && !error && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-6">
+                          <p className="text-slate-200 text-lg mb-2 font-medium">الوضع التجريبي</p>
+                          <p className="text-slate-500 text-sm mb-6">اختر إشارات من الأسفل لتجربة التحويل بدون كاميرا</p>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                              <Camera className="ml-2 h-5 w-5" />
+                              تشغيل الكاميرا
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              className="border-slate-600 text-slate-200"
+                              onClick={() => setDemoMode(false)}
+                            >
+                              إيقاف الوضع التجريبي
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -593,7 +639,23 @@ const SignLanguagePage: React.FC = () => {
                         <div className="text-center p-4">
                           <AlertCircle className="h-14 w-14 text-red-400 mx-auto mb-3" />
                           <p className="text-red-400 mb-4">{error}</p>
-                          <Button onClick={startCamera} size="lg">إعادة المحاولة</Button>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                            <Button onClick={startCamera} size="lg">إعادة المحاولة</Button>
+                            {(noCamera || (cameraSupport?.videoInputs ?? 1) === 0) && (
+                              <Button
+                                variant="outline"
+                                size="lg"
+                                className="border-slate-600 text-slate-200"
+                                onClick={() => {
+                                  setError(null);
+                                  setNoCamera(false);
+                                  setDemoMode(true);
+                                }}
+                              >
+                                وضع تجريبي
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -668,6 +730,29 @@ const SignLanguagePage: React.FC = () => {
                     <CameraOff className="ml-2 h-4 w-4" />
                     إيقاف الكاميرا
                   </Button>
+                )}
+
+                {!cameraActive && demoMode && (
+                  <Card className="bg-slate-900/60 border-indigo-500/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white">جرّب الإشارات (بدون كاميرا)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {Object.entries(gestureToArabic).map(([key, info]) => (
+                          <Button
+                            key={key}
+                            variant="outline"
+                            className="justify-start border-slate-700/40 bg-slate-800/30"
+                            onClick={() => handleGestureDetected(key, 0.99)}
+                          >
+                            <span className="ml-2">{info.emoji}</span>
+                            <span className="truncate">{info.text}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
 
