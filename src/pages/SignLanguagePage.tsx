@@ -639,7 +639,23 @@ const SignLanguagePage: React.FC = () => {
                         <div className="text-center p-4">
                           <AlertCircle className="h-14 w-14 text-red-400 mx-auto mb-3" />
                           <p className="text-red-400 mb-4">{error}</p>
-                          <Button onClick={startCamera} size="lg">إعادة المحاولة</Button>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                            <Button onClick={startCamera} size="lg">إعادة المحاولة</Button>
+                            {(noCamera || (cameraSupport?.videoInputs ?? 1) === 0) && (
+                              <Button
+                                variant="outline"
+                                size="lg"
+                                className="border-slate-600 text-slate-200"
+                                onClick={() => {
+                                  setError(null);
+                                  setNoCamera(false);
+                                  setDemoMode(true);
+                                }}
+                              >
+                                وضع تجريبي
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
