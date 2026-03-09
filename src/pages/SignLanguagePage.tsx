@@ -565,7 +565,7 @@ const SignLanguagePage: React.FC = () => {
               <div className="space-y-4">
                 <Card className="bg-slate-900/60 border-indigo-500/20 overflow-hidden">
                   <div className="relative aspect-video bg-slate-800">
-                    {!cameraActive && !isLoading && !error && (
+                    {!cameraActive && !isLoading && !error && !demoMode && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
                           <div className="relative mx-auto mb-6">
