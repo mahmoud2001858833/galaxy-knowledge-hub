@@ -256,27 +256,47 @@ const SignLanguagePage: React.FC = () => {
     setTimeout(() => setCurrentGesture(null), 1200);
   }, []);
 
-  const initializeHandDetection = useCallback(async () => {
+  const initializeHandDetection = useCallback(async (): Promise<{ handLandmarker: any | null; error?: string }> => {
     try {
       setLoadingStep('جاري تحميل مكتبة التعرف على اليد...');
       setLoadingProgress(20);
-      
+
       const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-      
+
       setLoadingStep('جاري تهيئة نظام الرؤية...');
       setLoadingProgress(40);
-      
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm'
-      );
-      
+
+      // IMPORTANT: The WASM files must match the installed @mediapipe/tasks-vision version.
+      const wasmCandidates = [
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm',
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm',
+      ];
+
+      let vision: any = null;
+      let lastErr: any = null;
+      for (const wasmBase of wasmCandidates) {
+        try {
+          vision = await FilesetResolver.forVisionTasks(wasmBase);
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+
+      if (!vision) {
+        throw lastErr ?? new Error('Failed to load MediaPipe WASM files');
+      }
+
       setLoadingStep('جاري تحميل نموذج الذكاء الاصطناعي...');
       setLoadingProgress(60);
-      
+
       const options = {
         baseOptions: {
-          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-          delegate: 'GPU' as const
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+          delegate: 'GPU' as const,
         },
         runningMode: 'VIDEO' as const,
         numHands: 2,
@@ -293,18 +313,23 @@ const SignLanguagePage: React.FC = () => {
         setLoadingStep('جاري التبديل لمعالج CPU...');
         handLandmarker = await HandLandmarker.createFromOptions(vision, {
           ...options,
-          baseOptions: { ...options.baseOptions, delegate: 'CPU' as const }
+          baseOptions: { ...options.baseOptions, delegate: 'CPU' as const },
         });
       }
-      
+
       setLoadingProgress(90);
       setLoadingStep('جاهز للتعرف!');
       handLandmarkerRef.current = handLandmarker;
       setMediapipeReady(true);
-      return handLandmarker;
-    } catch (err) {
+      return { handLandmarker };
+    } catch (err: any) {
       console.error('Failed to initialize MediaPipe:', err);
-      return null;
+      setMediapipeReady(false);
+      return {
+        handLandmarker: null,
+        error:
+          'تعذر تحميل MediaPipe (ملفات WASM). جرّب تعطيل مانع الإعلانات/الجدار الناري أو افتح من متصفح آخر.',
+      };
     }
   }, []);
 
