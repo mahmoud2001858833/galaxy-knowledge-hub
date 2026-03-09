@@ -486,16 +486,15 @@ const SignLanguagePage: React.FC = () => {
       await videoRef.current.play();
       setCameraActive(true);
 
-      const handLandmarker = await initializeHandDetection();
+      const init = await initializeHandDetection();
       setLoadingProgress(100);
       setIsLoading(false);
 
-      if (handLandmarker) {
-        startDetectionLoop(handLandmarker);
+      if (init.handLandmarker) {
+        startDetectionLoop(init.handLandmarker);
         toast.success('✅ الكاميرا جاهزة! أظهر يدك للبدء بالتعرف');
       } else {
-        toast.error('فشل تحميل نموذج التعرف. حاول تحديث الصفحة.');
-        setError('فشل تحميل نموذج الذكاء الاصطناعي.');
+        setError(init.error ?? 'فشل تحميل نموذج التعرف. حاول تحديث الصفحة.');
       }
     } catch (err: any) {
       console.error('Camera error:', err);
