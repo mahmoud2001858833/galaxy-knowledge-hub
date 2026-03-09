@@ -580,10 +580,24 @@ const SignLanguagePage: React.FC = () => {
                           </div>
                           <p className="text-slate-300 text-lg mb-2 font-medium">مترجم لغة الإشارة بالذكاء الاصطناعي</p>
                           <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">يدعم 12 إشارة مختلفة مع تعرف فوري ونطق تلقائي</p>
-                          <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
-                            <Camera className="ml-2 h-5 w-5" />
-                            تشغيل الكاميرا
-                          </Button>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                              <Camera className="ml-2 h-5 w-5" />
+                              تشغيل الكاميرا
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              className="border-indigo-500/30 text-slate-200"
+                              onClick={() => {
+                                setError(null);
+                                setNoCamera(false);
+                                setDemoMode(true);
+                              }}
+                            >
+                              جرّب بدون كاميرا
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
