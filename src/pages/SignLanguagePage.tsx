@@ -121,8 +121,15 @@ const SignLanguagePage: React.FC = () => {
   const [confidence, setConfidence] = useState(0);
   const [fps, setFps] = useState(0);
   const [handsCount, setHandsCount] = useState(0);
+  const [demoMode, setDemoMode] = useState(false);
+  const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
+  const [noCamera, setNoCamera] = useState(false);
 
   const fpsCounterRef = useRef({ frames: 0, lastTime: performance.now() });
+
+  useEffect(() => {
+    getCameraSupport().then(setCameraSupport).catch(() => {});
+  }, []);
 
   const filteredDictionary = signDictionary.filter(item => {
     const matchesSearch = item.word.includes(searchQuery);
