@@ -678,6 +678,29 @@ const SignLanguagePage: React.FC = () => {
                     إيقاف الكاميرا
                   </Button>
                 )}
+
+                {!cameraActive && demoMode && (
+                  <Card className="bg-slate-900/60 border-indigo-500/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white">جرّب الإشارات (بدون كاميرا)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {Object.entries(gestureToArabic).map(([key, info]) => (
+                          <Button
+                            key={key}
+                            variant="outline"
+                            className="justify-start border-slate-700/40 bg-slate-800/30"
+                            onClick={() => handleGestureDetected(key, 0.99)}
+                          >
+                            <span className="ml-2">{info.emoji}</span>
+                            <span className="truncate">{info.text}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               {/* Results Section */}
