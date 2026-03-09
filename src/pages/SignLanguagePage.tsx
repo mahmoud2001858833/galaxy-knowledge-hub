@@ -601,6 +601,29 @@ const SignLanguagePage: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    {demoMode && !cameraActive && !isLoading && !error && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-6">
+                          <p className="text-slate-200 text-lg mb-2 font-medium">الوضع التجريبي</p>
+                          <p className="text-slate-500 text-sm mb-6">اختر إشارات من الأسفل لتجربة التحويل بدون كاميرا</p>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                              <Camera className="ml-2 h-5 w-5" />
+                              تشغيل الكاميرا
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              className="border-slate-600 text-slate-200"
+                              onClick={() => setDemoMode(false)}
+                            >
+                              إيقاف الوضع التجريبي
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {isLoading && (
                       <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-800/90">
                         <div className="text-center w-72">
