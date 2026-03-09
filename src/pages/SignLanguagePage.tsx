@@ -443,43 +443,44 @@ const SignLanguagePage: React.FC = () => {
   const startCamera = useCallback(async () => {
     try {
       setError(null);
+      setNoCamera(false);
+      setDemoMode(false);
       setIsLoading(true);
       setLoadingStep('جاري طلب إذن الكاميرا...');
       setLoadingProgress(10);
-      
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
-      });
+
+      const stream = await getCameraStream();
       streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setCameraActive(true);
-        
-        const handLandmarker = await initializeHandDetection();
-        setLoadingProgress(100);
-        setIsLoading(false);
-        
-        if (handLandmarker) {
-          startDetectionLoop(handLandmarker);
-          toast.success('✅ الكاميرا جاهزة! أظهر يدك للبدء بالتعرف');
-        } else {
-          toast.error('فشل تحميل نموذج التعرف. حاول تحديث الصفحة.');
-          setError('فشل تحميل نموذج الذكاء الاصطناعي.');
-        }
+
+      if (!videoRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        throw new Error('Video element not available');
+      }
+
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setCameraActive(true);
+
+      const handLandmarker = await initializeHandDetection();
+      setLoadingProgress(100);
+      setIsLoading(false);
+
+      if (handLandmarker) {
+        startDetectionLoop(handLandmarker);
+        toast.success('✅ الكاميرا جاهزة! أظهر يدك للبدء بالتعرف');
+      } else {
+        toast.error('فشل تحميل نموذج التعرف. حاول تحديث الصفحة.');
+        setError('فشل تحميل نموذج الذكاء الاصطناعي.');
       }
     } catch (err: any) {
       console.error('Camera error:', err);
-      const msg = err?.name === 'NotAllowedError' 
-        ? 'تم رفض إذن الكاميرا. يرجى السماح بالوصول من إعدادات المتصفح.'
-        : err?.name === 'NotFoundError'
-        ? 'لم يتم العثور على كاميرا.'
-        : 'لم نتمكن من الوصول للكاميرا.';
-      setError(msg);
+      const support = cameraSupport ?? (await getCameraSupport().catch(() => null));
+      if (!cameraSupport && support) setCameraSupport(support);
+      setNoCamera(err?.name === 'NotFoundError' || (support?.videoInputs ?? 1) === 0);
+      setError(mapCameraError(err, support));
       setIsLoading(false);
     }
-  }, [initializeHandDetection, startDetectionLoop]);
+  }, [initializeHandDetection, startDetectionLoop, cameraSupport]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
