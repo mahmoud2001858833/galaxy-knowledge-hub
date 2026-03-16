@@ -877,6 +877,10 @@ const router = createBrowserRouter([
         element: <PublicRoute><AIInteriorDesign /></PublicRoute>,
       },
       {
+        path: 'gju-competition',
+        element: <PublicRoute><GJUCompetition /></PublicRoute>,
+      },
+      {
         path: '*',
         element: <NotFound />,
       }

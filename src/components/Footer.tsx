@@ -18,7 +18,9 @@ const Footer = () => {
               تواصل معنا
             </Link>
             <span className="text-white/30">•</span>
-            
+            <Link to="/gju-competition" className="text-amber-400 hover:text-amber-300 text-sm flex items-center gap-1">
+              🏆 مسابقة GJU 3030
+            </Link>
             <span className="text-white/30">•</span>
             <Link to="/" className="text-blue-400 hover:text-blue-300 text-sm">
               الرئيسية
