@@ -13,7 +13,7 @@ import {
   Calculator, School, Home, BarChart, Recycle,
   Palette, Camera, ChevronLeft, ArrowRight,
   Cpu, Image, Code, MessageSquare, Target,
-  Lightbulb, Layers, Box, Printer3d
+  Lightbulb, Layers, Box
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
