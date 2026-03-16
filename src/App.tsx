@@ -174,6 +174,7 @@ import SmartCitySection from './pages/SmartCitySection';
 import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
 import RoboticConstruction from './pages/RoboticConstruction';
 import AIInteriorDesign from './pages/AIInteriorDesign';
+import GJUCompetition from './pages/GJUCompetition';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -874,6 +875,10 @@ const router = createBrowserRouter([
       {
         path: 'smart-city/interior-design',
         element: <PublicRoute><AIInteriorDesign /></PublicRoute>,
+      },
+      {
+        path: 'gju-competition',
+        element: <PublicRoute><GJUCompetition /></PublicRoute>,
       },
       {
         path: '*',
