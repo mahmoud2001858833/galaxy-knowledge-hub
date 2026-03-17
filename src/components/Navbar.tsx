@@ -10,6 +10,8 @@ import { toast } from '@/hooks/use-toast';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 const Navbar = () => {
+  const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
+
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -77,6 +79,8 @@ const Navbar = () => {
     });
     navigate('/');
   };
+  if (isGJUMode) return null;
+
   return <nav className="sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
         <div className="hidden md:flex items-center space-x-1 rtl:space-x-reverse">

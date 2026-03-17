@@ -292,6 +292,16 @@ const GJUCompetition = () => {
   const { dir } = useLanguage();
   const navigate = useNavigate();
 
+  // Set GJU mode on mount
+  React.useEffect(() => {
+    sessionStorage.setItem('gju_mode', 'true');
+  }, []);
+
+  const handleBackToMain = () => {
+    sessionStorage.removeItem('gju_mode');
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[hsl(222,84%,5%)] via-[hsl(230,60%,8%)] to-[hsl(222,84%,5%)]" dir={dir}>
       <SEO
@@ -318,7 +328,7 @@ const GJUCompetition = () => {
               className="flex justify-start mb-8"
             >
               <button
-                onClick={() => navigate('/')}
+                onClick={handleBackToMain}
                 className="flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
               >
                 <ArrowRight className="w-4 h-4" />

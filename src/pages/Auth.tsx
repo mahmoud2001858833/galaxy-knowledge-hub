@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { FcGoogle } from 'react-icons/fc'; // We'll add this dependency later
 
 const Auth = () => {
+  const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
+  const redirectPath = isGJUMode ? '/gju-competition' : '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,7 +31,7 @@ const Auth = () => {
     }) => {
       setSession(session);
       if (session) {
-        navigate('/');
+        navigate(redirectPath);
       }
     });
 
@@ -41,7 +43,7 @@ const Auth = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        navigate('/');
+        navigate(redirectPath);
       }
     });
     return () => subscription.unsubscribe();
@@ -153,7 +155,7 @@ const Auth = () => {
       } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: isGJUMode ? `${window.location.origin}/gju-competition` : window.location.origin
         }
       });
       if (error) throw error;
@@ -175,7 +177,7 @@ const Auth = () => {
       } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: isGJUMode ? `${window.location.origin}/gju-competition` : window.location.origin
         }
       });
       if (error) throw error;
@@ -228,7 +230,7 @@ const Auth = () => {
               opacity: 1
             }} transition={{
               delay: 0.2
-            }}>🌌 ذروة العلم
+            }}>🌌 {isGJUMode ? 'مستقبل التكنولوجيا' : 'ذروة العلم'}
               </motion.h1>
             </div>
             
