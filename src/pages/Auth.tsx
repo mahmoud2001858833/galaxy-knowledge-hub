@@ -155,7 +155,7 @@ const Auth = () => {
       } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: isGJUMode ? `${window.location.origin}/gju-competition` : window.location.origin
         }
       });
       if (error) throw error;
