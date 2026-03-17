@@ -886,6 +886,26 @@ const router = createBrowserRouter([
         element: <PublicRoute><GJUCompetition /></PublicRoute>,
       },
       {
+        path: 'ai-document-analyzer',
+        element: <PublicRoute><AIDocumentAnalyzer /></PublicRoute>,
+      },
+      {
+        path: 'ai-smart-translator',
+        element: <PublicRoute><AISmartTranslator /></PublicRoute>,
+      },
+      {
+        path: 'ai-quiz-generator',
+        element: <PublicRoute><AIQuizGenerator /></PublicRoute>,
+      },
+      {
+        path: 'ai-code-reviewer',
+        element: <PublicRoute><AICodeReviewer /></PublicRoute>,
+      },
+      {
+        path: 'ai-research-assistant',
+        element: <PublicRoute><AIResearchAssistant /></PublicRoute>,
+      },
+      {
         path: '*',
         element: <NotFound />,
       }
