@@ -175,11 +175,6 @@ import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
 import RoboticConstruction from './pages/RoboticConstruction';
 import AIInteriorDesign from './pages/AIInteriorDesign';
 import GJUCompetition from './pages/GJUCompetition';
-import AIDocumentAnalyzer from './pages/AIDocumentAnalyzer';
-import AISmartTranslator from './pages/AISmartTranslator';
-import AIQuizGenerator from './pages/AIQuizGenerator';
-import AICodeReviewer from './pages/AICodeReviewer';
-import AIResearchAssistant from './pages/AIResearchAssistant';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -884,26 +879,6 @@ const router = createBrowserRouter([
       {
         path: 'gju-competition',
         element: <PublicRoute><GJUCompetition /></PublicRoute>,
-      },
-      {
-        path: 'ai-document-analyzer',
-        element: <PublicRoute><AIDocumentAnalyzer /></PublicRoute>,
-      },
-      {
-        path: 'ai-smart-translator',
-        element: <PublicRoute><AISmartTranslator /></PublicRoute>,
-      },
-      {
-        path: 'ai-quiz-generator',
-        element: <PublicRoute><AIQuizGenerator /></PublicRoute>,
-      },
-      {
-        path: 'ai-code-reviewer',
-        element: <PublicRoute><AICodeReviewer /></PublicRoute>,
-      },
-      {
-        path: 'ai-research-assistant',
-        element: <PublicRoute><AIResearchAssistant /></PublicRoute>,
       },
       {
         path: '*',

@@ -13,84 +13,43 @@ import {
   Calculator, School, Home, BarChart, Recycle,
   Palette, Camera, ChevronLeft, ArrowRight,
   Cpu, Image, Code, MessageSquare, Target,
-  Lightbulb, Layers, Box, FileSearch, Languages,
-  Code2, Search
+  Lightbulb, Layers, Box
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /* ─────────────── Track 1: AI & Machine Learning ─────────────── */
 const aiTools = [
   {
-    title: 'محلل المستندات الذكي',
-    description: 'حلّل مستنداتك وصورك واستخرج ملخصات وأسئلة مراجعة وخرائط ذهنية بالذكاء الاصطناعي',
-    icon: FileSearch,
-    gradient: 'from-violet-500 to-fuchsia-600',
-    link: '/ai-document-analyzer',
-    isNew: true,
-  },
-  {
-    title: 'المترجم الفوري الذكي',
-    description: 'ترجمة فورية متعددة اللغات مع تحليل نحوي ونطق صوتي وتصحيح قواعد',
-    icon: Languages,
-    gradient: 'from-cyan-500 to-blue-600',
-    link: '/ai-smart-translator',
-    isNew: true,
-  },
-  {
-    title: 'مولّد الاختبارات الذكي',
-    description: 'أدخل أي موضوع واحصل على اختبار كامل مع تصحيح تلقائي وتقييم ذكي',
-    icon: GraduationCap,
-    gradient: 'from-emerald-500 to-teal-600',
-    link: '/ai-quiz-generator',
-    isNew: true,
-  },
-  {
-    title: 'مراجع الأكواد الذكي',
-    description: 'تحليل شامل لأكوادك: أخطاء، ثغرات أمنية، تحسينات أداء، وأفضل الممارسات',
-    icon: Code2,
-    gradient: 'from-amber-500 to-orange-600',
-    link: '/ai-code-reviewer',
-    isNew: true,
-  },
-  {
-    title: 'الباحث الذكي المتقدم',
-    description: 'أدخل موضوعاً بحثياً واحصل على تقرير أكاديمي شامل مع فصول ومراجع',
-    icon: Search,
-    gradient: 'from-rose-500 to-pink-600',
-    link: '/ai-research-assistant',
-    isNew: true,
-  },
-  {
     title: 'مساعد ذروة العلم الذكي',
-    description: 'مساعد تعليمي ذكي متعدد المهام يجيب على أسئلتك في جميع المواد',
+    description: 'مساعد تعليمي ذكي متعدد المهام يجيب على أسئلتك في جميع المواد مع دعم الصور والفيديو',
     icon: Brain,
     gradient: 'from-violet-500 to-purple-600',
     link: '/falak-knowledge-ai',
   },
   {
     title: 'توليد الصور بالذكاء الاصطناعي',
-    description: 'أنشئ صوراً تعليمية احترافية باستخدام الذكاء الاصطناعي',
+    description: 'أنشئ صوراً تعليمية احترافية باستخدام الذكاء الاصطناعي مع وصف نصي بسيط',
     icon: Image,
     gradient: 'from-pink-500 to-rose-600',
     link: '/ai-image-generator',
   },
   {
     title: 'تقييم الرسومات بالذكاء الاصطناعي',
-    description: 'ارسم وتحدّى أصدقاءك! يقيّم الذكاء الاصطناعي رسوماتكم',
+    description: 'ارسم وتحدّى أصدقاءك! يقيّم الذكاء الاصطناعي رسوماتكم ويختار الفائز',
     icon: Target,
     gradient: 'from-amber-500 to-orange-600',
     link: '/drawing-challenge',
   },
   {
     title: 'مساعد البرمجة الذكي',
-    description: 'ولّد أكواداً برمجية بأي لغة مع توثيق وشرح مفصّل',
+    description: 'ولّد أكواداً برمجية بأي لغة مع توثيق وشرح مفصّل باستخدام AI',
     icon: Code,
     gradient: 'from-emerald-500 to-teal-600',
     link: '/btec',
   },
   {
     title: 'تحليل الصور التعليمية',
-    description: 'حلّل صور الكتب والمسائل والتجارب بالذكاء الاصطناعي',
+    description: 'حلّل صور الكتب والمسائل والتجارب باستخدام الذكاء الاصطناعي',
     icon: Eye,
     gradient: 'from-cyan-500 to-blue-600',
     link: '/jordanian-assistant',
@@ -245,9 +204,9 @@ const tracks = [
 ];
 
 const stats = [
-  { label: 'أداة ومنصة تعليمية', value: '55+', icon: BookOpen },
+  { label: 'أداة ومنصة تعليمية', value: '50+', icon: BookOpen },
   { label: 'محاكاة علمية تفاعلية', value: '49', icon: Zap },
-  { label: 'أداة ذكاء اصطناعي', value: '20+', icon: Brain },
+  { label: 'أداة ذكاء اصطناعي', value: '15+', icon: Brain },
   { label: 'مادة دراسية مدعومة', value: '8+', icon: GraduationCap },
 ];
 
@@ -263,7 +222,6 @@ const techStack = [
 /* ─────────────── Tool Card Component ─────────────── */
 const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) => {
   const navigate = useNavigate();
-  const isNew = (tool as any).isNew;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -271,15 +229,8 @@ const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) =
       viewport={{ once: true }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
       onClick={() => navigate(tool.link)}
-      className={`group cursor-pointer relative rounded-2xl border bg-white/[0.03] backdrop-blur-sm p-5 hover:bg-white/[0.07] transition-all duration-300 hover:-translate-y-1 ${
-        isNew ? 'border-amber-500/30 hover:border-amber-400/50 ring-1 ring-amber-500/10' : 'border-white/10 hover:border-white/20'
-      }`}
+      className="group cursor-pointer relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5 hover:bg-white/[0.07] transition-all duration-300 hover:border-white/20 hover:-translate-y-1"
     >
-      {isNew && (
-        <div className="absolute -top-2 -right-2 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-lg animate-pulse">
-          🆕 جديد
-        </div>
-      )}
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
         <tool.icon className="w-6 h-6 text-white" />
       </div>
