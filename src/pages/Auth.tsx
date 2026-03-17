@@ -31,7 +31,7 @@ const Auth = () => {
     }) => {
       setSession(session);
       if (session) {
-        navigate('/');
+        navigate(redirectPath);
       }
     });
 
