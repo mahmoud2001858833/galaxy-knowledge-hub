@@ -77,9 +77,55 @@ const Navbar = () => {
       title: "تم بنجاح",
       description: "تم تسجيل خروجك بنجاح"
     });
-    navigate('/');
+    if (isGJUMode) {
+      navigate('/gju-competition');
+    } else {
+      navigate('/');
+    }
   };
-  if (isGJUMode) return null;
+
+  if (isGJUMode) {
+    return (
+      <nav className="sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
+        <div className="container mx-auto px-4 flex justify-between items-center h-14">
+          <Link to="/gju-competition" className="flex items-center gap-2">
+            <span className="text-lg font-bold bg-gradient-to-l from-violet-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+              🌌 مستقبل التكنولوجيا
+            </span>
+          </Link>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 text-white/70 hover:text-white hover:bg-white/10">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={profile?.avatar_url || ''} />
+                      <AvatarFallback className="bg-violet-600/50 text-white text-xs">
+                        {user.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm hidden sm:inline">{profile?.username || user.email?.split('@')[0]}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-400 cursor-pointer">
+                    <LogOut className="ml-2 h-4 w-4" />
+                    تسجيل الخروج
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10 text-sm">
+                  تسجيل الدخول
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return <nav className="sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
