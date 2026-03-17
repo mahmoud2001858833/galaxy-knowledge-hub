@@ -230,7 +230,7 @@ const Auth = () => {
               opacity: 1
             }} transition={{
               delay: 0.2
-            }}>🌌 ذروة العلم
+            }}>🌌 {isGJUMode ? 'مستقبل التكنولوجيا' : 'ذروة العلم'}
               </motion.h1>
             </div>
             
