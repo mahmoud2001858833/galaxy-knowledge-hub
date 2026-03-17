@@ -263,6 +263,7 @@ const techStack = [
 /* ─────────────── Tool Card Component ─────────────── */
 const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) => {
   const navigate = useNavigate();
+  const isNew = (tool as any).isNew;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -270,8 +271,15 @@ const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) =
       viewport={{ once: true }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
       onClick={() => navigate(tool.link)}
-      className="group cursor-pointer relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5 hover:bg-white/[0.07] transition-all duration-300 hover:border-white/20 hover:-translate-y-1"
+      className={`group cursor-pointer relative rounded-2xl border bg-white/[0.03] backdrop-blur-sm p-5 hover:bg-white/[0.07] transition-all duration-300 hover:-translate-y-1 ${
+        isNew ? 'border-amber-500/30 hover:border-amber-400/50 ring-1 ring-amber-500/10' : 'border-white/10 hover:border-white/20'
+      }`}
     >
+      {isNew && (
+        <div className="absolute -top-2 -right-2 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-lg animate-pulse">
+          🆕 جديد
+        </div>
+      )}
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
         <tool.icon className="w-6 h-6 text-white" />
       </div>
