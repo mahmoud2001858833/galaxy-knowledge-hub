@@ -10,9 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 const Navbar = () => {
-  // Hide navbar in GJU competition mode
   const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
-  if (isGJUMode) return null;
 
   const location = useLocation();
   const navigate = useNavigate();
