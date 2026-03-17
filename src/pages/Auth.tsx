@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { FcGoogle } from 'react-icons/fc'; // We'll add this dependency later
 
 const Auth = () => {
+  const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
+  const redirectPath = isGJUMode ? '/gju-competition' : '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

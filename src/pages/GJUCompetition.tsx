@@ -292,6 +292,16 @@ const GJUCompetition = () => {
   const { dir } = useLanguage();
   const navigate = useNavigate();
 
+  // Set GJU mode on mount
+  React.useEffect(() => {
+    sessionStorage.setItem('gju_mode', 'true');
+  }, []);
+
+  const handleBackToMain = () => {
+    sessionStorage.removeItem('gju_mode');
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[hsl(222,84%,5%)] via-[hsl(230,60%,8%)] to-[hsl(222,84%,5%)]" dir={dir}>
       <SEO
