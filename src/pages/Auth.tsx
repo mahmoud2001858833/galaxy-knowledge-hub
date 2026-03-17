@@ -43,7 +43,7 @@ const Auth = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        navigate('/');
+        navigate(redirectPath);
       }
     });
     return () => subscription.unsubscribe();
