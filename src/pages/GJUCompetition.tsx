@@ -328,7 +328,7 @@ const GJUCompetition = () => {
               className="flex justify-start mb-8"
             >
               <button
-                onClick={() => navigate('/')}
+                onClick={handleBackToMain}
                 className="flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
               >
                 <ArrowRight className="w-4 h-4" />
