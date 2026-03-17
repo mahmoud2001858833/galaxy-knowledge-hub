@@ -97,7 +97,7 @@ const Auth = () => {
           throw error;
         }
       }
-      navigate('/');
+      navigate(redirectPath);
     } catch (error: any) {
       setAuthError(error.message || 'خطأ في تسجيل الدخول');
       toast({
