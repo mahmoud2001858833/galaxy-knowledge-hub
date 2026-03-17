@@ -179,3 +179,18 @@ verify_jwt = false
 
 [functions.smart-city-ai]
 verify_jwt = false
+
+[functions.ai-document-analyzer]
+verify_jwt = false
+
+[functions.ai-smart-translator]
+verify_jwt = false
+
+[functions.ai-quiz-generator]
+verify_jwt = false
+
+[functions.ai-code-reviewer]
+verify_jwt = false
+
+[functions.ai-research-assistant]
+verify_jwt = false
