@@ -390,55 +390,6 @@ const GJUCompetition = () => {
           </div>
         </section>
 
-        {/* ═══════════════ CTA ═══════════════ */}
-        <section className="py-20 md:py-28">
-          <div className="container mx-auto px-4">
-            <motion.div
-              className="relative rounded-[2rem] overflow-hidden"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              {/* CTA Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-950/50 via-[#0a0a1a] to-cyan-950/30" />
-              <div className="absolute inset-0 border border-white/[0.06] rounded-[2rem]" />
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-gradient-to-b from-violet-500/10 to-transparent blur-3xl" />
-              
-              <div className="relative z-10 p-10 md:p-20 text-center">
-                <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                  className="inline-block mb-8"
-                >
-                  <Rocket className="w-14 h-14 text-cyan-400/60" />
-                </motion.div>
-                <h2 className="text-3xl md:text-5xl font-black text-white mb-5">
-                  ابدأ رحلتك الآن
-                </h2>
-                <p className="text-white/35 max-w-lg mx-auto mb-10 text-lg">
-                  استكشف جميع أدوات مستقبل التكنولوجيا واستمتع بتجربة تعلّم فريدة
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Button
-                    onClick={() => scrollToTrack('ai')}
-                    className="bg-white text-black hover:bg-white/90 px-8 py-3.5 rounded-xl text-base font-bold h-auto"
-                  >
-                    <Play className="w-4 h-4 ml-2" />
-                    استكشف الأدوات
-                  </Button>
-                  <Button
-                    onClick={handleBackToMain}
-                    variant="outline"
-                    className="border-white/10 text-white/60 hover:bg-white/5 hover:text-white px-8 py-3.5 rounded-xl text-base h-auto bg-transparent"
-                  >
-                    زيارة ذروة العلم
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
       </main>
 
       <Footer />

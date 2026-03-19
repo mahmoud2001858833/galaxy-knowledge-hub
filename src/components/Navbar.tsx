@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Menu, User, ChevronDown, LogOut, Settings, UserCircle } from 'lucide-react';
+import { Menu, User, ChevronDown, LogOut, Settings, UserCircle, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -85,6 +85,11 @@ const Navbar = () => {
   };
 
   if (isGJUMode) {
+    // On the GJU competition page itself, don't show navbar (page has its own sticky nav)
+    if (location.pathname === '/gju-competition') {
+      return null;
+    }
+    // On sub-pages accessed from GJU, show minimal branded navbar with back link
     return (
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
         <div className="container mx-auto px-4 flex justify-between items-center h-14">
@@ -94,6 +99,12 @@ const Navbar = () => {
             </span>
           </Link>
           <div className="flex items-center gap-3">
+            <Link to="/gju-competition">
+              <Button variant="ghost" size="sm" className="text-white/50 hover:text-white hover:bg-white/10 text-sm gap-1">
+                <ArrowRight className="w-4 h-4" />
+                العودة للمسابقة
+              </Button>
+            </Link>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
