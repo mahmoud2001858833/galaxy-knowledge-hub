@@ -992,15 +992,18 @@ const SignLanguagePage: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {filteredDictionary.map((item, index) => (
                     <motion.div
-                      key={index}
+                      key={`${item.word}-${index}`}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.02 }}
+                      transition={{ delay: Math.min(index * 0.015, 0.5) }}
                       onClick={() => speakText(item.word)}
-                      className="flex flex-col items-center gap-2 p-4 bg-slate-800/40 rounded-xl border border-slate-700/30 hover:border-indigo-500/50 hover:bg-slate-800/60 cursor-pointer transition-all"
+                      className="group flex flex-col items-center gap-2 p-4 bg-slate-800/40 rounded-xl border border-slate-700/30 hover:border-indigo-500/50 hover:bg-slate-800/60 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer transition-all duration-200"
                     >
-                      <span className="text-3xl">{item.gesture}</span>
-                      <span className="text-sm font-medium text-white">{item.word}</span>
+                      <span className="text-3xl group-hover:scale-125 transition-transform duration-200">{item.gesture}</span>
+                      <span className="text-sm font-bold text-white">{item.word}</span>
+                      {item.description && (
+                        <p className="text-[10px] text-slate-400 text-center leading-tight opacity-0 group-hover:opacity-100 transition-opacity">{item.description}</p>
+                      )}
                       <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
                     </motion.div>
                   ))}
