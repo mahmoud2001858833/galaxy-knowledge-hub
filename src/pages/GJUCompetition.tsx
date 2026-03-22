@@ -190,6 +190,7 @@ const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) =
 
 /* ─────────────── Track Section ─────────────── */
 const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number }) => {
+  const [showAllSimulations, setShowAllSimulations] = useState(false);
   const accentGlows: Record<string, string> = {
     violet: 'rgba(139,92,246,0.08)',
     cyan: 'rgba(6,182,212,0.08)',
@@ -199,13 +200,11 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
 
   return (
     <section id={track.id} className="py-20 md:py-28 relative scroll-mt-20">
-      {/* Background accent */}
       <div className="absolute inset-0 pointer-events-none" style={{
         background: `radial-gradient(ellipse 80% 50% at ${index % 2 === 0 ? '20%' : '80%'} 50%, ${accentGlows[track.accent]}, transparent)`
       }} />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
-        {/* Track Header */}
         <motion.div
           className="mb-14"
           initial={{ opacity: 0, y: 20 }}
@@ -228,14 +227,13 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
           </div>
         </motion.div>
 
-        {/* Tools Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {track.tools.map((tool, i) => (
             <ToolCard key={i} tool={tool} index={i} />
           ))}
         </div>
 
-        {/* Extra Tools (Simulations) */}
+        {/* Simulations Preview */}
         {track.extraTools && track.extraTitle && (
           <div className="mt-16">
             <motion.div
@@ -256,11 +254,60 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
                 <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة تفاعلية</span>
               </div>
             </motion.div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {track.extraTools.map((tool, i) => (
-                <ToolCard key={`extra-${i}`} tool={tool} index={i} />
+
+            {/* Show only 2 preview cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {track.extraTools.slice(0, 2).map((tool, i) => (
+                <ToolCard key={`preview-${i}`} tool={tool} index={i} />
               ))}
             </div>
+
+            {/* Expand button */}
+            {!showAllSimulations && (
+              <motion.div
+                className="flex justify-center mt-8"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+              >
+                <button
+                  onClick={() => setShowAllSimulations(true)}
+                  className="group flex items-center gap-3 px-8 py-4 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300"
+                >
+                  <span className="text-white/70 group-hover:text-white font-semibold text-lg transition-colors">اكتشف المزيد</span>
+                  <span className="text-white/30 text-sm">({track.extraTools.length - 2} محاكاة أخرى)</span>
+                  <ChevronDown className="w-5 h-5 text-white/40 group-hover:text-white/80 group-hover:translate-y-1 transition-all" />
+                </button>
+              </motion.div>
+            )}
+
+            {/* All simulations expanded */}
+            <AnimatePresence>
+              {showAllSimulations && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-6">
+                    {track.extraTools.slice(2).map((tool, i) => (
+                      <ToolCard key={`extra-${i}`} tool={tool} index={i} />
+                    ))}
+                  </div>
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={() => setShowAllSimulations(false)}
+                      className="group flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] transition-all duration-300"
+                    >
+                      <span className="text-white/50 group-hover:text-white/80 text-sm">إخفاء</span>
+                      <ChevronUp className="w-4 h-4 text-white/40 group-hover:text-white/80 group-hover:-translate-y-1 transition-all" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
