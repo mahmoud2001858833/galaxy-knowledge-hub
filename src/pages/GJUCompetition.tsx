@@ -14,7 +14,13 @@ import {
   Palette, Camera, ChevronDown, ArrowRight,
   Cpu, Image, Code, MessageSquare, Target,
   Lightbulb, Layers, Box, ExternalLink, Play,
-  ChevronUp, Star
+  ChevronUp, Star, Atom, Waves, Beaker, Activity,
+  Sun, Dna, TreeDeciduous, FlaskConical, Battery,
+  Microscope, Heart, Mountain, Flame, Droplets,
+  Circle, Clock, Aperture, Orbit, TestTubes,
+  Hexagon, Snowflake, FlaskRound, Radiation,
+  Scissors, Wind, Shield, Bug, Shapes, Dice1,
+  Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
