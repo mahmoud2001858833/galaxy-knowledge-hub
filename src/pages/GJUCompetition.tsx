@@ -224,7 +224,7 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
           </div>
           <div className="flex items-center gap-3 mt-4">
             <div className={`h-1 w-16 rounded-full bg-gradient-to-l ${track.color}`} />
-            <span className="text-white/30 text-sm">{track.tools.length} أدوات متاحة</span>
+            <span className="text-white/30 text-sm">{track.tools.length + (track.extraTools?.length || 0)} أدوات متاحة</span>
           </div>
         </motion.div>
 
@@ -234,6 +234,35 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
             <ToolCard key={i} tool={tool} index={i} />
           ))}
         </div>
+
+        {/* Extra Tools (Simulations) */}
+        {track.extraTools && track.extraTitle && (
+          <div className="mt-16">
+            <motion.div
+              className="mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-lg`}>
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white">{track.extraTitle}</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`h-0.5 w-12 rounded-full bg-gradient-to-l ${track.color}`} />
+                <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة تفاعلية</span>
+              </div>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {track.extraTools.map((tool, i) => (
+                <ToolCard key={`extra-${i}`} tool={tool} index={i} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
