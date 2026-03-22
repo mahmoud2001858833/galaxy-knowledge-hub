@@ -420,11 +420,11 @@ const AdvancedAstronomySimulation = () => {
       <div className="flex items-center justify-between mb-6">
         <Button
           variant="ghost"
-          onClick={() => navigate('/scientific-simulations')}
+          onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}
           className="text-white hover:bg-white/10"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          العودة
+          {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة'}
         </Button>
         <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
           مختبر الفلك المتقدم

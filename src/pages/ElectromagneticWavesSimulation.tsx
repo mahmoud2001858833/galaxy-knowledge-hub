@@ -56,11 +56,11 @@ const ElectromagneticWavesSimulation = () => {
           <div className="container mx-auto flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => navigate('/scientific-simulations')}
+              onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}
               className="gap-2"
             >
               <ArrowLeft size={20} />
-              العودة
+              {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة'}
             </Button>
             <div className="flex items-center gap-3">
               <Activity className="text-primary" size={32} />
