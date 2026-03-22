@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Atom } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useSimulationBack } from '@/hooks/useSimulationBack';
 import { useLHCSimulation } from '@/hooks/useLHCSimulation';
 import { LHCVisualization } from '@/components/lhc/LHCVisualization';
 import { CollisionEffect } from '@/components/lhc/CollisionEffect';
