@@ -314,17 +314,25 @@ const SignLanguagePage: React.FC = () => {
       ...prev,
     ].slice(0, 100));
 
+    // Speak the detected gesture immediately with better voice settings
     try {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech for faster response
       const cleanText = info.text.replace(/[^\u0600-\u06FF\s\/]/g, '').trim();
       if (cleanText) {
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = 'ar-SA';
-        utterance.rate = 0.9;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.05;
+        utterance.volume = 1;
+        // Try to use a female Arabic voice
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+        if (arabicVoice) utterance.voice = arabicVoice;
         window.speechSynthesis.speak(utterance);
       }
     } catch (e) {}
 
-    setTimeout(() => setCurrentGesture(null), 1200);
+    setTimeout(() => setCurrentGesture(null), 1000);
   }, []);
 
   const initializeHandDetection = useCallback(async (): Promise<{ handLandmarker: any | null; error?: string }> => {
