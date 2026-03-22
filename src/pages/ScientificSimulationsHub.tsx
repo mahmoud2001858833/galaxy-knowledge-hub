@@ -305,11 +305,11 @@ const ScientificSimulationsHub = () => {
           >
             <Button
               variant="ghost"
-              onClick={() => navigate('/education')}
+              onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/education'); }}
               className="mb-6 text-white/70 hover:text-white"
             >
               <ArrowLeft className="ml-2 w-5 h-5" />
-              العودة للمنصات التعليمية
+              {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للمنصات التعليمية'}
             </Button>
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">

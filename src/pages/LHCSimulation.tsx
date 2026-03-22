@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Atom } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useSimulationBack } from '@/hooks/useSimulationBack';
 import { useLHCSimulation } from '@/hooks/useLHCSimulation';
 import { LHCVisualization } from '@/components/lhc/LHCVisualization';
 import { CollisionEffect } from '@/components/lhc/CollisionEffect';
@@ -62,11 +63,11 @@ const LHCSimulation = () => {
           <div className="container mx-auto flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => navigate('/scientific-simulations')}
+              onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}
               className="gap-2"
             >
               <ArrowLeft size={20} />
-              العودة
+              {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة'}
             </Button>
             <div className="flex items-center gap-3">
               <Atom className="text-primary" size={32} />

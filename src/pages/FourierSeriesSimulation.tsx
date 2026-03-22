@@ -221,11 +221,11 @@ const FourierSeriesSimulation = () => {
         <div className="flex items-center justify-between mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/scientific-simulations')}
+            onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}
             className="gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            العودة للتجارب العلمية
+            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للتجارب العلمية'}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">

@@ -519,9 +519,9 @@ const CircuitBuilderSimulation = () => {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="container mx-auto flex items-center justify-between">
-            <Button variant="ghost" onClick={() => navigate('/scientific-simulations')} className="gap-2">
+            <Button variant="ghost" onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }} className="gap-2">
               <ArrowLeft size={20} />
-              العودة
+              {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة'}
             </Button>
             <div className="flex items-center gap-3">
               <motion.div

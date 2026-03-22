@@ -31,7 +31,7 @@ const NuclearReactionsSimulation = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/scientific-simulations')}
+              onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}
               className="hover:bg-white/10"
             >
               <ArrowRight className="w-5 h-5" />
