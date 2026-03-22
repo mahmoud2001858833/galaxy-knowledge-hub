@@ -14,7 +14,13 @@ import {
   Palette, Camera, ChevronDown, ArrowRight,
   Cpu, Image, Code, MessageSquare, Target,
   Lightbulb, Layers, Box, ExternalLink, Play,
-  ChevronUp, Star
+  ChevronUp, Star, Atom, Waves, Beaker, Activity,
+  Sun, Dna, TreeDeciduous, FlaskConical, Battery,
+  Microscope, Heart, Mountain, Flame, Droplets,
+  Circle, Clock, Aperture, Orbit, TestTubes,
+  Hexagon, Snowflake, FlaskRound, Radiation,
+  Scissors, Wind, Shield, Bug, Shapes, Dice1,
+  Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -32,6 +38,59 @@ const roboticsTools = [
   { title: 'التصميم المعماري الذكي', description: 'تحليل موقع البناء واقتراح تصميمات مستدامة بالذكاء الاصطناعي', icon: Building2, gradient: 'from-cyan-500 to-blue-600', link: '/smart-city/architectural-design' },
   { title: 'روبوت البناء التفاعلي', description: 'تقنيات البناء الروبوتي والطباعة ثلاثية الأبعاد', icon: Bot, gradient: 'from-blue-500 to-indigo-600', link: '/smart-city/robotic-construction' },
   { title: 'التصميم الداخلي التفاعلي', description: 'توصيات ذكية للألوان والإضاءة والأثاث', icon: Palette, gradient: 'from-indigo-500 to-purple-600', link: '/smart-city/interior-design' },
+];
+
+/* ─────────────── المحاكيات التفاعلية ─────────────── */
+const simulationTools = [
+  { title: 'إشعاع الجسم الأسود', description: 'محاكاة تفاعلية لإشعاع الجسم الأسود مع الطيف المرئي', icon: Atom, gradient: 'from-purple-600 to-blue-600', link: '/simulation/blackbody-radiation' },
+  { title: 'بناء الذرة', description: 'بناء الذرات من خلال سحب وإفلات الجسيمات الذرية', icon: Zap, gradient: 'from-orange-600 to-red-600', link: '/simulation/build-atom' },
+  { title: 'مصادم الهدرونات الكبير', description: 'محاكاة متقدمة لمصادم الهدرونات مع تصادمات البروتونات', icon: Sparkles, gradient: 'from-cyan-500 to-purple-600', link: '/lhc-simulation' },
+  { title: 'الموجات الكهرومغناطيسية', description: 'استكشاف الطيف الكهرومغناطيسي من الراديو إلى غاما', icon: Waves, gradient: 'from-red-500 to-purple-600', link: '/electromagnetic-waves' },
+  { title: 'التفاعلات النووية', description: 'محاكاة الانشطار والاندماج النووي', icon: Atom, gradient: 'from-green-500 to-blue-500', link: '/nuclear-reactions' },
+  { title: 'التفاعلات الكيميائية 3D', description: 'محاكاة تفاعلية ثلاثية الأبعاد للتفاعلات الكيميائية', icon: Beaker, gradient: 'from-purple-500 to-blue-500', link: '/chemical-reactions' },
+  { title: 'سلسلة فورييه', description: 'حساب وتمثيل سلسلة فورييه مع كشف ظاهرة غيبس', icon: Activity, gradient: 'from-indigo-500 to-pink-600', link: '/fourier-series' },
+  { title: 'الدوال ثلاثية الأبعاد', description: 'عرض الدوال الرياضية في الفضاء ثلاثي الأبعاد', icon: Box, gradient: 'from-emerald-500 to-cyan-600', link: '/3d-function-visualizer' },
+  { title: 'مختبر البصريات', description: 'محاكاة للأشعة الضوئية مع العدسات والمرايا', icon: Sun, gradient: 'from-yellow-500 to-red-500', link: '/simulation/optics-lab' },
+  { title: 'بناء الدوائر الكهربائية', description: 'مختبر افتراضي لبناء الدوائر مع نظام أسلاك حقيقي', icon: Cpu, gradient: 'from-blue-500 to-teal-500', link: '/simulation/circuit-builder-advanced' },
+  { title: 'حركة المقذوفات', description: 'محاكاة شاملة لحركة المقذوفات والبندول', icon: Target, gradient: 'from-green-500 to-teal-500', link: '/simulation/projectile-motion' },
+  { title: 'النظام الشمسي 3D', description: 'محاكاة 3D كاملة مع تحكم كاميرا 360°', icon: Globe, gradient: 'from-indigo-500 to-pink-500', link: '/simulation/solar-system-3d' },
+  { title: 'مختبر الوراثة', description: 'محاكاة لمربع بونيت وتضاعف DNA والطفرات', icon: Dna, gradient: 'from-pink-500 to-red-500', link: '/simulation/genetics-lab' },
+  { title: 'النظام البيئي', description: 'نظام بيئي حي مع كائنات متحركة وتوازن السكان', icon: TreeDeciduous, gradient: 'from-green-600 to-lime-500', link: '/simulation/ecosystem' },
+  { title: 'الكهرومغناطيسية', description: 'محاكاة المجال المغناطيسي والحث الكهرومغناطيسي', icon: Zap, gradient: 'from-purple-600 to-cyan-500', link: '/simulation/electromagnetism' },
+  { title: 'الموجات والصوت', description: 'محاكاة الموجات الصوتية وتأثير دوبلر', icon: Waves, gradient: 'from-green-600 to-blue-500', link: '/simulation/waves-sound' },
+  { title: 'الكهرباء الساكنة', description: 'قانون كولوم والمجال الكهربائي ومولد فان دي غراف', icon: Sparkles, gradient: 'from-yellow-600 to-red-500', link: '/simulation/static-electricity' },
+  { title: 'الفلك المتقدم', description: 'محاكاة الكسوف والخسوف وأطوار القمر', icon: Globe, gradient: 'from-indigo-600 to-pink-500', link: '/simulation/advanced-astronomy' },
+  { title: 'ميكانيكا الكم', description: 'تجربة الشق المزدوج والنفق الكمي والتراكب', icon: Atom, gradient: 'from-pink-600 to-indigo-500', link: '/simulation/quantum-mechanics' },
+  { title: 'الكيمياء التحليلية', description: 'محاكاة المعايرة وقياس pH والكروماتوغرافيا', icon: FlaskConical, gradient: 'from-emerald-600 to-teal-500', link: '/simulation/analytical-chemistry' },
+  { title: 'الكيمياء الكهربائية', description: 'الخلايا الجلفانية والتحليل الكهربائي', icon: Battery, gradient: 'from-amber-600 to-yellow-500', link: '/simulation/electrochemistry' },
+  { title: 'البيولوجيا الجزيئية', description: 'تضاعف DNA والنسخ والترجمة وتفاعل PCR', icon: Microscope, gradient: 'from-violet-600 to-fuchsia-500', link: '/simulation/molecular-biology' },
+  { title: 'جسم الإنسان', description: 'استكشاف أجهزة الجسم: الدوران والتنفس والعصبي', icon: Heart, gradient: 'from-red-600 to-pink-500', link: '/simulation/human-body' },
+  { title: 'الفيزياء النووية المتقدمة', description: 'الاضمحلال الإشعاعي والانشطار وعمر النصف', icon: Atom, gradient: 'from-lime-600 to-emerald-500', link: '/simulation/advanced-nuclear' },
+  { title: 'الإلكترونيات الرقمية', description: 'بوابات المنطق والجامعات والعدادات', icon: Cpu, gradient: 'from-slate-600 to-zinc-500', link: '/simulation/digital-electronics' },
+  { title: 'علوم الأرض', description: 'محاكاة الزلازل والبراكين والصفائح التكتونية', icon: Mountain, gradient: 'from-amber-700 to-red-600', link: '/simulation/earth-sciences' },
+  { title: 'علوم الصواريخ والفضاء', description: 'إطلاق الصواريخ والمدارات الفضائية', icon: Rocket, gradient: 'from-sky-600 to-indigo-500', link: '/simulation/rocket-science' },
+  { title: 'البصريات المتقدمة', description: 'تشتت المنشور والعدسات والتداخل والاستقطاب', icon: Eye, gradient: 'from-cyan-600 to-emerald-500', link: '/simulation/advanced-optics' },
+  { title: 'علوم المواد', description: 'البنية البلورية والسبائك واختبارات الإجهاد', icon: Layers, gradient: 'from-stone-600 to-zinc-500', link: '/simulation/materials-science' },
+  { title: 'الديناميكا الحرارية', description: 'الغاز المثالي ومحرك كارنو وانتقال الحرارة', icon: Flame, gradient: 'from-orange-600 to-red-600', link: '/simulation/thermodynamics' },
+  { title: 'الموائع وقوى الطفو', description: 'قانون أرخميدس وباسكال وبرنولي', icon: Droplets, gradient: 'from-blue-500 to-cyan-500', link: '/simulation/fluid-mechanics' },
+  { title: 'الحركة الدائرية والجاذبية', description: 'حركة دائرية ومدارات الأقمار الصناعية', icon: Circle, gradient: 'from-violet-500 to-purple-600', link: '/simulation/circular-motion' },
+  { title: 'النسبية الخاصة', description: 'تمدد الزمن وتقلص الطول و E=mc²', icon: Clock, gradient: 'from-yellow-500 to-orange-500', link: '/simulation/special-relativity' },
+  { title: 'التداخل والحيود', description: 'تجربة يونج وحيود الشق الواحد وحلقات نيوتن', icon: Aperture, gradient: 'from-indigo-500 to-pink-500', link: '/simulation/interference-diffraction' },
+  { title: 'فيزياء البلازما', description: 'الحالة الرابعة للمادة والحصر المغناطيسي', icon: Sparkles, gradient: 'from-purple-500 to-pink-500', link: '/simulation/plasma-physics' },
+  { title: 'حركية التفاعلات', description: 'سرعة التفاعل وطاقة التنشيط والعوامل المؤثرة', icon: FlaskConical, gradient: 'from-blue-500 to-cyan-500', link: '/simulation/chemical-kinetics' },
+  { title: 'الكيمياء العضوية', description: 'بناء الجزيئات العضوية والمجموعات الوظيفية', icon: Hexagon, gradient: 'from-green-500 to-emerald-500', link: '/simulation/organic-chemistry' },
+  { title: 'حالات المادة والتحولات', description: 'صلب/سائل/غاز والتحولات ومخطط الطور', icon: Snowflake, gradient: 'from-cyan-500 to-blue-500', link: '/simulation/states-of-matter' },
+  { title: 'الأحماض والقواعد', description: 'مقياس pH والمعايرة والمحاليل المنظمة', icon: FlaskRound, gradient: 'from-yellow-500 to-red-500', link: '/simulation/acids-bases' },
+  { title: 'الكيمياء النووية التطبيقية', description: 'التأريخ بالكربون-14 والطب النووي', icon: Radiation, gradient: 'from-lime-500 to-green-600', link: '/simulation/nuclear-applications' },
+  { title: 'الخلية الحية', description: 'تركيب الخلية الحيوانية والنباتية والبكتيرية', icon: Microscope, gradient: 'from-emerald-500 to-teal-500', link: '/simulation/living-cell' },
+  { title: 'الانقسام الخلوي', description: 'الانقسام المتساوي والمنصف بالمراحل', icon: Scissors, gradient: 'from-violet-500 to-fuchsia-500', link: '/simulation/cell-division' },
+  { title: 'التمثيل الضوئي والتنفس', description: 'البناء الضوئي والتنفس الخلوي', icon: Wind, gradient: 'from-green-500 to-lime-500', link: '/simulation/photosynthesis-respiration' },
+  { title: 'الجهاز المناعي', description: 'المناعة الفطرية والمكتسبة واللقاحات', icon: Shield, gradient: 'from-blue-500 to-indigo-500', link: '/simulation/immune-system' },
+  { title: 'التطور والانتخاب الطبيعي', description: 'محاكاة الانتخاب الطبيعي والتكيف', icon: Bug, gradient: 'from-amber-500 to-orange-500', link: '/simulation/evolution' },
+  { title: 'الهندسة الفراغية', description: 'أشكال ثلاثية الأبعاد وحساب المساحات والحجوم', icon: Shapes, gradient: 'from-indigo-500 to-purple-600', link: '/simulation/spatial-geometry' },
+  { title: 'نظرية الاحتمالات', description: 'رمي النرد والعملات والتوزيع الطبيعي', icon: Dice1, gradient: 'from-green-500 to-cyan-500', link: '/simulation/probability' },
+  { title: 'الروبوتات والتحكم', description: 'برمجة روبوت افتراضي لتنفيذ مهام', icon: Bot, gradient: 'from-cyan-500 to-blue-500', link: '/simulation/robotics' },
+  { title: 'الهندسة الميكانيكية', description: 'التروس والرافعات والبكرات والآلات البسيطة', icon: Wrench, gradient: 'from-amber-500 to-orange-600', link: '/simulation/mechanical-engineering' },
 ];
 
 /* ─────────────── Track 3: Sustainability ─────────────── */
@@ -53,10 +112,10 @@ const inclusiveTools = [
 ];
 
 const tracks = [
-  { id: 'ai', title: 'الذكاء الاصطناعي', subtitle: 'AI & Machine Learning', icon: Brain, color: 'from-violet-500 to-purple-600', accent: 'violet', tools: aiTools },
-  { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools },
-  { id: 'sustainability', title: 'التقنيات المستدامة', subtitle: 'Sustainable Tech', icon: Leaf, color: 'from-emerald-500 to-green-600', accent: 'emerald', tools: sustainabilityTools },
-  { id: 'inclusive', title: 'التعلّم الدامج', subtitle: 'Inclusive Education', icon: Accessibility, color: 'from-pink-500 to-rose-600', accent: 'pink', tools: inclusiveTools },
+  { id: 'ai', title: 'الذكاء الاصطناعي', subtitle: 'AI & Machine Learning', icon: Brain, color: 'from-violet-500 to-purple-600', accent: 'violet', tools: aiTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools, extraTools: simulationTools, extraTitle: 'المحاكيات التفاعلية' },
+  { id: 'sustainability', title: 'التقنيات المستدامة', subtitle: 'Sustainable Tech', icon: Leaf, color: 'from-emerald-500 to-green-600', accent: 'emerald', tools: sustainabilityTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'inclusive', title: 'التعلّم الدامج', subtitle: 'Inclusive Education', icon: Accessibility, color: 'from-pink-500 to-rose-600', accent: 'pink', tools: inclusiveTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
 ];
 
 const stats = [
@@ -165,7 +224,7 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
           </div>
           <div className="flex items-center gap-3 mt-4">
             <div className={`h-1 w-16 rounded-full bg-gradient-to-l ${track.color}`} />
-            <span className="text-white/30 text-sm">{track.tools.length} أدوات متاحة</span>
+            <span className="text-white/30 text-sm">{track.tools.length + (track.extraTools?.length || 0)} أدوات متاحة</span>
           </div>
         </motion.div>
 
@@ -175,6 +234,35 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
             <ToolCard key={i} tool={tool} index={i} />
           ))}
         </div>
+
+        {/* Extra Tools (Simulations) */}
+        {track.extraTools && track.extraTitle && (
+          <div className="mt-16">
+            <motion.div
+              className="mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-lg`}>
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white">{track.extraTitle}</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`h-0.5 w-12 rounded-full bg-gradient-to-l ${track.color}`} />
+                <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة تفاعلية</span>
+              </div>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {track.extraTools.map((tool, i) => (
+                <ToolCard key={`extra-${i}`} tool={tool} index={i} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
