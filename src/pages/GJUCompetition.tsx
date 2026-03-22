@@ -104,10 +104,8 @@ const sustainabilityTools = [
 
 /* ─────────────── Track 4: Inclusive Education ─────────────── */
 const inclusiveTools = [
-  { title: 'قاموس لغة الإشارة', description: 'تعلّم لغة الإشارة العربية مع كاميرا تفاعلية', icon: Hand, gradient: 'from-pink-500 to-rose-600', link: '/sign-language' },
-  { title: 'تحويل النص إلى كلام', description: 'قراءة النصوص بصوت عربي لدعم ذوي الإعاقة البصرية', icon: Volume2, gradient: 'from-blue-500 to-indigo-600', link: '/sign-language' },
-  { title: 'الإدخال الصوتي الشامل', description: 'تحويل الكلام إلى نص في جميع المساعدين الذكيين', icon: Mic, gradient: 'from-emerald-500 to-green-600', link: '/falak-knowledge-ai' },
-  { title: 'أوضاع تعلّم مخصصة', description: 'واجهات مخصصة لذوي الإعاقات المختلفة', icon: Accessibility, gradient: 'from-amber-500 to-orange-600', link: '/sign-language' },
+  { title: 'مترجم لغة الإشارة الذكي', description: 'ترجمة فورية لإشارات اليد إلى نص وكلام باستخدام الذكاء الاصطناعي مع دعم 26+ إشارة', icon: Hand, gradient: 'from-pink-500 to-rose-600', link: '/sign-language' },
+  { title: 'قاموس لغة الإشارة التفاعلي', description: 'قاموس شامل مصنّف يضم 68+ كلمة وعبارة مع نطق صوتي ورسوم توضيحية', icon: BookOpen, gradient: 'from-blue-500 to-indigo-600', link: '/sign-language' },
 ];
 
 const trackDescriptions: Record<string, string> = {
