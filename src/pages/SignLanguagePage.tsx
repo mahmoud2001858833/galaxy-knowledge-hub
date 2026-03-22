@@ -12,75 +12,115 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from '@/features/sign-language/camera';
 
-// Extended sign language dictionary
+// Extended sign language dictionary with more words and detailed descriptions
 const signDictionary = [
-  { word: 'مرحبا', gesture: '👋', category: 'تحيات' },
-  { word: 'أهلاً', gesture: '🤗', category: 'تحيات' },
-  { word: 'السلام عليكم', gesture: '🙏', category: 'تحيات' },
-  { word: 'صباح الخير', gesture: '☀️', category: 'تحيات' },
-  { word: 'مساء الخير', gesture: '🌙', category: 'تحيات' },
-  { word: 'شكراً', gesture: '🙏', category: 'تحيات' },
-  { word: 'عفواً', gesture: '😊', category: 'تحيات' },
-  { word: 'وداعاً', gesture: '👋', category: 'تحيات' },
-  { word: 'نعم', gesture: '👍', category: 'أساسيات' },
-  { word: 'لا', gesture: '👎', category: 'أساسيات' },
-  { word: 'من فضلك', gesture: '🤲', category: 'أساسيات' },
-  { word: 'لماذا', gesture: '❓', category: 'أساسيات' },
-  { word: 'كيف', gesture: '🤔', category: 'أساسيات' },
-  { word: 'أين', gesture: '📍', category: 'أساسيات' },
-  { word: 'متى', gesture: '⏰', category: 'أساسيات' },
-  { word: 'أنا', gesture: '👆', category: 'ضمائر' },
-  { word: 'أنت', gesture: '👉', category: 'ضمائر' },
-  { word: 'نحن', gesture: '👐', category: 'ضمائر' },
-  { word: 'هو', gesture: '👉', category: 'ضمائر' },
-  { word: 'هي', gesture: '👉', category: 'ضمائر' },
-  { word: 'يأكل', gesture: '🍽️', category: 'أفعال' },
-  { word: 'يشرب', gesture: '🥤', category: 'أفعال' },
-  { word: 'يقرأ', gesture: '📖', category: 'أفعال' },
-  { word: 'يكتب', gesture: '✍️', category: 'أفعال' },
-  { word: 'يتكلم', gesture: '🗣️', category: 'أفعال' },
-  { word: 'يسمع', gesture: '👂', category: 'أفعال' },
-  { word: 'يرى', gesture: '👀', category: 'أفعال' },
-  { word: 'يحب', gesture: '❤️', category: 'أفعال' },
-  { word: 'يدرس', gesture: '📚', category: 'أفعال' },
-  { word: 'يساعد', gesture: '🤝', category: 'أفعال' },
-  { word: 'أب', gesture: '👨', category: 'عائلة' },
-  { word: 'أم', gesture: '👩', category: 'عائلة' },
-  { word: 'أخ', gesture: '👦', category: 'عائلة' },
-  { word: 'أخت', gesture: '👧', category: 'عائلة' },
-  { word: 'عائلة', gesture: '👨‍👩‍👧‍👦', category: 'عائلة' },
-  { word: 'طفل', gesture: '👶', category: 'عائلة' },
-  { word: 'مدرسة', gesture: '🏫', category: 'مدرسة' },
-  { word: 'معلم', gesture: '👨‍🏫', category: 'مدرسة' },
-  { word: 'طالب', gesture: '👨‍🎓', category: 'مدرسة' },
-  { word: 'كتاب', gesture: '📕', category: 'مدرسة' },
-  { word: 'قلم', gesture: '✏️', category: 'مدرسة' },
-  { word: 'سعيد', gesture: '😊', category: 'مشاعر' },
-  { word: 'حزين', gesture: '😢', category: 'مشاعر' },
-  { word: 'غاضب', gesture: '😠', category: 'مشاعر' },
-  { word: 'خائف', gesture: '😨', category: 'مشاعر' },
-  { word: 'متحمس', gesture: '🤩', category: 'مشاعر' },
-  { word: 'حب', gesture: '❤️', category: 'مشاعر' },
-  { word: 'بيت', gesture: '🏠', category: 'أماكن' },
-  { word: 'مستشفى', gesture: '🏥', category: 'أماكن' },
-  { word: 'مسجد', gesture: '🕌', category: 'أماكن' },
-  { word: 'حديقة', gesture: '🌳', category: 'أماكن' },
+  // تحيات
+  { word: 'مرحبا', gesture: '👋', category: 'تحيات', description: 'لوّح بيدك المفتوحة' },
+  { word: 'أهلاً', gesture: '🤗', category: 'تحيات', description: 'افتح ذراعيك للترحيب' },
+  { word: 'السلام عليكم', gesture: '🙏', category: 'تحيات', description: 'ضع كفيك معاً' },
+  { word: 'صباح الخير', gesture: '☀️', category: 'تحيات', description: 'ارفع يدك نحو الشمس' },
+  { word: 'مساء الخير', gesture: '🌙', category: 'تحيات', description: 'حرك يدك نحو الأسفل' },
+  { word: 'شكراً', gesture: '🙏', category: 'تحيات', description: 'المس ذقنك ثم حرك يدك للأمام' },
+  { word: 'عفواً', gesture: '😊', category: 'تحيات', description: 'حرك يدك في دائرة على صدرك' },
+  { word: 'وداعاً', gesture: '👋', category: 'تحيات', description: 'لوّح بيدك يميناً ويساراً' },
+  { word: 'تصبح على خير', gesture: '🌙', category: 'تحيات', description: 'ضع يدك على خدك' },
+  // أساسيات
+  { word: 'نعم', gesture: '👍', category: 'أساسيات', description: 'ارفع إبهامك للأعلى' },
+  { word: 'لا', gesture: '👎', category: 'أساسيات', description: 'اخفض إبهامك للأسفل' },
+  { word: 'من فضلك', gesture: '🤲', category: 'أساسيات', description: 'افتح كفيك للأعلى' },
+  { word: 'لماذا', gesture: '❓', category: 'أساسيات', description: 'ارفع سبابتك مع حركة دائرية' },
+  { word: 'كيف', gesture: '🤔', category: 'أساسيات', description: 'ضع يدك على ذقنك' },
+  { word: 'أين', gesture: '📍', category: 'أساسيات', description: 'أشر بسبابتك يميناً ويساراً' },
+  { word: 'متى', gesture: '⏰', category: 'أساسيات', description: 'أشر لمعصمك' },
+  { word: 'ماذا', gesture: '🤷', category: 'أساسيات', description: 'افتح كفيك مع رفع الكتفين' },
+  { word: 'كم', gesture: '🔢', category: 'أساسيات', description: 'حرك أصابعك بشكل متتالي' },
+  // ضمائر
+  { word: 'أنا', gesture: '👆', category: 'ضمائر', description: 'أشر لنفسك بسبابتك' },
+  { word: 'أنت', gesture: '👉', category: 'ضمائر', description: 'أشر للشخص أمامك' },
+  { word: 'نحن', gesture: '👐', category: 'ضمائر', description: 'حرك يدك بشكل دائري بينك وبين الآخرين' },
+  { word: 'هو', gesture: '👉', category: 'ضمائر', description: 'أشر للشخص بعيداً عنك' },
+  { word: 'هي', gesture: '👉', category: 'ضمائر', description: 'أشر برفق نحو الشخص' },
+  { word: 'هم', gesture: '👐', category: 'ضمائر', description: 'أشر بيدك نحو مجموعة' },
+  // أفعال
+  { word: 'يأكل', gesture: '🍽️', category: 'أفعال', description: 'حرك يدك نحو فمك' },
+  { word: 'يشرب', gesture: '🥤', category: 'أفعال', description: 'ارفع كفك المغلق لفمك' },
+  { word: 'يقرأ', gesture: '📖', category: 'أفعال', description: 'افتح كفيك كأنك تقرأ كتاباً' },
+  { word: 'يكتب', gesture: '✍️', category: 'أفعال', description: 'حرك يدك كأنك تكتب بقلم' },
+  { word: 'يتكلم', gesture: '🗣️', category: 'أفعال', description: 'افتح وأغلق أصابعك أمام فمك' },
+  { word: 'يسمع', gesture: '👂', category: 'أفعال', description: 'ضع يدك خلف أذنك' },
+  { word: 'يرى', gesture: '👀', category: 'أفعال', description: 'أشر بإصبعين نحو عينيك' },
+  { word: 'يحب', gesture: '❤️', category: 'أفعال', description: 'ضع يدك على قلبك' },
+  { word: 'يدرس', gesture: '📚', category: 'أفعال', description: 'حرك يديك كأنك تقلب صفحات' },
+  { word: 'يساعد', gesture: '🤝', category: 'أفعال', description: 'ضع يداً فوق الأخرى وارفعهما' },
+  { word: 'يمشي', gesture: '🚶', category: 'أفعال', description: 'حرك إصبعيك كأنهما يمشيان' },
+  { word: 'ينام', gesture: '😴', category: 'أفعال', description: 'ضع يديك تحت خدك' },
+  { word: 'يلعب', gesture: '🎮', category: 'أفعال', description: 'حرك يديك بشكل متبادل' },
+  // عائلة
+  { word: 'أب', gesture: '👨', category: 'عائلة', description: 'المس جبهتك بإبهامك' },
+  { word: 'أم', gesture: '👩', category: 'عائلة', description: 'المس ذقنك بإبهامك' },
+  { word: 'أخ', gesture: '👦', category: 'عائلة', description: 'اقبض يديك وحركهما للأسفل' },
+  { word: 'أخت', gesture: '👧', category: 'عائلة', description: 'حرك إبهامك على خدك' },
+  { word: 'عائلة', gesture: '👨‍👩‍👧‍👦', category: 'عائلة', description: 'ارسم دائرة بيديك' },
+  { word: 'طفل', gesture: '👶', category: 'عائلة', description: 'هز ذراعيك كأنك تحمل طفلاً' },
+  { word: 'جد', gesture: '👴', category: 'عائلة', description: 'المس جبهتك ثم حرك يدك للأمام' },
+  { word: 'جدة', gesture: '👵', category: 'عائلة', description: 'المس ذقنك ثم حرك يدك للأمام' },
+  // مدرسة
+  { word: 'مدرسة', gesture: '🏫', category: 'مدرسة', description: 'صفق بيديك مرتين' },
+  { word: 'معلم', gesture: '👨‍🏫', category: 'مدرسة', description: 'حرك يديك من جبهتك للأمام' },
+  { word: 'طالب', gesture: '👨‍🎓', category: 'مدرسة', description: 'ارفع يدك كأنك تجيب' },
+  { word: 'كتاب', gesture: '📕', category: 'مدرسة', description: 'افتح كفيك كالكتاب' },
+  { word: 'قلم', gesture: '✏️', category: 'مدرسة', description: 'حرك يدك كأنك تكتب' },
+  { word: 'واجب', gesture: '📝', category: 'مدرسة', description: 'أشر للورقة ثم اكتب' },
+  { word: 'امتحان', gesture: '📋', category: 'مدرسة', description: 'حرك يدك كأنك تكتب بسرعة' },
+  // مشاعر
+  { word: 'سعيد', gesture: '😊', category: 'مشاعر', description: 'ارفع زوايا فمك بأصابعك' },
+  { word: 'حزين', gesture: '😢', category: 'مشاعر', description: 'حرك إصبعك من عينك للأسفل' },
+  { word: 'غاضب', gesture: '😠', category: 'مشاعر', description: 'اقبض يديك وارفعهما' },
+  { word: 'خائف', gesture: '😨', category: 'مشاعر', description: 'ارتجف بيديك أمام صدرك' },
+  { word: 'متحمس', gesture: '🤩', category: 'مشاعر', description: 'حرك يديك بسرعة للأعلى' },
+  { word: 'حب', gesture: '❤️', category: 'مشاعر', description: 'ضع يديك على قلبك' },
+  { word: 'متفاجئ', gesture: '😲', category: 'مشاعر', description: 'افتح فمك وارفع يديك' },
+  // أماكن
+  { word: 'بيت', gesture: '🏠', category: 'أماكن', description: 'اصنع شكل سقف بيديك' },
+  { word: 'مستشفى', gesture: '🏥', category: 'أماكن', description: 'ارسم صليباً على ذراعك' },
+  { word: 'مسجد', gesture: '🕌', category: 'أماكن', description: 'اصنع شكل القبة بيديك' },
+  { word: 'حديقة', gesture: '🌳', category: 'أماكن', description: 'افتح يدك كالشجرة' },
+  { word: 'سوق', gesture: '🛒', category: 'أماكن', description: 'حرك يديك كأنك تدفع عربة' },
+  // أرقام
+  { word: 'واحد', gesture: '1️⃣', category: 'أرقام', description: 'ارفع سبابتك فقط' },
+  { word: 'اثنان', gesture: '2️⃣', category: 'أرقام', description: 'ارفع سبابتك والوسطى' },
+  { word: 'ثلاثة', gesture: '3️⃣', category: 'أرقام', description: 'ارفع ثلاثة أصابع' },
+  { word: 'أربعة', gesture: '4️⃣', category: 'أرقام', description: 'ارفع أربعة أصابع بدون إبهام' },
+  { word: 'خمسة', gesture: '5️⃣', category: 'أرقام', description: 'افتح كفك بالكامل' },
+  // ألوان
+  { word: 'أحمر', gesture: '🔴', category: 'ألوان', description: 'المس شفتك السفلى وحرك للأسفل' },
+  { word: 'أزرق', gesture: '🔵', category: 'ألوان', description: 'حرك يدك كالموجة' },
+  { word: 'أخضر', gesture: '🟢', category: 'ألوان', description: 'حرك يدك كنبتة تنمو' },
+  { word: 'أصفر', gesture: '🟡', category: 'ألوان', description: 'هز يدك مع إشارة Y' },
 ];
 
-// Extended gesture mapping with more detail
-const gestureToArabic: Record<string, { text: string; emoji: string; description: string }> = {
-  'open_palm': { text: 'مرحبا', emoji: '✋', description: 'كف مفتوح - جميع الأصابع ممدودة' },
-  'thumbs_up': { text: 'نعم / موافق', emoji: '👍', description: 'إبهام للأعلى' },
-  'thumbs_down': { text: 'لا / رفض', emoji: '👎', description: 'إبهام للأسفل' },
-  'pointing_up': { text: 'إشارة / انتبه', emoji: '☝️', description: 'إصبع السبابة للأعلى' },
-  'victory': { text: 'سلام / نصر', emoji: '✌️', description: 'إصبعان مرفوعان' },
-  'fist': { text: 'قوة / توقف', emoji: '✊', description: 'قبضة مغلقة' },
-  'rock': { text: 'روك / حماس', emoji: '🤘', description: 'إشارة الروك' },
-  'ok_sign': { text: 'ممتاز / تمام', emoji: '👌', description: 'إشارة أوكي' },
-  'three_fingers': { text: 'ثلاثة', emoji: '3️⃣', description: 'ثلاثة أصابع' },
-  'four_fingers': { text: 'أربعة', emoji: '4️⃣', description: 'أربعة أصابع بدون إبهام' },
-  'call_me': { text: 'اتصل بي', emoji: '🤙', description: 'إشارة الاتصال' },
-  'pinch': { text: 'قليل / صغير', emoji: '🤏', description: 'قرصة بالأصابع' },
+// Extended gesture mapping with more gestures and improved descriptions
+const gestureToArabic: Record<string, { text: string; emoji: string; description: string; context: string }> = {
+  'open_palm': { text: 'مرحبا', emoji: '✋', description: 'كف مفتوح - جميع الأصابع ممدودة', context: 'تحية أو طلب التوقف' },
+  'thumbs_up': { text: 'نعم / موافق', emoji: '👍', description: 'إبهام للأعلى', context: 'موافقة أو تأكيد' },
+  'thumbs_down': { text: 'لا / رفض', emoji: '👎', description: 'إبهام للأسفل', context: 'رفض أو عدم موافقة' },
+  'pointing_up': { text: 'واحد / انتبه', emoji: '☝️', description: 'إصبع السبابة للأعلى', context: 'الرقم 1 أو طلب الانتباه' },
+  'victory': { text: 'اثنان / سلام', emoji: '✌️', description: 'إصبعان مرفوعان', context: 'الرقم 2 أو علامة السلام' },
+  'fist': { text: 'قوة / توقف', emoji: '✊', description: 'قبضة مغلقة', context: 'القوة أو التحدي أو التوقف' },
+  'rock': { text: 'حماس / روك', emoji: '🤘', description: 'السبابة والخنصر مرفوعان', context: 'الحماس أو الإثارة' },
+  'ok_sign': { text: 'ممتاز / تمام', emoji: '👌', description: 'الإبهام والسبابة يشكلان دائرة', context: 'موافقة ممتازة أو جودة عالية' },
+  'three_fingers': { text: 'ثلاثة', emoji: '3️⃣', description: 'ثلاثة أصابع مرفوعة', context: 'الرقم 3' },
+  'four_fingers': { text: 'أربعة', emoji: '4️⃣', description: 'أربعة أصابع بدون إبهام', context: 'الرقم 4' },
+  'call_me': { text: 'اتصل بي', emoji: '🤙', description: 'الإبهام والخنصر ممدودان', context: 'طلب الاتصال أو التواصل' },
+  'pinch': { text: 'قليل / صغير', emoji: '🤏', description: 'الإبهام والسبابة متقاربان', context: 'كمية صغيرة أو حجم صغير' },
+  'love': { text: 'أحبك', emoji: '🤟', description: 'الإبهام والسبابة والخنصر ممدودة', context: 'التعبير عن الحب بلغة الإشارة' },
+  'pointing_right': { text: 'هناك / يمين', emoji: '👉', description: 'السبابة ممدودة جانبياً', context: 'الإشارة لاتجاه أو شيء معين' },
+  'open_palms_both': { text: 'توقف / كفى', emoji: '🙌', description: 'كفان مفتوحان مرفوعان', context: 'طلب التوقف أو الاحتفال' },
+  'prayer': { text: 'شكراً / دعاء', emoji: '🙏', description: 'كفان متلاصقان', context: 'الشكر أو الدعاء أو الطلب' },
+  'wave': { text: 'وداعاً', emoji: '👋', description: 'تلويح اليد يميناً ويساراً', context: 'تحية الوداع' },
+  'flat_hand_down': { text: 'اجلس / اهدأ', emoji: '🫳', description: 'كف مسطح متجه للأسفل', context: 'طلب الجلوس أو الهدوء' },
+  'crossed_fingers': { text: 'إن شاء الله / حظ', emoji: '🤞', description: 'السبابة والوسطى متشابكتان', context: 'الأمل أو التمني' },
+  'pinky_promise': { text: 'وعد', emoji: '🤙', description: 'الخنصر ممدود فقط', context: 'وعد أو عهد' },
 };
 
 // Hand landmark connections for drawing skeleton
@@ -171,61 +211,92 @@ const SignLanguagePage: React.FC = () => {
     // Distance helper
     const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 
+    // Love sign: thumb, index, pinky up; middle and ring down
+    if (thumbExtended && indexUp && !middleUp && !ringUp && pinkyUp) {
+      return { gesture: 'love', confidence: 0.92 };
+    }
+
     // OK sign: thumb and index tips close together, other fingers extended
     const thumbIndexDist = dist(thumbTip, indexTip);
     if (thumbIndexDist < 0.06 && middleUp && ringUp && pinkyUp) {
-      return { gesture: 'ok_sign', confidence: 0.85 };
+      return { gesture: 'ok_sign', confidence: 0.88 };
     }
 
     // Pinch: thumb and index close, others closed
     if (thumbIndexDist < 0.06 && !middleUp && !ringUp && !pinkyUp) {
-      return { gesture: 'pinch', confidence: 0.8 };
+      return { gesture: 'pinch', confidence: 0.82 };
+    }
+
+    // Crossed fingers: index and middle close together and crossed
+    const indexMiddleDist = dist(indexTip, middleTip);
+    if (indexUp && middleUp && !ringUp && !pinkyUp && indexMiddleDist < 0.04) {
+      return { gesture: 'crossed_fingers', confidence: 0.80 };
     }
 
     // Rock sign: index and pinky up, middle and ring down
-    if (indexUp && !middleUp && !ringUp && pinkyUp) {
-      return { gesture: 'rock', confidence: 0.9 };
+    if (indexUp && !middleUp && !ringUp && pinkyUp && !thumbExtended) {
+      return { gesture: 'rock', confidence: 0.90 };
     }
 
     // Call me: thumb and pinky out, others closed
     if (thumbExtended && !indexUp && !middleUp && !ringUp && pinkyUp) {
-      return { gesture: 'call_me', confidence: 0.85 };
+      return { gesture: 'call_me', confidence: 0.87 };
     }
 
     // Open palm: all fingers extended
     if (indexUp && middleUp && ringUp && pinkyUp && thumbExtended) {
+      // Check for wave motion (palm orientation)
+      const palmFacingDown = wrist.y < indexMcp.y;
+      if (palmFacingDown) {
+        return { gesture: 'flat_hand_down', confidence: 0.82 };
+      }
       return { gesture: 'open_palm', confidence: 0.95 };
     }
 
     // Four fingers: all except thumb
     if (indexUp && middleUp && ringUp && pinkyUp && !thumbExtended) {
-      return { gesture: 'four_fingers', confidence: 0.85 };
+      return { gesture: 'four_fingers', confidence: 0.87 };
     }
 
     // Three fingers: index, middle, ring up
     if (indexUp && middleUp && ringUp && !pinkyUp) {
-      return { gesture: 'three_fingers', confidence: 0.85 };
+      return { gesture: 'three_fingers', confidence: 0.87 };
     }
 
     // Victory/Peace: index + middle up
     if (indexUp && middleUp && !ringUp && !pinkyUp) {
-      return { gesture: 'victory', confidence: 0.9 };
+      return { gesture: 'victory', confidence: 0.90 };
     }
 
     // Pointing up: only index
-    if (indexUp && !middleUp && !ringUp && !pinkyUp) {
-      return { gesture: 'pointing_up', confidence: 0.9 };
+    if (indexUp && !middleUp && !ringUp && !pinkyUp && !thumbExtended) {
+      return { gesture: 'pointing_up', confidence: 0.92 };
+    }
+
+    // Pointing right: index extended horizontally
+    if (indexUp && !middleUp && !ringUp && !pinkyUp && thumbExtended) {
+      const indexHorizontal = Math.abs(indexTip.y - indexMcp.y) < 0.08;
+      if (indexHorizontal) {
+        return { gesture: 'pointing_right', confidence: 0.80 };
+      }
+      return { gesture: 'pointing_up', confidence: 0.88 };
     }
 
     // Thumbs up/down
     if (thumbExtended && !indexUp && !middleUp && !ringUp && !pinkyUp) {
-      if (thumbUp) return { gesture: 'thumbs_up', confidence: 0.9 };
-      if (thumbDown) return { gesture: 'thumbs_down', confidence: 0.85 };
+      if (thumbUp) return { gesture: 'thumbs_up', confidence: 0.92 };
+      if (thumbDown) return { gesture: 'thumbs_down', confidence: 0.88 };
     }
 
     // Fist: all closed
     if (!indexUp && !middleUp && !ringUp && !pinkyUp && !thumbExtended) {
-      return { gesture: 'fist', confidence: 0.85 };
+      return { gesture: 'fist', confidence: 0.87 };
+    }
+
+    // Prayer/Thanks: detect both hands close together (simplified - single hand flat)
+    const allFingersTogether = dist(indexTip, middleTip) < 0.04 && dist(middleTip, ringTip) < 0.04 && dist(ringTip, pinkyTip) < 0.04;
+    if (allFingersTogether && indexUp && middleUp && ringUp && pinkyUp && !thumbExtended) {
+      return { gesture: 'prayer', confidence: 0.78 };
     }
 
     return null;
@@ -243,17 +314,25 @@ const SignLanguagePage: React.FC = () => {
       ...prev,
     ].slice(0, 100));
 
+    // Speak the detected gesture immediately with better voice settings
     try {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech for faster response
       const cleanText = info.text.replace(/[^\u0600-\u06FF\s\/]/g, '').trim();
       if (cleanText) {
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = 'ar-SA';
-        utterance.rate = 0.9;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.05;
+        utterance.volume = 1;
+        // Try to use a female Arabic voice
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+        if (arabicVoice) utterance.voice = arabicVoice;
         window.speechSynthesis.speak(utterance);
       }
     } catch (e) {}
 
-    setTimeout(() => setCurrentGesture(null), 1200);
+    setTimeout(() => setCurrentGesture(null), 1000);
   }, []);
 
   const initializeHandDetection = useCallback(async (): Promise<{ handLandmarker: any | null; error?: string }> => {
@@ -424,8 +503,8 @@ const SignLanguagePage: React.FC = () => {
             setConfidence(Math.round(result.confidence * 100));
 
             const currentTime = Date.now();
-            // Trigger after 3 stable frames, with 600ms cooldown
-            if (stableGestureRef.current.count >= 3 && currentTime - lastGestureTimeRef.current > 600) {
+            // Trigger after 2 stable frames, with 450ms cooldown for faster response
+            if (stableGestureRef.current.count >= 2 && currentTime - lastGestureTimeRef.current > 450) {
               handleGestureDetected(result.gesture, result.confidence);
               lastGestureTimeRef.current = currentTime;
               stableGestureRef.current = { gesture: null, count: 0 };
@@ -921,15 +1000,18 @@ const SignLanguagePage: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {filteredDictionary.map((item, index) => (
                     <motion.div
-                      key={index}
+                      key={`${item.word}-${index}`}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.02 }}
+                      transition={{ delay: Math.min(index * 0.015, 0.5) }}
                       onClick={() => speakText(item.word)}
-                      className="flex flex-col items-center gap-2 p-4 bg-slate-800/40 rounded-xl border border-slate-700/30 hover:border-indigo-500/50 hover:bg-slate-800/60 cursor-pointer transition-all"
+                      className="group flex flex-col items-center gap-2 p-4 bg-slate-800/40 rounded-xl border border-slate-700/30 hover:border-indigo-500/50 hover:bg-slate-800/60 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer transition-all duration-200"
                     >
-                      <span className="text-3xl">{item.gesture}</span>
-                      <span className="text-sm font-medium text-white">{item.word}</span>
+                      <span className="text-3xl group-hover:scale-125 transition-transform duration-200">{item.gesture}</span>
+                      <span className="text-sm font-bold text-white">{item.word}</span>
+                      {item.description && (
+                        <p className="text-[10px] text-slate-400 text-center leading-tight opacity-0 group-hover:opacity-100 transition-opacity">{item.description}</p>
+                      )}
                       <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
                     </motion.div>
                   ))}
