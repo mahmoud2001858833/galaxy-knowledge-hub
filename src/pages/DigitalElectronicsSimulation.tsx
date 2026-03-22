@@ -397,9 +397,9 @@ const DigitalElectronicsSimulation = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate('/scientific-simulations')}>
+          <Button variant="ghost" onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}>
             <ArrowLeft className="h-5 w-5 ml-2" />
-            رجوع
+            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'رجوع'}
           </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Cpu className="h-6 w-6 text-cyan-500" />
