@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import StarField from '@/components/StarField';
 import Footer from '@/components/Footer';
 import { SEO } from '@/components/SEO';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -111,6 +110,13 @@ const inclusiveTools = [
   { title: 'أوضاع تعلّم مخصصة', description: 'واجهات مخصصة لذوي الإعاقات المختلفة', icon: Accessibility, gradient: 'from-amber-500 to-orange-600', link: '/sign-language' },
 ];
 
+const trackDescriptions: Record<string, string> = {
+  ai: 'أدوات ذكاء اصطناعي متقدمة تساعدك في التعلم والإبداع والبرمجة',
+  robotics: 'استكشف عالم الروبوتات والبناء الذكي والمحاكيات التفاعلية',
+  sustainability: 'أدوات تفاعلية لفهم الاستدامة البيئية وتطبيقها عملياً',
+  inclusive: 'تقنيات مساعدة تجعل التعلّم متاحاً للجميع بلا استثناء',
+};
+
 const tracks = [
   { id: 'ai', title: 'الذكاء الاصطناعي', subtitle: 'AI & Machine Learning', icon: Brain, color: 'from-violet-500 to-purple-600', accent: 'violet', tools: aiTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools, extraTools: simulationTools, extraTitle: 'المحاكيات التفاعلية' },
@@ -134,13 +140,83 @@ const techStack = [
   { name: 'Lovable AI', icon: '💜' },
 ];
 
+/* ─────────────── Floating Particles ─────────────── */
+const FloatingParticles = () => {
+  const particles = React.useMemo(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 3 + 1,
+      duration: Math.random() * 20 + 15,
+      delay: Math.random() * 10,
+      opacity: Math.random() * 0.3 + 0.05,
+    })), []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            background: `radial-gradient(circle, rgba(139,92,246,${p.opacity}), rgba(6,182,212,${p.opacity * 0.5}))`,
+          }}
+          animate={{
+            y: [0, -80, 0],
+            x: [0, Math.random() * 40 - 20, 0],
+            opacity: [p.opacity, p.opacity * 2, p.opacity],
+          }}
+          transition={{
+            duration: p.duration,
+            repeat: Infinity,
+            delay: p.delay,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+/* ─────────────── Typewriter Effect ─────────────── */
+const TypewriterText = ({ text, className }: { text: string; className?: string }) => {
+  const [displayed, setDisplayed] = useState('');
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        setDisplayed(text.slice(0, i + 1));
+        i++;
+      } else {
+        setDone(true);
+        clearInterval(interval);
+      }
+    }, 35);
+    return () => clearInterval(interval);
+  }, [text]);
+
+  return (
+    <span className={className}>
+      {displayed}
+      {!done && <span className="animate-pulse text-cyan-400">|</span>}
+    </span>
+  );
+};
+
 /* ─────────────── Animated Counter ─────────────── */
 const AnimatedCounter = ({ value }: { value: string }) => {
   const num = parseInt(value);
   const suffix = value.replace(/[0-9]/g, '');
   const [count, setCount] = useState(0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isNaN(num)) return;
     let start = 0;
     const duration = 2000;
@@ -156,74 +232,128 @@ const AnimatedCounter = ({ value }: { value: string }) => {
   return <span>{isNaN(num) ? value : `${count}${suffix}`}</span>;
 };
 
-/* ─────────────── Tool Card ─────────────── */
+/* ─────────────── 3D Tilt Card ─────────────── */
 const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) => {
   const navigate = useNavigate();
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-100, 100], [8, -8]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-100, 100], [-8, 8]), { stiffness: 300, damping: 30 });
+
+  const handleMouse = useCallback((e: React.MouseEvent) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    x.set(e.clientX - rect.left - rect.width / 2);
+    y.set(e.clientY - rect.top - rect.height / 2);
+  }, [x, y]);
+
+  const handleLeave = useCallback(() => {
+    x.set(0);
+    y.set(0);
+  }, [x, y]);
+
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ delay: index * 0.06, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
       onClick={() => navigate(tool.link)}
-      className="group cursor-pointer relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 transition-all duration-500 hover:border-white/20 hover:bg-white/[0.06] hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/20"
+      style={{ rotateX, rotateY, transformPerspective: 800 }}
+      className="group cursor-pointer relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-all duration-500 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-2xl hover:shadow-black/20"
     >
-      {/* Hover glow effect */}
+      {/* Top gradient bar */}
+      <div className={`h-1 w-full bg-gradient-to-l ${tool.gradient} opacity-40 group-hover:opacity-100 transition-opacity duration-500`} />
+
+      {/* Background serial number */}
+      <div className="absolute -bottom-4 -left-2 text-[80px] font-black text-white/[0.02] group-hover:text-white/[0.04] transition-colors duration-500 select-none leading-none">
+        {String(index + 1).padStart(2, '0')}
+      </div>
+
+      {/* Hover glow */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
         <div className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${tool.gradient} rounded-full blur-3xl opacity-20`} />
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 p-6">
         <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
           <tool.icon className="w-7 h-7 text-white" />
         </div>
         <h4 className="text-white font-bold text-lg mb-2 group-hover:text-white transition-colors">{tool.title}</h4>
-        <p className="text-white/35 text-sm leading-relaxed mb-4">{tool.description}</p>
-        <div className="flex items-center gap-2 text-white/25 group-hover:text-white/60 transition-all duration-300">
-          <span className="text-xs font-medium">استكشف</span>
-          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform duration-300" />
+        <p className="text-white/35 text-sm leading-relaxed mb-5">{tool.description}</p>
+        <div className="flex items-center gap-2 text-white/25 group-hover:text-white/70 transition-all duration-300">
+          <span className="text-xs font-semibold bg-gradient-to-l from-white/60 to-white/40 bg-clip-text text-transparent group-hover:from-white group-hover:to-white/80">جرّب الآن</span>
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-2 transition-transform duration-300" />
         </div>
       </div>
     </motion.div>
   );
 };
 
+/* ─────────────── Section Divider ─────────────── */
+const SectionDivider = ({ color }: { color: string }) => (
+  <div className="relative h-px w-full overflow-hidden">
+    <motion.div
+      className={`absolute inset-0 bg-gradient-to-l ${color} opacity-30`}
+      animate={{ x: ['-100%', '100%'] }}
+      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+    />
+    <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/10 to-transparent" />
+  </div>
+);
+
 /* ─────────────── Track Section ─────────────── */
 const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number }) => {
   const [showAllSimulations, setShowAllSimulations] = useState(false);
   const accentGlows: Record<string, string> = {
-    violet: 'rgba(139,92,246,0.08)',
-    cyan: 'rgba(6,182,212,0.08)',
-    emerald: 'rgba(16,185,129,0.08)',
-    pink: 'rgba(236,72,153,0.08)',
+    violet: 'rgba(139,92,246,0.1)',
+    cyan: 'rgba(6,182,212,0.1)',
+    emerald: 'rgba(16,185,129,0.1)',
+    pink: 'rgba(236,72,153,0.1)',
   };
 
   return (
-    <section id={track.id} className="py-20 md:py-28 relative scroll-mt-20">
+    <section id={track.id} className="py-24 md:py-32 relative scroll-mt-20">
       <div className="absolute inset-0 pointer-events-none" style={{
         background: `radial-gradient(ellipse 80% 50% at ${index % 2 === 0 ? '20%' : '80%'} 50%, ${accentGlows[track.accent]}, transparent)`
       }} />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         <motion.div
-          className="mb-14"
+          className="mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex items-center gap-4 mb-4">
-            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-xl`}>
-              <track.icon className="w-7 h-7 text-white" />
+          {/* Track badge */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-gradient-to-l ${track.color} bg-opacity-10 mb-6`}
+            style={{ background: `linear-gradient(135deg, ${accentGlows[track.accent]}, transparent)` }}
+          >
+            <track.icon className="w-3.5 h-3.5 text-white/60" />
+            <span className="text-white/60 text-xs font-mono tracking-wider uppercase">{track.subtitle}</span>
+          </motion.div>
+
+          <div className="flex items-center gap-4 mb-3">
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-xl shadow-black/20`}>
+              <track.icon className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl md:text-4xl font-black text-white">{track.title}</h2>
-              <span className="text-white/25 text-xs font-mono tracking-wider uppercase">{track.subtitle}</span>
+              <h2 className="text-3xl md:text-5xl font-black text-white">{track.title}</h2>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-4">
-            <div className={`h-1 w-16 rounded-full bg-gradient-to-l ${track.color}`} />
-            <span className="text-white/30 text-sm">{track.tools.length + (track.extraTools?.length || 0)} أدوات متاحة</span>
+          <p className="text-white/40 text-base mt-4 max-w-2xl">{trackDescriptions[track.id]}</p>
+          <div className="flex items-center gap-3 mt-5">
+            <div className={`h-1.5 w-20 rounded-full bg-gradient-to-l ${track.color}`} />
+            <span className="text-white/30 text-sm font-medium">{track.tools.length + (track.extraTools?.length || 0)} أداة متاحة</span>
           </div>
         </motion.div>
 
@@ -235,53 +365,53 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
 
         {/* Simulations Preview */}
         {track.extraTools && track.extraTitle && (
-          <div className="mt-16">
+          <div className="mt-20">
             <motion.div
-              className="mb-10"
+              className="mb-12"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-lg`}>
-                  <Zap className="w-5 h-5 text-white" />
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-lg`}>
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold text-white">{track.extraTitle}</h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`h-0.5 w-12 rounded-full bg-gradient-to-l ${track.color}`} />
-                <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة تفاعلية</span>
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white">{track.extraTitle}</h3>
+                  <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة علمية تفاعلية</span>
+                </div>
               </div>
             </motion.div>
 
-            {/* Show only 2 preview cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {track.extraTools.slice(0, 2).map((tool, i) => (
                 <ToolCard key={`preview-${i}`} tool={tool} index={i} />
               ))}
             </div>
 
-            {/* Expand button */}
+            {/* Shimmer Explore button */}
             {!showAllSimulations && (
               <motion.div
-                className="flex justify-center mt-8"
+                className="flex justify-center mt-10"
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
               >
                 <button
                   onClick={() => setShowAllSimulations(true)}
-                  className="group flex items-center gap-3 px-8 py-4 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300"
+                  className="group relative flex items-center gap-4 px-10 py-5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-500 overflow-hidden"
                 >
-                  <span className="text-white/70 group-hover:text-white font-semibold text-lg transition-colors">اكتشف المزيد</span>
-                  <span className="text-white/30 text-sm">({track.extraTools.length - 2} محاكاة أخرى)</span>
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                  <Sparkles className="w-5 h-5 text-cyan-400/60 group-hover:text-cyan-400 transition-colors" />
+                  <span className="text-white/70 group-hover:text-white font-bold text-lg transition-colors">اكتشف المزيد</span>
+                  <span className="px-3 py-1 rounded-full bg-white/5 text-white/40 text-sm font-medium">{track.extraTools.length - 2}+</span>
                   <ChevronDown className="w-5 h-5 text-white/40 group-hover:text-white/80 group-hover:translate-y-1 transition-all" />
                 </button>
               </motion.div>
             )}
 
-            {/* All simulations expanded */}
             <AnimatePresence>
               {showAllSimulations && (
                 <motion.div
@@ -291,12 +421,12 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
                   transition={{ duration: 0.5 }}
                   className="overflow-hidden"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-8">
                     {track.extraTools.slice(2).map((tool, i) => (
                       <ToolCard key={`extra-${i}`} tool={tool} index={i} />
                     ))}
                   </div>
-                  <div className="flex justify-center mt-8">
+                  <div className="flex justify-center mt-10">
                     <button
                       onClick={() => setShowAllSimulations(false)}
                       className="group flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] transition-all duration-300"
@@ -321,7 +451,7 @@ const GJUCompetition = () => {
   const navigate = useNavigate();
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     sessionStorage.setItem('gju_mode', 'true');
   }, []);
 
@@ -336,28 +466,29 @@ const GJUCompetition = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#060612]" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-[#04040e]" dir={dir}>
       <SEO
         title="مستقبل التكنولوجيا - مسابقة GJU 3030"
         description="منصة مستقبل التكنولوجيا - مسابقة التقدّم التكنولوجي GJU 3030"
         keywords="GJU 3030, مسابقة, تكنولوجيا, مستقبل التكنولوجيا"
       />
 
+      <FloatingParticles />
+
       {/* Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-gradient-to-b from-violet-900/10 via-transparent to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[800px] h-[400px] bg-gradient-to-tr from-cyan-900/8 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-0 w-[600px] h-[400px] bg-gradient-to-tl from-emerald-900/6 to-transparent rounded-full blur-3xl" />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.015]" style={{
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[700px] bg-gradient-to-b from-violet-900/15 via-transparent to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[800px] h-[400px] bg-gradient-to-tr from-cyan-900/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 right-0 w-[600px] h-[400px] bg-gradient-to-tl from-emerald-900/8 to-transparent rounded-full blur-3xl" />
+        <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-          backgroundSize: '60px 60px'
+          backgroundSize: '80px 80px'
         }} />
       </div>
 
       <main className="flex-1 relative z-10">
         {/* ═══════════════ HERO ═══════════════ */}
-        <section className="relative min-h-[85vh] flex flex-col justify-center items-center px-4 pt-8 pb-20">
+        <section className="relative min-h-screen flex flex-col justify-center items-center px-4 pt-8 pb-20">
           {/* Back button */}
           <motion.button
             onClick={handleBackToMain}
@@ -371,50 +502,54 @@ const GJUCompetition = () => {
           </motion.button>
 
           <div className="text-center max-w-5xl mx-auto">
-            {/* Badge */}
+            {/* Animated Glowing Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full border border-amber-500/20 bg-amber-500/5 mb-8 backdrop-blur-sm"
+              className="relative inline-flex items-center gap-2.5 px-7 py-3 rounded-full mb-10"
             >
-              <Trophy className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-300/90 text-sm font-semibold tracking-wide">مسابقة التقدّم التكنولوجي GJU 3030</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              {/* Glow border animation */}
+              <div className="absolute inset-0 rounded-full p-[1px] overflow-hidden">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500/30 via-yellow-300/40 to-amber-500/30 animate-spin" style={{ animationDuration: '4s' }} />
+                <div className="absolute inset-[1px] rounded-full bg-[#04040e]" />
+              </div>
+              <Trophy className="w-4 h-4 text-amber-400 relative z-10" />
+              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">مسابقة التقدّم التكنولوجي GJU 3030</span>
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse relative z-10" />
             </motion.div>
 
-            {/* Title */}
+            {/* Title with stronger gradient */}
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
               className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 leading-[0.9] tracking-tight"
             >
-              <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent drop-shadow-lg">
                 مستقبل
               </span>
               <br />
-              <span className="text-white/90">
+              <span className="text-white/95">
                 التكنولوجيا
               </span>
             </motion.h1>
 
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="text-lg md:text-xl text-white/40 max-w-2xl mx-auto mb-6 leading-relaxed"
+            {/* Typewriter Subtitle */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.5 }}
+              className="text-lg md:text-xl text-white/40 max-w-2xl mx-auto mb-6 leading-relaxed h-16"
             >
-              منصة تعليمية تفاعلية شاملة تدمج الذكاء الاصطناعي والروبوتات 
-              والتقنيات المستدامة والتعلّم الدامج
-            </motion.p>
+              <TypewriterText text="منصة تعليمية تفاعلية شاملة تدمج الذكاء الاصطناعي والروبوتات والتقنيات المستدامة والتعلّم الدامج" />
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="flex items-center justify-center gap-2 text-white/20 text-sm mb-14"
+              transition={{ delay: 0.7 }}
+              className="flex items-center justify-center gap-2 text-white/20 text-sm mb-10"
             >
               <Globe className="w-3.5 h-3.5" />
               <span>الجامعة الألمانية الأردنية</span>
@@ -422,39 +557,80 @@ const GJUCompetition = () => {
               <span>German Jordanian University</span>
             </motion.div>
 
-            {/* Stats */}
+            {/* CTA Buttons */}
             <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="flex flex-wrap justify-center gap-4 mb-16"
+            >
+              <button
+                onClick={() => scrollToTrack('ai')}
+                className="group relative px-8 py-4 rounded-2xl bg-gradient-to-l from-violet-600 to-cyan-600 text-white font-bold text-base overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/20 hover:scale-105"
+              >
+                <div className="absolute inset-0 bg-gradient-to-l from-violet-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative z-10 flex items-center gap-2">
+                  <Rocket className="w-5 h-5" />
+                  استكشف المسارات
+                </span>
+              </button>
+              <button
+                onClick={() => scrollToTrack('robotics')}
+                className="group px-8 py-4 rounded-2xl border border-white/10 bg-white/[0.03] text-white/70 font-bold text-base hover:bg-white/[0.08] hover:border-white/20 hover:text-white transition-all duration-300"
+              >
+                <span className="flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  المحاكيات التفاعلية
+                </span>
+              </button>
+            </motion.div>
+
+            {/* Stats with gradient borders */}
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto mb-16"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.7 }}
+              transition={{ delay: 0.9, duration: 0.7 }}
             >
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.05 }}
-                  className="relative group bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-5 text-center overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <stat.icon className="w-5 h-5 text-white/20 mx-auto mb-3" />
-                  <div className="text-3xl md:text-4xl font-black text-white mb-1">
-                    <AnimatedCounter value={stat.value} />
-                  </div>
-                  <div className="text-[11px] text-white/30 font-medium">{stat.label}</div>
-                </motion.div>
-              ))}
+              {stats.map((stat, i) => {
+                const gradients = [
+                  'from-violet-500/30 to-purple-500/30',
+                  'from-cyan-500/30 to-blue-500/30',
+                  'from-emerald-500/30 to-teal-500/30',
+                  'from-amber-500/30 to-orange-500/30',
+                ];
+                return (
+                  <motion.div
+                    key={i}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    className="relative group overflow-hidden rounded-2xl"
+                  >
+                    {/* Animated gradient border */}
+                    <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradients[i]} opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-[1px]`}>
+                      <div className="w-full h-full rounded-2xl bg-[#04040e]" />
+                    </div>
+                    <div className="relative bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-6 text-center group-hover:border-transparent transition-colors">
+                      <stat.icon className="w-6 h-6 text-white/20 mx-auto mb-3 group-hover:text-white/50 transition-colors" />
+                      <div className="text-4xl md:text-5xl font-black text-white mb-1.5">
+                        <AnimatedCounter value={stat.value} />
+                      </div>
+                      <div className="text-xs text-white/30 font-medium">{stat.label}</div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </motion.div>
 
             {/* Scroll indicator */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1.2 }}
+              transition={{ delay: 1.5 }}
               className="flex flex-col items-center gap-2"
             >
               <span className="text-white/15 text-xs">استكشف المسارات</span>
               <motion.div
-                animate={{ y: [0, 8, 0] }}
+                animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 <ChevronDown className="w-5 h-5 text-white/15" />
@@ -464,23 +640,37 @@ const GJUCompetition = () => {
         </section>
 
         {/* ═══════════════ STICKY TRACK NAV ═══════════════ */}
-        <div className="sticky top-0 z-50 bg-[#060612]/80 backdrop-blur-xl border-b border-white/[0.05]">
+        <div className="sticky top-0 z-50 bg-[#04040e]/80 backdrop-blur-2xl border-b border-white/[0.05]">
           <div className="container mx-auto px-4">
             <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
-              {tracks.map((track) => (
-                <button
-                  key={track.id}
-                  onClick={() => scrollToTrack(track.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-                    activeTrack === track.id
-                      ? 'bg-white/10 text-white border border-white/15'
-                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'
-                  }`}
-                >
-                  <track.icon className="w-4 h-4" />
-                  <span>{track.title}</span>
-                </button>
-              ))}
+              {tracks.map((track) => {
+                const toolCount = track.tools.length + (track.extraTools?.length || 0);
+                return (
+                  <button
+                    key={track.id}
+                    onClick={() => scrollToTrack(track.id)}
+                    className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                      activeTrack === track.id
+                        ? 'bg-white/10 text-white border border-white/15'
+                        : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'
+                    }`}
+                  >
+                    <track.icon className="w-4 h-4" />
+                    <span>{track.title}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      activeTrack === track.id ? 'bg-white/15 text-white/70' : 'bg-white/5 text-white/25'
+                    }`}>{toolCount}</span>
+                    {/* Glow line under active */}
+                    {activeTrack === track.id && (
+                      <motion.div
+                        layoutId="activeGlow"
+                        className={`absolute -bottom-3 left-2 right-2 h-0.5 rounded-full bg-gradient-to-l ${track.color}`}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -488,43 +678,46 @@ const GJUCompetition = () => {
         {/* ═══════════════ TRACK SECTIONS ═══════════════ */}
         {tracks.map((track, index) => (
           <React.Fragment key={track.id}>
+            {index > 0 && <SectionDivider color={track.color} />}
             <TrackSection track={track} index={index} />
           </React.Fragment>
         ))}
 
-        {/* ═══════════════ TECH STACK ═══════════════ */}
-        <section className="py-20">
+        {/* ═══════════════ TECH STACK - Marquee ═══════════════ */}
+        <section className="py-24">
           <div className="container mx-auto px-4">
             <motion.div
-              className="text-center mb-12"
+              className="text-center mb-14"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
               <span className="text-white/20 text-xs font-mono tracking-widest uppercase mb-3 block">BUILT WITH</span>
-              <h2 className="text-2xl md:text-3xl font-bold text-white">التقنيات المُستخدمة</h2>
+              <h2 className="text-3xl md:text-4xl font-black text-white">التقنيات المُستخدمة</h2>
             </motion.div>
 
-            <motion.div
-              className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              {techStack.map((tech, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  className="flex items-center gap-2.5 px-5 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
-                >
-                  <span className="text-lg">{tech.icon}</span>
-                  <span className="text-white/60 font-medium text-sm">{tech.name}</span>
-                </motion.div>
-              ))}
-            </motion.div>
+            {/* Marquee */}
+            <div className="relative overflow-hidden py-6">
+              <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-l from-transparent to-[#04040e] z-10" />
+              <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-[#04040e] z-10" />
+              <motion.div
+                className="flex gap-6 w-max"
+                animate={{ x: ['0%', '-50%'] }}
+                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              >
+                {[...techStack, ...techStack, ...techStack].map((tech, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-7 py-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] transition-colors shrink-0"
+                  >
+                    <span className="text-2xl">{tech.icon}</span>
+                    <span className="text-white/60 font-semibold text-sm">{tech.name}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
           </div>
         </section>
-
       </main>
 
       <Footer />
