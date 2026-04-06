@@ -1,0 +1,1 @@
+UPDATE public.profiles SET score = 0, solved_puzzles = 0;
