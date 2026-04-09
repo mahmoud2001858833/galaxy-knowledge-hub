@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Palette, Loader2, Sun, Moon, Sofa, Lightbulb, Droplets } from 'lucide-react';
+import { ArrowRight, Palette, Loader2, Sun, Moon, Sofa, Lightbulb, Droplets, Eye, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,6 +24,10 @@ const AIInteriorDesign = () => {
   const [loading, setLoading] = useState(false);
   const [design, setDesign] = useState<DesignResult | null>(null);
   const [timeOfDay, setTimeOfDay] = useState<'day' | 'night'>('day');
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
   const [form, setForm] = useState({
     roomType: '', area: '', style: '', budget: '', activity: '',
   });
@@ -59,8 +63,8 @@ const AIInteriorDesign = () => {
   return (
     <div className={`min-h-screen text-white transition-colors duration-700 ${timeOfDay === 'day' ? 'bg-gradient-to-br from-blue-950 via-slate-900 to-purple-950' : 'bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900'}`} dir="rtl">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <button onClick={() => navigate('/smart-city')} className="flex items-center gap-2 text-white/70 hover:text-white mb-6">
-          <ArrowRight className="w-5 h-5" /><span>العودة لقسم المدينة الذكية</span>
+        <button onClick={() => navigate(isGJUMode ? '/gju-competition' : '/smart-city')} className="flex items-center gap-2 text-white/70 hover:text-white mb-6">
+          <ArrowRight className="w-5 h-5" /><span>{isGJUMode ? 'العودة لمستقبل التكنولوجيا' : 'العودة لقسم المدينة الذكية'}</span>
         </button>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">

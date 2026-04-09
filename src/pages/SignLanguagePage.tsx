@@ -641,9 +641,12 @@ const SignLanguagePage: React.FC = () => {
               <p className="text-sm text-slate-400">تحويل إشارات اليد إلى نص وكلام بالذكاء الاصطناعي</p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => navigate(-1)} className="border-indigo-500/30 text-slate-300">
+          <Button variant="outline" onClick={() => {
+            const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+            navigate(isGJU ? '/gju-competition' : '/');
+          }} className="border-indigo-500/30 text-slate-300">
             <ArrowRight className="ml-2 h-4 w-4" />
-            رجوع
+            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'رجوع'}
           </Button>
         </div>
       </div>

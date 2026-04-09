@@ -177,9 +177,12 @@ const AIImageGenerator: React.FC = () => {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-6" onClick={(e) => {
+          const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+          if (isGJU) { e.preventDefault(); window.location.href = '/gju-competition'; }
+        }}>
           <ArrowLeft className="h-4 w-4" />
-          العودة للرئيسية
+          {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للرئيسية'}
         </Link>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
