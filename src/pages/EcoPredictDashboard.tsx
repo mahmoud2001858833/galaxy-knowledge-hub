@@ -107,7 +107,10 @@ const EcoPredictDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
-            onClick={() => navigate('/environmental-sustainability')}
+            onClick={() => {
+              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+              navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
+            }}
             className="text-gray-300 hover:text-white hover:bg-white/10"
           >
             <ArrowRight className="w-5 h-5 ml-2" />
