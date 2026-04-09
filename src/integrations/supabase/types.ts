@@ -1986,6 +1986,45 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_puzzle_jobs: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          difficulty: string
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          puzzles_per_day: number
+          schedule_days: string[]
+          subject: string
+          topic_description: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          difficulty: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          puzzles_per_day?: number
+          schedule_days: string[]
+          subject: string
+          topic_description: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          puzzles_per_day?: number
+          schedule_days?: string[]
+          subject?: string
+          topic_description?: string
+        }
+        Relationships: []
+      }
       school_news: {
         Row: {
           author_id: string
