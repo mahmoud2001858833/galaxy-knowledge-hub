@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Building2, Loader2, Star, Zap, DollarSign, Leaf, Eye } from 'lucide-react';
+import { ArrowRight, Building2, Loader2, Star, Zap, DollarSign, Leaf, Eye, ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,6 +39,10 @@ const AIArchitecturalDesign = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [generatingImage, setGeneratingImage] = useState<number | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({});
+  const [showImageModal, setShowImageModal] = useState<number | null>(null);
+  const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
   const [form, setForm] = useState({
     buildingType: '',
     area: '',
@@ -74,12 +78,46 @@ const AIArchitecturalDesign = () => {
     }
   };
 
+  const generate3DImage = async (suggestion: Suggestion, index: number) => {
+    setGeneratingImage(index);
+    try {
+      const prompt = `Create a stunning photorealistic 3D architectural rendering of: ${suggestion.name}. ${suggestion.description}. Style: modern 3D visualization, dramatic lighting, high detail, professional architectural render. Materials: ${suggestion.materials?.join(', ')}. The building should look impressive and futuristic.`;
+      
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyCiB3CDvu2iUSTk29l3KXDEDyXdMajmkeA', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+        })
+      });
+
+      const data = await response.json();
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const imagePart = parts.find((p: any) => p.inlineData);
+      
+      if (imagePart?.inlineData?.data) {
+        const imageUrl = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+        setGeneratedImages(prev => ({ ...prev, [index]: imageUrl }));
+        setShowImageModal(index);
+        toast({ title: 'تم إنشاء الصورة ثلاثية الأبعاد بنجاح! ✨' });
+      } else {
+        toast({ title: 'لم يتم إنشاء الصورة، حاول مرة أخرى', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'حدث خطأ في توليد الصورة', variant: 'destructive' });
+    } finally {
+      setGeneratingImage(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-cyan-950 text-white" dir="rtl">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <button onClick={() => navigate('/smart-city')} className="flex items-center gap-2 text-white/70 hover:text-white mb-6">
+        <button onClick={() => navigate(isGJUMode ? '/gju-competition' : '/smart-city')} className="flex items-center gap-2 text-white/70 hover:text-white mb-6">
           <ArrowRight className="w-5 h-5" />
-          <span>العودة لقسم المدينة الذكية</span>
+          <span>{isGJUMode ? 'العودة لمستقبل التكنولوجيا' : 'العودة لقسم المدينة الذكية'}</span>
         </button>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
@@ -180,8 +218,46 @@ const AIArchitecturalDesign = () => {
                   <span>💰 {s.estimatedCost}</span>
                   <span>⏱ {s.constructionTime}</span>
                 </div>
+
+                {/* 3D Image Generation Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => generate3DImage(s, i)}
+                  disabled={generatingImage === i}
+                  className="mt-3 w-full py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {generatingImage === i ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /><span>جاري التوليد...</span></>
+                  ) : (
+                    <><Eye className="w-4 h-4" /><span>إنشاء صورة ثلاثية الأبعاد</span></>
+                  )}
+                </motion.button>
+
+                {generatedImages[i] && (
+                  <button onClick={() => setShowImageModal(i)} className="mt-2 w-full text-center text-xs text-purple-300 hover:text-purple-200 underline">
+                    عرض الصورة المولّدة
+                  </button>
+                )}
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* Image Modal */}
+        {showImageModal !== null && generatedImages[showImageModal] && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setShowImageModal(null)}>
+            <div className="relative max-w-3xl w-full bg-slate-900 rounded-2xl border border-white/10 p-4" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowImageModal(null)} className="absolute top-3 left-3 text-white/70 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+              <h3 className="text-lg font-bold text-white mb-3">صورة التصميم ثلاثية الأبعاد</h3>
+              <img src={generatedImages[showImageModal]} alt="3D Design" className="w-full rounded-xl" />
+              <a href={generatedImages[showImageModal]} download={`3d-design-${showImageModal}.png`}
+                className="mt-3 inline-block px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm hover:bg-cyan-600">
+                تحميل الصورة
+              </a>
+            </div>
           </div>
         )}
       </div>

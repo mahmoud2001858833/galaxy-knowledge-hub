@@ -190,9 +190,12 @@ const FalakKnowledgeAI = () => {
         opacity: 1,
         y: 0
       }} className="mb-6">
-          <Button onClick={() => navigate('/')} variant="ghost" className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 mb-4">
+          <Button onClick={() => {
+            const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+            navigate(isGJU ? '/gju-competition' : '/');
+          }} variant="ghost" className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 mb-4">
             <ArrowRight className="w-4 h-4 ml-2" />
-            العودة للرئيسية
+            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للرئيسية'}
           </Button>
           
           <div className="text-center mb-6">

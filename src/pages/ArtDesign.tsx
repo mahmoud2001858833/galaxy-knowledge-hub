@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Palette, Upload, Bot, Users, Trophy, Lightbulb, Star } from "lucide-react";
+import { Palette, Upload, Bot, Users, Trophy, Lightbulb, Star, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -15,6 +16,8 @@ import DrawingTips from "@/components/artDesign/DrawingTips";
 
 const ArtDesign = () => {
   const [activeTab, setActiveTab] = useState("projects");
+  const navigate = useNavigate();
+  const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
 
   const tabs = [
     { id: "projects", label: "مشاريع الطلاب", icon: Upload },
@@ -36,6 +39,12 @@ const ArtDesign = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
+        {isGJUMode && (
+          <button onClick={() => navigate('/gju-competition')} className="flex items-center gap-2 text-primary/70 hover:text-primary mb-4">
+            <ArrowRight className="w-5 h-5" />
+            <span>العودة لمستقبل التكنولوجيا</span>
+          </button>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

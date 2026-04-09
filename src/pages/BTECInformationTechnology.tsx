@@ -77,11 +77,14 @@ const BTECInformationTechnology = () => {
         >
           {/* Back Button */}
           <button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+              navigate(isGJU ? '/gju-competition' : '/');
+            }}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8"
           >
             <ArrowRight size={20} />
-            العودة لذروة العلم
+            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة لذروة العلم'}
           </button>
 
           {/* Header */}

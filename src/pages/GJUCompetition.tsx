@@ -27,8 +27,8 @@ import { Button } from '@/components/ui/button';
 const aiTools = [
   { title: 'مساعد ذروة العلم الذكي', description: 'مساعد تعليمي ذكي متعدد المهام يجيب على أسئلتك في جميع المواد', icon: Brain, gradient: 'from-violet-500 to-purple-600', link: '/falak-knowledge-ai' },
   { title: 'توليد الصور بالذكاء الاصطناعي', description: 'أنشئ صوراً تعليمية احترافية باستخدام وصف نصي بسيط', icon: Image, gradient: 'from-pink-500 to-rose-600', link: '/ai-image-generator' },
-  { title: 'تقييم الرسومات بالذكاء الاصطناعي', description: 'ارسم وتحدّى أصدقاءك! الذكاء الاصطناعي يختار الفائز', icon: Target, gradient: 'from-amber-500 to-orange-600', link: '/drawing-challenge' },
-  { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec' },
+  { title: 'تقييم الرسومات بالذكاء الاصطناعي', description: 'ارسم وتحدّى أصدقاءك! الذكاء الاصطناعي يختار الفائز', icon: Target, gradient: 'from-amber-500 to-orange-600', link: '/art-design' },
+  { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec/information-technology' },
   { title: 'تحليل الصور التعليمية', description: 'حلّل صور الكتب والمسائل والتجارب بالذكاء الاصطناعي', icon: Eye, gradient: 'from-cyan-500 to-blue-600', link: '/jordanian-assistant' },
 ];
 
@@ -105,7 +105,7 @@ const sustainabilityTools = [
 /* ─────────────── Track 4: Inclusive Education ─────────────── */
 const inclusiveTools = [
   { title: 'مترجم لغة الإشارة الذكي', description: 'ترجمة فورية لإشارات اليد إلى نص وكلام باستخدام الذكاء الاصطناعي مع دعم 26+ إشارة', icon: Hand, gradient: 'from-pink-500 to-rose-600', link: '/sign-language' },
-  { title: 'قاموس لغة الإشارة التفاعلي', description: 'قاموس شامل مصنّف يضم 68+ كلمة وعبارة مع نطق صوتي ورسوم توضيحية', icon: BookOpen, gradient: 'from-blue-500 to-indigo-600', link: '/sign-language' },
+  { title: 'قاموس لغة الإشارة التفاعلي', description: 'قاموس شامل مصنّف يضم 68+ كلمة وعبارة مع نطق صوتي ورسوم توضيحية', icon: BookOpen, gradient: 'from-blue-500 to-indigo-600', link: '/sign-language?tab=dictionary' },
 ];
 
 const trackDescriptions: Record<string, string> = {
@@ -487,17 +487,7 @@ const GJUCompetition = () => {
       <main className="flex-1 relative z-10">
         {/* ═══════════════ HERO ═══════════════ */}
         <section className="relative min-h-screen flex flex-col justify-center items-center px-4 pt-8 pb-20">
-          {/* Back button */}
-          <motion.button
-            onClick={handleBackToMain}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="absolute top-6 right-6 flex items-center gap-2 text-white/30 hover:text-white/70 transition-colors text-sm z-20 group"
-          >
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            <span>العودة لذروة العلم</span>
-          </motion.button>
+          {/* Back button removed */}
 
           <div className="text-center max-w-5xl mx-auto">
             {/* Animated Glowing Badge */}

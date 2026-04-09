@@ -190,9 +190,15 @@ const SignLanguagePage: React.FC = () => {
     const pinkyTip = hand[20], pinkyDip = hand[19], pinkyPip = hand[18], pinkyMcp = hand[17];
     const wrist = hand[0];
 
+    // Distance helper
+    const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+
     // Finger extension detection (more precise)
     const isFingerExtended = (tip: any, dip: any, pip: any, mcp: any): boolean => {
-      return tip.y < pip.y && dip.y < pip.y;
+      const tipAbovePip = tip.y < pip.y - 0.01;
+      const dipAbovePip = dip.y < pip.y;
+      const tipFarther = dist(tip, wrist) > dist(mcp, wrist) * 0.85;
+      return (tipAbovePip && dipAbovePip) || (tipAbovePip && tipFarther);
     };
 
     const indexUp = isFingerExtended(indexTip, indexDip, indexPip, indexMcp);
@@ -200,16 +206,15 @@ const SignLanguagePage: React.FC = () => {
     const ringUp = isFingerExtended(ringTip, ringDip, ringPip, ringMcp);
     const pinkyUp = isFingerExtended(pinkyTip, pinkyDip, pinkyPip, pinkyMcp);
 
-    // Thumb detection (uses x-axis primarily)
+    // Thumb detection (uses x-axis and angle-based approach)
     const isLeftHand = thumbCmc.x < pinkyMcp.x;
     const thumbExtended = isLeftHand 
-      ? thumbTip.x > thumbIp.x && thumbTip.x > thumbMcp.x
-      : thumbTip.x < thumbIp.x && thumbTip.x < thumbMcp.x;
-    const thumbUp = thumbTip.y < thumbIp.y && thumbTip.y < wrist.y - 0.06;
-    const thumbDown = thumbTip.y > thumbIp.y && thumbTip.y > wrist.y + 0.04;
-
-    // Distance helper
-    const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+      ? (thumbTip.x > thumbIp.x + 0.01 && thumbTip.x > thumbMcp.x)
+      : (thumbTip.x < thumbIp.x - 0.01 && thumbTip.x < thumbMcp.x);
+    const palmCenter = { x: (indexMcp.x + pinkyMcp.x) / 2, y: (indexMcp.y + pinkyMcp.y) / 2 };
+    const thumbFarFromPalm = dist(thumbTip, palmCenter) > dist(thumbMcp, palmCenter) * 1.1;
+    const thumbUp = thumbTip.y < thumbIp.y && thumbTip.y < wrist.y - 0.04;
+    const thumbDown = thumbTip.y > thumbIp.y && thumbTip.y > wrist.y + 0.03;
 
     // Love sign: thumb, index, pinky up; middle and ring down
     if (thumbExtended && indexUp && !middleUp && !ringUp && pinkyUp) {
@@ -379,9 +384,9 @@ const SignLanguagePage: React.FC = () => {
         },
         runningMode: 'VIDEO' as const,
         numHands: 2,
-        minHandDetectionConfidence: 0.35,
-        minHandPresenceConfidence: 0.35,
-        minTrackingConfidence: 0.35,
+        minHandDetectionConfidence: 0.25,
+        minHandPresenceConfidence: 0.25,
+        minTrackingConfidence: 0.25,
       };
 
       let handLandmarker;
@@ -503,8 +508,8 @@ const SignLanguagePage: React.FC = () => {
             setConfidence(Math.round(result.confidence * 100));
 
             const currentTime = Date.now();
-            // Trigger after 2 stable frames, with 450ms cooldown for faster response
-            if (stableGestureRef.current.count >= 2 && currentTime - lastGestureTimeRef.current > 450) {
+            // Trigger after 1 stable frame, with 300ms cooldown for faster response
+            if (stableGestureRef.current.count >= 1 && currentTime - lastGestureTimeRef.current > 300) {
               handleGestureDetected(result.gesture, result.confidence);
               lastGestureTimeRef.current = currentTime;
               stableGestureRef.current = { gesture: null, count: 0 };
@@ -641,15 +646,18 @@ const SignLanguagePage: React.FC = () => {
               <p className="text-sm text-slate-400">تحويل إشارات اليد إلى نص وكلام بالذكاء الاصطناعي</p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => navigate(-1)} className="border-indigo-500/30 text-slate-300">
+          <Button variant="outline" onClick={() => {
+            const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+            navigate(isGJU ? '/gju-competition' : '/');
+          }} className="border-indigo-500/30 text-slate-300">
             <ArrowRight className="ml-2 h-4 w-4" />
-            رجوع
+            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'رجوع'}
           </Button>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <Tabs defaultValue="camera" className="w-full">
+        <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'camera'} className="w-full">
           <TabsList className="w-full max-w-md mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8">
             <TabsTrigger value="camera" className="flex-1 data-[state=active]:bg-indigo-600">
               <Camera className="ml-2 h-4 w-4" />
