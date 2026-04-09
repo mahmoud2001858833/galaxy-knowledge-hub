@@ -199,7 +199,80 @@ const AIInteriorDesign = () => {
               <h2 className="text-xl font-bold mb-3">🎨 الأجواء العامة</h2>
               <p className="text-white/70 leading-relaxed">{design.moodDescription}</p>
             </div>
+
+            {/* 3D Image Generation */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Eye className="w-5 h-5 text-pink-400" />صورة ثلاثية الأبعاد للتصميم</h2>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={async () => {
+                  setGeneratingImage(true);
+                  try {
+                    const prompt = `Create a stunning photorealistic 3D interior design rendering of a ${form.roomType} room. Style: ${form.style}. The room should have ${design.colorPalette.description}. Include furniture: ${design.furniture?.map(f => f.name).join(', ')}. Lighting: ${design.lighting?.type}. Mood: ${design.moodDescription}. Professional architectural visualization, dramatic lighting, ultra detailed.`;
+                    
+                    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyCiB3CDvu2iUSTk29l3KXDEDyXdMajmkeA', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                      })
+                    });
+
+                    const data = await response.json();
+                    const parts = data?.candidates?.[0]?.content?.parts || [];
+                    const imagePart = parts.find((p: any) => p.inlineData);
+                    
+                    if (imagePart?.inlineData?.data) {
+                      const imageUrl = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+                      setGeneratedImage(imageUrl);
+                      setShowImageModal(true);
+                      toast({ title: 'تم إنشاء الصورة ثلاثية الأبعاد بنجاح! ✨' });
+                    } else {
+                      toast({ title: 'لم يتم إنشاء الصورة، حاول مرة أخرى', variant: 'destructive' });
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    toast({ title: 'حدث خطأ في توليد الصورة', variant: 'destructive' });
+                  } finally {
+                    setGeneratingImage(false);
+                  }
+                }}
+                disabled={generatingImage}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {generatingImage ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /><span>جاري التوليد...</span></>
+                ) : (
+                  <><Eye className="w-5 h-5" /><span>إنشاء صورة ثلاثية الأبعاد للتصميم</span></>
+                )}
+              </motion.button>
+
+              {generatedImage && (
+                <button onClick={() => setShowImageModal(true)} className="mt-2 w-full text-center text-sm text-purple-300 hover:text-purple-200 underline">
+                  عرض الصورة المولّدة
+                </button>
+              )}
+            </div>
           </motion.div>
+        )}
+
+        {/* Image Modal */}
+        {showImageModal && generatedImage && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setShowImageModal(false)}>
+            <div className="relative max-w-3xl w-full bg-slate-900 rounded-2xl border border-white/10 p-4" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowImageModal(false)} className="absolute top-3 left-3 text-white/70 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+              <h3 className="text-lg font-bold text-white mb-3">صورة التصميم الداخلي ثلاثية الأبعاد</h3>
+              <img src={generatedImage} alt="3D Interior Design" className="w-full rounded-xl" />
+              <a href={generatedImage} download="3d-interior-design.png"
+                className="mt-3 inline-block px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600">
+                تحميل الصورة
+              </a>
+            </div>
+          </div>
         )}
       </div>
     </div>

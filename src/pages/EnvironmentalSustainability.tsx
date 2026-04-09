@@ -112,7 +112,10 @@ const EnvironmentalSustainability = () => {
         >
           <Button
             variant="outline"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+              navigate(isGJU ? '/gju-competition' : '/');
+            }}
             className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <ArrowLeft className="w-4 h-4" />
