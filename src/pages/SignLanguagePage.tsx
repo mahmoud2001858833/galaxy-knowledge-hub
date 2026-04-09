@@ -190,12 +190,13 @@ const SignLanguagePage: React.FC = () => {
     const pinkyTip = hand[20], pinkyDip = hand[19], pinkyPip = hand[18], pinkyMcp = hand[17];
     const wrist = hand[0];
 
+    // Distance helper
+    const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+
     // Finger extension detection (more precise)
     const isFingerExtended = (tip: any, dip: any, pip: any, mcp: any): boolean => {
-      // More precise: check tip is above pip AND dip is above pip (using y-axis, lower y = higher)
       const tipAbovePip = tip.y < pip.y - 0.01;
       const dipAbovePip = dip.y < pip.y;
-      // Also check angle: tip should be further from wrist than mcp
       const tipFarther = dist(tip, wrist) > dist(mcp, wrist) * 0.85;
       return (tipAbovePip && dipAbovePip) || (tipAbovePip && tipFarther);
     };
@@ -210,14 +211,10 @@ const SignLanguagePage: React.FC = () => {
     const thumbExtended = isLeftHand 
       ? (thumbTip.x > thumbIp.x + 0.01 && thumbTip.x > thumbMcp.x)
       : (thumbTip.x < thumbIp.x - 0.01 && thumbTip.x < thumbMcp.x);
-    // Also check thumb distance from palm center
     const palmCenter = { x: (indexMcp.x + pinkyMcp.x) / 2, y: (indexMcp.y + pinkyMcp.y) / 2 };
     const thumbFarFromPalm = dist(thumbTip, palmCenter) > dist(thumbMcp, palmCenter) * 1.1;
     const thumbUp = thumbTip.y < thumbIp.y && thumbTip.y < wrist.y - 0.04;
     const thumbDown = thumbTip.y > thumbIp.y && thumbTip.y > wrist.y + 0.03;
-
-    // Distance helper
-    const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 
     // Love sign: thumb, index, pinky up; middle and ring down
     if (thumbExtended && indexUp && !middleUp && !ringUp && pinkyUp) {
