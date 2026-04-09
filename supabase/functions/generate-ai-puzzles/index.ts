@@ -6,9 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GEMINI_API_KEY = "AIzaSyA2ZnwA-yCDBdkFmqtg2dZTq4DuQSSS7zM";
-const GEMINI_TEXT_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-const GEMINI_IMAGE_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`;
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -25,6 +23,11 @@ serve(async (req) => {
       });
     }
 
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -35,7 +38,7 @@ serve(async (req) => {
       'صعب': 30,
     };
 
-    // Generate puzzles text via Gemini
+    // Generate puzzles text via Lovable AI Gateway
     const textPrompt = `أنت مولّد ألغاز تعليمية. أنشئ ${count} لغز تعليمي في مادة "${subject}" بمستوى صعوبة "${difficulty}" حول الموضوع التالي: "${topicDescription}".
 
 لكل لغز أعط:
@@ -47,24 +50,40 @@ serve(async (req) => {
 أرجع النتيجة كـ JSON فقط بالشكل التالي بدون أي نص إضافي:
 [{"title":"...","question":"...","options":["أ","ب","ج","د"],"correct_answer":"أ"},...]`;
 
-    const textResponse = await fetch(GEMINI_TEXT_URL, {
+    const textResponse = await fetch(LOVABLE_AI_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: textPrompt }] }],
-        generationConfig: { temperature: 0.8 },
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: "أنت مساعد تعليمي متخصص في توليد ألغاز تعليمية. أجب بـ JSON فقط." },
+          { role: "user", content: textPrompt },
+        ],
       }),
     });
 
     if (!textResponse.ok) {
       const errText = await textResponse.text();
-      console.error("Gemini text error:", errText);
+      console.error("AI Gateway text error:", textResponse.status, errText);
+      if (textResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً" }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (textResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "يرجى شحن الرصيد في إعدادات Lovable" }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       throw new Error("Failed to generate puzzles text");
     }
 
     const textData = await textResponse.json();
-    let rawText = textData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    
+    let rawText = textData.choices?.[0]?.message?.content || "";
+
     // Extract JSON from response
     const jsonMatch = rawText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
@@ -78,57 +97,67 @@ serve(async (req) => {
     for (const puzzle of puzzles) {
       let imageUrl: string | null = null;
 
-      // Generate image for this puzzle
+      // Generate image for this puzzle using Lovable AI image generation
       try {
         const imagePrompt = `Create a clean, educational illustration for a ${subject} quiz about: ${puzzle.question}. 
 The image should be a simple, colorful educational diagram or illustration. 
 IMPORTANT: Do NOT include any text, letters, numbers, words, or Arabic characters in the image. Only visual elements.`;
 
-        const imgResponse = await fetch(GEMINI_IMAGE_URL, {
+        const imgResponse = await fetch(LOVABLE_AI_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: imagePrompt }] }],
-            generationConfig: {
-              responseModalities: ["TEXT", "IMAGE"],
-            },
+            model: "google/gemini-2.5-flash-image",
+            messages: [{ role: "user", content: imagePrompt }],
+            modalities: ["image", "text"],
           }),
         });
 
         if (imgResponse.ok) {
           const imgData = await imgResponse.json();
-          const parts = imgData.candidates?.[0]?.content?.parts || [];
-          const imagePart = parts.find((p: any) => p.inlineData);
+          const images = imgData.choices?.[0]?.message?.images;
           
-          if (imagePart?.inlineData) {
-            const base64 = imagePart.inlineData.data;
-            const mimeType = imagePart.inlineData.mimeType || "image/png";
-            const ext = mimeType.includes("jpeg") ? "jpg" : "png";
-            const fileName = `ai-puzzle-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          if (images && images.length > 0) {
+            const dataUrl = images[0]?.image_url?.url;
+            if (dataUrl && dataUrl.startsWith("data:image/")) {
+              // Extract base64 from data URL
+              const base64Match = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+              if (base64Match) {
+                const ext = base64Match[1] === "jpeg" ? "jpg" : base64Match[1];
+                const base64 = base64Match[2];
+                const mimeType = `image/${base64Match[1]}`;
+                const fileName = `ai-puzzle-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-            // Decode base64
-            const binaryString = atob(base64);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
+                // Decode base64
+                const binaryString = atob(base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from("educational_images")
-              .upload(`puzzles/${fileName}`, bytes, {
-                contentType: mimeType,
-                upsert: false,
-              });
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from("educational_images")
+                  .upload(`puzzles/${fileName}`, bytes, {
+                    contentType: mimeType,
+                    upsert: false,
+                  });
 
-            if (!uploadError && uploadData) {
-              const { data: urlData } = supabase.storage
-                .from("educational_images")
-                .getPublicUrl(`puzzles/${fileName}`);
-              imageUrl = urlData.publicUrl;
-            } else {
-              console.error("Upload error:", uploadError);
+                if (!uploadError && uploadData) {
+                  const { data: urlData } = supabase.storage
+                    .from("educational_images")
+                    .getPublicUrl(`puzzles/${fileName}`);
+                  imageUrl = urlData.publicUrl;
+                } else {
+                  console.error("Upload error:", uploadError);
+                }
+              }
             }
           }
+        } else {
+          console.error("Image generation error:", imgResponse.status, await imgResponse.text());
         }
       } catch (imgErr) {
         console.error("Image generation error:", imgErr);
