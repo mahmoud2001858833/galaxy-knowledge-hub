@@ -537,8 +537,8 @@ const SignLanguagePage: React.FC = () => {
             setConfidence(Math.round(result.confidence * 100));
 
             const currentTime = Date.now();
-            // Trigger after 1 stable frame, with 300ms cooldown for faster response
-            if (stableGestureRef.current.count >= 1 && currentTime - lastGestureTimeRef.current > 300) {
+            // Trigger after 3 stable frames to avoid false positives, with 500ms cooldown
+            if (stableGestureRef.current.count >= 3 && currentTime - lastGestureTimeRef.current > 500) {
               handleGestureDetected(result.gesture, result.confidence);
               lastGestureTimeRef.current = currentTime;
               stableGestureRef.current = { gesture: null, count: 0 };
