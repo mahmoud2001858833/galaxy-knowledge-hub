@@ -209,23 +209,22 @@ const AIInteriorDesign = () => {
                 onClick={async () => {
                   setGeneratingImage(true);
                   try {
-                    const prompt = `Create a stunning photorealistic 3D interior design rendering of a ${form.roomType} room. Style: ${form.style}. The room should have ${design.colorPalette.description}. Include furniture: ${design.furniture?.map(f => f.name).join(', ')}. Lighting: ${design.lighting?.type}. Mood: ${design.moodDescription}. Professional architectural visualization, dramatic lighting, ultra detailed.`;
+                    const prompt = `Create a stunning photorealistic 3D interior design rendering of a ${form.roomType} room. Style: ${form.style}. The room should have ${design.colorPalette.description}. Include furniture: ${design.furniture?.map(f => f.name).join(', ')}. Lighting: ${design.lighting?.type}. Mood: ${design.moodDescription}. Professional architectural visualization, dramatic lighting, ultra detailed, cinematic quality.`;
                     
-                    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyCiB3CDvu2iUSTk29l3KXDEDyXdMajmkeA', {
+                    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                        model: 'google/gemini-2.5-flash-image',
+                        messages: [{ role: 'user', content: prompt }],
+                        modalities: ['image', 'text']
                       })
                     });
 
                     const data = await response.json();
-                    const parts = data?.candidates?.[0]?.content?.parts || [];
-                    const imagePart = parts.find((p: any) => p.inlineData);
+                    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
                     
-                    if (imagePart?.inlineData?.data) {
-                      const imageUrl = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+                    if (imageUrl) {
                       setGeneratedImage(imageUrl);
                       setShowImageModal(true);
                       toast({ title: 'تم إنشاء الصورة ثلاثية الأبعاد بنجاح! ✨' });
