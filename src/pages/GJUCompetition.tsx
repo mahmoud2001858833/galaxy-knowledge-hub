@@ -29,7 +29,6 @@ const aiTools = [
   { title: 'توليد الصور بالذكاء الاصطناعي', description: 'أنشئ صوراً تعليمية احترافية باستخدام وصف نصي بسيط', icon: Image, gradient: 'from-pink-500 to-rose-600', link: '/ai-image-generator' },
   { title: 'تقييم الرسومات بالذكاء الاصطناعي', description: 'ارسم وتحدّى أصدقاءك! الذكاء الاصطناعي يختار الفائز', icon: Target, gradient: 'from-amber-500 to-orange-600', link: '/art-design' },
   { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec/information-technology' },
-  { title: 'تحليل الصور التعليمية', description: 'حلّل صور الكتب والمسائل والتجارب بالذكاء الاصطناعي', icon: Eye, gradient: 'from-cyan-500 to-blue-600', link: '/jordanian-assistant' },
 ];
 
 /* ─────────────── Track 2: Robotics & Construction ─────────────── */

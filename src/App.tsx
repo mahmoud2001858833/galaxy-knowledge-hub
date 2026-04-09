@@ -179,13 +179,14 @@ import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
 const RootLayout = () => {
+  const isGJUMode = typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true';
   return (
     <AutoReadWrapper>
       <ScrollToTop />
       <Outlet />
-      <WelcomeGuide />
-      <PlatformGuideAssistant />
-      <AccessibilityPanel />
+      {!isGJUMode && <WelcomeGuide />}
+      {!isGJUMode && <PlatformGuideAssistant />}
+      {!isGJUMode && <AccessibilityPanel />}
     </AutoReadWrapper>
   );
 };
