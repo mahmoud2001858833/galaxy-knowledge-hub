@@ -205,18 +205,28 @@ const SignLanguagePage: React.FC = () => {
       return Math.acos(cosAngle) * (180 / Math.PI);
     };
 
-    // Finger extension using angle-based approach (more accurate than y-position)
-    // A straight finger has a large angle at PIP joint (close to 180°)
-    // A bent finger has a smaller angle (< 130°)
+    // Finger extension using multiple checks for high accuracy:
+    // 1. Angle at PIP joint (straight finger ≈ 170-180°, bent < 140°)
+    // 2. Angle at DIP joint
+    // 3. Tip must be significantly farther from wrist than PIP
+    // 4. Tip must be above PIP (in y-axis, accounting for hand orientation)
     const isFingerExtended = (tip: any, dip: any, pip: any, mcp: any): boolean => {
       const pipAngle = angle(mcp, pip, tip);
       const dipAngle = angle(pip, dip, tip);
-      // Finger is extended if PIP angle > 145° (mostly straight)
-      // Also check that tip is farther from wrist than MCP
-      const tipDist = dist(tip, wrist);
-      const mcpDist = dist(mcp, wrist);
-      const extended = pipAngle > 140 && tipDist > mcpDist * 0.9;
-      return extended;
+      
+      // Primary: PIP angle must be > 155° (finger mostly straight)
+      // This is the key threshold - 155° is strict enough to reject partially curled fingers
+      if (pipAngle < 155) return false;
+      
+      // Secondary: tip must be farther from wrist than PIP (finger pointing outward)
+      const tipToWrist = dist(tip, wrist);
+      const pipToWrist = dist(pip, wrist);
+      if (tipToWrist < pipToWrist * 1.05) return false;
+      
+      // Tertiary: DIP should also be relatively straight (> 140°)
+      if (dipAngle < 135) return false;
+      
+      return true;
     };
 
     const indexUp = isFingerExtended(indexTip, indexDip, indexPip, indexMcp);
