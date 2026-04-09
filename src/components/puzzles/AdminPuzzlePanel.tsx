@@ -203,252 +203,221 @@ const AdminPuzzlePanel: React.FC<AdminPuzzlePanelProps> = ({ onPuzzleChange }) =
   };
 
   return (
-    <Card className="bg-card/80 backdrop-blur-xl border-border/50">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <div className="p-2 rounded-full bg-primary/20">
-            <Upload className="h-5 w-5 text-primary" />
-          </div>
-          إدارة الألغاز
-        </CardTitle>
-        
-        <Dialog open={isFormOpen} onOpenChange={(open) => {
-          setIsFormOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              إضافة لغز جديد
-            </Button>
-          </DialogTrigger>
-          
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingPuzzle ? 'تعديل اللغز' : 'إضافة لغز جديد'}
-              </DialogTitle>
-            </DialogHeader>
+    <div className="space-y-4">
+      <Tabs defaultValue="manage" className="w-full">
+        <TabsList className="grid grid-cols-4 mb-4">
+          <TabsTrigger value="manage">📋 إدارة الألغاز</TabsTrigger>
+          <TabsTrigger value="add">➕ إضافة لغز</TabsTrigger>
+          <TabsTrigger value="ai-generate">🤖 توليد بالذكاء</TabsTrigger>
+          <TabsTrigger value="schedule">📅 الجدولة</TabsTrigger>
+        </TabsList>
 
-            <div className="space-y-4 py-4">
-              {/* Title */}
-              <div className="space-y-2">
-                <Label>عنوان اللغز *</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="أدخل عنوان اللغز"
-                  dir="rtl"
-                />
-              </div>
+        <TabsContent value="manage">
+          <Card className="bg-card/80 backdrop-blur-xl border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 rounded-full bg-primary/20">
+                  <Upload className="h-5 w-5 text-primary" />
+                </div>
+                إدارة الألغاز
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  جاري التحميل...
+                </div>
+              ) : puzzles.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>لا توجد ألغاز بعد</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-3">
+                    {puzzles.map((puzzle) => (
+                      <motion.div
+                        key={puzzle.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate">{puzzle.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className={getDifficultyColor(puzzle.difficulty)}>
+                              {puzzle.difficulty}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">{puzzle.points} نقاط</span>
+                            <span className="text-sm text-muted-foreground">{puzzle.subject}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="icon" onClick={() => openEditForm(puzzle)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Dialog open={deleteId === puzzle.id} onOpenChange={(open) => !open && setDeleteId(null)}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteId(puzzle.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader><DialogTitle>تأكيد الحذف</DialogTitle></DialogHeader>
+                              <p>هل أنت متأكد من حذف هذا اللغز؟</p>
+                              <p className="font-semibold">{puzzle.title}</p>
+                              <div className="flex gap-2 justify-end mt-4">
+                                <Button variant="outline" onClick={() => setDeleteId(null)}>إلغاء</Button>
+                                <Button variant="destructive" onClick={() => handleDelete(puzzle.id)}>حذف</Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              {/* Question */}
-              <div className="space-y-2">
-                <Label>السؤال *</Label>
-                <Textarea
-                  value={formData.question}
-                  onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                  placeholder="أدخل نص السؤال"
-                  dir="rtl"
-                  rows={3}
-                />
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <Label>الخيارات (4 خيارات) *</Label>
+        <TabsContent value="add">
+          <Card className="bg-card/80 backdrop-blur-xl border-border/50">
+            <CardHeader>
+              <CardTitle>إضافة لغز جديد</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div className="space-y-2">
+                  <Label>عنوان اللغز *</Label>
+                  <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="أدخل عنوان اللغز" dir="rtl" />
+                </div>
+                <div className="space-y-2">
+                  <Label>السؤال *</Label>
+                  <Textarea value={formData.question} onChange={(e) => setFormData({ ...formData, question: e.target.value })} placeholder="أدخل نص السؤال" dir="rtl" rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label>الخيارات (4 خيارات) *</Label>
                   {formData.options.map((option, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <span className="text-muted-foreground w-6">{index + 1}.</span>
-                      <Input
-                        value={option}
-                        onChange={(e) => handleOptionChange(index, e.target.value)}
-                        placeholder={`الخيار ${index + 1}`}
-                        dir="rtl"
-                      />
+                      <Input value={option} onChange={(e) => handleOptionChange(index, e.target.value)} placeholder={`الخيار ${index + 1}`} dir="rtl" />
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Correct Answer */}
-              <div className="space-y-2">
-                <Label>الإجابة الصحيحة *</Label>
-                <RadioGroup
-                  value={formData.correct_answer}
-                  onValueChange={(value) => setFormData({ ...formData, correct_answer: value })}
-                  className="space-y-2"
-                >
-                  {formData.options.map((option, index) => (
-                    option.trim() && (
-                      <div key={index} className="flex items-center space-x-2 space-x-reverse">
-                        <RadioGroupItem value={option} id={`option-${index}`} />
-                        <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                          {option}
-                        </Label>
-                        {formData.correct_answer === option && (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        )}
-                      </div>
-                    )
-                  ))}
-                </RadioGroup>
-              </div>
-
-              {/* Subject and Difficulty */}
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>المادة</Label>
-                  <Select
-                    value={formData.subject}
-                    onValueChange={(value) => setFormData({ ...formData, subject: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="الفيزياء">⚛️ الفيزياء</SelectItem>
-                      <SelectItem value="الكيمياء">🧪 الكيمياء</SelectItem>
-                      <SelectItem value="الأحياء">🧬 الأحياء</SelectItem>
-                      <SelectItem value="الرياضيات">📐 الرياضيات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>مستوى الصعوبة</Label>
-                  <Select
-                    value={formData.difficulty}
-                    onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="سهل">🟢 سهل</SelectItem>
-                      <SelectItem value="متوسط">🟡 متوسط</SelectItem>
-                      <SelectItem value="صعب">🔴 صعب</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Points */}
-              <div className="space-y-2">
-                <Label>النقاط</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={formData.points}
-                  onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 10 })}
-                />
-              </div>
-
-              {/* Image Upload */}
-              <PuzzleImageUploader
-                currentImageUrl={formData.image}
-                onImageUrl={(url) => setFormData({ ...formData, image: url })}
-              />
-
-              {/* Submit Button */}
-              <Button 
-                onClick={handleSubmit} 
-                disabled={submitting}
-                className="w-full"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    جاري الحفظ...
-                  </>
-                ) : (
-                  editingPuzzle ? 'حفظ التعديلات' : 'إضافة اللغز'
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-
-      <CardContent>
-        {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-            جاري التحميل...
-          </div>
-        ) : puzzles.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>لا توجد ألغاز بعد</p>
-            <p className="text-sm">أضف لغزك الأول!</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-3">
-              {puzzles.map((puzzle) => (
-                <motion.div
-                  key={puzzle.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{puzzle.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className={getDifficultyColor(puzzle.difficulty)}>
-                        {puzzle.difficulty}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">{puzzle.points} نقاط</span>
-                      <span className="text-sm text-muted-foreground">{puzzle.subject}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => openEditForm(puzzle)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    
-                    <Dialog open={deleteId === puzzle.id} onOpenChange={(open) => !open && setDeleteId(null)}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteId(puzzle.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>تأكيد الحذف</DialogTitle>
-                        </DialogHeader>
-                        <p>هل أنت متأكد من حذف هذا اللغز؟</p>
-                        <p className="font-semibold">{puzzle.title}</p>
-                        <div className="flex gap-2 justify-end mt-4">
-                          <Button variant="outline" onClick={() => setDeleteId(null)}>
-                            إلغاء
-                          </Button>
-                          <Button variant="destructive" onClick={() => handleDelete(puzzle.id)}>
-                            حذف
-                          </Button>
+                  <Label>الإجابة الصحيحة *</Label>
+                  <RadioGroup value={formData.correct_answer} onValueChange={(value) => setFormData({ ...formData, correct_answer: value })} className="space-y-2">
+                    {formData.options.map((option, index) => (
+                      option.trim() && (
+                        <div key={index} className="flex items-center space-x-2 space-x-reverse">
+                          <RadioGroupItem value={option} id={`option-${index}`} />
+                          <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">{option}</Label>
+                          {formData.correct_answer === option && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
                         </div>
-                      </DialogContent>
-                    </Dialog>
+                      )
+                    ))}
+                  </RadioGroup>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>المادة</Label>
+                    <Select value={formData.subject} onValueChange={(value) => setFormData({ ...formData, subject: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="الفيزياء">⚛️ الفيزياء</SelectItem>
+                        <SelectItem value="الكيمياء">🧪 الكيمياء</SelectItem>
+                        <SelectItem value="الأحياء">🧬 الأحياء</SelectItem>
+                        <SelectItem value="الرياضيات">📐 الرياضيات</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </motion.div>
+                  <div className="space-y-2">
+                    <Label>مستوى الصعوبة</Label>
+                    <Select value={formData.difficulty} onValueChange={(value) => setFormData({ ...formData, difficulty: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="سهل">🟢 سهل</SelectItem>
+                        <SelectItem value="متوسط">🟡 متوسط</SelectItem>
+                        <SelectItem value="صعب">🔴 صعب</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>النقاط</Label>
+                  <Input type="number" min={1} max={100} value={formData.points} onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 10 })} />
+                </div>
+                <PuzzleImageUploader currentImageUrl={formData.image} onImageUrl={(url) => setFormData({ ...formData, image: url })} />
+                <Button onClick={handleSubmit} disabled={submitting} className="w-full">
+                  {submitting ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />جاري الحفظ...</>) : (editingPuzzle ? 'حفظ التعديلات' : 'إضافة اللغز')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-generate">
+          <Card className="bg-card/80 backdrop-blur-xl border-border/50">
+            <CardContent className="p-6">
+              <AIPuzzleGenerator onPuzzlesGenerated={() => { fetchPuzzles(); onPuzzleChange(); }} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="schedule">
+          <Card className="bg-card/80 backdrop-blur-xl border-border/50">
+            <CardContent className="p-6">
+              <AIPuzzleScheduler />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>تعديل اللغز</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>عنوان اللغز *</Label>
+              <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} dir="rtl" />
+            </div>
+            <div className="space-y-2">
+              <Label>السؤال *</Label>
+              <Textarea value={formData.question} onChange={(e) => setFormData({ ...formData, question: e.target.value })} dir="rtl" rows={3} />
+            </div>
+            <div className="space-y-2">
+              <Label>الخيارات</Label>
+              {formData.options.map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-muted-foreground w-6">{index + 1}.</span>
+                  <Input value={option} onChange={(e) => handleOptionChange(index, e.target.value)} dir="rtl" />
+                </div>
               ))}
             </div>
-          </ScrollArea>
-        )}
-      </CardContent>
-    </Card>
+            <div className="space-y-2">
+              <Label>الإجابة الصحيحة *</Label>
+              <RadioGroup value={formData.correct_answer} onValueChange={(value) => setFormData({ ...formData, correct_answer: value })}>
+                {formData.options.map((option, index) => (
+                  option.trim() && (
+                    <div key={index} className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value={option} id={`edit-option-${index}`} />
+                      <Label htmlFor={`edit-option-${index}`}>{option}</Label>
+                    </div>
+                  )
+                ))}
+              </RadioGroup>
+            </div>
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ التعديلات'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
