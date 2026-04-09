@@ -1,41 +1,82 @@
 
 
-# فيديو ترويجي لمنصة "مستقبل التكنولوجيا"
+# خطة تحسين التنقل والميزات في "مستقبل التكنولوجيا"
 
-## ⚠️ قيود تقنية مهمة
+## المطلوب (ملخص)
 
-هناك قيدان أساسيان في بيئة العمل الحالية:
+عدة تعديلات على صفحة مستقبل التكنولوجيا والصفحات المرتبطة بها:
 
-1. **الحد الأقصى للرندر**: 10 دقائق فقط لمعالجة الفيديو - فيديو 5 دقائق (9000 إطار) سيفشل حتماً لأن المعالجة ستتجاوز الوقت المسموح
-2. **الصوت**: بيئة العمل لا تدعم تشفير الصوت - الفيديو سيكون بدون صوت ويجب إضافة الموسيقى يدوياً بعد التصدير
+1. حذف زر "العودة لذروة العلم" من صفحة GJU Competition
+2. تعديل أزرار الرجوع في جميع الصفحات الفرعية لتعود إلى `/gju-competition` عند تفعيل GJU mode
+3. إصلاح رابط "تقييم الرسومات" (404) → تغييره إلى `/art-design`
+4. تغيير رابط "مساعد البرمجة" ليفتح BTEC IT مباشرة `/btec/information-technology`
+5. تغيير رابط "تحليل الصور التعليمية" ليفتح `/jordanian-assistant` (مع إصلاح الرجوع)
+6. إضافة أزرار رجوع لمستقبل التكنولوجيا في صفحات المدينة الذكية والاستدامة
+7. تغيير رابط "قاموس لغة الإشارة" ليفتح القاموس مباشرة بدل الكاميرا
+8. تحسين دقة قراءة اليد في SignLanguagePage
+9. إضافة خاصية توليد صورة 3D للتصاميم المعمارية والداخلية باستخدام مفتاح AI جديد
 
-## الحل المقترح
+---
 
-إنشاء فيديو احترافي مدته **25-30 ثانية** بجودة عالية جداً يغطي أبرز أقسام المنصة بلقطات سريعة ومؤثرة، ثم يمكنك إضافة الموسيقى التحفيزية عبر أي برنامج مونتاج (CapCut, Premiere, إلخ).
+## التغييرات التفصيلية
 
-## محتوى الفيديو (7 مشاهد)
+### 1. حذف زر "العودة لذروة العلم" (GJUCompetition.tsx)
+- حذف الـ motion.button في سطور 490-500 بالكامل
 
-| المشهد | المدة | المحتوى |
-|--------|-------|---------|
-| 1 - الافتتاح | 4 ثوانٍ | شعار المنصة + GJU 3030 مع انفجار جسيمات |
-| 2 - الذكاء الاصطناعي | 4 ثوانٍ | أدوات الـ AI: فلك، توليد الصور، التحديات |
-| 3 - الروبوتات | 3 ثوانٍ | البناء الذكي والمحاكيات |
-| 4 - المحاكيات | 5 ثوانٍ | عرض سريع لـ 49+ تجربة تفاعلية |
-| 5 - الاستدامة | 3 ثوانٍ | حاسبة الكربون والمشاريع البيئية |
-| 6 - التعليم الشامل | 3 ثوانٍ | مترجم لغة الإشارة الذكي |
-| 7 - الختام | 3 ثوانٍ | إحصائيات + شعار ختامي |
+### 2. تعديل التنقل في GJU mode عبر جميع الصفحات الفرعية
+**الملفات المتأثرة:**
+- `FalakKnowledgeAI.tsx` - تغيير زر الرجوع ليرجع لـ `/gju-competition` عند GJU mode
+- `AIImageGenerator.tsx` - نفس التعديل
+- `BTECInformationTechnology.tsx` - تغيير النص والرابط
+- `ProgrammingSection.tsx` - تغيير النص والرابط
+- `JordanianAssistant.tsx` - إضافة زر رجوع
+- `AIArchitecturalDesign.tsx` - تغيير الرجوع لـ `/gju-competition` عند GJU mode
+- `AIInteriorDesign.tsx` - نفس التعديل
+- `SmartCitySection.tsx` - نفس التعديل
+- `SignLanguagePage.tsx` - تعديل زر الرجوع
+- جميع صفحات الاستدامة البيئية (6 صفحات) - إضافة/تعديل زر رجوع
+- `ArtDesign.tsx` - إضافة زر رجوع
 
-## الأسلوب البصري
+**النمط الموحد:** فحص `sessionStorage.getItem('gju_mode') === 'true'` وتوجيه الرجوع وفقاً لذلك
 
-- **الألوان**: أزرق داكن (#0a0e27)، بنفسجي (#8b5cf6)، سيان (#06b6d4)
-- **الخط**: Cairo (عربي) + Inter (إنجليزي)
-- **الحركة**: انتقالات wipe وslide سريعة، عناصر تدخل بـ spring، أرقام متحركة (counters)
-- **الخلفية**: جسيمات متحركة مستمرة طوال الفيديو
+### 3. إصلاح روابط GJU Competition
+- `drawing-challenge` → `/art-design` (لأنه لا يوجد route لـ `/drawing-challenge` بدون roomId)
+- `btec` → `/btec/information-technology` (يفتح قسم التكنولوجيا مباشرة)
 
-## التفاصيل التقنية
+### 4. قاموس لغة الإشارة - فتح القاموس مباشرة
+- تغيير رابط "قاموس لغة الإشارة التفاعلي" من `/sign-language` إلى `/sign-language?tab=dictionary`
+- تعديل `SignLanguagePage.tsx` لقراءة query parameter وضبط الـ default tab
 
-- Remotion مع 7 مشاهد + TransitionSeries
-- 1920×1080 بـ 30fps
-- ~750 إطار إجمالي
-- الفيديو سيُصدّر بدون صوت (يُضاف لاحقاً)
+### 5. تحسين دقة قراءة اليد (SignLanguagePage.tsx)
+- تحسين `classifyGesture`: إضافة فحوصات أدق للمسافات بين الأصابع
+- تقليل stability threshold من 2 frames إلى 1 frame للاستجابة الأسرع
+- تقليل gesture cooldown من 450ms إلى 300ms
+- تحسين confidence threshold من 0.35 إلى 0.25
+- إضافة فحوصات إضافية لزوايا الأصابع بدل الاعتماد على y-axis فقط
+- تحسين thumb detection باستخدام زوايا بدل مقارنة بسيطة
+
+### 6. توليد صور 3D للتصاميم (AIArchitecturalDesign.tsx + AIInteriorDesign.tsx)
+- إضافة زر "إنشاء صورة ثلاثية الأبعاد" بجانب كل تصميم مُقترح
+- استخدام مفتاح AI: `AIzaSyCiB3CDvu2iUSTk29l3KXDEDyXdMajmkeA`
+- استدعاء Google Gemini image generation model لإنشاء صور 3D بناءً على وصف التصميم
+- عرض الصورة المولّدة في modal مع خيار التحميل
+
+---
+
+## الملفات التي ستُعدّل
+
+| الملف | التغيير |
+|-------|---------|
+| `GJUCompetition.tsx` | حذف زر العودة + إصلاح روابط |
+| `FalakKnowledgeAI.tsx` | GJU mode back nav |
+| `AIImageGenerator.tsx` | GJU mode back nav |
+| `BTECInformationTechnology.tsx` | GJU mode back nav + نص |
+| `ProgrammingSection.tsx` | GJU mode back nav + نص |
+| `JordanianAssistant.tsx` | إضافة GJU mode back nav |
+| `AIArchitecturalDesign.tsx` | GJU mode back + زر توليد صورة 3D |
+| `AIInteriorDesign.tsx` | GJU mode back + زر توليد صورة 3D |
+| `SmartCitySection.tsx` | GJU mode back nav |
+| `SignLanguagePage.tsx` | default tab + تحسين قراءة اليد |
+| `ArtDesign.tsx` | GJU mode back nav |
+| 6 صفحات استدامة | GJU mode back nav |
 
