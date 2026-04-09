@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, X, Upload, Image as ImageIcon, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload, Image as ImageIcon, Loader2, CheckCircle2, Bot, Calendar } from 'lucide-react';
 import PuzzleImageUploader from '@/components/shared/PuzzleImageUploader';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AIPuzzleGenerator from './AIPuzzleGenerator';
+import AIPuzzleScheduler from './AIPuzzleScheduler';
 
 interface Puzzle {
   id: string;
