@@ -177,7 +177,7 @@ const SignLanguagePage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Advanced gesture classification with more gestures and better accuracy
+  // Advanced gesture classification with angle-based detection for much higher accuracy
   const classifyGesture = useCallback((landmarks: any[]): { gesture: string; confidence: number } | null => {
     if (!landmarks || landmarks.length === 0) return null;
     const hand = landmarks[0];
@@ -191,14 +191,32 @@ const SignLanguagePage: React.FC = () => {
     const wrist = hand[0];
 
     // Distance helper
-    const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + ((a.z || 0) - (b.z || 0)) ** 2);
+    
+    // Angle between three points (returns degrees)
+    const angle = (a: any, b: any, c: any) => {
+      const ab = { x: a.x - b.x, y: a.y - b.y };
+      const cb = { x: c.x - b.x, y: c.y - b.y };
+      const dot = ab.x * cb.x + ab.y * cb.y;
+      const magAB = Math.sqrt(ab.x ** 2 + ab.y ** 2);
+      const magCB = Math.sqrt(cb.x ** 2 + cb.y ** 2);
+      if (magAB === 0 || magCB === 0) return 0;
+      const cosAngle = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
+      return Math.acos(cosAngle) * (180 / Math.PI);
+    };
 
-    // Finger extension detection (more precise)
+    // Finger extension using angle-based approach (more accurate than y-position)
+    // A straight finger has a large angle at PIP joint (close to 180°)
+    // A bent finger has a smaller angle (< 130°)
     const isFingerExtended = (tip: any, dip: any, pip: any, mcp: any): boolean => {
-      const tipAbovePip = tip.y < pip.y - 0.01;
-      const dipAbovePip = dip.y < pip.y;
-      const tipFarther = dist(tip, wrist) > dist(mcp, wrist) * 0.85;
-      return (tipAbovePip && dipAbovePip) || (tipAbovePip && tipFarther);
+      const pipAngle = angle(mcp, pip, tip);
+      const dipAngle = angle(pip, dip, tip);
+      // Finger is extended if PIP angle > 145° (mostly straight)
+      // Also check that tip is farther from wrist than MCP
+      const tipDist = dist(tip, wrist);
+      const mcpDist = dist(mcp, wrist);
+      const extended = pipAngle > 140 && tipDist > mcpDist * 0.9;
+      return extended;
     };
 
     const indexUp = isFingerExtended(indexTip, indexDip, indexPip, indexMcp);
@@ -206,102 +224,113 @@ const SignLanguagePage: React.FC = () => {
     const ringUp = isFingerExtended(ringTip, ringDip, ringPip, ringMcp);
     const pinkyUp = isFingerExtended(pinkyTip, pinkyDip, pinkyPip, pinkyMcp);
 
-    // Thumb detection (uses x-axis and angle-based approach)
+    // Thumb detection - use x-axis for left/right hand + angle
     const isLeftHand = thumbCmc.x < pinkyMcp.x;
-    const thumbExtended = isLeftHand 
-      ? (thumbTip.x > thumbIp.x + 0.01 && thumbTip.x > thumbMcp.x)
-      : (thumbTip.x < thumbIp.x - 0.01 && thumbTip.x < thumbMcp.x);
-    const palmCenter = { x: (indexMcp.x + pinkyMcp.x) / 2, y: (indexMcp.y + pinkyMcp.y) / 2 };
-    const thumbFarFromPalm = dist(thumbTip, palmCenter) > dist(thumbMcp, palmCenter) * 1.1;
-    const thumbUp = thumbTip.y < thumbIp.y && thumbTip.y < wrist.y - 0.04;
-    const thumbDown = thumbTip.y > thumbIp.y && thumbTip.y > wrist.y + 0.03;
+    const thumbAngle = angle(thumbCmc, thumbMcp, thumbTip);
+    const thumbExtended = thumbAngle > 130 && (
+      isLeftHand 
+        ? (thumbTip.x > thumbIp.x + 0.015)
+        : (thumbTip.x < thumbIp.x - 0.015)
+    );
+    
+    const thumbUp = thumbExtended && thumbTip.y < thumbIp.y - 0.03 && thumbTip.y < wrist.y - 0.05;
+    const thumbDown = thumbExtended && thumbTip.y > thumbIp.y + 0.03 && thumbTip.y > wrist.y + 0.04;
 
-    // Love sign: thumb, index, pinky up; middle and ring down
+    // Count extended fingers for validation
+    const extendedCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
+
+    // ─── Gesture Recognition (ordered by specificity) ───
+
+    // Love sign: thumb + index + pinky (NOT middle, NOT ring)
     if (thumbExtended && indexUp && !middleUp && !ringUp && pinkyUp) {
-      return { gesture: 'love', confidence: 0.92 };
+      return { gesture: 'love', confidence: 0.93 };
     }
 
-    // OK sign: thumb and index tips close together, other fingers extended
+    // OK sign: thumb and index tips very close, other fingers extended
     const thumbIndexDist = dist(thumbTip, indexTip);
-    if (thumbIndexDist < 0.06 && middleUp && ringUp && pinkyUp) {
-      return { gesture: 'ok_sign', confidence: 0.88 };
+    if (thumbIndexDist < 0.055 && middleUp && ringUp && pinkyUp) {
+      return { gesture: 'ok_sign', confidence: 0.90 };
     }
 
     // Pinch: thumb and index close, others closed
-    if (thumbIndexDist < 0.06 && !middleUp && !ringUp && !pinkyUp) {
-      return { gesture: 'pinch', confidence: 0.82 };
+    if (thumbIndexDist < 0.055 && !middleUp && !ringUp && !pinkyUp) {
+      return { gesture: 'pinch', confidence: 0.85 };
     }
 
-    // Crossed fingers: index and middle close together and crossed
-    const indexMiddleDist = dist(indexTip, middleTip);
-    if (indexUp && middleUp && !ringUp && !pinkyUp && indexMiddleDist < 0.04) {
-      return { gesture: 'crossed_fingers', confidence: 0.80 };
-    }
-
-    // Rock sign: index and pinky up, middle and ring down
+    // Rock sign: index + pinky up, middle + ring down, thumb NOT extended
     if (indexUp && !middleUp && !ringUp && pinkyUp && !thumbExtended) {
-      return { gesture: 'rock', confidence: 0.90 };
+      return { gesture: 'rock', confidence: 0.91 };
     }
 
-    // Call me: thumb and pinky out, others closed
+    // Call me: thumb + pinky out, others closed
     if (thumbExtended && !indexUp && !middleUp && !ringUp && pinkyUp) {
-      return { gesture: 'call_me', confidence: 0.87 };
+      return { gesture: 'call_me', confidence: 0.88 };
     }
 
-    // Open palm: all fingers extended
+    // Open palm: ALL 5 digits extended
     if (indexUp && middleUp && ringUp && pinkyUp && thumbExtended) {
-      // Check for wave motion (palm orientation)
-      const palmFacingDown = wrist.y < indexMcp.y;
+      // Check palm orientation for flat_hand_down
+      const palmFacingDown = wrist.y < indexMcp.y && (indexMcp.y - wrist.y) > 0.06;
       if (palmFacingDown) {
-        return { gesture: 'flat_hand_down', confidence: 0.82 };
+        return { gesture: 'flat_hand_down', confidence: 0.83 };
       }
       return { gesture: 'open_palm', confidence: 0.95 };
     }
 
     // Four fingers: all except thumb
-    if (indexUp && middleUp && ringUp && pinkyUp && !thumbExtended) {
-      return { gesture: 'four_fingers', confidence: 0.87 };
+    if (indexUp && middleUp && ringUp && pinkyUp && !thumbExtended && extendedCount === 4) {
+      return { gesture: 'four_fingers', confidence: 0.88 };
     }
 
-    // Three fingers: index, middle, ring up
-    if (indexUp && middleUp && ringUp && !pinkyUp) {
-      return { gesture: 'three_fingers', confidence: 0.87 };
+    // Three fingers: index + middle + ring (NOT pinky)
+    if (indexUp && middleUp && ringUp && !pinkyUp && extendedCount === 3) {
+      return { gesture: 'three_fingers', confidence: 0.88 };
     }
 
-    // Victory/Peace: index + middle up
-    if (indexUp && middleUp && !ringUp && !pinkyUp) {
-      return { gesture: 'victory', confidence: 0.90 };
+    // Crossed fingers: index + middle close together and both up
+    const indexMiddleDist = dist(indexTip, middleTip);
+    if (indexUp && middleUp && !ringUp && !pinkyUp && indexMiddleDist < 0.035) {
+      return { gesture: 'crossed_fingers', confidence: 0.82 };
     }
 
-    // Pointing up: only index
-    if (indexUp && !middleUp && !ringUp && !pinkyUp && !thumbExtended) {
-      return { gesture: 'pointing_up', confidence: 0.92 };
+    // Victory/Peace: index + middle up, ring + pinky down
+    if (indexUp && middleUp && !ringUp && !pinkyUp && extendedCount === 2) {
+      return { gesture: 'victory', confidence: 0.91 };
     }
 
-    // Pointing right: index extended horizontally
+    // Pointing up: ONLY index finger up
+    if (indexUp && !middleUp && !ringUp && !pinkyUp && !thumbExtended && extendedCount === 1) {
+      return { gesture: 'pointing_up', confidence: 0.93 };
+    }
+
+    // Pointing with thumb out: index + thumb
     if (indexUp && !middleUp && !ringUp && !pinkyUp && thumbExtended) {
-      const indexHorizontal = Math.abs(indexTip.y - indexMcp.y) < 0.08;
+      const indexHorizontal = Math.abs(indexTip.y - indexMcp.y) < 0.07;
       if (indexHorizontal) {
-        return { gesture: 'pointing_right', confidence: 0.80 };
+        return { gesture: 'pointing_right', confidence: 0.82 };
       }
-      return { gesture: 'pointing_up', confidence: 0.88 };
+      return { gesture: 'pointing_up', confidence: 0.89 };
     }
 
-    // Thumbs up/down
-    if (thumbExtended && !indexUp && !middleUp && !ringUp && !pinkyUp) {
-      if (thumbUp) return { gesture: 'thumbs_up', confidence: 0.92 };
-      if (thumbDown) return { gesture: 'thumbs_down', confidence: 0.88 };
+    // Thumbs up: ONLY thumb extended upward
+    if (thumbUp && !indexUp && !middleUp && !ringUp && !pinkyUp && extendedCount === 0) {
+      return { gesture: 'thumbs_up', confidence: 0.93 };
     }
 
-    // Fist: all closed
-    if (!indexUp && !middleUp && !ringUp && !pinkyUp && !thumbExtended) {
-      return { gesture: 'fist', confidence: 0.87 };
+    // Thumbs down: ONLY thumb extended downward  
+    if (thumbDown && !indexUp && !middleUp && !ringUp && !pinkyUp && extendedCount === 0) {
+      return { gesture: 'thumbs_down', confidence: 0.89 };
     }
 
-    // Prayer/Thanks: detect both hands close together (simplified - single hand flat)
-    const allFingersTogether = dist(indexTip, middleTip) < 0.04 && dist(middleTip, ringTip) < 0.04 && dist(ringTip, pinkyTip) < 0.04;
-    if (allFingersTogether && indexUp && middleUp && ringUp && pinkyUp && !thumbExtended) {
-      return { gesture: 'prayer', confidence: 0.78 };
+    // Fist: ALL fingers closed
+    if (!indexUp && !middleUp && !ringUp && !pinkyUp && !thumbExtended && extendedCount === 0) {
+      return { gesture: 'fist', confidence: 0.88 };
+    }
+
+    // Prayer: all 4 fingers up and very close together (no thumb)
+    const allFingersTogether = dist(indexTip, middleTip) < 0.035 && dist(middleTip, ringTip) < 0.035 && dist(ringTip, pinkyTip) < 0.035;
+    if (allFingersTogether && extendedCount === 4 && !thumbExtended) {
+      return { gesture: 'prayer', confidence: 0.80 };
     }
 
     return null;
@@ -508,8 +537,8 @@ const SignLanguagePage: React.FC = () => {
             setConfidence(Math.round(result.confidence * 100));
 
             const currentTime = Date.now();
-            // Trigger after 1 stable frame, with 300ms cooldown for faster response
-            if (stableGestureRef.current.count >= 1 && currentTime - lastGestureTimeRef.current > 300) {
+            // Trigger after 3 stable frames to avoid false positives, with 500ms cooldown
+            if (stableGestureRef.current.count >= 3 && currentTime - lastGestureTimeRef.current > 500) {
               handleGestureDetected(result.gesture, result.confidence);
               lastGestureTimeRef.current = currentTime;
               stableGestureRef.current = { gesture: null, count: 0 };

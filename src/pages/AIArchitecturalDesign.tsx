@@ -81,23 +81,22 @@ const AIArchitecturalDesign = () => {
   const generate3DImage = async (suggestion: Suggestion, index: number) => {
     setGeneratingImage(index);
     try {
-      const prompt = `Create a stunning photorealistic 3D architectural rendering of: ${suggestion.name}. ${suggestion.description}. Style: modern 3D visualization, dramatic lighting, high detail, professional architectural render. Materials: ${suggestion.materials?.join(', ')}. The building should look impressive and futuristic.`;
+      const prompt = `Create a stunning photorealistic 3D architectural rendering of: ${suggestion.name}. ${suggestion.description}. Style: modern 3D visualization, dramatic lighting, high detail, professional architectural render. Materials: ${suggestion.materials?.join(', ')}. The building should look impressive and futuristic with cinematic lighting and sharp details.`;
       
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyCiB3CDvu2iUSTk29l3KXDEDyXdMajmkeA', {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+          model: 'google/gemini-2.5-flash-image',
+          messages: [{ role: 'user', content: prompt }],
+          modalities: ['image', 'text']
         })
       });
 
       const data = await response.json();
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      const imagePart = parts.find((p: any) => p.inlineData);
+      const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       
-      if (imagePart?.inlineData?.data) {
-        const imageUrl = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+      if (imageUrl) {
         setGeneratedImages(prev => ({ ...prev, [index]: imageUrl }));
         setShowImageModal(index);
         toast({ title: 'تم إنشاء الصورة ثلاثية الأبعاد بنجاح! ✨' });
