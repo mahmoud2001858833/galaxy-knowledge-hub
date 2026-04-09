@@ -62,8 +62,11 @@ const RoboticConstruction = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 text-white" dir="rtl">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <button onClick={() => navigate('/smart-city')} className="flex items-center gap-2 text-white/70 hover:text-white mb-6">
-          <ArrowRight className="w-5 h-5" /><span>العودة لقسم المدينة الذكية</span>
+        <button onClick={() => {
+          const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+          navigate(isGJU ? '/gju-competition' : '/smart-city');
+        }} className="flex items-center gap-2 text-white/70 hover:text-white mb-6">
+          <ArrowRight className="w-5 h-5" /><span>{sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة لقسم المدينة الذكية'}</span>
         </button>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
