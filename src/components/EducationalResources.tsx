@@ -73,6 +73,13 @@ const EducationalResources = () => {
       link: '/platform-documentation',
       gradient: 'from-slate-500 to-gray-600'
     },
+    {
+      title: "🤖 حديقة الحسن - الذكاء الاصطناعي",
+      icon: Brain,
+      description: "تجربة تفاعلية لبناء نموذج ذكاء اصطناعي خاص بك",
+      link: '/hassan-garden-ai',
+      gradient: 'from-violet-500 to-fuchsia-500'
+    },
   ];
 
   const containerVariants = {
