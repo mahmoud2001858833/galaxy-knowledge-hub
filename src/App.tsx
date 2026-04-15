@@ -175,6 +175,7 @@ import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
 import RoboticConstruction from './pages/RoboticConstruction';
 import AIInteriorDesign from './pages/AIInteriorDesign';
 import GJUCompetition from './pages/GJUCompetition';
+import HassanGardenAI from './pages/HassanGardenAI';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -880,6 +881,10 @@ const router = createBrowserRouter([
       {
         path: 'gju-competition',
         element: <PublicRoute><GJUCompetition /></PublicRoute>,
+      },
+      {
+        path: 'hassan-garden-ai',
+        element: <PublicRoute><HassanGardenAI /></PublicRoute>,
       },
       {
         path: '*',
