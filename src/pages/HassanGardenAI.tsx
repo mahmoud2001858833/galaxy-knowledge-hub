@@ -1,507 +1,712 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Brain, Monitor, Cpu, Users, Heart, Dumbbell, BookOpen, Sparkles, Zap, Trophy, Star, ChevronDown, Globe } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Brain, Monitor, Cpu, Users, Heart, Dumbbell, BookOpen, Sparkles, Zap, Trophy, Star, Globe, ChevronLeft, ChevronRight, Maximize, Minimize, Database, BarChart3, MessageSquare, Award, Layers, Target, Settings, AlertTriangle, Lightbulb, Presentation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
-const STEPS = [
-  'intro', 'domain', 'data', 'environment', 'awakening', 'training', 'agent', 'leaderboard', 'presentation'
-] as const;
-type Step = typeof STEPS[number];
+/* ───────── slide data ───────── */
+interface Slide {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  contentAr: React.ReactNode;
+  contentEn: React.ReactNode;
+  bg: string;           // tailwind gradient
+  icon: React.ReactNode;
+}
 
-const domains = [
-  { id: 'education', label: '📚 تعليمي', labelEn: 'Education', icon: BookOpen, color: 'from-blue-500 to-cyan-500' },
-  { id: 'health', label: '🏥 صحي', labelEn: 'Health', icon: Heart, color: 'from-green-500 to-emerald-500' },
-  { id: 'personal', label: '🧠 شخصي', labelEn: 'Personal', icon: Brain, color: 'from-purple-500 to-violet-500' },
-  { id: 'sports', label: '⚽ رياضي', labelEn: 'Sports', icon: Dumbbell, color: 'from-orange-500 to-red-500' },
-];
-
-const HassanGardenAI = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [step, setStep] = useState<Step>('intro');
-  const [selectedDomain, setSelectedDomain] = useState('');
-  const [studentName, setStudentName] = useState('');
-  const [interests, setInterests] = useState('');
-  const [trainingData, setTrainingData] = useState('');
-  const [accuracy, setAccuracy] = useState(0);
-  const [trainingPhase, setTrainingPhase] = useState(0);
-  const [aiQuestions, setAiQuestions] = useState<{question: string; options: string[]; correct: number}[]>([]);
-  const [currentQ, setCurrentQ] = useState(0);
-  const [score, setScore] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [agentReady, setAgentReady] = useState(false);
-  const [agentChat, setAgentChat] = useState<{role: string; text: string}[]>([]);
-  const [agentInput, setAgentInput] = useState('');
-  const [presLang, setPresLang] = useState<'ar'|'en'>('ar');
-
-  const stepIndex = STEPS.indexOf(step);
-
-  const goNext = () => {
-    const i = STEPS.indexOf(step);
-    if (i < STEPS.length - 1) setStep(STEPS[i + 1]);
-  };
-  const goBack = () => {
-    const i = STEPS.indexOf(step);
-    if (i > 0) setStep(STEPS[i - 1]);
-  };
-
-  // Simulate training progress
-  const startTraining = () => {
-    setAccuracy(0);
-    setTrainingPhase(0);
-    const phases = [15, 35, 55, 72, 88, 95];
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < phases.length) {
-        setAccuracy(phases[i]);
-        setTrainingPhase(i + 1);
-        i++;
-      } else {
-        clearInterval(interval);
-        goNext();
-      }
-    }, 800);
-  };
-
-  // Generate AI questions
-  const generateQuestions = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-ai-puzzles', {
-        body: {
-          subject: selectedDomain === 'education' ? 'physics' : selectedDomain === 'health' ? 'biology' : 'mathematics',
-          difficulty: 'متوسط',
-          count: 4,
-          topicDescription: `أسئلة تحليلية عن الذكاء الاصطناعي في مجال ${domains.find(d => d.id === selectedDomain)?.label || 'عام'} مناسبة لطالب اسمه ${studentName} يهتم بـ ${interests}. الأسئلة يجب أن تكون عن مفاهيم AI مثل: ما الهدف من النموذج؟ ما أهم عامل يؤثر على النتيجة؟ كيف نحسن الأداء؟`,
-          skipImageGeneration: true
-        }
-      });
-      
-      if (data?.puzzles?.length) {
-        setAiQuestions(data.puzzles.map((p: any) => ({
-          question: p.question,
-          options: p.options,
-          correct: p.options.indexOf(p.correct_answer)
-        })));
-      } else {
-        // Fallback questions
-        setAiQuestions([
-          { question: 'ما هو الهدف الرئيسي من تدريب نموذج الذكاء الاصطناعي؟', options: ['حفظ البيانات فقط', 'التعلم من الأنماط واتخاذ قرارات', 'استهلاك الطاقة', 'تخزين الصور'], correct: 1 },
-          { question: 'ما أهم عامل يؤثر على دقة النموذج؟', options: ['لون الشاشة', 'جودة وكمية البيانات', 'حجم الجهاز', 'سرعة الإنترنت'], correct: 1 },
-          { question: 'ماذا يحدث إذا تجاهلنا متغيراً مهماً؟', options: ['لا شيء', 'تتحسن الدقة', 'تنخفض دقة النموذج', 'يتوقف الجهاز'], correct: 2 },
-          { question: 'كيف يمكن تحسين أداء النموذج؟', options: ['إيقاف التدريب', 'زيادة بيانات التدريب وضبط المعاملات', 'حذف كل البيانات', 'تجاهل الأخطاء'], correct: 1 },
-        ]);
-      }
-    } catch {
-      setAiQuestions([
-        { question: 'ما هو الهدف الرئيسي من تدريب نموذج الذكاء الاصطناعي؟', options: ['حفظ البيانات فقط', 'التعلم من الأنماط واتخاذ قرارات', 'استهلاك الطاقة', 'تخزين الصور'], correct: 1 },
-        { question: 'ما أهم عامل يؤثر على دقة النموذج؟', options: ['لون الشاشة', 'جودة وكمية البيانات', 'حجم الجهاز', 'سرعة الإنترنت'], correct: 1 },
-        { question: 'ماذا يحدث إذا تجاهلنا متغيراً مهماً؟', options: ['لا شيء', 'تتحسن الدقة', 'تنخفض دقة النموذج', 'يتوقف الجهاز'], correct: 2 },
-        { question: 'كيف يمكن تحسين أداء النموذج؟', options: ['إيقاف التدريب', 'زيادة بيانات التدريب وضبط المعاملات', 'حذف كل البيانات', 'تجاهل الأخطاء'], correct: 1 },
-      ]);
-    }
-    setIsLoading(false);
-  };
-
-  const answerQuestion = (optionIndex: number) => {
-    if (aiQuestions[currentQ]?.correct === optionIndex) {
-      setScore(s => s + 25);
-      setAccuracy(a => Math.min(100, a + 3));
-      toast({ title: '✅ إجابة صحيحة!', description: 'أحسنت! تم تحسين دقة النموذج' });
-    } else {
-      toast({ title: '❌ إجابة خاطئة', description: 'حاول مرة أخرى في السؤال القادم', variant: 'destructive' });
-    }
-    if (currentQ < aiQuestions.length - 1) {
-      setCurrentQ(c => c + 1);
-    } else {
-      setAgentReady(true);
-      goNext();
-    }
-  };
-
-  const chatWithAgent = async () => {
-    if (!agentInput.trim()) return;
-    const userMsg = agentInput;
-    setAgentChat(c => [...c, { role: 'user', text: userMsg }]);
-    setAgentInput('');
-    setIsLoading(true);
-    try {
-      const { data } = await supabase.functions.invoke('generate-ai-puzzles', {
-        body: {
-          subject: 'mathematics',
-          difficulty: 'سهل',
-          count: 1,
-          topicDescription: `أنت وكيل ذكاء اصطناعي اسمك "${studentName}-AI" متخصص في مجال ${domains.find(d => d.id === selectedDomain)?.label}. أجب على السؤال التالي بشكل مختصر ومفيد: ${userMsg}`,
-          skipImageGeneration: true,
-          returnRawResponse: true
-        }
-      });
-      setAgentChat(c => [...c, { role: 'agent', text: data?.rawResponse || data?.puzzles?.[0]?.question || 'أنا وكيلك الذكي! اسألني أي شيء عن مجال تخصصي 🤖' }]);
-    } catch {
-      setAgentChat(c => [...c, { role: 'agent', text: `مرحباً! أنا ${studentName}-AI. أستطيع مساعدتك في مجال ${domains.find(d => d.id === selectedDomain)?.label}! 🤖` }]);
-    }
-    setIsLoading(false);
-  };
-
-  const agentId = `AG-${studentName.slice(0,3).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
-
-  // Presentation content
-  const presContent = {
-    ar: [
-      { title: '🎯 الفكرة العامة', text: 'يهدف قسم الذكاء الاصطناعي إلى تقديم تجربة تعليمية تفاعلية، تمكّن الطالب من فهم الذكاء الاصطناعي عملياً من خلال بناء نموذج خاص به خطوة بخطوة.' },
-      { title: '🚀 رحلة الطالب', text: 'تبدأ من التعريف بالذكاء الاصطناعي → اختيار المجال → إدخال البيانات → بناء البيئة التعليمية → لحظة الإدراك → التدريب التفاعلي → إنتاج الوكيل الذكي.' },
-      { title: '💡 لحظة الإدراك', text: 'المرحلة المفصلية حيث يتحول AI من مجرد مخزن معلومات إلى نظام يفهم ويحلل، مع تحول بصري من "جهاز" إلى "شخص مفكر".' },
-      { title: '🤖 الوكيل الذكي', text: 'في النهاية يحصل الطالب على AI خاص باسمه، مبني على بياناته، يمكنه التفاعل معه بالسؤال والجواب.' },
-      { title: '🏆 التنافس والتحفيز', text: 'نظام نقاط وترتيب وجوائز حسب الأداء، مع إمكانية العودة لتطوير النموذج ومقارنته مع نماذج أخرى.' },
-      { title: '⚙️ المتطلبات التقنية', text: 'منصة ويب تفاعلية، قاعدة بيانات، نماذج AI مدرّبة مسبقاً (Pre-trained Models)، نظام توليد أسئلة، ونظام تتبع التقدم.' },
-      { title: '⚠️ ملاحظة مهمة', text: 'هذا النظام يعتمد على نماذج مدرّبة مسبقاً وليس تدريب من الصفر، لأن التدريب الحقيقي يتطلب تكلفة عالية وموارد حوسبة ضخمة. الهدف تعليمي تفاعلي.' },
-    ],
-    en: [
-      { title: '🎯 General Idea', text: 'The AI section aims to provide an interactive educational experience, enabling students to understand AI practically by building their own model step by step.' },
-      { title: '🚀 Student Journey', text: 'Starts from AI introduction → domain selection → data input → learning environment → Awakening Moment → interactive training → AI Agent production.' },
-      { title: '💡 Awakening Moment', text: 'The pivotal stage where AI transforms from a mere data store to a system that understands and analyzes, with a visual transition from "device" to "thinker".' },
-      { title: '🤖 AI Agent', text: 'At the end, the student gets a personalized AI named after them, built on their data, capable of Q&A interaction.' },
-      { title: '🏆 Competition & Motivation', text: 'Points, rankings, and awards based on performance, with the ability to return and improve the model and compare with others.' },
-      { title: '⚙️ Technical Requirements', text: 'Interactive web platform, database, pre-trained AI models, question generation system, and progress tracking system.' },
-      { title: '⚠️ Important Note', text: 'This system relies on pre-trained models, not training from scratch, as real training requires high costs and massive computing resources. The goal is interactive education.' },
-    ],
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-violet-950 to-gray-950 text-white" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-violet-500/20 px-4 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-white/70 hover:text-white">
-            <ArrowRight className="w-4 h-4 ml-1" /> الرئيسية
-          </Button>
-          <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-fuchsia-400">
-            🤖 حديقة الحسن - الذكاء الاصطناعي
-          </h1>
-          <div className="text-xs text-white/50">{stepIndex + 1}/{STEPS.length}</div>
+const slides: Slide[] = [
+  {
+    id: 'cover',
+    titleAr: 'حديقة الحسن للعلوم',
+    titleEn: 'Al-Hassan Science Garden',
+    bg: 'from-violet-950 via-fuchsia-950 to-violet-950',
+    icon: <Brain className="w-20 h-20" />,
+    contentAr: (
+      <div className="flex flex-col items-center justify-center gap-6 h-full">
+        <div className="w-36 h-36 rounded-3xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/40">
+          <Brain className="w-20 h-20 text-white" />
         </div>
-        {/* Progress bar */}
-        <div className="max-w-5xl mx-auto mt-2">
-          <Progress value={((stepIndex + 1) / STEPS.length) * 100} className="h-1.5 bg-gray-800" />
+        <h1 className="text-[64px] font-black leading-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-white to-fuchsia-300">
+          قسم الذكاء الاصطناعي التفاعلي
+        </h1>
+        <p className="text-[28px] text-white/60 font-light">حديقة الحسن للعلوم</p>
+        <div className="mt-4 px-8 py-3 rounded-full bg-white/10 text-white/80 text-[22px]">
+          تصوّر مشروع تعليمي تفاعلي
         </div>
       </div>
-
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <AnimatePresence mode="wait">
-          {/* STEP 1: INTRO */}
-          {step === 'intro' && (
-            <motion.div key="intro" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="text-center space-y-8">
-              <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 3, repeat: Infinity }} className="mx-auto w-32 h-32 rounded-3xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/30">
-                <Monitor className="w-16 h-16 text-white" />
-              </motion.div>
-              <h2 className="text-3xl md:text-4xl font-bold">مرحباً بك في عالم الذكاء الاصطناعي!</h2>
-              <p className="text-lg text-white/70 max-w-2xl mx-auto">
-                هل تساءلت يوماً كيف يفكر الذكاء الاصطناعي؟ 🤔<br/>
-                في هذه الرحلة التفاعلية، ستبني نموذج AI خاص بك خطوة بخطوة!
-              </p>
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-                {[
-                  { icon: '📊', label: 'أدخل بياناتك' },
-                  { icon: '🧠', label: 'درّب النموذج' },
-                  { icon: '🤖', label: 'أنشئ وكيلك الذكي' },
-                ].map((item, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.2 }} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="text-3xl mb-2">{item.icon}</div>
-                    <div className="text-sm text-white/80">{item.label}</div>
-                  </motion.div>
-                ))}
+    ),
+    contentEn: (
+      <div className="flex flex-col items-center justify-center gap-6 h-full">
+        <div className="w-36 h-36 rounded-3xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/40">
+          <Brain className="w-20 h-20 text-white" />
+        </div>
+        <h1 className="text-[64px] font-black leading-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-white to-fuchsia-300">
+          Interactive AI Section
+        </h1>
+        <p className="text-[28px] text-white/60 font-light">Al-Hassan Science Garden</p>
+        <div className="mt-4 px-8 py-3 rounded-full bg-white/10 text-white/80 text-[22px]">
+          An Interactive Educational Project Concept
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'idea',
+    titleAr: 'الفكرة العامة',
+    titleEn: 'General Idea',
+    bg: 'from-blue-950 via-indigo-950 to-blue-950',
+    icon: <Target className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col gap-8 h-full justify-center px-16">
+        <div className="flex items-center gap-6">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+            <Target className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-[48px] font-bold text-white">الفكرة العامة</h2>
+        </div>
+        <p className="text-[28px] text-white/80 leading-relaxed">
+          يهدف قسم الذكاء الاصطناعي إلى تقديم <span className="text-cyan-400 font-semibold">تجربة تعليمية تفاعلية</span>، تمكّن الطالب من فهم الذكاء الاصطناعي عملياً من خلال بناء نموذج خاص به خطوة بخطوة.
+        </p>
+        <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+          <p className="text-[26px] text-violet-300 font-semibold text-center">
+            "التعلّم من خلال التجربة والتأثير المباشر"
+          </p>
+          <p className="text-[22px] text-white/50 text-center mt-3">
+            حيث يرى الطالب أثر كل قرار يتخذه على تطور النموذج
+          </p>
+        </div>
+        <div className="flex gap-4 justify-center mt-2">
+          {['إدخال البيانات', 'التدريب', 'التفاعل', 'إنتاج وكيل AI'].map((s, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-[20px] font-bold">{i+1}</div>
+              <span className="text-[20px] text-white/70">{s}</span>
+              {i < 3 && <ChevronLeft className="w-5 h-5 text-white/30" />}
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col gap-8 h-full justify-center px-16">
+        <div className="flex items-center gap-6">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+            <Target className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-[48px] font-bold text-white">General Idea</h2>
+        </div>
+        <p className="text-[28px] text-white/80 leading-relaxed">
+          The AI section aims to deliver an <span className="text-cyan-400 font-semibold">interactive educational experience</span>, enabling students to understand AI practically by building their own model step by step.
+        </p>
+        <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+          <p className="text-[26px] text-violet-300 font-semibold text-center">
+            "Learning Through Experimentation & Direct Impact"
+          </p>
+          <p className="text-[22px] text-white/50 text-center mt-3">
+            The student sees the effect of every decision on the model's development
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'journey-1',
+    titleAr: 'رحلة الطالب (١)',
+    titleEn: 'Student Journey (1)',
+    bg: 'from-emerald-950 via-teal-950 to-emerald-950',
+    icon: <Sparkles className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col gap-6 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white mb-2">🚀 رحلة الطالب داخل القسم</h2>
+        <div className="grid grid-cols-2 gap-6">
+          {[
+            { num: '1', title: 'شاشة البداية', desc: 'تعريف بسيط بالذكاء الاصطناعي مع عرض بصري لحاسوب بسيط بدون ذكاء', icon: <Monitor className="w-8 h-8" />, color: 'from-blue-500 to-cyan-500' },
+            { num: '2', title: 'اختيار المجال وإدخال البيانات', desc: 'يختار الطالب مجالاً (تعليمي، صحي، شخصي، رياضي) ويدخل بيانات التدريب', icon: <Database className="w-8 h-8" />, color: 'from-green-500 to-emerald-500' },
+            { num: '3', title: 'بناء البيئة التعليمية', desc: 'النظام يحلل البيانات وينشئ بيئة مخصصة مع عرض تقدم AI ونسبة الفهم', icon: <Layers className="w-8 h-8" />, color: 'from-purple-500 to-violet-500' },
+            { num: '4', title: 'لحظة الإدراك ⚡', desc: 'AI يتحول من مخزن معلومات إلى نظام يفهم ويحلل - المرحلة المفصلية!', icon: <Zap className="w-8 h-8" />, color: 'from-amber-500 to-orange-500' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white/5 rounded-2xl p-6 border border-white/10 flex gap-4">
+              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center flex-shrink-0`}>
+                {item.icon}
               </div>
-              <Button onClick={goNext} className="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white px-8 py-3 text-lg rounded-xl hover:shadow-xl hover:shadow-violet-500/30 transition-all">
-                ابدأ الرحلة <Sparkles className="w-5 h-5 mr-2" />
-              </Button>
+              <div>
+                <div className="text-[24px] font-bold text-white mb-1">{item.title}</div>
+                <div className="text-[18px] text-white/60 leading-relaxed">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col gap-6 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white mb-2">🚀 Student Journey</h2>
+        <div className="grid grid-cols-2 gap-6">
+          {[
+            { title: 'Introduction Screen', desc: 'Simple AI intro with visual of a basic computer without intelligence', icon: <Monitor className="w-8 h-8" />, color: 'from-blue-500 to-cyan-500' },
+            { title: 'Domain & Data Input', desc: 'Student selects domain (Education, Health, Personal, Sports) and enters training data', icon: <Database className="w-8 h-8" />, color: 'from-green-500 to-emerald-500' },
+            { title: 'Learning Environment', desc: 'System analyzes data and creates a personalized environment with progress tracking', icon: <Layers className="w-8 h-8" />, color: 'from-purple-500 to-violet-500' },
+            { title: 'Awakening Moment ⚡', desc: 'AI transforms from data store to an understanding, analyzing system - the pivotal stage!', icon: <Zap className="w-8 h-8" />, color: 'from-amber-500 to-orange-500' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white/5 rounded-2xl p-6 border border-white/10 flex gap-4">
+              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center flex-shrink-0`}>
+                {item.icon}
+              </div>
+              <div>
+                <div className="text-[24px] font-bold text-white mb-1">{item.title}</div>
+                <div className="text-[18px] text-white/60 leading-relaxed">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'awakening',
+    titleAr: 'لحظة الإدراك',
+    titleEn: 'Awakening Moment',
+    bg: 'from-amber-950 via-orange-950 to-amber-950',
+    icon: <Zap className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col items-center justify-center gap-8 h-full px-16">
+        <h2 className="text-[48px] font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500">
+          ⚡ لحظة الإدراك — Awakening Moment
+        </h2>
+        <p className="text-[26px] text-white/70 text-center max-w-[1400px]">المرحلة الأهم حيث يتحول الذكاء الاصطناعي من مجرد مخزن معلومات إلى نظام يفهم ويحلل</p>
+        <div className="flex items-center gap-12 mt-4">
+          <div className="text-center">
+            <div className="w-40 h-40 rounded-3xl bg-gray-700/50 flex items-center justify-center mb-4 border-2 border-gray-600">
+              <Monitor className="w-20 h-20 text-gray-400" />
+            </div>
+            <p className="text-[22px] text-white/40">قبل: جهاز عادي</p>
+            <p className="text-[18px] text-white/30">يعرض بيانات فقط</p>
+          </div>
+          <div className="text-[60px]">→</div>
+          <div className="text-center">
+            <div className="w-40 h-40 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4 shadow-2xl shadow-amber-500/40 border-2 border-amber-400">
+              <Brain className="w-20 h-20 text-white" />
+            </div>
+            <p className="text-[22px] text-amber-300 font-bold">بعد: مفكر ذكي!</p>
+            <p className="text-[18px] text-white/50">يتوقع ويحلل ويجيب</p>
+          </div>
+        </div>
+        <div className="flex gap-6 mt-6">
+          {['التوقع 📈', 'الإجابة 💬', 'التحليل 🔍'].map((s, i) => (
+            <div key={i} className="px-8 py-4 rounded-xl bg-amber-500/10 border border-amber-400/30 text-[22px] text-amber-300">{s}</div>
+          ))}
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col items-center justify-center gap-8 h-full px-16">
+        <h2 className="text-[48px] font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500">
+          ⚡ Awakening Moment
+        </h2>
+        <p className="text-[26px] text-white/70 text-center max-w-[1400px]">The most critical stage where AI transforms from a data store to a system that understands and analyzes</p>
+        <div className="flex items-center gap-12 mt-4">
+          <div className="text-center">
+            <div className="w-40 h-40 rounded-3xl bg-gray-700/50 flex items-center justify-center mb-4 border-2 border-gray-600">
+              <Monitor className="w-20 h-20 text-gray-400" />
+            </div>
+            <p className="text-[22px] text-white/40">Before: Basic Device</p>
+            <p className="text-[18px] text-white/30">Displays data only</p>
+          </div>
+          <div className="text-[60px]">→</div>
+          <div className="text-center">
+            <div className="w-40 h-40 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4 shadow-2xl shadow-amber-500/40 border-2 border-amber-400">
+              <Brain className="w-20 h-20 text-white" />
+            </div>
+            <p className="text-[22px] text-amber-300 font-bold">After: Smart Thinker!</p>
+            <p className="text-[18px] text-white/50">Predicts, analyzes, responds</p>
+          </div>
+        </div>
+        <div className="flex gap-6 mt-6">
+          {['Prediction 📈', 'Response 💬', 'Analysis 🔍'].map((s, i) => (
+            <div key={i} className="px-8 py-4 rounded-xl bg-amber-500/10 border border-amber-400/30 text-[22px] text-amber-300">{s}</div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'journey-2',
+    titleAr: 'رحلة الطالب (٢)',
+    titleEn: 'Student Journey (2)',
+    bg: 'from-cyan-950 via-blue-950 to-cyan-950',
+    icon: <MessageSquare className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col gap-6 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white mb-2">🎯 المراحل المتقدمة</h2>
+        <div className="grid grid-cols-3 gap-6">
+          {[
+            { num: '5', title: 'التدريب التفاعلي', desc: 'أسئلة تحليلية تُولّد تلقائياً بناءً على بيانات الطالب. كل إجابة = إجراء يؤثر على دقة النموذج وسلوكه.', icon: <MessageSquare className="w-8 h-8" />, color: 'from-cyan-500 to-blue-500' },
+            { num: '6', title: 'إنتاج الوكيل الذكي', desc: 'AI خاص باسم الطالب مع QR Code ورابط مباشر و ID خاص. يمكنه التفاعل بالسؤال والجواب.', icon: <Cpu className="w-8 h-8" />, color: 'from-violet-500 to-fuchsia-500' },
+            { num: '7', title: 'التنافس والتحفيز', desc: 'لوحة متصدرين، نظام نقاط وترتيب وجوائز. إمكانية العودة لتطوير النموذج ومقارنته.', icon: <Trophy className="w-8 h-8" />, color: 'from-amber-500 to-yellow-500' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white/5 rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center`}>
+                {item.icon}
+              </div>
+              <div className="text-[26px] font-bold text-white">{item.title}</div>
+              <div className="text-[19px] text-white/60 leading-relaxed">{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 mt-2">
+          <p className="text-[22px] text-cyan-300 text-center font-semibold">
+            🤖 المرشد الذكي (AI Guide) يرافق الطالب في كل خطوة — يشرح ويطرح أسئلة ويعطي أدوات تطوير
+          </p>
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col gap-6 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white mb-2">🎯 Advanced Stages</h2>
+        <div className="grid grid-cols-3 gap-6">
+          {[
+            { title: 'Interactive Training', desc: 'Auto-generated analytical questions based on student data. Each answer is an action affecting model accuracy.', icon: <MessageSquare className="w-8 h-8" />, color: 'from-cyan-500 to-blue-500' },
+            { title: 'AI Agent Production', desc: 'Personalized AI with student\'s name, QR Code, direct link & unique ID. Capable of Q&A interaction.', icon: <Cpu className="w-8 h-8" />, color: 'from-violet-500 to-fuchsia-500' },
+            { title: 'Competition & Rewards', desc: 'Leaderboard, points system, rankings & awards. Return to improve and compare models.', icon: <Trophy className="w-8 h-8" />, color: 'from-amber-500 to-yellow-500' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white/5 rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center`}>
+                {item.icon}
+              </div>
+              <div className="text-[26px] font-bold text-white">{item.title}</div>
+              <div className="text-[19px] text-white/60 leading-relaxed">{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 mt-2">
+          <p className="text-[22px] text-cyan-300 text-center font-semibold">
+            🤖 AI Guide accompanies the student at every step — explains, asks questions & provides development tools
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'screens',
+    titleAr: 'الشاشات المطلوبة',
+    titleEn: 'Required Screens',
+    bg: 'from-purple-950 via-violet-950 to-purple-950',
+    icon: <Layers className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col gap-8 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white">📱 الشاشات المطلوبة</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { num: 1, name: 'شاشة البداية', color: 'bg-blue-500/20 border-blue-400/30' },
+            { num: 2, name: 'اختيار المجال', color: 'bg-green-500/20 border-green-400/30' },
+            { num: 3, name: 'إدخال البيانات', color: 'bg-cyan-500/20 border-cyan-400/30' },
+            { num: 4, name: 'البيئة التعليمية', color: 'bg-purple-500/20 border-purple-400/30' },
+            { num: 5, name: 'لحظة الإدراك', color: 'bg-amber-500/20 border-amber-400/30' },
+            { num: 6, name: 'التدريب التفاعلي', color: 'bg-orange-500/20 border-orange-400/30' },
+            { num: 7, name: 'شاشة النتائج', color: 'bg-pink-500/20 border-pink-400/30' },
+            { num: 8, name: 'الوكيل الذكي (AI Agent)', color: 'bg-violet-500/20 border-violet-400/30' },
+            { num: 9, name: 'الترتيب والمقارنة', color: 'bg-yellow-500/20 border-yellow-400/30' },
+          ].map((s, i) => (
+            <div key={i} className={`${s.color} rounded-xl p-5 border flex items-center gap-4`}>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-[20px] font-bold text-white/80 flex-shrink-0">{s.num}</div>
+              <span className="text-[22px] text-white/80">{s.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col gap-8 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white">📱 Required Screens</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { num: 1, name: 'Introduction', color: 'bg-blue-500/20 border-blue-400/30' },
+            { num: 2, name: 'Domain Selection', color: 'bg-green-500/20 border-green-400/30' },
+            { num: 3, name: 'Data Input', color: 'bg-cyan-500/20 border-cyan-400/30' },
+            { num: 4, name: 'Learning Environment', color: 'bg-purple-500/20 border-purple-400/30' },
+            { num: 5, name: 'Awakening Moment', color: 'bg-amber-500/20 border-amber-400/30' },
+            { num: 6, name: 'Interactive Training', color: 'bg-orange-500/20 border-orange-400/30' },
+            { num: 7, name: 'Results Screen', color: 'bg-pink-500/20 border-pink-400/30' },
+            { num: 8, name: 'AI Agent', color: 'bg-violet-500/20 border-violet-400/30' },
+            { num: 9, name: 'Leaderboard', color: 'bg-yellow-500/20 border-yellow-400/30' },
+          ].map((s, i) => (
+            <div key={i} className={`${s.color} rounded-xl p-5 border flex items-center gap-4`}>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-[20px] font-bold text-white/80 flex-shrink-0">{s.num}</div>
+              <span className="text-[22px] text-white/80">{s.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'tech',
+    titleAr: 'المتطلبات التقنية',
+    titleEn: 'Technical Requirements',
+    bg: 'from-slate-950 via-gray-950 to-slate-950',
+    icon: <Settings className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col gap-8 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white">⚙️ المتطلبات التقنية</h2>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+            <h3 className="text-[28px] font-bold text-blue-400 mb-6 flex items-center gap-3"><Cpu className="w-8 h-8" /> Hardware (الأجهزة)</h3>
+            <ul className="space-y-3">
+              {['خادم مركزي (Server)', 'GPU (كرت شاشة للتسريع)', 'أجهزة عرض (شاشات تفاعلية)', 'أجهزة طلاب (Tablets أو PCs)', 'شبكة إنترنت داخلية قوية'].map((item, i) => (
+                <li key={i} className="text-[21px] text-white/70 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></div>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+            <h3 className="text-[28px] font-bold text-green-400 mb-6 flex items-center gap-3"><Layers className="w-8 h-8" /> Software (البرمجيات)</h3>
+            <ul className="space-y-3">
+              {['منصة ويب تفاعلية', 'قاعدة بيانات (لتخزين بيانات الطلاب)', 'نماذج AI جاهزة (Pre-trained Models)', 'نظام توليد أسئلة', 'نظام تتبع التقدم'].map((item, i) => (
+                <li key={i} className="text-[21px] text-white/70 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col gap-8 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white">⚙️ Technical Requirements</h2>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+            <h3 className="text-[28px] font-bold text-blue-400 mb-6 flex items-center gap-3"><Cpu className="w-8 h-8" /> Hardware</h3>
+            <ul className="space-y-3">
+              {['Central Server', 'GPU (for acceleration)', 'Interactive displays', 'Student devices (Tablets/PCs)', 'Strong internal network'].map((item, i) => (
+                <li key={i} className="text-[21px] text-white/70 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></div>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+            <h3 className="text-[28px] font-bold text-green-400 mb-6 flex items-center gap-3"><Layers className="w-8 h-8" /> Software</h3>
+            <ul className="space-y-3">
+              {['Interactive web platform', 'Database (student data storage)', 'Pre-trained AI models', 'Question generation system', 'Progress tracking system'].map((item, i) => (
+                <li key={i} className="text-[21px] text-white/70 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'note',
+    titleAr: 'ملاحظة مهمة',
+    titleEn: 'Important Note',
+    bg: 'from-red-950 via-rose-950 to-red-950',
+    icon: <AlertTriangle className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col items-center justify-center gap-8 h-full px-20">
+        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+          <AlertTriangle className="w-14 h-14 text-white" />
+        </div>
+        <h2 className="text-[48px] font-bold text-white">⚠️ ملاحظة مهمة</h2>
+        <div className="bg-white/5 rounded-2xl p-10 border border-red-400/20 max-w-[1200px]">
+          <p className="text-[26px] text-white/80 leading-relaxed text-center">
+            هذا النظام يعتمد على <span className="text-red-300 font-bold">نماذج ذكاء اصطناعي مدرّبة مسبقاً (Pre-trained Models)</span>
+          </p>
+          <p className="text-[24px] text-white/60 leading-relaxed text-center mt-6">
+            وذلك لأن تدريب نماذج AI من الصفر يتطلب:
+          </p>
+          <div className="flex justify-center gap-8 mt-6">
+            <div className="px-8 py-4 rounded-xl bg-red-500/10 border border-red-400/30 text-[22px] text-red-300">💰 تكلفة عالية جداً</div>
+            <div className="px-8 py-4 rounded-xl bg-red-500/10 border border-red-400/30 text-[22px] text-red-300">🖥️ موارد حوسبة ضخمة</div>
+          </div>
+          <p className="text-[26px] text-amber-300 font-semibold text-center mt-8">
+            ✨ الهدف هنا تعليمي تفاعلي، وليس تدريب نموذج حقيقي من الصفر
+          </p>
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col items-center justify-center gap-8 h-full px-20">
+        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+          <AlertTriangle className="w-14 h-14 text-white" />
+        </div>
+        <h2 className="text-[48px] font-bold text-white">⚠️ Important Note</h2>
+        <div className="bg-white/5 rounded-2xl p-10 border border-red-400/20 max-w-[1200px]">
+          <p className="text-[26px] text-white/80 leading-relaxed text-center">
+            This system relies on <span className="text-red-300 font-bold">Pre-trained AI Models</span>
+          </p>
+          <p className="text-[24px] text-white/60 leading-relaxed text-center mt-6">
+            Because training AI models from scratch requires:
+          </p>
+          <div className="flex justify-center gap-8 mt-6">
+            <div className="px-8 py-4 rounded-xl bg-red-500/10 border border-red-400/30 text-[22px] text-red-300">💰 Very high cost</div>
+            <div className="px-8 py-4 rounded-xl bg-red-500/10 border border-red-400/30 text-[22px] text-red-300">🖥️ Massive computing resources</div>
+          </div>
+          <p className="text-[26px] text-amber-300 font-semibold text-center mt-8">
+            ✨ The goal is interactive education, not real model training from scratch
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'ideas',
+    titleAr: 'أفكار للتطوير',
+    titleEn: 'Development Ideas',
+    bg: 'from-fuchsia-950 via-pink-950 to-fuchsia-950',
+    icon: <Lightbulb className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col gap-6 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white">💡 أفكار مقترحة للتطوير المستقبلي</h2>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { icon: '🏅', title: 'نظام شارات', desc: 'مكافآت "مبتكر AI" و "خبير بيانات" عند إنجاز مراحل' },
+            { icon: '⚔️', title: 'تحدي بين الطلاب', desc: 'مسابقة أسبوعية لمقارنة دقة النماذج مع جوائز' },
+            { icon: '🎨', title: 'معرض النماذج', desc: 'صفحة عامة لعرض نماذج الطلاب مع تقييم الزملاء' },
+            { icon: '📄', title: 'تصدير PDF', desc: 'تقرير احترافي يوثق رحلة الطالب ونتائج نموذجه' },
+            { icon: '📚', title: 'ربط بالمواد الدراسية', desc: 'صحي → أحياء، رياضي → رياضيات، تعليمي → فيزياء' },
+            { icon: '🧬', title: 'محاكاة الشبكة العصبية', desc: 'عرض بصري تفاعلي لكيفية عمل الشبكات أثناء التدريب' },
+            { icon: '👨‍🏫', title: 'وضع المعلم', desc: 'لوحة تحكم للمعلم لمتابعة تقدم الطلاب ونماذجهم' },
+            { icon: '🌐', title: 'مشاركة عالمية', desc: 'نشر الوكيل الذكي ومشاركته مع العالم عبر رابط' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white/5 rounded-xl p-5 border border-white/10 flex items-start gap-4">
+              <span className="text-[32px] flex-shrink-0">{item.icon}</span>
+              <div>
+                <div className="text-[22px] font-bold text-white">{item.title}</div>
+                <div className="text-[18px] text-white/55 mt-1">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col gap-6 h-full justify-center px-16">
+        <h2 className="text-[44px] font-bold text-white">💡 Future Development Ideas</h2>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { icon: '🏅', title: 'Badge System', desc: '"AI Innovator" & "Data Expert" rewards upon completion' },
+            { icon: '⚔️', title: 'Student Challenges', desc: 'Weekly competitions comparing model accuracy with prizes' },
+            { icon: '🎨', title: 'Model Gallery', desc: 'Public page showcasing student models with peer reviews' },
+            { icon: '📄', title: 'PDF Export', desc: 'Professional report documenting the student\'s AI journey' },
+            { icon: '📚', title: 'Subject Linking', desc: 'Health → Biology, Sports → Math, Education → Physics' },
+            { icon: '🧬', title: 'Neural Network Sim', desc: 'Interactive visual showing how networks work during training' },
+            { icon: '👨‍🏫', title: 'Teacher Mode', desc: 'Dashboard for teachers to track student progress & models' },
+            { icon: '🌐', title: 'Global Sharing', desc: 'Publish and share your AI agent worldwide via link' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white/5 rounded-xl p-5 border border-white/10 flex items-start gap-4">
+              <span className="text-[32px] flex-shrink-0">{item.icon}</span>
+              <div>
+                <div className="text-[22px] font-bold text-white">{item.title}</div>
+                <div className="text-[18px] text-white/55 mt-1">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'end',
+    titleAr: 'شكراً لكم',
+    titleEn: 'Thank You',
+    bg: 'from-violet-950 via-fuchsia-950 to-violet-950',
+    icon: <Star className="w-16 h-16" />,
+    contentAr: (
+      <div className="flex flex-col items-center justify-center gap-8 h-full">
+        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/40">
+          <Star className="w-16 h-16 text-white" />
+        </div>
+        <h2 className="text-[56px] font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-white to-fuchsia-300">
+          شكراً لكم
+        </h2>
+        <p className="text-[28px] text-white/60">حديقة الحسن للعلوم — قسم الذكاء الاصطناعي التفاعلي</p>
+        <div className="flex gap-4 mt-4">
+          <div className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[20px] text-white/50">🤖 نحو مستقبل تعليمي ذكي</div>
+        </div>
+      </div>
+    ),
+    contentEn: (
+      <div className="flex flex-col items-center justify-center gap-8 h-full">
+        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/40">
+          <Star className="w-16 h-16 text-white" />
+        </div>
+        <h2 className="text-[56px] font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-white to-fuchsia-300">
+          Thank You
+        </h2>
+        <p className="text-[28px] text-white/60">Al-Hassan Science Garden — Interactive AI Section</p>
+        <div className="flex gap-4 mt-4">
+          <div className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[20px] text-white/50">🤖 Towards a Smart Educational Future</div>
+        </div>
+      </div>
+    ),
+  },
+];
+
+/* ───────── Presentation Component ───────── */
+const HassanGardenAI = () => {
+  const navigate = useNavigate();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const total = slides.length;
+
+  const goTo = useCallback((i: number) => {
+    if (i >= 0 && i < total) setCurrentSlide(i);
+  }, [total]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); goTo(currentSlide - 1); }
+      if (e.key === 'Escape' && isFullscreen) toggleFullscreen();
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [currentSlide, goTo, isFullscreen]);
+
+  // Scale calculation
+  useEffect(() => {
+    const calc = () => {
+      if (!wrapperRef.current) return;
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const sx = rect.width / 1920;
+      const sy = rect.height / 1080;
+      setScale(Math.min(sx, sy));
+    };
+    calc();
+    window.addEventListener('resize', calc);
+    return () => window.removeEventListener('resize', calc);
+  }, [isFullscreen]);
+
+  // Fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const slide = slides[currentSlide];
+
+  return (
+    <div ref={containerRef} className={`min-h-screen bg-gray-950 text-white flex flex-col ${isFullscreen ? '' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      {/* Top bar - hidden in fullscreen */}
+      {!isFullscreen && (
+        <div className="bg-gray-950/90 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between z-50">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-white/60 hover:text-white">
+            {lang === 'ar' ? <><ArrowRight className="w-4 h-4 ml-1" /> الرئيسية</> : <>Home <ArrowLeft className="w-4 h-4 ml-1" /></>}
+          </Button>
+          <h1 className="text-sm font-bold text-white/80">
+            {lang === 'ar' ? '🤖 حديقة الحسن — تصوّر قسم الذكاء الاصطناعي' : '🤖 Al-Hassan Garden — AI Section Concept'}
+          </h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setLang(l => l === 'ar' ? 'en' : 'ar')} className="text-white/60 text-xs">
+              <Globe className="w-3.5 h-3.5 ml-1" />{lang === 'ar' ? 'EN' : 'عربي'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="text-white/60">
+              <Maximize className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Main content area */}
+      <div className="flex-1 flex">
+        {/* Thumbnail sidebar - hidden on mobile and fullscreen */}
+        {!isFullscreen && (
+          <div className="hidden md:flex flex-col w-44 bg-gray-900/50 border-l border-white/5 overflow-y-auto py-3 px-2 gap-2">
+            {slides.map((s, i) => (
+              <button key={s.id} onClick={() => goTo(i)}
+                className={`relative rounded-lg overflow-hidden border-2 transition-all aspect-video flex-shrink-0 ${i === currentSlide ? 'border-violet-400 shadow-lg shadow-violet-500/20' : 'border-white/10 hover:border-white/30 opacity-60 hover:opacity-100'}`}>
+                <div className={`absolute inset-0 bg-gradient-to-br ${s.bg}`}></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-[10px] text-white/80 font-bold text-center px-1 leading-tight">{lang === 'ar' ? s.titleAr : s.titleEn}</span>
+                </div>
+                <div className="absolute bottom-0.5 left-0.5 text-[8px] text-white/40 bg-black/40 rounded px-1">{i + 1}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Slide canvas */}
+        <div ref={wrapperRef} className="flex-1 relative overflow-hidden bg-black" onClick={(e) => {
+          if (!wrapperRef.current) return;
+          const rect = wrapperRef.current.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          if (x > rect.width / 2) goTo(currentSlide + 1);
+          else goTo(currentSlide - 1);
+        }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={slide.id + lang}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute"
+              style={{
+                width: 1920,
+                height: 1080,
+                left: '50%',
+                top: '50%',
+                marginLeft: -960,
+                marginTop: -540,
+                transform: `scale(${scale})`,
+                transformOrigin: 'center center',
+              }}
+            >
+              <div className={`w-full h-full bg-gradient-to-br ${slide.bg} p-0`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+                {lang === 'ar' ? slide.contentAr : slide.contentEn}
+              </div>
             </motion.div>
-          )}
+          </AnimatePresence>
 
-          {/* STEP 2: DOMAIN SELECTION */}
-          {step === 'domain' && (
-            <motion.div key="domain" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-8">
-              <div className="text-center">
-                <h2 className="text-3xl font-bold mb-3">اختر مجال نموذجك</h2>
-                <p className="text-white/60">في أي مجال تريد أن يتخصص ذكاؤك الاصطناعي؟</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
-                {domains.map(d => (
-                  <motion.div key={d.id} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    onClick={() => setSelectedDomain(d.id)}
-                    className={`cursor-pointer rounded-2xl p-6 text-center border-2 transition-all ${selectedDomain === d.id ? 'border-violet-400 bg-violet-500/20 shadow-lg shadow-violet-500/20' : 'border-white/10 bg-white/5 hover:border-white/30'}`}>
-                    <d.icon className="w-10 h-10 mx-auto mb-3 text-white" />
-                    <div className="text-lg font-bold">{d.label}</div>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="flex justify-between max-w-lg mx-auto">
-                <Button variant="ghost" onClick={goBack} className="text-white/60"><ArrowRight className="w-4 h-4 ml-1" /> رجوع</Button>
-                <Button onClick={goNext} disabled={!selectedDomain} className="bg-gradient-to-r from-violet-500 to-fuchsia-500">التالي <ArrowLeft className="w-4 h-4 mr-1" /></Button>
-              </div>
-            </motion.div>
-          )}
+          {/* Navigation overlay */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur rounded-full px-4 py-2 z-10">
+            <button onClick={(e) => { e.stopPropagation(); goTo(currentSlide - 1); }} disabled={currentSlide === 0}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center disabled:opacity-30 transition-all">
+              {lang === 'ar' ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            <span className="text-sm text-white/60 font-mono min-w-[60px] text-center">{currentSlide + 1} / {total}</span>
+            <button onClick={(e) => { e.stopPropagation(); goTo(currentSlide + 1); }} disabled={currentSlide === total - 1}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center disabled:opacity-30 transition-all">
+              {lang === 'ar' ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {isFullscreen && (
+              <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center ml-2">
+                <Minimize className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-          {/* STEP 3: DATA INPUT */}
-          {step === 'data' && (
-            <motion.div key="data" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-6 max-w-lg mx-auto">
-              <div className="text-center">
-                <h2 className="text-3xl font-bold mb-3">أدخل بيانات التدريب</h2>
-                <p className="text-white/60">هذه البيانات ستُستخدم لتدريب نموذجك الخاص</p>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-white/70 mb-2">اسمك</label>
-                  <Input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="أدخل اسمك..." className="bg-white/10 border-white/20 text-white placeholder:text-white/40" />
-                </div>
-                <div>
-                  <label className="block text-sm text-white/70 mb-2">اهتماماتك</label>
-                  <Input value={interests} onChange={e => setInterests(e.target.value)} placeholder="مثل: البرمجة، الرياضيات، الفن..." className="bg-white/10 border-white/20 text-white placeholder:text-white/40" />
-                </div>
-                <div>
-                  <label className="block text-sm text-white/70 mb-2">بيانات التدريب (اختياري)</label>
-                  <textarea value={trainingData} onChange={e => setTrainingData(e.target.value)} placeholder="أدخل أي بيانات إضافية مثل: درجاتك، عاداتك، أهدافك..." className="w-full min-h-[100px] rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 p-3 text-sm" />
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <Button variant="ghost" onClick={goBack} className="text-white/60"><ArrowRight className="w-4 h-4 ml-1" /> رجوع</Button>
-                <Button onClick={goNext} disabled={!studentName.trim()} className="bg-gradient-to-r from-violet-500 to-fuchsia-500">بدء التدريب <Zap className="w-4 h-4 mr-1" /></Button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 4: ENVIRONMENT / TRAINING PROGRESS */}
-          {step === 'environment' && (
-            <motion.div key="env" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-8 max-w-lg mx-auto text-center">
-              <h2 className="text-3xl font-bold">البيئة التعليمية</h2>
-              <p className="text-white/60">جاري تحليل بياناتك وبناء نموذجك...</p>
-
-              <motion.div animate={{ rotate: accuracy < 95 ? [0, 360] : 0 }} transition={{ duration: 2, repeat: accuracy < 95 ? Infinity : 0, ease: 'linear' }}
-                className="mx-auto w-28 h-28 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl">
-                <Cpu className="w-14 h-14 text-white" />
-              </motion.div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/60">دقة النموذج</span>
-                  <span className="text-violet-400 font-bold">{accuracy}%</span>
-                </div>
-                <Progress value={accuracy} className="h-3 bg-gray-800" />
-                <div className="text-sm text-white/50">المرحلة {trainingPhase} من 6</div>
-              </div>
-
-              {accuracy === 0 && (
-                <Button onClick={startTraining} className="bg-gradient-to-r from-violet-500 to-fuchsia-500 px-8">
-                  🚀 ابدأ التدريب
-                </Button>
-              )}
-              {accuracy >= 95 && (
-                <div className="text-green-400 font-bold text-lg">✅ اكتمل التدريب الأساسي!</div>
-              )}
-            </motion.div>
-          )}
-
-          {/* STEP 5: AWAKENING MOMENT */}
-          {step === 'awakening' && (
-            <motion.div key="awaken" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="text-center space-y-8">
-              <motion.h2 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500">
-                ⚡ لحظة الإدراك - Awakening Moment
-              </motion.h2>
-              <p className="text-white/70 text-lg">نموذجك يتحول الآن من مخزن بيانات... إلى نظام يفهم ويحلل!</p>
-
-              <div className="flex items-center justify-center gap-8 my-8">
-                <motion.div initial={{ opacity: 1 }} animate={{ opacity: 0.3 }} transition={{ delay: 2 }} className="text-center">
-                  <div className="w-24 h-24 rounded-2xl bg-gray-700 flex items-center justify-center mb-2">
-                    <Monitor className="w-12 h-12 text-gray-400" />
-                  </div>
-                  <span className="text-sm text-white/50">جهاز عادي</span>
-                </motion.div>
-
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.5 }} className="text-4xl">→</motion.div>
-
-                <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 2.5, type: 'spring' }} className="text-center">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center mb-2 shadow-xl shadow-violet-500/40">
-                    <Brain className="w-12 h-12 text-white" />
-                  </div>
-                  <span className="text-sm text-violet-300 font-bold">مفكر ذكي!</span>
-                </motion.div>
-              </div>
-
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.5 }} className="space-y-3">
-                <p className="text-white/60">الآن يستطيع نموذجك: التوقع 📈 | الإجابة 💬 | التحليل 🔍</p>
-                <Button onClick={() => { generateQuestions(); goNext(); }} className="bg-gradient-to-r from-amber-500 to-orange-500 px-8">
-                  ابدأ التدريب التفاعلي <Sparkles className="w-4 h-4 mr-1" />
-                </Button>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {/* STEP 6: INTERACTIVE TRAINING */}
-          {step === 'training' && (
-            <motion.div key="training" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-lg mx-auto">
-              <h2 className="text-2xl font-bold text-center">🧪 التدريب التفاعلي</h2>
-              <p className="text-white/60 text-center text-sm">كل إجابة تؤثر على دقة وسلوك نموذجك!</p>
-
-              <div className="flex justify-between text-sm text-white/50">
-                <span>النقاط: <span className="text-violet-400 font-bold">{score}</span></span>
-                <span>الدقة: <span className="text-green-400 font-bold">{accuracy}%</span></span>
-              </div>
-
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                    <Cpu className="w-12 h-12 text-violet-400 mx-auto" />
-                  </motion.div>
-                  <p className="text-white/60 mt-4">جاري توليد الأسئلة بالذكاء الاصطناعي...</p>
-                </div>
-              ) : aiQuestions.length > 0 ? (
-                <Card className="bg-white/5 border-white/10">
-                  <CardContent className="p-6 space-y-4">
-                    <div className="text-xs text-white/40 mb-2">السؤال {currentQ + 1} من {aiQuestions.length}</div>
-                    <h3 className="text-lg font-bold text-white">{aiQuestions[currentQ]?.question}</h3>
-                    <div className="space-y-2">
-                      {aiQuestions[currentQ]?.options.map((opt, i) => (
-                        <motion.button key={i} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                          onClick={() => answerQuestion(i)}
-                          className="w-full text-right p-3 rounded-xl bg-white/5 hover:bg-violet-500/20 border border-white/10 hover:border-violet-400/50 transition-all text-white/80 text-sm">
-                          {opt}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="text-center py-8">
-                  <Button onClick={generateQuestions} className="bg-gradient-to-r from-violet-500 to-fuchsia-500">
-                    توليد الأسئلة <Brain className="w-4 h-4 mr-1" />
-                  </Button>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* STEP 7: AI AGENT */}
-          {step === 'agent' && (
-            <motion.div key="agent" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-lg mx-auto">
-              <div className="text-center space-y-4">
-                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-violet-500/40">
-                  <Brain className="w-12 h-12 text-white" />
-                </motion.div>
-                <h2 className="text-3xl font-bold">🎉 وكيلك الذكي جاهز!</h2>
-                <p className="text-violet-300 font-semibold text-xl">{studentName}-AI</p>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
-                  <div className="text-sm text-white/60">معرّف الوكيل: <span className="font-mono text-violet-400">{agentId}</span></div>
-                  <div className="text-sm text-white/60">الدقة: <span className="text-green-400">{accuracy}%</span></div>
-                  <div className="text-sm text-white/60">النقاط: <span className="text-amber-400">{score}</span></div>
-                  <div className="text-sm text-white/60">التخصص: {domains.find(d => d.id === selectedDomain)?.label}</div>
-                </div>
-              </div>
-
-              {/* Chat */}
-              <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-                <div className="p-3 bg-violet-500/10 border-b border-white/10 text-sm font-bold text-center">💬 تحدث مع وكيلك</div>
-                <div className="h-48 overflow-y-auto p-3 space-y-2">
-                  {agentChat.length === 0 && <p className="text-white/30 text-center text-sm mt-8">اسأل وكيلك أي سؤال...</p>}
-                  {agentChat.map((m, i) => (
-                    <div key={i} className={`text-sm p-2 rounded-lg max-w-[80%] ${m.role === 'user' ? 'bg-violet-500/20 mr-auto' : 'bg-white/10 ml-auto'}`}>
-                      {m.text}
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 border-t border-white/10 flex gap-2">
-                  <Input value={agentInput} onChange={e => setAgentInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && chatWithAgent()} placeholder="اكتب سؤالك..." className="bg-white/10 border-white/20 text-white text-sm placeholder:text-white/40" />
-                  <Button onClick={chatWithAgent} disabled={isLoading} size="sm" className="bg-violet-500">إرسال</Button>
-                </div>
-              </div>
-
-              <div className="flex justify-between">
-                <Button variant="ghost" onClick={goBack} className="text-white/60"><ArrowRight className="w-4 h-4 ml-1" /> رجوع</Button>
-                <Button onClick={goNext} className="bg-gradient-to-r from-violet-500 to-fuchsia-500">لوحة المتصدرين <Trophy className="w-4 h-4 mr-1" /></Button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 8: LEADERBOARD */}
-          {step === 'leaderboard' && (
-            <motion.div key="leader" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-lg mx-auto">
-              <h2 className="text-3xl font-bold text-center">🏆 لوحة المتصدرين</h2>
-              <div className="space-y-3">
-                {[
-                  { name: `${studentName}-AI`, score, accuracy, isYou: true },
-                  { name: 'أحمد-AI', score: 85, accuracy: 92, isYou: false },
-                  { name: 'سارة-AI', score: 70, accuracy: 88, isYou: false },
-                  { name: 'محمد-AI', score: 60, accuracy: 85, isYou: false },
-                ].sort((a, b) => b.score - a.score).map((entry, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.15 }}
-                    className={`flex items-center gap-4 p-4 rounded-xl border ${entry.isYou ? 'bg-violet-500/20 border-violet-400/50' : 'bg-white/5 border-white/10'}`}>
-                    <div className="text-2xl font-bold text-white/30 w-8">{i + 1}</div>
-                    <div className="flex-1">
-                      <div className="font-bold text-white">{entry.name} {entry.isYou && '⭐'}</div>
-                      <div className="text-xs text-white/50">دقة: {entry.accuracy}%</div>
-                    </div>
-                    <div className="text-lg font-bold text-amber-400">{entry.score} نقطة</div>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="flex justify-between">
-                <Button variant="ghost" onClick={goBack} className="text-white/60"><ArrowRight className="w-4 h-4 ml-1" /> رجوع</Button>
-                <Button onClick={goNext} className="bg-gradient-to-r from-violet-500 to-fuchsia-500">العرض التقديمي <Globe className="w-4 h-4 mr-1" /></Button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 9: PRESENTATION */}
-          {step === 'presentation' && (
-            <motion.div key="pres" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
-              <div className="text-center space-y-4">
-                <h2 className="text-3xl font-bold">📋 العرض التقديمي للمشروع</h2>
-                <p className="text-white/60">تصوّر حديقة الحسن للعلوم - قسم الذكاء الاصطناعي التفاعلي</p>
-                <div className="flex justify-center gap-2">
-                  <Button onClick={() => setPresLang('ar')} variant={presLang === 'ar' ? 'default' : 'ghost'} size="sm" className={presLang === 'ar' ? 'bg-violet-500' : 'text-white/60'}>عربي</Button>
-                  <Button onClick={() => setPresLang('en')} variant={presLang === 'en' ? 'default' : 'ghost'} size="sm" className={presLang === 'en' ? 'bg-violet-500' : 'text-white/60'}>English</Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir={presLang === 'en' ? 'ltr' : 'rtl'}>
-                {presContent[presLang].map((slide, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:border-violet-400/30 transition-all">
-                    <h3 className="text-lg font-bold text-violet-300 mb-3">{slide.title}</h3>
-                    <p className="text-white/70 text-sm leading-relaxed">{slide.text}</p>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Ideas section */}
-              <div className="bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 rounded-2xl p-6 border border-violet-400/20">
-                <h3 className="text-xl font-bold text-violet-300 mb-4">💡 أفكار مقترحة للتطوير</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    '🏅 نظام شارات - مكافآت عند إكمال النماذج',
-                    '⚔️ تحدي بين الطلاب - مسابقة أسبوعية',
-                    '🎨 معرض النماذج - عرض وتقييم من الزملاء',
-                    '📄 تصدير PDF - تقرير احترافي للرحلة',
-                    '📚 ربط بالمواد - كل مجال مرتبط بمادة دراسية',
-                    '🧬 محاكاة الشبكة العصبية - عرض بصري تفاعلي',
-                    '👨‍🏫 وضع المعلم - متابعة تقدم الطلاب',
-                  ].map((idea, i) => (
-                    <div key={i} className="text-sm text-white/70 bg-white/5 rounded-lg p-3">{idea}</div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-between">
-                <Button variant="ghost" onClick={goBack} className="text-white/60"><ArrowRight className="w-4 h-4 ml-1" /> رجوع</Button>
-                <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-violet-500 to-fuchsia-500">العودة للرئيسية</Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* Slide dots */}
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            {slides.map((_, i) => (
+              <button key={i} onClick={(e) => { e.stopPropagation(); goTo(i); }}
+                className={`rounded-full transition-all ${i === currentSlide ? 'w-6 h-2 bg-violet-400' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}`} />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
