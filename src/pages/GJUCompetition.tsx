@@ -520,7 +520,7 @@ const GJUCompetition = () => {
                 <div className="absolute inset-[1px] rounded-full bg-[#04040e]/80 backdrop-blur-md" />
               </div>
               <Trophy className="w-4 h-4 text-amber-400 relative z-10" />
-              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">GJU 3030 · Innovation Challenge</span>
+              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">{ui.badge}</span>
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse relative z-10" />
             </motion.div>
 
@@ -548,7 +548,7 @@ const GJUCompetition = () => {
               className="flex items-center justify-center gap-4 mb-8"
             >
               <div className="h-px w-16 bg-gradient-to-l from-transparent to-violet-400/50" />
-              <span className="text-white/70 text-xl md:text-2xl font-semibold tracking-wide">مستقبل التكنولوجيا</span>
+              <span className="text-white/70 text-xl md:text-2xl font-semibold tracking-wide">{lang === 'en' ? 'Future of Technology' : 'مستقبل التكنولوجيا'}</span>
               <div className="h-px w-16 bg-gradient-to-r from-transparent to-cyan-400/50" />
             </motion.div>
 
@@ -559,7 +559,7 @@ const GJUCompetition = () => {
               transition={{ duration: 0.7, delay: 0.5 }}
               className="text-base md:text-lg text-white/45 max-w-2xl mx-auto mb-8 leading-relaxed h-14 px-4"
             >
-              <TypewriterText text="منصة عرض رسمية تدمج الذكاء الاصطناعي والروبوتات والتقنيات المستدامة والتعلّم الدامج" />
+              <TypewriterText key={lang} text={ui.subtitle} />
             </motion.div>
 
             <motion.div
@@ -569,9 +569,7 @@ const GJUCompetition = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/40 text-xs mb-12 pointer-events-auto"
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>German Jordanian University</span>
-              <span className="text-white/15">·</span>
-              <span>الجامعة الألمانية الأردنية</span>
+              <span>{lang === 'en' ? 'German Jordanian University' : 'الجامعة الألمانية الأردنية'}</span>
             </motion.div>
 
             {/* CTA Buttons */}
@@ -588,7 +586,7 @@ const GJUCompetition = () => {
                 <div className="absolute inset-0 bg-gradient-to-l from-violet-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <span className="relative z-10 flex items-center gap-2">
                   <Rocket className="w-5 h-5" />
-                  استكشف المسارات
+                  {ui.exploreTracks}
                 </span>
               </button>
               <button
@@ -597,7 +595,7 @@ const GJUCompetition = () => {
               >
                 <span className="flex items-center gap-2">
                   <Zap className="w-5 h-5" />
-                  المحاكيات التفاعلية
+                  {ui.interactiveSims}
                 </span>
               </button>
             </motion.div>
@@ -610,6 +608,9 @@ const GJUCompetition = () => {
               transition={{ delay: 0.9, duration: 0.7 }}
             >
               {stats.map((stat, i) => {
+                const labels = lang === 'en'
+                  ? [ui.statTools, ui.statSims, ui.statAI, ui.statSubjects]
+                  : [ui.statTools, ui.statSims, ui.statAI, ui.statSubjects];
                 const gradients = [
                   'from-violet-500/40 to-purple-500/40',
                   'from-cyan-500/40 to-blue-500/40',
@@ -630,7 +631,7 @@ const GJUCompetition = () => {
                       <div className="text-4xl md:text-5xl font-black text-white mb-1.5">
                         <AnimatedCounter value={stat.value} />
                       </div>
-                      <div className="text-xs text-white/40 font-medium">{stat.label}</div>
+                      <div className="text-xs text-white/40 font-medium">{labels[i] ?? stat.label}</div>
                     </div>
                   </motion.div>
                 );
@@ -644,7 +645,7 @@ const GJUCompetition = () => {
               transition={{ delay: 1.5 }}
               className="flex flex-col items-center gap-2"
             >
-              <span className="text-white/25 text-xs font-mono tracking-widest uppercase">Scroll</span>
+              <span className="text-white/25 text-xs font-mono tracking-widest uppercase">{ui.scroll}</span>
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
