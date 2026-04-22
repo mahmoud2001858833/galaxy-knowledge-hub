@@ -183,6 +183,49 @@ const ClassChat = () => {
     }
   };
 
+  const dataUrlToFile = async (dataUrl: string, filename: string): Promise<File> => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: blob.type || 'image/png' });
+  };
+
+  const handleGenerateAIImage = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiGenerating(true);
+    setAiPreview(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-chat-image', {
+        body: { prompt: aiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (!data?.image) throw new Error('لم يتم إنشاء صورة');
+      setAiPreview(data.image as string);
+    } catch (err: any) {
+      console.error('AI image error:', err);
+      toast({
+        title: 'تعذّر توليد الصورة',
+        description: err?.message || 'حاول مرة أخرى',
+        variant: 'destructive',
+      });
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleUseAIImage = async () => {
+    if (!aiPreview) return;
+    try {
+      const file = await dataUrlToFile(aiPreview, `ai-${Date.now()}.png`);
+      setImageFile(file);
+      setAiOpen(false);
+      setAiPrompt('');
+      setAiPreview(null);
+      toast({ title: 'تمت الإضافة', description: 'الصورة جاهزة للإرسال' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
