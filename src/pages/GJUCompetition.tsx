@@ -38,6 +38,8 @@ const aiTools = [
 
 /* ─────────────── Track 2: Robotics & Construction ─────────────── */
 const roboticsTools = [
+  { title: 'مولّد الروبوتات بالذكاء الاصطناعي', description: 'صف فكرتك واحصل على مخططات + كود Arduino + قائمة مكونات بأسعار حقيقية', icon: Wrench, gradient: 'from-violet-500 to-cyan-600', link: '/gju/robotics-generator' },
+  { title: 'التوأم الرقمي للأردن', description: 'مراقبة حية لمؤشرات المدن الأردنية مع تحليل ذكي وتوصيات', icon: Globe, gradient: 'from-emerald-500 to-cyan-600', link: '/gju/jordan-digital-twin' },
   { title: 'التصميم المعماري الذكي', description: 'تحليل موقع البناء واقتراح تصميمات مستدامة بالذكاء الاصطناعي', icon: Building2, gradient: 'from-cyan-500 to-blue-600', link: '/smart-city/architectural-design' },
   { title: 'روبوت البناء التفاعلي', description: 'تقنيات البناء الروبوتي والطباعة ثلاثية الأبعاد', icon: Bot, gradient: 'from-blue-500 to-indigo-600', link: '/smart-city/robotic-construction' },
   { title: 'التصميم الداخلي التفاعلي', description: 'توصيات ذكية للألوان والإضاءة والأثاث', icon: Palette, gradient: 'from-indigo-500 to-purple-600', link: '/smart-city/interior-design' },
