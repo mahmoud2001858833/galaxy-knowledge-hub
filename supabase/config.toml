@@ -182,3 +182,6 @@ verify_jwt = false
 
 [functions.generate-chat-image]
 verify_jwt = false
+
+[functions.cancer-detection-ai]
+verify_jwt = false
