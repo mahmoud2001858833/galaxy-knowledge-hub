@@ -409,6 +409,7 @@ const CancerDetection: React.FC = () => {
                 </div>
               )}
 
+              {result && (
                 <div className="space-y-6">
                   {/* Risk hero card */}
                   <Card className={`${riskStyle.bg} border-2 ${riskStyle.ring} ring-1 backdrop-blur-md overflow-hidden relative`}>
