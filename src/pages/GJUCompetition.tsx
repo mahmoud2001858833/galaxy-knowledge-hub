@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 /* ─────────────── Track 1: AI & Machine Learning ─────────────── */
 const aiTools = [
   { title: 'المساعد التعليمي الذكي', description: 'مساعد تعليمي ذكي متعدد المهام يجيب على أسئلتك في جميع المواد', icon: Brain, gradient: 'from-violet-500 to-purple-600', link: '/falak-knowledge-ai' },
+  { title: 'كشف السرطان بالذكاء الاصطناعي', description: 'فحص أوّلي تعليمي يحلّل الصور الطبية والأعراض ويعطي تقييم خطر مع تقرير PDF', icon: Microscope, gradient: 'from-cyan-500 via-fuchsia-500 to-violet-600', link: '/cancer-detection' },
   { title: 'توليد الصور بالذكاء الاصطناعي', description: 'أنشئ صوراً تعليمية احترافية باستخدام وصف نصي بسيط', icon: Image, gradient: 'from-pink-500 to-rose-600', link: '/ai-image-generator' },
   { title: 'تقييم الرسومات بالذكاء الاصطناعي', description: 'ارسم وتحدّى أصدقاءك! الذكاء الاصطناعي يختار الفائز', icon: Target, gradient: 'from-amber-500 to-orange-600', link: '/art-design' },
   { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec/information-technology' },
