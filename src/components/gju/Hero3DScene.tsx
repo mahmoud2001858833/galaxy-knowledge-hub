@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 /* ─── Rotating distorted core ─── */
 const Core: React.FC = () => {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<any>(null);
   useFrame((state) => {
     if (!ref.current) return;
     ref.current.rotation.x = state.clock.getElapsedTime() * 0.15;
@@ -30,7 +30,7 @@ const Core: React.FC = () => {
 
 /* ─── Wireframe outer shell ─── */
 const Shell: React.FC = () => {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<any>(null);
   useFrame((state) => {
     if (!ref.current) return;
     ref.current.rotation.x = -state.clock.getElapsedTime() * 0.08;
@@ -52,7 +52,7 @@ const Satellite: React.FC<{ radius: number; speed: number; offset: number; color
   offset,
   color,
 }) => {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<any>(null);
   useFrame((state) => {
     if (!ref.current) return;
     const t = state.clock.getElapsedTime() * speed + offset;
@@ -79,7 +79,7 @@ const Satellite: React.FC<{ radius: number; speed: number; offset: number; color
 
 /* ─── Particle ring ─── */
 const ParticleRing: React.FC = () => {
-  const ref = useRef<THREE.Points>(null);
+  const ref = useRef<any>(null);
   const positions = useMemo(() => {
     const arr = new Float32Array(800 * 3);
     for (let i = 0; i < 800; i++) {
