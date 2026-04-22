@@ -480,12 +480,24 @@ const GJUCompetition = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#04040e]" dir={dir}>
       <SEO
-        title="مستقبل التكنولوجيا - مسابقة GJU 3030"
-        description="منصة مستقبل التكنولوجيا - مسابقة التقدّم التكنولوجي GJU 3030"
-        keywords="GJU 3030, مسابقة, تكنولوجيا, مستقبل التكنولوجيا"
+        title={lang === 'en' ? 'Future of Technology - GJU 3030' : 'مستقبل التكنولوجيا - مسابقة GJU 3030'}
+        description={lang === 'en' ? 'Future of Technology platform - GJU 3030 Innovation Challenge' : 'منصة مستقبل التكنولوجيا - مسابقة التقدّم التكنولوجي GJU 3030'}
+        keywords="GJU 3030, مسابقة, تكنولوجيا, مستقبل التكنولوجيا, Future of Technology"
       />
 
       <FloatingParticles />
+
+      {/* Floating Language Toggle */}
+      <button
+        onClick={toggleLanguage}
+        aria-label="Toggle language"
+        className="fixed top-5 left-5 z-[60] group flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#04040e]/80 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/[0.06] transition-all duration-300 shadow-lg shadow-black/40"
+      >
+        <Languages className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
+        <span className="text-white/70 group-hover:text-white text-xs font-bold tracking-wider">
+          {lang === 'en' ? 'AR' : 'EN'}
+        </span>
+      </button>
 
       {/* Ambient Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
