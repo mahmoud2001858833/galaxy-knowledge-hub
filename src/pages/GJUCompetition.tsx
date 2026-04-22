@@ -315,7 +315,7 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
   };
 
   return (
-    <section id={track.id} className="py-24 md:py-32 relative scroll-mt-20">
+    <section id={track.id} className="py-24 md:py-32 relative scroll-mt-28">
       <div className="absolute inset-0 pointer-events-none" style={{
         background: `radial-gradient(ellipse 80% 50% at ${index % 2 === 0 ? '20%' : '80%'} 50%, ${accentGlows[track.accent]}, transparent)`
       }} />
@@ -460,7 +460,13 @@ const GJUCompetition = () => {
 
   const scrollToTrack = (id: string) => {
     setActiveTrack(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Compensate for sticky header height (measured live, fallback 72px)
+    const stickyEl = document.querySelector<HTMLElement>('[data-sticky-tracknav]');
+    const offset = (stickyEl?.offsetHeight ?? 72) + 16;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
   };
 
   return (
@@ -750,7 +756,7 @@ const GJUCompetition = () => {
         </section>
 
         {/* ═══════════════ COMPACT STICKY NAV (after scroll) ═══════════════ */}
-        <div className="sticky top-0 z-50 bg-[#04040e]/85 backdrop-blur-2xl border-b border-white/[0.06]">
+        <div data-sticky-tracknav className="sticky top-0 z-50 bg-[#04040e]/85 backdrop-blur-2xl border-b border-white/[0.06]">
           <div className="container mx-auto px-4">
             <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
               {tracks.map((track) => {
