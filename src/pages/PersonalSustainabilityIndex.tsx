@@ -9,6 +9,9 @@ import { ArrowLeft, BarChart as BarChartIcon, CheckCircle, Target, TrendingUp, D
 import { useToast } from '@/hooks/use-toast';
 import VoiceNumberInput from '@/components/eco/VoiceNumberInput';
 import GlobalComparisonChart from '@/components/eco/GlobalComparisonChart';
+import MultiViewChart from '@/components/eco/MultiViewChart';
+import WhatIfScenarios from '@/components/eco/WhatIfScenarios';
+import AIRecommendationsPanel from '@/components/eco/AIRecommendationsPanel';
 import { generateSustainabilityPdf } from '@/lib/sustainabilityPdf';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 
