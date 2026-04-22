@@ -486,63 +486,78 @@ const GJUCompetition = () => {
 
       <main className="flex-1 relative z-10">
         {/* ═══════════════ HERO ═══════════════ */}
-        <section className="relative min-h-screen flex flex-col justify-center items-center px-4 pt-8 pb-20">
-          {/* Back button removed */}
+        <section className="relative min-h-screen flex flex-col justify-center items-center px-4 pt-8 pb-20 overflow-hidden">
+          {/* 3D Scene Background */}
+          <div className="absolute inset-0 z-0">
+            <Hero3DScene />
+          </div>
 
-          <div className="text-center max-w-5xl mx-auto">
+          {/* Foreground Content */}
+          <div className="relative z-10 text-center max-w-5xl mx-auto pointer-events-none">
             {/* Animated Glowing Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="relative inline-flex items-center gap-2.5 px-7 py-3 rounded-full mb-10"
+              className="relative inline-flex items-center gap-2.5 px-7 py-3 rounded-full mb-10 pointer-events-auto"
             >
-              {/* Glow border animation */}
               <div className="absolute inset-0 rounded-full p-[1px] overflow-hidden">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500/30 via-yellow-300/40 to-amber-500/30 animate-spin" style={{ animationDuration: '4s' }} />
-                <div className="absolute inset-[1px] rounded-full bg-[#04040e]" />
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500/40 via-yellow-300/60 to-amber-500/40 animate-spin" style={{ animationDuration: '4s' }} />
+                <div className="absolute inset-[1px] rounded-full bg-[#04040e]/80 backdrop-blur-md" />
               </div>
               <Trophy className="w-4 h-4 text-amber-400 relative z-10" />
-              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">مسابقة التقدّم التكنولوجي GJU 3030</span>
+              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">GJU 3030 · Innovation Challenge</span>
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse relative z-10" />
             </motion.div>
 
-            {/* Title with stronger gradient */}
+            {/* Title */}
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 leading-[0.9] tracking-tight"
+              className="text-6xl md:text-8xl lg:text-[8.5rem] font-black mb-6 leading-[0.85] tracking-tight"
+              style={{ textShadow: '0 0 80px rgba(124,58,237,0.3)' }}
             >
-              <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent drop-shadow-lg">
-                مستقبل
+              <span className="block bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">
+                Future
               </span>
-              <br />
-              <span className="text-white/95">
-                التكنولوجيا
+              <span className="block text-white/95 text-5xl md:text-7xl lg:text-8xl mt-2">
+                of Technology
               </span>
             </motion.h1>
+
+            {/* Arabic accent line */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.4 }}
+              className="flex items-center justify-center gap-4 mb-8"
+            >
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-violet-400/50" />
+              <span className="text-white/70 text-xl md:text-2xl font-semibold tracking-wide">مستقبل التكنولوجيا</span>
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-cyan-400/50" />
+            </motion.div>
 
             {/* Typewriter Subtitle */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.5 }}
-              className="text-lg md:text-xl text-white/40 max-w-2xl mx-auto mb-6 leading-relaxed h-16"
+              className="text-base md:text-lg text-white/45 max-w-2xl mx-auto mb-8 leading-relaxed h-14 px-4"
             >
-              <TypewriterText text="منصة تعليمية تفاعلية شاملة تدمج الذكاء الاصطناعي والروبوتات والتقنيات المستدامة والتعلّم الدامج" />
+              <TypewriterText text="منصة عرض رسمية تدمج الذكاء الاصطناعي والروبوتات والتقنيات المستدامة والتعلّم الدامج" />
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="flex items-center justify-center gap-2 text-white/20 text-sm mb-10"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/40 text-xs mb-12 pointer-events-auto"
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>الجامعة الألمانية الأردنية</span>
-              <span className="text-white/10">•</span>
               <span>German Jordanian University</span>
+              <span className="text-white/15">·</span>
+              <span>الجامعة الألمانية الأردنية</span>
             </motion.div>
 
             {/* CTA Buttons */}
@@ -550,11 +565,11 @@ const GJUCompetition = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              className="flex flex-wrap justify-center gap-4 mb-16"
+              className="flex flex-wrap justify-center gap-4 mb-16 pointer-events-auto"
             >
               <button
                 onClick={() => scrollToTrack('ai')}
-                className="group relative px-8 py-4 rounded-2xl bg-gradient-to-l from-violet-600 to-cyan-600 text-white font-bold text-base overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/20 hover:scale-105"
+                className="group relative px-8 py-4 rounded-2xl bg-gradient-to-l from-violet-600 to-cyan-600 text-white font-bold text-base overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-violet-500/40 hover:scale-105"
               >
                 <div className="absolute inset-0 bg-gradient-to-l from-violet-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <span className="relative z-10 flex items-center gap-2">
@@ -564,7 +579,7 @@ const GJUCompetition = () => {
               </button>
               <button
                 onClick={() => scrollToTrack('robotics')}
-                className="group px-8 py-4 rounded-2xl border border-white/10 bg-white/[0.03] text-white/70 font-bold text-base hover:bg-white/[0.08] hover:border-white/20 hover:text-white transition-all duration-300"
+                className="group px-8 py-4 rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-md text-white/80 font-bold text-base hover:bg-white/[0.10] hover:border-white/25 hover:text-white transition-all duration-300"
               >
                 <span className="flex items-center gap-2">
                   <Zap className="w-5 h-5" />
@@ -575,17 +590,17 @@ const GJUCompetition = () => {
 
             {/* Stats with gradient borders */}
             <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto mb-16"
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto mb-16 pointer-events-auto"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9, duration: 0.7 }}
             >
               {stats.map((stat, i) => {
                 const gradients = [
-                  'from-violet-500/30 to-purple-500/30',
-                  'from-cyan-500/30 to-blue-500/30',
-                  'from-emerald-500/30 to-teal-500/30',
-                  'from-amber-500/30 to-orange-500/30',
+                  'from-violet-500/40 to-purple-500/40',
+                  'from-cyan-500/40 to-blue-500/40',
+                  'from-emerald-500/40 to-teal-500/40',
+                  'from-amber-500/40 to-orange-500/40',
                 ];
                 return (
                   <motion.div
@@ -593,16 +608,15 @@ const GJUCompetition = () => {
                     whileHover={{ scale: 1.05, y: -4 }}
                     className="relative group overflow-hidden rounded-2xl"
                   >
-                    {/* Animated gradient border */}
                     <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradients[i]} opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-[1px]`}>
                       <div className="w-full h-full rounded-2xl bg-[#04040e]" />
                     </div>
-                    <div className="relative bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-6 text-center group-hover:border-transparent transition-colors">
-                      <stat.icon className="w-6 h-6 text-white/20 mx-auto mb-3 group-hover:text-white/50 transition-colors" />
+                    <div className="relative bg-[#04040e]/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 text-center group-hover:border-transparent transition-colors">
+                      <stat.icon className="w-6 h-6 text-white/30 mx-auto mb-3 group-hover:text-white/60 transition-colors" />
                       <div className="text-4xl md:text-5xl font-black text-white mb-1.5">
                         <AnimatedCounter value={stat.value} />
                       </div>
-                      <div className="text-xs text-white/30 font-medium">{stat.label}</div>
+                      <div className="text-xs text-white/40 font-medium">{stat.label}</div>
                     </div>
                   </motion.div>
                 );
@@ -616,12 +630,12 @@ const GJUCompetition = () => {
               transition={{ delay: 1.5 }}
               className="flex flex-col items-center gap-2"
             >
-              <span className="text-white/15 text-xs">استكشف المسارات</span>
+              <span className="text-white/25 text-xs font-mono tracking-widest uppercase">Scroll</span>
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <ChevronDown className="w-5 h-5 text-white/15" />
+                <ChevronDown className="w-5 h-5 text-white/25" />
               </motion.div>
             </motion.div>
           </div>
