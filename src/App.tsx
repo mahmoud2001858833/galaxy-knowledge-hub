@@ -177,6 +177,7 @@ import RoboticConstruction from './pages/RoboticConstruction';
 import AIInteriorDesign from './pages/AIInteriorDesign';
 import GJUCompetition from './pages/GJUCompetition';
 import HassanGardenAI from './pages/HassanGardenAI';
+import CancerDetection from './pages/CancerDetection';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -887,6 +888,10 @@ const router = createBrowserRouter([
       {
         path: 'hassan-garden-ai',
         element: <PublicRoute><HassanGardenAI /></PublicRoute>,
+      },
+      {
+        path: 'cancer-detection',
+        element: <PublicRoute><CancerDetection /></PublicRoute>,
       },
       {
         path: '*',
