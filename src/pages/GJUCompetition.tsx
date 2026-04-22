@@ -5,6 +5,8 @@ import GJUFooter from '@/components/gju/GJUFooter';
 import Hero3DScene from '@/components/gju/Hero3DScene';
 import { SEO } from '@/components/SEO';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { toolTranslationsEn, trackTranslationsEn, uiTranslationsEn, uiTranslationsAr } from './gju/translations';
+import { Languages } from 'lucide-react';
 import { 
   Brain, Bot, Leaf, Building2, Accessibility, 
   Sparkles, Users, BookOpen, Zap, ArrowLeft,
@@ -231,7 +233,11 @@ const AnimatedCounter = ({ value }: { value: string }) => {
 };
 
 /* ─────────────── 3D Tilt Card ─────────────── */
-const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) => {
+const ToolCard = ({ tool, index, lang }: { tool: typeof aiTools[0]; index: number; lang: 'ar' | 'en' }) => {
+  const tr = lang === 'en' ? toolTranslationsEn[tool.title] : null;
+  const displayTitle = tr?.title ?? tool.title;
+  const displayDesc = tr?.description ?? tool.description;
+  const ctaLabel = lang === 'en' ? 'Try it' : 'جرّب الآن';
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
@@ -281,10 +287,10 @@ const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) =
         <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
           <tool.icon className="w-7 h-7 text-white" />
         </div>
-        <h4 className="text-white font-bold text-lg mb-2 group-hover:text-white transition-colors">{tool.title}</h4>
-        <p className="text-white/35 text-sm leading-relaxed mb-5">{tool.description}</p>
+        <h4 className="text-white font-bold text-lg mb-2 group-hover:text-white transition-colors">{displayTitle}</h4>
+        <p className="text-white/35 text-sm leading-relaxed mb-5">{displayDesc}</p>
         <div className="flex items-center gap-2 text-white/25 group-hover:text-white/70 transition-all duration-300">
-          <span className="text-xs font-semibold bg-gradient-to-l from-white/60 to-white/40 bg-clip-text text-transparent group-hover:from-white group-hover:to-white/80">جرّب الآن</span>
+          <span className="text-xs font-semibold bg-gradient-to-l from-white/60 to-white/40 bg-clip-text text-transparent group-hover:from-white group-hover:to-white/80">{ctaLabel}</span>
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-2 transition-transform duration-300" />
         </div>
       </div>
@@ -305,7 +311,7 @@ const SectionDivider = ({ color }: { color: string }) => (
 );
 
 /* ─────────────── Track Section ─────────────── */
-const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number }) => {
+const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: number; lang: 'ar' | 'en' }) => {
   const [showAllSimulations, setShowAllSimulations] = useState(false);
   const accentGlows: Record<string, string> = {
     violet: 'rgba(139,92,246,0.1)',
