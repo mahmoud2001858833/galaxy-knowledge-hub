@@ -1758,6 +1758,42 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_complaints: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string
+          email: string | null
+          id: string
+          name: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description: string
+          email?: string | null
+          id?: string
+          name: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string
+          email?: string | null
+          id?: string
+          name?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       poems: {
         Row: {
           content: string

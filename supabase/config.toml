@@ -194,3 +194,6 @@ verify_jwt = false
 
 [functions.tech-ai-platform-builder]
 verify_jwt = false
+
+[functions.complaints-admin]
+verify_jwt = false

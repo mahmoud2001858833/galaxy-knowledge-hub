@@ -50,6 +50,7 @@ import IslamicHistoricalEras from './pages/IslamicHistoricalEras';
 import BTEC from './pages/BTEC';
 import BTECInformationTechnology from './pages/BTECInformationTechnology';
 import TechCodingPlatform from './pages/TechCodingPlatform';
+import Complaints from './pages/Complaints';
 import BTECStudentProjects from './components/btec/BTECStudentProjects';
 import CodeFixerSection from './components/btec/CodeFixerSection';
 import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
@@ -474,6 +475,10 @@ const router = createBrowserRouter([
       {
         path: 'contact',
         element: <AuthGuard><Contact /></AuthGuard>,
+      },
+      {
+        path: 'complaints',
+        element: <PublicRoute><Complaints /></PublicRoute>,
       },
       {
         path: 'educational-videos',
