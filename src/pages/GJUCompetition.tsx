@@ -641,8 +641,116 @@ const GJUCompetition = () => {
           </div>
         </section>
 
-        {/* ═══════════════ STICKY TRACK NAV ═══════════════ */}
-        <div className="sticky top-0 z-50 bg-[#04040e]/80 backdrop-blur-2xl border-b border-white/[0.05]">
+        {/* ═══════════════ MISSION CONTROL · TRACK NAVIGATOR ═══════════════ */}
+        <section className="relative py-20 md:py-28 overflow-hidden">
+          {/* Animated grid background */}
+          <div className="absolute inset-0 opacity-[0.07]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 90%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 90%)',
+          }} />
+          {/* Glow orbs */}
+          <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-violet-600/10 blur-3xl" />
+          <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-cyan-600/10 blur-3xl" />
+
+          <div className="container mx-auto px-4 relative z-10">
+            {/* Section header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-14 md:mb-16"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-md mb-5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-white/50 text-[11px] font-mono tracking-[0.25em] uppercase">Mission Control</span>
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
+                اختر <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">مسارك</span>
+              </h2>
+              <p className="text-white/40 text-base md:text-lg max-w-2xl mx-auto">
+                خمسة مسارات تكنولوجية متكاملة · انتقل بين المحاور باستكشاف فوري
+              </p>
+            </motion.div>
+
+            {/* Track cards grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5 max-w-7xl mx-auto">
+              {tracks.map((track, i) => {
+                const toolCount = track.tools.length + (track.extraTools?.length || 0);
+                const isActive = activeTrack === track.id;
+                return (
+                  <motion.button
+                    key={track.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-50px' }}
+                    transition={{ duration: 0.5, delay: i * 0.08 }}
+                    whileHover={{ y: -6, scale: 1.02 }}
+                    onClick={() => scrollToTrack(track.id)}
+                    className="group relative text-right"
+                  >
+                    {/* Animated gradient border */}
+                    <div className={`absolute -inset-px rounded-2xl bg-gradient-to-br ${track.color} opacity-0 group-hover:opacity-60 ${isActive ? 'opacity-80' : ''} blur-sm transition-opacity duration-500`} />
+                    <div className={`absolute -inset-px rounded-2xl bg-gradient-to-br ${track.color} opacity-0 group-hover:opacity-100 ${isActive ? 'opacity-100' : ''} transition-opacity duration-500`} />
+
+                    {/* Card body */}
+                    <div className="relative bg-[#04040e]/95 backdrop-blur-xl rounded-2xl p-5 md:p-6 border border-white/[0.06] group-hover:border-transparent transition-all duration-500 overflow-hidden h-full">
+                      {/* Inner glow */}
+                      <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${track.color} opacity-0 group-hover:opacity-20 ${isActive ? 'opacity-25' : ''} blur-2xl transition-opacity duration-500`} />
+
+                      {/* Icon orb */}
+                      <div className="relative mb-4 flex items-center justify-between">
+                        <div className={`relative w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br ${track.color} p-[1.5px] shadow-lg`}>
+                          <div className="w-full h-full rounded-xl bg-[#04040e] flex items-center justify-center">
+                            <track.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                          </div>
+                        </div>
+                        {/* Count chip */}
+                        <div className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border transition-colors ${
+                          isActive
+                            ? 'border-white/30 bg-white/10 text-white'
+                            : 'border-white/10 bg-white/[0.03] text-white/40 group-hover:text-white/70 group-hover:border-white/20'
+                        }`}>
+                          {toolCount}+
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-white font-bold text-base md:text-lg mb-1.5 leading-tight">
+                        {track.title}
+                      </h3>
+                      <p className="text-white/35 text-xs leading-relaxed line-clamp-2 mb-4 group-hover:text-white/55 transition-colors">
+                        {track.subtitle || 'استكشف الأدوات والمحاكيات'}
+                      </p>
+
+                      {/* CTA bar */}
+                      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] group-hover:border-white/[0.12] transition-colors">
+                        <span className="text-[10px] font-mono tracking-widest uppercase text-white/30 group-hover:text-white/60 transition-colors">
+                          Explore
+                        </span>
+                        <ArrowLeft className="w-3.5 h-3.5 text-white/30 group-hover:text-white group-hover:-translate-x-1 transition-all duration-300" />
+                      </div>
+
+                      {/* Active indicator */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="trackActiveIndicator"
+                          className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-l ${track.color}`}
+                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        />
+                      )}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════ COMPACT STICKY NAV (after scroll) ═══════════════ */}
+        <div className="sticky top-0 z-50 bg-[#04040e]/85 backdrop-blur-2xl border-b border-white/[0.06]">
           <div className="container mx-auto px-4">
             <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
               {tracks.map((track) => {
@@ -651,18 +759,17 @@ const GJUCompetition = () => {
                   <button
                     key={track.id}
                     onClick={() => scrollToTrack(track.id)}
-                    className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                       activeTrack === track.id
                         ? 'bg-white/10 text-white border border-white/15'
                         : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'
                     }`}
                   >
-                    <track.icon className="w-4 h-4" />
+                    <track.icon className="w-3.5 h-3.5" />
                     <span>{track.title}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                       activeTrack === track.id ? 'bg-white/15 text-white/70' : 'bg-white/5 text-white/25'
                     }`}>{toolCount}</span>
-                    {/* Glow line under active */}
                     {activeTrack === track.id && (
                       <motion.div
                         layoutId="activeGlow"
