@@ -49,7 +49,7 @@ import HijriEventsExplorer from './pages/HijriEventsExplorer';
 import IslamicHistoricalEras from './pages/IslamicHistoricalEras';
 import BTEC from './pages/BTEC';
 import BTECInformationTechnology from './pages/BTECInformationTechnology';
-import ProgrammingSection from './components/btec/ProgrammingSection';
+import TechCodingPlatform from './pages/TechCodingPlatform';
 import BTECStudentProjects from './components/btec/BTECStudentProjects';
 import CodeFixerSection from './components/btec/CodeFixerSection';
 import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
@@ -317,7 +317,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'btec/it/programming',
-        element: <PublicRoute><ProgrammingSection /></PublicRoute>,
+        element: <PublicRoute><TechCodingPlatform /></PublicRoute>,
       },
       {
         path: 'btec/it/student-projects',
