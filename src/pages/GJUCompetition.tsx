@@ -351,19 +351,19 @@ const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: 
               <track.icon className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl md:text-5xl font-black text-white">{track.title}</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-white">{lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}</h2>
             </div>
           </div>
-          <p className="text-white/40 text-base mt-4 max-w-2xl">{trackDescriptions[track.id]}</p>
+          <p className="text-white/40 text-base mt-4 max-w-2xl">{lang === 'en' ? trackTranslationsEn[track.id]?.description ?? trackDescriptions[track.id] : trackDescriptions[track.id]}</p>
           <div className="flex items-center gap-3 mt-5">
             <div className={`h-1.5 w-20 rounded-full bg-gradient-to-l ${track.color}`} />
-            <span className="text-white/30 text-sm font-medium">{track.tools.length + (track.extraTools?.length || 0)} أداة متاحة</span>
+            <span className="text-white/30 text-sm font-medium">{track.tools.length + (track.extraTools?.length || 0)} {lang === 'en' ? 'tools available' : 'أداة متاحة'}</span>
           </div>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {track.tools.map((tool, i) => (
-            <ToolCard key={i} tool={tool} index={i} />
+            <ToolCard key={i} tool={tool} index={i} lang={lang} />
           ))}
         </div>
 
@@ -382,15 +382,15 @@ const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: 
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white">{track.extraTitle}</h3>
-                  <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة علمية تفاعلية</span>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white">{lang === 'en' ? 'Interactive Simulations' : track.extraTitle}</h3>
+                  <span className="text-white/30 text-sm">{track.extraTools.length} {lang === 'en' ? 'interactive scientific simulations' : 'محاكاة علمية تفاعلية'}</span>
                 </div>
               </div>
             </motion.div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {track.extraTools.slice(0, 2).map((tool, i) => (
-                <ToolCard key={`preview-${i}`} tool={tool} index={i} />
+                <ToolCard key={`preview-${i}`} tool={tool} index={i} lang={lang} />
               ))}
             </div>
 
@@ -409,7 +409,7 @@ const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: 
                   {/* Shimmer effect */}
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                   <Sparkles className="w-5 h-5 text-cyan-400/60 group-hover:text-cyan-400 transition-colors" />
-                  <span className="text-white/70 group-hover:text-white font-bold text-lg transition-colors">اكتشف المزيد</span>
+                  <span className="text-white/70 group-hover:text-white font-bold text-lg transition-colors">{lang === 'en' ? 'Discover more' : 'اكتشف المزيد'}</span>
                   <span className="px-3 py-1 rounded-full bg-white/5 text-white/40 text-sm font-medium">{track.extraTools.length - 2}+</span>
                   <ChevronDown className="w-5 h-5 text-white/40 group-hover:text-white/80 group-hover:translate-y-1 transition-all" />
                 </button>
@@ -427,7 +427,7 @@ const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: 
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-8">
                     {track.extraTools.slice(2).map((tool, i) => (
-                      <ToolCard key={`extra-${i}`} tool={tool} index={i} />
+                      <ToolCard key={`extra-${i}`} tool={tool} index={i} lang={lang} />
                     ))}
                   </div>
                   <div className="flex justify-center mt-10">
