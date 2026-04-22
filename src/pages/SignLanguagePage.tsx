@@ -11,6 +11,9 @@ import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from '@/features/sign-language/camera';
+import LearnSignsTab from '@/features/sign-language/LearnSignsTab';
+import TextToSignTab from '@/features/sign-language/TextToSignTab';
+import { GraduationCap, Type } from 'lucide-react';
 
 // Extended sign language dictionary with more words and detailed descriptions
 const signDictionary = [
@@ -697,12 +700,20 @@ const SignLanguagePage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'camera'} className="w-full">
-          <TabsList className="w-full max-w-md mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8">
-            <TabsTrigger value="camera" className="flex-1 data-[state=active]:bg-indigo-600">
+          <TabsList className="w-full max-w-3xl mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1">
+            <TabsTrigger value="camera" className="data-[state=active]:bg-indigo-600 py-2.5">
               <Camera className="ml-2 h-4 w-4" />
               الكاميرا
             </TabsTrigger>
-            <TabsTrigger value="dictionary" className="flex-1 data-[state=active]:bg-indigo-600">
+            <TabsTrigger value="learn" className="data-[state=active]:bg-indigo-600 py-2.5">
+              <GraduationCap className="ml-2 h-4 w-4" />
+              تعلّم
+            </TabsTrigger>
+            <TabsTrigger value="text-to-sign" className="data-[state=active]:bg-indigo-600 py-2.5">
+              <Type className="ml-2 h-4 w-4" />
+              نص → إشارة
+            </TabsTrigger>
+            <TabsTrigger value="dictionary" className="data-[state=active]:bg-indigo-600 py-2.5">
               <BookOpen className="ml-2 h-4 w-4" />
               القاموس
             </TabsTrigger>
