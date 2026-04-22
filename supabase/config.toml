@@ -185,3 +185,12 @@ verify_jwt = false
 
 [functions.cancer-detection-ai]
 verify_jwt = false
+
+[functions.tech-ai-code-gen]
+verify_jwt = false
+
+[functions.tech-ai-code-fix]
+verify_jwt = false
+
+[functions.tech-ai-platform-builder]
+verify_jwt = false
