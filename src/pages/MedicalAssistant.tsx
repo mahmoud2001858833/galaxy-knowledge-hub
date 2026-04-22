@@ -545,6 +545,68 @@ const ConditionCheckerDialog: React.FC<{
                     )}
                   </div>
 
+                  {/* Advanced contextual fields */}
+                  <div className="rounded-xl bg-white/[0.02] border border-white/10 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvanced(s => !s)}
+                      className="w-full px-4 py-3 flex items-center justify-between text-sm text-white/80 hover:bg-white/5 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Cpu className="w-4 h-4 text-cyan-400" />
+                        معلومات إضافية لتحليل أدق (اختياري)
+                      </span>
+                      <span className="text-xs text-white/40">{showAdvanced ? "إخفاء" : "إظهار"}</span>
+                    </button>
+                    {showAdvanced && (
+                      <div className="p-4 space-y-3 border-t border-white/10">
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="العمر" className="bg-black/40 border-white/10 text-white text-sm" />
+                          <select value={sex} onChange={e => setSex(e.target.value as any)} className="bg-black/40 border border-white/10 text-white text-sm rounded-md px-3 h-10">
+                            <option value="">الجنس</option>
+                            <option value="male">ذكر</option>
+                            <option value="female">أنثى</option>
+                            <option value="other">آخر</option>
+                          </select>
+                          <Input type="number" value={durationHours} onChange={e => setDurationHours(e.target.value)} placeholder="مدة الأعراض (ساعات)" className="bg-black/40 border-white/10 text-white text-sm" />
+                          <Input type="number" step="0.1" value={temperature} onChange={e => setTemperature(e.target.value)} placeholder="الحرارة °C" className="bg-black/40 border-white/10 text-white text-sm" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs text-white/70 mb-2">
+                            <span>مستوى الألم</span>
+                            <span className="font-bold text-cyan-300">{painLevel}/10</span>
+                          </div>
+                          <Slider value={[painLevel]} max={10} step={1} onValueChange={(v) => setPainLevel(v[0])} />
+                        </div>
+                        <div>
+                          <div className="text-xs text-white/70 mb-2">حالات مزمنة (اختر ما ينطبق)</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {CHRONIC_OPTIONS.map(c => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => toggleChronic(c)}
+                                className={`px-2.5 py-1 rounded-full text-[11px] border transition-all ${
+                                  chronicConditions.includes(c)
+                                    ? "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
+                                    : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                                }`}
+                              >
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <Input
+                          value={medications}
+                          onChange={e => setMedications(e.target.value)}
+                          placeholder="أدوية حالية (اختياري)"
+                          className="bg-black/40 border-white/10 text-white text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <Button
                     onClick={runCheck}
                     disabled={loading}
