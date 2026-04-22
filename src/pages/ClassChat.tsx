@@ -2,7 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowRight, Send, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Sparkles, Loader2, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -32,6 +34,10 @@ const ClassChat = () => {
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiPreview, setAiPreview] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<{
     grade: string;
     section: string;
@@ -174,6 +180,49 @@ const ClassChat = () => {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
+    }
+  };
+
+  const dataUrlToFile = async (dataUrl: string, filename: string): Promise<File> => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: blob.type || 'image/png' });
+  };
+
+  const handleGenerateAIImage = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiGenerating(true);
+    setAiPreview(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-chat-image', {
+        body: { prompt: aiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (!data?.image) throw new Error('لم يتم إنشاء صورة');
+      setAiPreview(data.image as string);
+    } catch (err: any) {
+      console.error('AI image error:', err);
+      toast({
+        title: 'تعذّر توليد الصورة',
+        description: err?.message || 'حاول مرة أخرى',
+        variant: 'destructive',
+      });
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleUseAIImage = async () => {
+    if (!aiPreview) return;
+    try {
+      const file = await dataUrlToFile(aiPreview, `ai-${Date.now()}.png`);
+      setImageFile(file);
+      setAiOpen(false);
+      setAiPrompt('');
+      setAiPreview(null);
+      toast({ title: 'تمت الإضافة', description: 'الصورة جاهزة للإرسال' });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -361,8 +410,19 @@ const ClassChat = () => {
                   variant="outline"
                   size="icon"
                   className="bg-background/30 border-teal-500/30 hover:bg-background/50"
+                  title="رفع صورة من الجهاز"
                 >
                   <ImageIcon size={20} className="text-teal-400" />
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setAiOpen(true)}
+                  variant="outline"
+                  size="icon"
+                  className="bg-gradient-to-br from-fuchsia-500/20 via-violet-500/20 to-cyan-500/20 border-violet-400/40 hover:from-fuchsia-500/30 hover:to-cyan-500/30"
+                  title="توليد صورة بالذكاء الاصطناعي"
+                >
+                  <Sparkles size={20} className="text-fuchsia-300" />
                 </Button>
                 <Input
                   value={messageText}
@@ -384,6 +444,66 @@ const ClassChat = () => {
       </main>
       
       <Footer />
+
+      {/* AI Image Generation Dialog */}
+      <Dialog open={aiOpen} onOpenChange={(o) => { setAiOpen(o); if (!o) { setAiPreview(null); } }}>
+        <DialogContent className="max-w-lg bg-blue-950 border-violet-500/40 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-fuchsia-300">
+              <Sparkles className="h-5 w-5" />
+              توليد صورة بالذكاء الاصطناعي
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="صف الصورة التي تريد توليدها... مثال: قطة صغيرة تلعب في حديقة مزهرة"
+              className="bg-background/30 border-violet-500/30 text-white min-h-[100px]"
+              dir="rtl"
+            />
+            {aiPreview && (
+              <div className="relative rounded-lg overflow-hidden border border-violet-500/40">
+                <img src={aiPreview} alt="معاينة" className="w-full max-h-80 object-contain bg-black/40" />
+                <button
+                  type="button"
+                  onClick={() => setAiPreview(null)}
+                  className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 rounded-full p-1"
+                  aria-label="حذف"
+                >
+                  <X size={16} className="text-white" />
+                </button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleGenerateAIImage}
+                disabled={aiGenerating || !aiPrompt.trim()}
+                className="flex-1 bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700 text-white"
+              >
+                {aiGenerating ? (
+                  <><Loader2 className="h-4 w-4 ml-2 animate-spin" /> جاري التوليد...</>
+                ) : (
+                  <><Sparkles className="h-4 w-4 ml-2" /> {aiPreview ? 'إعادة التوليد' : 'توليد'}</>
+                )}
+              </Button>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setAiOpen(false)} className="bg-transparent border-white/20 text-white hover:bg-white/10">
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleUseAIImage}
+              disabled={!aiPreview}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              استخدام في الرسالة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
