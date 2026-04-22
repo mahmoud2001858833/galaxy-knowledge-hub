@@ -1,22 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowRight, Search, Phone, AlertTriangle, Heart, Stethoscope, 
-  Thermometer, Brain, Eye, Ear, Bone, Pill, Activity, Loader2,
-  Camera, Upload, MessageSquare, ChevronDown, ChevronUp, Volume2
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import {
+  ArrowLeft, Search, Phone, AlertTriangle, Loader2, Sparkles,
+  Activity, ShieldAlert, ShieldCheck, Stethoscope, X, Mic, MicOff,
+  HeartPulse, Zap, ChevronRight, Cpu, ScanLine,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useArabicSpeech } from "@/hooks/useArabicSpeech";
 
 interface MedicalCondition {
   id: number;
@@ -81,439 +78,622 @@ const medicalConditions: MedicalCondition[] = [
   { id: 50, name: 'جفاف الجلد والتشققات', category: 'جلد', symptoms: ['جفاف', 'تشققات', 'حكة', 'احمرار'], firstAid: ['مرطب مناسب', 'شرب الماء', 'تجنب الصابون القوي', 'حماية من الشمس'], warning: 'التشققات العميقة تحتاج علاجاً', icon: '🧴' },
 ];
 
-const categories = [...new Set(medicalConditions.map(c => c.category))];
+const categories = ["all", ...Array.from(new Set(medicalConditions.map((c) => c.category)))];
+
+interface CheckResult {
+  probability: number;
+  verdict: "likely" | "possible" | "unlikely";
+  severity: "low" | "medium" | "high" | "emergency";
+  matched_symptoms: string[];
+  missing_symptoms: string[];
+  red_flags?: string[];
+  recommendation: string;
+  alternative_conditions?: string[];
+}
 
 const MedicalAssistant = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCondition, setSelectedCondition] = useState<MedicalCondition | null>(null);
-  const [symptoms, setSymptoms] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [activeCondition, setActiveCondition] = useState<MedicalCondition | null>(null);
+  const [checkerCondition, setCheckerCondition] = useState<MedicalCondition | null>(null);
 
-  const filteredConditions = medicalConditions.filter(condition => {
-    const matchesSearch = condition.name.includes(searchQuery) || 
-                         condition.symptoms.some(s => s.includes(searchQuery));
-    const matchesCategory = !selectedCategory || condition.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const filteredConditions = useMemo(
+    () =>
+      medicalConditions.filter((c) => {
+        const q = searchQuery.trim();
+        const okSearch =
+          !q || c.name.includes(q) || c.symptoms.some((s) => s.includes(q));
+        const okCat = selectedCategory === "all" || c.category === selectedCategory;
+        return okSearch && okCat;
+      }),
+    [searchQuery, selectedCategory]
+  );
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-[#05060f] text-white relative overflow-hidden">
+      <Helmet>
+        <title>المساعد الطبي الذكي · مستقبل التكنولوجيا</title>
+        <meta name="description" content="فحص أولي للحالات الطبية الشائعة وتأكيد ذكي عبر الذكاء الاصطناعي" />
+      </Helmet>
+
+      {/* Background grid + glows */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
+        <div className="absolute top-0 left-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-violet-500/15 rounded-full blur-[140px]" />
+        <div className="absolute top-1/3 right-1/3 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Header */}
+      <header className="border-b border-white/5 backdrop-blur-xl bg-black/30 sticky top-0 z-50 relative">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate("/")} className="text-white/70 hover:text-white hover:bg-white/5 gap-2">
+            <ArrowLeft className="w-4 h-4" /> الرئيسية
+          </Button>
+
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-cyan-500/40">
+                <Stethoscope className="w-5 h-5 text-white" />
+              </div>
+              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 opacity-50 blur-md -z-10" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold bg-gradient-to-l from-cyan-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
+                المساعد الطبي الذكي
+              </h1>
+              <p className="text-xs text-white/50 flex items-center gap-1.5">
+                <Cpu className="w-3 h-3" /> فحص أولي بالذكاء الاصطناعي
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="tel:911"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-all text-sm font-medium"
+          >
+            <Phone className="w-4 h-4" /> طوارئ
+          </a>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-10 relative z-10">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12 max-w-3xl mx-auto"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-xs text-white/70 mb-5">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+            مدعوم بالذكاء الاصطناعي · أداة تعليمية فقط
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-l from-white via-cyan-200 to-violet-300 bg-clip-text text-transparent leading-tight">
+            افهم حالتك في ثوانٍ
+          </h2>
+          <p className="text-white/60 text-lg leading-relaxed">
+            اختر الحالة المشابهة لما تشعر به، اقرأ الإسعافات الأولية، ثم اضغط
+            <span className="text-cyan-300 font-semibold"> «تأكد من حالتك» </span>
+            لتحليل أعراضك الفعلية بالذكاء الاصطناعي.
+          </p>
+        </motion.div>
+
+        {/* Search + Category filter */}
+        <div className="max-w-4xl mx-auto mb-8 space-y-4">
+          <div className="relative">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث عن حالة أو عرض... (مثلاً: صداع، حرارة)"
+              className="bg-white/5 border-white/10 text-white pr-12 h-14 text-base backdrop-blur-xl rounded-2xl focus-visible:ring-cyan-500/50"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-center">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-1.5 rounded-full text-sm transition-all border ${
+                  selectedCategory === cat
+                    ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white border-transparent shadow-lg shadow-cyan-500/30"
+                    : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {cat === "all" ? "الكل" : cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Conditions grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-7xl mx-auto">
+          <AnimatePresence mode="popLayout">
+            {filteredConditions.map((cond, i) => (
+              <ConditionCard
+                key={cond.id}
+                cond={cond}
+                index={i}
+                onView={() => setActiveCondition(cond)}
+                onCheck={() => setCheckerCondition(cond)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {filteredConditions.length === 0 && (
+          <div className="text-center py-20 text-white/40">
+            <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            لا توجد حالات مطابقة
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div className="max-w-3xl mx-auto mt-16 p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20 backdrop-blur-xl flex gap-4">
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-100/80 leading-relaxed">
+            هذه الأداة للأغراض التعليمية والإرشادية فقط، وليست بديلاً عن الفحص أو التشخيص الطبي. في حالات الطوارئ اتصل فوراً بالإسعاف.
+          </p>
+        </div>
+      </main>
+
+      {/* Detail dialog */}
+      <ConditionDetailDialog
+        cond={activeCondition}
+        onClose={() => setActiveCondition(null)}
+        onCheck={() => {
+          setCheckerCondition(activeCondition);
+          setActiveCondition(null);
+        }}
+      />
+
+      {/* AI Checker dialog */}
+      <ConditionCheckerDialog
+        cond={checkerCondition}
+        onClose={() => setCheckerCondition(null)}
+      />
+    </div>
+  );
+};
+
+/* ================================ CARD ================================ */
+const ConditionCard: React.FC<{
+  cond: MedicalCondition;
+  index: number;
+  onView: () => void;
+  onCheck: () => void;
+}> = ({ cond, index, onView, onCheck }) => {
+  const isEmergency = cond.category === "طوارئ";
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ delay: Math.min(index * 0.02, 0.4), duration: 0.3 }}
+      whileHover={{ y: -4 }}
+      className="group relative"
+    >
+      <div
+        className={`absolute -inset-px rounded-2xl bg-gradient-to-br ${
+          isEmergency
+            ? "from-rose-500/40 via-orange-500/30 to-amber-500/20"
+            : "from-cyan-500/30 via-violet-500/20 to-fuchsia-500/20"
+        } opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300 -z-10`}
+      />
+      <div className="relative h-full rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.01] backdrop-blur-xl p-4 overflow-hidden">
+        {isEmergency && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-[10px] text-rose-300">
+            <Zap className="w-2.5 h-2.5" /> طوارئ
+          </div>
+        )}
+
+        <div className="flex items-start gap-3 mb-3">
+          <div className="text-3xl drop-shadow-lg">{cond.icon}</div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-white text-sm mb-0.5 truncate">{cond.name}</h3>
+            <p className="text-[11px] text-white/40">{cond.category}</p>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 mb-4 min-h-[60px]">
+          {cond.symptoms.slice(0, 3).map((s, idx) => (
+            <div key={idx} className="flex items-center gap-1.5 text-[11px] text-white/60">
+              <div className="w-1 h-1 rounded-full bg-cyan-400" />
+              <span className="truncate">{s}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onView}
+            className="flex-1 py-2 px-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs text-white/70 hover:text-white transition-all flex items-center justify-center gap-1"
+          >
+            التفاصيل <ChevronRight className="w-3 h-3" />
+          </button>
+          <button
+            onClick={onCheck}
+            className="flex-1 py-2 px-3 rounded-lg bg-gradient-to-r from-cyan-500/90 to-violet-500/90 hover:from-cyan-500 hover:to-violet-500 text-xs text-white font-medium transition-all flex items-center justify-center gap-1 shadow-lg shadow-cyan-500/20"
+          >
+            <ScanLine className="w-3 h-3" /> تأكد
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ============================ DETAIL DIALOG ============================ */
+const ConditionDetailDialog: React.FC<{
+  cond: MedicalCondition | null;
+  onClose: () => void;
+  onCheck: () => void;
+}> = ({ cond, onClose, onCheck }) => (
+  <Dialog open={!!cond} onOpenChange={(o) => !o && onClose()}>
+    <DialogContent className="max-w-2xl bg-[#0a0b18] border-white/10 text-white max-h-[90vh] overflow-y-auto" dir="rtl">
+      {cond && (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <span className="text-3xl">{cond.icon}</span>
+              <span className="bg-gradient-to-l from-cyan-300 to-violet-300 bg-clip-text text-transparent">
+                {cond.name}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-4">
+            <Section title="الأعراض" icon={<HeartPulse className="w-4 h-4 text-cyan-400" />}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {cond.symptoms.map((s, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/80">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> {s}
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="الإسعافات الأولية" icon={<Activity className="w-4 h-4 text-emerald-400" />}>
+              <ol className="space-y-2">
+                {cond.firstAid.map((s, i) => (
+                  <li key={i} className="flex gap-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/15 text-sm text-white/80">
+                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
+                    {s}
+                  </li>
+                ))}
+              </ol>
+            </Section>
+
+            <div className="flex gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-100">{cond.warning}</div>
+            </div>
+
+            <Button
+              onClick={onCheck}
+              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 shadow-lg shadow-cyan-500/30 gap-2"
+            >
+              <ScanLine className="w-4 h-4" />
+              تأكد إن كنت مصاباً بهذه الحالة
+            </Button>
+          </div>
+        </>
+      )}
+    </DialogContent>
+  </Dialog>
+);
+
+const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
+  <div>
+    <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-white/90">{icon}{title}</div>
+    {children}
+  </div>
+);
+
+/* ============================ CHECKER DIALOG ============================ */
+const ConditionCheckerDialog: React.FC<{
+  cond: MedicalCondition | null;
+  onClose: () => void;
+}> = ({ cond, onClose }) => {
+  const [userSymptoms, setUserSymptoms] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<CheckResult | null>(null);
+  const baseRef = React.useRef("");
+
+  const speech = useArabicSpeech((text, isFinal) => {
+    if (isFinal) {
+      baseRef.current = (baseRef.current + text).trimStart();
+      setUserSymptoms(baseRef.current);
+    } else {
+      setUserSymptoms((baseRef.current + " " + text).trimStart());
+    }
   });
 
-  const analyzeSymptoms = async () => {
-    if (!symptoms.trim()) return;
-    
-    setIsAnalyzing(true);
-    setDiagnosis('');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('medical-ai-assistant', {
-        body: { 
-          symptoms,
-          type: 'symptoms'
-        }
-      });
+  const handleClose = () => {
+    if (speech.listening) speech.stop();
+    setUserSymptoms("");
+    setResult(null);
+    baseRef.current = "";
+    onClose();
+  };
 
-      if (error) throw error;
-      setDiagnosis(data.diagnosis || 'لم أتمكن من التحليل');
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('حدث خطأ أثناء التحليل');
-      setDiagnosis('عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.');
-    } finally {
-      setIsAnalyzing(false);
+  const handleMicToggle = () => {
+    if (speech.listening) {
+      speech.stop();
+    } else {
+      baseRef.current = userSymptoms ? userSymptoms + " " : "";
+      speech.start();
     }
   };
 
-  const analyzeImage = async () => {
-    if (!selectedImage) return;
-    
-    setIsAnalyzing(true);
-    setDiagnosis('');
-    
-    try {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve) => {
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(selectedImage);
-      });
-
-      const { data, error } = await supabase.functions.invoke('medical-ai-assistant', {
-        body: { 
-          image: base64,
-          type: 'image'
-        }
-      });
-
-      if (error) throw error;
-      setDiagnosis(data.diagnosis || 'لم أتمكن من التحليل');
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('حدث خطأ أثناء تحليل الصورة');
-    } finally {
-      setIsAnalyzing(false);
+  const runCheck = async () => {
+    if (!cond || !userSymptoms.trim() || userSymptoms.trim().length < 5) {
+      toast.error("اكتب أعراضك بشكل أوضح (5 أحرف على الأقل)");
+      return;
     }
-  };
-
-  const speakText = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ar-SA';
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target?.result as string);
-      reader.readAsDataURL(file);
+    setLoading(true);
+    setResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("medical-condition-checker", {
+        body: {
+          conditionName: cond.name,
+          knownSymptoms: cond.symptoms,
+          userSymptoms: userSymptoms.trim(),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setResult(data as CheckResult);
+    } catch (e: any) {
+      toast.error(e.message || "فشل التحليل");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-teal-950 to-cyan-950" dir="rtl">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="text-emerald-400 hover:text-emerald-300 mb-4"
-          >
-            <ArrowRight className="ml-2 h-4 w-4" />
-            العودة للرئيسية
-          </Button>
-
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 mb-4">
-              <Stethoscope className="h-10 w-10 text-emerald-400" />
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 mb-4">
-              المساعدة الطبية للمدارس
-            </h1>
-            <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              دليل شامل للتعامل مع الحالات الطبية الشائعة في المدارس - 50 حالة طبية
-            </p>
-          </div>
-
-          {/* Emergency Call Button */}
-          <div className="flex justify-center mt-6">
-            <Button
-              size="lg"
-              className="bg-red-600 hover:bg-red-700 text-white animate-pulse"
-              onClick={() => window.location.href = 'tel:911'}
-            >
-              <Phone className="ml-2 h-5 w-5" />
-              اتصل بالطوارئ - 911
-            </Button>
-          </div>
-        </motion.div>
-
-        <Tabs defaultValue="conditions" className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 mb-8 bg-white/10">
-            <TabsTrigger value="conditions" className="text-white data-[state=active]:bg-emerald-600">
-              <Heart className="ml-2 h-4 w-4" />
-              الحالات
-            </TabsTrigger>
-            <TabsTrigger value="symptoms" className="text-white data-[state=active]:bg-emerald-600">
-              <MessageSquare className="ml-2 h-4 w-4" />
-              تحليل الأعراض
-            </TabsTrigger>
-            <TabsTrigger value="image" className="text-white data-[state=active]:bg-emerald-600">
-              <Camera className="ml-2 h-4 w-4" />
-              تشخيص بالصورة
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Conditions Tab */}
-          <TabsContent value="conditions">
-            {/* Search and Filter */}
-            <div className="mb-6 space-y-4">
-              <div className="relative max-w-md mx-auto">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ابحث عن حالة أو عرض..."
-                  className="pr-10 bg-white/10 border-emerald-500/30 text-white"
-                />
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-2">
-                <Badge
-                  variant={selectedCategory === null ? "default" : "outline"}
-                  className="cursor-pointer bg-emerald-600"
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  الكل ({medicalConditions.length})
-                </Badge>
-                {categories.map(cat => (
-                  <Badge
-                    key={cat}
-                    variant={selectedCategory === cat ? "default" : "outline"}
-                    className={`cursor-pointer ${selectedCategory === cat ? 'bg-emerald-600' : 'border-white/30 text-white/70'}`}
-                    onClick={() => setSelectedCategory(cat)}
-                  >
-                    {cat}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            {/* Conditions Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredConditions.map((condition) => (
-                <motion.div
-                  key={condition.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <Card 
-                    className="bg-white/5 border-emerald-500/30 cursor-pointer hover:bg-white/10 transition-all"
-                    onClick={() => setSelectedCondition(selectedCondition?.id === condition.id ? null : condition)}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg text-white flex items-center gap-2">
-                          <span className="text-2xl">{condition.icon}</span>
-                          {condition.name}
-                        </CardTitle>
-                        <Badge className="bg-emerald-500/20 text-emerald-400">
-                          {condition.category}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    
-                    <AnimatePresence>
-                      {selectedCondition?.id === condition.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                        >
-                          <CardContent className="space-y-4">
-                            {/* Symptoms */}
-                            <div>
-                              <h4 className="text-emerald-400 font-semibold mb-2">الأعراض:</h4>
-                              <div className="flex flex-wrap gap-1">
-                                {condition.symptoms.map((symptom, i) => (
-                                  <Badge key={i} variant="outline" className="text-white/70 border-white/20">
-                                    {symptom}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* First Aid */}
-                            <div>
-                              <h4 className="text-emerald-400 font-semibold mb-2">الإسعافات الأولية:</h4>
-                              <ol className="space-y-1 text-white/80 text-sm">
-                                {condition.firstAid.map((step, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs">
-                                      {i + 1}
-                                    </span>
-                                    {step}
-                                  </li>
-                                ))}
-                              </ol>
-                            </div>
-
-                            {/* Warning */}
-                            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
-                              <div className="flex items-center gap-2 text-red-400">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span className="font-semibold">تحذير:</span>
-                              </div>
-                              <p className="text-red-300 text-sm mt-1">{condition.warning}</p>
-                            </div>
-
-                            {/* Speak Button */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                speakText(`${condition.name}. الأعراض: ${condition.symptoms.join('، ')}. الإسعافات: ${condition.firstAid.join('، ')}`);
-                              }}
-                            >
-                              <Volume2 className="ml-2 h-4 w-4" />
-                              استمع للتعليمات
-                            </Button>
-                          </CardContent>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Symptoms Analysis Tab */}
-          <TabsContent value="symptoms">
-            <Card className="bg-white/5 border-emerald-500/30 max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-emerald-400" />
-                  تحليل الأعراض بالذكاء الاصطناعي
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+    <Dialog open={!!cond} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="max-w-2xl bg-[#0a0b18] border-white/10 text-white max-h-[90vh] overflow-y-auto" dir="rtl">
+        {cond && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center">
+                  <ScanLine className="w-5 h-5" />
+                </div>
                 <div>
-                  <label className="text-white/80 block mb-2">صف الأعراض:</label>
-                  <Textarea
-                    value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    placeholder="مثال: الطالب يشكو من صداع شديد وغثيان وارتفاع في الحرارة..."
-                    className="min-h-[120px] bg-white/10 border-emerald-500/30 text-white"
-                  />
+                  <div className="bg-gradient-to-l from-cyan-300 to-violet-300 bg-clip-text text-transparent">
+                    تأكد من حالتك
+                  </div>
+                  <div className="text-sm text-white/50 font-normal mt-0.5">
+                    هل تعاني من <span className="text-white">{cond.icon} {cond.name}</span>؟
+                  </div>
                 </div>
+              </DialogTitle>
+            </DialogHeader>
 
-                <Button
-                  onClick={analyzeSymptoms}
-                  disabled={isAnalyzing || !symptoms.trim()}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      جاري التحليل...
-                    </>
-                  ) : (
-                    <>
-                      <Activity className="ml-2 h-4 w-4" />
-                      تحليل الأعراض
-                    </>
-                  )}
-                </Button>
+            <div className="space-y-4 mt-2">
+              {!result && (
+                <>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/60">
+                    💡 اكتب أو سجّل صوتياً جميع الأعراض التي تشعر بها الآن، حتى التي تظنها بسيطة. الذكاء الاصطناعي سيقارنها مع الأعراض النموذجية لـ <span className="text-white/90">{cond.name}</span>.
+                  </div>
 
-                {diagnosis && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-4"
-                  >
-                    <h4 className="text-emerald-400 font-semibold mb-2 flex items-center gap-2">
-                      <Stethoscope className="h-4 w-4" />
-                      نتيجة التحليل:
-                    </h4>
-                    <p className="text-white/90 whitespace-pre-wrap">{diagnosis}</p>
-                    
-                    <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                      <p className="text-yellow-300 text-sm">
-                        ⚠️ هذا التحليل للإرشاد فقط وليس بديلاً عن الفحص الطبي. يرجى استشارة الطبيب للحالات الخطيرة.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Image Diagnosis Tab */}
-          <TabsContent value="image">
-            <Card className="bg-white/5 border-emerald-500/30 max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Camera className="h-5 w-5 text-emerald-400" />
-                  التشخيص بالصورة
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                  
-                  {imagePreview ? (
-                    <div className="relative inline-block">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="max-h-64 rounded-xl border border-emerald-500/30"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 right-2"
-                        onClick={() => {
-                          setSelectedImage(null);
-                          setImagePreview(null);
-                        }}
+                  <div className="relative">
+                    <Textarea
+                      value={userSymptoms}
+                      onChange={(e) => {
+                        setUserSymptoms(e.target.value);
+                        baseRef.current = e.target.value;
+                      }}
+                      placeholder={`مثلاً: أشعر بـ${cond.symptoms[0]} منذ ساعة، وأيضاً ${cond.symptoms[1] || "...."} بعد...`}
+                      className="bg-black/40 border-white/10 text-white min-h-[140px] resize-none pl-12"
+                      maxLength={1000}
+                    />
+                    {speech.supported && (
+                      <button
+                        type="button"
+                        onClick={handleMicToggle}
+                        title={speech.listening ? "إيقاف" : "تحدث"}
+                        className={`absolute top-3 left-3 w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                          speech.listening
+                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/50"
+                            : "bg-white/10 text-white/70 hover:bg-white/20"
+                        }`}
                       >
-                        ✕
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-dashed border-2 border-emerald-500/30 h-32 w-full"
-                    >
-                      <Upload className="ml-2 h-6 w-6" />
-                      ارفع صورة للإصابة
-                    </Button>
-                  )}
-                </div>
+                        {speech.listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        {speech.listening && (
+                          <motion.span
+                            className="absolute inset-0 rounded-lg border-2 border-rose-400"
+                            animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
+                            transition={{ duration: 1.2, repeat: Infinity }}
+                          />
+                        )}
+                      </button>
+                    )}
+                  </div>
 
-                <Button
-                  onClick={analyzeImage}
-                  disabled={isAnalyzing || !selectedImage}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      جاري التحليل...
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="ml-2 h-4 w-4" />
-                      تحليل الصورة
-                    </>
-                  )}
-                </Button>
-
-                {diagnosis && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-4"
+                  <Button
+                    onClick={runCheck}
+                    disabled={loading}
+                    className="w-full h-12 bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600 shadow-lg shadow-cyan-500/30 gap-2"
                   >
-                    <h4 className="text-emerald-400 font-semibold mb-2">نتيجة التحليل:</h4>
-                    <p className="text-white/90 whitespace-pre-wrap">{diagnosis}</p>
-                    
-                    <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                      <p className="text-yellow-300 text-sm">
-                        ⚠️ هذا التحليل للإرشاد فقط. الحالات الخطيرة تتطلب فحصاً طبياً فورياً.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>يقوم الذكاء الاصطناعي بالتحليل...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        تحليل وتأكيد
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
 
-      <Footer />
-    </div>
+              {result && (
+                <CheckerResultView
+                  result={result}
+                  conditionName={cond.name}
+                  onReset={() => setResult(null)}
+                  onClose={handleClose}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/* ============================ RESULT VIEW ============================ */
+const CheckerResultView: React.FC<{
+  result: CheckResult;
+  conditionName: string;
+  onReset: () => void;
+  onClose: () => void;
+}> = ({ result, conditionName, onReset, onClose }) => {
+  const verdictMap = {
+    likely: { label: "مرجّح إصابتك بها", color: "from-rose-500 to-orange-500", icon: ShieldAlert, ring: "ring-rose-500/40" },
+    possible: { label: "احتمال متوسط", color: "from-amber-500 to-yellow-500", icon: AlertTriangle, ring: "ring-amber-500/40" },
+    unlikely: { label: "غير مرجّح", color: "from-emerald-500 to-cyan-500", icon: ShieldCheck, ring: "ring-emerald-500/40" },
+  };
+  const v = verdictMap[result.verdict];
+  const VIcon = v.icon;
+
+  const severityLabel = {
+    low: "خطورة منخفضة",
+    medium: "خطورة متوسطة",
+    high: "خطورة عالية",
+    emergency: "🚨 طوارئ",
+  }[result.severity];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      {/* Probability gauge */}
+      <div className={`relative p-5 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.01] border border-white/10 ring-1 ${v.ring}`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${v.color} flex items-center justify-center shadow-xl`}>
+            <VIcon className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm text-white/60 mb-0.5">{conditionName}</div>
+            <div className="text-2xl font-bold">{v.label}</div>
+            <div className="text-xs text-white/50 mt-1">{severityLabel}</div>
+          </div>
+          <div className="text-right">
+            <div className={`text-4xl font-bold bg-gradient-to-br ${v.color} bg-clip-text text-transparent`}>
+              {result.probability}%
+            </div>
+            <div className="text-[10px] text-white/40 uppercase tracking-wider">احتمال</div>
+          </div>
+        </div>
+        <div className="mt-4 h-2 rounded-full bg-white/5 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${result.probability}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className={`h-full bg-gradient-to-r ${v.color}`}
+          />
+        </div>
+      </div>
+
+      {/* Recommendation */}
+      <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
+        <div className="text-xs text-cyan-300 mb-1.5 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5" /> التوصية
+        </div>
+        <div className="text-sm text-white/90 leading-relaxed">{result.recommendation}</div>
+      </div>
+
+      {/* Red flags */}
+      {result.red_flags && result.red_flags.length > 0 && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30">
+          <div className="text-xs text-rose-300 mb-2 flex items-center gap-1.5 font-semibold">
+            🚨 علامات خطر — اطلب المساعدة فوراً
+          </div>
+          <ul className="space-y-1.5">
+            {result.red_flags.map((rf, i) => (
+              <li key={i} className="text-sm text-rose-100 flex gap-2">
+                <span className="text-rose-400">•</span> {rf}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Matched / Missing */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {result.matched_symptoms.length > 0 && (
+          <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+            <div className="text-xs text-emerald-300 mb-2 flex items-center gap-1.5 font-semibold">
+              ✓ أعراض متطابقة ({result.matched_symptoms.length})
+            </div>
+            <ul className="space-y-1">
+              {result.matched_symptoms.map((s, i) => (
+                <li key={i} className="text-xs text-white/80 flex gap-1.5">
+                  <span className="text-emerald-400">✓</span> {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {result.missing_symptoms.length > 0 && (
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-xs text-white/60 mb-2 flex items-center gap-1.5 font-semibold">
+              − أعراض نموذجية لم تذكرها
+            </div>
+            <ul className="space-y-1">
+              {result.missing_symptoms.map((s, i) => (
+                <li key={i} className="text-xs text-white/60 flex gap-1.5">
+                  <span className="text-white/30">−</span> {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Alternatives */}
+      {result.alternative_conditions && result.alternative_conditions.length > 0 && (
+        <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/20">
+          <div className="text-xs text-violet-300 mb-2 flex items-center gap-1.5 font-semibold">
+            💡 حالات أخرى محتملة قد تفسّر أعراضك
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {result.alternative_conditions.map((a, i) => (
+              <span key={i} className="px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs text-violet-100">
+                {a}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="text-[11px] text-white/40 text-center pt-2 border-t border-white/5">
+        ⚠️ هذا تحليل أولي تعليمي وليس تشخيصاً طبياً. للتأكد، استشر طبيباً.
+      </div>
+
+      <div className="flex gap-2">
+        <Button onClick={onReset} variant="outline" className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 text-white">
+          فحص مرة أخرى
+        </Button>
+        <Button onClick={onClose} className="flex-1 bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600">
+          إغلاق
+        </Button>
+      </div>
+    </motion.div>
   );
 };
 
