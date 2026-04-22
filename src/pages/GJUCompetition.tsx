@@ -708,7 +708,7 @@ const GJUCompetition = () => {
         </section>
       </main>
 
-      <Footer />
+      <GJUFooter />
     </div>
   );
 };
