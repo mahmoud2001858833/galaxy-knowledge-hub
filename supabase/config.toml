@@ -197,3 +197,6 @@ verify_jwt = false
 
 [functions.complaints-admin]
 verify_jwt = false
+
+[functions.medical-condition-checker]
+verify_jwt = false
