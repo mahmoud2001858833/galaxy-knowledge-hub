@@ -444,6 +444,66 @@ const ClassChat = () => {
       </main>
       
       <Footer />
+
+      {/* AI Image Generation Dialog */}
+      <Dialog open={aiOpen} onOpenChange={(o) => { setAiOpen(o); if (!o) { setAiPreview(null); } }}>
+        <DialogContent className="max-w-lg bg-blue-950 border-violet-500/40 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-fuchsia-300">
+              <Sparkles className="h-5 w-5" />
+              توليد صورة بالذكاء الاصطناعي
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="صف الصورة التي تريد توليدها... مثال: قطة صغيرة تلعب في حديقة مزهرة"
+              className="bg-background/30 border-violet-500/30 text-white min-h-[100px]"
+              dir="rtl"
+            />
+            {aiPreview && (
+              <div className="relative rounded-lg overflow-hidden border border-violet-500/40">
+                <img src={aiPreview} alt="معاينة" className="w-full max-h-80 object-contain bg-black/40" />
+                <button
+                  type="button"
+                  onClick={() => setAiPreview(null)}
+                  className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 rounded-full p-1"
+                  aria-label="حذف"
+                >
+                  <X size={16} className="text-white" />
+                </button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleGenerateAIImage}
+                disabled={aiGenerating || !aiPrompt.trim()}
+                className="flex-1 bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700 text-white"
+              >
+                {aiGenerating ? (
+                  <><Loader2 className="h-4 w-4 ml-2 animate-spin" /> جاري التوليد...</>
+                ) : (
+                  <><Sparkles className="h-4 w-4 ml-2" /> {aiPreview ? 'إعادة التوليد' : 'توليد'}</>
+                )}
+              </Button>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setAiOpen(false)} className="bg-transparent border-white/20 text-white hover:bg-white/10">
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleUseAIImage}
+              disabled={!aiPreview}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              استخدام في الرسالة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
