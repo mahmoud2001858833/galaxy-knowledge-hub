@@ -395,6 +395,10 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 );
 
 /* ============================ CHECKER DIALOG ============================ */
+const CHRONIC_OPTIONS = [
+  "ضغط الدم", "السكري", "الربو", "أمراض القلب", "حساسية", "صداع نصفي", "اكتئاب/قلق",
+];
+
 const ConditionCheckerDialog: React.FC<{
   cond: MedicalCondition | null;
   onClose: () => void;
@@ -402,6 +406,15 @@ const ConditionCheckerDialog: React.FC<{
   const [userSymptoms, setUserSymptoms] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
+  // Advanced contextual fields
+  const [age, setAge] = useState<string>("");
+  const [sex, setSex] = useState<"male" | "female" | "other" | "">("");
+  const [durationHours, setDurationHours] = useState<string>("");
+  const [painLevel, setPainLevel] = useState<number>(5);
+  const [temperature, setTemperature] = useState<string>("");
+  const [chronicConditions, setChronicConditions] = useState<string[]>([]);
+  const [medications, setMedications] = useState<string>("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const baseRef = React.useRef("");
 
   const speech = useArabicSpeech((text, isFinal) => {
@@ -417,6 +430,9 @@ const ConditionCheckerDialog: React.FC<{
     if (speech.listening) speech.stop();
     setUserSymptoms("");
     setResult(null);
+    setAge(""); setSex(""); setDurationHours(""); setPainLevel(5);
+    setTemperature(""); setChronicConditions([]); setMedications("");
+    setShowAdvanced(false);
     baseRef.current = "";
     onClose();
   };
@@ -428,6 +444,10 @@ const ConditionCheckerDialog: React.FC<{
       baseRef.current = userSymptoms ? userSymptoms + " " : "";
       speech.start();
     }
+  };
+
+  const toggleChronic = (c: string) => {
+    setChronicConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
   };
 
   const runCheck = async () => {
@@ -443,6 +463,13 @@ const ConditionCheckerDialog: React.FC<{
           conditionName: cond.name,
           knownSymptoms: cond.symptoms,
           userSymptoms: userSymptoms.trim(),
+          age: age || undefined,
+          sex: sex || undefined,
+          durationHours: durationHours || undefined,
+          painLevel,
+          temperature: temperature || undefined,
+          chronicConditions,
+          medications: medications || undefined,
         },
       });
       if (error) throw error;
