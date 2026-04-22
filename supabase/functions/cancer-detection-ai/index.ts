@@ -59,10 +59,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    const MEDICAL_AI_KEY = Deno.env.get("MEDICAL_AI_KEY");
-    if (!MEDICAL_AI_KEY) {
+    // Multi-key fallback to avoid 429/quota failures
+    const KEY_NAMES = [
+      "MEDICAL_AI_KEY",
+      "GEMINI_API_KEY_NEW",
+      "GEMINI_API_KEY",
+      "GOOGLE_AI_API_KEY",
+      "JORDANIAN_NEW_AI_KEY_1",
+      "JORDANIAN_NEW_AI_KEY_2",
+      "JORDANIAN_NEW_AI_KEY_3",
+      "JORDANIAN_NEW_AI_KEY_4",
+      "JORDANIAN_NEW_AI_KEY_5",
+    ];
+    const apiKeys = KEY_NAMES
+      .map((n) => ({ name: n, key: Deno.env.get(n) }))
+      .filter((k) => !!k.key) as { name: string; key: string }[];
+
+    if (apiKeys.length === 0) {
       return new Response(
-        JSON.stringify({ error: "MEDICAL_AI_KEY غير مُعدّ على الخادم." }),
+        JSON.stringify({ error: "لا يوجد أي مفتاح Gemini مُعدّ على الخادم." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -92,28 +107,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${MEDICAL_AI_KEY}`;
-
-    const geminiResp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: "user", parts: userParts }],
-        generationConfig: {
-          temperature: 0.3,
-          responseMimeType: "application/json",
-        },
-      }),
+    const requestBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ role: "user", parts: userParts }],
+      generationConfig: {
+        temperature: 0.3,
+        responseMimeType: "application/json",
+      },
     });
 
-    if (!geminiResp.ok) {
-      const errText = await geminiResp.text();
-      console.error("Gemini error:", geminiResp.status, errText);
+    // Try models in order, with each key as fallback
+    const MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+
+    let geminiResp: Response | null = null;
+    let lastErrText = "";
+    let lastStatus = 0;
+
+    outer: for (const model of MODELS) {
+      for (const { name, key } of apiKeys) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        try {
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: requestBody,
+          });
+          if (resp.ok) {
+            geminiResp = resp;
+            console.log(`cancer-detection-ai: success with ${name} on ${model}`);
+            break outer;
+          }
+          lastStatus = resp.status;
+          lastErrText = await resp.text();
+          console.warn(`cancer-detection-ai: ${name}/${model} failed (${resp.status})`);
+          if (resp.status === 400) break outer; // bad input — won't help to retry
+        } catch (e) {
+          lastErrText = e instanceof Error ? e.message : String(e);
+          console.warn(`cancer-detection-ai: ${name}/${model} threw`, lastErrText);
+        }
+      }
+    }
+
+    if (!geminiResp) {
       return new Response(
         JSON.stringify({
-          error: "تعذّر تحليل البيانات حالياً. حاول لاحقاً.",
-          details: errText.slice(0, 300),
+          error: "تعذّر تحليل البيانات حالياً. جميع المفاتيح مشغولة. حاول بعد دقائق.",
+          details: lastErrText.slice(0, 300),
+          status: lastStatus,
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

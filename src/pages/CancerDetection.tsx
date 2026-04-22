@@ -105,17 +105,20 @@ const CancerDetection: React.FC = () => {
           patientAge: age, patientGender: gender,
         },
       });
+      const payload: any = data;
       if (error) throw error;
-      if (!data?.result) throw new Error('استجابة فارغة');
-      setResult(data.result as CancerResult);
+      // Server may return 200 with a structured error payload (e.g., quota exhausted)
+      if (payload?.error) throw new Error(payload.error);
+      if (!payload?.result) throw new Error('استجابة فارغة من الخادم');
+      setResult(payload.result as CancerResult);
     } catch (err: any) {
-      console.error(err);
+      console.error('Cancer detection failed:', err);
       toast({
         title: 'تعذّر التحليل',
-        description: err?.message || 'حاول لاحقاً',
+        description: (err?.message || 'حاول لاحقاً') + ' — بياناتك محفوظة، اضغط «إعادة المحاولة».',
         variant: 'destructive',
       });
-      setStep(1);
+      // IMPORTANT: keep user on step 2 with their data intact — do NOT reset to step 1.
     } finally {
       setAnalyzing(false);
     }
@@ -373,6 +376,36 @@ const CancerDetection: React.FC = () => {
                   </div>
                   <p className="text-white/70 text-lg">يحلّل الذكاء الاصطناعي البيانات...</p>
                   <p className="text-white/40 text-sm">قد يستغرق ذلك حتى 30 ثانية</p>
+                </div>
+              )}
+
+              {!analyzing && !result && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+                  <div className="w-20 h-20 rounded-full bg-amber-500/15 ring-2 ring-amber-400/40 flex items-center justify-center">
+                    <AlertTriangle className="w-10 h-10 text-amber-300" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-amber-200">لم يكتمل التحليل</h3>
+                  <p className="text-white/70 max-w-md">
+                    حدث خطأ أثناء استدعاء الذكاء الاصطناعي (قد يكون بسبب الضغط على الخدمة).
+                    بياناتك (الصورة + الأعراض + العمر + الجنس) <b>محفوظة</b>، لا داعي لإعادة إدخالها.
+                  </p>
+                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
+                    <Button
+                      onClick={runAnalysis}
+                      disabled={analyzing}
+                      className="bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90 text-white px-6"
+                    >
+                      <Sparkles className="w-4 h-4 ml-2" />
+                      إعادة المحاولة
+                    </Button>
+                    <Button
+                      onClick={() => setStep(1)}
+                      variant="outline"
+                      className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                    >
+                      تعديل المدخلات
+                    </Button>
+                  </div>
                 </div>
               )}
 
