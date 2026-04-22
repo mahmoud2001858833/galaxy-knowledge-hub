@@ -9,6 +9,9 @@ import { ArrowLeft, BarChart as BarChartIcon, CheckCircle, Target, TrendingUp, D
 import { useToast } from '@/hooks/use-toast';
 import VoiceNumberInput from '@/components/eco/VoiceNumberInput';
 import GlobalComparisonChart from '@/components/eco/GlobalComparisonChart';
+import MultiViewChart from '@/components/eco/MultiViewChart';
+import WhatIfScenarios from '@/components/eco/WhatIfScenarios';
+import AIRecommendationsPanel from '@/components/eco/AIRecommendationsPanel';
 import { generateSustainabilityPdf } from '@/lib/sustainabilityPdf';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 
@@ -311,8 +314,30 @@ const PersonalSustainabilityIndex = () => {
               </Card>
             </motion.div>
 
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="lg:col-span-2">
+              <MultiViewChart
+                title="رؤية متعددة لأدائك البيئي"
+                description="بدّل بين عرض الأعمدة، الخط، الدائرة، والرادار"
+                unit="%"
+                colorScheme="emerald"
+                data={results.categoryScores.map((c: any) => ({ name: c.category, value: c.score }))}
+              />
+            </motion.div>
+
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
               <GlobalComparisonChart userValue={results.estimatedCO2} unit="طن CO₂/سنة" />
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35 }} className="lg:col-span-2">
+              <WhatIfScenarios baselineEmissions={results.estimatedCO2} unit="طن CO₂/سنة" />
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="lg:col-span-2">
+              <AIRecommendationsPanel
+                context="sustainability_index"
+                userData={{ overallScore: results.overallScore, categoryScores: results.categoryScores }}
+                currentEmissions={results.estimatedCO2}
+              />
             </motion.div>
 
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="lg:col-span-2">
