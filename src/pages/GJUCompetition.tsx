@@ -6,6 +6,7 @@ import Hero3DScene from '@/components/gju/Hero3DScene';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { toolTranslationsEn, trackTranslationsEn, uiTranslationsEn, uiTranslationsAr } from './gju/translations';
+import SimulationsShowcase from '@/components/gju/SimulationsShowcase';
 import { Languages } from 'lucide-react';
 import { 
   Brain, Bot, Leaf, Building2, Accessibility, 
@@ -321,6 +322,11 @@ const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: 
     emerald: 'rgba(16,185,129,0.1)',
     pink: 'rgba(236,72,153,0.1)',
   };
+
+  // Special cinematic showcase for the Simulations track
+  if (track.id === 'simulations') {
+    return <SimulationsShowcase tools={track.tools} lang={lang} toolTranslations={toolTranslationsEn} />;
+  }
 
   return (
     <section id={track.id} className="py-24 md:py-32 relative scroll-mt-28">
