@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
 import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPanel';
+import { GJUFloatingNav } from '@/components/gju/GJUFloatingNav';
 import ScrollToTop from '@/components/ScrollToTop';
 import { AutoReadWrapper } from '@/components/accessibility/AutoReadWrapper';
 import StudyScheduleCreator from './pages/StudyScheduleCreator';
@@ -188,6 +189,7 @@ const RootLayout = () => {
       {!isGJUMode && <WelcomeGuide />}
       {!isGJUMode && <PlatformGuideAssistant />}
       {!isGJUMode && <AccessibilityPanel />}
+      {isGJUMode && <GJUFloatingNav />}
     </AutoReadWrapper>
   );
 };
