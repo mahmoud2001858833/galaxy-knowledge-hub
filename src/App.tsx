@@ -177,6 +177,8 @@ import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
 import RoboticConstruction from './pages/RoboticConstruction';
 import AIInteriorDesign from './pages/AIInteriorDesign';
 import GJUCompetition from './pages/GJUCompetition';
+import RoboticsGenerator from './pages/RoboticsGenerator';
+import JordanDigitalTwin from './pages/JordanDigitalTwin';
 import HassanGardenAI from './pages/HassanGardenAI';
 import CancerDetection from './pages/CancerDetection';
 import './App.css';
@@ -889,6 +891,14 @@ const router = createBrowserRouter([
       {
         path: 'gju-competition',
         element: <PublicRoute><GJUCompetition /></PublicRoute>,
+      },
+      {
+        path: 'gju/robotics-generator',
+        element: <PublicRoute><RoboticsGenerator /></PublicRoute>,
+      },
+      {
+        path: 'gju/jordan-digital-twin',
+        element: <PublicRoute><JordanDigitalTwin /></PublicRoute>,
       },
       {
         path: 'hassan-garden-ai',
