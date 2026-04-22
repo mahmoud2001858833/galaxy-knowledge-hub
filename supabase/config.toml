@@ -179,3 +179,6 @@ verify_jwt = false
 
 [functions.smart-city-ai]
 verify_jwt = false
+
+[functions.generate-chat-image]
+verify_jwt = false
