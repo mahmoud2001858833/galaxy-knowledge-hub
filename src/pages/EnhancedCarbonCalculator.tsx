@@ -192,6 +192,12 @@ const EnhancedCarbonCalculator = () => {
           </Card>
         </motion.div>
 
+        {totalEmissions > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <GlobalComparisonChart userValue={totalEmissions / 1000} unit="طن CO₂/سنة" />
+          </motion.div>
+        )}
+
         {/* Calculation Modules */}
         <div className="space-y-6">
           {calculationModules.map((module, index) => (
