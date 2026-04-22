@@ -13,6 +13,9 @@ import ScenarioComparison from '@/components/eco-predict/ScenarioComparison';
 import RegionalBarChart from '@/components/eco-predict/RegionalBarChart';
 import AIInsights from '@/components/eco-predict/AIInsights';
 import GlobalComparisonChart from '@/components/eco/GlobalComparisonChart';
+import WhatIfScenarios from '@/components/eco/WhatIfScenarios';
+import AIRecommendationsPanel from '@/components/eco/AIRecommendationsPanel';
+import MultiViewChart from '@/components/eco/MultiViewChart';
 import { generateSustainabilityPdf, GLOBAL_CO2_BENCHMARKS } from '@/lib/sustainabilityPdf';
 
 interface AnalysisResult {
