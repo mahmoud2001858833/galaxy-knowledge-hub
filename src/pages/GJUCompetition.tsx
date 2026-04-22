@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from
 import { Link, useNavigate } from 'react-router-dom';
 import GJUFooter from '@/components/gju/GJUFooter';
 import Hero3DScene from '@/components/gju/Hero3DScene';
-import { SEO } from '@/components/SEO';
+import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { toolTranslationsEn, trackTranslationsEn, uiTranslationsEn, uiTranslationsAr } from './gju/translations';
 import { Languages } from 'lucide-react';
@@ -479,11 +479,24 @@ const GJUCompetition = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#04040e]" dir={dir}>
-      <SEO
-        title={lang === 'en' ? 'Future of Technology - GJU 3030' : 'مستقبل التكنولوجيا - مسابقة GJU 3030'}
-        description={lang === 'en' ? 'Future of Technology platform - GJU 3030 Innovation Challenge' : 'منصة مستقبل التكنولوجيا - مسابقة التقدّم التكنولوجي GJU 3030'}
-        keywords="GJU 3030, مسابقة, تكنولوجيا, مستقبل التكنولوجيا, Future of Technology"
-      />
+      <Helmet>
+        <html lang={lang === 'en' ? 'en' : 'ar'} dir={dir} />
+        <title>{lang === 'en' ? 'Future of Technology — GJU 3030 Innovation Challenge' : 'مستقبل التكنولوجيا — مسابقة GJU 3030 للابتكار'}</title>
+        <meta name="description" content={lang === 'en' ? 'Future of Technology — GJU 3030 Innovation Challenge. AI, robotics, sustainable tech and inclusive learning showcase.' : 'مستقبل التكنولوجيا — مسابقة GJU 3030 للابتكار. منصة عرض للذكاء الاصطناعي والروبوتات والتقنيات المستدامة والتعلم الدامج.'} />
+        <meta name="keywords" content="GJU 3030, German Jordanian University, Future of Technology, Innovation Challenge, AI, Robotics, Sustainability, مستقبل التكنولوجيا, الجامعة الألمانية الأردنية, الذكاء الاصطناعي, الروبوتات, الاستدامة" />
+        <meta name="author" content={lang === 'en' ? 'GJU 3030' : 'GJU 3030'} />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={lang === 'en' ? 'Future of Technology — GJU 3030' : 'مستقبل التكنولوجيا — GJU 3030'} />
+        <meta property="og:description" content={lang === 'en' ? 'GJU 3030 Innovation Challenge — AI, robotics, sustainable tech & inclusive learning.' : 'مسابقة GJU 3030 للابتكار — ذكاء اصطناعي وروبوتات وتقنيات مستدامة وتعلّم دامج.'} />
+        <meta property="og:site_name" content="GJU 3030 — Future of Technology" />
+        <meta property="og:locale" content={lang === 'en' ? 'en_US' : 'ar_JO'} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={lang === 'en' ? 'Future of Technology — GJU 3030' : 'مستقبل التكنولوجيا — GJU 3030'} />
+        <meta name="twitter:description" content={lang === 'en' ? 'GJU 3030 Innovation Challenge.' : 'مسابقة GJU 3030 للابتكار.'} />
+        <meta name="application-name" content="GJU 3030" />
+        <meta name="apple-mobile-web-app-title" content="GJU 3030" />
+      </Helmet>
 
       <FloatingParticles />
 
