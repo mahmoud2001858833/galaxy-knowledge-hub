@@ -478,7 +478,9 @@ const GJUCompetition = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#04040e]" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-[#04040e]" dir={dir} data-no-tts>
+      {/* Cancel any in-flight TTS the moment this page mounts */}
+      {(() => { try { window.speechSynthesis?.cancel(); } catch {} return null; })()}
       <Helmet>
         <html lang={lang === 'en' ? 'en' : 'ar'} dir={dir} />
         <title>{lang === 'en' ? 'Future of Technology — GJU 3030 Innovation Challenge' : 'مستقبل التكنولوجيا — مسابقة GJU 3030 للابتكار'}</title>
