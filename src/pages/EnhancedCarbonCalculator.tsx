@@ -8,6 +8,8 @@ import { ArrowLeft, Calculator, BarChart3, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CalculationModule from '@/components/carbon-calculator/CalculationModule';
 import { calculationModules } from '@/components/carbon-calculator/modules';
+import GlobalComparisonChart from '@/components/eco/GlobalComparisonChart';
+import { generateSustainabilityPdf, GLOBAL_CO2_BENCHMARKS } from '@/lib/sustainabilityPdf';
 
 interface ModuleInstance {
   id: string;
