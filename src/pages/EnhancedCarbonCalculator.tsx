@@ -9,6 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import CalculationModule from '@/components/carbon-calculator/CalculationModule';
 import { calculationModules } from '@/components/carbon-calculator/modules';
 import GlobalComparisonChart from '@/components/eco/GlobalComparisonChart';
+import MultiViewChart from '@/components/eco/MultiViewChart';
+import WhatIfScenarios from '@/components/eco/WhatIfScenarios';
+import AIRecommendationsPanel from '@/components/eco/AIRecommendationsPanel';
 import { generateSustainabilityPdf, GLOBAL_CO2_BENCHMARKS } from '@/lib/sustainabilityPdf';
 
 interface ModuleInstance {
@@ -193,9 +196,33 @@ const EnhancedCarbonCalculator = () => {
         </motion.div>
 
         {totalEmissions > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <GlobalComparisonChart userValue={totalEmissions / 1000} unit="طن CO₂/سنة" />
-          </motion.div>
+          <>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <MultiViewChart
+                title="توزيع الانبعاثات حسب الفئة"
+                description="بدّل بين الأعمدة، الخط، الدائرة، والرادار"
+                unit="كج CO₂/سنة"
+                colorScheme="emerald"
+                data={Object.entries(categoryTotals).map(([name, value]) => ({ name, value }))}
+              />
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <GlobalComparisonChart userValue={totalEmissions / 1000} unit="طن CO₂/سنة" />
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <WhatIfScenarios baselineEmissions={totalEmissions / 1000} unit="طن CO₂/سنة" />
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <AIRecommendationsPanel
+                context="carbon_calculator"
+                userData={{ categoryTotals, modulesUsed: calculationModules.length }}
+                currentEmissions={totalEmissions / 1000}
+              />
+            </motion.div>
+          </>
         )}
 
         {/* Calculation Modules */}
