@@ -2,7 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ArrowRight, Send, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Sparkles, Loader2, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -32,6 +34,10 @@ const ClassChat = () => {
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiPreview, setAiPreview] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<{
     grade: string;
     section: string;
