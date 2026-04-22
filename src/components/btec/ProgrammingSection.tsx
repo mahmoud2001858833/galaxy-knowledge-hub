@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -16,9 +16,28 @@ import CodeFixerTab from './programming/CodeFixerTab';
 import DevTipsTab from './programming/DevTipsTab';
 import BuildPlatformTab from './programming/BuildPlatformTab';
 
+const VALID_TABS = ['ai-assistant', 'concepts', 'math-to-code', 'projects', 'code-fixer', 'dev-tips', 'build-platform'];
+
 const ProgrammingSection = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('ai-assistant');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'ai-assistant'
+  );
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && VALID_TABS.includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    setSearchParams({ tab: val }, { replace: true });
+  };
 
   return (
     <div className="min-h-screen flex flex-col text-right bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900" dir="rtl">
@@ -55,7 +74,7 @@ const ProgrammingSection = () => {
           </div>
         </motion.div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-7 gap-2 bg-white/5 p-2 rounded-xl mb-8">
             <TabsTrigger value="ai-assistant" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500">
               مساعد الذكاء الاصطناعي

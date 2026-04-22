@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Rocket } from 'lucide-react';
-import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPanel';
 
 /**
  * Floating navigation for GJU mode.
- * Shows the Accessibility (wheelchair) icon AND a quick-jump back to the
- * "Future of Technology" hub (/gju-competition) on every GJU page.
+ * Shows ONLY a quick-jump back to the "Future of Technology" hub (/gju-competition).
+ * Accessibility panel and Smart Guide are intentionally hidden in GJU mode.
  */
 export const GJUFloatingNav: React.FC = () => {
   const location = useLocation();
@@ -14,9 +13,6 @@ export const GJUFloatingNav: React.FC = () => {
 
   return (
     <>
-      {/* Accessibility (wheelchair) — same component, same position as the rest of the app */}
-      <AccessibilityPanel />
-
       {/* Future of Technology — quick return to the hub */}
       {!onHub && (
         <Link
@@ -24,7 +20,7 @@ export const GJUFloatingNav: React.FC = () => {
           title="مستقبل التكنولوجيا"
           aria-label="مستقبل التكنولوجيا"
           className="
-            fixed bottom-4 left-20 z-50 h-12 w-12 rounded-full shadow-lg
+            fixed bottom-4 left-4 z-50 h-12 w-12 rounded-full shadow-lg
             flex items-center justify-center
             bg-gradient-to-br from-fuchsia-500 via-violet-500 to-cyan-500
             text-white
