@@ -5,6 +5,8 @@ import GJUFooter from '@/components/gju/GJUFooter';
 import Hero3DScene from '@/components/gju/Hero3DScene';
 import { SEO } from '@/components/SEO';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { toolTranslationsEn, trackTranslationsEn, uiTranslationsEn, uiTranslationsAr } from './gju/translations';
+import { Languages } from 'lucide-react';
 import { 
   Brain, Bot, Leaf, Building2, Accessibility, 
   Sparkles, Users, BookOpen, Zap, ArrowLeft,
@@ -231,7 +233,11 @@ const AnimatedCounter = ({ value }: { value: string }) => {
 };
 
 /* ─────────────── 3D Tilt Card ─────────────── */
-const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) => {
+const ToolCard = ({ tool, index, lang }: { tool: typeof aiTools[0]; index: number; lang: 'ar' | 'en' }) => {
+  const tr = lang === 'en' ? toolTranslationsEn[tool.title] : null;
+  const displayTitle = tr?.title ?? tool.title;
+  const displayDesc = tr?.description ?? tool.description;
+  const ctaLabel = lang === 'en' ? 'Try it' : 'جرّب الآن';
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
@@ -281,10 +287,10 @@ const ToolCard = ({ tool, index }: { tool: typeof aiTools[0]; index: number }) =
         <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
           <tool.icon className="w-7 h-7 text-white" />
         </div>
-        <h4 className="text-white font-bold text-lg mb-2 group-hover:text-white transition-colors">{tool.title}</h4>
-        <p className="text-white/35 text-sm leading-relaxed mb-5">{tool.description}</p>
+        <h4 className="text-white font-bold text-lg mb-2 group-hover:text-white transition-colors">{displayTitle}</h4>
+        <p className="text-white/35 text-sm leading-relaxed mb-5">{displayDesc}</p>
         <div className="flex items-center gap-2 text-white/25 group-hover:text-white/70 transition-all duration-300">
-          <span className="text-xs font-semibold bg-gradient-to-l from-white/60 to-white/40 bg-clip-text text-transparent group-hover:from-white group-hover:to-white/80">جرّب الآن</span>
+          <span className="text-xs font-semibold bg-gradient-to-l from-white/60 to-white/40 bg-clip-text text-transparent group-hover:from-white group-hover:to-white/80">{ctaLabel}</span>
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-2 transition-transform duration-300" />
         </div>
       </div>
@@ -305,7 +311,7 @@ const SectionDivider = ({ color }: { color: string }) => (
 );
 
 /* ─────────────── Track Section ─────────────── */
-const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number }) => {
+const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: number; lang: 'ar' | 'en' }) => {
   const [showAllSimulations, setShowAllSimulations] = useState(false);
   const accentGlows: Record<string, string> = {
     violet: 'rgba(139,92,246,0.1)',
@@ -345,19 +351,19 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
               <track.icon className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl md:text-5xl font-black text-white">{track.title}</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-white">{lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}</h2>
             </div>
           </div>
-          <p className="text-white/40 text-base mt-4 max-w-2xl">{trackDescriptions[track.id]}</p>
+          <p className="text-white/40 text-base mt-4 max-w-2xl">{lang === 'en' ? trackTranslationsEn[track.id]?.description ?? trackDescriptions[track.id] : trackDescriptions[track.id]}</p>
           <div className="flex items-center gap-3 mt-5">
             <div className={`h-1.5 w-20 rounded-full bg-gradient-to-l ${track.color}`} />
-            <span className="text-white/30 text-sm font-medium">{track.tools.length + (track.extraTools?.length || 0)} أداة متاحة</span>
+            <span className="text-white/30 text-sm font-medium">{track.tools.length + (track.extraTools?.length || 0)} {lang === 'en' ? 'tools available' : 'أداة متاحة'}</span>
           </div>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {track.tools.map((tool, i) => (
-            <ToolCard key={i} tool={tool} index={i} />
+            <ToolCard key={i} tool={tool} index={i} lang={lang} />
           ))}
         </div>
 
@@ -376,15 +382,15 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white">{track.extraTitle}</h3>
-                  <span className="text-white/30 text-sm">{track.extraTools.length} محاكاة علمية تفاعلية</span>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white">{lang === 'en' ? 'Interactive Simulations' : track.extraTitle}</h3>
+                  <span className="text-white/30 text-sm">{track.extraTools.length} {lang === 'en' ? 'interactive scientific simulations' : 'محاكاة علمية تفاعلية'}</span>
                 </div>
               </div>
             </motion.div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {track.extraTools.slice(0, 2).map((tool, i) => (
-                <ToolCard key={`preview-${i}`} tool={tool} index={i} />
+                <ToolCard key={`preview-${i}`} tool={tool} index={i} lang={lang} />
               ))}
             </div>
 
@@ -403,7 +409,7 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
                   {/* Shimmer effect */}
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                   <Sparkles className="w-5 h-5 text-cyan-400/60 group-hover:text-cyan-400 transition-colors" />
-                  <span className="text-white/70 group-hover:text-white font-bold text-lg transition-colors">اكتشف المزيد</span>
+                  <span className="text-white/70 group-hover:text-white font-bold text-lg transition-colors">{lang === 'en' ? 'Discover more' : 'اكتشف المزيد'}</span>
                   <span className="px-3 py-1 rounded-full bg-white/5 text-white/40 text-sm font-medium">{track.extraTools.length - 2}+</span>
                   <ChevronDown className="w-5 h-5 text-white/40 group-hover:text-white/80 group-hover:translate-y-1 transition-all" />
                 </button>
@@ -421,7 +427,7 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-8">
                     {track.extraTools.slice(2).map((tool, i) => (
-                      <ToolCard key={`extra-${i}`} tool={tool} index={i} />
+                      <ToolCard key={`extra-${i}`} tool={tool} index={i} lang={lang} />
                     ))}
                   </div>
                   <div className="flex justify-center mt-10">
@@ -445,7 +451,9 @@ const TrackSection = ({ track, index }: { track: typeof tracks[0]; index: number
 
 /* ─────────────── Main Page ─────────────── */
 const GJUCompetition = () => {
-  const { dir } = useLanguage();
+  const { dir, language, toggleLanguage } = useLanguage();
+  const lang: 'ar' | 'en' = language === 'en' ? 'en' : 'ar';
+  const ui = lang === 'en' ? uiTranslationsEn : uiTranslationsAr;
   const navigate = useNavigate();
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
 
@@ -472,12 +480,24 @@ const GJUCompetition = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#04040e]" dir={dir}>
       <SEO
-        title="مستقبل التكنولوجيا - مسابقة GJU 3030"
-        description="منصة مستقبل التكنولوجيا - مسابقة التقدّم التكنولوجي GJU 3030"
-        keywords="GJU 3030, مسابقة, تكنولوجيا, مستقبل التكنولوجيا"
+        title={lang === 'en' ? 'Future of Technology - GJU 3030' : 'مستقبل التكنولوجيا - مسابقة GJU 3030'}
+        description={lang === 'en' ? 'Future of Technology platform - GJU 3030 Innovation Challenge' : 'منصة مستقبل التكنولوجيا - مسابقة التقدّم التكنولوجي GJU 3030'}
+        keywords="GJU 3030, مسابقة, تكنولوجيا, مستقبل التكنولوجيا, Future of Technology"
       />
 
       <FloatingParticles />
+
+      {/* Floating Language Toggle */}
+      <button
+        onClick={toggleLanguage}
+        aria-label="Toggle language"
+        className="fixed top-5 left-5 z-[60] group flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#04040e]/80 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/[0.06] transition-all duration-300 shadow-lg shadow-black/40"
+      >
+        <Languages className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
+        <span className="text-white/70 group-hover:text-white text-xs font-bold tracking-wider">
+          {lang === 'en' ? 'AR' : 'EN'}
+        </span>
+      </button>
 
       {/* Ambient Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -512,7 +532,7 @@ const GJUCompetition = () => {
                 <div className="absolute inset-[1px] rounded-full bg-[#04040e]/80 backdrop-blur-md" />
               </div>
               <Trophy className="w-4 h-4 text-amber-400 relative z-10" />
-              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">GJU 3030 · Innovation Challenge</span>
+              <span className="text-amber-300/90 text-sm font-semibold tracking-wide relative z-10">{ui.badge}</span>
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse relative z-10" />
             </motion.div>
 
@@ -540,7 +560,7 @@ const GJUCompetition = () => {
               className="flex items-center justify-center gap-4 mb-8"
             >
               <div className="h-px w-16 bg-gradient-to-l from-transparent to-violet-400/50" />
-              <span className="text-white/70 text-xl md:text-2xl font-semibold tracking-wide">مستقبل التكنولوجيا</span>
+              <span className="text-white/70 text-xl md:text-2xl font-semibold tracking-wide">{lang === 'en' ? 'Future of Technology' : 'مستقبل التكنولوجيا'}</span>
               <div className="h-px w-16 bg-gradient-to-r from-transparent to-cyan-400/50" />
             </motion.div>
 
@@ -551,7 +571,7 @@ const GJUCompetition = () => {
               transition={{ duration: 0.7, delay: 0.5 }}
               className="text-base md:text-lg text-white/45 max-w-2xl mx-auto mb-8 leading-relaxed h-14 px-4"
             >
-              <TypewriterText text="منصة عرض رسمية تدمج الذكاء الاصطناعي والروبوتات والتقنيات المستدامة والتعلّم الدامج" />
+              <TypewriterText key={lang} text={ui.subtitle} />
             </motion.div>
 
             <motion.div
@@ -561,9 +581,7 @@ const GJUCompetition = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/40 text-xs mb-12 pointer-events-auto"
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>German Jordanian University</span>
-              <span className="text-white/15">·</span>
-              <span>الجامعة الألمانية الأردنية</span>
+              <span>{lang === 'en' ? 'German Jordanian University' : 'الجامعة الألمانية الأردنية'}</span>
             </motion.div>
 
             {/* CTA Buttons */}
@@ -580,7 +598,7 @@ const GJUCompetition = () => {
                 <div className="absolute inset-0 bg-gradient-to-l from-violet-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <span className="relative z-10 flex items-center gap-2">
                   <Rocket className="w-5 h-5" />
-                  استكشف المسارات
+                  {ui.exploreTracks}
                 </span>
               </button>
               <button
@@ -589,7 +607,7 @@ const GJUCompetition = () => {
               >
                 <span className="flex items-center gap-2">
                   <Zap className="w-5 h-5" />
-                  المحاكيات التفاعلية
+                  {ui.interactiveSims}
                 </span>
               </button>
             </motion.div>
@@ -602,6 +620,9 @@ const GJUCompetition = () => {
               transition={{ delay: 0.9, duration: 0.7 }}
             >
               {stats.map((stat, i) => {
+                const labels = lang === 'en'
+                  ? [ui.statTools, ui.statSims, ui.statAI, ui.statSubjects]
+                  : [ui.statTools, ui.statSims, ui.statAI, ui.statSubjects];
                 const gradients = [
                   'from-violet-500/40 to-purple-500/40',
                   'from-cyan-500/40 to-blue-500/40',
@@ -622,7 +643,7 @@ const GJUCompetition = () => {
                       <div className="text-4xl md:text-5xl font-black text-white mb-1.5">
                         <AnimatedCounter value={stat.value} />
                       </div>
-                      <div className="text-xs text-white/40 font-medium">{stat.label}</div>
+                      <div className="text-xs text-white/40 font-medium">{labels[i] ?? stat.label}</div>
                     </div>
                   </motion.div>
                 );
@@ -636,7 +657,7 @@ const GJUCompetition = () => {
               transition={{ delay: 1.5 }}
               className="flex flex-col items-center gap-2"
             >
-              <span className="text-white/25 text-xs font-mono tracking-widest uppercase">Scroll</span>
+              <span className="text-white/25 text-xs font-mono tracking-widest uppercase">{ui.scroll}</span>
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -671,13 +692,13 @@ const GJUCompetition = () => {
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-md mb-5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-white/50 text-[11px] font-mono tracking-[0.25em] uppercase">Mission Control</span>
+                <span className="text-white/50 text-[11px] font-mono tracking-[0.25em] uppercase">{ui.missionControl}</span>
               </div>
               <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
-                اختر <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">مسارك</span>
+                {ui.chooseTrack} <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">{ui.chooseTrackHighlight}</span>
               </h2>
               <p className="text-white/40 text-base md:text-lg max-w-2xl mx-auto">
-                خمسة مسارات تكنولوجية متكاملة · انتقل بين المحاور باستكشاف فوري
+                {ui.chooseTrackSub}
               </p>
             </motion.div>
 
@@ -725,16 +746,16 @@ const GJUCompetition = () => {
 
                       {/* Title */}
                       <h3 className="text-white font-bold text-base md:text-lg mb-1.5 leading-tight">
-                        {track.title}
+                        {lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}
                       </h3>
                       <p className="text-white/35 text-xs leading-relaxed line-clamp-2 mb-4 group-hover:text-white/55 transition-colors">
-                        {track.subtitle || 'استكشف الأدوات والمحاكيات'}
+                        {track.subtitle || (lang === 'en' ? 'Explore tools and simulations' : 'استكشف الأدوات والمحاكيات')}
                       </p>
 
                       {/* CTA bar */}
                       <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] group-hover:border-white/[0.12] transition-colors">
                         <span className="text-[10px] font-mono tracking-widest uppercase text-white/30 group-hover:text-white/60 transition-colors">
-                          Explore
+                          {ui.explore}
                         </span>
                         <ArrowLeft className="w-3.5 h-3.5 text-white/30 group-hover:text-white group-hover:-translate-x-1 transition-all duration-300" />
                       </div>
@@ -772,7 +793,7 @@ const GJUCompetition = () => {
                     }`}
                   >
                     <track.icon className="w-3.5 h-3.5" />
-                    <span>{track.title}</span>
+                    <span>{lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                       activeTrack === track.id ? 'bg-white/15 text-white/70' : 'bg-white/5 text-white/25'
                     }`}>{toolCount}</span>
@@ -794,7 +815,7 @@ const GJUCompetition = () => {
         {tracks.map((track, index) => (
           <React.Fragment key={track.id}>
             {index > 0 && <SectionDivider color={track.color} />}
-            <TrackSection track={track} index={index} />
+            <TrackSection track={track} index={index} lang={lang} />
           </React.Fragment>
         ))}
 
@@ -807,8 +828,8 @@ const GJUCompetition = () => {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              <span className="text-white/20 text-xs font-mono tracking-widest uppercase mb-3 block">BUILT WITH</span>
-              <h2 className="text-3xl md:text-4xl font-black text-white">التقنيات المُستخدمة</h2>
+              <span className="text-white/20 text-xs font-mono tracking-widest uppercase mb-3 block">{ui.builtWith}</span>
+              <h2 className="text-3xl md:text-4xl font-black text-white">{ui.techStackTitle}</h2>
             </motion.div>
 
             {/* Marquee */}
