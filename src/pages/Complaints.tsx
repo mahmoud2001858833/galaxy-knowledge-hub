@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { useArabicSpeech } from "@/hooks/useArabicSpeech";
+import { MicButton } from "@/components/MicButton";
 
 const STATUSES = [
   { value: "new", label: "جديد", color: "bg-blue-500/15 text-blue-300 border-blue-500/30" },
@@ -99,6 +101,40 @@ const ComplaintForm = () => {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Speech-to-text — separate base values to support interim text without losing typed content
+  const [activeField, setActiveField] = useState<"name" | "title" | "description" | null>(null);
+  const baseRef = useRef({ name: "", title: "", description: "" });
+
+  const handleSpeech = (text: string, isFinal: boolean) => {
+    if (!activeField) return;
+    if (isFinal) {
+      const next = (baseRef.current[activeField] + text).trimStart();
+      baseRef.current[activeField] = next;
+      if (activeField === "name") setName(next);
+      else if (activeField === "title") setTitle(next);
+      else setDescription(next);
+    } else {
+      const preview = (baseRef.current[activeField] + " " + text).trimStart();
+      if (activeField === "name") setName(preview);
+      else if (activeField === "title") setTitle(preview);
+      else setDescription(preview);
+    }
+  };
+
+  const speech = useArabicSpeech(handleSpeech);
+
+  const startDictation = (field: "name" | "title" | "description", current: string) => {
+    if (speech.listening && activeField === field) {
+      speech.stop();
+      setActiveField(null);
+      return;
+    }
+    if (speech.listening) speech.stop();
+    baseRef.current[field] = current ? current + " " : "";
+    setActiveField(field);
+    setTimeout(() => speech.start(), 100);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
