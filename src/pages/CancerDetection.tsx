@@ -105,17 +105,20 @@ const CancerDetection: React.FC = () => {
           patientAge: age, patientGender: gender,
         },
       });
+      const payload: any = data;
       if (error) throw error;
-      if (!data?.result) throw new Error('استجابة فارغة');
-      setResult(data.result as CancerResult);
+      // Server may return 200 with a structured error payload (e.g., quota exhausted)
+      if (payload?.error) throw new Error(payload.error);
+      if (!payload?.result) throw new Error('استجابة فارغة من الخادم');
+      setResult(payload.result as CancerResult);
     } catch (err: any) {
-      console.error(err);
+      console.error('Cancer detection failed:', err);
       toast({
         title: 'تعذّر التحليل',
-        description: err?.message || 'حاول لاحقاً',
+        description: (err?.message || 'حاول لاحقاً') + ' — بياناتك محفوظة، اضغط «إعادة المحاولة».',
         variant: 'destructive',
       });
-      setStep(1);
+      // IMPORTANT: keep user on step 2 with their data intact — do NOT reset to step 1.
     } finally {
       setAnalyzing(false);
     }
