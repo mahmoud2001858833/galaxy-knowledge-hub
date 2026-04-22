@@ -451,7 +451,9 @@ const TrackSection = ({ track, index, lang }: { track: typeof tracks[0]; index: 
 
 /* ─────────────── Main Page ─────────────── */
 const GJUCompetition = () => {
-  const { dir } = useLanguage();
+  const { dir, language, toggleLanguage } = useLanguage();
+  const lang: 'ar' | 'en' = language === 'en' ? 'en' : 'ar';
+  const ui = lang === 'en' ? uiTranslationsEn : uiTranslationsAr;
   const navigate = useNavigate();
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
 
@@ -800,7 +802,7 @@ const GJUCompetition = () => {
         {tracks.map((track, index) => (
           <React.Fragment key={track.id}>
             {index > 0 && <SectionDivider color={track.color} />}
-            <TrackSection track={track} index={index} />
+            <TrackSection track={track} index={index} lang={lang} />
           </React.Fragment>
         ))}
 
