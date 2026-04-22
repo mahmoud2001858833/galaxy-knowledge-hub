@@ -680,13 +680,13 @@ const GJUCompetition = () => {
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-md mb-5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-white/50 text-[11px] font-mono tracking-[0.25em] uppercase">Mission Control</span>
+                <span className="text-white/50 text-[11px] font-mono tracking-[0.25em] uppercase">{ui.missionControl}</span>
               </div>
               <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
-                اختر <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">مسارك</span>
+                {ui.chooseTrack} <span className="bg-gradient-to-l from-violet-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">{ui.chooseTrackHighlight}</span>
               </h2>
               <p className="text-white/40 text-base md:text-lg max-w-2xl mx-auto">
-                خمسة مسارات تكنولوجية متكاملة · انتقل بين المحاور باستكشاف فوري
+                {ui.chooseTrackSub}
               </p>
             </motion.div>
 
@@ -734,16 +734,16 @@ const GJUCompetition = () => {
 
                       {/* Title */}
                       <h3 className="text-white font-bold text-base md:text-lg mb-1.5 leading-tight">
-                        {track.title}
+                        {lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}
                       </h3>
                       <p className="text-white/35 text-xs leading-relaxed line-clamp-2 mb-4 group-hover:text-white/55 transition-colors">
-                        {track.subtitle || 'استكشف الأدوات والمحاكيات'}
+                        {track.subtitle || (lang === 'en' ? 'Explore tools and simulations' : 'استكشف الأدوات والمحاكيات')}
                       </p>
 
                       {/* CTA bar */}
                       <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] group-hover:border-white/[0.12] transition-colors">
                         <span className="text-[10px] font-mono tracking-widest uppercase text-white/30 group-hover:text-white/60 transition-colors">
-                          Explore
+                          {ui.explore}
                         </span>
                         <ArrowLeft className="w-3.5 h-3.5 text-white/30 group-hover:text-white group-hover:-translate-x-1 transition-all duration-300" />
                       </div>
@@ -781,7 +781,7 @@ const GJUCompetition = () => {
                     }`}
                   >
                     <track.icon className="w-3.5 h-3.5" />
-                    <span>{track.title}</span>
+                    <span>{lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                       activeTrack === track.id ? 'bg-white/15 text-white/70' : 'bg-white/5 text-white/25'
                     }`}>{toolCount}</span>
@@ -816,8 +816,8 @@ const GJUCompetition = () => {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              <span className="text-white/20 text-xs font-mono tracking-widest uppercase mb-3 block">BUILT WITH</span>
-              <h2 className="text-3xl md:text-4xl font-black text-white">التقنيات المُستخدمة</h2>
+              <span className="text-white/20 text-xs font-mono tracking-widest uppercase mb-3 block">{ui.builtWith}</span>
+              <h2 className="text-3xl md:text-4xl font-black text-white">{ui.techStackTitle}</h2>
             </motion.div>
 
             {/* Marquee */}
