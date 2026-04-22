@@ -379,7 +379,36 @@ const CancerDetection: React.FC = () => {
                 </div>
               )}
 
-              {result && (
+              {!analyzing && !result && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+                  <div className="w-20 h-20 rounded-full bg-amber-500/15 ring-2 ring-amber-400/40 flex items-center justify-center">
+                    <AlertTriangle className="w-10 h-10 text-amber-300" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-amber-200">لم يكتمل التحليل</h3>
+                  <p className="text-white/70 max-w-md">
+                    حدث خطأ أثناء استدعاء الذكاء الاصطناعي (قد يكون بسبب الضغط على الخدمة).
+                    بياناتك (الصورة + الأعراض + العمر + الجنس) <b>محفوظة</b>، لا داعي لإعادة إدخالها.
+                  </p>
+                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
+                    <Button
+                      onClick={runAnalysis}
+                      disabled={analyzing}
+                      className="bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90 text-white px-6"
+                    >
+                      <Sparkles className="w-4 h-4 ml-2" />
+                      إعادة المحاولة
+                    </Button>
+                    <Button
+                      onClick={() => setStep(1)}
+                      variant="outline"
+                      className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                    >
+                      تعديل المدخلات
+                    </Button>
+                  </div>
+                </div>
+              )}
+
                 <div className="space-y-6">
                   {/* Risk hero card */}
                   <Card className={`${riskStyle.bg} border-2 ${riskStyle.ring} ring-1 backdrop-blur-md overflow-hidden relative`}>
