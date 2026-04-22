@@ -203,13 +203,21 @@ const ComplaintForm = () => {
           <label className="text-xs text-white/60 mb-1.5 flex items-center gap-1.5">
             <User className="w-3.5 h-3.5" /> الاسم
           </label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="اسمك الكامل"
-            className="bg-black/40 border-white/10 text-white"
-            required
-          />
+          <div className="relative">
+            <Input
+              value={name}
+              onChange={(e) => { setName(e.target.value); baseRef.current.name = e.target.value; }}
+              placeholder="اسمك الكامل"
+              className="bg-black/40 border-white/10 text-white pl-12"
+              required
+            />
+            {speech.supported && (
+              <MicButton
+                listening={speech.listening && activeField === "name"}
+                onClick={() => startDictation("name", name)}
+              />
+            )}
+          </div>
         </div>
 
         <div>
@@ -245,28 +253,45 @@ const ComplaintForm = () => {
           <label className="text-xs text-white/60 mb-1.5 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" /> عنوان الشكوى
           </label>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="عنوان مختصر"
-            className="bg-black/40 border-white/10 text-white"
-            required
-            maxLength={150}
-          />
+          <div className="relative">
+            <Input
+              value={title}
+              onChange={(e) => { setTitle(e.target.value); baseRef.current.title = e.target.value; }}
+              placeholder="عنوان مختصر"
+              className="bg-black/40 border-white/10 text-white pl-12"
+              required
+              maxLength={150}
+            />
+            {speech.supported && (
+              <MicButton
+                listening={speech.listening && activeField === "title"}
+                onClick={() => startDictation("title", title)}
+              />
+            )}
+          </div>
         </div>
 
         <div>
           <label className="text-xs text-white/60 mb-1.5 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" /> وصف الشكوى
           </label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="اشرح المشكلة أو الاقتراح بالتفصيل..."
-            className="bg-black/40 border-white/10 text-white min-h-[140px] resize-none"
-            required
-            maxLength={2000}
-          />
+          <div className="relative">
+            <Textarea
+              value={description}
+              onChange={(e) => { setDescription(e.target.value); baseRef.current.description = e.target.value; }}
+              placeholder="اشرح المشكلة أو الاقتراح بالتفصيل... (يمكنك التحدث بالعربية)"
+              className="bg-black/40 border-white/10 text-white min-h-[140px] resize-none pl-12"
+              required
+              maxLength={2000}
+            />
+            {speech.supported && (
+              <MicButton
+                listening={speech.listening && activeField === "description"}
+                onClick={() => startDictation("description", description)}
+                className="!top-3 !-translate-y-0"
+              />
+            )}
+          </div>
           <div className="text-xs text-white/40 text-left mt-1">{description.length}/2000</div>
         </div>
 
