@@ -79,9 +79,10 @@ export const toolTranslationsEn: Record<string, { title: string; description: st
 
 export const trackTranslationsEn: Record<string, { title: string; description: string }> = {
   ai: { title: 'Artificial Intelligence', description: 'Advanced AI tools that help you learn, create and code' },
-  robotics: { title: 'Robotics & Smart Construction', description: 'Explore robotics, smart construction and interactive simulations' },
-  sustainability: { title: 'Sustainable Tech', description: 'Interactive tools to understand and apply environmental sustainability' },
+  simulations: { title: 'Interactive Simulations Lab', description: 'A digital science lab with 49 high-fidelity interactive simulations across all branches of science' },
   inclusive: { title: 'Inclusive Education', description: 'Assistive technologies that make learning accessible to everyone' },
+  robotics: { title: 'Robotics & Smart Construction', description: 'Explore robotics, smart construction and architectural design' },
+  sustainability: { title: 'Sustainable Tech', description: 'Interactive tools to understand and apply environmental sustainability' },
 };
 
 export const uiTranslationsEn = {
