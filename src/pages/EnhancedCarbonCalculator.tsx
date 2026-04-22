@@ -106,6 +106,40 @@ const EnhancedCarbonCalculator = () => {
             <ArrowLeft className="w-4 h-4" />
             العودة
           </Button>
+
+          <Button
+            onClick={() => {
+              const totalTons = totalEmissions / 1000;
+              generateSustainabilityPdf({
+                title: 'Advanced Carbon Footprint Report',
+                subtitle: `${calculationModules.length} calculation modules · Comprehensive analysis`,
+                headlineMetric: { label: 'Total Annual Emissions', value: `${totalTons.toFixed(2)} t CO2e/yr` },
+                sections: [
+                  {
+                    title: 'Category Breakdown (kg CO2e/yr)',
+                    rows: Object.entries(categoryTotals).map(([cat, val]) => [cat, val.toFixed(2)]),
+                  },
+                ],
+                comparison: [
+                  { label: 'You', value: totalTons, unit: 't CO2/yr' },
+                  ...GLOBAL_CO2_BENCHMARKS,
+                ],
+                recommendations: [
+                  'Switch to renewable energy sources (solar/wind) for electricity',
+                  'Reduce red meat consumption to 1-2 meals per week',
+                  'Use public transport, carpool, or shift to electric vehicles',
+                  'Improve home insulation to reduce heating/cooling needs',
+                  'Recycle and compost to reduce waste emissions',
+                ],
+                footer: `Carbon Calculator · ${new Date().toLocaleString()}`,
+              }, `carbon-footprint-${Date.now()}.pdf`);
+              toast({ title: 'تم تنزيل التقرير', description: 'تقرير PDF شامل جاهز' });
+            }}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+          >
+            <Download className="w-4 h-4 ml-2" />
+            تحميل تقرير PDF
+          </Button>
         </motion.div>
 
         <motion.div
