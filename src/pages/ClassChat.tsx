@@ -410,8 +410,19 @@ const ClassChat = () => {
                   variant="outline"
                   size="icon"
                   className="bg-background/30 border-teal-500/30 hover:bg-background/50"
+                  title="رفع صورة من الجهاز"
                 >
                   <ImageIcon size={20} className="text-teal-400" />
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setAiOpen(true)}
+                  variant="outline"
+                  size="icon"
+                  className="bg-gradient-to-br from-fuchsia-500/20 via-violet-500/20 to-cyan-500/20 border-violet-400/40 hover:from-fuchsia-500/30 hover:to-cyan-500/30"
+                  title="توليد صورة بالذكاء الاصطناعي"
+                >
+                  <Sparkles size={20} className="text-fuchsia-300" />
                 </Button>
                 <Input
                   value={messageText}
