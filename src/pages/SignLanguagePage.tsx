@@ -1015,6 +1015,16 @@ const SignLanguagePage: React.FC = () => {
             </div>
           </TabsContent>
 
+          {/* Learn Tab */}
+          <TabsContent value="learn">
+            <LearnSignsTab dictionary={signDictionary} categories={categories} speak={speakText} />
+          </TabsContent>
+
+          {/* Text-to-Sign Tab */}
+          <TabsContent value="text-to-sign">
+            <TextToSignTab dictionary={signDictionary} speak={speakText} />
+          </TabsContent>
+
           {/* Dictionary Tab */}
           <TabsContent value="dictionary">
             <Card className="bg-slate-900/60 border-indigo-500/20">
