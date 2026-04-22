@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Editor from "@monaco-editor/react";
 import {
@@ -31,9 +31,33 @@ const LANGUAGES = [
   { value: "sql", label: "SQL" },
 ];
 
+const TAB_ALIASES: Record<string, Tab> = {
+  "ai-code": "ai-code",
+  "ai-assistant": "ai-code",
+  "fix-code": "fix-code",
+  "build-platform": "build-platform",
+};
+
 const TechCodingPlatform = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("ai-code");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<Tab>(
+    requestedTab && TAB_ALIASES[requestedTab] ? TAB_ALIASES[requestedTab] : "ai-code"
+  );
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && TAB_ALIASES[t] && TAB_ALIASES[t] !== tab) {
+      setTab(TAB_ALIASES[t]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const changeTab = (newTab: Tab) => {
+    setTab(newTab);
+    setSearchParams({ tab: newTab }, { replace: true });
+  };
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#05060f] text-white relative overflow-hidden">
@@ -108,7 +132,7 @@ const TechCodingPlatform = () => {
               return (
                 <button
                   key={t.id}
-                  onClick={() => setTab(t.id)}
+                  onClick={() => changeTab(t.id)}
                   className={`group relative px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
                     active
                       ? "text-white shadow-2xl scale-105"

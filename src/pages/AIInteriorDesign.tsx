@@ -210,20 +210,15 @@ const AIInteriorDesign = () => {
                   setGeneratingImage(true);
                   try {
                     const prompt = `Create a stunning photorealistic 3D interior design rendering of a ${form.roomType} room. Style: ${form.style}. The room should have ${design.colorPalette.description}. Include furniture: ${design.furniture?.map(f => f.name).join(', ')}. Lighting: ${design.lighting?.type}. Mood: ${design.moodDescription}. Professional architectural visualization, dramatic lighting, ultra detailed, cinematic quality.`;
-                    
-                    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        model: 'google/gemini-2.5-flash-image',
-                        messages: [{ role: 'user', content: prompt }],
-                        modalities: ['image', 'text']
-                      })
+
+                    const { data, error } = await supabase.functions.invoke('smart-city-image-gen', {
+                      body: { prompt },
                     });
 
-                    const data = await response.json();
-                    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-                    
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+
+                    const imageUrl = data?.imageUrl;
                     if (imageUrl) {
                       setGeneratedImage(imageUrl);
                       setShowImageModal(true);
@@ -231,9 +226,9 @@ const AIInteriorDesign = () => {
                     } else {
                       toast({ title: 'لم يتم إنشاء الصورة، حاول مرة أخرى', variant: 'destructive' });
                     }
-                  } catch (err) {
+                  } catch (err: any) {
                     console.error(err);
-                    toast({ title: 'حدث خطأ في توليد الصورة', variant: 'destructive' });
+                    toast({ title: err?.message || 'حدث خطأ في توليد الصورة', variant: 'destructive' });
                   } finally {
                     setGeneratingImage(false);
                   }

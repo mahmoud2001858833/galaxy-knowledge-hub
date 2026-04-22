@@ -411,6 +411,58 @@ const CancerDetection: React.FC = () => {
 
               {result && (
                 <div className="space-y-6">
+                  {/* HUGE ALERT BANNER — high or medium risk */}
+                  {(result.risk_level === 'عالي' || result.risk_score >= 70) && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative overflow-hidden rounded-3xl border-4 border-red-500 shadow-[0_0_60px_rgba(239,68,68,0.6)] animate-pulse"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-700 via-red-600 to-rose-700" />
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_50%)]" />
+                      <div className="relative p-8 md:p-12 flex flex-col md:flex-row items-center gap-6 text-center md:text-right">
+                        <div className="flex-shrink-0">
+                          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white/20 ring-4 ring-white/40 flex items-center justify-center">
+                            <AlertTriangle className="w-14 h-14 md:w-20 md:h-20 text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white/90 text-lg md:text-xl font-semibold mb-2 tracking-wider">⚠️ تنبيه طبي عاجل</p>
+                          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] mb-3">
+                            تم اكتشاف اشتباه بـ {result.suspected_type}
+                          </h2>
+                          <p className="text-white/95 text-lg md:text-2xl font-bold">
+                            مراجعة طبية فورية مطلوبة — درجة الخطر: {result.risk_score}/100
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {result.risk_level === 'متوسط' && result.risk_score < 70 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative overflow-hidden rounded-3xl border-4 border-amber-500 shadow-[0_0_40px_rgba(245,158,11,0.5)]"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600" />
+                      <div className="relative p-6 md:p-10 flex flex-col md:flex-row items-center gap-5 text-center md:text-right">
+                        <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white/20 ring-4 ring-white/40 flex items-center justify-center flex-shrink-0">
+                          <AlertTriangle className="w-12 h-12 md:w-16 md:h-16 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white/90 text-base md:text-lg font-semibold mb-2">⚠️ اشتباه يستدعي المتابعة</p>
+                          <h2 className="text-3xl md:text-5xl font-black text-white leading-tight drop-shadow-md">
+                            اشتباه عالي بـ {result.suspected_type}
+                          </h2>
+                          <p className="text-white/95 text-base md:text-xl font-bold mt-2">
+                            يُنصح بمراجعة طبية خلال أيام
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {/* Risk hero card */}
                   <Card className={`${riskStyle.bg} border-2 ${riskStyle.ring} ring-1 backdrop-blur-md overflow-hidden relative`}>
                     <CardContent className="p-8">

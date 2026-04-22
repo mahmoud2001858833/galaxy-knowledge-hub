@@ -69,26 +69,34 @@ export default function AIPlatformBuilder() {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
-  // Check supervisor access
+  // Check access — opens to all logged-in users in GJU mode, otherwise admin/super_admin only
   useEffect(() => {
     const checkAccess = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           setIsAuthorized(false);
           setCheckingAccess(false);
           return;
         }
 
-        // Check if user has admin/supervisor access
+        // GJU mode → open to ALL logged-in users
+        const isGJUMode = sessionStorage.getItem('gju_mode') === 'true';
+        if (isGJUMode) {
+          setIsAuthorized(true);
+          setCheckingAccess(false);
+          return;
+        }
+
+        // Otherwise: admin/super_admin only
         const { data: accessLevel } = await supabase.rpc('get_admin_teacher_access_level', {
           user_uuid: user.id
         });
 
         const authorized = accessLevel === 'admin' || accessLevel === 'super_admin';
         setIsAuthorized(authorized);
-        
+
         if (!authorized) {
           toast.error("هذه الصفحة متاحة للمشرفين فقط");
         }
@@ -255,7 +263,13 @@ export default function AIPlatformBuilder() {
       toast.success("تم تحديث المشروع");
     } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error(error.message || "فشل إرسال الرسالة");
+      // Try to extract user-friendly status
+      const ctx = error?.context;
+      const status = ctx?.status || error?.status;
+      let userMsg = error?.message || "فشل إرسال الرسالة";
+      if (status === 429) userMsg = "تم تجاوز الحد المسموح، حاول بعد دقيقة";
+      else if (status === 402) userMsg = "نفدت اعتمادات الذكاء الاصطناعي، يرجى التواصل مع المسؤول";
+      toast.error(userMsg);
       setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
       setIsLoading(false);

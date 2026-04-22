@@ -82,20 +82,15 @@ const AIArchitecturalDesign = () => {
     setGeneratingImage(index);
     try {
       const prompt = `Create a stunning photorealistic 3D architectural rendering of: ${suggestion.name}. ${suggestion.description}. Style: modern 3D visualization, dramatic lighting, high detail, professional architectural render. Materials: ${suggestion.materials?.join(', ')}. The building should look impressive and futuristic with cinematic lighting and sharp details.`;
-      
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image',
-          messages: [{ role: 'user', content: prompt }],
-          modalities: ['image', 'text']
-        })
+
+      const { data, error } = await supabase.functions.invoke('smart-city-image-gen', {
+        body: { prompt },
       });
 
-      const data = await response.json();
-      const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const imageUrl = data?.imageUrl;
       if (imageUrl) {
         setGeneratedImages(prev => ({ ...prev, [index]: imageUrl }));
         setShowImageModal(index);
@@ -103,9 +98,9 @@ const AIArchitecturalDesign = () => {
       } else {
         toast({ title: 'لم يتم إنشاء الصورة، حاول مرة أخرى', variant: 'destructive' });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast({ title: 'حدث خطأ في توليد الصورة', variant: 'destructive' });
+      toast({ title: err?.message || 'حدث خطأ في توليد الصورة', variant: 'destructive' });
     } finally {
       setGeneratingImage(null);
     }
