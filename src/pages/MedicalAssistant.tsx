@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useArabicSpeech } from "@/hooks/useArabicSpeech";
@@ -395,6 +396,10 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 );
 
 /* ============================ CHECKER DIALOG ============================ */
+const CHRONIC_OPTIONS = [
+  "ضغط الدم", "السكري", "الربو", "أمراض القلب", "حساسية", "صداع نصفي", "اكتئاب/قلق",
+];
+
 const ConditionCheckerDialog: React.FC<{
   cond: MedicalCondition | null;
   onClose: () => void;
@@ -402,6 +407,15 @@ const ConditionCheckerDialog: React.FC<{
   const [userSymptoms, setUserSymptoms] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
+  // Advanced contextual fields
+  const [age, setAge] = useState<string>("");
+  const [sex, setSex] = useState<"male" | "female" | "other" | "">("");
+  const [durationHours, setDurationHours] = useState<string>("");
+  const [painLevel, setPainLevel] = useState<number>(5);
+  const [temperature, setTemperature] = useState<string>("");
+  const [chronicConditions, setChronicConditions] = useState<string[]>([]);
+  const [medications, setMedications] = useState<string>("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const baseRef = React.useRef("");
 
   const speech = useArabicSpeech((text, isFinal) => {
@@ -417,6 +431,9 @@ const ConditionCheckerDialog: React.FC<{
     if (speech.listening) speech.stop();
     setUserSymptoms("");
     setResult(null);
+    setAge(""); setSex(""); setDurationHours(""); setPainLevel(5);
+    setTemperature(""); setChronicConditions([]); setMedications("");
+    setShowAdvanced(false);
     baseRef.current = "";
     onClose();
   };
@@ -428,6 +445,10 @@ const ConditionCheckerDialog: React.FC<{
       baseRef.current = userSymptoms ? userSymptoms + " " : "";
       speech.start();
     }
+  };
+
+  const toggleChronic = (c: string) => {
+    setChronicConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
   };
 
   const runCheck = async () => {
@@ -443,6 +464,13 @@ const ConditionCheckerDialog: React.FC<{
           conditionName: cond.name,
           knownSymptoms: cond.symptoms,
           userSymptoms: userSymptoms.trim(),
+          age: age || undefined,
+          sex: sex || undefined,
+          durationHours: durationHours || undefined,
+          painLevel,
+          temperature: temperature || undefined,
+          chronicConditions,
+          medications: medications || undefined,
         },
       });
       if (error) throw error;
@@ -514,6 +542,68 @@ const ConditionCheckerDialog: React.FC<{
                           />
                         )}
                       </button>
+                    )}
+                  </div>
+
+                  {/* Advanced contextual fields */}
+                  <div className="rounded-xl bg-white/[0.02] border border-white/10 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvanced(s => !s)}
+                      className="w-full px-4 py-3 flex items-center justify-between text-sm text-white/80 hover:bg-white/5 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Cpu className="w-4 h-4 text-cyan-400" />
+                        معلومات إضافية لتحليل أدق (اختياري)
+                      </span>
+                      <span className="text-xs text-white/40">{showAdvanced ? "إخفاء" : "إظهار"}</span>
+                    </button>
+                    {showAdvanced && (
+                      <div className="p-4 space-y-3 border-t border-white/10">
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="العمر" className="bg-black/40 border-white/10 text-white text-sm" />
+                          <select value={sex} onChange={e => setSex(e.target.value as any)} className="bg-black/40 border border-white/10 text-white text-sm rounded-md px-3 h-10">
+                            <option value="">الجنس</option>
+                            <option value="male">ذكر</option>
+                            <option value="female">أنثى</option>
+                            <option value="other">آخر</option>
+                          </select>
+                          <Input type="number" value={durationHours} onChange={e => setDurationHours(e.target.value)} placeholder="مدة الأعراض (ساعات)" className="bg-black/40 border-white/10 text-white text-sm" />
+                          <Input type="number" step="0.1" value={temperature} onChange={e => setTemperature(e.target.value)} placeholder="الحرارة °C" className="bg-black/40 border-white/10 text-white text-sm" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs text-white/70 mb-2">
+                            <span>مستوى الألم</span>
+                            <span className="font-bold text-cyan-300">{painLevel}/10</span>
+                          </div>
+                          <Slider value={[painLevel]} max={10} step={1} onValueChange={(v) => setPainLevel(v[0])} />
+                        </div>
+                        <div>
+                          <div className="text-xs text-white/70 mb-2">حالات مزمنة (اختر ما ينطبق)</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {CHRONIC_OPTIONS.map(c => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => toggleChronic(c)}
+                                className={`px-2.5 py-1 rounded-full text-[11px] border transition-all ${
+                                  chronicConditions.includes(c)
+                                    ? "bg-cyan-500/30 border-cyan-500/50 text-cyan-200"
+                                    : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                                }`}
+                              >
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <Input
+                          value={medications}
+                          onChange={e => setMedications(e.target.value)}
+                          placeholder="أدوية حالية (اختياري)"
+                          className="bg-black/40 border-white/10 text-white text-sm"
+                        />
+                      </div>
                     )}
                   </div>
 
