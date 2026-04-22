@@ -112,16 +112,18 @@ const inclusiveTools = [
 
 const trackDescriptions: Record<string, string> = {
   ai: 'أدوات ذكاء اصطناعي متقدمة تساعدك في التعلم والإبداع والبرمجة',
-  robotics: 'استكشف عالم الروبوتات والبناء الذكي والمحاكيات التفاعلية',
-  sustainability: 'أدوات تفاعلية لفهم الاستدامة البيئية وتطبيقها عملياً',
+  simulations: 'مختبر علمي رقمي يضم 49 محاكاة تفاعلية بدقة احترافية لجميع فروع العلوم',
   inclusive: 'تقنيات مساعدة تجعل التعلّم متاحاً للجميع بلا استثناء',
+  robotics: 'استكشف عالم الروبوتات والبناء الذكي والتصميم المعماري',
+  sustainability: 'أدوات تفاعلية لفهم الاستدامة البيئية وتطبيقها عملياً',
 };
 
 const tracks = [
   { id: 'ai', title: 'الذكاء الاصطناعي', subtitle: 'AI & Machine Learning', icon: Brain, color: 'from-violet-500 to-purple-600', accent: 'violet', tools: aiTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
-  { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools, extraTools: simulationTools, extraTitle: 'المحاكيات التفاعلية' },
-  { id: 'sustainability', title: 'التقنيات المستدامة', subtitle: 'Sustainable Tech', icon: Leaf, color: 'from-emerald-500 to-green-600', accent: 'emerald', tools: sustainabilityTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'simulations', title: 'المحاكيات التفاعلية', subtitle: 'Interactive Simulations Lab', icon: FlaskConical, color: 'from-fuchsia-500 via-cyan-500 to-emerald-500', accent: 'cyan', tools: simulationTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'inclusive', title: 'التعلّم الدامج', subtitle: 'Inclusive Education', icon: Accessibility, color: 'from-pink-500 to-rose-600', accent: 'pink', tools: inclusiveTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'sustainability', title: 'التقنيات المستدامة', subtitle: 'Sustainable Tech', icon: Leaf, color: 'from-emerald-500 to-green-600', accent: 'emerald', tools: sustainabilityTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
 ];
 
 const stats = [
