@@ -756,7 +756,7 @@ const GJUCompetition = () => {
         </section>
 
         {/* ═══════════════ COMPACT STICKY NAV (after scroll) ═══════════════ */}
-        <div className="sticky top-0 z-50 bg-[#04040e]/85 backdrop-blur-2xl border-b border-white/[0.06]">
+        <div data-sticky-tracknav className="sticky top-0 z-50 bg-[#04040e]/85 backdrop-blur-2xl border-b border-white/[0.06]">
           <div className="container mx-auto px-4">
             <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
               {tracks.map((track) => {
