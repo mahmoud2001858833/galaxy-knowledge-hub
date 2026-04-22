@@ -116,14 +116,67 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Try models in order, with each key as fallback
-    const MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
-
+    // Try Lovable AI Gateway first (Gemini via gateway), then direct Gemini API.
     let geminiResp: Response | null = null;
     let lastErrText = "";
     let lastStatus = 0;
 
+    // 1) Lovable AI Gateway attempt (uses LOVABLE_API_KEY automatically if available)
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (LOVABLE_API_KEY) {
+      const gatewayModels = ["google/gemini-2.5-flash", "google/gemini-2.5-pro", "google/gemini-2.5-flash-lite"];
+      for (const gm of gatewayModels) {
+        try {
+          // Build OpenAI-compatible message with image (data URL) if present
+          const userContent: any[] = [{ type: "text", text: textBlock }];
+          if (imageBase64) {
+            userContent.push({
+              type: "image_url",
+              image_url: { url: `data:${imageMimeType || "image/jpeg"};base64,${imageBase64}` },
+            });
+          }
+          const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: gm,
+              messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                { role: "user", content: userContent },
+              ],
+              response_format: { type: "json_object" },
+            }),
+          });
+          if (resp.ok) {
+            const j = await resp.json();
+            const content: string = j?.choices?.[0]?.message?.content ?? "";
+            console.log(`cancer-detection-ai: success via Lovable Gateway ${gm}`);
+            // Synthesize a Gemini-shaped response so downstream parsing works
+            geminiResp = new Response(
+              JSON.stringify({ candidates: [{ content: { parts: [{ text: content }] } }] }),
+              { status: 200 }
+            );
+            break;
+          }
+          lastStatus = resp.status;
+          lastErrText = await resp.text();
+          console.warn(`cancer-detection-ai: gateway ${gm} failed (${resp.status})`);
+          if (resp.status === 402) break; // out of credits — stop gateway attempts
+        } catch (e) {
+          lastErrText = e instanceof Error ? e.message : String(e);
+          console.warn(`cancer-detection-ai: gateway ${gm} threw`, lastErrText);
+        }
+      }
+    }
+
+    // 2) Direct Gemini API fallback with currently-supported models
+    const MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+
     outer: for (const model of MODELS) {
+      if (geminiResp) break;
       for (const { name, key } of apiKeys) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
         try {
