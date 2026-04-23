@@ -43,6 +43,7 @@ const FalakKnowledgeAI = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [inkOpen, setInkOpen] = useState(false);
   useEffect(() => {
     // Get current user for personalization
     const getCurrentUser = async () => {
