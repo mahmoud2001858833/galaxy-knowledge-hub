@@ -176,7 +176,7 @@ const AICodeStudio = () => {
   const [code, setCode] = useState("// اكتب وصفاً للكود الذي تريده وسيقوم الذكاء الاصطناعي بتوليده هنا\n");
   const [explanation, setExplanation] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [projectTitle, setProjectTitle] = useState("");
   const [saving, setSaving] = useState(false);
 
