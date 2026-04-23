@@ -240,7 +240,6 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
             setProgress(Math.round(m.progress * 100));
           }
         },
-        // @ts-expect-error - tesseract.js accepts these runtime params
         tessedit_pageseg_mode: '6',           // Assume a single uniform block of text
         preserve_interword_spaces: '1',
         user_defined_dpi: '300',
