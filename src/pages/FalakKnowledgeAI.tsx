@@ -333,6 +333,16 @@ const FalakKnowledgeAI = () => {
             <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30" title="رفع صورة">
               <Upload className="w-4 h-4" />
             </Button>
+
+            <Button
+              onClick={() => setInkOpen(true)}
+              variant="outline"
+              className="border-purple-500/50 text-purple-200 hover:bg-purple-900/30 gap-2"
+              title="INK TO TEXT AI - تحويل الكتابة إلى نص"
+            >
+              <ScanText className="w-4 h-4" />
+              <span className="hidden sm:inline">INK TO TEXT</span>
+            </Button>
             
             <Textarea value={inputText} onChange={e => setInputText(e.target.value)} onKeyPress={handleKeyPress} placeholder="اسأل أي سؤال عن المنهاج الأردني أو ارفع صورة للتحليل..." className="flex-1 min-h-[50px] bg-gray-900/50 border-indigo-500/30 text-white placeholder:text-gray-400 resize-none" rows={2} />
           </div>
