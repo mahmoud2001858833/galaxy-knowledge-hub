@@ -247,7 +247,7 @@ const AICodeStudio = () => {
     URL.revokeObjectURL(url);
   };
 
-  const isPreviewable = ["html", "css", "javascript"].includes(language);
+  const isPreviewable = ["html", "css", "javascript", "typescript", "python"].includes(language);
 
   return (
     <motion.div
