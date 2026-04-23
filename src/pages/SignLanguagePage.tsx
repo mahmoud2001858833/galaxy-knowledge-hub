@@ -365,25 +365,45 @@ const SignLanguagePage: React.FC = () => {
     const info = gestureToArabic[gesture];
     if (!info) return;
 
+    // ── Linguistic correction filter ──
+    const incoming: DetectedToken = {
+      gesture,
+      text: info.text,
+      confidence: gestureConfidence,
+      timestamp: Date.now(),
+    };
+    const decision = filterGesture(incoming, acceptedTokensRef.current);
+    if (decision.action === 'ignore') return;
+
+    if (decision.action === 'replace') {
+      // Replace the last accepted token (correct a confused detection)
+      acceptedTokensRef.current = [...acceptedTokensRef.current.slice(0, -1), incoming];
+      setGestureHistory(prev => [
+        { gesture, text: decision.text, emoji: info.emoji, time: new Date().toLocaleTimeString('ar-SA') },
+        ...prev.slice(1),
+      ].slice(0, 100));
+    } else {
+      acceptedTokensRef.current = [...acceptedTokensRef.current, incoming].slice(-200);
+      setGestureHistory(prev => [
+        { gesture, text: decision.text, emoji: info.emoji, time: new Date().toLocaleTimeString('ar-SA') },
+        ...prev,
+      ].slice(0, 100));
+    }
+
     setCurrentGesture(gesture);
     setConfidence(Math.round(gestureConfidence * 100));
-    setDetectedText(prev => (prev ? prev + ' ' : '') + info.text);
-    setGestureHistory(prev => [
-      { gesture, text: info.text, emoji: info.emoji, time: new Date().toLocaleTimeString('ar-SA') },
-      ...prev,
-    ].slice(0, 100));
+    setDetectedText(buildSentence(acceptedTokensRef.current));
 
-    // Speak the detected gesture immediately with better voice settings
+    // Speak only the cleaned word
     try {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech for faster response
-      const cleanText = info.text.replace(/[^\u0600-\u06FF\s\/]/g, '').trim();
+      window.speechSynthesis.cancel();
+      const cleanText = decision.text;
       if (cleanText) {
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = 'ar-SA';
         utterance.rate = 1.0;
         utterance.pitch = 1.05;
         utterance.volume = 1;
-        // Try to use a female Arabic voice
         const voices = window.speechSynthesis.getVoices();
         const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
         if (arabicVoice) utterance.voice = arabicVoice;
