@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, GraduationCap } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, GraduationCap, ScanText } from 'lucide-react';
+import InkToTextDialog from '@/components/ink-to-text/InkToTextDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,6 +43,7 @@ const FalakKnowledgeAI = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [inkOpen, setInkOpen] = useState(false);
   useEffect(() => {
     // Get current user for personalization
     const getCurrentUser = async () => {
@@ -331,6 +333,16 @@ const FalakKnowledgeAI = () => {
             <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30" title="رفع صورة">
               <Upload className="w-4 h-4" />
             </Button>
+
+            <Button
+              onClick={() => setInkOpen(true)}
+              variant="outline"
+              className="border-purple-500/50 text-purple-200 hover:bg-purple-900/30 gap-2"
+              title="INK TO TEXT AI - تحويل الكتابة إلى نص"
+            >
+              <ScanText className="w-4 h-4" />
+              <span className="hidden sm:inline">INK TO TEXT</span>
+            </Button>
             
             <Textarea value={inputText} onChange={e => setInputText(e.target.value)} onKeyPress={handleKeyPress} placeholder="اسأل أي سؤال عن المنهاج الأردني أو ارفع صورة للتحليل..." className="flex-1 min-h-[50px] bg-gray-900/50 border-indigo-500/30 text-white placeholder:text-gray-400 resize-none" rows={2} />
           </div>
@@ -369,7 +381,13 @@ const FalakKnowledgeAI = () => {
           </Card>
         </motion.div>
       </main>
-      
+
+      <InkToTextDialog
+        open={inkOpen}
+        onOpenChange={setInkOpen}
+        onUseText={(text) => setInputText((prev) => (prev ? prev + '\n' : '') + text)}
+      />
+
       <Footer />
     </div>;
 };
