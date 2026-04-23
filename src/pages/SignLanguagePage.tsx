@@ -237,15 +237,19 @@ const SignLanguagePage: React.FC = () => {
     const ringUp = isFingerExtended(ringTip, ringDip, ringPip, ringMcp);
     const pinkyUp = isFingerExtended(pinkyTip, pinkyDip, pinkyPip, pinkyMcp);
 
-    // Thumb detection - use x-axis for left/right hand + angle
+    // Thumb detection - more permissive: extended if it's clearly away from the index MCP
+    // OR has a straight angle. This fixes "open palm" being misread as "four fingers".
     const isLeftHand = thumbCmc.x < pinkyMcp.x;
     const thumbAngle = angle(thumbCmc, thumbMcp, thumbTip);
-    const thumbExtended = thumbAngle > 130 && (
-      isLeftHand 
-        ? (thumbTip.x > thumbIp.x + 0.015)
-        : (thumbTip.x < thumbIp.x - 0.015)
-    );
-    
+    const thumbToIndexMcp = dist(thumbTip, indexMcp);
+    const palmWidth = dist(indexMcp, pinkyMcp) || 0.0001;
+    const thumbAwayFromPalm = thumbToIndexMcp / palmWidth > 0.85; // thumb tip clearly outside palm
+    const thumbStraight = thumbAngle > 150;
+    const thumbSideOut = isLeftHand
+      ? (thumbTip.x > thumbIp.x + 0.005)
+      : (thumbTip.x < thumbIp.x - 0.005);
+    const thumbExtended = (thumbStraight && thumbSideOut) || thumbAwayFromPalm;
+
     const thumbUp = thumbExtended && thumbTip.y < thumbIp.y - 0.03 && thumbTip.y < wrist.y - 0.05;
     const thumbDown = thumbExtended && thumbTip.y > thumbIp.y + 0.03 && thumbTip.y > wrist.y + 0.04;
 
@@ -280,19 +284,24 @@ const SignLanguagePage: React.FC = () => {
       return { gesture: 'call_me', confidence: 0.88 };
     }
 
-    // Open palm: ALL 5 digits extended
-    if (indexUp && middleUp && ringUp && pinkyUp && thumbExtended) {
-      // Check palm orientation for flat_hand_down
+    // Open palm: ALL 4 fingers extended AND fingers are spread apart (typical wave/hello)
+    // Spread check distinguishes open palm from "four fingers together"
+    const fingersSpread =
+      dist(indexTip, middleTip) > 0.045 ||
+      dist(middleTip, ringTip) > 0.045 ||
+      dist(ringTip, pinkyTip) > 0.045;
+
+    if (indexUp && middleUp && ringUp && pinkyUp && (thumbExtended || fingersSpread)) {
       const palmFacingDown = wrist.y < indexMcp.y && (indexMcp.y - wrist.y) > 0.06;
-      if (palmFacingDown) {
+      if (palmFacingDown && thumbExtended) {
         return { gesture: 'flat_hand_down', confidence: 0.83 };
       }
-      return { gesture: 'open_palm', confidence: 0.95 };
+      return { gesture: 'open_palm', confidence: 0.94 };
     }
 
-    // Four fingers: all except thumb
-    if (indexUp && middleUp && ringUp && pinkyUp && !thumbExtended && extendedCount === 4) {
-      return { gesture: 'four_fingers', confidence: 0.88 };
+    // Four fingers (number 4): all 4 fingers up, thumb tucked, fingers held together
+    if (indexUp && middleUp && ringUp && pinkyUp && !thumbExtended && !fingersSpread && extendedCount === 4) {
+      return { gesture: 'four_fingers', confidence: 0.85 };
     }
 
     // Three fingers: index + middle + ring (NOT pinky)
@@ -538,26 +547,36 @@ const SignLanguagePage: React.FC = () => {
           setHandsCount(results.landmarks.length);
           const result = classifyGesture(results.landmarks);
           
-          // Stability filter
+          // Stability filter + de-duplication: don't repeat the same gesture
+          // unless the user releases (no detection) or shows a different gesture.
           if (result) {
             if (stableGestureRef.current.gesture === result.gesture) {
               stableGestureRef.current.count++;
             } else {
               stableGestureRef.current = { gesture: result.gesture, count: 1 };
             }
-            
+
             confidenceRef.current = result.confidence;
             setConfidence(Math.round(result.confidence * 100));
 
             const currentTime = Date.now();
-            // Trigger after 3 stable frames to avoid false positives, with 500ms cooldown
-            if (stableGestureRef.current.count >= 3 && currentTime - lastGestureTimeRef.current > 500) {
+            const isDifferentFromLast = lastFiredGestureRef.current !== result.gesture;
+            const longCooldownPassed = currentTime - lastGestureTimeRef.current > 1800;
+
+            // Fire when stable for 5 frames AND (gesture changed OR long cooldown for repeats)
+            if (
+              stableGestureRef.current.count >= 5 &&
+              (isDifferentFromLast || longCooldownPassed)
+            ) {
               handleGestureDetected(result.gesture, result.confidence);
               lastGestureTimeRef.current = currentTime;
-              stableGestureRef.current = { gesture: null, count: 0 };
+              lastFiredGestureRef.current = result.gesture;
+              stableGestureRef.current = { gesture: result.gesture, count: 0 };
             }
           } else {
             stableGestureRef.current = { gesture: null, count: 0 };
+            // Hand released → allow same gesture to fire again next time
+            lastFiredGestureRef.current = null;
           }
 
           // Draw landmarks
