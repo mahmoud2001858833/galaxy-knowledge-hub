@@ -978,7 +978,7 @@ const SignLanguagePage: React.FC = () => {
                         <Volume2 className="ml-2 h-4 w-4" />
                         نطق النص
                       </Button>
-                      <Button variant="outline" onClick={() => setDetectedText('')} className="border-slate-600">
+                      <Button variant="outline" onClick={() => { setDetectedText(''); acceptedTokensRef.current = []; setGestureHistory([]); }} className="border-slate-600">
                         <Trash2 className="ml-2 h-4 w-4" />
                         مسح
                       </Button>
