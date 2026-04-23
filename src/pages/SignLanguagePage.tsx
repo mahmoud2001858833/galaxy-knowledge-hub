@@ -150,6 +150,7 @@ const SignLanguagePage: React.FC = () => {
   const stableGestureRef = useRef<{ gesture: string | null; count: number }>({ gesture: null, count: 0 });
   const lastFiredGestureRef = useRef<string | null>(null);
   const confidenceRef = useRef<number>(0);
+  const acceptedTokensRef = useRef<DetectedToken[]>([]);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
