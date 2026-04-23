@@ -144,9 +144,7 @@ export const TextToSignTab: React.FC<Props> = ({ dictionary, speak }) => {
   const [spellUnknown, setSpellUnknown] = useState<boolean>(true);
   const timerRef = useRef<number | null>(null);
 
-  const tokens: Token[] = useMemo(() => {
-    return text.split(/\s+/).filter(Boolean).map(w => ({ word: w, match: findSign(w, dictionary) }));
-  }, [text, dictionary]);
+  const tokens: Token[] = useMemo(() => tokenize(text, dictionary), [text, dictionary]);
 
   // Build the full play sequence: each item is either { kind: 'sign', sign } or { kind: 'letter', letter, gesture, parent }
   type Step = { kind: 'sign'; sign: SignItem; word: string } | { kind: 'letter'; letter: string; gesture: string; word: string };
