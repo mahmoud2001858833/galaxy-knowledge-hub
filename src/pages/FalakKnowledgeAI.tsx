@@ -381,7 +381,13 @@ const FalakKnowledgeAI = () => {
           </Card>
         </motion.div>
       </main>
-      
+
+      <InkToTextDialog
+        open={inkOpen}
+        onOpenChange={setInkOpen}
+        onUseText={(text) => setInputText((prev) => (prev ? prev + '\n' : '') + text)}
+      />
+
       <Footer />
     </div>;
 };
