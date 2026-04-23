@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from '@/features/sign-language/camera';
 import LearnSignsTab from '@/features/sign-language/LearnSignsTab';
 import TextToSignTab from '@/features/sign-language/TextToSignTab';
+import { filterGesture, cleanGestureText, buildSentence, type DetectedToken } from '@/features/sign-language/gestureFilter';
 import { GraduationCap, Type } from 'lucide-react';
 
 // Extended sign language dictionary with more words and detailed descriptions
@@ -149,6 +150,7 @@ const SignLanguagePage: React.FC = () => {
   const stableGestureRef = useRef<{ gesture: string | null; count: number }>({ gesture: null, count: 0 });
   const lastFiredGestureRef = useRef<string | null>(null);
   const confidenceRef = useRef<number>(0);
+  const acceptedTokensRef = useRef<DetectedToken[]>([]);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -363,25 +365,45 @@ const SignLanguagePage: React.FC = () => {
     const info = gestureToArabic[gesture];
     if (!info) return;
 
+    // ── Linguistic correction filter ──
+    const incoming: DetectedToken = {
+      gesture,
+      text: info.text,
+      confidence: gestureConfidence,
+      timestamp: Date.now(),
+    };
+    const decision = filterGesture(incoming, acceptedTokensRef.current);
+    if (decision.action === 'ignore') return;
+
+    if (decision.action === 'replace') {
+      // Replace the last accepted token (correct a confused detection)
+      acceptedTokensRef.current = [...acceptedTokensRef.current.slice(0, -1), incoming];
+      setGestureHistory(prev => [
+        { gesture, text: decision.text, emoji: info.emoji, time: new Date().toLocaleTimeString('ar-SA') },
+        ...prev.slice(1),
+      ].slice(0, 100));
+    } else {
+      acceptedTokensRef.current = [...acceptedTokensRef.current, incoming].slice(-200);
+      setGestureHistory(prev => [
+        { gesture, text: decision.text, emoji: info.emoji, time: new Date().toLocaleTimeString('ar-SA') },
+        ...prev,
+      ].slice(0, 100));
+    }
+
     setCurrentGesture(gesture);
     setConfidence(Math.round(gestureConfidence * 100));
-    setDetectedText(prev => (prev ? prev + ' ' : '') + info.text);
-    setGestureHistory(prev => [
-      { gesture, text: info.text, emoji: info.emoji, time: new Date().toLocaleTimeString('ar-SA') },
-      ...prev,
-    ].slice(0, 100));
+    setDetectedText(buildSentence(acceptedTokensRef.current));
 
-    // Speak the detected gesture immediately with better voice settings
+    // Speak only the cleaned word
     try {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech for faster response
-      const cleanText = info.text.replace(/[^\u0600-\u06FF\s\/]/g, '').trim();
+      window.speechSynthesis.cancel();
+      const cleanText = decision.text;
       if (cleanText) {
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = 'ar-SA';
         utterance.rate = 1.0;
         utterance.pitch = 1.05;
         utterance.volume = 1;
-        // Try to use a female Arabic voice
         const voices = window.speechSynthesis.getVoices();
         const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
         if (arabicVoice) utterance.voice = arabicVoice;
@@ -956,7 +978,7 @@ const SignLanguagePage: React.FC = () => {
                         <Volume2 className="ml-2 h-4 w-4" />
                         نطق النص
                       </Button>
-                      <Button variant="outline" onClick={() => setDetectedText('')} className="border-slate-600">
+                      <Button variant="outline" onClick={() => { setDetectedText(''); acceptedTokensRef.current = []; setGestureHistory([]); }} className="border-slate-600">
                         <Trash2 className="ml-2 h-4 w-4" />
                         مسح
                       </Button>

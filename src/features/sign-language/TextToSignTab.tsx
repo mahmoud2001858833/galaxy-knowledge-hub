@@ -35,23 +35,103 @@ const ARABIC_LETTER_GESTURES: Record<string, string> = {
   'ة': '🤚', 'ى': '☝️', 'ء': '👆',
 };
 
+// Common Arabic synonyms / colloquial → dictionary key
+const SYNONYMS: Record<string, string> = {
+  'كيفك': 'كيف',
+  'كيفكم': 'كيف',
+  'شكرا': 'شكراً',
+  'مرحبًا': 'مرحبا',
+  'اهلا': 'أهلاً',
+  'اهلاً': 'أهلاً',
+  'وداعا': 'وداعاً',
+  'باي': 'وداعاً',
+  'مع السلامة': 'وداعاً',
+  'ابي': 'أب',
+  'امي': 'أم',
+  'بابا': 'أب',
+  'ماما': 'أم',
+  'اخي': 'أخ',
+  'اختي': 'أخت',
+  'بيتي': 'بيت',
+  'منزل': 'بيت',
+  'مدرستي': 'مدرسة',
+};
+
+// Multi-word phrases that should be recognized as a single sign
+const PHRASES = ['السلام عليكم', 'صباح الخير', 'مساء الخير', 'تصبح على خير', 'من فضلك', 'إن شاء الله'];
+
 const stripPunct = (s: string) => s.replace(/[.,!?؟،;:"'()[\]{}]/g, '');
+
+// Normalize Arabic text: remove diacritics, unify alef/yaa/taa-marbuta
+const normalize = (s: string): string =>
+  s
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '') // tashkeel + tatweel
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/ة/g, 'ه');
+
+const ARABIC_PREFIXES = ['وال', 'فال', 'بال', 'كال', 'لل', 'ال', 'و', 'ف', 'ب', 'ل', 'ك', 'س'];
 
 const findSign = (raw: string, dict: SignItem[]): SignItem | null => {
   const w = stripPunct(raw).trim();
   if (!w) return null;
+
+  // Synonym lookup (raw)
+  const synonymTarget = SYNONYMS[w];
+  if (synonymTarget) {
+    const s = dict.find(d => d.word === synonymTarget);
+    if (s) return s;
+  }
+
   // Exact match
   let hit = dict.find(d => d.word === w);
   if (hit) return hit;
-  // Match ignoring leading "ال"
-  if (w.startsWith('ال') && w.length > 2) {
-    hit = dict.find(d => d.word === w.slice(2));
-    if (hit) return hit;
-  }
-  // Match if dictionary word is contained in token (handles attached prefixes like وَ، فَ، بـ، لـ)
-  hit = dict.find(d => w.includes(d.word) && d.word.length >= 2);
+
+  // Normalized exact match
+  const nw = normalize(w);
+  hit = dict.find(d => normalize(d.word) === nw);
   if (hit) return hit;
+
+  // Strip prefixes and retry (longest first)
+  for (const p of ARABIC_PREFIXES) {
+    if (nw.startsWith(p) && nw.length > p.length + 1) {
+      const stripped = nw.slice(p.length);
+      hit = dict.find(d => normalize(d.word) === stripped);
+      if (hit) return hit;
+    }
+  }
+
+  // Substring match (handles attached prefixes/suffixes)
+  hit = dict.find(d => {
+    const nd = normalize(d.word);
+    return nd.length >= 3 && nw.includes(nd);
+  });
+  if (hit) return hit;
+
   return null;
+};
+
+// Tokenize text but glue together known multi-word phrases first
+const tokenize = (text: string, dict: SignItem[]): { word: string; match: SignItem | null }[] => {
+  let working = ' ' + text + ' ';
+  const placeholders: { id: string; phrase: string; match: SignItem }[] = [];
+  PHRASES.forEach((phrase, i) => {
+    const m = dict.find(d => d.word === phrase);
+    if (!m) return;
+    const id = `__PH${i}__`;
+    if (working.includes(' ' + phrase + ' ')) {
+      working = working.split(' ' + phrase + ' ').join(' ' + id + ' ');
+      placeholders.push({ id, phrase, match: m });
+    }
+  });
+  const rawTokens = working.trim().split(/\s+/).filter(Boolean);
+  return rawTokens.map(tok => {
+    const ph = placeholders.find(p => p.id === tok);
+    if (ph) return { word: ph.phrase, match: ph.match };
+    return { word: tok, match: findSign(tok, dict) };
+  });
 };
 
 export const TextToSignTab: React.FC<Props> = ({ dictionary, speak }) => {
@@ -64,9 +144,7 @@ export const TextToSignTab: React.FC<Props> = ({ dictionary, speak }) => {
   const [spellUnknown, setSpellUnknown] = useState<boolean>(true);
   const timerRef = useRef<number | null>(null);
 
-  const tokens: Token[] = useMemo(() => {
-    return text.split(/\s+/).filter(Boolean).map(w => ({ word: w, match: findSign(w, dictionary) }));
-  }, [text, dictionary]);
+  const tokens: Token[] = useMemo(() => tokenize(text, dictionary), [text, dictionary]);
 
   // Build the full play sequence: each item is either { kind: 'sign', sign } or { kind: 'letter', letter, gesture, parent }
   type Step = { kind: 'sign'; sign: SignItem; word: string } | { kind: 'letter'; letter: string; gesture: string; word: string };
