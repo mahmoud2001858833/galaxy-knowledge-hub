@@ -28,6 +28,8 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,8 +43,12 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
   };
 
   const startCamera = async () => {
+    setCameraError(null);
     try {
       stopCamera();
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('NotSupportedError');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
@@ -52,13 +58,20 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Camera error:', err);
-      toast({
-        title: 'تعذر الوصول للكاميرا',
-        description: 'يمكنك رفع صورة من جهازك بدلاً من ذلك.',
-        variant: 'destructive',
-      });
+      const name = err?.name || err?.message || '';
+      let msg = 'تعذّر الوصول إلى الكاميرا. يمكنك رفع صورة من جهازك بدلاً من ذلك.';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        msg = '🚫 تم رفض إذن الكاميرا. اسمح للموقع باستخدام الكاميرا من إعدادات المتصفح ثم أعد المحاولة.';
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        msg = '📷 لم يتم العثور على كاميرا متصلة بجهازك. جرّب رفع صورة بدلاً من ذلك.';
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        msg = '⚠️ الكاميرا مستخدَمة من تطبيق آخر. أغلِق التطبيقات الأخرى ثم أعد المحاولة.';
+      } else if (name === 'NotSupportedError' || name === 'SecurityError') {
+        msg = '🔒 المتصفح لا يدعم الكاميرا أو يجب فتح الموقع عبر HTTPS.';
+      }
+      setCameraError(msg);
     }
   };
 
@@ -72,6 +85,8 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
       setIsProcessing(false);
       setProgress(0);
       setCopied(false);
+      setCameraError(null);
+      setOcrError(null);
     }
   }, [open]);
 
@@ -90,33 +105,165 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
     setStep('capture');
   };
 
-  const runOCR = async (dataUrl: string) => {
+  // ───────── Image preprocessing for OCR ─────────
+  // 1) upscale small images, 2) grayscale + contrast stretch,
+  // 3) auto-crop dark borders, 4) Otsu-style binarization.
+  const preprocessImage = (dataUrl: string): Promise<string> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        // Upscale if too small (helps OCR a lot)
+        const minSide = 1200;
+        const scale = Math.max(1, minSide / Math.min(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const d = imageData.data;
+
+        // Grayscale + collect histogram
+        const hist = new Uint32Array(256);
+        for (let i = 0; i < d.length; i += 4) {
+          const g = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+          d[i] = d[i + 1] = d[i + 2] = g;
+          hist[g]++;
+        }
+
+        // Contrast stretch (ignore 1% tails)
+        const total = w * h;
+        const lowCut = total * 0.01;
+        const highCut = total * 0.99;
+        let acc = 0;
+        let lo = 0;
+        let hi = 255;
+        for (let i = 0; i < 256; i++) {
+          acc += hist[i];
+          if (acc >= lowCut) { lo = i; break; }
+        }
+        acc = 0;
+        for (let i = 0; i < 256; i++) {
+          acc += hist[i];
+          if (acc >= highCut) { hi = i; break; }
+        }
+        const range = Math.max(1, hi - lo);
+
+        // Otsu threshold on stretched values
+        const stretched = new Uint8ClampedArray(w * h);
+        const hist2 = new Uint32Array(256);
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+          const v = Math.max(0, Math.min(255, Math.round(((d[i] - lo) * 255) / range)));
+          stretched[p] = v;
+          hist2[v]++;
+        }
+        // Otsu
+        let sum = 0;
+        for (let t = 0; t < 256; t++) sum += t * hist2[t];
+        let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
+        for (let t = 0; t < 256; t++) {
+          wB += hist2[t];
+          if (wB === 0) continue;
+          const wF = total - wB;
+          if (wF === 0) break;
+          sumB += t * hist2[t];
+          const mB = sumB / wB;
+          const mF = (sum - sumB) / wF;
+          const between = wB * wF * (mB - mF) * (mB - mF);
+          if (between > maxVar) { maxVar = between; threshold = t; }
+        }
+
+        // Soft binarization: keep mid-tones near threshold for thin strokes
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+          const v = stretched[p];
+          let out: number;
+          if (v < threshold - 25) out = 0;
+          else if (v > threshold + 25) out = 255;
+          else out = v < threshold ? 40 : 215; // soft
+          d[i] = d[i + 1] = d[i + 2] = out;
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        // Auto-crop large white margins
+        const isWhiteRow = (y: number) => {
+          const row = ctx.getImageData(0, y, w, 1).data;
+          let dark = 0;
+          for (let i = 0; i < row.length; i += 4) if (row[i] < 200) dark++;
+          return dark < w * 0.01;
+        };
+        const isWhiteCol = (x: number) => {
+          const col = ctx.getImageData(x, 0, 1, h).data;
+          let dark = 0;
+          for (let i = 0; i < col.length; i += 4) if (col[i] < 200) dark++;
+          return dark < h * 0.01;
+        };
+        let top = 0, bottom = h - 1, left = 0, right = w - 1;
+        while (top < bottom && isWhiteRow(top)) top++;
+        while (bottom > top && isWhiteRow(bottom)) bottom--;
+        while (left < right && isWhiteCol(left)) left++;
+        while (right > left && isWhiteCol(right)) right--;
+        const pad = 12;
+        top = Math.max(0, top - pad);
+        left = Math.max(0, left - pad);
+        bottom = Math.min(h - 1, bottom + pad);
+        right = Math.min(w - 1, right + pad);
+        const cw = right - left + 1;
+        const ch = bottom - top + 1;
+        if (cw > 50 && ch > 50 && (cw < w * 0.98 || ch < h * 0.98)) {
+          const cropped = ctx.getImageData(left, top, cw, ch);
+          canvas.width = cw;
+          canvas.height = ch;
+          ctx.putImageData(cropped, 0, 0);
+        }
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+
+  const runOCR = async (rawDataUrl: string) => {
     setIsProcessing(true);
     setProgress(0);
+    setOcrError(null);
     try {
-      const { data } = await Tesseract.recognize(dataUrl, lang, {
+      // Preprocess for clearer characters
+      const processed = await preprocessImage(rawDataUrl);
+      setPreviewUrl(processed);
+
+      const { data } = await Tesseract.recognize(processed, lang, {
         logger: (m) => {
           if (m.status === 'recognizing text') {
             setProgress(Math.round(m.progress * 100));
           }
         },
-      });
-      const text = (data.text || '').trim();
+        // @ts-expect-error - tesseract.js accepts these runtime params
+        tessedit_pageseg_mode: '6',           // Assume a single uniform block of text
+        preserve_interword_spaces: '1',
+        user_defined_dpi: '300',
+      } as any);
+
+      const text = (data.text || '').replace(/\s+\n/g, '\n').trim();
+      const meanConf = typeof (data as any).confidence === 'number' ? (data as any).confidence : 0;
       setExtracted(text);
       setStep('result');
-      if (!text) {
-        toast({
-          title: 'لم يتم العثور على نص',
-          description: 'حاول التقاط صورة أوضح وبإضاءة أفضل.',
-        });
+
+      if (!text || text.length < 2) {
+        setOcrError(
+          '❗ لم يتم استخراج أي نص واضح من الصورة.\n\nنصائح:\n• استخدم إضاءة جيدة بدون انعكاسات\n• اجعل النص داخل الإطار وموازياً للكاميرا\n• قرّب الكاميرا حتى تملأ الكلمات معظم الصورة\n• تأكد من اختيار اللغة الصحيحة (' + (lang === 'ara' ? 'العربية' : 'English') + ')'
+        );
+      } else if (meanConf && meanConf < 55) {
+        setOcrError(
+          `⚠️ تم استخراج النص ولكن بثقة منخفضة (${Math.round(meanConf)}%). راجع النص أو حاول إعادة التصوير لنتيجة أدق.`
+        );
       }
     } catch (err) {
       console.error('OCR error:', err);
-      toast({
-        title: 'فشل استخراج النص',
-        description: 'حاول مرة أخرى بصورة أوضح.',
-        variant: 'destructive',
-      });
+      setOcrError('💥 فشل تشغيل محرّك OCR. تأكد من اتصال الإنترنت ثم اضغط "إعادة المحاولة".');
+      setStep('result');
     } finally {
       setIsProcessing(false);
     }
