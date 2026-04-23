@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, GraduationCap } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Video, Sparkles, Brain, BookOpen, Target, Eye, Upload, X, Loader2, User, GraduationCap, ScanText } from 'lucide-react';
+import InkToTextDialog from '@/components/ink-to-text/InkToTextDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
