@@ -176,7 +176,7 @@ const AICodeStudio = () => {
   const [code, setCode] = useState("// اكتب وصفاً للكود الذي تريده وسيقوم الذكاء الاصطناعي بتوليده هنا\n");
   const [explanation, setExplanation] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [projectTitle, setProjectTitle] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -247,7 +247,7 @@ const AICodeStudio = () => {
     URL.revokeObjectURL(url);
   };
 
-  const isPreviewable = ["html", "css", "javascript"].includes(language);
+  const isPreviewable = ["html", "css", "javascript", "typescript", "python"].includes(language);
 
   return (
     <motion.div
@@ -379,21 +379,96 @@ const AICodeStudio = () => {
 /* ============================== LIVE PREVIEW ============================== */
 const LivePreview = ({ code, language }: { code: string; language: string }) => {
   const [src, setSrc] = useState("");
+  const [runKey, setRunKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const buildSrc = (lang: string, src: string) => {
+    const base = `<!doctype html><html><head><meta charset="utf-8"><style>
+      body{background:#0a0b18;color:#e6e7ee;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:16px;margin:0;line-height:1.6}
+      #__console{white-space:pre-wrap;font-size:13px}
+      #__console .err{color:#ff6b6b}
+      #__console .warn{color:#ffd166}
+      #__console .info{color:#7dd3fc}
+      #__app{margin-top:12px}
+      .py-loading{color:#a78bfa;display:flex;align-items:center;gap:8px}
+      .py-loading::before{content:"";width:14px;height:14px;border:2px solid #a78bfa;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
+    </style></head><body>`;
+    const consoleSetup = `
+      const __out=document.createElement('div');__out.id='__console';document.body.appendChild(__out);
+      const __print=(cls,args)=>{const line=document.createElement('div');if(cls)line.className=cls;line.textContent=args.map(a=>{try{return typeof a==='object'?JSON.stringify(a,null,2):String(a)}catch(e){return String(a)}}).join(' ');__out.appendChild(line)};
+      const __origConsole=window.console;
+      window.console={log:(...a)=>__print('',a),error:(...a)=>__print('err',a),warn:(...a)=>__print('warn',a),info:(...a)=>__print('info',a)};
+      window.addEventListener('error',e=>__print('err',['Error:',e.message]));
+      window.addEventListener('unhandledrejection',e=>__print('err',['Promise:',e.reason]));
+    `;
+
+    if (lang === "html") {
+      return src;
+    }
+    if (lang === "css") {
+      return `${base}<style>${src}</style>
+        <div style="background:#fff;color:#111;padding:20px;border-radius:8px;margin-bottom:12px">
+          <h1>عنوان رئيسي</h1>
+          <p>فقرة نموذجية لاختبار التصميم.</p>
+          <button>زر</button> <a href="#">رابط</a>
+          <ul><li>عنصر ١</li><li>عنصر ٢</li></ul>
+        </div></body></html>`;
+    }
+    if (lang === "javascript") {
+      return `${base}<div id="app"></div><script>${consoleSetup}try{${src}}catch(e){console.error(e.message)}<\/script></body></html>`;
+    }
+    if (lang === "typescript") {
+      // strip TS types crudely via Babel
+      return `${base}<div id="app"></div>
+        <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"><\/script>
+        <script>${consoleSetup}try{const __js=Babel.transform(${JSON.stringify(src)},{presets:['typescript'],filename:'f.ts'}).code;(0,eval)(__js)}catch(e){console.error(e.message)}<\/script></body></html>`;
+    }
+    if (lang === "python") {
+      return `${base}<div class="py-loading">جارٍ تحميل بيئة Python...</div>
+        <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"><\/script>
+        <script>${consoleSetup}
+          (async()=>{
+            try{
+              const py=await loadPyodide();
+              document.querySelector('.py-loading')?.remove();
+              py.setStdout({batched:s=>console.log(s)});
+              py.setStderr({batched:s=>console.error(s)});
+              await py.runPythonAsync(${JSON.stringify(src)});
+            }catch(e){console.error(e.message||e)}
+          })();
+        <\/script></body></html>`;
+    }
+    return base + "</body></html>";
+  };
+
   useEffect(() => {
-    let html = "";
-    if (language === "html") html = code;
-    else if (language === "css") html = `<style>${code}</style><div style="padding:20px;color:#fff">معاينة CSS</div>`;
-    else if (language === "javascript")
-      html = `<!doctype html><html><body style="background:#0a0b18;color:#fff;font-family:sans-serif;padding:20px"><pre id="out"></pre><script>const log=(...a)=>{document.getElementById('out').textContent+=a.join(' ')+'\\n'};const console={log,error:log,warn:log};try{${code}}catch(e){log('Error:',e.message)}<\/script></body></html>`;
-    setSrc(html);
-  }, [code, language]);
+    setSrc(buildSrc(language, code));
+  }, [code, language, runKey]);
+
   return (
-    <iframe
-      srcDoc={src}
-      title="preview"
-      sandbox="allow-scripts"
-      className="w-full h-[600px] bg-white"
-    />
+    <div className="flex flex-col h-[600px] bg-[#0a0b18]">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-black/40">
+        <span className="text-xs text-white/60 flex items-center gap-1.5">
+          <Eye className="w-3.5 h-3.5" /> معاينة حية {language === "python" && "(Pyodide)"}
+        </span>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setRunKey((k) => k + 1)}
+          className="h-7 text-xs text-white/70 hover:text-white hover:bg-white/10"
+        >
+          <RefreshCcw className="w-3 h-3 ml-1" /> تشغيل
+        </Button>
+      </div>
+      <iframe
+        ref={iframeRef}
+        srcDoc={src}
+        title="preview"
+        sandbox="allow-scripts"
+        className="flex-1 w-full bg-white"
+      />
+    </div>
   );
 };
 
