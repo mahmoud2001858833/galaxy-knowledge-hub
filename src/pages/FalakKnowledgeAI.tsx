@@ -318,6 +318,18 @@ const FalakKnowledgeAI = () => {
               </button>
             </motion.div>}
           
+          {/* INK TO TEXT AI — prominent action bar */}
+          <div className="mb-3">
+            <Button
+              onClick={() => setInkOpen(true)}
+              className="w-full h-12 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-indigo-700 text-white font-bold gap-2 shadow-lg shadow-purple-500/30 border border-purple-400/40"
+              title="INK TO TEXT AI - تحويل الكتابة إلى نص"
+            >
+              <ScanText className="w-5 h-5" />
+              ✨ INK TO TEXT AI — حوّل أي كتابة (عربي/إنجليزي) إلى نص
+            </Button>
+          </div>
+
           {/* Input Area */}
           <div className="flex gap-2">
             <Button onClick={sendMessage} disabled={isLoading || !inputText.trim() && !selectedImage} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4">
@@ -332,16 +344,6 @@ const FalakKnowledgeAI = () => {
             
             <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30" title="رفع صورة">
               <Upload className="w-4 h-4" />
-            </Button>
-
-            <Button
-              onClick={() => setInkOpen(true)}
-              variant="outline"
-              className="border-purple-500/50 text-purple-200 hover:bg-purple-900/30 gap-2"
-              title="INK TO TEXT AI - تحويل الكتابة إلى نص"
-            >
-              <ScanText className="w-4 h-4" />
-              <span className="hidden sm:inline">INK TO TEXT</span>
             </Button>
             
             <Textarea value={inputText} onChange={e => setInputText(e.target.value)} onKeyPress={handleKeyPress} placeholder="اسأل أي سؤال عن المنهاج الأردني أو ارفع صورة للتحليل..." className="flex-1 min-h-[50px] bg-gray-900/50 border-indigo-500/30 text-white placeholder:text-gray-400 resize-none" rows={2} />
