@@ -50,6 +50,7 @@ import IslamicHistoricalEras from './pages/IslamicHistoricalEras';
 import BTEC from './pages/BTEC';
 import BTECInformationTechnology from './pages/BTECInformationTechnology';
 import TechCodingPlatform from './pages/TechCodingPlatform';
+import AIPlatformBuilderPro from './pages/AIPlatformBuilderPro';
 import Complaints from './pages/Complaints';
 import BTECStudentProjects from './components/btec/BTECStudentProjects';
 import CodeFixerSection from './components/btec/CodeFixerSection';
@@ -321,6 +322,10 @@ const router = createBrowserRouter([
       {
         path: 'btec/it/programming',
         element: <PublicRoute><TechCodingPlatform /></PublicRoute>,
+      },
+      {
+        path: 'ai-platform-builder',
+        element: <PublicRoute><AIPlatformBuilderPro /></PublicRoute>,
       },
       {
         path: 'btec/it/student-projects',

@@ -33,6 +33,7 @@ const aiTools = [
   { title: 'كشف السرطان بالذكاء الاصطناعي', description: 'فحص أوّلي تعليمي يحلّل الصور الطبية والأعراض ويعطي تقييم خطر مع تقرير PDF', icon: Microscope, gradient: 'from-cyan-500 via-fuchsia-500 to-violet-600', link: '/cancer-detection' },
   { title: 'توليد الصور بالذكاء الاصطناعي', description: 'أنشئ صوراً تعليمية احترافية باستخدام وصف نصي بسيط', icon: Image, gradient: 'from-pink-500 to-rose-600', link: '/ai-image-generator' },
   { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec/it/programming?tab=ai-assistant' },
+  { title: '🚀 باني المنصات بالـ AI', description: 'صف فكرتك ليبني الذكاء الاصطناعي منصة كاملة بقاعدة بيانات وتسجيل دخول ومساعد ذكي على 5 مراحل واضحة', icon: Sparkles, gradient: 'from-violet-500 via-cyan-500 to-emerald-500', link: '/ai-platform-builder' },
   { title: 'المساعد الطبي الذكي', description: 'مساعد طبي ذكي للإسعافات الأولية والتحليل التشخيصي', icon: Stethoscope, gradient: 'from-rose-500 to-red-600', link: '/medical-assistant' },
 ];
 
