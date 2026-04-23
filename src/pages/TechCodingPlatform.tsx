@@ -720,108 +720,155 @@ const PlatformBuilder = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="grid lg:grid-cols-[400px_1fr] gap-6"
+      className="space-y-4"
     >
-      {/* Chat panel */}
-      <div className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.04] to-blue-500/[0.02] backdrop-blur-xl flex flex-col h-[700px]">
-        <div className="p-5 border-b border-white/10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">باني المنصات الذكي</h2>
-            <p className="text-xs text-white/60">صف منصتك وسأبنيها لك</p>
-          </div>
-        </div>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.length === 0 && (
-            <div className="text-center py-12 text-white/40 text-sm">
-              <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>اكتب وصفاً لمنصتك في الأسفل</p>
-              <p className="mt-2 text-xs">مثال: منصة لإدارة المهام مع تسجيل دخول وقائمة مهام</p>
-            </div>
-          )}
-          {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-                  m.role === "user"
-                    ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
-                    : "bg-white/5 border border-white/10 text-white/90"
-                }`}
-              >
-                {m.content}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                جارٍ البناء...
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-white/10 space-y-2">
-          <div className="flex gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder="اوصف منصتك..."
-              className="bg-black/40 border-white/10 text-white min-h-[60px] resize-none"
-            />
-            <Button
-              onClick={send}
-              disabled={loading}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 self-end shadow-lg shadow-cyan-500/30"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+      {/* Capabilities banner */}
+      <div className="rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-purple-500/5 backdrop-blur-xl p-4">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <span className="font-bold text-white/90">قدرات المنصة المُولّدة:</span>
+          <span className="px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">🗄️ قاعدة بيانات</span>
+          <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">🔐 تسجيل دخول</span>
+          <span className="px-3 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">🤖 مساعد AI</span>
+          <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">🐍 Python</span>
+          <span className="px-3 py-1 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30">⚙️ C++</span>
+          <span className="px-3 py-1 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">📱 Responsive</span>
         </div>
       </div>
 
-      {/* Preview panel */}
-      <div className="rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden flex flex-col h-[700px]">
-        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-          <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-medium">معاينة حية</span>
+      <div className="grid lg:grid-cols-[380px_1fr] gap-4">
+        {/* Chat panel */}
+        <div className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.04] to-blue-500/[0.02] backdrop-blur-xl flex flex-col h-[760px]">
+          <div className="p-5 border-b border-white/10 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">باني المنصات الذكي</h2>
+              <p className="text-xs text-white/60">صف منصتك وسأبنيها كاملة</p>
+            </div>
           </div>
-          {html && (
-            <div className="flex gap-2 items-center">
-              <Input
-                value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
-                placeholder="اسم المشروع"
-                className="bg-black/40 border-white/10 text-white h-8 w-44 text-xs"
+
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.length === 0 && (
+              <div className="text-center py-8 text-white/50 text-sm space-y-3">
+                <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold text-white/70">اكتب وصفاً لمنصتك</p>
+                <div className="text-xs space-y-2 text-right bg-white/5 rounded-xl p-3 border border-white/10">
+                  <p className="text-cyan-300 font-bold">أمثلة:</p>
+                  <p>• منصة لإدارة المهام مع AI لاقتراح الأولويات</p>
+                  <p>• متجر إلكتروني بسلة مشتريات وقاعدة منتجات</p>
+                  <p>• منصة تعليم برمجة بمحرر Python و C++</p>
+                  <p>• شبكة اجتماعية مصغرة بمنشورات ومحادثات</p>
+                </div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                    m.role === "user"
+                      ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
+                      : "bg-white/5 border border-white/10 text-white/90"
+                  }`}
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                  جارٍ بناء المنصة الكاملة...
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 border-t border-white/10 space-y-2">
+            <div className="flex gap-2">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="اوصف منصتك بالتفصيل..."
+                className="bg-black/40 border-white/10 text-white min-h-[70px] resize-none"
               />
-              <Button size="sm" onClick={saveProject} disabled={saving} variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20">
-                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              <Button
+                onClick={send}
+                disabled={loading}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 self-end shadow-lg shadow-cyan-500/30"
+              >
+                <Send className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={downloadHtml} className="text-white/70">
-                <Download className="w-3.5 h-3.5" />
-              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview panel */}
+        <div className="rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden flex flex-col h-[760px]">
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-medium">معاينة حية تفاعلية</span>
+              {html && (
+                <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  ● جاهزة
+                </span>
+              )}
+            </div>
+            {html && (
+              <div className="flex gap-2 items-center">
+                <Input
+                  value={projectTitle}
+                  onChange={(e) => setProjectTitle(e.target.value)}
+                  placeholder="اسم المشروع"
+                  className="bg-black/40 border-white/10 text-white h-8 w-44 text-xs"
+                />
+                <Button size="sm" onClick={saveProject} disabled={saving} variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20">
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={downloadHtml} className="text-white/70" title="تحميل HTML">
+                  <Download className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    const w = window.open("", "_blank");
+                    if (w) { w.document.write(html); w.document.close(); }
+                  }}
+                  className="text-white/70"
+                  title="فتح في نافذة جديدة"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+          {html ? (
+            <iframe
+              srcDoc={html}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+              title="platform-preview"
+              className="flex-1 w-full bg-white"
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-white/30 p-8">
+              <Code2 className="w-20 h-20 mb-4 opacity-50" />
+              <p className="text-sm font-semibold mb-2">المعاينة الحية ستظهر هنا</p>
+              <p className="text-xs text-center max-w-md leading-relaxed">
+                ستحصل على منصة كاملة بقاعدة بيانات محلية، تسجيل دخول، مساعد AI مدمج،
+                ومحرر يُنفّذ Python و C++ مباشرة في المتصفح.
+              </p>
             </div>
           )}
         </div>
-        {html ? (
-          <iframe srcDoc={html} sandbox="allow-scripts" title="platform-preview" className="flex-1 w-full bg-white" />
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-white/30">
-            <Code2 className="w-16 h-16 mb-4 opacity-50" />
-            <p className="text-sm">المعاينة ستظهر هنا بعد البناء</p>
-          </div>
-        )}
       </div>
     </motion.div>
   );
