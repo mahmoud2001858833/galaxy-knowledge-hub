@@ -409,7 +409,7 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
                 <div className="relative rounded-xl overflow-hidden border border-indigo-500/40 bg-black aspect-video">
                   <video
                     ref={videoRef}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     playsInline
                     muted
                   />
