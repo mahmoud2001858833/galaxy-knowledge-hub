@@ -384,21 +384,44 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
                 </Button>
               </div>
 
-              <div className="relative rounded-xl overflow-hidden border border-indigo-500/40 bg-black aspect-video">
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  playsInline
-                  muted
-                />
-                <div className="absolute inset-6 border-2 border-dashed border-indigo-300/60 rounded-lg pointer-events-none" />
-                {isProcessing && (
-                  <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center">
-                    <Loader2 className="w-10 h-10 text-indigo-300 animate-spin mb-3" />
-                    <p className="text-white">جاري استخراج النص... {progress}%</p>
+              {cameraError ? (
+                <div className="rounded-xl border border-red-500/50 bg-red-950/40 p-5 text-right">
+                  <p className="text-red-200 whitespace-pre-line leading-relaxed">{cameraError}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 justify-end">
+                    <Button
+                      onClick={startCamera}
+                      className="bg-red-600 hover:bg-red-700 text-white gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      إعادة محاولة الكاميرا
+                    </Button>
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      variant="outline"
+                      className="border-indigo-400/50 text-indigo-200 hover:bg-indigo-900/40 gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      رفع صورة بدلاً من ذلك
+                    </Button>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="relative rounded-xl overflow-hidden border border-indigo-500/40 bg-black aspect-video">
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    playsInline
+                    muted
+                  />
+                  <div className="absolute inset-6 border-2 border-dashed border-indigo-300/60 rounded-lg pointer-events-none" />
+                  {isProcessing && (
+                    <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center">
+                      <Loader2 className="w-10 h-10 text-indigo-300 animate-spin mb-3" />
+                      <p className="text-white">جاري معالجة الصورة واستخراج النص... {progress}%</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <canvas ref={canvasRef} className="hidden" />
 
