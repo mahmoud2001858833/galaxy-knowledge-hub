@@ -473,6 +473,12 @@ const InkToTextDialog: React.FC<Props> = ({ open, onOpenChange, onUseText }) => 
                 </div>
               )}
 
+              {ocrError && (
+                <div className="rounded-xl border border-amber-500/50 bg-amber-950/30 p-4 text-right">
+                  <p className="text-amber-200 whitespace-pre-line text-sm leading-relaxed">{ocrError}</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm text-indigo-300 mb-2">
                   النص المستخرج (يمكنك تعديله قبل الاستخدام):
