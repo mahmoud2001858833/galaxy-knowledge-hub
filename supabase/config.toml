@@ -198,6 +198,21 @@ verify_jwt = false
 [functions.platform-ai-proxy]
 verify_jwt = false
 
+[functions.platform-stage-analyze]
+verify_jwt = false
+
+[functions.platform-stage-schema]
+verify_jwt = false
+
+[functions.platform-stage-ui]
+verify_jwt = false
+
+[functions.platform-stage-logic]
+verify_jwt = false
+
+[functions.platform-stage-assemble]
+verify_jwt = false
+
 [functions.complaints-admin]
 verify_jwt = false
 
