@@ -8,6 +8,7 @@ export interface SavedPlatform {
   html: string;
   createdAt: string;
   analysis?: any;
+  files?: Array<{ path: string; content: string; language: string }>;
 }
 
 interface Props {

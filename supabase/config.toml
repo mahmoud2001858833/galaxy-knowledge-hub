@@ -213,6 +213,9 @@ verify_jwt = false
 [functions.platform-stage-assemble]
 verify_jwt = false
 
+[functions.platform-stage-files]
+verify_jwt = false
+
 [functions.complaints-admin]
 verify_jwt = false
 
