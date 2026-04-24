@@ -16,9 +16,11 @@ import MyPlatforms, { type SavedPlatform } from "@/components/platform-builder/M
 import BuilderSettings, { type BuilderConfig } from "@/components/platform-builder/BuilderSettings";
 import FilesExplorer, { type ProjectFile } from "@/components/platform-builder/FilesExplorer";
 import LivePreview from "@/components/platform-builder/LivePreview";
+import DesignPreferencesPanel, { DEFAULT_PREFERENCES, type DesignPreferences } from "@/components/platform-builder/DesignPreferences";
 
 const STORAGE_KEY = "ai_platform_builder_v2";
 const CONFIG_KEY = "ai_platform_builder_config_v2";
+const PREFS_KEY = "ai_platform_builder_design_prefs_v1";
 
 const DEFAULT_CONFIG: BuilderConfig = {
   uiModel: "google/gemini-2.5-flash",
@@ -168,6 +170,7 @@ export default function AIPlatformBuilderPro() {
   const [config, setConfig] = useState<BuilderConfig>(DEFAULT_CONFIG);
   const [totalBuilds, setTotalBuilds] = useState(0);
   const [lastBuildAt, setLastBuildAt] = useState<string | null>(null);
+  const [designPrefs, setDesignPrefs] = useState<DesignPreferences>(DEFAULT_PREFERENCES);
 
   useEffect(() => {
     try {
@@ -180,8 +183,14 @@ export default function AIPlatformBuilderPro() {
       }
       const cfg = localStorage.getItem(CONFIG_KEY);
       if (cfg) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(cfg) });
+      const prefs = localStorage.getItem(PREFS_KEY);
+      if (prefs) setDesignPrefs({ ...DEFAULT_PREFERENCES, ...JSON.parse(prefs) });
     } catch {}
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(designPrefs));
+  }, [designPrefs]);
 
   const persist = (next: { platforms?: SavedPlatform[]; totalBuilds?: number; lastBuildAt?: string | null }) => {
     const merged = {
@@ -250,7 +259,7 @@ export default function AIPlatformBuilderPro() {
       // Stage 3: generate all files (single optimized call → 20+ files)
       updateStage("files", { status: "running" });
       const f = await callStage("platform-stage-files", {
-        description, analysis, schema, model: config.uiModel,
+        description, analysis, schema, model: config.uiModel, designPreferences: designPrefs,
       });
       const projFiles: ProjectFile[] = f.files || [];
       if (projFiles.length < 5) {
@@ -446,6 +455,8 @@ export default function AIPlatformBuilderPro() {
                     )}
                   </div>
                 </div>
+
+                <DesignPreferencesPanel value={designPrefs} onChange={setDesignPrefs} disabled={building} />
 
                 <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">

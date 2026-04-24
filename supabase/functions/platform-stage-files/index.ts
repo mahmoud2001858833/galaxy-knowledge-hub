@@ -1161,7 +1161,23 @@ function pageFileFor(table: any): FileObj {
   };
 }
 
-async function generateBrandTheme(description: string, analysis: any): Promise<{ css: string; hero: string } | null> {
+function formatPrefs(p: any = {}): string {
+  if (!p || typeof p !== "object") return "لا تفضيلات محددة — اختر أنت بحرية كاملة.";
+  const lines: string[] = [];
+  const isAuto = (v: any) => !v || v === "auto" || v === "";
+  if (!isAuto(p.style)) lines.push(`• الستايل / الحركة التصميمية: ${p.style} — يجب أن تتبع هذه الحركة بوضوح في كل عنصر.`);
+  if (!isAuto(p.palette)) lines.push(`• لوحة الألوان المطلوبة: ${p.palette} — استخدم هذه العائلة اللونية بشكل أساسي في palette و gradients.`);
+  if (!isAuto(p.theme)) lines.push(`• الوضع: ${p.theme === 'dark' ? 'داكن (خلفيات قاتمة)' : p.theme === 'light' ? 'فاتح (خلفيات بيضاء/كريمي)' : 'تلقائي'}`);
+  if (!isAuto(p.layout)) lines.push(`• شكل الـ Hero: heroArchetype = "${p.layout}" — استخدم هذا التصميم تحديداً.`);
+  if (!isAuto(p.typography)) lines.push(`• الخطوط المطلوبة: ${p.typography} — استخدم الخط الأول للعناوين والثاني للنص.`);
+  if (!isAuto(p.vibe)) lines.push(`• المزاج / الإحساس العام: ${p.vibe} — يجب أن يظهر هذا في الألوان والحركات والصياغة.`);
+  if (p.useImages === false) lines.push(`• ⚠️ ممنوع استخدام الصور من Unsplash — استبدلها بأشكال SVG وأيقونات وتدرجات فقط. اجعل heroImageQuery و gallery و features.imageQuery فارغة.`);
+  else lines.push(`• استخدم صوراً احترافية من Unsplash (heroImageQuery, gallery, features) مرتبطة بدقة بموضوع المنصة.`);
+  if (p.customNotes && String(p.customNotes).trim()) lines.push(`• ملاحظات إضافية من المستخدم (إلزامية): ${String(p.customNotes).trim()}`);
+  return lines.length ? lines.join("\n") : "لا تفضيلات محددة — اختر أنت بحرية كاملة.";
+}
+
+async function generateBrandTheme(description: string, analysis: any, prefs: any = {}): Promise<{ css: string; hero: string } | null> {
   const KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!KEY) return null;
   try {
@@ -1241,7 +1257,7 @@ async function generateBrandTheme(description: string, analysis: any): Promise<{
         model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: `وصف المنصة: ${description}\nالتحليل: ${JSON.stringify(analysis)}\n\nصمّم هوية بصرية بمستوى Awwwards Site of the Day. كن جريئاً واستثنائياً.` },
+          { role: "user", content: `وصف المنصة: ${description}\nالتحليل: ${JSON.stringify(analysis)}\n\n=== تفضيلات المستخدم الإلزامية (يجب الالتزام بها بدقة، تجاوزها يعتبر فشلاً) ===\n${formatPrefs(prefs)}\n\nصمّم هوية بصرية بمستوى Awwwards Site of the Day. كن جريئاً واستثنائياً، لكن التزم بكل تفضيل اختاره المستخدم أعلاه.` },
         ],
         response_format: { type: "json_object" },
       }),
@@ -1483,7 +1499,7 @@ ${footerHtml}`;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { description, analysis, schema } = await req.json();
+    const { description, analysis, schema, designPreferences } = await req.json();
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
@@ -1493,7 +1509,7 @@ serve(async (req) => {
     const finalSchema = { ...schema, tables };
 
     // Generate UNIQUE brand identity for this specific platform (parallel-safe)
-    const brand = await generateBrandTheme(description || "", analysis || {});
+    const brand = await generateBrandTheme(description || "", analysis || {}, designPreferences || {});
 
     const core = defaultCoreFiles(analysis || {}, finalSchema, SUPABASE_URL, SUPABASE_ANON);
     const modules = tables.map(moduleFileFor);
