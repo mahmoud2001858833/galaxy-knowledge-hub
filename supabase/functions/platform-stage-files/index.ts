@@ -1161,7 +1161,7 @@ function pageFileFor(table: any): FileObj {
   };
 }
 
-async function generateBrandTheme(description: string, analysis: any): Promise<{ css: string; hero: string } | null> {
+async function generateBrandTheme(description: string, analysis: any, prefs: any = {}): Promise<{ css: string; hero: string } | null> {
   const KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!KEY) return null;
   try {
