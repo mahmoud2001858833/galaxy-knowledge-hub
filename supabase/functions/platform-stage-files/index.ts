@@ -288,22 +288,35 @@ window.DB = (function(){
   return { register, login, logout, current, require };
 })();`;
 
+  const platformContext = `أنت المساعد الذكي داخل منصة "${platformName}". تعرف عن قاعدة البيانات (الجداول: ${tableNames.join("، ") || "لا يوجد"}). ساعد المستخدم في فهم البيانات، اقتراح إجراءات، شرح الميزات، والإجابة عن أي سؤال بالعربية بشكل واضح ومنظم. استخدم تنسيقًا جميلاً (نقاط، عناوين قصيرة عند الحاجة).`;
   const aiJs = `window.AI = (function(){
   const URL = ${JSON.stringify(supabaseUrl + "/functions/v1/platform-ai-proxy")};
   const KEY = ${JSON.stringify(supabaseAnon)};
-  async function ask(prompt, system){
+  const SYSTEM = ${JSON.stringify(platformContext)};
+  const history = [];
+  async function ask(prompt, extraSystem){
     try {
+      history.push({ role:'user', content: String(prompt) });
       const r = await fetch(URL, {
         method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY},
-        body: JSON.stringify({ prompt, system })
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY,'apikey':KEY},
+        body: JSON.stringify({
+          messages: history.slice(-10),
+          system: extraSystem ? SYSTEM+'\\n'+extraSystem : SYSTEM
+        })
       });
-      if (!r.ok) throw new Error('AI error '+r.status);
-      const d = await r.json();
-      return d.text || d.message || '';
-    } catch(e){ return 'تعذر الاتصال بالمساعد: '+e.message; }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = d.error || ('خطأ '+r.status);
+        return '⚠️ '+msg;
+      }
+      const reply = d.reply || d.text || d.message || '';
+      if (reply) history.push({ role:'assistant', content: reply });
+      return reply || 'لم يصل رد من المساعد.';
+    } catch(e){ return '⚠️ تعذر الاتصال بالمساعد: '+e.message; }
   }
-  return { ask };
+  function reset(){ history.length = 0; }
+  return { ask, reset, history: () => [...history] };
 })();`;
 
   const routerJs = `window.Router = (function(){
