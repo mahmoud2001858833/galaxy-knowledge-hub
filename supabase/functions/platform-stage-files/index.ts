@@ -1195,13 +1195,35 @@ async function generateBrandTheme(description: string, analysis: any): Promise<{
   "heroCtaPrimary": "نص الزر الأساسي (2-3 كلمات + أيقونة سهم)",
   "heroCtaSecondary": "نص الزر الثانوي",
   "heroDecorationSvg": "كود SVG كامل لشكل زخرفي فريد يوضع في الخلفية (دوائر، موجات، شبكات، نقاط، خطوط هندسية، أيقونات مجردة...) - استخدم viewBox=0 0 800 600 وألواناً شفافة - اجعله احترافياً ومتقناً",
-  "stats": [ {"number":"10K+","label":"مستخدم"}, {"number":"99%","label":"رضا"}, {"number":"24/7","label":"دعم"}, {"number":"+50","label":"ميزة"} ],
-  "features": [
-    {"icon":"emoji أو رمز","title":"عنوان قصير","desc":"وصف 10-15 كلمة","tag":"كلمة وسم"},
-    ... 6 عناصر متنوعة ومرتبطة بالمنصة بدقة
+  "brandName": "اسم تجاري قصير وأنيق للمنصة (كلمة أو كلمتين)",
+  "navLinks": [
+    {"label":"الرئيسية","href":"#/"},
+    {"label":"المميزات","href":"#features"},
+    {"label":"المعرض","href":"#gallery"},
+    {"label":"حولنا","href":"#/about"},
+    {"label":"تواصل","href":"#/contact"}
   ],
-  "testimonial": { "quote": "اقتباس من مستخدم بالعربية (15-25 كلمة)", "author": "اسم", "role": "وظيفة" },
+  "heroImageQuery": "كلمات إنجليزية دقيقة للبحث في Unsplash عن صورة hero احترافية مرتبطة بموضوع المنصة (مثلاً: 'modern classroom students learning' أو 'fresh organic food kitchen')",
+  "stats": [ {"number":"10K+","label":"مستخدم","color":"primary"}, {"number":"99%","label":"رضا","color":"accent"}, {"number":"24/7","label":"دعم","color":"primary2"}, {"number":"+50","label":"ميزة","color":"primary"} ],
+  "features": [
+    {"icon":"emoji","title":"عنوان قصير","desc":"وصف 10-15 كلمة","tag":"كلمة وسم","color":"H S% L%","imageQuery":"كلمات بحث Unsplash"},
+    ... 6 عناصر متنوعة ومرتبطة بالمنصة، كل واحد بلون hsl مختلف ومتناغم
+  ],
+  "gallery": [
+    {"title":"عنوان","query":"unsplash search keywords","caption":"شرح قصير"},
+    ... 6 صور متنوعة مرتبطة بالمنصة بدقة
+  ],
+  "testimonials": [
+    {"quote":"اقتباس عربي (15-25 كلمة)","author":"اسم","role":"وظيفة","avatarQuery":"portrait professional"},
+    ... 3 شهادات
+  ],
   "ctaSection": { "title": "عنوان قسم الدعوة الأخيرة", "subtitle": "وصف", "button": "نص الزر" },
+  "footerTagline": "جملة قصيرة عن المنصة في الفوتر",
+  "footerColumns": [
+    {"title":"المنصة","links":[{"label":"المميزات","href":"#features"},{"label":"الأسعار","href":"#"},{"label":"تحديثات","href":"#"}]},
+    {"title":"الشركة","links":[{"label":"حولنا","href":"#/about"},{"label":"الفريق","href":"#"},{"label":"الوظائف","href":"#"}]},
+    {"title":"الدعم","links":[{"label":"المساعدة","href":"#"},{"label":"تواصل","href":"#/contact"},{"label":"الأسئلة","href":"#"}]}
+  ],
   "extraCss": "CSS متقدم وفريد — يجب أن يحتوي على: keyframes animations مخصصة، تأثيرات hover متقنة على .btn و .card و .feature-card، شكل مخصص لـ scrollbar، خلفية متحركة بـ ::before على .hero-unique، تأثيرات gradient text، pulse/float/shimmer animations، noise overlay، blob shapes — لا تقل عن 60 سطر من CSS عالي الجودة",
   "noiseTexture": true | false
 }
