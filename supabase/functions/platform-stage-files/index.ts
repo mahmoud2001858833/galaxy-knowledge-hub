@@ -480,14 +480,18 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
     const exists = DB.table('users').where(u => u.email===email).first();
     if (exists) throw new Error('البريد مسجل مسبقاً');
     const hash = await Utils.sha256(password);
-    const user = DB.table('users').insert({
+    const payload = {
       email: email.trim().toLowerCase(),
       name: name.trim(),
+      full_name: name.trim(),
+      username: name.trim(),
       password: hash,
       role: 'user',
       avatar: '',
-      bio: ''
-    });
+      bio: '',
+      is_active: true
+    };
+    const user = DB.table('users').insert(payload);
     setSession(user, remember);
     return user;
   }
