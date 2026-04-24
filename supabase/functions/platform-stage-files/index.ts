@@ -1241,7 +1241,7 @@ async function generateBrandTheme(description: string, analysis: any, prefs: any
         model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: `وصف المنصة: ${description}\nالتحليل: ${JSON.stringify(analysis)}\n\nصمّم هوية بصرية بمستوى Awwwards Site of the Day. كن جريئاً واستثنائياً.` },
+          { role: "user", content: `وصف المنصة: ${description}\nالتحليل: ${JSON.stringify(analysis)}\n\n=== تفضيلات المستخدم الإلزامية (يجب الالتزام بها بدقة، تجاوزها يعتبر فشلاً) ===\n${formatPrefs(prefs)}\n\nصمّم هوية بصرية بمستوى Awwwards Site of the Day. كن جريئاً واستثنائياً، لكن التزم بكل تفضيل اختاره المستخدم أعلاه.` },
         ],
         response_format: { type: "json_object" },
       }),
@@ -1483,7 +1483,7 @@ ${footerHtml}`;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { description, analysis, schema } = await req.json();
+    const { description, analysis, schema, designPreferences } = await req.json();
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
@@ -1493,7 +1493,7 @@ serve(async (req) => {
     const finalSchema = { ...schema, tables };
 
     // Generate UNIQUE brand identity for this specific platform (parallel-safe)
-    const brand = await generateBrandTheme(description || "", analysis || {});
+    const brand = await generateBrandTheme(description || "", analysis || {}, designPreferences || {});
 
     const core = defaultCoreFiles(analysis || {}, finalSchema, SUPABASE_URL, SUPABASE_ANON);
     const modules = tables.map(moduleFileFor);
