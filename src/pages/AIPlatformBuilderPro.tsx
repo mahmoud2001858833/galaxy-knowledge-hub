@@ -183,8 +183,14 @@ export default function AIPlatformBuilderPro() {
       }
       const cfg = localStorage.getItem(CONFIG_KEY);
       if (cfg) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(cfg) });
+      const prefs = localStorage.getItem(PREFS_KEY);
+      if (prefs) setDesignPrefs({ ...DEFAULT_PREFERENCES, ...JSON.parse(prefs) });
     } catch {}
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(designPrefs));
+  }, [designPrefs]);
 
   const persist = (next: { platforms?: SavedPlatform[]; totalBuilds?: number; lastBuildAt?: string | null }) => {
     const merged = {
@@ -253,7 +259,7 @@ export default function AIPlatformBuilderPro() {
       // Stage 3: generate all files (single optimized call → 20+ files)
       updateStage("files", { status: "running" });
       const f = await callStage("platform-stage-files", {
-        description, analysis, schema, model: config.uiModel,
+        description, analysis, schema, model: config.uiModel, designPreferences: designPrefs,
       });
       const projFiles: ProjectFile[] = f.files || [];
       if (projFiles.length < 5) {
