@@ -16,9 +16,11 @@ import MyPlatforms, { type SavedPlatform } from "@/components/platform-builder/M
 import BuilderSettings, { type BuilderConfig } from "@/components/platform-builder/BuilderSettings";
 import FilesExplorer, { type ProjectFile } from "@/components/platform-builder/FilesExplorer";
 import LivePreview from "@/components/platform-builder/LivePreview";
+import DesignPreferencesPanel, { DEFAULT_PREFERENCES, type DesignPreferences } from "@/components/platform-builder/DesignPreferences";
 
 const STORAGE_KEY = "ai_platform_builder_v2";
 const CONFIG_KEY = "ai_platform_builder_config_v2";
+const PREFS_KEY = "ai_platform_builder_design_prefs_v1";
 
 const DEFAULT_CONFIG: BuilderConfig = {
   uiModel: "google/gemini-2.5-flash",
@@ -168,6 +170,7 @@ export default function AIPlatformBuilderPro() {
   const [config, setConfig] = useState<BuilderConfig>(DEFAULT_CONFIG);
   const [totalBuilds, setTotalBuilds] = useState(0);
   const [lastBuildAt, setLastBuildAt] = useState<string | null>(null);
+  const [designPrefs, setDesignPrefs] = useState<DesignPreferences>(DEFAULT_PREFERENCES);
 
   useEffect(() => {
     try {
