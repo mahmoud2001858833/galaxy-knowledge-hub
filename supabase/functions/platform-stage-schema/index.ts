@@ -13,17 +13,55 @@ serve(async (req) => {
     const KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!KEY) throw new Error("LOVABLE_API_KEY not set");
 
-    const sys = `أنت مصمم قواعد بيانات. بناءً على تحليل المنصة، صمّم schema مناسب لـ localStorage DB.
-أعد JSON فقط:
+    const sys = `أنت مهندس قواعد بيانات محترف. صمّم schema احترافي قوي.
+
+أعد JSON بهذا الشكل بالضبط:
 {
   "tables": [
-    { "name": "users", "fields": [{"name":"id","type":"string"},{"name":"email","type":"string"},{"name":"password","type":"string"},{"name":"full_name","type":"string"},{"name":"avatar","type":"string"},{"name":"created_at","type":"datetime"}], "seed": [{"email":"demo@demo.com","password":"123456","full_name":"مستخدم تجريبي"}] },
-    ...
+    {
+      "name": "users",
+      "displayName": "المستخدمون",
+      "fields": [
+        {"name":"id","type":"uuid","primary":true,"default":"uuid()"},
+        {"name":"email","type":"string","required":true,"unique":true,"validate":"email"},
+        {"name":"password_hash","type":"string","required":true,"hidden":true},
+        {"name":"full_name","type":"string","required":true,"minLength":2},
+        {"name":"avatar","type":"url","default":""},
+        {"name":"role","type":"enum","options":["user","admin"],"default":"user"},
+        {"name":"bio","type":"text","default":""},
+        {"name":"is_active","type":"boolean","default":true},
+        {"name":"last_login","type":"datetime","default":null},
+        {"name":"created_at","type":"datetime","default":"now()","auto":true},
+        {"name":"updated_at","type":"datetime","default":"now()","auto":true}
+      ],
+      "indexes": ["email", "role"],
+      "seed": [
+        {"email":"admin@demo.com","password_hash":"sha256:demo","full_name":"المدير","role":"admin"},
+        {"email":"user@demo.com","password_hash":"sha256:demo","full_name":"مستخدم تجريبي","role":"user"}
+      ]
+    }
   ],
-  "relationships": ["posts.user_id -> users.id", ...],
+  "relationships": [
+    {"from":"posts.user_id","to":"users.id","type":"many-to-one","onDelete":"cascade"}
+  ],
+  "indexes": [
+    {"table":"posts","fields":["user_id","created_at"]}
+  ],
   "notes": "ملاحظات تصميم"
 }
-احرص دوماً على وجود جدول users إذا كانت needsAuth=true، وأضف بيانات seed واقعية لكل جدول (3-5 صفوف).`;
+
+قواعد إلزامية:
+- جدول users إلزامي إذا needsAuth=true (بكل الحقول أعلاه)
+- كل جدول يحتوي 8-15 حقلاً متنوعاً
+- استخدم أنواع متنوعة: uuid, string, text, integer, float, boolean, datetime, date, enum, url, email, json, array
+- حدّد primary, unique, required, default, validate, foreignKey بدقة
+- أضف indexes على الحقول كثيرة البحث
+- أضف 5-10 صفوف seed واقعية بالعربية لكل جدول
+- صمم 4-7 جداول حسب الحاجة (مثلاً: users, courses, lessons, enrollments, comments, notifications, settings)
+- علاقات واضحة بين الجداول
+- نوع الحقل foreignKey مع جدول مرتبط حقيقي
+
+التزم بالـ JSON الصحيح فقط.`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -32,7 +70,7 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: `التحليل: ${JSON.stringify(analysis)}` },
+          { role: "user", content: `التحليل: ${JSON.stringify(analysis)}\nصمّم schema احترافي قوي.` },
         ],
         response_format: { type: "json_object" },
       }),
