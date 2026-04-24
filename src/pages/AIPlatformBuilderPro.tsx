@@ -35,6 +35,63 @@ const initialStages = (): Stage[] => [
   { id: "preview", title: "بناء المعاينة الحية", emoji: "✅", description: "ربط الملفات وعرض النتيجة", status: "pending" },
 ];
 
+const PROFESSIONAL_PROMPT = `أنشئ منصة ويب احترافية متكاملة بالمواصفات التالية:
+
+🎯 الهوية والتصميم:
+- اسم المنصة: [اختر اسماً جذاباً مناسباً]
+- تصميم عصري داكن مع لمسات Glassmorphism وتدرجات نيون (بنفسجي/سماوي)
+- خط Cairo، واجهة RTL عربية كاملة، Responsive لكل الأحجام
+- أنيميشن سلس على البطاقات والأزرار والانتقالات
+
+👤 نظام المستخدمين:
+- تسجيل/دخول بالبريد وكلمة المرور (تشفير SHA-256)
+- ملف شخصي قابل للتعديل: اسم، صورة، نبذة، إحصائيات
+- أدوار: admin / user مع صلاحيات مختلفة
+- Session management مع تذكر الدخول
+
+📊 قاعدة بيانات احترافية (10+ جداول):
+- users (المستخدمون)
+- profiles (الملفات الشخصية)
+- categories (التصنيفات)
+- posts/items (المحتوى الرئيسي مع صور ووصف)
+- comments (التعليقات)
+- likes (الإعجابات)
+- notifications (الإشعارات)
+- messages (الرسائل الخاصة)
+- activities (سجل النشاط)
+- settings (الإعدادات لكل مستخدم)
+- علاقات وindexes واضحة، soft-delete، timestamps تلقائية
+
+🚀 الميزات الأساسية:
+- لوحة تحكم رئيسية بإحصائيات مرئية وكروت متحركة
+- صفحة لكل جدول بـ CRUD كامل (إضافة/تعديل/حذف/بحث/فلترة)
+- نظام بحث عام يبحث في كل المحتوى
+- نظام إشعارات Real-time
+- نظام تعليقات وإعجابات على المحتوى
+- رفع وعرض الصور
+- تصدير/استيراد البيانات (JSON)
+- Dark/Light mode toggle
+- لغتان: عربي/إنجليزي
+
+🤖 المساعد الذكي (AI):
+- زر دردشة عائم في كل صفحات المنصة
+- يفهم سياق المنصة وبياناتها ويرد بالعربية
+- يساعد في: شرح الميزات، اقتراحات، تحليل البيانات، الإجابة عن أي سؤال
+- ذاكرة محادثة (يتذكر آخر 10 رسائل)
+
+⚙️ صفحة الإعدادات:
+- تغيير اللغة، الثيم، الإشعارات
+- تعديل البروفايل وكلمة المرور
+- إدارة الخصوصية
+- تصدير/مسح كل البيانات
+
+🎨 صفحات إضافية:
+- صفحة "حول المنصة" + "تواصل معنا" + "الأسئلة الشائعة"
+- صفحة 404 مخصصة
+- Footer احترافي بروابط ومعلومات
+
+اجعل كل شيء جاهز للاستخدام الفوري مع بيانات تجريبية أولية.`;
+
 /**
  * Build a single runnable HTML preview from multi-file project (inlined).
  */
@@ -352,7 +409,19 @@ export default function AIPlatformBuilderPro() {
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/30 mb-4"
                     disabled={building}
                   />
-                  <label className="block text-sm font-semibold text-white/80 mb-2">صف منصتك بالتفصيل</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-white/80">صف منصتك بالتفصيل</label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10"
+                      disabled={building}
+                      onClick={() => setDescription(PROFESSIONAL_PROMPT)}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 ml-1" /> برومبت احترافي
+                    </Button>
+                  </div>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
