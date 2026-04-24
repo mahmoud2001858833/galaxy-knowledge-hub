@@ -1165,80 +1165,195 @@ async function generateBrandTheme(description: string, analysis: any): Promise<{
   const KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!KEY) return null;
   try {
-    const sys = `أنت مصمم واجهات محترف. بناءً على وصف المنصة، صمّم هوية بصرية فريدة ومميزة تختلف جذرياً عن أي منصة أخرى.
-أعد JSON بهذا الشكل فقط:
+    const sys = `أنت Art Director عالمي المستوى (مزيج من Pentagram + Awwwards + Behance Top 1%). مهمتك أن تصمّم لكل منصة هويةً بصرية فريدة بمستوى وكالات التصميم العالمية، تختلف جذرياً عن أي منصة سابقة.
+
+اختر بحرية تامة حركة تصميمية مناسبة للموضوع (مثلاً: Bauhaus, Brutalism, Glassmorphism, Neumorphism, Y2K, Vaporwave, Editorial Magazine, Art Deco, Memphis, Swiss, Cyberpunk, Organic Naturalism, Luxury Minimalism, Newspaper, Claymorphism, Liquid, Aurora, Retro 70s, Futurism, Japandi, Dark Academia, Sunset Gradient, Neon Noir, Paper Origami, Constructivism...). لا تكرر نفس الحركة. اربط الحركة بطبيعة المنصة بذكاء.
+
+أعد JSON صارم بهذا الشكل (بدون أي شرح خارجه):
 {
-  "palette": { "bg":"H S% L%", "surface":"H S% L%", "primary":"H S% L%", "primary2":"H S% L%", "accent":"H S% L%", "text":"H S% L%", "muted":"H S% L%" },
-  "font": "اسم خط Google Fonts عربي مناسب (مثل Tajawal, Almarai, Cairo, Amiri, Reem Kufi, Markazi Text)",
-  "vibe": "وصف مزاج التصميم بكلمتين (مثال: فخم ذهبي، تقني نيون، طبيعي هادئ)",
-  "radius": "px للـ border-radius (4-24)",
-  "heroLayout": "split | centered | asymmetric | grid-cards | floating-cards",
-  "heroTitle": "عنوان جذاب للصفحة الرئيسية بالعربية (5-8 كلمات)",
-  "heroSubtitle": "وصف فرعي (10-20 كلمة)",
-  "heroCtaPrimary": "نص الزر الأساسي",
+  "movement": "اسم الحركة التصميمية بالإنجليزية",
+  "vibe": "وصف عربي بكلمتين أو ثلاث",
+  "palette": {
+    "bg": "H S% L%", "surface": "H S% L%", "surface2": "H S% L%",
+    "primary": "H S% L%", "primary2": "H S% L%", "accent": "H S% L%",
+    "text": "H S% L%", "muted": "H S% L%", "border": "H S% L%"
+  },
+  "gradients": {
+    "hero": "linear-gradient(...)  أو radial-gradient(...) أو conic-gradient(...)",
+    "button": "linear-gradient(...)",
+    "card": "linear-gradient(...)"
+  },
+  "fontHeading": "اسم خط Google Fonts عربي للعناوين (Tajawal, Almarai, Reem Kufi, Markazi Text, Amiri, Noto Kufi Arabic, Aref Ruqaa, Lateef, Scheherazade New)",
+  "fontBody": "اسم خط Google Fonts عربي للنص (مختلف عن العنوان أحياناً)",
+  "radius": 4-32,
+  "shadowStyle": "soft | hard | neon | layered | none",
+  "heroArchetype": "split-image | centered-spotlight | asymmetric-grid | full-bleed-hero | editorial-magazine | floating-cards | sidebar-showcase | terminal-style | newspaper | gallery-mosaic",
+  "heroBadge": "نص شارة صغيرة قبل العنوان (مثل: ✨ جديد - الإصدار 2.0)",
+  "heroTitle": "عنوان قوي وجذاب (5-9 كلمات بالعربية)",
+  "heroTitleHighlight": "كلمة واحدة من العنوان لتمييزها بلون مختلف",
+  "heroSubtitle": "جملة فرعية مقنعة (15-25 كلمة)",
+  "heroCtaPrimary": "نص الزر الأساسي (2-3 كلمات + أيقونة سهم)",
   "heroCtaSecondary": "نص الزر الثانوي",
-  "features": [ {"icon":"emoji","title":"...","desc":"..."}, ... 6 عناصر ],
-  "extraCss": "CSS إضافي لتأثيرات بصرية فريدة (animations, gradients, shapes) - اجعله مميزاً جداً"
+  "heroDecorationSvg": "كود SVG كامل لشكل زخرفي فريد يوضع في الخلفية (دوائر، موجات، شبكات، نقاط، خطوط هندسية، أيقونات مجردة...) - استخدم viewBox=0 0 800 600 وألواناً شفافة - اجعله احترافياً ومتقناً",
+  "stats": [ {"number":"10K+","label":"مستخدم"}, {"number":"99%","label":"رضا"}, {"number":"24/7","label":"دعم"}, {"number":"+50","label":"ميزة"} ],
+  "features": [
+    {"icon":"emoji أو رمز","title":"عنوان قصير","desc":"وصف 10-15 كلمة","tag":"كلمة وسم"},
+    ... 6 عناصر متنوعة ومرتبطة بالمنصة بدقة
+  ],
+  "testimonial": { "quote": "اقتباس من مستخدم بالعربية (15-25 كلمة)", "author": "اسم", "role": "وظيفة" },
+  "ctaSection": { "title": "عنوان قسم الدعوة الأخيرة", "subtitle": "وصف", "button": "نص الزر" },
+  "extraCss": "CSS متقدم وفريد — يجب أن يحتوي على: keyframes animations مخصصة، تأثيرات hover متقنة على .btn و .card و .feature-card، شكل مخصص لـ scrollbar، خلفية متحركة بـ ::before على .hero-unique، تأثيرات gradient text، pulse/float/shimmer animations، noise overlay، blob shapes — لا تقل عن 60 سطر من CSS عالي الجودة",
+  "noiseTexture": true | false
 }
-كن مبدعاً جداً. كل منصة يجب أن تبدو مختلفة كلياً عن غيرها بناءً على موضوعها.`;
+
+قواعد صارمة:
+- كل ما تنتجه يجب أن يكون مستوحى من موضوع المنصة (تعليمي = ألوان دافئة وأشكال أوراق، طبي = أزرق نقي وأشكال نبض، فني = ألوان جريئة وفرش، تقني = ظلام ونيون، طعام = برتقالي وأخضر، رياضة = طاقة وحركة...)
+- الـ extraCss يجب أن يكون فعلياً متقناً وكثيراً (60+ سطر) وفيه animations مسماة بشكل فريد
+- الـ heroDecorationSvg يجب أن يكون عملاً فنياً حقيقياً وليس مجرد دائرة بسيطة
+- لا تستخدم نفس النمط مرتين`;
+
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: `الوصف: ${description}\nالتحليل: ${JSON.stringify(analysis)}\nصمّم هوية بصرية فريدة.` },
+          { role: "user", content: `وصف المنصة: ${description}\nالتحليل: ${JSON.stringify(analysis)}\n\nصمّم هوية بصرية بمستوى Awwwards Site of the Day. كن جريئاً واستثنائياً.` },
         ],
         response_format: { type: "json_object" },
       }),
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      console.error("brand theme http", r.status, await r.text());
+      return null;
+    }
     const d = await r.json();
     const brand = JSON.parse(d.choices?.[0]?.message?.content || "{}");
     const p = brand.palette || {};
-    const fontName = (brand.font || "Cairo").trim();
-    const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName).replace(/%20/g, '+')}:wght@300;400;600;700;900&display=swap`;
-    const css = `/* ============ Brand Theme: ${brand.vibe || 'Custom'} ============ */
-@import url('${fontUrl}');
+    const g = brand.gradients || {};
+    const fontHeading = (brand.fontHeading || "Tajawal").trim();
+    const fontBody = (brand.fontBody || fontHeading).trim();
+    const fontUrl = (name: string) => `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name).replace(/%20/g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
+
+    const noiseSvg = brand.noiseTexture
+      ? `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>`
+      : "";
+
+    const css = `/* ============ Brand: ${brand.movement || 'Custom'} — ${brand.vibe || ''} ============ */
+@import url('${fontUrl(fontHeading)}');
+${fontBody !== fontHeading ? `@import url('${fontUrl(fontBody)}');` : ''}
 :root{
   ${p.bg ? `--bg:${p.bg};` : ''}
-  ${p.surface ? `--surface:${p.surface};--surface-2:${p.surface};--surface-3:${p.surface};` : ''}
+  ${p.surface ? `--surface:${p.surface};` : ''}
+  ${p.surface2 ? `--surface-2:${p.surface2};--surface-3:${p.surface2};` : (p.surface ? `--surface-2:${p.surface};--surface-3:${p.surface};` : '')}
   ${p.primary ? `--primary:${p.primary};` : ''}
   ${p.primary2 ? `--primary-2:${p.primary2};` : ''}
   ${p.accent ? `--accent:${p.accent};` : ''}
   ${p.text ? `--text:${p.text};` : ''}
   ${p.muted ? `--text-muted:${p.muted};` : ''}
+  ${p.border ? `--border:${p.border};` : ''}
   --radius:${brand.radius || 14}px;
+  ${g.hero ? `--gradient-hero:${g.hero};` : ''}
+  ${g.button ? `--gradient-button:${g.button};` : ''}
+  ${g.card ? `--gradient-card:${g.card};` : ''}
 }
-body{font-family:'${fontName}','Cairo',sans-serif;}
-h1,h2,h3,h4{font-family:'${fontName}','Cairo',sans-serif;font-weight:900;}
+body{font-family:'${fontBody}','Cairo',sans-serif;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4,h5{font-family:'${fontHeading}','Cairo',sans-serif;font-weight:800;letter-spacing:-.01em;}
+.btn-primary{background:${g.button || 'var(--gradient-primary)'};border:none;color:#fff;}
+.card{background:${g.card || 'hsl(var(--surface))'};}
+${noiseSvg ? `body::before{content:'';position:fixed;inset:0;background-image:url("${noiseSvg}");opacity:.4;pointer-events:none;z-index:1;mix-blend-mode:overlay;}` : ''}
+.hero-decoration{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.5;z-index:0;}
+.hero-decoration svg{width:100%;height:100%;}
+.gradient-text-hero{background:${g.hero || g.button || 'var(--gradient-primary)'};-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
+.feature-card{position:relative;overflow:hidden;transition:all .4s cubic-bezier(.4,0,.2,1);}
+.feature-card::before{content:'';position:absolute;inset:0;background:${g.button || 'var(--gradient-primary)'};opacity:0;transition:opacity .4s;border-radius:inherit;z-index:0;}
+.feature-card:hover{transform:translateY(-6px);box-shadow:0 20px 50px -20px hsl(var(--primary)/.4);}
+.feature-card>*{position:relative;z-index:1;}
+.stat-card{text-align:center;padding:1.5rem 1rem;}
+.stat-number{font-size:2.5rem;font-weight:900;background:${g.button || 'var(--gradient-primary)'};-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+@keyframes float-slow{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(3deg)}}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 hsl(var(--primary)/.4)}50%{box-shadow:0 0 0 20px hsl(var(--primary)/0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes gradient-shift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.float-anim{animation:float-slow 6s ease-in-out infinite;}
+.pulse-anim{animation:pulse-glow 2.5s ease-in-out infinite;}
+.shimmer-text{background:linear-gradient(90deg,hsl(var(--text)) 0%,hsl(var(--primary)) 50%,hsl(var(--text)) 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite;}
 ${brand.extraCss || ''}`;
+
     const features = Array.isArray(brand.features) ? brand.features.slice(0, 6) : [];
-    const featuresHtml = features.map((f: any) => `
-      <div class="feature-card glass" style="padding:1.5rem;border-radius:var(--radius);text-align:center;transition:transform .3s">
-        <div style="font-size:2.5rem;margin-bottom:.5rem">${f.icon || '✨'}</div>
-        <h3 style="margin:.5rem 0;font-size:1.1rem">${f.title || ''}</h3>
-        <p class="text-muted" style="font-size:.9rem">${f.desc || ''}</p>
-      </div>`).join('');
-    const heroLayout = brand.heroLayout || 'centered';
-    const heroAlign = heroLayout === 'split' ? 'text-align:right' : 'text-align:center';
-    const hero = `<section class="hero-unique" style="padding:4rem 1.5rem;${heroAlign};position:relative;overflow:hidden">
-  <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,hsl(var(--primary)/.25),transparent 60%),radial-gradient(circle at 70% 80%,hsl(var(--primary-2)/.2),transparent 60%);pointer-events:none"></div>
-  <div style="position:relative;max-width:900px;margin:0 auto">
-    <div style="display:inline-block;padding:.4rem 1rem;border-radius:999px;background:hsl(var(--primary)/.15);border:1px solid hsl(var(--primary)/.3);font-size:.85rem;margin-bottom:1.5rem">${brand.vibe || '✨ منصة جديدة'}</div>
-    <h1 style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.2;margin:0 0 1rem;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${brand.heroTitle || analysis?.platformName || 'منصة جديدة'}</h1>
-    <p style="font-size:1.1rem;color:hsl(var(--text-muted));max-width:600px;margin:0 auto 2rem">${brand.heroSubtitle || 'تجربة فريدة من نوعها'}</p>
-    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
-      <a href="#/signup" class="btn btn-primary" style="padding:.85rem 1.75rem;font-weight:700">${brand.heroCtaPrimary || 'ابدأ الآن'}</a>
-      <a href="#/about" class="btn btn-ghost" style="padding:.85rem 1.75rem">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
+    const stats = Array.isArray(brand.stats) ? brand.stats.slice(0, 4) : [];
+    const heroTitle = brand.heroTitle || analysis?.platformName || "منصة جديدة";
+    const highlight = brand.heroTitleHighlight || "";
+    const titleHtml = highlight && heroTitle.includes(highlight)
+      ? heroTitle.replace(highlight, `<span class="gradient-text-hero">${highlight}</span>`)
+      : `<span class="gradient-text-hero">${heroTitle}</span>`;
+
+    const featuresHtml = features.map((f: any, i: number) => `
+      <article class="feature-card glass" style="padding:1.75rem;border-radius:var(--radius);animation:float-slow ${5 + i}s ease-in-out infinite;animation-delay:${i * .15}s">
+        <div style="font-size:2.5rem;margin-bottom:.75rem;display:inline-block">${f.icon || '✨'}</div>
+        ${f.tag ? `<div style="display:inline-block;padding:.2rem .6rem;border-radius:999px;background:hsl(var(--primary)/.12);color:hsl(var(--primary-2));font-size:.7rem;margin-bottom:.5rem">${f.tag}</div>` : ''}
+        <h3 style="margin:.5rem 0;font-size:1.15rem">${f.title || ''}</h3>
+        <p class="text-muted" style="font-size:.92rem;line-height:1.6">${f.desc || ''}</p>
+      </article>`).join('');
+
+    const statsHtml = stats.length ? `
+<section style="padding:2.5rem 1.5rem;max-width:1100px;margin:0 auto">
+  <div class="glass" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;padding:2rem;border-radius:var(--radius)">
+    ${stats.map((s: any) => `<div class="stat-card"><div class="stat-number">${s.number || ''}</div><div class="text-muted" style="font-size:.9rem;margin-top:.25rem">${s.label || ''}</div></div>`).join('')}
+  </div>
+</section>` : '';
+
+    const testimonialHtml = brand.testimonial?.quote ? `
+<section style="padding:3rem 1.5rem;max-width:850px;margin:0 auto;text-align:center">
+  <div style="font-size:3rem;line-height:1;color:hsl(var(--primary));opacity:.4">"</div>
+  <blockquote style="font-size:1.35rem;font-weight:600;line-height:1.6;margin:.5rem 0 1.5rem">${brand.testimonial.quote}</blockquote>
+  <div style="display:flex;align-items:center;justify-content:center;gap:.75rem">
+    <div style="width:48px;height:48px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff">${(brand.testimonial.author || '?').charAt(0)}</div>
+    <div style="text-align:right">
+      <div style="font-weight:700">${brand.testimonial.author || ''}</div>
+      <div class="text-muted" style="font-size:.85rem">${brand.testimonial.role || ''}</div>
+    </div>
+  </div>
+</section>` : '';
+
+    const ctaHtml = brand.ctaSection?.title ? `
+<section style="padding:4rem 1.5rem">
+  <div class="glass pulse-anim" style="max-width:900px;margin:0 auto;padding:3rem 2rem;border-radius:calc(var(--radius) * 1.5);text-align:center;background:${g.hero || 'var(--gradient-primary)'};border:none;color:#fff">
+    <h2 style="font-size:2rem;margin:0 0 .75rem;color:#fff">${brand.ctaSection.title}</h2>
+    <p style="opacity:.9;margin:0 0 1.5rem;font-size:1.05rem">${brand.ctaSection.subtitle || ''}</p>
+    <a href="#/signup" class="btn" style="background:#fff;color:hsl(var(--primary));padding:1rem 2rem;font-weight:800;border-radius:var(--radius);display:inline-block">${brand.ctaSection.button || 'ابدأ الآن'} ←</a>
+  </div>
+</section>` : '';
+
+    const decoration = brand.heroDecorationSvg && brand.heroDecorationSvg.includes('<svg')
+      ? `<div class="hero-decoration float-anim">${brand.heroDecorationSvg}</div>`
+      : '';
+
+    const hero = `<section class="hero-unique" style="padding:5rem 1.5rem 4rem;text-align:center;position:relative;overflow:hidden;min-height:70vh;display:flex;align-items:center;justify-content:center">
+  ${decoration}
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at top,hsl(var(--primary)/.18),transparent 60%),radial-gradient(ellipse at bottom right,hsl(var(--primary-2)/.15),transparent 60%);pointer-events:none;z-index:0"></div>
+  <div style="position:relative;z-index:2;max-width:900px;margin:0 auto">
+    ${brand.heroBadge ? `<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;border-radius:999px;background:hsl(var(--surface)/.6);backdrop-filter:blur(10px);border:1px solid hsl(var(--primary)/.4);font-size:.85rem;margin-bottom:1.5rem;font-weight:600">${brand.heroBadge}</div>` : ''}
+    <h1 style="font-size:clamp(2.25rem,6vw,4.5rem);line-height:1.1;margin:0 0 1.25rem;font-weight:900">${titleHtml}</h1>
+    <p style="font-size:clamp(1rem,1.6vw,1.25rem);color:hsl(var(--text-muted));max-width:640px;margin:0 auto 2.25rem;line-height:1.7">${brand.heroSubtitle || ''}</p>
+    <div style="display:flex;gap:.85rem;justify-content:center;flex-wrap:wrap">
+      <a href="#/signup" class="btn btn-primary pulse-anim" style="padding:1rem 2rem;font-weight:700;font-size:1.05rem;border-radius:var(--radius)">${brand.heroCtaPrimary || 'ابدأ الآن'} ←</a>
+      <a href="#/about" class="btn btn-ghost" style="padding:1rem 2rem;font-weight:600;border-radius:var(--radius);border:1px solid hsl(var(--border))">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
     </div>
   </div>
 </section>
-<section style="padding:3rem 1.5rem;max-width:1200px;margin:0 auto">
-  <h2 style="text-align:center;margin-bottom:2rem;font-size:1.8rem">المميزات</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem">${featuresHtml}</div>
-</section>`;
+${statsHtml}
+<section style="padding:4rem 1.5rem;max-width:1200px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:3rem">
+    <div style="display:inline-block;padding:.3rem .9rem;border-radius:999px;background:hsl(var(--primary)/.1);color:hsl(var(--primary-2));font-size:.8rem;font-weight:700;margin-bottom:.75rem">المميزات</div>
+    <h2 class="shimmer-text" style="font-size:clamp(1.75rem,3.5vw,2.5rem);margin:0">كل ما تحتاجه في مكان واحد</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem">${featuresHtml}</div>
+</section>
+${testimonialHtml}
+${ctaHtml}`;
+
     return { css, hero };
   } catch (e) {
     console.error("brand theme error", e);
