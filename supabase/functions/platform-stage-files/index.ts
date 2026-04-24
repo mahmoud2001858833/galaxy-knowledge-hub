@@ -777,7 +777,7 @@ function toggleTheme(){
 }
 (function(){ const t = localStorage.getItem('app_theme'); if (t) document.documentElement.setAttribute('data-theme', t); })();
 
-function pageHome(){
+async function pageHome(){
   const u = Auth.current();
   const stats = DB.stats();
   const cards = Object.entries(stats).map(([t,c]) => \`
@@ -786,13 +786,22 @@ function pageHome(){
       <div style="font-size:2rem;font-weight:900" class="gradient-text">\${c}</div>
     </div>
   \`).join('');
-  document.getElementById('app').innerHTML = shell(\`
-    <div class="card mb-6 animate-fade-in" style="background:linear-gradient(135deg,hsl(var(--primary)/.15),hsl(var(--primary-2)/.1));border-color:hsl(var(--primary)/.3)">
+  // Load unique hero from pages/home.html (custom per-platform branding)
+  let hero = '';
+  try {
+    const r = await fetch('pages/home.html');
+    if (r.ok) hero = await r.text();
+  } catch {}
+  if (!hero || hero.includes('class="card"><h2>الرئيسية')) {
+    hero = \`<div class="card mb-6 animate-fade-in" style="background:linear-gradient(135deg,hsl(var(--primary)/.15),hsl(var(--primary-2)/.1));border-color:hsl(var(--primary)/.3)">
       <h2 style="margin-top:0;font-size:1.6rem">\${u ? 'أهلاً '+Utils.escape(u.name)+' 👋' : 'مرحباً بك في ${platformName}'}</h2>
       <p class="text-muted">منصة ذكية متكاملة بقاعدة بيانات احترافية ومساعد ذكاء اصطناعي.</p>
       \${u ? '' : '<div class="flex gap-2 mt-4"><a href="#/login" class="btn btn-primary">تسجيل الدخول</a><a href="#/signup" class="btn btn-ghost">إنشاء حساب</a></div>'}
-    </div>
-    <h3 class="mb-4">📊 نظرة عامة</h3>
+    </div>\`;
+  }
+  document.getElementById('app').innerHTML = shell(\`
+    \${hero}
+    <h3 class="mb-4 mt-8">📊 نظرة عامة</h3>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem">\${cards}</div>
   \`);
 }
