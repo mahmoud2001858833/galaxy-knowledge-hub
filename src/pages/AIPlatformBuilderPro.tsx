@@ -15,6 +15,7 @@ import BuilderDashboard from "@/components/platform-builder/BuilderDashboard";
 import MyPlatforms, { type SavedPlatform } from "@/components/platform-builder/MyPlatforms";
 import BuilderSettings, { type BuilderConfig } from "@/components/platform-builder/BuilderSettings";
 import FilesExplorer, { type ProjectFile } from "@/components/platform-builder/FilesExplorer";
+import LivePreview from "@/components/platform-builder/LivePreview";
 
 const STORAGE_KEY = "ai_platform_builder_v2";
 const CONFIG_KEY = "ai_platform_builder_config_v2";
@@ -479,20 +480,7 @@ export default function AIPlatformBuilderPro() {
                     </div>
 
                     <TabsContent value="preview" className="mt-0">
-                      <div className="rounded-xl overflow-hidden bg-black border border-white/10" style={{ height: 720 }}>
-                        {finalHtml ? (
-                          <iframe
-                            title="preview"
-                            srcDoc={finalHtml}
-                            className="w-full h-full bg-white"
-                            sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/40 text-sm text-center px-6">
-                            {building ? "جاري إنشاء المنصة... ستظهر هنا عند الانتهاء" : "ستظهر معاينة منصتك هنا بعد اكتمال البناء"}
-                          </div>
-                        )}
-                      </div>
+                      <LivePreview html={finalHtml} />
                     </TabsContent>
 
                     <TabsContent value="code" className="mt-0">

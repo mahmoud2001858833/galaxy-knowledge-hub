@@ -1,8 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { FileCode, FileText, FileJson, File as FileIcon, Folder, FolderOpen, Download, Copy, Check, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import hljs from "highlight.js/lib/core";
+import javascript from "highlight.js/lib/languages/javascript";
+import xml from "highlight.js/lib/languages/xml";
+import css from "highlight.js/lib/languages/css";
+import json from "highlight.js/lib/languages/json";
+import markdown from "highlight.js/lib/languages/markdown";
+import "highlight.js/styles/github-dark.css";
+
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("html", xml);
+hljs.registerLanguage("xml", xml);
+hljs.registerLanguage("css", css);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("markdown", markdown);
 
 export interface ProjectFile {
   path: string;
@@ -36,7 +50,6 @@ const buildTree = (files: ProjectFile[]): TreeNode => {
       cur = next;
     }
   }
-  // sort: folders first
   const sort = (n: TreeNode) => {
     if (!n.children) return;
     n.children.sort((a, b) => {
@@ -110,6 +123,7 @@ export default function FilesExplorer({ files }: { files: ProjectFile[] }) {
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return files;
@@ -118,6 +132,25 @@ export default function FilesExplorer({ files }: { files: ProjectFile[] }) {
   }, [files, query]);
 
   const tree = useMemo(() => buildTree(filtered), [filtered]);
+
+  // Highlight on file change
+  useEffect(() => {
+    if (codeRef.current && selected) {
+      const langMap: Record<string, string> = {
+        javascript: "javascript", html: "html", css: "css", json: "json", markdown: "markdown",
+      };
+      const lang = langMap[selected.language] || "plaintext";
+      try {
+        const result = hljs.highlight(selected.content, { language: lang, ignoreIllegals: true });
+        codeRef.current.innerHTML = result.value;
+      } catch {
+        codeRef.current.textContent = selected.content;
+      }
+    }
+  }, [selected]);
+
+  const lineCount = useMemo(() => (selected ? selected.content.split("\n").length : 0), [selected]);
+  const sizeKb = useMemo(() => (selected ? (selected.content.length / 1024).toFixed(1) : "0"), [selected]);
 
   const copyContent = async () => {
     if (!selected) return;
@@ -139,6 +172,8 @@ export default function FilesExplorer({ files }: { files: ProjectFile[] }) {
   if (!files.length) {
     return <div className="text-center py-12 text-white/40 text-sm">لا توجد ملفات بعد</div>;
   }
+
+  const breadcrumbs = selected ? selected.path.split("/") : [];
 
   return (
     <div className="grid grid-cols-12 gap-3 h-[640px]">
@@ -164,19 +199,26 @@ export default function FilesExplorer({ files }: { files: ProjectFile[] }) {
       </div>
 
       {/* Code preview */}
-      <div className="col-span-8 lg:col-span-9 rounded-xl border border-white/10 bg-[#0b0b1a] overflow-hidden flex flex-col">
+      <div className="col-span-8 lg:col-span-9 rounded-xl border border-white/10 bg-[#0d1117] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-black/40">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 text-xs" dir="ltr">
             {selected && iconFor(selected.language)}
-            <span className="text-xs text-white/80 truncate" dir="ltr">{selected?.path || "اختر ملفاً"}</span>
+            {breadcrumbs.map((part, i) => (
+              <span key={i} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-white/30">/</span>}
+                <span className={i === breadcrumbs.length - 1 ? "text-white/90 font-medium" : "text-white/50"}>
+                  {part}
+                </span>
+              </span>
+            ))}
             {selected && (
-              <span className="text-[10px] text-white/40 shrink-0">
-                {selected.content.length} حرف
+              <span className="text-[10px] text-white/40 shrink-0 ms-2">
+                {lineCount} سطر · {sizeKb} KB
               </span>
             )}
           </div>
           {selected && (
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 shrink-0">
               <Button size="sm" variant="ghost" className="h-7 text-white/70 hover:text-white" onClick={copyContent}>
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </Button>
@@ -188,9 +230,17 @@ export default function FilesExplorer({ files }: { files: ProjectFile[] }) {
         </div>
         <div className="flex-1 overflow-auto">
           {selected ? (
-            <pre className="text-xs leading-5 p-4 text-white/85 font-mono" dir="ltr">
-              <code>{selected.content}</code>
-            </pre>
+            <div className="flex" dir="ltr">
+              {/* Line numbers */}
+              <div className="select-none text-right py-4 px-3 text-white/25 font-mono text-xs leading-5 bg-black/30 border-r border-white/5 sticky left-0">
+                {Array.from({ length: lineCount }, (_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+              <pre className="text-xs leading-5 p-4 flex-1 font-mono overflow-x-auto">
+                <code ref={codeRef} className={`language-${selected.language}`}>{selected.content}</code>
+              </pre>
+            </div>
           ) : (
             <div className="h-full flex items-center justify-center text-white/40 text-sm">اختر ملفاً لعرض محتواه</div>
           )}

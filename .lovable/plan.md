@@ -1,101 +1,126 @@
+# تطوير ضخم لباني المنصات + إصلاح خطأ كلمة المرور
 
+## 1) إصلاح خطأ "الحقل password_hash مطلوب"
 
-# تطوير شامل لـ "باني المنصات الذكي"
+**السبب الجذري**: مولّد الـ schema يُسمّي حقل المستخدم `password_hash`، لكن `Auth.register` في `assets/js/auth.js` يُدخل الحقل باسم `password`. فيفشل التحقق `validate()` ويظهر التوست الأحمر.
 
-سأحول هذا الخيار إلى أداة احترافية مستقلة بمراحل واضحة، لوحة تحكم، وحلّ لمشكلة الخطأ الحالي.
+**الحل**: في `platform-stage-files/index.ts` سأقوم بـ:
+- توحيد أسماء حقول users قبل التوليد (normalization): يُعاد تسمية أي حقل من `password` / `password_hash` / `pwd` إلى **`password`** قياسياً، وحذف التكرار.
+- ضمان وجود `email` و `name` و `role` و `created_at` كحقول قياسية.
+- تحديث `Auth.register/login` لاستخدام نفس الأسماء الموحّدة.
+- التحقق من أن `validate()` لا يُلزم حقولاً مخفية (`hidden:true`) من جهة المستخدم.
 
-## 1. حلّ الخطأ `Edge Function returned a non-2xx status code`
+نتيجة: التسجيل يعمل من أول مرة في كل منصة مولَّدة.
 
-**السبب**: نموذج `gemini-2.5-pro` مع طلب 1500+ سطر من HTML يستغرق وقتاً طويلاً جداً ويتجاوز حد الـ timeout أو يُرجع خطأ 429/500. الواجهة تعرض الخطأ العام بدون تفاصيل.
+## 2) تطوير ضخم للمولّد (×3 ملفات وميزات)
 
-**الحل**:
-- التحويل إلى نظام **متعدد المراحل (Multi-Stage Pipeline)** بدل طلب واحد ضخم.
-- كل مرحلة طلب صغير وسريع (~20-40 ثانية بدل 3 دقائق).
-- عرض رسائل الخطأ الحقيقية من الـ edge function (parse error body بدل throw عام).
+**الهدف**: بدل 14 ملفاً، نُولّد **30+ ملفاً** بمشروع شبه إنتاجي.
 
-## 2. صفحة مستقلة جديدة: `/ai-platform-builder`
-
-تصبح أداة منفصلة بدل tab داخل صفحة البرمجة، مع:
-- Header احترافي خاص بها (تدرج violet-cyan-emerald، خلفية gridlines، أوربس متحركة).
-- زر رجوع إلى `/gju-competition`.
-- بطاقة عرض القدرات (DB / Auth / AI / Python / C++).
-
-ستُضاف بطاقة جديدة في **قسم "الذكاء الاصطناعي" بصفحة مستقبل التكنولوجيا** باسم: **"باني المنصات الذكي بالـ AI"** برابط `/ai-platform-builder`.
-
-## 3. نظام البناء متعدد المراحل (الميزة الرئيسية الجديدة)
-
-عند إدخال الوصف، يُقسَّم العمل إلى 5 مراحل مرئية للمستخدم:
+### ملفات جديدة تُضاف لكل مشروع:
 
 ```text
-[المرحلة 1] 🧠 تحليل المتطلبات       ← يحدد نوع المنصة + الميزات
-[المرحلة 2] 🗂️  تصميم قاعدة البيانات ← يحدد الجداول والحقول
-[المرحلة 3] 🎨 تصميم الواجهة          ← ينتج layout + components + ألوان
-[المرحلة 4] ⚙️  بناء المنطق والوظائف  ← CRUD + auth + AI integration
-[المرحلة 5] ✅ التجميع النهائي         ← دمج كل شيء في HTML واحد
+index.html
+404.html                       ← صفحة جديدة
+assets/
+  css/
+    theme.css                  ← مُحسَّن بـ design tokens كاملة
+    main.css
+    components.css
+    animations.css             ← جديد: keyframes + transitions
+    responsive.css             ← جديد: breakpoints احترافية
+  js/
+    utils.js
+    toast.js                   ← مُحسَّن (أنواع، مدة قابلة للتخصيص)
+    db.js                      ← مُحسَّن (search, pagination, joins)
+    seed.js                    ← seed واقعي عربي (5-10 صفوف لكل جدول)
+    auth.js                    ← Fix password + reset password + sessions
+    ai.js                      ← مع context-aware system prompt
+    router.js                  ← مع transitions وحماية routes
+    app.js                     ← shell + theme toggle + lang toggle
+    notifications.js           ← جديد: نظام إشعارات
+    search.js                  ← جديد: بحث عام عبر كل الجداول
+    upload.js                  ← جديد: رفع صور (base64 → localStorage)
+    export.js                  ← جديد: تصدير/استيراد JSON
+    i18n.js                    ← جديد: عربي/إنجليزي
+    modules/<table>.js         ← ملف لكل جدول
+  components/
+    navbar.js                  ← جديد: مكوّن
+    sidebar.js                 ← جديد: مكوّن
+    modal.js                   ← جديد: مكوّن
+    floating-ai.js             ← جديد: زر AI عائم في كل الصفحات
+pages/
+  home.html, login.html, signup.html, profile.html
+  settings.html, ai-chat.html, about.html, contact.html
+  faq.html, search.html
+  <table>.html × N
+README.md
 ```
 
-كل مرحلة:
-- تستدعي edge function منفصلة (سريعة، أقل من 30 ثانية).
-- تعرض **شريط تقدم متحرك** + **checkmark أخضر** عند الإنجاز.
-- تعرض **ملخص ما تم** (مثلاً: "تم تحديد 4 جداول: users, tasks, comments, settings").
-- يمكن للمستخدم رؤية الناتج الجزئي وتعديل الوصف قبل المتابعة.
+النتيجة: **30–40 ملفاً منظماً** لكل مشروع.
 
-## 4. لوحة التحكم (Dashboard) داخل الصفحة
+### تحسينات DB engine:
+- `search(table, query)` بحث نصّي.
+- `paginate(table, page, perPage)`.
+- `join(tableA, tableB, fk)` بسيط للعرض.
+- `subscribe(table, callback)` لتحديث UI تلقائياً عند تغيّر البيانات.
+- صادرة/مُستوردة JSON كاملة.
 
-تنقسم الصفحة إلى 4 أقسام عبر تابات:
+### تحسينات Auth:
+- إصلاح كلمة المرور (مذكور أعلاه).
+- "تذكرني" + Session expiry قابل للتخصيص.
+- تعديل البروفايل وتغيير كلمة المرور من صفحة Profile.
+- صورة بروفايل (base64 رفع محلي).
 
-- **🛠️ البناء**: المحادثة + المراحل + المعاينة الحية.
-- **📊 لوحة التحكم**: إحصائيات (عدد المنصات المُنشأة، آخر بناء، استهلاك AI).
-- **📚 منصاتي**: قائمة بكل المنصات المحفوظة مع عرض/تعديل/حذف/مشاركة.
-- **⚙️ إعدادات البناء**: اختيار النموذج (Pro للجودة / Flash للسرعة)، اللغة الافتراضية، مفتاح OpenAI/Gemini اختياري لـ AI داخل المنصة.
+### Floating AI (في كل صفحة):
+- زر دائري في الزاوية اليسرى السفلى.
+- يفتح Drawer بمحادثة.
+- يرسل سياق المنصة (الجداول + إحصائيات + المستخدم الحالي) للـ AI.
 
-## 5. تحسينات داخل المنصة المُنشأة
+## 3) تطوير ضخم للمعاينة الحية
 
-عند طلب المستخدم "أريد تسجيل دخول"، النظام يضيف تلقائياً:
-- صفحة Login/Signup احترافية بتصميم glass.
-- لوحة بروفايل تظهر للمستخدم بعد الدخول (الاسم، الإيميل، الصورة، تاريخ الانضمام).
-- أزرار: تعديل البروفايل، تغيير كلمة المرور، تسجيل الخروج.
-- عرض إحصائيات المستخدم (مثلاً: "5 مهام أنشأتها"، "3 رسائل").
-- إعدادات: الوضع الداكن/الفاتح، اللغة، الإشعارات.
+المعاينة الحالية تعمل عبر iframe بـ `srcDoc`. المشاكل:
+- بطيء عند الملفات الكبيرة.
+- لا يوجد device toolbar (mobile/tablet/desktop).
+- لا يوجد تحكم بإعادة التحميل / فتح في تبويب / Console مدمج.
+- Inlining كل الكود يُفقد القدرة على debug ملف بعينه.
 
-كل هذا يُحفظ في `localStorage` DB ضمن جدول `users` و `user_settings`.
+**التحسينات**:
+- **Device Toolbar**: أزرار 📱 📟 💻 لتغيير عرض المعاينة (375 / 768 / 100%).
+- **زر Reload** للمعاينة دون إعادة بناء.
+- **Console مدمج**: نلتقط `console.log/error` من iframe عبر `postMessage` ونعرضها في لوحة سفلية.
+- **Loading skeleton** أثناء تحميل المعاينة.
+- **Open in new tab** يُنشئ Blob URL محسَّن.
+- **Fullscreen mode** للمعاينة (يأخذ كل الشاشة).
+- **Status bar**: حجم HTML النهائي + عدد الملفات + زمن البناء.
+- شارة "محدّث" خضراء عند انتهاء build جديد.
 
-## 6. التفاصيل التقنية
+### تحسين معاينة الكود (FilesExplorer):
+- **Syntax highlighting حقيقي** عبر `highlight.js` (لا فقط نص أبيض).
+- **Line numbers** في جانب الكود.
+- **زر "نسخ السطر"** عند المرور.
+- **Breadcrumbs** للمسار الكامل.
+- **حجم الملف** بالـ KB مع حساب gzip تقديري.
 
-### Edge Functions الجديدة (5 مراحل):
-- `platform-stage-analyze` (Gemini Flash, ~10s) — يُرجع JSON بالميزات والجداول المقترحة.
-- `platform-stage-schema` (Gemini Flash, ~15s) — يُرجع schema قاعدة البيانات.
-- `platform-stage-ui` (Gemini Pro, ~40s) — يولّد HTML + Tailwind للواجهة فقط.
-- `platform-stage-logic` (Gemini Pro, ~40s) — يولّد JS للمنطق + AI + auth.
-- `platform-stage-assemble` (Gemini Flash, ~20s) — دمج وتنظيف.
+## 4) التفاصيل التقنية
 
-كل function:
-- معالجة 429/402/500 برسائل عربية واضحة.
-- Streaming اختياري لعرض النص أثناء التوليد.
-- Timeout داخلي 50s مع fallback.
+### ملفات معدَّلة:
+- `supabase/functions/platform-stage-files/index.ts` — توحيد users schema، إضافة 15+ ملفاً جديداً، Floating AI، notifications/search/i18n/upload modules، إصلاح Auth.
+- `supabase/functions/platform-stage-schema/index.ts` — توحيد اسم الحقل إلى `password`، إضافة جداول قياسية (notifications, settings) إن لم تكن موجودة.
+- `src/pages/AIPlatformBuilderPro.tsx` — Device toolbar، Console panel، Reload، Fullscreen، Status bar.
+- `src/components/platform-builder/FilesExplorer.tsx` — Syntax highlighting (highlight.js)، line numbers، breadcrumbs.
 
-### الملفات الجديدة:
-- `src/pages/AIPlatformBuilderPro.tsx` — الصفحة الرئيسية الجديدة.
-- `src/components/platform-builder/StagePipeline.tsx` — مكون عرض المراحل.
-- `src/components/platform-builder/BuilderDashboard.tsx` — لوحة التحكم والإحصائيات.
-- `src/components/platform-builder/MyPlatforms.tsx` — قائمة المنصات المحفوظة.
-- `src/components/platform-builder/BuilderSettings.tsx` — إعدادات البناء.
-- 5 ملفات edge functions جديدة في `supabase/functions/`.
+### تبعيات جديدة:
+- `highlight.js` — للـ syntax highlighting في معاينة الكود.
 
-### الملفات المعدّلة:
-- `src/App.tsx` — إضافة route `/ai-platform-builder`.
-- `src/pages/GJUCompetition.tsx` — إضافة بطاقة جديدة في `aiTools` تشير إلى `/ai-platform-builder`.
-- `src/pages/TechCodingPlatform.tsx` — إزالة tab "بناء منصة كاملة" (انتقل لصفحته الخاصة).
+### لا تغييرات DB:
+نستخدم `localStorage` فقط داخل المنصات المولَّدة، ولا حاجة لجداول Supabase جديدة.
 
-### قاعدة البيانات:
-لا تغييرات — نستخدم جداول `ai_builder_projects` و `ai_builder_files` الموجودة.
+## 5) ما سيراه المستخدم
 
-## 7. ما سيراه المستخدم النهائي
-
-1. يفتح صفحة "مستقبل التكنولوجيا" → يرى بطاقة جديدة لامعة "🚀 باني المنصات بالـ AI".
-2. يدخل الصفحة → واجهة احترافية بـ 4 تابات.
-3. يكتب: "منصة لإدارة المهام مع تسجيل دخول".
-4. يرى المراحل تتقدم واحدة تلو الأخرى مع checkmarks.
-5. عند الانتهاء، تظهر المعاينة الحية مع قاعدة بيانات وتسجيل دخول كاملة.
-6. يستطيع الحفظ، التحميل، المشاركة، أو طلب تعديلات إضافية.
-
+1. يكتب الوصف ويضغط "ابدأ البناء".
+2. خلال 30–60 ثانية يحصل على **30+ ملف** منظم في شجرة احترافية.
+3. **معاينة حية** بـ device toolbar وconsole مدمج وreload.
+4. **معاينة كود** بـ syntax highlighting وأرقام أسطر.
+5. **التسجيل وتسجيل الدخول يعملان من أول محاولة** (إصلاح password).
+6. زر AI عائم في كل صفحة من المنصة المولَّدة.
+7. تحميل ZIP يحتوي بنية مشروع جاهزة للنشر فوراً.
