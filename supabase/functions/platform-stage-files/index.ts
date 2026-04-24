@@ -1161,6 +1161,22 @@ function pageFileFor(table: any): FileObj {
   };
 }
 
+function formatPrefs(p: any = {}): string {
+  if (!p || typeof p !== "object") return "لا تفضيلات محددة — اختر أنت بحرية كاملة.";
+  const lines: string[] = [];
+  const isAuto = (v: any) => !v || v === "auto" || v === "";
+  if (!isAuto(p.style)) lines.push(`• الستايل / الحركة التصميمية: ${p.style} — يجب أن تتبع هذه الحركة بوضوح في كل عنصر.`);
+  if (!isAuto(p.palette)) lines.push(`• لوحة الألوان المطلوبة: ${p.palette} — استخدم هذه العائلة اللونية بشكل أساسي في palette و gradients.`);
+  if (!isAuto(p.theme)) lines.push(`• الوضع: ${p.theme === 'dark' ? 'داكن (خلفيات قاتمة)' : p.theme === 'light' ? 'فاتح (خلفيات بيضاء/كريمي)' : 'تلقائي'}`);
+  if (!isAuto(p.layout)) lines.push(`• شكل الـ Hero: heroArchetype = "${p.layout}" — استخدم هذا التصميم تحديداً.`);
+  if (!isAuto(p.typography)) lines.push(`• الخطوط المطلوبة: ${p.typography} — استخدم الخط الأول للعناوين والثاني للنص.`);
+  if (!isAuto(p.vibe)) lines.push(`• المزاج / الإحساس العام: ${p.vibe} — يجب أن يظهر هذا في الألوان والحركات والصياغة.`);
+  if (p.useImages === false) lines.push(`• ⚠️ ممنوع استخدام الصور من Unsplash — استبدلها بأشكال SVG وأيقونات وتدرجات فقط. اجعل heroImageQuery و gallery و features.imageQuery فارغة.`);
+  else lines.push(`• استخدم صوراً احترافية من Unsplash (heroImageQuery, gallery, features) مرتبطة بدقة بموضوع المنصة.`);
+  if (p.customNotes && String(p.customNotes).trim()) lines.push(`• ملاحظات إضافية من المستخدم (إلزامية): ${String(p.customNotes).trim()}`);
+  return lines.length ? lines.join("\n") : "لا تفضيلات محددة — اختر أنت بحرية كاملة.";
+}
+
 async function generateBrandTheme(description: string, analysis: any, prefs: any = {}): Promise<{ css: string; hero: string } | null> {
   const KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!KEY) return null;
