@@ -456,6 +456,8 @@ export default function AIPlatformBuilderPro() {
                   </div>
                 </div>
 
+                <DesignPreferencesPanel value={designPrefs} onChange={setDesignPrefs} disabled={building} />
+
                 <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-cyan-400" /> مراحل البناء
