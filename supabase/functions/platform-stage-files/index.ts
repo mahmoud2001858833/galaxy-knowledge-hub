@@ -21,12 +21,13 @@ function normalizeUsersTable(tables: any[]): any[] {
     out.unshift(users);
   }
   const fields: any[] = users.fields || [];
-  // Rename any password-like field to "password"
+  // Canonicalize: password*/pwd → "password", full_name/fullname/username/display_name → "name"
   const seen = new Set<string>();
   const cleaned: any[] = [];
   for (const f of fields) {
     let n = String(f.name || "").toLowerCase();
     if (["password_hash", "pwd", "pass", "passwd"].includes(n)) n = "password";
+    if (["full_name", "fullname", "username", "user_name", "display_name", "displayname"].includes(n)) n = "name";
     if (seen.has(n)) continue;
     seen.add(n);
     cleaned.push({ ...f, name: n, hidden: n === "password" ? true : f.hidden });
@@ -479,14 +480,18 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
     const exists = DB.table('users').where(u => u.email===email).first();
     if (exists) throw new Error('البريد مسجل مسبقاً');
     const hash = await Utils.sha256(password);
-    const user = DB.table('users').insert({
+    const payload = {
       email: email.trim().toLowerCase(),
       name: name.trim(),
+      full_name: name.trim(),
+      username: name.trim(),
       password: hash,
       role: 'user',
       avatar: '',
-      bio: ''
-    });
+      bio: '',
+      is_active: true
+    };
+    const user = DB.table('users').insert(payload);
     setSession(user, remember);
     return user;
   }
@@ -772,7 +777,7 @@ function toggleTheme(){
 }
 (function(){ const t = localStorage.getItem('app_theme'); if (t) document.documentElement.setAttribute('data-theme', t); })();
 
-function pageHome(){
+async function pageHome(){
   const u = Auth.current();
   const stats = DB.stats();
   const cards = Object.entries(stats).map(([t,c]) => \`
@@ -781,13 +786,22 @@ function pageHome(){
       <div style="font-size:2rem;font-weight:900" class="gradient-text">\${c}</div>
     </div>
   \`).join('');
-  document.getElementById('app').innerHTML = shell(\`
-    <div class="card mb-6 animate-fade-in" style="background:linear-gradient(135deg,hsl(var(--primary)/.15),hsl(var(--primary-2)/.1));border-color:hsl(var(--primary)/.3)">
+  // Load unique hero from pages/home.html (custom per-platform branding)
+  let hero = '';
+  try {
+    const r = await fetch('pages/home.html');
+    if (r.ok) hero = await r.text();
+  } catch {}
+  if (!hero || hero.includes('class="card"><h2>الرئيسية')) {
+    hero = \`<div class="card mb-6 animate-fade-in" style="background:linear-gradient(135deg,hsl(var(--primary)/.15),hsl(var(--primary-2)/.1));border-color:hsl(var(--primary)/.3)">
       <h2 style="margin-top:0;font-size:1.6rem">\${u ? 'أهلاً '+Utils.escape(u.name)+' 👋' : 'مرحباً بك في ${platformName}'}</h2>
       <p class="text-muted">منصة ذكية متكاملة بقاعدة بيانات احترافية ومساعد ذكاء اصطناعي.</p>
       \${u ? '' : '<div class="flex gap-2 mt-4"><a href="#/login" class="btn btn-primary">تسجيل الدخول</a><a href="#/signup" class="btn btn-ghost">إنشاء حساب</a></div>'}
-    </div>
-    <h3 class="mb-4">📊 نظرة عامة</h3>
+    </div>\`;
+  }
+  document.getElementById('app').innerHTML = shell(\`
+    \${hero}
+    <h3 class="mb-4 mt-8">📊 نظرة عامة</h3>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem">\${cards}</div>
   \`);
 }
@@ -1147,6 +1161,91 @@ function pageFileFor(table: any): FileObj {
   };
 }
 
+async function generateBrandTheme(description: string, analysis: any): Promise<{ css: string; hero: string } | null> {
+  const KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!KEY) return null;
+  try {
+    const sys = `أنت مصمم واجهات محترف. بناءً على وصف المنصة، صمّم هوية بصرية فريدة ومميزة تختلف جذرياً عن أي منصة أخرى.
+أعد JSON بهذا الشكل فقط:
+{
+  "palette": { "bg":"H S% L%", "surface":"H S% L%", "primary":"H S% L%", "primary2":"H S% L%", "accent":"H S% L%", "text":"H S% L%", "muted":"H S% L%" },
+  "font": "اسم خط Google Fonts عربي مناسب (مثل Tajawal, Almarai, Cairo, Amiri, Reem Kufi, Markazi Text)",
+  "vibe": "وصف مزاج التصميم بكلمتين (مثال: فخم ذهبي، تقني نيون، طبيعي هادئ)",
+  "radius": "px للـ border-radius (4-24)",
+  "heroLayout": "split | centered | asymmetric | grid-cards | floating-cards",
+  "heroTitle": "عنوان جذاب للصفحة الرئيسية بالعربية (5-8 كلمات)",
+  "heroSubtitle": "وصف فرعي (10-20 كلمة)",
+  "heroCtaPrimary": "نص الزر الأساسي",
+  "heroCtaSecondary": "نص الزر الثانوي",
+  "features": [ {"icon":"emoji","title":"...","desc":"..."}, ... 6 عناصر ],
+  "extraCss": "CSS إضافي لتأثيرات بصرية فريدة (animations, gradients, shapes) - اجعله مميزاً جداً"
+}
+كن مبدعاً جداً. كل منصة يجب أن تبدو مختلفة كلياً عن غيرها بناءً على موضوعها.`;
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: `الوصف: ${description}\nالتحليل: ${JSON.stringify(analysis)}\nصمّم هوية بصرية فريدة.` },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const brand = JSON.parse(d.choices?.[0]?.message?.content || "{}");
+    const p = brand.palette || {};
+    const fontName = (brand.font || "Cairo").trim();
+    const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName).replace(/%20/g, '+')}:wght@300;400;600;700;900&display=swap`;
+    const css = `/* ============ Brand Theme: ${brand.vibe || 'Custom'} ============ */
+@import url('${fontUrl}');
+:root{
+  ${p.bg ? `--bg:${p.bg};` : ''}
+  ${p.surface ? `--surface:${p.surface};--surface-2:${p.surface};--surface-3:${p.surface};` : ''}
+  ${p.primary ? `--primary:${p.primary};` : ''}
+  ${p.primary2 ? `--primary-2:${p.primary2};` : ''}
+  ${p.accent ? `--accent:${p.accent};` : ''}
+  ${p.text ? `--text:${p.text};` : ''}
+  ${p.muted ? `--text-muted:${p.muted};` : ''}
+  --radius:${brand.radius || 14}px;
+}
+body{font-family:'${fontName}','Cairo',sans-serif;}
+h1,h2,h3,h4{font-family:'${fontName}','Cairo',sans-serif;font-weight:900;}
+${brand.extraCss || ''}`;
+    const features = Array.isArray(brand.features) ? brand.features.slice(0, 6) : [];
+    const featuresHtml = features.map((f: any) => `
+      <div class="feature-card glass" style="padding:1.5rem;border-radius:var(--radius);text-align:center;transition:transform .3s">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">${f.icon || '✨'}</div>
+        <h3 style="margin:.5rem 0;font-size:1.1rem">${f.title || ''}</h3>
+        <p class="text-muted" style="font-size:.9rem">${f.desc || ''}</p>
+      </div>`).join('');
+    const heroLayout = brand.heroLayout || 'centered';
+    const heroAlign = heroLayout === 'split' ? 'text-align:right' : 'text-align:center';
+    const hero = `<section class="hero-unique" style="padding:4rem 1.5rem;${heroAlign};position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,hsl(var(--primary)/.25),transparent 60%),radial-gradient(circle at 70% 80%,hsl(var(--primary-2)/.2),transparent 60%);pointer-events:none"></div>
+  <div style="position:relative;max-width:900px;margin:0 auto">
+    <div style="display:inline-block;padding:.4rem 1rem;border-radius:999px;background:hsl(var(--primary)/.15);border:1px solid hsl(var(--primary)/.3);font-size:.85rem;margin-bottom:1.5rem">${brand.vibe || '✨ منصة جديدة'}</div>
+    <h1 style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.2;margin:0 0 1rem;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${brand.heroTitle || analysis?.platformName || 'منصة جديدة'}</h1>
+    <p style="font-size:1.1rem;color:hsl(var(--text-muted));max-width:600px;margin:0 auto 2rem">${brand.heroSubtitle || 'تجربة فريدة من نوعها'}</p>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+      <a href="#/signup" class="btn btn-primary" style="padding:.85rem 1.75rem;font-weight:700">${brand.heroCtaPrimary || 'ابدأ الآن'}</a>
+      <a href="#/about" class="btn btn-ghost" style="padding:.85rem 1.75rem">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
+    </div>
+  </div>
+</section>
+<section style="padding:3rem 1.5rem;max-width:1200px;margin:0 auto">
+  <h2 style="text-align:center;margin-bottom:2rem;font-size:1.8rem">المميزات</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem">${featuresHtml}</div>
+</section>`;
+    return { css, hero };
+  } catch (e) {
+    console.error("brand theme error", e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -1154,18 +1253,24 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    // CRITICAL: normalize users + ensure helper tables
     let tables: any[] = schema?.tables || [];
     tables = normalizeUsersTable(tables);
     tables = ensureCoreTables(tables);
     const finalSchema = { ...schema, tables };
 
+    // Generate UNIQUE brand identity for this specific platform (parallel-safe)
+    const brand = await generateBrandTheme(description || "", analysis || {});
+
     const core = defaultCoreFiles(analysis || {}, finalSchema, SUPABASE_URL, SUPABASE_ANON);
     const modules = tables.map(moduleFileFor);
     const pages = tables.map(pageFileFor);
 
+    const homeContent = brand?.hero
+      ? brand.hero
+      : `<section class="card"><h2>الرئيسية</h2><p>أهلاً بك.</p></section>`;
+
     const commonPages: FileObj[] = [
-      { path: "pages/home.html", language: "html", content: `<section class="card"><h2>الرئيسية</h2><p>أهلاً بك.</p></section>` },
+      { path: "pages/home.html", language: "html", content: homeContent },
       { path: "pages/login.html", language: "html", content: `<section class="card"><h2>تسجيل الدخول</h2></section>` },
       { path: "pages/signup.html", language: "html", content: `<section class="card"><h2>إنشاء حساب</h2></section>` },
       { path: "pages/profile.html", language: "html", content: `<section class="card"><h2>الملف الشخصي</h2></section>` },
@@ -1176,11 +1281,24 @@ serve(async (req) => {
       { path: "pages/contact.html", language: "html", content: `<section class="card"><h2>تواصل معنا</h2></section>` },
     ];
 
+    // Inject the unique brand CSS (loaded LAST so it overrides defaults)
+    if (brand?.css) {
+      // Patch index.html to include brand.css after other styles
+      const idx = core.findIndex((f) => f.path === "index.html");
+      if (idx >= 0) {
+        core[idx].content = core[idx].content.replace(
+          '<link rel="stylesheet" href="assets/css/responsive.css">',
+          '<link rel="stylesheet" href="assets/css/responsive.css">\n<link rel="stylesheet" href="assets/css/brand.css">'
+        );
+      }
+      core.push({ path: "assets/css/brand.css", content: brand.css, language: "css" });
+    }
+
     const all = [...core, ...modules, ...pages, ...commonPages];
     const seen = new Set<string>();
     const files = all.filter((f) => { if (seen.has(f.path)) return false; seen.add(f.path); return true; });
 
-    return new Response(JSON.stringify({ files, schema: finalSchema }), {
+    return new Response(JSON.stringify({ files, schema: finalSchema, brand: brand ? { vibe: "custom" } : null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
