@@ -21,12 +21,13 @@ function normalizeUsersTable(tables: any[]): any[] {
     out.unshift(users);
   }
   const fields: any[] = users.fields || [];
-  // Rename any password-like field to "password"
+  // Canonicalize: password*/pwd → "password", full_name/fullname/username/display_name → "name"
   const seen = new Set<string>();
   const cleaned: any[] = [];
   for (const f of fields) {
     let n = String(f.name || "").toLowerCase();
     if (["password_hash", "pwd", "pass", "passwd"].includes(n)) n = "password";
+    if (["full_name", "fullname", "username", "user_name", "display_name", "displayname"].includes(n)) n = "name";
     if (seen.has(n)) continue;
     seen.add(n);
     cleaned.push({ ...f, name: n, hidden: n === "password" ? true : f.hidden });
