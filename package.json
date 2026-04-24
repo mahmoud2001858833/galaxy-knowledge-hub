@@ -59,6 +59,7 @@
     "embla-carousel-react": "^8.3.0",
     "fabric": "^6.6.5",
     "framer-motion": "^12.9.4",
+    "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.2.4",
     "jspdf": "^4.2.1",
