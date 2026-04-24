@@ -1195,13 +1195,35 @@ async function generateBrandTheme(description: string, analysis: any): Promise<{
   "heroCtaPrimary": "نص الزر الأساسي (2-3 كلمات + أيقونة سهم)",
   "heroCtaSecondary": "نص الزر الثانوي",
   "heroDecorationSvg": "كود SVG كامل لشكل زخرفي فريد يوضع في الخلفية (دوائر، موجات، شبكات، نقاط، خطوط هندسية، أيقونات مجردة...) - استخدم viewBox=0 0 800 600 وألواناً شفافة - اجعله احترافياً ومتقناً",
-  "stats": [ {"number":"10K+","label":"مستخدم"}, {"number":"99%","label":"رضا"}, {"number":"24/7","label":"دعم"}, {"number":"+50","label":"ميزة"} ],
-  "features": [
-    {"icon":"emoji أو رمز","title":"عنوان قصير","desc":"وصف 10-15 كلمة","tag":"كلمة وسم"},
-    ... 6 عناصر متنوعة ومرتبطة بالمنصة بدقة
+  "brandName": "اسم تجاري قصير وأنيق للمنصة (كلمة أو كلمتين)",
+  "navLinks": [
+    {"label":"الرئيسية","href":"#/"},
+    {"label":"المميزات","href":"#features"},
+    {"label":"المعرض","href":"#gallery"},
+    {"label":"حولنا","href":"#/about"},
+    {"label":"تواصل","href":"#/contact"}
   ],
-  "testimonial": { "quote": "اقتباس من مستخدم بالعربية (15-25 كلمة)", "author": "اسم", "role": "وظيفة" },
+  "heroImageQuery": "كلمات إنجليزية دقيقة للبحث في Unsplash عن صورة hero احترافية مرتبطة بموضوع المنصة (مثلاً: 'modern classroom students learning' أو 'fresh organic food kitchen')",
+  "stats": [ {"number":"10K+","label":"مستخدم","color":"primary"}, {"number":"99%","label":"رضا","color":"accent"}, {"number":"24/7","label":"دعم","color":"primary2"}, {"number":"+50","label":"ميزة","color":"primary"} ],
+  "features": [
+    {"icon":"emoji","title":"عنوان قصير","desc":"وصف 10-15 كلمة","tag":"كلمة وسم","color":"H S% L%","imageQuery":"كلمات بحث Unsplash"},
+    ... 6 عناصر متنوعة ومرتبطة بالمنصة، كل واحد بلون hsl مختلف ومتناغم
+  ],
+  "gallery": [
+    {"title":"عنوان","query":"unsplash search keywords","caption":"شرح قصير"},
+    ... 6 صور متنوعة مرتبطة بالمنصة بدقة
+  ],
+  "testimonials": [
+    {"quote":"اقتباس عربي (15-25 كلمة)","author":"اسم","role":"وظيفة","avatarQuery":"portrait professional"},
+    ... 3 شهادات
+  ],
   "ctaSection": { "title": "عنوان قسم الدعوة الأخيرة", "subtitle": "وصف", "button": "نص الزر" },
+  "footerTagline": "جملة قصيرة عن المنصة في الفوتر",
+  "footerColumns": [
+    {"title":"المنصة","links":[{"label":"المميزات","href":"#features"},{"label":"الأسعار","href":"#"},{"label":"تحديثات","href":"#"}]},
+    {"title":"الشركة","links":[{"label":"حولنا","href":"#/about"},{"label":"الفريق","href":"#"},{"label":"الوظائف","href":"#"}]},
+    {"title":"الدعم","links":[{"label":"المساعدة","href":"#"},{"label":"تواصل","href":"#/contact"},{"label":"الأسئلة","href":"#"}]}
+  ],
   "extraCss": "CSS متقدم وفريد — يجب أن يحتوي على: keyframes animations مخصصة، تأثيرات hover متقنة على .btn و .card و .feature-card، شكل مخصص لـ scrollbar، خلفية متحركة بـ ::before على .hero-unique، تأثيرات gradient text، pulse/float/shimmer animations، noise overlay، blob shapes — لا تقل عن 60 سطر من CSS عالي الجودة",
   "noiseTexture": true | false
 }
@@ -1283,76 +1305,173 @@ ${brand.extraCss || ''}`;
 
     const features = Array.isArray(brand.features) ? brand.features.slice(0, 6) : [];
     const stats = Array.isArray(brand.stats) ? brand.stats.slice(0, 4) : [];
+    const gallery = Array.isArray(brand.gallery) ? brand.gallery.slice(0, 6) : [];
+    const testimonials = Array.isArray(brand.testimonials) ? brand.testimonials.slice(0, 3) : (brand.testimonial ? [brand.testimonial] : []);
+    const navLinks = Array.isArray(brand.navLinks) ? brand.navLinks : [
+      {label:"الرئيسية",href:"#/"},{label:"المميزات",href:"#features"},{label:"المعرض",href:"#gallery"},{label:"حولنا",href:"#/about"},{label:"تواصل",href:"#/contact"}
+    ];
+    const footerCols = Array.isArray(brand.footerColumns) ? brand.footerColumns : [];
+    const brandName = brand.brandName || analysis?.platformName || "منصتي";
+
     const heroTitle = brand.heroTitle || analysis?.platformName || "منصة جديدة";
     const highlight = brand.heroTitleHighlight || "";
     const titleHtml = highlight && heroTitle.includes(highlight)
       ? heroTitle.replace(highlight, `<span class="gradient-text-hero">${highlight}</span>`)
       : `<span class="gradient-text-hero">${heroTitle}</span>`;
 
-    const featuresHtml = features.map((f: any, i: number) => `
-      <article class="feature-card glass" style="padding:1.75rem;border-radius:var(--radius);animation:float-slow ${5 + i}s ease-in-out infinite;animation-delay:${i * .15}s">
-        <div style="font-size:2.5rem;margin-bottom:.75rem;display:inline-block">${f.icon || '✨'}</div>
-        ${f.tag ? `<div style="display:inline-block;padding:.2rem .6rem;border-radius:999px;background:hsl(var(--primary)/.12);color:hsl(var(--primary-2));font-size:.7rem;margin-bottom:.5rem">${f.tag}</div>` : ''}
-        <h3 style="margin:.5rem 0;font-size:1.15rem">${f.title || ''}</h3>
-        <p class="text-muted" style="font-size:.92rem;line-height:1.6">${f.desc || ''}</p>
-      </article>`).join('');
+    const img = (q: string, w = 800, h = 600) =>
+      `https://source.unsplash.com/${w}x${h}/?${encodeURIComponent(q || 'abstract,gradient')}`;
 
+    const headerHtml = `<header class="site-header" style="position:sticky;top:0;z-index:50;backdrop-filter:blur(20px);background:hsl(var(--bg)/.75);border-bottom:1px solid hsl(var(--border)/.5)">
+  <nav style="max-width:1280px;margin:0 auto;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+    <a href="#/" style="display:flex;align-items:center;gap:.6rem;text-decoration:none;color:hsl(var(--text));font-weight:900;font-size:1.25rem">
+      <span style="width:36px;height:36px;border-radius:10px;background:${g.button || 'var(--gradient-primary)'};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 8px 24px -8px hsl(var(--primary)/.5)">${brandName.charAt(0)}</span>
+      <span>${brandName}</span>
+    </a>
+    <ul class="nav-links" style="display:flex;gap:.25rem;list-style:none;margin:0;padding:0;align-items:center">
+      ${navLinks.map((n:any)=>`<li><a href="${n.href}" style="display:inline-block;padding:.55rem 1rem;border-radius:999px;color:hsl(var(--text-muted));text-decoration:none;font-weight:600;font-size:.95rem;transition:all .25s" onmouseover="this.style.background='hsl(var(--primary)/.1)';this.style.color='hsl(var(--primary))'" onmouseout="this.style.background='transparent';this.style.color='hsl(var(--text-muted))'">${n.label}</a></li>`).join('')}
+    </ul>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <a href="#/login" class="btn btn-ghost" style="padding:.55rem 1rem;font-weight:600;border-radius:999px;border:1px solid hsl(var(--border));text-decoration:none;color:hsl(var(--text));font-size:.92rem">دخول</a>
+      <a href="#/signup" class="btn btn-primary" style="padding:.55rem 1.1rem;font-weight:700;border-radius:999px;text-decoration:none;font-size:.92rem;box-shadow:0 8px 24px -8px hsl(var(--primary)/.5)">ابدأ مجاناً</a>
+    </div>
+  </nav>
+</header>`;
+
+    const featuresHtml = features.map((f: any, i: number) => {
+      const accent = f.color ? `hsl(${f.color})` : `hsl(var(--primary))`;
+      return `
+      <article class="feature-card glass" style="padding:0;border-radius:calc(var(--radius) + 4px);overflow:hidden;animation:float-slow ${5 + i}s ease-in-out infinite;animation-delay:${i * .15}s;border:1px solid hsl(var(--border)/.6);background:linear-gradient(180deg,hsl(var(--surface)),hsl(var(--surface-2)))">
+        ${f.imageQuery ? `<div style="height:160px;background:url('${img(f.imageQuery, 600, 360)}') center/cover, ${accent};position:relative"><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,hsl(var(--surface)) 100%)"></div><div style="position:absolute;top:.75rem;right:.75rem;width:48px;height:48px;border-radius:14px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 10px 30px -10px ${accent}">${f.icon || '✨'}</div></div>` : `<div style="font-size:2.5rem;margin:1.5rem 1.5rem 0">${f.icon || '✨'}</div>`}
+        <div style="padding:1.25rem 1.5rem 1.75rem">
+          ${f.tag ? `<div style="display:inline-block;padding:.25rem .7rem;border-radius:999px;background:${accent}1f;color:${accent};font-size:.7rem;margin-bottom:.6rem;font-weight:700">${f.tag}</div>` : ''}
+          <h3 style="margin:.25rem 0 .5rem;font-size:1.2rem;color:hsl(var(--text))">${f.title || ''}</h3>
+          <p style="font-size:.92rem;line-height:1.65;color:hsl(var(--text-muted));margin:0">${f.desc || ''}</p>
+        </div>
+      </article>`;
+    }).join('');
+
+    const statColors = ['var(--primary)', 'var(--primary-2)', 'var(--primary)', 'var(--primary-2)'];
     const statsHtml = stats.length ? `
-<section style="padding:2.5rem 1.5rem;max-width:1100px;margin:0 auto">
-  <div class="glass" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;padding:2rem;border-radius:var(--radius)">
-    ${stats.map((s: any) => `<div class="stat-card"><div class="stat-number">${s.number || ''}</div><div class="text-muted" style="font-size:.9rem;margin-top:.25rem">${s.label || ''}</div></div>`).join('')}
+<section style="padding:3rem 1.5rem;max-width:1200px;margin:0 auto">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem">
+    ${stats.map((s: any, i: number) => `<div class="glass" style="padding:1.75rem 1.25rem;text-align:center;border-radius:calc(var(--radius) + 4px);border-top:3px solid hsl(${statColors[i % 4]})"><div style="font-size:2.5rem;font-weight:900;background:linear-gradient(135deg,hsl(${statColors[i % 4]}),hsl(var(--primary-2)));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">${s.number || ''}</div><div style="color:hsl(var(--text-muted));font-size:.9rem;margin-top:.35rem;font-weight:600">${s.label || ''}</div></div>`).join('')}
   </div>
 </section>` : '';
 
-    const testimonialHtml = brand.testimonial?.quote ? `
-<section style="padding:3rem 1.5rem;max-width:850px;margin:0 auto;text-align:center">
-  <div style="font-size:3rem;line-height:1;color:hsl(var(--primary));opacity:.4">"</div>
-  <blockquote style="font-size:1.35rem;font-weight:600;line-height:1.6;margin:.5rem 0 1.5rem">${brand.testimonial.quote}</blockquote>
-  <div style="display:flex;align-items:center;justify-content:center;gap:.75rem">
-    <div style="width:48px;height:48px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff">${(brand.testimonial.author || '?').charAt(0)}</div>
-    <div style="text-align:right">
-      <div style="font-weight:700">${brand.testimonial.author || ''}</div>
-      <div class="text-muted" style="font-size:.85rem">${brand.testimonial.role || ''}</div>
-    </div>
+    const galleryHtml = gallery.length ? `
+<section id="gallery" style="padding:5rem 1.5rem;max-width:1280px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:3rem">
+    <div style="display:inline-block;padding:.3rem .9rem;border-radius:999px;background:hsl(var(--primary)/.1);color:hsl(var(--primary-2));font-size:.8rem;font-weight:700;margin-bottom:.75rem">معرض</div>
+    <h2 style="font-size:clamp(1.75rem,3.5vw,2.5rem);margin:0">لمحات من ${brandName}</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;grid-auto-rows:220px">
+    ${gallery.map((it: any, i: number) => `<figure class="gallery-item" style="margin:0;position:relative;border-radius:calc(var(--radius) + 4px);overflow:hidden;cursor:pointer;${i === 0 ? 'grid-row:span 2;' : ''}background:url('${img(it.query, i === 0 ? 800 : 600, i === 0 ? 800 : 400)}') center/cover;transition:transform .5s">
+      <figcaption style="position:absolute;inset:auto 0 0 0;padding:1.25rem;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);color:#fff">
+        <div style="font-weight:800;font-size:1.05rem">${it.title || ''}</div>
+        <div style="font-size:.85rem;opacity:.85;margin-top:.2rem">${it.caption || ''}</div>
+      </figcaption>
+    </figure>`).join('')}
+  </div>
+</section>` : '';
+
+    const testimonialsHtml = testimonials.length ? `
+<section style="padding:5rem 1.5rem;max-width:1200px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:2.5rem">
+    <div style="display:inline-block;padding:.3rem .9rem;border-radius:999px;background:hsl(var(--primary-2)/.15);color:hsl(var(--primary-2));font-size:.8rem;font-weight:700;margin-bottom:.75rem">آراء المستخدمين</div>
+    <h2 style="font-size:clamp(1.75rem,3.5vw,2.5rem);margin:0">يحبّها آلاف المستخدمين</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem">
+    ${testimonials.map((t: any) => `<div class="glass" style="padding:1.75rem;border-radius:calc(var(--radius) + 4px);position:relative">
+      <div style="font-size:2.5rem;line-height:1;color:hsl(var(--primary));opacity:.3;position:absolute;top:.75rem;right:1rem">"</div>
+      <blockquote style="margin:0 0 1.25rem;font-size:1.02rem;line-height:1.7;font-weight:500">${t.quote || ''}</blockquote>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div style="width:44px;height:44px;border-radius:50%;background:url('${img(t.avatarQuery || 'portrait professional', 100, 100)}') center/cover, var(--gradient-primary);border:2px solid hsl(var(--primary)/.3)"></div>
+        <div><div style="font-weight:700;font-size:.95rem">${t.author || ''}</div><div style="color:hsl(var(--text-muted));font-size:.82rem">${t.role || ''}</div></div>
+      </div>
+    </div>`).join('')}
   </div>
 </section>` : '';
 
     const ctaHtml = brand.ctaSection?.title ? `
-<section style="padding:4rem 1.5rem">
-  <div class="glass pulse-anim" style="max-width:900px;margin:0 auto;padding:3rem 2rem;border-radius:calc(var(--radius) * 1.5);text-align:center;background:${g.hero || 'var(--gradient-primary)'};border:none;color:#fff">
-    <h2 style="font-size:2rem;margin:0 0 .75rem;color:#fff">${brand.ctaSection.title}</h2>
-    <p style="opacity:.9;margin:0 0 1.5rem;font-size:1.05rem">${brand.ctaSection.subtitle || ''}</p>
-    <a href="#/signup" class="btn" style="background:#fff;color:hsl(var(--primary));padding:1rem 2rem;font-weight:800;border-radius:var(--radius);display:inline-block">${brand.ctaSection.button || 'ابدأ الآن'} ←</a>
+<section style="padding:5rem 1.5rem">
+  <div class="pulse-anim" style="max-width:1000px;margin:0 auto;padding:3.5rem 2rem;border-radius:calc(var(--radius) * 2);text-align:center;background:${g.hero || g.button || 'var(--gradient-primary)'};color:#fff;position:relative;overflow:hidden;box-shadow:0 30px 80px -30px hsl(var(--primary)/.6)">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.2),transparent 50%),radial-gradient(circle at 80% 80%,rgba(255,255,255,.15),transparent 50%);pointer-events:none"></div>
+    <h2 style="font-size:clamp(1.75rem,4vw,2.5rem);margin:0 0 .75rem;color:#fff;position:relative">${brand.ctaSection.title}</h2>
+    <p style="opacity:.92;margin:0 0 2rem;font-size:1.1rem;position:relative">${brand.ctaSection.subtitle || ''}</p>
+    <a href="#/signup" class="btn" style="background:#fff;color:hsl(var(--primary));padding:1.1rem 2.25rem;font-weight:800;border-radius:999px;display:inline-block;text-decoration:none;font-size:1.05rem;position:relative;box-shadow:0 10px 30px -10px rgba(0,0,0,.4)">${brand.ctaSection.button || 'ابدأ الآن'} ←</a>
   </div>
 </section>` : '';
+
+    const footerHtml = `<footer style="margin-top:3rem;padding:4rem 1.5rem 2rem;background:hsl(var(--surface)/.5);border-top:1px solid hsl(var(--border))">
+  <div style="max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.5fr repeat(${footerCols.length || 3},1fr);gap:2.5rem">
+    <div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+        <span style="width:36px;height:36px;border-radius:10px;background:${g.button || 'var(--gradient-primary)'};display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:900">${brandName.charAt(0)}</span>
+        <span style="font-weight:900;font-size:1.15rem">${brandName}</span>
+      </div>
+      <p style="color:hsl(var(--text-muted));font-size:.92rem;line-height:1.7;max-width:320px">${brand.footerTagline || brand.heroSubtitle || ''}</p>
+    </div>
+    ${footerCols.map((col:any)=>`<div>
+      <div style="font-weight:800;margin-bottom:1rem;font-size:.95rem">${col.title}</div>
+      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.6rem">
+        ${(col.links||[]).map((l:any)=>`<li><a href="${l.href}" style="color:hsl(var(--text-muted));text-decoration:none;font-size:.9rem;transition:color .2s" onmouseover="this.style.color='hsl(var(--primary))'" onmouseout="this.style.color='hsl(var(--text-muted))'">${l.label}</a></li>`).join('')}
+      </ul>
+    </div>`).join('')}
+  </div>
+  <div style="max-width:1280px;margin:2.5rem auto 0;padding-top:1.5rem;border-top:1px solid hsl(var(--border));display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;color:hsl(var(--text-muted));font-size:.85rem">
+    <div>© ${new Date().getFullYear()} ${brandName}. جميع الحقوق محفوظة.</div>
+    <div style="display:flex;gap:1rem"><a href="#" style="color:inherit;text-decoration:none">الخصوصية</a><a href="#" style="color:inherit;text-decoration:none">الشروط</a></div>
+  </div>
+</footer>`;
 
     const decoration = brand.heroDecorationSvg && brand.heroDecorationSvg.includes('<svg')
       ? `<div class="hero-decoration float-anim">${brand.heroDecorationSvg}</div>`
       : '';
 
-    const hero = `<section class="hero-unique" style="padding:5rem 1.5rem 4rem;text-align:center;position:relative;overflow:hidden;min-height:70vh;display:flex;align-items:center;justify-content:center">
+    const heroImageUrl = img(brand.heroImageQuery || (analysis?.platformName || 'modern abstract gradient'), 1200, 900);
+
+    const hero = `${headerHtml}
+<section class="hero-unique" style="padding:4rem 1.5rem 3rem;position:relative;overflow:hidden;min-height:80vh">
   ${decoration}
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at top,hsl(var(--primary)/.18),transparent 60%),radial-gradient(ellipse at bottom right,hsl(var(--primary-2)/.15),transparent 60%);pointer-events:none;z-index:0"></div>
-  <div style="position:relative;z-index:2;max-width:900px;margin:0 auto">
-    ${brand.heroBadge ? `<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;border-radius:999px;background:hsl(var(--surface)/.6);backdrop-filter:blur(10px);border:1px solid hsl(var(--primary)/.4);font-size:.85rem;margin-bottom:1.5rem;font-weight:600">${brand.heroBadge}</div>` : ''}
-    <h1 style="font-size:clamp(2.25rem,6vw,4.5rem);line-height:1.1;margin:0 0 1.25rem;font-weight:900">${titleHtml}</h1>
-    <p style="font-size:clamp(1rem,1.6vw,1.25rem);color:hsl(var(--text-muted));max-width:640px;margin:0 auto 2.25rem;line-height:1.7">${brand.heroSubtitle || ''}</p>
-    <div style="display:flex;gap:.85rem;justify-content:center;flex-wrap:wrap">
-      <a href="#/signup" class="btn btn-primary pulse-anim" style="padding:1rem 2rem;font-weight:700;font-size:1.05rem;border-radius:var(--radius)">${brand.heroCtaPrimary || 'ابدأ الآن'} ←</a>
-      <a href="#/about" class="btn btn-ghost" style="padding:1rem 2rem;font-weight:600;border-radius:var(--radius);border:1px solid hsl(var(--border))">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at top right,hsl(var(--primary)/.22),transparent 55%),radial-gradient(ellipse at bottom left,hsl(var(--primary-2)/.18),transparent 55%);pointer-events:none;z-index:0"></div>
+  <div class="hero-grid" style="position:relative;z-index:2;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.1fr 1fr;gap:3rem;align-items:center">
+    <div>
+      ${brand.heroBadge ? `<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;border-radius:999px;background:hsl(var(--surface)/.7);backdrop-filter:blur(10px);border:1px solid hsl(var(--primary)/.4);font-size:.85rem;margin-bottom:1.5rem;font-weight:600">${brand.heroBadge}</div>` : ''}
+      <h1 style="font-size:clamp(2.5rem,6vw,4.75rem);line-height:1.05;margin:0 0 1.25rem;font-weight:900;letter-spacing:-.02em">${titleHtml}</h1>
+      <p style="font-size:clamp(1.05rem,1.4vw,1.25rem);color:hsl(var(--text-muted));max-width:560px;margin:0 0 2.25rem;line-height:1.7">${brand.heroSubtitle || ''}</p>
+      <div style="display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:2rem">
+        <a href="#/signup" class="btn btn-primary pulse-anim" style="padding:1.1rem 2.1rem;font-weight:700;font-size:1.05rem;border-radius:999px;text-decoration:none;box-shadow:0 15px 40px -15px hsl(var(--primary)/.7)">${brand.heroCtaPrimary || 'ابدأ الآن'} ←</a>
+        <a href="#features" class="btn btn-ghost" style="padding:1.1rem 2.1rem;font-weight:600;border-radius:999px;border:1px solid hsl(var(--border));text-decoration:none;color:hsl(var(--text))">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem;color:hsl(var(--text-muted));font-size:.88rem">
+        <div style="display:flex">${[0,1,2,3].map(i=>`<div style="width:32px;height:32px;border-radius:50%;background:url('${img('person portrait', 80, 80)}&sig=${i}') center/cover;border:2px solid hsl(var(--bg));margin-right:-8px"></div>`).join('')}</div>
+        <span>★★★★★ &nbsp;<strong style="color:hsl(var(--text))">+10,000</strong> مستخدم سعيد</span>
+      </div>
+    </div>
+    <div style="position:relative;aspect-ratio:4/5;border-radius:calc(var(--radius) * 2);overflow:hidden;box-shadow:0 40px 100px -30px hsl(var(--primary)/.5);transform:rotate(2deg);background:url('${heroImageUrl}') center/cover">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,hsl(var(--primary)/.25),transparent 60%)"></div>
+      <div class="float-anim" style="position:absolute;bottom:1.25rem;right:1.25rem;background:hsl(var(--bg)/.95);backdrop-filter:blur(20px);padding:1rem 1.25rem;border-radius:var(--radius);border:1px solid hsl(var(--border));display:flex;align-items:center;gap:.75rem;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)">
+        <div style="width:42px;height:42px;border-radius:12px;background:${g.button || 'var(--gradient-primary)'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.25rem">⚡</div>
+        <div><div style="font-weight:800;font-size:.95rem">${brandName}</div><div style="font-size:.8rem;color:hsl(var(--text-muted))">جاهز للانطلاق</div></div>
+      </div>
     </div>
   </div>
 </section>
+<style>@media(max-width:880px){.hero-grid{grid-template-columns:1fr !important}.nav-links{display:none !important}}</style>
 ${statsHtml}
-<section style="padding:4rem 1.5rem;max-width:1200px;margin:0 auto">
+<section id="features" style="padding:5rem 1.5rem;max-width:1280px;margin:0 auto">
   <div style="text-align:center;margin-bottom:3rem">
     <div style="display:inline-block;padding:.3rem .9rem;border-radius:999px;background:hsl(var(--primary)/.1);color:hsl(var(--primary-2));font-size:.8rem;font-weight:700;margin-bottom:.75rem">المميزات</div>
-    <h2 class="shimmer-text" style="font-size:clamp(1.75rem,3.5vw,2.5rem);margin:0">كل ما تحتاجه في مكان واحد</h2>
+    <h2 class="shimmer-text" style="font-size:clamp(1.75rem,3.5vw,2.75rem);margin:0 0 .75rem">كل ما تحتاجه في مكان واحد</h2>
+    <p style="color:hsl(var(--text-muted));max-width:600px;margin:0 auto;font-size:1.02rem">مجموعة متكاملة من الأدوات صُممت بعناية لتجربة استثنائية</p>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem">${featuresHtml}</div>
 </section>
-${testimonialHtml}
-${ctaHtml}`;
+${galleryHtml}
+${testimonialsHtml}
+${ctaHtml}
+${footerHtml}`;
 
     return { css, hero };
   } catch (e) {
