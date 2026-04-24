@@ -352,7 +352,19 @@ export default function AIPlatformBuilderPro() {
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/30 mb-4"
                     disabled={building}
                   />
-                  <label className="block text-sm font-semibold text-white/80 mb-2">صف منصتك بالتفصيل</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-white/80">صف منصتك بالتفصيل</label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10"
+                      disabled={building}
+                      onClick={() => setDescription(PROFESSIONAL_PROMPT)}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 ml-1" /> برومبت احترافي
+                    </Button>
+                  </div>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
