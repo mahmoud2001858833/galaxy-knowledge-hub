@@ -312,7 +312,7 @@ const FacePayAI = () => {
           open={!!checkoutProduct}
           product={checkoutProduct}
           account={account}
-          onClose={() => setCheckoutProduct(null)}
+          onClose={() => { setCheckoutProduct(null); setAccount(loadAccount()); }}
           onSuccess={(updated) => { setAccount(updated); setCheckoutProduct(null); }}
         />
       )}
