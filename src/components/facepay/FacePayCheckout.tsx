@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FaceScanner } from './FaceScanner';
 import { GestureCapture } from './GestureCapture';
-import { addTransaction, type FacePayAccount } from '@/lib/facepay/storage';
+import { addTransaction, logAttempt, type FacePayAccount, type AttemptReason } from '@/lib/facepay/storage';
 import type { FaceProduct } from './Store';
-import { ScanFace, KeyRound, ShieldCheck, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { ScanFace, KeyRound, ShieldCheck, CheckCircle2, ShoppingBag, RotateCw } from 'lucide-react';
 
 interface FacePayCheckoutProps {
   open: boolean;
@@ -17,15 +17,52 @@ interface FacePayCheckoutProps {
 
 type Phase = 'identify' | 'password' | 'confirm' | 'success';
 
+const PHASE_TIMEOUT_MS = 20000;
+
 export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: FacePayCheckoutProps) => {
   const [phase, setPhase] = useState<Phase>('identify');
+  const [attemptKey, setAttemptKey] = useState(0); // forces remount of scanner/gesture on retry
+  const phaseStartRef = useRef<number>(Date.now());
+  const completedRef = useRef(false);
 
-  const reset = () => setPhase('identify');
-  const handleClose = () => { reset(); onClose(); };
+  const reset = () => {
+    setPhase('identify');
+    setAttemptKey(k => k + 1);
+    completedRef.current = false;
+    phaseStartRef.current = Date.now();
+  };
+
+  const recordFailure = (reason: AttemptReason) => {
+    if (!product || completedRef.current) return;
+    logAttempt(product.name, product.price, 'failed', reason, product.id);
+  };
+
+  const handleClose = () => {
+    if (!completedRef.current && phase !== 'success') {
+      recordFailure('cancelled');
+    }
+    reset();
+    onClose();
+  };
+
+  const handleRetry = () => {
+    // Log current attempt as failed before retrying
+    if (!completedRef.current) {
+      const reason: AttemptReason = phase === 'identify' ? 'face_mismatch' : 'gesture_failed';
+      recordFailure(reason);
+    }
+    reset();
+  };
+
+  // Reset phase start timestamp whenever phase changes (for timeout detection if needed)
+  useEffect(() => {
+    phaseStartRef.current = Date.now();
+  }, [phase, attemptKey]);
 
   const completePurchase = () => {
     if (!product) return;
-    const updated = addTransaction(product.name, product.price);
+    completedRef.current = true;
+    const updated = addTransaction(product.name, product.price, product.id);
     if (updated) {
       setPhase('success');
       setTimeout(() => {
@@ -75,6 +112,7 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
         {phase === 'identify' && (
           <div className="space-y-3">
             <FaceScanner
+              key={`scan-${attemptKey}`}
               mode="verify"
               expectedEmbedding={account.faceEmbedding}
               onComplete={() => {
@@ -94,6 +132,7 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
               <p className="text-lg font-bold text-emerald-300">{account.name}</p>
             </div>
             <GestureCapture
+              key={`pw-${attemptKey}`}
               type={account.passwordType}
               onSuccess={() => setPhase('confirm')}
               label="أدخل كلمة السر"
@@ -108,6 +147,7 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
               <p className="text-sm text-white">كرر الإيماءة لإتمام الشراء</p>
             </div>
             <GestureCapture
+              key={`cf-${attemptKey}`}
               type={account.passwordType}
               onSuccess={completePurchase}
               label="تأكيد الإيماءة"
@@ -130,10 +170,21 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
         )}
 
         {phase !== 'success' && (
-          <Button variant="outline" onClick={handleClose} className="w-full">
-            إلغاء العملية
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRetry}
+              className="flex-1 border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/10"
+            >
+              <RotateCw className="w-4 h-4" />
+              إعادة المحاولة
+            </Button>
+            <Button variant="outline" onClick={handleClose} className="flex-1">
+              إلغاء العملية
+            </Button>
+          </div>
         )}
+
       </DialogContent>
     </Dialog>
   );

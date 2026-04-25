@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateAccountWizard } from '@/components/facepay/CreateAccountWizard';
-import { Store, type FaceProduct } from '@/components/facepay/Store';
+import { Store, PRODUCTS, type FaceProduct } from '@/components/facepay/Store';
 import { FacePayCheckout } from '@/components/facepay/FacePayCheckout';
 import { loadAccount, deleteAccount, type FacePayAccount } from '@/lib/facepay/storage';
 import {
   ArrowRight, ScanFace, Wallet, ShoppingBag, History, Trash2, ShieldAlert,
-  Smile, Eye, Sparkles
+  Smile, Eye, Sparkles, ListChecks, CheckCircle2, XCircle, RotateCw
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -17,7 +17,7 @@ const FacePayAI = () => {
   const navigate = useNavigate();
   const [account, setAccount] = useState<FacePayAccount | null>(null);
   const [showWizard, setShowWizard] = useState(false);
-  const [tab, setTab] = useState<'home' | 'store' | 'history'>('home');
+  const [tab, setTab] = useState<'home' | 'store' | 'history' | 'attempts'>('home');
   const [checkoutProduct, setCheckoutProduct] = useState<FaceProduct | null>(null);
 
   useEffect(() => {
@@ -122,10 +122,18 @@ const FacePayAI = () => {
 
         {account && (
           <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6 bg-slate-900/60 border border-white/10 h-12">
+            <TabsList className="grid grid-cols-4 mb-6 bg-slate-900/60 border border-white/10 h-12">
               <TabsTrigger value="home"><Wallet className="w-4 h-4 ml-1" />حسابي</TabsTrigger>
               <TabsTrigger value="store"><ShoppingBag className="w-4 h-4 ml-1" />المتجر</TabsTrigger>
               <TabsTrigger value="history"><History className="w-4 h-4 ml-1" />السجل</TabsTrigger>
+              <TabsTrigger value="attempts">
+                <ListChecks className="w-4 h-4 ml-1" />المحاولات
+                {(account.attempts?.length ?? 0) > 0 && (
+                  <span className="mr-1 px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[10px]">
+                    {account.attempts!.length}
+                  </span>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="home">
@@ -218,6 +226,83 @@ const FacePayAI = () => {
                 </div>
               )}
             </TabsContent>
+
+            <TabsContent value="attempts">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">سجل المحاولات</h2>
+                <span className="text-xs text-slate-400">
+                  آخر {Math.min(account.attempts?.length ?? 0, 50)} عملية
+                </span>
+              </div>
+              {(!account.attempts || account.attempts.length === 0) ? (
+                <div className="text-center py-12 text-slate-400 border border-dashed border-white/10 rounded-2xl">
+                  لا توجد محاولات بعد. ابدأ من المتجر.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {account.attempts.map(att => {
+                    const success = att.status === 'success';
+                    const StatusIcon = success ? CheckCircle2 : XCircle;
+                    const reasonLabel: Record<string, string> = {
+                      success: 'تمت بنجاح',
+                      face_mismatch: 'فشل التعرّف على الوجه',
+                      gesture_failed: 'إيماءة كلمة السر غير صحيحة',
+                      cancelled: 'تم الإلغاء يدوياً',
+                      insufficient_balance: 'رصيد غير كافٍ',
+                    };
+                    const product = PRODUCTS.find(p => p.id === att.productId)
+                      ?? PRODUCTS.find(p => p.name === att.productName);
+                    return (
+                      <div
+                        key={att.id}
+                        className={`flex items-center gap-3 p-4 rounded-xl border ${
+                          success
+                            ? 'bg-emerald-500/5 border-emerald-400/20'
+                            : 'bg-rose-500/5 border-rose-400/20'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          success ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                        }`}>
+                          <StatusIcon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-white text-sm truncate">{att.productName}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                              success
+                                ? 'bg-emerald-500/20 text-emerald-200'
+                                : 'bg-rose-500/20 text-rose-200'
+                            }`}>
+                              {success ? 'نجح' : 'فشل'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {reasonLabel[att.reason] ?? att.reason} · {new Date(att.date).toLocaleString('ar-EG')}
+                          </div>
+                        </div>
+                        <div className="text-left flex-shrink-0">
+                          <div className={`font-bold text-sm ${success ? 'text-rose-300' : 'text-slate-400'}`}>
+                            {success ? '-' : ''}{att.amount} د.أ
+                          </div>
+                          {!success && product && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setCheckoutProduct(product)}
+                              className="mt-1 h-7 text-[11px] border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/10"
+                            >
+                              <RotateCw className="w-3 h-3" />
+                              إعادة المحاولة
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         )}
       </main>
@@ -227,7 +312,7 @@ const FacePayAI = () => {
           open={!!checkoutProduct}
           product={checkoutProduct}
           account={account}
-          onClose={() => setCheckoutProduct(null)}
+          onClose={() => { setCheckoutProduct(null); setAccount(loadAccount()); }}
           onSuccess={(updated) => { setAccount(updated); setCheckoutProduct(null); }}
         />
       )}
