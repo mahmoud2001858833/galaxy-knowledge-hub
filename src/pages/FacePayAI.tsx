@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateAccountWizard } from '@/components/facepay/CreateAccountWizard';
-import { Store, type FaceProduct } from '@/components/facepay/Store';
+import { Store, PRODUCTS, type FaceProduct } from '@/components/facepay/Store';
 import { FacePayCheckout } from '@/components/facepay/FacePayCheckout';
 import { loadAccount, deleteAccount, type FacePayAccount } from '@/lib/facepay/storage';
 import {
