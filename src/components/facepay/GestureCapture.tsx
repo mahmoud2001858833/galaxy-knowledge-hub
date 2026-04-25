@@ -124,6 +124,24 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
           {label || hint}
         </div>
 
+        {type === 'smile' && ready && !error && !done && (
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-black/70 border border-violet-400/30 backdrop-blur">
+            <span className={`text-xs font-bold ${smileState.c}`}>{smileState.t}</span>
+            <div className="flex items-center gap-2 flex-1 max-w-[60%]">
+              <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${
+                    smileLive >= 0.62 ? 'bg-emerald-400'
+                    : smileLive >= 0.4 ? 'bg-amber-400' : 'bg-rose-400'
+                  }`}
+                  style={{ width: `${smilePct}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-white/80 w-8 text-left">{smilePct}%</span>
+            </div>
+          </div>
+        )}
+
         {type === 'blinks' && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
             {[0, 1, 2].map(i => (
