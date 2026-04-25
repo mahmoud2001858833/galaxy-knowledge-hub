@@ -17,7 +17,7 @@ const FacePayAI = () => {
   const navigate = useNavigate();
   const [account, setAccount] = useState<FacePayAccount | null>(null);
   const [showWizard, setShowWizard] = useState(false);
-  const [tab, setTab] = useState<'home' | 'store' | 'history'>('home');
+  const [tab, setTab] = useState<'home' | 'store' | 'history' | 'attempts'>('home');
   const [checkoutProduct, setCheckoutProduct] = useState<FaceProduct | null>(null);
 
   useEffect(() => {
