@@ -96,7 +96,12 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
   });
 
   const Icon = type === 'smile' ? Smile : Eye;
-  const hint = type === 'smile' ? 'ابتسم بوضوح لمدة ثانية' : 'أغمض عينيك ٣ مرات متتالية';
+  const hint = type === 'smile' ? 'ابتسم بوضوح وارفع زوايا فمك' : 'أغمض عينيك ٣ مرات متتالية';
+  const smilePct = Math.round(smileLive * 100);
+  const smileState =
+    smileLive >= 0.62 ? { c: 'text-emerald-300', t: 'ابتسامة واضحة ✓' }
+    : smileLive >= 0.4 ? { c: 'text-amber-300', t: 'ابتسم أكثر…' }
+    : { c: 'text-rose-300', t: 'لا توجد ابتسامة' };
 
   return (
     <div className="w-full">
