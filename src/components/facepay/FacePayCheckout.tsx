@@ -112,6 +112,7 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
         {phase === 'identify' && (
           <div className="space-y-3">
             <FaceScanner
+              key={`scan-${attemptKey}`}
               mode="verify"
               expectedEmbedding={account.faceEmbedding}
               onComplete={() => {
@@ -131,6 +132,7 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
               <p className="text-lg font-bold text-emerald-300">{account.name}</p>
             </div>
             <GestureCapture
+              key={`pw-${attemptKey}`}
               type={account.passwordType}
               onSuccess={() => setPhase('confirm')}
               label="أدخل كلمة السر"
@@ -145,6 +147,7 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
               <p className="text-sm text-white">كرر الإيماءة لإتمام الشراء</p>
             </div>
             <GestureCapture
+              key={`cf-${attemptKey}`}
               type={account.passwordType}
               onSuccess={completePurchase}
               label="تأكيد الإيماءة"
@@ -167,10 +170,21 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
         )}
 
         {phase !== 'success' && (
-          <Button variant="outline" onClick={handleClose} className="w-full">
-            إلغاء العملية
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRetry}
+              className="flex-1 border-cyan-400/40 text-cyan-200 hover:bg-cyan-500/10"
+            >
+              <RotateCw className="w-4 h-4" />
+              إعادة المحاولة
+            </Button>
+            <Button variant="outline" onClick={handleClose} className="flex-1">
+              إلغاء العملية
+            </Button>
+          </div>
         )}
+
       </DialogContent>
     </Dialog>
   );
