@@ -81,18 +81,69 @@ export const faceMatchScore = (a: number[], b: number[]): number => {
   return 0.35 * cos + 0.65 * distScore;
 };
 
-/** Smile detection: mouth width vs eye distance + lip openness. */
-export const detectSmile = (landmarks: Landmark[]): boolean => {
-  if (!landmarks || landmarks.length < 400) return false;
-  const mouthW = dist(landmarks[61], landmarks[291]);
-  const eyeW = dist(landmarks[33], landmarks[263]) || 1e-6;
-  const ratio = mouthW / eyeW;
-  // Corners pulled up: average y of corners higher (smaller y) than lips center y
-  const cornersY = (landmarks[61].y + landmarks[291].y) / 2;
-  const lipCenterY = landmarks[13].y;
-  const upturned = cornersY < lipCenterY + 0.01;
-  return ratio > 0.62 && upturned;
+/**
+ * Smile score in [0,1]. Combines:
+ *  - Mouth width relative to eye distance (smiling stretches mouth wider).
+ *  - Mouth-corner elevation: corners must rise ABOVE the upper-lip line, not just align.
+ *  - Cheek raise: distance from mouth corner to outer eye shrinks when smiling.
+ *  - Penalty when corners are pulled DOWN (frown / neutral).
+ *
+ * Returns ~0 for neutral/closed mouth and >0.7 for a clear genuine smile.
+ */
+export const smileScore = (landmarks: Landmark[]): number => {
+  if (!landmarks || landmarks.length < 400) return 0;
+  const leftCorner = landmarks[61];
+  const rightCorner = landmarks[291];
+  const upperLip = landmarks[13];
+  const lowerLip = landmarks[14];
+  const leftEyeOuter = landmarks[33];
+  const rightEyeOuter = landmarks[263];
+  const leftEyeInner = landmarks[133];
+  const rightEyeInner = landmarks[362];
+  const noseTip = landmarks[1];
+
+  const eyeW = dist(leftEyeOuter, rightEyeOuter) || 1e-6;
+  const faceH = Math.abs(landmarks[10].y - landmarks[152].y) || 1e-6;
+
+  // 1) Mouth-width ratio. Neutral ~0.50, smile >0.66.
+  const mouthW = dist(leftCorner, rightCorner);
+  const widthRatio = mouthW / eyeW;
+  const widthScore = Math.max(0, Math.min(1, (widthRatio - 0.58) / 0.16)); // 0 at 0.58, 1 at 0.74
+
+  // 2) Corner elevation vs upper lip. In normalized coords smaller y = higher up.
+  // For a real smile, corners should be HIGHER than the upper lip (cornersY < upperLipY).
+  const cornersY = (leftCorner.y + rightCorner.y) / 2;
+  const elevation = (upperLip.y - cornersY) / faceH; // positive when corners above upper lip
+  // Require clear elevation: 0 at <=0, 1 at >=0.012 of face height.
+  const elevationScore = Math.max(0, Math.min(1, elevation / 0.012));
+
+  // 3) Cheek raise: distance from corner to outer-eye shrinks when smiling.
+  // Reference baseline ~0.42*eyeW for neutral; ~0.30*eyeW for big smile.
+  const cornerToEye =
+    (dist(leftCorner, leftEyeOuter) + dist(rightCorner, rightEyeOuter)) / 2;
+  const cheekRatio = cornerToEye / eyeW;
+  const cheekScore = Math.max(0, Math.min(1, (0.42 - cheekRatio) / 0.10));
+
+  // 4) Frown penalty: if corners are clearly BELOW the lower lip, kill the score.
+  const lowerLipY = lowerLip.y;
+  const frown = cornersY > lowerLipY + 0.004 * faceH;
+  if (frown) return 0;
+
+  // Weighted combination — elevation matters most because it's the hardest fake.
+  const score =
+    0.30 * widthScore +
+    0.45 * elevationScore +
+    0.25 * cheekScore;
+
+  // Hard gate: must satisfy ALL three minimums to count as a smile at all.
+  if (widthScore < 0.25 || elevationScore < 0.25 || cheekScore < 0.15) {
+    return Math.min(score, 0.35); // cap below threshold
+  }
+  return score;
 };
+
+/** Boolean smile detector with strict threshold. Use smileScore for granular control. */
+export const detectSmile = (landmarks: Landmark[]): boolean => smileScore(landmarks) >= 0.62;
 
 /** Eye Aspect Ratio (EAR): low value => eye closed. */
 export const getEAR = (landmarks: Landmark[]): number => {

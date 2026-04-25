@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFaceLandmarker, type LandmarkPoint } from './useFaceLandmarker';
-import { detectSmile, getEAR } from '@/lib/facepay/faceUtils';
+import { smileScore, getEAR } from '@/lib/facepay/faceUtils';
 import { Smile, Eye, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { PasswordType } from '@/lib/facepay/storage';
 
@@ -17,26 +17,36 @@ interface GestureCaptureProps {
 export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) => {
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
+  const [smileLive, setSmileLive] = useState(0); // 0..1 live smile score for HUD
   const blinkCountRef = useRef(0);
   const eyeClosedRef = useRef(false);
-  const smileStartRef = useRef<number | null>(null);
+  const smileHoldRef = useRef(0); // ms accumulated above threshold
+  const lastTickRef = useRef<number | null>(null);
   const firstBlinkRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
+
+  const SMILE_THRESHOLD = 0.62;       // must clear this to count
+  const SMILE_HOLD_MS = 1100;         // sustained for ~1.1s
+  const SMILE_DECAY_MS = 220;         // grace before progress drops
 
   const handleLandmarks = (landmarks: LandmarkPoint[]) => {
     if (finishedRef.current) return;
     const now = performance.now();
+    const dt = lastTickRef.current == null ? 16 : Math.min(60, now - lastTickRef.current);
+    lastTickRef.current = now;
 
     if (type === 'smile') {
-      if (detectSmile(landmarks)) {
-        if (smileStartRef.current === null) smileStartRef.current = now;
-        const dur = now - smileStartRef.current;
-        setProgress(Math.min(100, (dur / 800) * 100));
-        if (dur >= 800) finish();
+      const score = smileScore(landmarks);
+      setSmileLive(score);
+      if (score >= SMILE_THRESHOLD) {
+        smileHoldRef.current = Math.min(SMILE_HOLD_MS, smileHoldRef.current + dt);
       } else {
-        smileStartRef.current = null;
-        setProgress(p => Math.max(0, p - 4));
+        // Decay faster when score is far from threshold
+        const decay = score < 0.35 ? dt : dt * 0.4;
+        smileHoldRef.current = Math.max(0, smileHoldRef.current - decay);
       }
+      setProgress((smileHoldRef.current / SMILE_HOLD_MS) * 100);
+      if (smileHoldRef.current >= SMILE_HOLD_MS) finish();
     } else {
       const ear = getEAR(landmarks);
       const CLOSED = 0.18;
@@ -86,7 +96,12 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
   });
 
   const Icon = type === 'smile' ? Smile : Eye;
-  const hint = type === 'smile' ? 'ابتسم بوضوح لمدة ثانية' : 'أغمض عينيك ٣ مرات متتالية';
+  const hint = type === 'smile' ? 'ابتسم بوضوح وارفع زوايا فمك' : 'أغمض عينيك ٣ مرات متتالية';
+  const smilePct = Math.round(smileLive * 100);
+  const smileState =
+    smileLive >= 0.62 ? { c: 'text-emerald-300', t: 'ابتسامة واضحة ✓' }
+    : smileLive >= 0.4 ? { c: 'text-amber-300', t: 'ابتسم أكثر…' }
+    : { c: 'text-rose-300', t: 'لا توجد ابتسامة' };
 
   return (
     <div className="w-full">
@@ -108,6 +123,24 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
           <Icon className="w-3.5 h-3.5" />
           {label || hint}
         </div>
+
+        {type === 'smile' && ready && !error && !done && (
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-black/70 border border-violet-400/30 backdrop-blur">
+            <span className={`text-xs font-bold ${smileState.c}`}>{smileState.t}</span>
+            <div className="flex items-center gap-2 flex-1 max-w-[60%]">
+              <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${
+                    smileLive >= 0.62 ? 'bg-emerald-400'
+                    : smileLive >= 0.4 ? 'bg-amber-400' : 'bg-rose-400'
+                  }`}
+                  style={{ width: `${smilePct}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-white/80 w-8 text-left">{smilePct}%</span>
+            </div>
+          </div>
+        )}
 
         {type === 'blinks' && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
