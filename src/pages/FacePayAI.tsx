@@ -9,7 +9,7 @@ import { FacePayCheckout } from '@/components/facepay/FacePayCheckout';
 import { loadAccount, deleteAccount, type FacePayAccount } from '@/lib/facepay/storage';
 import {
   ArrowRight, ScanFace, Wallet, ShoppingBag, History, Trash2, ShieldAlert,
-  Smile, Eye, Sparkles
+  Smile, Eye, Sparkles, ListChecks, CheckCircle2, XCircle, RotateCw
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
