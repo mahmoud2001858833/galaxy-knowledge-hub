@@ -118,9 +118,15 @@ export const FacePayCheckout = ({ open, product, account, onClose, onSuccess }: 
               onComplete={() => {
                 setTimeout(() => setPhase('password'), 400);
               }}
+              onReject={() => {
+                // Wrong face detected -> log failure and close the dialog
+                recordFailure('face_mismatch');
+                completedRef.current = true; // prevent double-log on close
+                setTimeout(() => { reset(); onClose(); }, 600);
+              }}
             />
             <p className="text-center text-xs text-cyan-200">
-              عند التعرف عليك سيظهر اسم حسابك تلقائياً.
+              لن يظهر اسم الحساب إلا بعد التحقق الصارم من تطابق وجهك.
             </p>
           </div>
         )}
