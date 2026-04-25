@@ -122,10 +122,18 @@ const FacePayAI = () => {
 
         {account && (
           <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6 bg-slate-900/60 border border-white/10 h-12">
+            <TabsList className="grid grid-cols-4 mb-6 bg-slate-900/60 border border-white/10 h-12">
               <TabsTrigger value="home"><Wallet className="w-4 h-4 ml-1" />حسابي</TabsTrigger>
               <TabsTrigger value="store"><ShoppingBag className="w-4 h-4 ml-1" />المتجر</TabsTrigger>
               <TabsTrigger value="history"><History className="w-4 h-4 ml-1" />السجل</TabsTrigger>
+              <TabsTrigger value="attempts">
+                <ListChecks className="w-4 h-4 ml-1" />المحاولات
+                {(account.attempts?.length ?? 0) > 0 && (
+                  <span className="mr-1 px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[10px]">
+                    {account.attempts!.length}
+                  </span>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="home">
