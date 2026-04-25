@@ -1,5 +1,7 @@
-import { ScanFace } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ScanFace, ArrowRight, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export interface FaceProduct {
   id: string;
@@ -39,57 +41,138 @@ export const PRODUCTS: FaceProduct[] = [
 interface StoreProps {
   balance: number;
   onBuy: (p: FaceProduct) => void;
+  onBack?: () => void;
 }
 
-export const Store = ({ balance, onBuy }: StoreProps) => {
+const ALL = 'الكل';
+
+export const Store = ({ balance, onBuy, onBack }: StoreProps) => {
+  const [category, setCategory] = useState<string>(ALL);
+  const [query, setQuery] = useState('');
+
+  const categories = useMemo(() => [ALL, ...Array.from(new Set(PRODUCTS.map(p => p.category)))], []);
+
+  const filtered = useMemo(() => {
+    return PRODUCTS.filter(p => {
+      const matchCat = category === ALL || p.category === category;
+      const matchQ = !query.trim() || p.name.includes(query.trim());
+      return matchCat && matchQ;
+    });
+  }, [category, query]);
+
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {PRODUCTS.map(p => {
-          const insufficient = p.price > balance;
-          return (
-            <div
-              key={p.id}
-              className="group rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-white/10 hover:border-cyan-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_20px_40px_-12px_rgba(56,232,255,0.3)]"
+    <div className="space-y-5 animate-in fade-in duration-300">
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 p-4 rounded-2xl bg-slate-900/60 border border-white/10 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          {onBack && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBack}
+              className="border-white/20 hover:bg-white/5 text-cyan-200"
             >
-              <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-cyan-200 backdrop-blur border border-cyan-400/30">
-                  {p.category}
-                </span>
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-white text-sm leading-snug">{p.name}</h3>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-emerald-300 font-bold text-lg">
-                    {p.price}
-                    <span className="text-[10px] text-slate-400 font-normal mr-1">د.أ</span>
-                  </span>
-                  <Button
-                    size="sm"
-                    disabled={insufficient}
-                    onClick={() => onBuy(p)}
-                    className="bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 disabled:opacity-40 text-xs"
-                  >
-                    <ScanFace className="w-3.5 h-3.5" />
-                    ادفع بالوجه
-                  </Button>
-                </div>
-                {insufficient && (
-                  <p className="text-[10px] text-rose-300">رصيدك لا يكفي</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+              <ArrowRight className="w-4 h-4" />
+              رجوع
+            </Button>
+          )}
+          <div className="relative flex-1 max-w-sm mr-auto">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              dir="rtl"
+              placeholder="ابحث عن منتج..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pr-9 bg-slate-950/60 border-white/10 text-white placeholder:text-slate-500"
+            />
+          </div>
+        </div>
+
+        {/* Category chips */}
+        <div className="flex flex-wrap gap-2">
+          {categories.map(c => {
+            const active = c === category;
+            return (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={[
+                  'px-3 py-1.5 rounded-full text-xs font-bold border transition-all',
+                  active
+                    ? 'bg-gradient-to-r from-cyan-500 to-violet-500 border-transparent text-white shadow-[0_4px_20px_-4px_rgba(56,232,255,0.5)]'
+                    : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-cyan-400/40 hover:text-cyan-200'
+                ].join(' ')}
+              >
+                {c}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Results count */}
+      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+          {filtered.length} منتج {category !== ALL && `في ${category}`}
+        </span>
+      </div>
+
+      {/* Grid */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-slate-400 border border-dashed border-white/10 rounded-2xl">
+          لا توجد منتجات مطابقة.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map(p => {
+            const insufficient = p.price > balance;
+            return (
+              <div
+                key={p.id}
+                className="group rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-12px_rgba(56,232,255,0.3)] animate-in fade-in"
+              >
+                <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-cyan-200 backdrop-blur border border-cyan-400/30">
+                    {p.category}
+                  </span>
+                  {insufficient && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                      <span className="px-3 py-1 rounded-full bg-rose-500/80 text-white text-xs font-bold">
+                        رصيد غير كافٍ
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 space-y-3">
+                  <h3 className="font-bold text-white text-sm leading-snug line-clamp-2 min-h-[2.5rem]">{p.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-emerald-300 font-bold text-lg">
+                      {p.price}
+                      <span className="text-[10px] text-slate-400 font-normal mr-1">د.أ</span>
+                    </span>
+                    <Button
+                      size="sm"
+                      disabled={insufficient}
+                      onClick={() => onBuy(p)}
+                      className="bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 disabled:opacity-40 text-xs group-hover:scale-105 transition-transform"
+                    >
+                      <ScanFace className="w-3.5 h-3.5" />
+                      ادفع بالوجه
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
