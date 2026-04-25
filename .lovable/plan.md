@@ -1,126 +1,100 @@
-# تطوير ضخم لباني المنصات + إصلاح خطأ كلمة المرور
 
-## 1) إصلاح خطأ "الحقل password_hash مطلوب"
+## الهدف
+إضافة خيار جديد ضمن أدوات الذكاء الاصطناعي في صفحة `/gju-competition` (مستقبل التكنولوجيا) باسم **"الدفع بالوجه - FacePay AI"**، يشبه تجربة بنكية مصغّرة مع متجر إلكتروني والدفع بالتعرف على الوجه + كلمة سر بإيماءة (ابتسامة / 3 رمشات).
 
-**السبب الجذري**: مولّد الـ schema يُسمّي حقل المستخدم `password_hash`، لكن `Auth.register` في `assets/js/auth.js` يُدخل الحقل باسم `password`. فيفشل التحقق `validate()` ويظهر التوست الأحمر.
+---
 
-**الحل**: في `platform-stage-files/index.ts` سأقوم بـ:
-- توحيد أسماء حقول users قبل التوليد (normalization): يُعاد تسمية أي حقل من `password` / `password_hash` / `pwd` إلى **`password`** قياسياً، وحذف التكرار.
-- ضمان وجود `email` و `name` و `role` و `created_at` كحقول قياسية.
-- تحديث `Auth.register/login` لاستخدام نفس الأسماء الموحّدة.
-- التحقق من أن `validate()` لا يُلزم حقولاً مخفية (`hidden:true`) من جهة المستخدم.
+## التدفق (User Flow)
 
-نتيجة: التسجيل يعمل من أول مرة في كل منصة مولَّدة.
+1. **إنشاء حساب بنكي**: اسم الحساب + الرصيد الابتدائي (المبلغ المرفوع على اللينك).
+2. **تسجيل الوجه**: مسح احترافي لملامح الوجه عبر الكاميرا مع تأثير سكان شعاعي وشبكة نقاط (FaceLandmarker من MediaPipe — موجود مسبقاً في المشروع لميزة لغة الإشارة).
+3. **اختيار كلمة السر بالإيماءة**: 
+   - ☺️ ابتسامة، أو 
+   - 👁️ ثلاث رمشات متتالية.
+4. **حفظ الحساب** (محلياً في `localStorage` — لا يحتاج باكند).
+5. **المتجر**: 24+ منتج مع صور (Unsplash) وفئات وأسعار.
+6. **الشراء**: زر "ادفع بالوجه" → كاميرا تتعرف على الوجه → تعرض اسم الحساب → تطلب الإيماءة (السر) → تأكيد بإيماءة ثانية → خصم الرصيد → فاتورة نجاح.
 
-## 2) تطوير ضخم للمولّد (×3 ملفات وميزات)
+---
 
-**الهدف**: بدل 14 ملفاً، نُولّد **30+ ملفاً** بمشروع شبه إنتاجي.
+## الملفات المُنشأة
 
-### ملفات جديدة تُضاف لكل مشروع:
+### 1. `src/pages/FacePayAI.tsx` (الصفحة الرئيسية)
+- لوحة قيادة بتصميم مستقبلي (Glassmorphism + Neon) متناغم مع هوية GJU 3030.
+- تبويبات: **حسابي / المتجر / السجل**.
+- إذا لا يوجد حساب → يعرض زر كبير "إنشاء حساب بنكي".
 
-```text
-index.html
-404.html                       ← صفحة جديدة
-assets/
-  css/
-    theme.css                  ← مُحسَّن بـ design tokens كاملة
-    main.css
-    components.css
-    animations.css             ← جديد: keyframes + transitions
-    responsive.css             ← جديد: breakpoints احترافية
-  js/
-    utils.js
-    toast.js                   ← مُحسَّن (أنواع، مدة قابلة للتخصيص)
-    db.js                      ← مُحسَّن (search, pagination, joins)
-    seed.js                    ← seed واقعي عربي (5-10 صفوف لكل جدول)
-    auth.js                    ← Fix password + reset password + sessions
-    ai.js                      ← مع context-aware system prompt
-    router.js                  ← مع transitions وحماية routes
-    app.js                     ← shell + theme toggle + lang toggle
-    notifications.js           ← جديد: نظام إشعارات
-    search.js                  ← جديد: بحث عام عبر كل الجداول
-    upload.js                  ← جديد: رفع صور (base64 → localStorage)
-    export.js                  ← جديد: تصدير/استيراد JSON
-    i18n.js                    ← جديد: عربي/إنجليزي
-    modules/<table>.js         ← ملف لكل جدول
-  components/
-    navbar.js                  ← جديد: مكوّن
-    sidebar.js                 ← جديد: مكوّن
-    modal.js                   ← جديد: مكوّن
-    floating-ai.js             ← جديد: زر AI عائم في كل الصفحات
-pages/
-  home.html, login.html, signup.html, profile.html
-  settings.html, ai-chat.html, about.html, contact.html
-  faq.html, search.html
-  <table>.html × N
-README.md
+### 2. `src/components/facepay/CreateAccountWizard.tsx`
+معالج 4 خطوات:
+- Step 1: اسم الحساب + الرصيد الابتدائي.
+- Step 2: مسح الوجه (FaceScanner).
+- Step 3: اختيار نوع كلمة السر بالإيماءة (ابتسامة / 3 رمشات).
+- Step 4: تسجيل الإيماءة + تأكيد.
+
+### 3. `src/components/facepay/FaceScanner.tsx`
+- يستخدم `@mediapipe/tasks-vision` (المثبت سابقاً) — `FaceLandmarker` بنموذج `face_landmarker.task`.
+- Overlay احترافي: شبكة 468 نقطة + خط مسح متحرك + حلقات نبض + مؤشر تقدم.
+- يحسب **face embedding مبسط** = متجه من 30 مسافة معيارية بين landmarks (مقاومة للحجم/الميل) → يُحفظ بالـ localStorage.
+- التحقق: cosine similarity > 0.92.
+
+### 4. `src/components/facepay/GestureCapture.tsx`
+- **ابتسامة**: نسبة عرض الفم (landmarks 61, 291) إلى المسافة بين العينين > حد معين.
+- **رمش**: EAR (Eye Aspect Ratio) باستخدام landmarks الجفون — كشف 3 رمشات متتالية خلال 4 ثوانٍ.
+
+### 5. `src/components/facepay/Store.tsx`
+- شبكة 24 منتج بفئات (إلكترونيات، ملابس، طعام، كتب، ألعاب، عطور...) مع صور Unsplash وأسعار بالدينار.
+- زر "ادفع بالوجه 👤" على كل منتج.
+
+### 6. `src/components/facepay/FacePayCheckout.tsx`
+- Modal بثلاث مراحل:
+  1. **التعرف على الوجه** → يعرض "مرحباً، {اسم_الحساب}".
+  2. **أدخل كلمة السر** (الإيماءة المسجلة).
+  3. **تأكيد** (نفس الإيماءة مرة ثانية).
+- عند النجاح: animation + خصم الرصيد + إضافة للسجل.
+
+### 7. `src/lib/facepay/storage.ts`
+إدارة `localStorage` تحت مفتاح `facepay_account_v1`:
+```ts
+{ name, balance, faceEmbedding: number[], passwordType: 'smile'|'blinks', history: Tx[] }
 ```
 
-النتيجة: **30–40 ملفاً منظماً** لكل مشروع.
+### 8. `src/lib/facepay/faceUtils.ts`
+- `extractEmbedding(landmarks)` — متجه ثابت الطول.
+- `cosineSimilarity(a, b)`.
+- `detectSmile(landmarks)`, `getEAR(landmarks)`.
 
-### تحسينات DB engine:
-- `search(table, query)` بحث نصّي.
-- `paginate(table, page, perPage)`.
-- `join(tableA, tableB, fk)` بسيط للعرض.
-- `subscribe(table, callback)` لتحديث UI تلقائياً عند تغيّر البيانات.
-- صادرة/مُستوردة JSON كاملة.
+---
 
-### تحسينات Auth:
-- إصلاح كلمة المرور (مذكور أعلاه).
-- "تذكرني" + Session expiry قابل للتخصيص.
-- تعديل البروفايل وتغيير كلمة المرور من صفحة Profile.
-- صورة بروفايل (base64 رفع محلي).
+## التعديلات
 
-### Floating AI (في كل صفحة):
-- زر دائري في الزاوية اليسرى السفلى.
-- يفتح Drawer بمحادثة.
-- يرسل سياق المنصة (الجداول + إحصائيات + المستخدم الحالي) للـ AI.
+### `src/pages/GJUCompetition.tsx`
+إضافة عنصر جديد في `aiTools` (السطر 31-38):
+```ts
+{ title: '💳 الدفع بالوجه - FacePay AI', description: 'تجربة بنكية متكاملة: أنشئ حساباً، سجّل وجهك، اختر كلمة سر بإيماءة، وادفع من المتجر بمسح وجهك فقط', icon: ScanFace, gradient: 'from-emerald-500 via-cyan-500 to-violet-600', link: '/face-pay' }
+```
 
-## 3) تطوير ضخم للمعاينة الحية
+### `src/App.tsx`
+إضافة المسار:
+```tsx
+<Route path="/face-pay" element={<FacePayAI />} />
+```
 
-المعاينة الحالية تعمل عبر iframe بـ `srcDoc`. المشاكل:
-- بطيء عند الملفات الكبيرة.
-- لا يوجد device toolbar (mobile/tablet/desktop).
-- لا يوجد تحكم بإعادة التحميل / فتح في تبويب / Console مدمج.
-- Inlining كل الكود يُفقد القدرة على debug ملف بعينه.
+---
 
-**التحسينات**:
-- **Device Toolbar**: أزرار 📱 📟 💻 لتغيير عرض المعاينة (375 / 768 / 100%).
-- **زر Reload** للمعاينة دون إعادة بناء.
-- **Console مدمج**: نلتقط `console.log/error` من iframe عبر `postMessage` ونعرضها في لوحة سفلية.
-- **Loading skeleton** أثناء تحميل المعاينة.
-- **Open in new tab** يُنشئ Blob URL محسَّن.
-- **Fullscreen mode** للمعاينة (يأخذ كل الشاشة).
-- **Status bar**: حجم HTML النهائي + عدد الملفات + زمن البناء.
-- شارة "محدّث" خضراء عند انتهاء build جديد.
+## التفاصيل التقنية
 
-### تحسين معاينة الكود (FilesExplorer):
-- **Syntax highlighting حقيقي** عبر `highlight.js` (لا فقط نص أبيض).
-- **Line numbers** في جانب الكود.
-- **زر "نسخ السطر"** عند المرور.
-- **Breadcrumbs** للمسار الكامل.
-- **حجم الملف** بالـ KB مع حساب gzip تقديري.
+- **مكتبة الوجه**: `@mediapipe/tasks-vision` — موجودة مسبقاً (تُستخدم في `src/features/sign-language/`). نستخدم `FaceLandmarker` بدل `HandLandmarker`.
+- **النموذج**: يُحمَّل من CDN `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`.
+- **التخزين**: `localStorage` فقط — لا حاجة لباكند أو Supabase.
+- **الأمان**: تجريبي/تعليمي (ضمن إطار GJU 3030 العرضي) — لا يُستخدم لمدفوعات حقيقية. يُعرض تنبيه في الصفحة.
+- **التصميم**: متناغم مع تصميم `GJUCompetition` الداكن (gradients violet/cyan/emerald + glassmorphism + animations).
+- **RTL**: كامل بالعربية.
+- **Responsive**: يعمل على viewport 771px وما فوق.
 
-## 4) التفاصيل التقنية
+---
 
-### ملفات معدَّلة:
-- `supabase/functions/platform-stage-files/index.ts` — توحيد users schema، إضافة 15+ ملفاً جديداً، Floating AI، notifications/search/i18n/upload modules، إصلاح Auth.
-- `supabase/functions/platform-stage-schema/index.ts` — توحيد اسم الحقل إلى `password`، إضافة جداول قياسية (notifications, settings) إن لم تكن موجودة.
-- `src/pages/AIPlatformBuilderPro.tsx` — Device toolbar، Console panel، Reload، Fullscreen، Status bar.
-- `src/components/platform-builder/FilesExplorer.tsx` — Syntax highlighting (highlight.js)، line numbers، breadcrumbs.
+## ملاحظات مهمة
 
-### تبعيات جديدة:
-- `highlight.js` — للـ syntax highlighting في معاينة الكود.
-
-### لا تغييرات DB:
-نستخدم `localStorage` فقط داخل المنصات المولَّدة، ولا حاجة لجداول Supabase جديدة.
-
-## 5) ما سيراه المستخدم
-
-1. يكتب الوصف ويضغط "ابدأ البناء".
-2. خلال 30–60 ثانية يحصل على **30+ ملف** منظم في شجرة احترافية.
-3. **معاينة حية** بـ device toolbar وconsole مدمج وreload.
-4. **معاينة كود** بـ syntax highlighting وأرقام أسطر.
-5. **التسجيل وتسجيل الدخول يعملان من أول محاولة** (إصلاح password).
-6. زر AI عائم في كل صفحة من المنصة المولَّدة.
-7. تحميل ZIP يحتوي بنية مشروع جاهزة للنشر فوراً.
+- لن نُنشئ أي جداول في Supabase — كل شيء client-side.
+- لن نلمس عزل منصة GJU 3030 (نحترم القيد المحفوظ في الذاكرة).
+- سيظهر بانر "تجربة تعليمية — ليس نظام دفع حقيقي" بشكل واضح.
