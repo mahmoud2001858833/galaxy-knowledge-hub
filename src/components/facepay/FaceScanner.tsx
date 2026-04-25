@@ -1,27 +1,54 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useFaceLandmarker, type LandmarkPoint } from './useFaceLandmarker';
-import { extractEmbedding, cosineSimilarity } from '@/lib/facepay/faceUtils';
+import { extractEmbedding, faceMatchScore } from '@/lib/facepay/faceUtils';
 import { Button } from '@/components/ui/button';
-import { ScanFace, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ScanFace, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 
 interface FaceScannerProps {
   mode: 'enroll' | 'verify';
   expectedEmbedding?: number[];
   onComplete: (embedding: number[]) => void;
+  onReject?: () => void;
   onCancel?: () => void;
   ctaLabel?: string;
 }
 
+// Strict identity threshold. Empirically: same face -> 0.93+, different face -> < 0.85
+const MATCH_THRESHOLD = 0.93;
+// Number of consecutive matching frames required to accept identity (anti-glitch).
+const REQUIRED_MATCHES = 12;
+// Time window for verify before auto-rejecting (ms)
+const VERIFY_TIMEOUT_MS = 9000;
+// Number of clearly-low-score frames in a row that triggers an immediate reject
+const REJECT_STREAK = 25;
+
 /**
- * Reusable face scanner. In `enroll` mode it samples ~20 stable landmark
+ * Reusable face scanner. In `enroll` mode it samples ~25 stable landmark
  * frames, averages them into an embedding and returns it. In `verify` mode
- * it streams cosine similarity vs expectedEmbedding until threshold passed.
+ * it streams an identity score vs expectedEmbedding and only accepts after
+ * REQUIRED_MATCHES consecutive high-score frames; otherwise rejects.
  */
-export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onCancel, ctaLabel }: FaceScannerProps) => {
+export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onReject, onCancel }: FaceScannerProps) => {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'scanning' | 'success' | 'mismatch'>('scanning');
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
   const samplesRef = useRef<number[][]>([]);
+  const matchStreakRef = useRef(0);
+  const lowStreakRef = useRef(0);
   const finishedRef = useRef(false);
+
+  // Verify-mode timeout -> reject
+  useEffect(() => {
+    if (mode !== 'verify') return;
+    const t = setTimeout(() => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      setStatus('mismatch');
+      setTimeout(() => onReject?.(), 1200);
+    }, VERIFY_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [mode, onReject]);
 
   const handleLandmarks = (landmarks: LandmarkPoint[]) => {
     if (finishedRef.current) return;
@@ -35,7 +62,6 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onCancel, cta
       setProgress(p);
       if (samplesRef.current.length >= target) {
         finishedRef.current = true;
-        // Average embeddings
         const dim = emb.length;
         const avg = new Array(dim).fill(0);
         for (const s of samplesRef.current) {
@@ -45,15 +71,28 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onCancel, cta
         setStatus('success');
         setTimeout(() => onComplete(avg), 700);
       }
-    } else if (expectedEmbedding) {
-      const sim = cosineSimilarity(emb, expectedEmbedding);
-      // Map similarity 0.85..1 -> 0..100
-      const p = Math.max(0, Math.min(100, ((sim - 0.85) / 0.13) * 100));
-      setProgress(p);
-      if (sim > 0.95) {
+    } else if (expectedEmbedding && expectedEmbedding.length) {
+      const s = faceMatchScore(emb, expectedEmbedding);
+      setScore(s);
+
+      if (s >= MATCH_THRESHOLD) {
+        matchStreakRef.current += 1;
+        lowStreakRef.current = 0;
+      } else {
+        matchStreakRef.current = 0;
+        if (s < MATCH_THRESHOLD - 0.05) lowStreakRef.current += 1;
+      }
+      setStreak(matchStreakRef.current);
+      setProgress(Math.min(100, (matchStreakRef.current / REQUIRED_MATCHES) * 100));
+
+      if (matchStreakRef.current >= REQUIRED_MATCHES) {
         finishedRef.current = true;
         setStatus('success');
         setTimeout(() => onComplete(emb), 600);
+      } else if (lowStreakRef.current >= REJECT_STREAK) {
+        finishedRef.current = true;
+        setStatus('mismatch');
+        setTimeout(() => onReject?.(), 1200);
       }
     }
   };
@@ -83,24 +122,46 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onCancel, cta
           </div>
         )}
 
-        {/* HUD */}
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono">
           <span className="px-2 py-1 rounded bg-black/50 text-cyan-300 border border-cyan-400/30">
-            FACE-AI · v3.0
+            FACE-AI · v3.1
           </span>
           <span className="px-2 py-1 rounded bg-black/50 text-violet-300 border border-violet-400/30">
             {mode === 'enroll' ? 'ENROLL' : 'VERIFY'}
           </span>
         </div>
 
+        {mode === 'verify' && ready && status === 'scanning' && (
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono">
+            <span className={`px-2 py-1 rounded border ${
+              score >= MATCH_THRESHOLD
+                ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40'
+                : score > MATCH_THRESHOLD - 0.05
+                  ? 'bg-amber-500/20 text-amber-200 border-amber-400/40'
+                  : 'bg-rose-500/20 text-rose-200 border-rose-400/40'
+            }`}>
+              تطابق: {(score * 100).toFixed(1)}%
+            </span>
+            <span className="px-2 py-1 rounded bg-black/50 text-cyan-200 border border-cyan-400/30">
+              {streak}/{REQUIRED_MATCHES} إطار
+            </span>
+          </div>
+        )}
+
         {status === 'success' && (
           <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 backdrop-blur-sm animate-in fade-in">
             <CheckCircle2 className="w-24 h-24 text-emerald-400 drop-shadow-[0_0_30px_rgba(16,185,129,0.8)]" />
           </div>
         )}
+        {status === 'mismatch' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-rose-500/15 backdrop-blur-sm animate-in fade-in p-4 text-center">
+            <XCircle className="w-20 h-20 text-rose-400 drop-shadow-[0_0_30px_rgba(244,63,94,0.8)]" />
+            <p className="text-rose-100 font-bold">الوجه غير مطابق لصاحب الحساب</p>
+            <p className="text-xs text-rose-200/80">رُفِضت العملية لحماية حسابك.</p>
+          </div>
+        )}
       </div>
 
-      {/* Progress bar */}
       <div className="mt-4">
         <div className="flex justify-between text-xs text-cyan-200/80 mb-2 font-mono">
           <span>{mode === 'enroll' ? 'جاري بناء بصمة الوجه…' : 'جاري التحقق من الهوية…'}</span>
@@ -114,13 +175,11 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onCancel, cta
         </div>
       </div>
 
-      {(onCancel || ctaLabel) && (
+      {onCancel && (
         <div className="flex gap-2 mt-4">
-          {onCancel && (
-            <Button variant="outline" onClick={onCancel} className="flex-1">
-              إلغاء
-            </Button>
-          )}
+          <Button variant="outline" onClick={onCancel} className="flex-1">
+            إلغاء
+          </Button>
         </div>
       )}
     </div>
