@@ -1,0 +1,95 @@
+import { ScanFace } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+export interface FaceProduct {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  image: string;
+}
+
+export const PRODUCTS: FaceProduct[] = [
+  { id: 'p1', name: 'سماعات لاسلكية Pro', price: 65, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop' },
+  { id: 'p2', name: 'ساعة ذكية رياضية', price: 120, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop' },
+  { id: 'p3', name: 'لابتوب احترافي', price: 850, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop' },
+  { id: 'p4', name: 'كاميرا رقمية DSLR', price: 540, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=300&fit=crop' },
+  { id: 'p5', name: 'هاتف ذكي حديث', price: 720, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=300&fit=crop' },
+  { id: 'p6', name: 'حذاء رياضي', price: 55, category: 'ملابس', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop' },
+  { id: 'p7', name: 'جاكيت شتوي', price: 90, category: 'ملابس', image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=300&fit=crop' },
+  { id: 'p8', name: 'نظارة شمسية', price: 35, category: 'ملابس', image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=300&fit=crop' },
+  { id: 'p9', name: 'حقيبة ظهر', price: 42, category: 'ملابس', image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop' },
+  { id: 'p10', name: 'قهوة عربية فاخرة', price: 18, category: 'طعام', image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&h=300&fit=crop' },
+  { id: 'p11', name: 'صندوق شوكولاتة', price: 22, category: 'طعام', image: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=400&h=300&fit=crop' },
+  { id: 'p12', name: 'عسل طبيعي 1كغ', price: 28, category: 'طعام', image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop' },
+  { id: 'p13', name: 'كتاب: الذكاء الاصطناعي', price: 15, category: 'كتب', image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop' },
+  { id: 'p14', name: 'موسوعة العلوم', price: 32, category: 'كتب', image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=300&fit=crop' },
+  { id: 'p15', name: 'رواية أدبية', price: 12, category: 'كتب', image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=300&fit=crop' },
+  { id: 'p16', name: 'يد تحكم ألعاب', price: 48, category: 'ألعاب', image: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=400&h=300&fit=crop' },
+  { id: 'p17', name: 'لعبة ليغو', price: 60, category: 'ألعاب', image: 'https://images.unsplash.com/photo-1558877385-81a1c7e67d72?w=400&h=300&fit=crop' },
+  { id: 'p18', name: 'طائرة درون', price: 240, category: 'ألعاب', image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=300&fit=crop' },
+  { id: 'p19', name: 'عطر شرقي فاخر', price: 75, category: 'عطور', image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=300&fit=crop' },
+  { id: 'p20', name: 'عطر نسائي', price: 68, category: 'عطور', image: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&h=300&fit=crop' },
+  { id: 'p21', name: 'مكواة بخار', price: 45, category: 'منزل', image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop' },
+  { id: 'p22', name: 'مكنسة كهربائية', price: 180, category: 'منزل', image: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?w=400&h=300&fit=crop' },
+  { id: 'p23', name: 'نباتات منزلية', price: 25, category: 'منزل', image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400&h=300&fit=crop' },
+  { id: 'p24', name: 'دراجة هوائية', price: 320, category: 'رياضة', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&h=300&fit=crop' },
+];
+
+interface StoreProps {
+  balance: number;
+  onBuy: (p: FaceProduct) => void;
+}
+
+export const Store = ({ balance, onBuy }: StoreProps) => {
+  return (
+    <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {PRODUCTS.map(p => {
+          const insufficient = p.price > balance;
+          return (
+            <div
+              key={p.id}
+              className="group rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950/80 border border-white/10 hover:border-cyan-400/40 transition-all hover:-translate-y-1 hover:shadow-[0_20px_40px_-12px_rgba(56,232,255,0.3)]"
+            >
+              <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-cyan-200 backdrop-blur border border-cyan-400/30">
+                  {p.category}
+                </span>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-bold text-white text-sm leading-snug">{p.name}</h3>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-300 font-bold text-lg">
+                    {p.price}
+                    <span className="text-[10px] text-slate-400 font-normal mr-1">د.أ</span>
+                  </span>
+                  <Button
+                    size="sm"
+                    disabled={insufficient}
+                    onClick={() => onBuy(p)}
+                    className="bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 disabled:opacity-40 text-xs"
+                  >
+                    <ScanFace className="w-3.5 h-3.5" />
+                    ادفع بالوجه
+                  </Button>
+                </div>
+                {insufficient && (
+                  <p className="text-[10px] text-rose-300">رصيدك لا يكفي</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
