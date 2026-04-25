@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFaceLandmarker, type LandmarkPoint } from './useFaceLandmarker';
-import { detectSmile, getEAR } from '@/lib/facepay/faceUtils';
+import { smileScore, getEAR } from '@/lib/facepay/faceUtils';
 import { Smile, Eye, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { PasswordType } from '@/lib/facepay/storage';
 
