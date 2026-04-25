@@ -190,7 +190,7 @@ const FacePayAI = () => {
                   رصيدك: <span className="text-emerald-300 font-bold">{account.balance.toFixed(2)} د.أ</span>
                 </div>
               </div>
-              <Store balance={account.balance} onBuy={handleBuy} />
+              <Store balance={account.balance} onBuy={handleBuy} onBack={() => setTab('home')} />
             </TabsContent>
 
             <TabsContent value="history">
