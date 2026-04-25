@@ -9,19 +9,26 @@ const dist = (a: Landmark, b: Landmark) => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
-// A small fixed set of landmark indices used as anchors (face mesh = 468 pts).
+// An expanded set of landmark indices used as anchors (face mesh = 468 pts).
+// More anchors => higher-dimensional embedding => much harder to spoof with another face.
 const ANCHORS = [
-  10, 152, 234, 454,  // forehead, chin, left ear, right ear
-  168, 6, 197, 195,    // nose bridge
+  10, 152, 234, 454,   // forehead, chin, left ear, right ear
+  168, 6, 197, 195, 5, 4, 1, // nose bridge + tip
   33, 133, 362, 263,   // eyes corners
   61, 291, 13, 14,     // mouth corners + lips center
-  78, 308,             // mouth inner
+  78, 308, 0, 17,      // mouth inner + upper/lower lip
   127, 356,            // cheekbones
   93, 323,             // jaw sides
   70, 300,             // brow outer
-  55, 285,             // brow inner
+  55, 285, 105, 334,   // brow inner + mid
   159, 386,            // upper eyelids
   145, 374,            // lower eyelids
+  46, 276,             // brow tail
+  207, 427,            // mid-cheek
+  132, 361,            // lower jaw curve
+  58, 288,             // jawline
+  172, 397,            // jaw mid
+  136, 365,            // chin sides
 ];
 
 /**
@@ -50,6 +57,28 @@ export const cosineSimilarity = (a: number[], b: number[]): number => {
   }
   const d = Math.sqrt(na) * Math.sqrt(nb);
   return d === 0 ? 0 : dot / d;
+};
+
+/** Mean absolute error between two embeddings. Lower = more similar. */
+export const meanAbsError = (a: number[], b: number[]): number => {
+  if (!a.length || a.length !== b.length) return Infinity;
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
+  return s / a.length;
+};
+
+/**
+ * Combined identity score in [0,1]. Combines cosine similarity with a
+ * geometric-distance penalty so two different faces with similar overall
+ * shape can still be distinguished. Returns ~1 only for the same face.
+ */
+export const faceMatchScore = (a: number[], b: number[]): number => {
+  const cos = cosineSimilarity(a, b);            // typically 0.95..1 for same person
+  const mae = meanAbsError(a, b);                // typically <0.04 same, >0.08 different
+  // Convert MAE to a 0..1 score (1 = identical, 0 = >=0.15 apart)
+  const distScore = Math.max(0, 1 - mae / 0.15);
+  // Weighted combination — distance dominates because cosine alone is too lenient
+  return 0.35 * cos + 0.65 * distScore;
 };
 
 /** Smile detection: mouth width vs eye distance + lip openness. */
