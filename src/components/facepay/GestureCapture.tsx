@@ -17,26 +17,36 @@ interface GestureCaptureProps {
 export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) => {
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
+  const [smileLive, setSmileLive] = useState(0); // 0..1 live smile score for HUD
   const blinkCountRef = useRef(0);
   const eyeClosedRef = useRef(false);
-  const smileStartRef = useRef<number | null>(null);
+  const smileHoldRef = useRef(0); // ms accumulated above threshold
+  const lastTickRef = useRef<number | null>(null);
   const firstBlinkRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
+
+  const SMILE_THRESHOLD = 0.62;       // must clear this to count
+  const SMILE_HOLD_MS = 1100;         // sustained for ~1.1s
+  const SMILE_DECAY_MS = 220;         // grace before progress drops
 
   const handleLandmarks = (landmarks: LandmarkPoint[]) => {
     if (finishedRef.current) return;
     const now = performance.now();
+    const dt = lastTickRef.current == null ? 16 : Math.min(60, now - lastTickRef.current);
+    lastTickRef.current = now;
 
     if (type === 'smile') {
-      if (detectSmile(landmarks)) {
-        if (smileStartRef.current === null) smileStartRef.current = now;
-        const dur = now - smileStartRef.current;
-        setProgress(Math.min(100, (dur / 800) * 100));
-        if (dur >= 800) finish();
+      const score = smileScore(landmarks);
+      setSmileLive(score);
+      if (score >= SMILE_THRESHOLD) {
+        smileHoldRef.current = Math.min(SMILE_HOLD_MS, smileHoldRef.current + dt);
       } else {
-        smileStartRef.current = null;
-        setProgress(p => Math.max(0, p - 4));
+        // Decay faster when score is far from threshold
+        const decay = score < 0.35 ? dt : dt * 0.4;
+        smileHoldRef.current = Math.max(0, smileHoldRef.current - decay);
       }
+      setProgress((smileHoldRef.current / SMILE_HOLD_MS) * 100);
+      if (smileHoldRef.current >= SMILE_HOLD_MS) finish();
     } else {
       const ear = getEAR(landmarks);
       const CLOSED = 0.18;
