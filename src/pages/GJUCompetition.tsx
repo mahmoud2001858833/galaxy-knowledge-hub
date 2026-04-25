@@ -23,7 +23,7 @@ import {
   Circle, Clock, Aperture, Orbit, TestTubes,
   Hexagon, Snowflake, FlaskRound, Radiation,
   Scissors, Wind, Shield, Bug, Shapes, Dice1,
-  Wrench
+  Wrench, ScanFace
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +35,7 @@ const aiTools = [
   { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec/it/programming?tab=ai-assistant' },
   { title: '🚀 باني المنصات بالـ AI', description: 'صف فكرتك ليبني الذكاء الاصطناعي منصة كاملة بقاعدة بيانات وتسجيل دخول ومساعد ذكي على 5 مراحل واضحة', icon: Sparkles, gradient: 'from-violet-500 via-cyan-500 to-emerald-500', link: '/ai-platform-builder' },
   { title: 'المساعد الطبي الذكي', description: 'مساعد طبي ذكي للإسعافات الأولية والتحليل التشخيصي', icon: Stethoscope, gradient: 'from-rose-500 to-red-600', link: '/medical-assistant' },
+  { title: '💳 الدفع بالوجه - FacePay AI', description: 'تجربة بنكية متكاملة: أنشئ حساباً، سجّل وجهك، اختر كلمة سر بإيماءة، وادفع من المتجر بمسح وجهك فقط', icon: ScanFace, gradient: 'from-emerald-500 via-cyan-500 to-violet-600', link: '/face-pay' },
 ];
 
 /* ─────────────── Track 2: Robotics & Construction ─────────────── */

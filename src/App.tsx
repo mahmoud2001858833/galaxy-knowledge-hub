@@ -178,6 +178,7 @@ import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
 import RoboticConstruction from './pages/RoboticConstruction';
 import AIInteriorDesign from './pages/AIInteriorDesign';
 import GJUCompetition from './pages/GJUCompetition';
+import FacePayAI from './pages/FacePayAI';
 import RoboticsGenerator from './pages/RoboticsGenerator';
 import JordanDigitalTwin from './pages/JordanDigitalTwin';
 import HassanGardenAI from './pages/HassanGardenAI';
@@ -896,6 +897,10 @@ const router = createBrowserRouter([
       {
         path: 'gju-competition',
         element: <PublicRoute><GJUCompetition /></PublicRoute>,
+      },
+      {
+        path: 'face-pay',
+        element: <PublicRoute><FacePayAI /></PublicRoute>,
       },
       {
         path: 'gju/robotics-generator',
