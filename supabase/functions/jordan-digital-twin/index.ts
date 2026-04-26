@@ -192,7 +192,7 @@ serve(async (req) => {
             );
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Gateway error", e);
       }
     }
@@ -241,7 +241,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error("jordan-digital-twin error", e);
     return new Response(
       JSON.stringify({

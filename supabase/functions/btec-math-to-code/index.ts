@@ -72,7 +72,7 @@ ${operation}`;
     return new Response(JSON.stringify({ code }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("btec-math-to-code error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),

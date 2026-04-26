@@ -144,7 +144,7 @@ ${topics ? `المواضيع المطلوبة:\n${topics}` : ''}
       JSON.stringify({ questions: allQuestions }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: 'حدث خطأ في معالجة الطلب' }),

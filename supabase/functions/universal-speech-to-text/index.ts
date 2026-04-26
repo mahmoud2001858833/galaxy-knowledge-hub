@@ -68,7 +68,7 @@ serve(async (req) => {
             // Fall through to other providers
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Lovable gateway threw:', e);
       }
     }
@@ -108,7 +108,7 @@ serve(async (req) => {
           const errorText = await response.text();
           console.warn('OpenAI Whisper failed:', errorText.slice(0, 200));
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Whisper threw:', e);
       }
     }
@@ -149,7 +149,7 @@ serve(async (req) => {
           const errorText = await response.text();
           console.error('Gemini direct failed:', errorText.slice(0, 200));
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Gemini direct threw:', e);
       }
     }
@@ -160,7 +160,7 @@ serve(async (req) => {
       }),
       { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف';
     console.error('Error in universal-speech-to-text:', errorMessage);
 

@@ -145,7 +145,7 @@ serve(async (req) => {
           const errorText = await whisperResponse.text();
           console.log('Whisper API error:', whisperResponse.status, errorText);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('Whisper transcription failed:', e);
       }
     }
@@ -248,12 +248,12 @@ serve(async (req) => {
               strengths = parsed.strengths || [];
               improvements = parsed.improvements || [];
               wordTips = parsed.wordTips || {};
-            } catch (e) {
+            } catch (e: any) {
               console.log('Failed to parse AI feedback JSON');
             }
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         console.log('AI feedback generation failed:', e);
       }
     }
@@ -328,7 +328,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error in enhanced-speech-analysis function:', errorMessage);
     return new Response(

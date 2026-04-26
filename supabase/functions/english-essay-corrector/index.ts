@@ -105,7 +105,7 @@ Please ensure the correction is accurate, detailed, and comprehensive covering a
       JSON.stringify({ correction }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: 'An error occurred processing the request' }),

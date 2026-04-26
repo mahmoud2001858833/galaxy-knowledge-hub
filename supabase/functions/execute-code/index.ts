@@ -45,7 +45,7 @@ serve(async (req) => {
         } else {
           error = new TextDecoder().decode(stderr)
         }
-      } catch (e) {
+      } catch (e: any) {
         error = `Python execution error: ${e.message}`
       }
     } else if (language === 'cpp') {
@@ -104,7 +104,7 @@ serve(async (req) => {
         } catch (_) {
           // Ignore cleanup errors
         }
-      } catch (e) {
+      } catch (e: any) {
         error = `C++ execution error: ${e.message}`
       }
     } else if (language === 'php') {
@@ -129,7 +129,7 @@ serve(async (req) => {
         } else {
           error = new TextDecoder().decode(stderr)
         }
-      } catch (e) {
+      } catch (e: any) {
         error = `PHP execution error: ${e.message}`
       }
     } else {
@@ -147,7 +147,7 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Error in execute-code function:', errorMessage)
     

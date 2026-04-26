@@ -83,7 +83,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error in accessibility-text-to-speech:', errorMessage);
     

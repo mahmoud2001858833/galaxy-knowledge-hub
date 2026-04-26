@@ -108,7 +108,7 @@ Schema: ${JSON.stringify(schema)}
     const m = text.match(/```html\n?([\s\S]*?)```/i);
     const html = m ? m[1].trim() : text.trim();
     return new Response(JSON.stringify({ html }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  } catch (e) {
+  } catch (e: any) {
     console.error("ui fatal", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -192,7 +192,7 @@ IMPORTANT: Do NOT include any text, letters, numbers, words, or Arabic character
     return new Response(JSON.stringify({ success: true, puzzles: results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

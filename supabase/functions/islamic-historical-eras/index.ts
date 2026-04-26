@@ -95,7 +95,7 @@ serve(async (req) => {
           const parsed = JSON.parse(jsonMatch[0]);
           era = parsed.era;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('JSON parsing error:', e);
       }
 
@@ -170,7 +170,7 @@ serve(async (req) => {
           const parsed = JSON.parse(jsonMatch[0]);
           comparison = parsed.comparison;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('JSON parsing error:', e);
       }
 

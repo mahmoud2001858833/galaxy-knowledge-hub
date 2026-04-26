@@ -114,7 +114,7 @@ serve(async (req) => {
         } else {
           console.error("Gateway failed", resp.status, await resp.text());
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Gateway error", e);
       }
     }
@@ -166,7 +166,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error("robotics-generator error", e);
     return new Response(
       JSON.stringify({
@@ -193,7 +193,7 @@ function extractJson(text: string): any | null {
   if (start === -1 || end === -1) return null;
   try {
     return JSON.parse(cleaned.slice(start, end + 1));
-  } catch (e) {
+  } catch (e: any) {
     console.error("JSON parse failed", e);
     return null;
   }

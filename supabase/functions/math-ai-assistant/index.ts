@@ -98,7 +98,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in math-ai-assistant:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'حدث خطأ غير متوقع' }),

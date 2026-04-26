@@ -54,7 +54,7 @@ async function callLovableAI(prompt: string): Promise<string> {
 async function getAIResponse(prompt: string): Promise<string> {
   try {
     return await callGemini(prompt);
-  } catch (err) {
+  } catch (err: any) {
     console.log("Gemini failed, falling back to Lovable AI:", err);
     return await callLovableAI(prompt);
   }
@@ -185,7 +185,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ result: parsed || result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("smart-city-ai error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),

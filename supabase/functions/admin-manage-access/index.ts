@@ -123,7 +123,7 @@ serve(async (req) => {
           foundUserId = foundUser.id;
           console.log('Found existing user:', foundUserId);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('listUsers failed, will try createUser fallback:', e);
       }
 

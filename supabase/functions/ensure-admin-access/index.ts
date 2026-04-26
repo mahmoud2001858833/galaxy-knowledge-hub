@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ status: "ok", access_level: "super_admin" }), { status: 200 });
-  } catch (e) {
+  } catch (e: any) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
   }
 });
