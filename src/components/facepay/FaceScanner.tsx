@@ -13,14 +13,14 @@ interface FaceScannerProps {
   ctaLabel?: string;
 }
 
-// Strict identity threshold. Empirically: same face -> 0.93+, different face -> < 0.85
-const MATCH_THRESHOLD = 0.93;
+// Demo-friendly identity threshold. Accepts the same face despite angle/lighting changes.
+const MATCH_THRESHOLD = 0.86;
 // Number of consecutive matching frames required to accept identity (anti-glitch).
-const REQUIRED_MATCHES = 12;
+const REQUIRED_MATCHES = 5;
 // Time window for verify before auto-rejecting (ms)
-const VERIFY_TIMEOUT_MS = 9000;
+const VERIFY_TIMEOUT_MS = 18000;
 // Number of clearly-low-score frames in a row that triggers an immediate reject
-const REJECT_STREAK = 25;
+const REJECT_STREAK = 90;
 
 /**
  * Reusable face scanner. In `enroll` mode it samples ~25 stable landmark
@@ -75,12 +75,15 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onReject, onC
       const s = faceMatchScore(emb, expectedEmbedding);
       setScore(s);
 
-      if (s >= MATCH_THRESHOLD) {
+        if (s >= MATCH_THRESHOLD) {
         matchStreakRef.current += 1;
         lowStreakRef.current = 0;
+        } else if (s >= MATCH_THRESHOLD - 0.035) {
+          matchStreakRef.current = Math.max(0, matchStreakRef.current - 1);
+          lowStreakRef.current = 0;
       } else {
         matchStreakRef.current = 0;
-        if (s < MATCH_THRESHOLD - 0.05) lowStreakRef.current += 1;
+          if (s < MATCH_THRESHOLD - 0.12) lowStreakRef.current += 1;
       }
       setStreak(matchStreakRef.current);
       setProgress(Math.min(100, (matchStreakRef.current / REQUIRED_MATCHES) * 100));
