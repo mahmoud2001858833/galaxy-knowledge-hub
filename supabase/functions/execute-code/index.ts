@@ -26,7 +26,7 @@ serve(async (req) => {
     if (language === 'python') {
       // Execute Python code
       try {
-        const pythonProcess = Deno.run({
+        const pythonProcess = (Deno as any).run({
           cmd: ['python3', '-c', code],
           stdout: 'piped',
           stderr: 'piped',
@@ -58,7 +58,7 @@ serve(async (req) => {
         await Deno.writeTextFile(tempFile, code)
 
         // Compile C++ code
-        const compileProcess = Deno.run({
+        const compileProcess = (Deno as any).run({
           cmd: ['g++', tempFile, '-o', outputFile],
           stdout: 'piped',
           stderr: 'piped',
@@ -76,7 +76,7 @@ serve(async (req) => {
           error = `Compilation error: ${new TextDecoder().decode(compileStderr)}`
         } else {
           // Execute compiled program
-          const executeProcess = Deno.run({
+          const executeProcess = (Deno as any).run({
             cmd: [outputFile],
             stdout: 'piped',
             stderr: 'piped',
@@ -110,7 +110,7 @@ serve(async (req) => {
     } else if (language === 'php') {
       // Execute PHP code
       try {
-        const phpProcess = Deno.run({
+        const phpProcess = (Deno as any).run({
           cmd: ['php', '-r', code],
           stdout: 'piped',
           stderr: 'piped',
