@@ -21,13 +21,13 @@ serve(async (req) => {
       );
     }
     
-    const essayTypeArabic = {
+    const essayTypeArabic = ({
       article: 'مقالة',
       story: 'قصة',
       descriptive: 'وصفي',
       argumentative: 'حجاجي',
       narrative: 'سردي'
-    }[essayType] || essayType;
+    } as Record<string, string>)[essayType] || essayType;
     
     const prompt = `أنت مصحح لغوي وأدبي محترف متخصص في اللغة العربية. قم بتصحيح النص التالي تصحيحاً كاملاً وشاملاً.
 

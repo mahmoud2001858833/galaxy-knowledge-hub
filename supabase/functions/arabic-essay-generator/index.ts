@@ -21,13 +21,13 @@ serve(async (req) => {
       );
     }
     
-    const essayTypeArabic = {
+    const essayTypeArabic = ({
       article: 'مقالة',
       story: 'قصة',
       descriptive: 'تعبير وصفي',
       argumentative: 'تعبير حجاجي',
       narrative: 'تعبير سردي'
-    }[essayType] || 'مقالة'
+    } as Record<string, string>)[essayType] || 'مقالة'
     
     const prompt = `أنت كاتب متخصص في اللغة العربية. قم بكتابة ${essayTypeArabic} متكاملة باللغة العربية الفصحى.
 

@@ -21,11 +21,11 @@ serve(async (req) => {
       );
     }
     
-    const difficultyArabic = {
+    const difficultyArabic = ({
       easy: 'سهل',
       medium: 'متوسط',
       hard: 'صعب'
-    }[difficulty] || 'متوسط'
+    } as Record<string, string>)[difficulty] || 'متوسط'
     
     // Split large requests into batches
     const batchSize = 20;
@@ -96,15 +96,15 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
     const rawQuestions = data.choices[0].message.content
     
     // Parse the questions
-    const questionBlocks = rawQuestions.split('---').filter(block => block.trim())
-    const batchQuestions = questionBlocks.map(block => {
+    const questionBlocks = rawQuestions.split('---').filter((block: string) => block.trim())
+    const batchQuestions = questionBlocks.map((block: string) => {
       const lines = block.trim().split('\n')
       let question = ''
       let answer = ''
       let grammarRule = ''
       
       let currentSection = ''
-      lines.forEach(line => {
+      lines.forEach((line: string) => {
         if (line.startsWith('السؤال')) {
           currentSection = 'question'
           question = line.replace(/السؤال \d+:\s*/, '')
@@ -127,7 +127,7 @@ ${grammarRules ? `القواعد النحوية المطلوبة:\n${grammarRule
         difficulty: difficultyArabic,
         grammarRule: grammarRule.trim() || undefined
       }
-    }).filter(q => q.question && q.answer)
+    }).filter((q: any) => q.question && q.answer)
 
     allQuestions = allQuestions.concat(batchQuestions);
     }
