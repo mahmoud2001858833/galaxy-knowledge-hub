@@ -342,14 +342,41 @@ const AIFutureStore = () => {
                     onClick={checkout}
                     className="w-full h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-base font-bold"
                   >
-                    <CheckCircle2 className="w-5 h-5" />
-                    إتمام الطلب
+                    <ScanFace className="w-5 h-5" />
+                    إتمام الطلب والدفع بالوجه
                   </Button>
+                  {!account && (
+                    <p className="flex items-center gap-1.5 text-xs text-amber-200">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      إذا لم يتم العثور على حساب، أنشئ حساباً وهمياً من FacePay أولاً.
+                    </p>
+                  )}
                 </div>
               </>
             )}
           </aside>
         </div>
+      )}
+
+      {account && payProduct && (
+        <FacePayCheckout
+          open={!!payProduct}
+          product={payProduct}
+          account={account}
+          onClose={() => { setPayProduct(null); setAccount(loadAccount()); }}
+          onSuccess={(updated) => {
+            setCompletedOrder({
+              items: cart,
+              total,
+              accountName: updated.name,
+              date: new Date().toISOString(),
+            });
+            setAccount(updated);
+            setCart([]);
+            setPayProduct(null);
+            setCheckoutDone(true);
+          }}
+        />
       )}
     </div>
   );
