@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { FaceLandmarker, FilesetResolver, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
 export type LandmarkPoint = { x: number; y: number; z: number };
+export type FaceBlendshapes = Record<string, number>;
 
 interface UseFaceLandmarkerOpts {
-  onLandmarks?: (landmarks: LandmarkPoint[]) => void;
+  onLandmarks?: (landmarks: LandmarkPoint[], blendshapes: FaceBlendshapes) => void;
   enabled: boolean;
 }
 
@@ -57,7 +58,7 @@ export const useFaceLandmarker = ({ onLandmarks, enabled }: UseFaceLandmarkerOpt
           },
           runningMode: 'VIDEO',
           numFaces: 1,
-          outputFaceBlendshapes: false,
+          outputFaceBlendshapes: true,
         });
         if (cancelled) { lm.close(); return; }
         landmarkerRef.current = lm;
@@ -166,7 +167,11 @@ export const useFaceLandmarker = ({ onLandmarks, enabled }: UseFaceLandmarkerOpt
         ctx.fillRect(bx, lineY - 8, bw, 16);
 
         if (onLandmarksRef.current) {
-          onLandmarksRef.current(landmarks as LandmarkPoint[]);
+          const blendshapes: FaceBlendshapes = {};
+          for (const category of result?.faceBlendshapes?.[0]?.categories ?? []) {
+            if (category.categoryName) blendshapes[category.categoryName] = category.score ?? 0;
+          }
+          onLandmarksRef.current(landmarks as LandmarkPoint[], blendshapes);
         }
       } else {
         // No face: pulse hint
