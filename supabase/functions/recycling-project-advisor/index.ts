@@ -264,7 +264,7 @@ serve(async (req) => {
       const questionsText = questionsMatch[1];
       const questionLines = questionsText.match(/\d+\.\s*(.+?)(?=\n|$)/g);
       if (questionLines) {
-        followUpQuestions = questionLines.map(q => q.replace(/^\d+\.\s*/, '').trim());
+        followUpQuestions = questionLines.map((q: string) => q.replace(/^\d+\.\s*/, '').trim());
       }
     }
 

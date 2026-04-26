@@ -861,7 +861,7 @@ serve(async (req) => {
         subject,
         semester,
         file_url: 'text-only',
-        file_size_mb: fileSizeMB || fileSizeMBCalculated,
+        file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
         gemini_file_uri: fileUri || null
