@@ -207,7 +207,7 @@ ${contextLines.length ? `السياق الإضافي:\n${contextLines.join("\n")
     return new Response(JSON.stringify({ error: "تعذّر التحليل" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("medical-condition-checker error", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }),

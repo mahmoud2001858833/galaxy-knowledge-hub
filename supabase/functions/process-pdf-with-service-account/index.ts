@@ -313,7 +313,7 @@ ${chunkInfo}
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) result = parseGeminiResponse(text);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Service account extraction error:', e);
     }
   }
@@ -348,7 +348,7 @@ ${chunkInfo}
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) result = parseGeminiResponse(text);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('API key extraction error:', e);
       }
     }
@@ -368,7 +368,7 @@ function parseGeminiResponse(text: string): any {
       return JSON.parse(jsonStr);
     }
     return { rawText: text };
-  } catch (e) {
+  } catch (e: any) {
     console.error('JSON parse error:', e);
     return { rawText: text };
   }
@@ -402,7 +402,7 @@ serve(async (req) => {
         console.log('Service account loaded for:', serviceAccount.client_email);
         accessToken = await getAccessToken(serviceAccount);
         console.log('Access token obtained');
-      } catch (e) {
+      } catch (e: any) {
         console.error('Service account error:', e);
       }
     }
@@ -453,7 +453,7 @@ serve(async (req) => {
           'هذا كتاب مدرسي أردني كامل. استخرج كل المحتوى من كل الصفحات بدون أي اختصار.',
           accessToken
         );
-      } catch (e) {
+      } catch (e: any) {
         console.error('File API error:', e);
         throw new Error(`فشل معالجة الملف الكبير: ${(e as Error).message}`);
       }

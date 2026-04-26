@@ -91,7 +91,7 @@ serve(async (req) => {
         imageUrl =
           data?.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
         if (imageUrl) break;
-      } catch (e) {
+      } catch (e: any) {
         lastError = `${model} threw: ${e instanceof Error ? e.message : "unknown"}`;
         console.error(lastError);
       }
@@ -113,7 +113,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ imageUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("smart-city-image-gen error", e);
     return new Response(
       JSON.stringify({

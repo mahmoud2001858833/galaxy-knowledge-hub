@@ -21,13 +21,13 @@ serve(async (req) => {
       );
     }
     
-    const essayTypeArabic = {
+    const essayTypeArabic = ({
       article: 'مقالة',
       story: 'قصة',
       descriptive: 'تعبير وصفي',
       argumentative: 'تعبير حجاجي',
       narrative: 'تعبير سردي'
-    }[essayType] || 'مقالة'
+    } as Record<string, string>)[essayType] || 'مقالة'
     
     const prompt = `أنت كاتب متخصص في اللغة العربية. قم بكتابة ${essayTypeArabic} متكاملة باللغة العربية الفصحى.
 
@@ -68,7 +68,7 @@ ${additionalInfo ? `- معلومات إضافية: ${additionalInfo}` : ''}
       JSON.stringify({ essay }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: 'حدث خطأ في معالجة الطلب' }),

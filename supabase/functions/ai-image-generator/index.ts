@@ -167,7 +167,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in ai-image-generator:', error);
     return new Response(
       JSON.stringify({ 

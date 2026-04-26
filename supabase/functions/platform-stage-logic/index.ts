@@ -107,7 +107,7 @@ async function askAI(prompt){
   try{
     const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AI_KEY},body:JSON.stringify({messages:[...aiHistory,{role:'user',content:prompt}]})});
     const d=await r.json();return d.reply||d.error||'حدث خطأ';
-  }catch(e){return 'تعذّر الاتصال بالذكاء الاصطناعي';}
+  }catch (e: any){return 'تعذّر الاتصال بالذكاء الاصطناعي';}
 }
 \`\`\`
 - #ai-fab يفتح #ai-modal، #ai-send يأخذ #ai-input، يضيف رسالة المستخدم في #ai-messages، يظهر typing، ينادي askAI، يضيف الرد، يخفي typing
@@ -166,7 +166,7 @@ IDs الموجودة في HTML (يجب ربطها كلها): ${ids.join(', ')}
     const m = text.match(/```(?:javascript|js)\n?([\s\S]*?)```/i);
     const js = m ? m[1].trim() : text.trim();
     return new Response(JSON.stringify({ js }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  } catch (e) {
+  } catch (e: any) {
     console.error("logic fatal", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

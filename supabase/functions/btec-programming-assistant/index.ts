@@ -67,7 +67,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ response: text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("btec-programming-assistant error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),

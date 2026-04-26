@@ -94,7 +94,7 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
       fileUrl: book.file_url ?? null,
       pageNumber: pageNumber,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error searching ${book.book_name}:`, error);
     return null;
   }
@@ -107,7 +107,7 @@ const searchPromises = relevantBooks.slice(0, 5).map(async (book) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

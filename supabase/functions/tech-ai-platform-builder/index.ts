@@ -91,7 +91,7 @@ async function askAI(prompt, history = []) {
      if (!_pyodide) _pyodide = await loadPyodide();
      let out = '';
      _pyodide.setStdout({ batched: (s) => out += s + '\\n' });
-     try { await _pyodide.runPythonAsync(code); return out; } catch(e) { return 'خطأ: ' + e.message; }
+     try { await _pyodide.runPythonAsync(code); return out; } catch (e: any) { return 'خطأ: ' + e.message; }
    }
    \`\`\`
 
@@ -102,7 +102,7 @@ async function askAI(prompt, history = []) {
    \`\`\`js
    function runCpp(code) {
      let out = '';
-     try { JSCPP.run(code, '', { stdio: { write: (s) => out += s } }); return out; } catch(e) { return 'خطأ: ' + e.message; }
+     try { JSCPP.run(code, '', { stdio: { write: (s) => out += s } }); return out; } catch (e: any) { return 'خطأ: ' + e.message; }
    }
    \`\`\`
 
@@ -161,7 +161,7 @@ async function askAI(prompt, history = []) {
     return new Response(JSON.stringify({ html, raw: text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("tech-ai-platform-builder error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
       status: 500,

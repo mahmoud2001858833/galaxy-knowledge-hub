@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
           lastErrText = await resp.text();
           console.warn(`cancer-detection-ai: gateway ${gm} failed (${resp.status})`);
           if (resp.status === 402) break; // out of credits — stop gateway attempts
-        } catch (e) {
+        } catch (e: any) {
           lastErrText = e instanceof Error ? e.message : String(e);
           console.warn(`cancer-detection-ai: gateway ${gm} threw`, lastErrText);
         }
@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
           lastErrText = await resp.text();
           console.warn(`cancer-detection-ai: ${name}/${model} failed (${resp.status})`);
           if (resp.status === 400) break outer; // bad input — won't help to retry
-        } catch (e) {
+        } catch (e: any) {
           lastErrText = e instanceof Error ? e.message : String(e);
           console.warn(`cancer-detection-ai: ${name}/${model} threw`, lastErrText);
         }
@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ result: parsed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("cancer-detection-ai error:", e);
     return new Response(
       JSON.stringify({

@@ -264,7 +264,7 @@ serve(async (req) => {
       const questionsText = questionsMatch[1];
       const questionLines = questionsText.match(/\d+\.\s*(.+?)(?=\n|$)/g);
       if (questionLines) {
-        followUpQuestions = questionLines.map(q => q.replace(/^\d+\.\s*/, '').trim());
+        followUpQuestions = questionLines.map((q: string) => q.replace(/^\d+\.\s*/, '').trim());
       }
     }
 
@@ -279,7 +279,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in recycling-project-advisor:', error);
     return new Response(JSON.stringify({
       success: false,

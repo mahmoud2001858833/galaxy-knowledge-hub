@@ -265,7 +265,7 @@ serve(async (req) => {
             JSON.stringify({ success: true, tables }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error fetching tables:', err)
           return new Response(
             JSON.stringify({ success: true, tables: [] }),
@@ -402,7 +402,7 @@ serve(async (req) => {
                     console.log('RPC not available, SQL needs manual execution')
                     errors.push(rpcError.message)
                   }
-                } catch (e) {
+                } catch (e: any) {
                   console.error('Statement error:', e)
                 }
               }
@@ -549,7 +549,7 @@ CREATE TRIGGER on_auth_user_created
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ 

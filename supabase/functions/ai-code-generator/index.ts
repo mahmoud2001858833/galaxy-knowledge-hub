@@ -156,7 +156,7 @@ const BuilderAPI = {
       this.user = result.user;
       localStorage.setItem('builder_user', JSON.stringify(result.user));
       return true;
-    } catch (e) {
+    } catch (e: any) {
       this.logout();
       return false;
     }
@@ -216,7 +216,7 @@ const BuilderAPI = {
             folder
           });
           resolve(result);
-        } catch (e) { reject(e); }
+        } catch (e: any) { reject(e); }
       };
       reader.onerror = () => reject(reader.error);
       reader.readAsDataURL(file);
@@ -250,7 +250,7 @@ const Auth = {
       Toast.success('تم إنشاء الحساب بنجاح! مرحباً بك');
       window.location.href = 'dashboard.html';
       return true;
-    } catch (error) {
+    } catch (error: any) {
       Toast.error(error.message || 'فشل إنشاء الحساب');
       return false;
     }
@@ -262,7 +262,7 @@ const Auth = {
       Toast.success('مرحباً بعودتك!');
       window.location.href = 'dashboard.html';
       return true;
-    } catch (error) {
+    } catch (error: any) {
       Toast.error(error.message || 'البريد أو كلمة المرور غير صحيحة');
       return false;
     }
@@ -398,7 +398,7 @@ const Social = {
       
       if (countEl) countEl.textContent = result.count || 0;
       return result;
-    } catch (error) {
+    } catch (error: any) {
       Toast.error('يجب تسجيل الدخول أولاً');
       return null;
     }
@@ -411,7 +411,7 @@ const Social = {
       // إعادة تحميل التعليقات
       await this.loadComments(contentId, container);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       Toast.error('فشل إضافة التعليق');
       return null;
     }
@@ -1263,7 +1263,7 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Error:', errorMessage)
     

@@ -79,7 +79,7 @@ IMPORTANT: Generate ONLY the visual image without any text or writing on it. The
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating educational image:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Failed to generate image' }),

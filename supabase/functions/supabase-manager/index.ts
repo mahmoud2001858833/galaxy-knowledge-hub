@@ -129,7 +129,7 @@ serve(async (req) => {
         try {
           await executeSQL(sql)
           result = { success: true, message: `RLS enabled on ${tableName}` }
-        } catch (e) {
+        } catch (e: any) {
           result = { success: false, sql, error: e instanceof Error ? e.message : 'Unknown error' }
         }
         break
@@ -149,7 +149,7 @@ serve(async (req) => {
         try {
           await executeSQL(sql)
           result = { success: true, message: `Policy ${policyName} created on ${tableName}` }
-        } catch (e) {
+        } catch (e: any) {
           result = { success: false, sql, error: e instanceof Error ? e.message : 'Unknown error' }
         }
         break
@@ -190,7 +190,7 @@ serve(async (req) => {
         try {
           await executeSQL(sql)
           result = { success: true, message: 'SQL executed successfully' }
-        } catch (e) {
+        } catch (e: any) {
           result = { success: false, sql, error: e instanceof Error ? e.message : 'Unknown error' }
         }
         break
@@ -204,7 +204,7 @@ serve(async (req) => {
       JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in supabase-manager:', error)
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),

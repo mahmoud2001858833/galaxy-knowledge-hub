@@ -87,7 +87,7 @@ serve(async (req) => {
     let schema: any;
     try { schema = JSON.parse(text); } catch { schema = { tables: [] }; }
     return new Response(JSON.stringify({ schema }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  } catch (e) {
+  } catch (e: any) {
     console.error("schema fatal", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

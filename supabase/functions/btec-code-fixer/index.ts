@@ -74,7 +74,7 @@ ${code}`;
     return new Response(JSON.stringify({ fixed_code: fixedCode, explanation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("btec-code-fixer error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),

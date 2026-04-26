@@ -174,7 +174,7 @@ async function uploadToGoogleFileAPIFromUrl(pdfUrl: string, apiKeys: string[]): 
         offset += chunk.length;
         console.log(`📤 Streamed ${(offset / 1024 / 1024).toFixed(2)}MB`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log(`❌ Key ${keyIndex + 1} error:`, error);
       await delay(2000);
       continue;
@@ -324,7 +324,7 @@ async function iterativeExtraction(
       retryCount = 0; // Reset retry count on success
       await delay(2000); // Rate limiting protection
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error in extraction:`, error);
       keyIndex++;
       retryCount++;
@@ -466,7 +466,7 @@ async function extractFromBase64Iterative(
       retryCount = 0;
       await delay(2000);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error:`, error);
       keyIndex++;
       retryCount++;
@@ -605,7 +605,7 @@ async function extractFromUrlWithLovableAI(
       retryCount = 0;
       await delay(2000);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Lovable AI error:', error);
       retryCount++;
       await delay(3000);
@@ -703,7 +703,7 @@ async function extractContentWithLovableAI(
       retryCount = 0;
       await delay(2000);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Lovable AI error:', error);
       retryCount++;
       await delay(3000);
@@ -726,7 +726,7 @@ function parseGeminiResponse(text: string): any {
       return JSON.parse(jsonStr);
     }
     return { rawText: text };
-  } catch (e) {
+  } catch (e: any) {
     console.error('JSON parse error:', e);
     return { rawText: text };
   }
@@ -861,7 +861,7 @@ serve(async (req) => {
         subject,
         semester,
         file_url: 'text-only',
-        file_size_mb: fileSizeMB || fileSizeMBCalculated,
+        file_size_mb: fileSizeMB || 0,
         created_by: userId,
         is_active: true,
         gemini_file_uri: fileUri || null
@@ -962,7 +962,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('=== ❌ ERROR ===', error);
     return new Response(JSON.stringify({
       success: false,

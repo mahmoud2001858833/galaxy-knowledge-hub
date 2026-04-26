@@ -91,7 +91,7 @@ Provide comprehensive answers with practical examples and clear explanations.`;
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error in English AI assistant function:', errorMessage);
     return new Response(

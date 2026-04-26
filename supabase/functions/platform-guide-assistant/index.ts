@@ -280,7 +280,7 @@ serve(async (req) => {
       JSON.stringify({ answer, navigationPath }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in platform-guide-assistant:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(

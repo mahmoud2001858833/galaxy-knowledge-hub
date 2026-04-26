@@ -113,7 +113,7 @@ async function generateImage(eventDescription: string, eventTitle: string, locat
     }
     
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Image generation failed:', error);
     return null;
   }
@@ -154,7 +154,7 @@ serve(async (req) => {
           const parsed = JSON.parse(jsonMatch[0]);
           events = parsed.events || [];
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('JSON parsing error:', e);
       }
 
@@ -194,7 +194,7 @@ serve(async (req) => {
           const parsed = JSON.parse(jsonMatch[0]);
           event = parsed.event;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('JSON parsing error:', e);
       }
 

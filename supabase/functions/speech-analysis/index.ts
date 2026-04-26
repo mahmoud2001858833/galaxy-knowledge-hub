@@ -67,7 +67,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error in speech-analysis function:', errorMessage);
     return new Response(
@@ -125,7 +125,7 @@ async function generateDetailedFeedback(transcribed: string, target: string, api
       const data = await response.json();
       return data.choices[0].message.content;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating feedback:', error);
   }
   

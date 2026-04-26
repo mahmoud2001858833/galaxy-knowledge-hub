@@ -88,7 +88,7 @@ Write the complete ${essayTypeEnglish} now:`;
       JSON.stringify({ essay }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: 'An error occurred processing the request' }),

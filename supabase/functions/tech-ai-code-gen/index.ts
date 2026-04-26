@@ -89,7 +89,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ code, explanation, raw: text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("tech-ai-code-gen error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
       status: 500,

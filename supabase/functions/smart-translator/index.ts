@@ -141,7 +141,7 @@ Format the response as JSON:
         }
       )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(

@@ -91,7 +91,7 @@ Provide comprehensive answers with practical examples and accurate calculations 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error in enhanced biology assistant function:', errorMessage);
     return new Response(

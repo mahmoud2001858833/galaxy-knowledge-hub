@@ -150,7 +150,7 @@ ${goals.length ? `أولويات المستخدم: ${goals.join(", ")}.` : ""}
         } else if (resp.status !== 429 && resp.status !== 402) {
           throw new Error(`Lovable AI error ${resp.status}`);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.log("Lovable AI failed, trying fallback:", e);
       }
     }
@@ -164,7 +164,7 @@ ${goals.length ? `أولويات المستخدم: ${goals.join(", ")}.` : ""}
     }
 
     throw new Error("لا يوجد مفتاح AI متاح");
-  } catch (e) {
+  } catch (e: any) {
     console.error("eco-ai-recommendations error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }),
