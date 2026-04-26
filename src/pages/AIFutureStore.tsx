@@ -4,13 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PRODUCTS, type FaceProduct } from '@/components/facepay/Store';
+import { FacePayCheckout } from '@/components/facepay/FacePayCheckout';
+import { loadAccount, type FacePayAccount } from '@/lib/facepay/storage';
 import {
   ArrowRight, Search, ShoppingBag, ShoppingCart, Plus, Minus, Trash2,
-  Sparkles, CheckCircle2, X
+  Sparkles, CheckCircle2, X, ScanFace, AlertCircle
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface CartItem { product: FaceProduct; qty: number; }
+interface CompletedOrder { items: CartItem[]; total: number; accountName: string; date: string; }
 
 const ALL = 'الكل';
 
@@ -21,6 +24,9 @@ const AIFutureStore = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [checkoutDone, setCheckoutDone] = useState(false);
+  const [account, setAccount] = useState<FacePayAccount | null>(() => loadAccount());
+  const [payProduct, setPayProduct] = useState<FaceProduct | null>(null);
+  const [completedOrder, setCompletedOrder] = useState<CompletedOrder | null>(null);
 
   const categories = useMemo(
     () => [ALL, ...Array.from(new Set(PRODUCTS.map(p => p.category)))],
@@ -58,12 +64,23 @@ const AIFutureStore = () => {
 
   const checkout = () => {
     if (cart.length === 0) return;
-    setCheckoutDone(true);
-    setTimeout(() => {
-      setCart([]);
-      setCheckoutDone(false);
-      setShowCart(false);
-    }, 2000);
+    const freshAccount = loadAccount();
+    setAccount(freshAccount);
+    if (!freshAccount) {
+      toast({ title: 'الحساب غير موجود', description: 'يرجى إنشاء حساب بنكي وهمي في FacePay أولاً.' });
+      return;
+    }
+    if (total > freshAccount.balance) {
+      toast({ title: 'رصيد غير كافٍ', description: `رصيدك الحالي ${freshAccount.balance} د.أ والمطلوب ${total} د.أ.` });
+      return;
+    }
+    setPayProduct({
+      id: `cart-${Date.now()}`,
+      name: `طلب المتجر (${itemCount} منتج)`,
+      price: total,
+      category: 'سلة التسوق',
+      image: cart[0]?.product.image ?? '',
+    });
   };
 
   return (
@@ -229,15 +246,30 @@ const AIFutureStore = () => {
               </Button>
             </div>
 
-            {checkoutDone ? (
+            {checkoutDone && completedOrder ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
                 <div className="w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.7)]">
                   <CheckCircle2 className="w-12 h-12 text-emerald-300" />
                 </div>
                 <div>
                   <h4 className="text-2xl font-bold text-emerald-300">تم الطلب بنجاح!</h4>
-                  <p className="text-sm text-slate-400 mt-1">شكراً لتسوّقك معنا.</p>
+                  <p className="text-sm text-slate-400 mt-1">تم الدفع عبر وجه {completedOrder.accountName}</p>
                 </div>
+                <div className="w-full space-y-2 text-right">
+                  {completedOrder.items.map(it => (
+                    <div key={it.product.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-white/10">
+                      <span className="text-sm text-white">{it.product.name} × {it.qty}</span>
+                      <span className="text-sm font-bold text-cyan-300">{it.product.price * it.qty} د.أ</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <span className="text-sm text-slate-400">المجموع</span>
+                    <span className="text-2xl font-bold text-emerald-300">{completedOrder.total} د.أ</span>
+                  </div>
+                </div>
+                <Button onClick={() => { setCheckoutDone(false); setCompletedOrder(null); setShowCart(false); }} className="w-full bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90">
+                  إغلاق التفاصيل
+                </Button>
               </div>
             ) : cart.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center text-slate-400">
@@ -310,14 +342,41 @@ const AIFutureStore = () => {
                     onClick={checkout}
                     className="w-full h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-base font-bold"
                   >
-                    <CheckCircle2 className="w-5 h-5" />
-                    إتمام الطلب
+                    <ScanFace className="w-5 h-5" />
+                    إتمام الطلب والدفع بالوجه
                   </Button>
+                  {!account && (
+                    <p className="flex items-center gap-1.5 text-xs text-amber-200">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      إذا لم يتم العثور على حساب، أنشئ حساباً وهمياً من FacePay أولاً.
+                    </p>
+                  )}
                 </div>
               </>
             )}
           </aside>
         </div>
+      )}
+
+      {account && payProduct && (
+        <FacePayCheckout
+          open={!!payProduct}
+          product={payProduct}
+          account={account}
+          onClose={() => { setPayProduct(null); setAccount(loadAccount()); }}
+          onSuccess={(updated) => {
+            setCompletedOrder({
+              items: cart,
+              total,
+              accountName: updated.name,
+              date: new Date().toISOString(),
+            });
+            setAccount(updated);
+            setCart([]);
+            setPayProduct(null);
+            setCheckoutDone(true);
+          }}
+        />
       )}
     </div>
   );

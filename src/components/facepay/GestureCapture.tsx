@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useFaceLandmarker, type LandmarkPoint } from './useFaceLandmarker';
+import { useFaceLandmarker, type FaceBlendshapes, type LandmarkPoint } from './useFaceLandmarker';
 import { smileScore, getEAR } from '@/lib/facepay/faceUtils';
 import { Smile, Eye, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { PasswordType } from '@/lib/facepay/storage';
@@ -25,18 +25,17 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
   const firstBlinkRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
 
-  const SMILE_THRESHOLD = 0.62;       // must clear this to count
-  const SMILE_HOLD_MS = 1100;         // sustained for ~1.1s
-  const SMILE_DECAY_MS = 220;         // grace before progress drops
+  const SMILE_THRESHOLD = 0.42;       // blendshape-assisted threshold
+  const SMILE_HOLD_MS = 650;          // faster confirmation for a clear smile
 
-  const handleLandmarks = (landmarks: LandmarkPoint[]) => {
+  const handleLandmarks = (landmarks: LandmarkPoint[], blendshapes: FaceBlendshapes = {}) => {
     if (finishedRef.current) return;
     const now = performance.now();
     const dt = lastTickRef.current == null ? 16 : Math.min(60, now - lastTickRef.current);
     lastTickRef.current = now;
 
     if (type === 'smile') {
-      const score = smileScore(landmarks);
+      const score = smileScore(landmarks, blendshapes);
       setSmileLive(score);
       if (score >= SMILE_THRESHOLD) {
         smileHoldRef.current = Math.min(SMILE_HOLD_MS, smileHoldRef.current + dt);
@@ -49,11 +48,12 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
       if (smileHoldRef.current >= SMILE_HOLD_MS) finish();
     } else {
       const ear = getEAR(landmarks);
-      const CLOSED = 0.18;
-      const OPEN = 0.24;
-      if (!eyeClosedRef.current && ear < CLOSED) {
+      const blinkStrength = Math.max(blendshapes.eyeBlinkLeft ?? 0, blendshapes.eyeBlinkRight ?? 0);
+      const closed = ear < 0.22 || blinkStrength > 0.45;
+      const open = ear > 0.27 && blinkStrength < 0.28;
+      if (!eyeClosedRef.current && closed) {
         eyeClosedRef.current = true;
-      } else if (eyeClosedRef.current && ear > OPEN) {
+      } else if (eyeClosedRef.current && open) {
         eyeClosedRef.current = false;
         blinkCountRef.current += 1;
         if (firstBlinkRef.current === null) firstBlinkRef.current = now;
@@ -96,11 +96,11 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
   });
 
   const Icon = type === 'smile' ? Smile : Eye;
-  const hint = type === 'smile' ? 'ابتسم بوضوح وارفع زوايا فمك' : 'أغمض عينيك ٣ مرات متتالية';
+  const hint = type === 'smile' ? 'ابتسم ابتسامة طبيعية واضحة' : 'ارمش ٣ مرات بهدوء أمام الكاميرا';
   const smilePct = Math.round(smileLive * 100);
   const smileState =
-    smileLive >= 0.62 ? { c: 'text-emerald-300', t: 'ابتسامة واضحة ✓' }
-    : smileLive >= 0.4 ? { c: 'text-amber-300', t: 'ابتسم أكثر…' }
+    smileLive >= SMILE_THRESHOLD ? { c: 'text-emerald-300', t: 'ابتسامة واضحة ✓' }
+    : smileLive >= 0.25 ? { c: 'text-amber-300', t: 'ابتسم أكثر…' }
     : { c: 'text-rose-300', t: 'لا توجد ابتسامة' };
 
   return (
@@ -131,8 +131,8 @@ export const GestureCapture = ({ type, onSuccess, label }: GestureCaptureProps) 
               <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                 <div
                   className={`h-full transition-all ${
-                    smileLive >= 0.62 ? 'bg-emerald-400'
-                    : smileLive >= 0.4 ? 'bg-amber-400' : 'bg-rose-400'
+                    smileLive >= SMILE_THRESHOLD ? 'bg-emerald-400'
+                    : smileLive >= 0.25 ? 'bg-amber-400' : 'bg-rose-400'
                   }`}
                   style={{ width: `${smilePct}%` }}
                 />
