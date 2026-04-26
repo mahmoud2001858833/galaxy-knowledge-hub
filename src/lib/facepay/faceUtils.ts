@@ -2,6 +2,7 @@
 // Landmarks are normalized {x,y,z} in [0,1].
 
 export type Landmark = { x: number; y: number; z: number };
+export type Blendshapes = Record<string, number>;
 
 const dist = (a: Landmark, b: Landmark) => {
   const dx = a.x - b.x;
@@ -75,10 +76,10 @@ export const meanAbsError = (a: number[], b: number[]): number => {
 export const faceMatchScore = (a: number[], b: number[]): number => {
   const cos = cosineSimilarity(a, b);            // typically 0.95..1 for same person
   const mae = meanAbsError(a, b);                // typically <0.04 same, >0.08 different
-  // Convert MAE to a 0..1 score (1 = identical, 0 = >=0.15 apart)
-  const distScore = Math.max(0, 1 - mae / 0.15);
-  // Weighted combination — distance dominates because cosine alone is too lenient
-  return 0.35 * cos + 0.65 * distScore;
+  // Convert MAE to a forgiving demo score. The browser camera can change angle/lighting
+  // between enrollment and payment, so the threshold is intentionally tolerant.
+  const distScore = Math.max(0, 1 - mae / 0.22);
+  return Math.max(0, Math.min(1, 0.48 * cos + 0.52 * distScore));
 };
 
 /**
@@ -90,8 +91,14 @@ export const faceMatchScore = (a: number[], b: number[]): number => {
  *
  * Returns ~0 for neutral/closed mouth and >0.7 for a clear genuine smile.
  */
-export const smileScore = (landmarks: Landmark[]): number => {
+export const smileScore = (landmarks: Landmark[], blendshapes: Blendshapes = {}): number => {
   if (!landmarks || landmarks.length < 400) return 0;
+  const blendSmile = Math.max(
+    blendshapes.mouthSmileLeft ?? 0,
+    blendshapes.mouthSmileRight ?? 0,
+    ((blendshapes.mouthDimpleLeft ?? 0) + (blendshapes.mouthDimpleRight ?? 0)) / 2,
+  );
+  const blendBoost = Math.max(0, Math.min(1, blendSmile / 0.55));
   const leftCorner = landmarks[61];
   const rightCorner = landmarks[291];
   const upperLip = landmarks[13];
@@ -100,7 +107,6 @@ export const smileScore = (landmarks: Landmark[]): number => {
   const rightEyeOuter = landmarks[263];
   const leftEyeInner = landmarks[133];
   const rightEyeInner = landmarks[362];
-  const noseTip = landmarks[1];
 
   const eyeW = dist(leftEyeOuter, rightEyeOuter) || 1e-6;
   const faceH = Math.abs(landmarks[10].y - landmarks[152].y) || 1e-6;
@@ -113,37 +119,38 @@ export const smileScore = (landmarks: Landmark[]): number => {
   // 2) Corner elevation vs upper lip. In normalized coords smaller y = higher up.
   // For a real smile, corners should be HIGHER than the upper lip (cornersY < upperLipY).
   const cornersY = (leftCorner.y + rightCorner.y) / 2;
-  const elevation = (upperLip.y - cornersY) / faceH; // positive when corners above upper lip
-  // Require clear elevation: 0 at <=0, 1 at >=0.012 of face height.
-  const elevationScore = Math.max(0, Math.min(1, elevation / 0.012));
+  const lipLineY = (upperLip.y + lowerLip.y) / 2;
+  const elevation = (lipLineY - cornersY) / faceH; // positive when corners rise toward the upper lip
+  const elevationScore = Math.max(0, Math.min(1, (elevation + 0.004) / 0.018));
 
   // 3) Cheek raise: distance from corner to outer-eye shrinks when smiling.
   // Reference baseline ~0.42*eyeW for neutral; ~0.30*eyeW for big smile.
   const cornerToEye =
     (dist(leftCorner, leftEyeOuter) + dist(rightCorner, rightEyeOuter)) / 2;
   const cheekRatio = cornerToEye / eyeW;
-  const cheekScore = Math.max(0, Math.min(1, (0.42 - cheekRatio) / 0.10));
+  const cheekScore = Math.max(0, Math.min(1, (0.47 - cheekRatio) / 0.15));
 
   // 4) Frown penalty: if corners are clearly BELOW the lower lip, kill the score.
   const lowerLipY = lowerLip.y;
-  const frown = cornersY > lowerLipY + 0.004 * faceH;
+  const frown = cornersY > lowerLipY + 0.012 * faceH && blendBoost < 0.25;
   if (frown) return 0;
 
   // Weighted combination — elevation matters most because it's the hardest fake.
-  const score =
+  const geometryScore =
     0.30 * widthScore +
     0.45 * elevationScore +
     0.25 * cheekScore;
+  const score = Math.max(geometryScore, 0.65 * blendBoost + 0.35 * geometryScore);
 
   // Hard gate: must satisfy ALL three minimums to count as a smile at all.
-  if (widthScore < 0.25 || elevationScore < 0.25 || cheekScore < 0.15) {
+  if (blendBoost < 0.35 && (widthScore < 0.18 || elevationScore < 0.12 || cheekScore < 0.08)) {
     return Math.min(score, 0.35); // cap below threshold
   }
   return score;
 };
 
 /** Boolean smile detector with strict threshold. Use smileScore for granular control. */
-export const detectSmile = (landmarks: Landmark[]): boolean => smileScore(landmarks) >= 0.62;
+export const detectSmile = (landmarks: Landmark[], blendshapes: Blendshapes = {}): boolean => smileScore(landmarks, blendshapes) >= 0.42;
 
 /** Eye Aspect Ratio (EAR): low value => eye closed. */
 export const getEAR = (landmarks: Landmark[]): number => {
