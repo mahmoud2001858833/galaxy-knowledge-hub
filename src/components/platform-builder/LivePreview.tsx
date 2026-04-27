@@ -77,8 +77,18 @@ export default function LivePreview({ html }: { html: string }) {
   };
 
   const openInNewTab = () => {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    window.open(URL.createObjectURL(blob), "_blank");
+    if (!html) return;
+    // Use document.write to avoid blob URL sandbox blank-screen issues
+    const w = window.open("", "_blank");
+    if (!w) {
+      // Popup blocked → fallback to blob URL
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      window.open(URL.createObjectURL(blob), "_blank");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
   };
 
   const errorCount = logs.filter((l) => l.level === "error").length;
