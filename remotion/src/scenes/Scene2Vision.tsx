@@ -40,7 +40,7 @@ const StatCard: React.FC<{ s: typeof stats[number]; delay: number }> = ({ s, del
         <div
           style={{
             fontFamily: orbitron.fontFamily,
-            fontSize: 140,
+            fontSize: 120,
             fontWeight: 900,
             color: s.color,
             lineHeight: 1,
@@ -53,7 +53,7 @@ const StatCard: React.FC<{ s: typeof stats[number]; delay: number }> = ({ s, del
         <div
           style={{
             fontFamily: cairo.fontFamily,
-            fontSize: 32,
+            fontSize: 28,
             color: C.text,
             marginTop: 16,
             fontWeight: 700,
