@@ -904,17 +904,17 @@ function pageProfile(){
     e.preventDefault();
     const fd = new FormData(e.target);
     try { Auth.updateProfile({ name: fd.get('name'), bio: fd.get('bio') }); Toast.success('تم الحفظ'); setTimeout(()=>location.reload(), 600); }
-    catch (err: any){ Toast.error(err.message); }
+    catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
   document.getElementById('cpf').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     try { await Auth.changePassword(fd.get('oldPass'), fd.get('newPass')); Toast.success('تم تحديث كلمة المرور'); e.target.reset(); }
-    catch (err: any){ Toast.error(err.message); }
+    catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
   document.getElementById('upBtn').addEventListener('click', async () => {
     try { const dataUrl = await Upload.pickImage(); Auth.updateProfile({ avatar: dataUrl }); Toast.success('تم تحديث الصورة'); setTimeout(()=>location.reload(), 600); }
-    catch (err: any){ Toast.error(err.message); }
+    catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
 }
 
@@ -1067,7 +1067,7 @@ function makeTablePage(tableName, fields){
       // Handle checkboxes
       e.target.querySelectorAll('input[type="checkbox"]').forEach(cb => { data[cb.name] = cb.checked; });
       try { DB.table(tableName).insert(data); Toast.success('تمت الإضافة'); location.reload(); }
-      catch (err: any){ Toast.error(err.message); }
+      catch (err){ Toast.error(err?.message || 'خطأ'); }
     });
   };
 }
