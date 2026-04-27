@@ -36,7 +36,7 @@ const aiTools = [
   { title: '🚀 باني المنصات بالـ AI', description: 'صف فكرتك ليبني الذكاء الاصطناعي منصة كاملة بقاعدة بيانات وتسجيل دخول ومساعد ذكي على 5 مراحل واضحة', icon: Sparkles, gradient: 'from-violet-500 via-cyan-500 to-emerald-500', link: '/ai-platform-builder' },
   { title: 'المساعد الطبي الذكي', description: 'مساعد طبي ذكي للإسعافات الأولية والتحليل التشخيصي', icon: Stethoscope, gradient: 'from-rose-500 to-red-600', link: '/medical-assistant' },
   { title: '💳 الدفع بالوجه - FacePay AI', description: 'تجربة بنكية متكاملة: أنشئ حساباً، سجّل وجهك، اختر كلمة سر بإيماءة، وادفع بمسح وجهك فقط', icon: ScanFace, gradient: 'from-emerald-500 via-cyan-500 to-violet-600', link: '/face-pay' },
-  { title: '🛍️ المتجر الذكي - AI Store', description: 'متجر إلكتروني مستقل بـ ٢٤ منتجاً وسلة شراء كاملة عبر ٧ فئات — تجربة تسوّق صافية بدون حساب', icon: ShoppingBag, gradient: 'from-pink-500 via-violet-500 to-cyan-500', link: '/ai-future-store' },
+  // Standalone AI Store removed — now integrated inside FacePay AI's Store tab.
   { title: '🌙 الذكاء الاصطناعي بلغة العربية - Lumina', description: 'منصة ذكاء اصطناعي عربية متقدمة بتصميم أنيق تدعم المحادثات والاستفسارات بلغة الضاد', icon: Languages, gradient: 'from-amber-500 via-orange-500 to-rose-600', link: 'https://lumina-arabic.lovable.app/', external: true },
 ];
 
@@ -128,8 +128,8 @@ const trackDescriptions: Record<string, string> = {
 
 const tracks = [
   { id: 'ai', title: 'الذكاء الاصطناعي', subtitle: 'AI & Machine Learning', icon: Brain, color: 'from-violet-500 to-purple-600', accent: 'violet', tools: aiTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
-  { id: 'simulations', title: 'المحاكيات التفاعلية', subtitle: 'Interactive Simulations Lab', icon: FlaskConical, color: 'from-fuchsia-500 via-cyan-500 to-emerald-500', accent: 'cyan', tools: simulationTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'inclusive', title: 'التعلّم الدامج', subtitle: 'Inclusive Education', icon: Accessibility, color: 'from-pink-500 to-rose-600', accent: 'pink', tools: inclusiveTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'simulations', title: 'المحاكيات التفاعلية', subtitle: 'Interactive Simulations Lab', icon: FlaskConical, color: 'from-fuchsia-500 via-cyan-500 to-emerald-500', accent: 'cyan', tools: simulationTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'sustainability', title: 'التقنيات المستدامة', subtitle: 'Sustainable Tech', icon: Leaf, color: 'from-emerald-500 to-green-600', accent: 'emerald', tools: sustainabilityTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
 ];
