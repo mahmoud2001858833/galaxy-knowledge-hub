@@ -24,11 +24,8 @@ export default function LivePreview({ html }: { html: string }) {
   const [iframeKey, setIframeKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Inject console interceptor into HTML
-  const instrumentedHtml = html
-    ? html.replace(
-        "</body>",
-        `<script>
+  // Inject console interceptor + ensure body exists with white background fallback
+  const consoleScript = `<script>
         (function(){
           const send = (level, args) => {
             try { parent.postMessage({ __preview_log: true, level, args: args.map(a => {
@@ -42,9 +39,27 @@ export default function LivePreview({ html }: { html: string }) {
           window.addEventListener('error', e => send('error', [e.message + ' @ ' + e.filename + ':' + e.lineno]));
           window.addEventListener('unhandledrejection', e => send('error', ['Unhandled: ' + (e.reason?.message || e.reason)]));
         })();
-        </script></body>`
-      )
-    : "";
+        </script>`;
+
+  let instrumentedHtml = "";
+  if (html) {
+    instrumentedHtml = html;
+    // Ensure html has a body close tag — if missing, append fallbacks
+    if (instrumentedHtml.includes("</body>")) {
+      instrumentedHtml = instrumentedHtml.replace("</body>", `${consoleScript}</body>`);
+    } else if (instrumentedHtml.includes("</html>")) {
+      instrumentedHtml = instrumentedHtml.replace("</html>", `${consoleScript}</html>`);
+    } else {
+      instrumentedHtml = instrumentedHtml + consoleScript;
+    }
+    // Force a white-ish base so transparent generated bodies don't show as black
+    if (!/background\s*:/i.test(instrumentedHtml.slice(0, 2000))) {
+      instrumentedHtml = instrumentedHtml.replace(
+        /<head([^>]*)>/i,
+        `<head$1><style>html,body{min-height:100%;background:#ffffff;color:#0f172a;margin:0}</style>`
+      );
+    }
+  }
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
