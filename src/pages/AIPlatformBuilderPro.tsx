@@ -105,7 +105,22 @@ function buildPreviewHtml(files: ProjectFile[]): string {
     return `<!doctype html><html dir="rtl"><body style="font-family:sans-serif;padding:24px;background:#0b0b1a;color:#fff"><h2>لا يوجد index.html</h2></body></html>`;
   }
 
+  const sanitizeRunnableJs = (code: string) => code
+    .replace(/catch\s*\((\w+)\s*:\s*any\)/g, "catch ($1)")
+    .replace(/catch\s*\((\w+)\s*:\s*unknown\)/g, "catch ($1)");
+
   let html = indexFile.content;
+
+  // Make page fragments available before app.js/router.js executes.
+  const pageFiles = files.filter((f) => f.path.startsWith("pages/") && f.path.endsWith(".html"));
+  const pagesObj = pageFiles.map((f) => {
+    const name = f.path.replace(/^pages\//, "").replace(/\.html$/, "");
+    return `${JSON.stringify(name)}: ${JSON.stringify(f.content)}`;
+  }).join(",\n");
+
+  const globalsScript = `<script>window.__PROJECT_PAGES__={${pagesObj}};window.__PROJECT_FILES__=${JSON.stringify(files.map(f => ({ path: f.path, language: f.language })))};</script>`;
+  if (html.includes("<body>")) html = html.replace("<body>", `<body>\n${globalsScript}`);
+  else if (html.includes("</head>")) html = html.replace("</head>", `${globalsScript}\n</head>`);
 
   // Inline all CSS files referenced via <link rel="stylesheet" href="...">
   html = html.replace(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["'][^>]*>/gi, (_, href) => {
@@ -121,11 +136,10 @@ function buildPreviewHtml(files: ProjectFile[]): string {
     const f = byPath.get(clean);
     if (!f) return "";
     const isModule = /type=["']module["']/.test(match);
-    return `<script${isModule ? ' type="module"' : ""}>\n${f.content}\n</script>`;
+    return `<script${isModule ? ' type="module"' : ""}>\n${sanitizeRunnableJs(f.content)}\n</script>`;
   });
 
-  // Inject all page HTML fragments + module sources as window globals so router.js can find them
-  const pageFiles = files.filter((f) => f.path.startsWith("pages/") && f.path.endsWith(".html"));
+  // Inject module sources after core boot files.
   const moduleFiles = files.filter((f) => f.path.startsWith("assets/js/modules/") && f.path.endsWith(".js"));
   const remainingJs = files.filter((f) =>
     f.language === "javascript" &&
@@ -133,18 +147,9 @@ function buildPreviewHtml(files: ProjectFile[]): string {
     !html.includes(f.content.slice(0, 80))
   );
 
-  const pagesObj = pageFiles.map((f) => {
-    const name = f.path.replace(/^pages\//, "").replace(/\.html$/, "");
-    return `${JSON.stringify(name)}: ${JSON.stringify(f.content)}`;
-  }).join(",\n");
-
   const inject = `
-<script>
-window.__PROJECT_PAGES__ = {${pagesObj}};
-window.__PROJECT_FILES__ = ${JSON.stringify(files.map(f => ({ path: f.path, language: f.language })))};
-</script>
-${moduleFiles.map(f => `<script>\n${f.content}\n</script>`).join("\n")}
-${remainingJs.map(f => `<script>\n${f.content}\n</script>`).join("\n")}
+${moduleFiles.map(f => `<script>\n${sanitizeRunnableJs(f.content)}\n</script>`).join("\n")}
+${remainingJs.map(f => `<script>\n${sanitizeRunnableJs(f.content)}\n</script>`).join("\n")}
 `;
 
   if (html.includes("</body>")) {

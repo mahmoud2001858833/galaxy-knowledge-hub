@@ -465,10 +465,10 @@ window.DB = (function(){
   try {
 ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
       const data = samples[${JSON.stringify(t)}] || [{name:'عنصر تجريبي 1'},{name:'عنصر تجريبي 2'},{name:'عنصر تجريبي 3'}];
-      data.forEach(d => { try { DB.table(${JSON.stringify(t)}).insert(d); } catch (e: any){} });
+      data.forEach(d => { try { DB.table(${JSON.stringify(t)}).insert(d); } catch (e){} });
     }`).join("\n")}
     localStorage.setItem('app_seeded_v2','1');
-  } catch (e: any){ console.warn('seed', e); }
+    } catch (e){ console.warn('seed', e); }
 })();`;
 
   // ============ Auth: uses unified "password" field ============
@@ -576,7 +576,7 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
     input.onchange = async () => {
       const f = input.files[0]; if (!f) return;
       try { const text = await f.text(); DB.import(text); Toast.success('تم الاستيراد'); setTimeout(()=>location.reload(), 800); }
-      catch (e: any){ Toast.error('ملف غير صالح'); }
+      catch (e){ Toast.error('ملف غير صالح'); }
     };
     input.click();
   }
@@ -589,14 +589,14 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
 
   const notificationsJs = `window.Notifications = {
   send(userId, title, body, type='info'){
-    try { DB.table('notifications').insert({ user_id: userId, title, body: body||'', type, read: false }); } catch (e: any){}
+    try { DB.table('notifications').insert({ user_id: userId, title, body: body||'', type, read: false }); } catch (e){}
   },
   unreadCount(userId){
     try { return DB.table('notifications').where(n => n.user_id===userId && !n.read).count(); } catch { return 0; }
   },
-  markRead(id){ try { DB.table('notifications').update(id, { read: true }); } catch (e: any){} },
+  markRead(id){ try { DB.table('notifications').update(id, { read: true }); } catch (e){} },
   markAllRead(userId){
-    try { DB.table('notifications').where(n => n.user_id===userId && !n.read).get().forEach(n => DB.table('notifications').update(n.id, { read: true })); } catch (e: any){}
+    try { DB.table('notifications').where(n => n.user_id===userId && !n.read).get().forEach(n => DB.table('notifications').update(n.id, { read: true })); } catch (e){}
   }
 };`;
 
@@ -629,7 +629,7 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
       const reply = d.reply || d.text || d.message || '';
       if (reply) history.push({ role:'assistant', content: reply });
       return reply || 'لم يصل رد من المساعد.';
-    } catch (e: any){ return '⚠️ تعذر الاتصال: '+e.message; }
+    } catch (e){ return '⚠️ تعذر الاتصال: '+(e?.message || 'خطأ غير معروف'); }
   }
   function reset(){ history.length = 0; }
   return { ask, reset, history: () => [...history] };
@@ -727,7 +727,7 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
     app.style.opacity = '0';
     setTimeout(async () => {
       try { await route.handler(); renderNav(); FloatingAI.mount(); }
-      catch (e: any){ console.error(e); Toast.error(e.message||'خطأ'); }
+      catch (e){ console.error(e); Toast.error(e?.message||'خطأ'); }
       app.style.transition = 'opacity .25s'; app.style.opacity = '1';
     }, 80);
   }
@@ -834,7 +834,7 @@ function pageLogin(){
     try {
       await Auth.login({ email: fd.get('email'), password: fd.get('password'), remember: fd.get('remember')==='on' });
       Toast.success('أهلاً بك!'); location.hash='#/';
-    } catch (err: any){ Toast.error(err.message); }
+    } catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
 }
 
@@ -861,7 +861,7 @@ function pageSignup(){
       await Auth.register({ name: fd.get('name'), email: fd.get('email'), password: fd.get('password'), remember: true });
       Toast.success('تم إنشاء الحساب 🎉');
       location.hash='#/';
-    } catch (err: any){ Toast.error(err.message); }
+    } catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
 }
 
@@ -904,17 +904,17 @@ function pageProfile(){
     e.preventDefault();
     const fd = new FormData(e.target);
     try { Auth.updateProfile({ name: fd.get('name'), bio: fd.get('bio') }); Toast.success('تم الحفظ'); setTimeout(()=>location.reload(), 600); }
-    catch (err: any){ Toast.error(err.message); }
+    catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
   document.getElementById('cpf').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     try { await Auth.changePassword(fd.get('oldPass'), fd.get('newPass')); Toast.success('تم تحديث كلمة المرور'); e.target.reset(); }
-    catch (err: any){ Toast.error(err.message); }
+    catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
   document.getElementById('upBtn').addEventListener('click', async () => {
     try { const dataUrl = await Upload.pickImage(); Auth.updateProfile({ avatar: dataUrl }); Toast.success('تم تحديث الصورة'); setTimeout(()=>location.reload(), 600); }
-    catch (err: any){ Toast.error(err.message); }
+    catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
 }
 
@@ -1067,7 +1067,7 @@ function makeTablePage(tableName, fields){
       // Handle checkboxes
       e.target.querySelectorAll('input[type="checkbox"]').forEach(cb => { data[cb.name] = cb.checked; });
       try { DB.table(tableName).insert(data); Toast.success('تمت الإضافة'); location.reload(); }
-      catch (err: any){ Toast.error(err.message); }
+      catch (err){ Toast.error(err?.message || 'خطأ'); }
     });
   };
 }

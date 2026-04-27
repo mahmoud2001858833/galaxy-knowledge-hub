@@ -16,6 +16,10 @@ interface LogEntry {
   ts: number;
 }
 
+const sanitizePreviewHtml = (value: string) => value
+  .replace(/catch\s*\((\w+)\s*:\s*any\)/g, "catch ($1)")
+  .replace(/catch\s*\((\w+)\s*:\s*unknown\)/g, "catch ($1)");
+
 export default function LivePreview({ html }: { html: string }) {
   const [device, setDevice] = useState<Device>("desktop");
   const [fullscreen, setFullscreen] = useState(false);
@@ -43,7 +47,7 @@ export default function LivePreview({ html }: { html: string }) {
 
   let instrumentedHtml = "";
   if (html) {
-    instrumentedHtml = html;
+    instrumentedHtml = sanitizePreviewHtml(html);
     // Ensure html has a body close tag — if missing, append fallbacks
     if (instrumentedHtml.includes("</body>")) {
       instrumentedHtml = instrumentedHtml.replace("</body>", `${consoleScript}</body>`);
@@ -78,17 +82,10 @@ export default function LivePreview({ html }: { html: string }) {
 
   const openInNewTab = () => {
     if (!html) return;
-    // Use document.write to avoid blob URL sandbox blank-screen issues
-    const w = window.open("", "_blank");
-    if (!w) {
-      // Popup blocked → fallback to blob URL
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      window.open(URL.createObjectURL(blob), "_blank");
-      return;
-    }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
+    const blob = new Blob([sanitizePreviewHtml(html)], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
   const errorCount = logs.filter((l) => l.level === "error").length;
