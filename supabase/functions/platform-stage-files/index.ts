@@ -786,11 +786,15 @@ async function pageHome(){
       <div style="font-size:2rem;font-weight:900" class="gradient-text">\${c}</div>
     </div>
   \`).join('');
-  // Load unique hero from pages/home.html (custom per-platform branding)
+  // Load unique hero from window.__PROJECT_PAGES__ (works in srcDoc/blob/about:blank)
   let hero = '';
   try {
-    const r = await fetch('pages/home.html');
-    if (r.ok) hero = await r.text();
+    if (window.__PROJECT_PAGES__ && window.__PROJECT_PAGES__['home']) {
+      hero = window.__PROJECT_PAGES__['home'];
+    } else {
+      const r = await fetch('pages/home.html');
+      if (r.ok) hero = await r.text();
+    }
   } catch {}
   if (!hero || hero.includes('class="card"><h2>الرئيسية')) {
     hero = \`<div class="card mb-6 animate-fade-in" style="background:linear-gradient(135deg,hsl(var(--primary)/.15),hsl(var(--primary-2)/.1));border-color:hsl(var(--primary)/.3)">
