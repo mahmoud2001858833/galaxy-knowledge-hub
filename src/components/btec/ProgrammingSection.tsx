@@ -15,15 +15,20 @@ import StudentProjectsTab from './programming/StudentProjectsTab';
 import CodeFixerTab from './programming/CodeFixerTab';
 import DevTipsTab from './programming/DevTipsTab';
 import BuildPlatformTab from './programming/BuildPlatformTab';
+import PlatformEvalTab from './programming/PlatformEvalTab';
 
-const VALID_TABS = ['ai-assistant', 'concepts', 'math-to-code', 'projects', 'code-fixer', 'dev-tips', 'build-platform'];
+const VALID_TABS = ['ai-assistant', 'concepts', 'math-to-code', 'projects', 'code-fixer', 'dev-tips', 'build-platform', 'platform-eval'];
+const GJU_TABS = ['code-fixer', 'platform-eval'];
 
 const ProgrammingSection = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isGJU = typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true';
+  const allowedTabs = isGJU ? GJU_TABS : VALID_TABS;
   const initialTab = searchParams.get('tab');
+  const defaultTab = isGJU ? 'code-fixer' : 'ai-assistant';
   const [activeTab, setActiveTab] = useState(
-    initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'ai-assistant'
+    initialTab && allowedTabs.includes(initialTab) ? initialTab : defaultTab
   );
 
   useEffect(() => {
