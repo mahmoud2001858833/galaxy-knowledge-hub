@@ -80,29 +80,40 @@ const ProgrammingSection = () => {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 gap-2 bg-white/5 p-2 rounded-xl mb-8">
-            <TabsTrigger value="ai-assistant" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500">
-              مساعد الذكاء الاصطناعي
-            </TabsTrigger>
-            <TabsTrigger value="concepts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500">
-              المفاهيم البرمجية
-            </TabsTrigger>
-            <TabsTrigger value="math-to-code" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-red-500">
-              رياضيات إلى كود
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500">
-              مشاريع الطلاب
-            </TabsTrigger>
-            <TabsTrigger value="code-fixer" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-500">
-              تصحيح الكود
-            </TabsTrigger>
-            <TabsTrigger value="dev-tips" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500">
-              نصائح التطوير
-            </TabsTrigger>
-            <TabsTrigger value="build-platform" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500">
-              بناء منصة
-            </TabsTrigger>
-          </TabsList>
+          {isGJU ? (
+            <TabsList className="grid w-full grid-cols-2 gap-2 bg-white/5 p-2 rounded-xl mb-8">
+              <TabsTrigger value="code-fixer" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-500">
+                تصحيح الكود
+              </TabsTrigger>
+              <TabsTrigger value="platform-eval" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500">
+                تقييم المنصات
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="grid w-full grid-cols-7 gap-2 bg-white/5 p-2 rounded-xl mb-8">
+              <TabsTrigger value="ai-assistant" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500">
+                مساعد الذكاء الاصطناعي
+              </TabsTrigger>
+              <TabsTrigger value="concepts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500">
+                المفاهيم البرمجية
+              </TabsTrigger>
+              <TabsTrigger value="math-to-code" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-red-500">
+                رياضيات إلى كود
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500">
+                مشاريع الطلاب
+              </TabsTrigger>
+              <TabsTrigger value="code-fixer" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-500">
+                تصحيح الكود
+              </TabsTrigger>
+              <TabsTrigger value="dev-tips" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500">
+                نصائح التطوير
+              </TabsTrigger>
+              <TabsTrigger value="build-platform" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500">
+                بناء منصة
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="ai-assistant">
             <AIAssistantTab />
