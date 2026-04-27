@@ -135,9 +135,9 @@ const tracks = [
 ];
 
 const stats = [
-  { label: 'أداة تعليمية', value: '50+', icon: BookOpen },
-  { label: 'محاكاة تفاعلية', value: '49', icon: Zap },
-  { label: 'أداة ذكاء اصطناعي', value: '15+', icon: Brain },
+  { label: 'أداة تعليمية', value: '200+', icon: BookOpen },
+  { label: 'محاكاة تفاعلية', value: '150+', icon: Zap },
+  { label: 'أداة ذكاء اصطناعي', value: '125+', icon: Brain },
   { label: 'مادة دراسية', value: '8+', icon: GraduationCap },
 ];
 
