@@ -142,6 +142,10 @@ const ProgrammingSection = () => {
           <TabsContent value="build-platform">
             <BuildPlatformTab />
           </TabsContent>
+
+          <TabsContent value="platform-eval">
+            <PlatformEvalTab />
+          </TabsContent>
         </Tabs>
       </main>
 
