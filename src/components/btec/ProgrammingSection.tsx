@@ -15,20 +15,25 @@ import StudentProjectsTab from './programming/StudentProjectsTab';
 import CodeFixerTab from './programming/CodeFixerTab';
 import DevTipsTab from './programming/DevTipsTab';
 import BuildPlatformTab from './programming/BuildPlatformTab';
+import PlatformEvalTab from './programming/PlatformEvalTab';
 
-const VALID_TABS = ['ai-assistant', 'concepts', 'math-to-code', 'projects', 'code-fixer', 'dev-tips', 'build-platform'];
+const VALID_TABS = ['ai-assistant', 'concepts', 'math-to-code', 'projects', 'code-fixer', 'dev-tips', 'build-platform', 'platform-eval'];
+const GJU_TABS = ['code-fixer', 'platform-eval'];
 
 const ProgrammingSection = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isGJU = typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true';
+  const allowedTabs = isGJU ? GJU_TABS : VALID_TABS;
   const initialTab = searchParams.get('tab');
+  const defaultTab = isGJU ? 'code-fixer' : 'ai-assistant';
   const [activeTab, setActiveTab] = useState(
-    initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'ai-assistant'
+    initialTab && allowedTabs.includes(initialTab) ? initialTab : defaultTab
   );
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && VALID_TABS.includes(tab) && tab !== activeTab) {
+    if (tab && allowedTabs.includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -56,48 +61,59 @@ const ProgrammingSection = () => {
           className="mb-8"
         >
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(isGJU ? '/gju-competition' : '/')}
             variant="outline"
             className="mb-6 gap-2 bg-white/5 hover:bg-white/10 border-white/20"
           >
             <ArrowLeft className="w-4 h-4" />
-            العودة لذروة العلم
+            {isGJU ? 'العودة لمستقبل التكنولوجيا' : 'العودة لذروة العلم'}
           </Button>
 
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold mb-4 bg-gradient-to-l from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              منصة البرمجة المتطورة
+              {isGJU ? 'مساعد البرمجة الذكي' : 'منصة البرمجة المتطورة'}
             </h1>
             <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-              مساعد ذكي، تصحيح الأكواد، تحويل الرياضيات لكود، وبناء منصاتك الخاصة
+              {isGJU ? 'تصحيح الأكواد بالذكاء الاصطناعي وتقييم المنصات الاحترافي' : 'مساعد ذكي، تصحيح الأكواد، تحويل الرياضيات لكود، وبناء منصاتك الخاصة'}
             </p>
           </div>
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 gap-2 bg-white/5 p-2 rounded-xl mb-8">
-            <TabsTrigger value="ai-assistant" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500">
-              مساعد الذكاء الاصطناعي
-            </TabsTrigger>
-            <TabsTrigger value="concepts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500">
-              المفاهيم البرمجية
-            </TabsTrigger>
-            <TabsTrigger value="math-to-code" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-red-500">
-              رياضيات إلى كود
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500">
-              مشاريع الطلاب
-            </TabsTrigger>
-            <TabsTrigger value="code-fixer" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-500">
-              تصحيح الكود
-            </TabsTrigger>
-            <TabsTrigger value="dev-tips" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500">
-              نصائح التطوير
-            </TabsTrigger>
-            <TabsTrigger value="build-platform" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500">
-              بناء منصة
-            </TabsTrigger>
-          </TabsList>
+          {isGJU ? (
+            <TabsList className="grid w-full grid-cols-2 gap-2 bg-white/5 p-2 rounded-xl mb-8">
+              <TabsTrigger value="code-fixer" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-500">
+                تصحيح الكود
+              </TabsTrigger>
+              <TabsTrigger value="platform-eval" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500">
+                تقييم المنصات
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="grid w-full grid-cols-7 gap-2 bg-white/5 p-2 rounded-xl mb-8">
+              <TabsTrigger value="ai-assistant" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500">
+                مساعد الذكاء الاصطناعي
+              </TabsTrigger>
+              <TabsTrigger value="concepts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500">
+                المفاهيم البرمجية
+              </TabsTrigger>
+              <TabsTrigger value="math-to-code" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-red-500">
+                رياضيات إلى كود
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500">
+                مشاريع الطلاب
+              </TabsTrigger>
+              <TabsTrigger value="code-fixer" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-500">
+                تصحيح الكود
+              </TabsTrigger>
+              <TabsTrigger value="dev-tips" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500">
+                نصائح التطوير
+              </TabsTrigger>
+              <TabsTrigger value="build-platform" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500">
+                بناء منصة
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="ai-assistant">
             <AIAssistantTab />
@@ -125,6 +141,10 @@ const ProgrammingSection = () => {
 
           <TabsContent value="build-platform">
             <BuildPlatformTab />
+          </TabsContent>
+
+          <TabsContent value="platform-eval">
+            <PlatformEvalTab />
           </TabsContent>
         </Tabs>
       </main>
