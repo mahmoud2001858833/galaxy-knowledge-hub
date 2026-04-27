@@ -135,11 +135,14 @@ const TechCodingPlatform = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap gap-3 justify-center mb-8"
           >
-            {[
-              { id: "ai-code" as Tab, icon: Sparkles, label: "كتابة الكود بالذكاء الاصطناعي", gradient: "from-violet-500 to-purple-600" },
-              { id: "fix-code" as Tab, icon: Wrench, label: "تصليح الكود", gradient: "from-amber-500 to-orange-600" },
-              { id: "build-platform" as Tab, icon: Bot, label: "بناء منصة كاملة بالـAI", gradient: "from-cyan-500 to-blue-600" },
-            ].map((t) => {
+            {(
+              [
+                { id: "ai-code" as Tab, icon: Sparkles, label: "كتابة الكود بالذكاء الاصطناعي", gradient: "from-violet-500 to-purple-600" },
+                { id: "fix-code" as Tab, icon: Wrench, label: "تصليح الكود", gradient: "from-amber-500 to-orange-600" },
+                { id: "build-platform" as Tab, icon: Bot, label: "بناء منصة كاملة بالـAI", gradient: "from-cyan-500 to-blue-600" },
+                { id: "platform-eval" as Tab, icon: Sparkles, label: "تقييم المنصات", gradient: "from-fuchsia-500 to-pink-600" },
+              ] as const
+            ).filter((t) => allowedTabs.includes(t.id)).map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
               return (
