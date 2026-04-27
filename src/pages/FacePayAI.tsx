@@ -196,7 +196,7 @@ const FacePayAI = () => {
                 <div>
                   <h2 className="text-xl font-bold">المتجر</h2>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    تجربة تسوّق مستقلة — يتم التحقق من الوجه فقط عند لحظة الدفع.
+                    تجربة تسوّق مدمجة مع حسابك — يتم التحقق من وجهك فقط عند لحظة الدفع.
                   </p>
                 </div>
                 <div className="text-xs px-3 py-1.5 rounded-full bg-slate-900/60 border border-white/10 text-slate-300">
