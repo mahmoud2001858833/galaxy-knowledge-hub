@@ -1177,6 +1177,27 @@ function formatPrefs(p: any = {}): string {
   return lines.length ? lines.join("\n") : "لا تفضيلات محددة — اختر أنت بحرية كاملة.";
 }
 
+async function generateAIHeroImage(topic: string, query: string): Promise<string | null> {
+  const KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!KEY) return null;
+  try {
+    const prompt = `Wide cinematic hero banner illustrating: ${topic}. ${query}. Elegant, premium, editorial-quality, soft depth, dramatic lighting, rich colors, no text, no watermark, no logos, ultra-detailed, 16:9 composition.`;
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+    if (!r.ok) { console.error("hero image http", r.status); return null; }
+    const d = await r.json();
+    const url = d.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return typeof url === "string" && url.length > 100 ? url : null;
+  } catch (e) { console.error("hero image err", e); return null; }
+}
+
 async function generateBrandTheme(description: string, analysis: any, prefs: any = {}): Promise<{ css: string; hero: string } | null> {
   const KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!KEY) return null;
