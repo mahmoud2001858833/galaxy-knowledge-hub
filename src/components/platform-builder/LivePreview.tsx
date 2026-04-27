@@ -160,23 +160,34 @@ export default function LivePreview({ html }: { html: string }) {
         </div>
       </div>
 
-      {/* Iframe area */}
-      <div className="flex-1 bg-neutral-900 flex items-center justify-center overflow-auto p-2">
+      {/* Iframe area — elegant browser-window frame */}
+      <div className="flex-1 bg-gradient-to-br from-[#0b0b1a] via-[#101028] to-[#0b0b1a] flex items-center justify-center overflow-auto p-4">
         <div
-          className="bg-white shadow-2xl transition-all duration-300 rounded-md overflow-hidden"
+          className="bg-white shadow-[0_30px_80px_-20px_rgba(139,92,246,0.45)] ring-1 ring-white/10 transition-all duration-300 rounded-xl overflow-hidden flex flex-col"
           style={{
             width: SIZES[device].w,
             maxWidth: "100%",
             height: "100%",
-            minHeight: 480,
+            minHeight: 520,
           }}
         >
+          {/* Mini browser chrome */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-100 to-slate-200 border-b border-slate-300/60">
+            <div className="flex gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            </div>
+            <div className="flex-1 mx-3 px-3 py-1 rounded-md bg-white/80 border border-slate-300/50 text-[10px] text-slate-500 font-mono truncate" dir="ltr">
+              preview · {SIZES[device].label.toLowerCase()}
+            </div>
+          </div>
           <iframe
             key={iframeKey}
             ref={iframeRef}
             title="preview"
             srcDoc={instrumentedHtml}
-            className="w-full h-full border-0"
+            className="w-full flex-1 border-0 bg-white"
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
           />
         </div>
