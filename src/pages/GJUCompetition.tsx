@@ -35,8 +35,8 @@ const aiTools = [
   { title: 'مساعد البرمجة الذكي', description: 'ولّد أكواداً برمجية بأي لغة مع شرح مفصّل', icon: Code, gradient: 'from-emerald-500 to-teal-600', link: '/btec/it/programming?tab=ai-assistant' },
   { title: '🚀 باني المنصات بالـ AI', description: 'صف فكرتك ليبني الذكاء الاصطناعي منصة كاملة بقاعدة بيانات وتسجيل دخول ومساعد ذكي على 5 مراحل واضحة', icon: Sparkles, gradient: 'from-violet-500 via-cyan-500 to-emerald-500', link: '/ai-platform-builder' },
   { title: 'المساعد الطبي الذكي', description: 'مساعد طبي ذكي للإسعافات الأولية والتحليل التشخيصي', icon: Stethoscope, gradient: 'from-rose-500 to-red-600', link: '/medical-assistant' },
-  { title: '💳 الدفع بالوجه - FacePay AI', description: 'تجربة بنكية متكاملة: أنشئ حساباً، سجّل وجهك، اختر كلمة سر بإيماءة، وادفع بمسح وجهك فقط', icon: ScanFace, gradient: 'from-emerald-500 via-cyan-500 to-violet-600', link: '/face-pay' },
-  { title: '🛍️ المتجر الذكي - AI Store', description: 'متجر إلكتروني مستقل بـ ٢٤ منتجاً وسلة شراء كاملة عبر ٧ فئات — تجربة تسوّق صافية بدون حساب', icon: ShoppingBag, gradient: 'from-pink-500 via-violet-500 to-cyan-500', link: '/ai-future-store' },
+  { title: '💳 الدفع بالوجه - FacePay AI', description: 'تجربة بنكية متكاملة مع متجر مدمج: أنشئ حساباً، سجّل وجهك، تسوّق وادفع بمسح وجهك فقط', icon: ScanFace, gradient: 'from-emerald-500 via-cyan-500 to-violet-600', link: '/face-pay' },
+  // Standalone AI Store removed — now integrated inside FacePay AI's Store tab.
   { title: '🌙 الذكاء الاصطناعي بلغة العربية - Lumina', description: 'منصة ذكاء اصطناعي عربية متقدمة بتصميم أنيق تدعم المحادثات والاستفسارات بلغة الضاد', icon: Languages, gradient: 'from-amber-500 via-orange-500 to-rose-600', link: 'https://lumina-arabic.lovable.app/', external: true },
 ];
 
@@ -128,8 +128,8 @@ const trackDescriptions: Record<string, string> = {
 
 const tracks = [
   { id: 'ai', title: 'الذكاء الاصطناعي', subtitle: 'AI & Machine Learning', icon: Brain, color: 'from-violet-500 to-purple-600', accent: 'violet', tools: aiTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
-  { id: 'simulations', title: 'المحاكيات التفاعلية', subtitle: 'Interactive Simulations Lab', icon: FlaskConical, color: 'from-fuchsia-500 via-cyan-500 to-emerald-500', accent: 'cyan', tools: simulationTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'inclusive', title: 'التعلّم الدامج', subtitle: 'Inclusive Education', icon: Accessibility, color: 'from-pink-500 to-rose-600', accent: 'pink', tools: inclusiveTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
+  { id: 'simulations', title: 'المحاكيات التفاعلية', subtitle: 'Interactive Simulations Lab', icon: FlaskConical, color: 'from-fuchsia-500 via-cyan-500 to-emerald-500', accent: 'cyan', tools: simulationTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'robotics', title: 'الروبوتات والبناء الذكي', subtitle: 'Robotics & Construction', icon: Bot, color: 'from-cyan-500 to-blue-600', accent: 'cyan', tools: roboticsTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
   { id: 'sustainability', title: 'التقنيات المستدامة', subtitle: 'Sustainable Tech', icon: Leaf, color: 'from-emerald-500 to-green-600', accent: 'emerald', tools: sustainabilityTools, extraTools: undefined as typeof simulationTools | undefined, extraTitle: undefined as string | undefined },
 ];
@@ -280,6 +280,11 @@ const ToolCard = ({ tool, index, lang }: { tool: typeof aiTools[0]; index: numbe
         if ((tool as any).external) {
           window.open(tool.link, '_blank', 'noopener,noreferrer');
         } else {
+          // Remember the track this tool was opened from so the back button can return to it.
+          try {
+            const sectionEl = ref.current?.closest('section[id]');
+            if (sectionEl?.id) sessionStorage.setItem('gju_last_track', sectionEl.id);
+          } catch {}
           navigate(tool.link);
         }
       }}
@@ -855,7 +860,90 @@ const GJUCompetition = () => {
           </React.Fragment>
         ))}
 
-        {/* ═══════════════ TECH STACK - Marquee ═══════════════ */}
+        {/* ═══════════════ FEATURES OVERVIEW (auto-generated from tracks) ═══════════════ */}
+        <section id="features-overview" className="py-24 md:py-28 relative scroll-mt-28">
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'radial-gradient(ellipse 80% 40% at 50% 50%, rgba(139,92,246,0.08), transparent)'
+          }} />
+          <div className="container mx-auto px-4 relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-14"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] mb-5">
+                <Star className="w-3.5 h-3.5 text-amber-300" />
+                <span className="text-white/50 text-[11px] font-mono tracking-[0.25em] uppercase">
+                  {lang === 'en' ? 'Platform Features' : 'مزايا المنصة'}
+                </span>
+              </div>
+              <h2 className="text-3xl md:text-5xl font-black text-white mb-3">
+                {lang === 'en' ? 'Features of Future of Technology' : 'مزايا منصة مستقبل التكنولوجيا'}
+              </h2>
+              <p className="text-white/40 text-base max-w-2xl mx-auto">
+                {lang === 'en'
+                  ? 'A complete catalog of every section, tool and option available on the platform.'
+                  : 'فهرس كامل لكل قسم وأداة وخيار متوفّر على المنصة.'}
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
+              {tracks.map((track, idx) => (
+                <motion.div
+                  key={track.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ duration: 0.5, delay: idx * 0.05 }}
+                  className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 hover:border-white/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-lg`}>
+                      <track.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">
+                        {lang === 'en' ? trackTranslationsEn[track.id]?.title ?? track.title : track.title}
+                      </h3>
+                      <p className="text-white/40 text-xs">
+                        {lang === 'en' ? trackTranslationsEn[track.id]?.description ?? trackDescriptions[track.id] : trackDescriptions[track.id]}
+                      </p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2 max-h-[260px] overflow-y-auto pr-1 scrollbar-hide">
+                    {track.tools.map((tool, i) => {
+                      const tr = lang === 'en' ? toolTranslationsEn[tool.title] : null;
+                      const tt = tr?.title ?? tool.title;
+                      const td = tr?.description ?? tool.description;
+                      return (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className={`mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-br ${track.color} flex-shrink-0`} />
+                          <div>
+                            <span className="text-white/85 font-semibold">{tt}</span>
+                            <span className="text-white/40"> — {td}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="mt-4 pt-3 border-t border-white/5 text-[11px] text-white/30 flex items-center justify-between">
+                    <span>{track.tools.length} {lang === 'en' ? 'tools' : 'أداة'}</span>
+                    <button
+                      onClick={() => scrollToTrack(track.id)}
+                      className="text-white/50 hover:text-white transition-colors flex items-center gap-1"
+                    >
+                      {lang === 'en' ? 'Open section' : 'افتح القسم'}
+                      <ArrowLeft className="w-3 h-3" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="py-24">
           <div className="container mx-auto px-4">
             <motion.div

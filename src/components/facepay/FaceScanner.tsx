@@ -13,14 +13,16 @@ interface FaceScannerProps {
   ctaLabel?: string;
 }
 
-// Demo-friendly identity threshold. Accepts the same face despite angle/lighting changes.
-const MATCH_THRESHOLD = 0.86;
+// Strict identity threshold — only the registered face should pass.
+const MATCH_THRESHOLD = 0.92;
 // Number of consecutive matching frames required to accept identity (anti-glitch).
-const REQUIRED_MATCHES = 5;
+const REQUIRED_MATCHES = 9;
 // Time window for verify before auto-rejecting (ms)
 const VERIFY_TIMEOUT_MS = 18000;
 // Number of clearly-low-score frames in a row that triggers an immediate reject
-const REJECT_STREAK = 90;
+const REJECT_STREAK = 45;
+// Maximum allowed distance of face center from frame center (normalized 0..1)
+const CENTER_TOLERANCE = 0.18;
 
 /**
  * Reusable face scanner. In `enroll` mode it samples ~25 stable landmark
@@ -55,7 +57,21 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onReject, onC
     const emb = extractEmbedding(landmarks);
     if (!emb.length) return;
 
+    // Compute face center in normalized coords (0..1) — reject if not centered.
+    let minX = 1, minY = 1, maxX = 0, maxY = 0;
+    for (const p of landmarks) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const offCenter = Math.hypot(cx - 0.5, cy - 0.5);
+    const isCentered = offCenter <= CENTER_TOLERANCE;
+
     if (mode === 'enroll') {
+      if (!isCentered) return; // require user to center their face during enrollment too
       samplesRef.current.push(emb);
       const target = 25;
       const p = Math.min(100, (samplesRef.current.length / target) * 100);
@@ -72,18 +88,19 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onReject, onC
         setTimeout(() => onComplete(avg), 700);
       }
     } else if (expectedEmbedding && expectedEmbedding.length) {
-      const s = faceMatchScore(emb, expectedEmbedding);
+      // Only the face that is well-centered in the frame is considered.
+      const s = isCentered ? faceMatchScore(emb, expectedEmbedding) : 0;
       setScore(s);
 
-        if (s >= MATCH_THRESHOLD) {
+      if (isCentered && s >= MATCH_THRESHOLD) {
         matchStreakRef.current += 1;
         lowStreakRef.current = 0;
-        } else if (s >= MATCH_THRESHOLD - 0.035) {
-          matchStreakRef.current = Math.max(0, matchStreakRef.current - 1);
-          lowStreakRef.current = 0;
+      } else if (isCentered && s >= MATCH_THRESHOLD - 0.025) {
+        matchStreakRef.current = Math.max(0, matchStreakRef.current - 1);
+        lowStreakRef.current = 0;
       } else {
         matchStreakRef.current = 0;
-          if (s < MATCH_THRESHOLD - 0.12) lowStreakRef.current += 1;
+        if (!isCentered || s < MATCH_THRESHOLD - 0.10) lowStreakRef.current += 1;
       }
       setStreak(matchStreakRef.current);
       setProgress(Math.min(100, (matchStreakRef.current / REQUIRED_MATCHES) * 100));

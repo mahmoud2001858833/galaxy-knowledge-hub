@@ -129,7 +129,15 @@ const MedicalAssistant = () => {
       {/* Header */}
       <header className="border-b border-white/5 backdrop-blur-xl bg-black/30 sticky top-0 z-50 relative">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate("/")} className="text-white/70 hover:text-white hover:bg-white/5 gap-2">
+          <Button variant="ghost" onClick={() => {
+            const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+            if (isGJU) {
+              const last = sessionStorage.getItem('gju_last_track') || 'ai';
+              navigate(`/gju-competition#${last}`);
+            } else {
+              navigate('/');
+            }
+          }} className="text-white/70 hover:text-white hover:bg-white/5 gap-2">
             <ArrowLeft className="w-4 h-4" /> الرئيسية
           </Button>
 

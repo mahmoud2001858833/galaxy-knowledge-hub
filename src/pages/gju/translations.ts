@@ -7,6 +7,13 @@ export const toolTranslationsEn: Record<string, { title: string; description: st
   'توليد الصور بالذكاء الاصطناعي': { title: 'AI Image Generation', description: 'Create professional educational images from simple text prompts' },
   'تقييم الرسومات بالذكاء الاصطناعي': { title: 'AI Drawing Evaluation', description: 'Draw and challenge your friends — AI picks the winner' },
   'مساعد البرمجة الذكي': { title: 'Smart Coding Assistant', description: 'Generate code in any language with detailed explanations' },
+  'كشف السرطان بالذكاء الاصطناعي': { title: 'AI Cancer Detection', description: 'Educational pre-screening that analyses medical images and symptoms with a risk report PDF' },
+  '🚀 باني المنصات بالـ AI': { title: '🚀 AI Platform Builder', description: 'Describe your idea and let AI build a full platform with database, auth and AI assistant in 5 clear stages' },
+  'المساعد الطبي الذكي': { title: 'Smart Medical Assistant', description: 'AI-powered first-aid and diagnostic medical assistant' },
+  '💳 الدفع بالوجه - FacePay AI': { title: '💳 FacePay AI — Pay With Your Face', description: 'Full banking experience with built-in store: create an account, register your face, shop and pay with a face scan only' },
+  '🌙 الذكاء الاصطناعي بلغة العربية - Lumina': { title: '🌙 Lumina — Arabic AI', description: 'Advanced Arabic-language AI platform with an elegant design that supports conversations and queries in Arabic' },
+  'مولّد الروبوتات بالذكاء الاصطناعي': { title: 'AI Robotics Generator', description: 'Describe your idea and get blueprints, Arduino code and a real-priced bill of materials' },
+  'التوأم الرقمي للأردن': { title: 'Jordan Digital Twin', description: 'Live monitoring of Jordanian-city KPIs with smart analysis and recommendations' },
 
   // ───── Robotics Tools ─────
   'التصميم المعماري الذكي': { title: 'Smart Architectural Design', description: 'Site analysis and sustainable design suggestions powered by AI' },
