@@ -178,6 +178,7 @@ const TechCodingPlatform = () => {
             {tab === "ai-code" && <AICodeStudio key="ai-code" />}
             {tab === "fix-code" && <CodeFixerStudio key="fix-code" />}
             {tab === "build-platform" && <PlatformBuilder key="build-platform" />}
+            {tab === "platform-eval" && <PlatformEvaluator key="platform-eval" />}
           </AnimatePresence>
         </main>
       </div>
