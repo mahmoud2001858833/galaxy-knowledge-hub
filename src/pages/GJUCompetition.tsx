@@ -280,6 +280,11 @@ const ToolCard = ({ tool, index, lang }: { tool: typeof aiTools[0]; index: numbe
         if ((tool as any).external) {
           window.open(tool.link, '_blank', 'noopener,noreferrer');
         } else {
+          // Remember the track this tool was opened from so the back button can return to it.
+          try {
+            const sectionEl = ref.current?.closest('section[id]');
+            if (sectionEl?.id) sessionStorage.setItem('gju_last_track', sectionEl.id);
+          } catch {}
           navigate(tool.link);
         }
       }}
