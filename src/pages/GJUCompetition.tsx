@@ -37,6 +37,7 @@ const aiTools = [
   { title: 'المساعد الطبي الذكي', description: 'مساعد طبي ذكي للإسعافات الأولية والتحليل التشخيصي', icon: Stethoscope, gradient: 'from-rose-500 to-red-600', link: '/medical-assistant' },
   { title: '💳 الدفع بالوجه - FacePay AI', description: 'تجربة بنكية متكاملة: أنشئ حساباً، سجّل وجهك، اختر كلمة سر بإيماءة، وادفع بمسح وجهك فقط', icon: ScanFace, gradient: 'from-emerald-500 via-cyan-500 to-violet-600', link: '/face-pay' },
   { title: '🛍️ المتجر الذكي - AI Store', description: 'متجر إلكتروني مستقل بـ ٢٤ منتجاً وسلة شراء كاملة عبر ٧ فئات — تجربة تسوّق صافية بدون حساب', icon: ShoppingBag, gradient: 'from-pink-500 via-violet-500 to-cyan-500', link: '/ai-future-store' },
+  { title: '🌙 الذكاء الاصطناعي بلغة العربية - Lumina', description: 'منصة ذكاء اصطناعي عربية متقدمة بتصميم أنيق تدعم المحادثات والاستفسارات بلغة الضاد', icon: Languages, gradient: 'from-amber-500 via-orange-500 to-rose-600', link: 'https://lumina-arabic.lovable.app/', external: true },
 ];
 
 /* ─────────────── Track 2: Robotics & Construction ─────────────── */
