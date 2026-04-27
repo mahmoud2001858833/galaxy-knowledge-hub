@@ -57,7 +57,21 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onReject, onC
     const emb = extractEmbedding(landmarks);
     if (!emb.length) return;
 
+    // Compute face center in normalized coords (0..1) — reject if not centered.
+    let minX = 1, minY = 1, maxX = 0, maxY = 0;
+    for (const p of landmarks) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const offCenter = Math.hypot(cx - 0.5, cy - 0.5);
+    const isCentered = offCenter <= CENTER_TOLERANCE;
+
     if (mode === 'enroll') {
+      if (!isCentered) return; // require user to center their face during enrollment too
       samplesRef.current.push(emb);
       const target = 25;
       const p = Math.min(100, (samplesRef.current.length / target) * 100);
