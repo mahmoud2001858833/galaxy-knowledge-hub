@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -641,6 +641,30 @@ const CodeFixerStudio = () => {
 };
 
 /* ============================== PLATFORM BUILDER ============================== */
+// Wraps any AI-generated HTML with a safe shell so the preview never goes black,
+// always has a viewport, base font, and a visible background even before the AI styles load.
+function wrapWithSafeShell(raw: string): string {
+  if (!raw) return "";
+  let html = raw.trim();
+  // Strip accidental markdown fences
+  html = html.replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  const baseStyle = `<style id="__safe_shell__">html,body{background:#ffffff;color:#0f172a;margin:0;min-height:100vh;font-family:'Cairo','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}body:empty::before{content:'جارٍ تشغيل المنصة...';display:flex;align-items:center;justify-content:center;min-height:100vh;color:#7c3aed;font-size:1.1rem;font-weight:700}img{max-width:100%}</style>`;
+  const viewport = `<meta name="viewport" content="width=device-width,initial-scale=1">`;
+  const cairo = `<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">`;
+
+  // If it has <head>, inject base style FIRST so AI styles still win on cascade
+  if (/<head[^>]*>/i.test(html)) {
+    html = html.replace(/<head([^>]*)>/i, `<head$1>${viewport}${cairo}${baseStyle}`);
+  } else if (/<html[^>]*>/i.test(html)) {
+    html = html.replace(/<html([^>]*)>/i, `<html$1><head>${viewport}${cairo}${baseStyle}</head>`);
+  } else {
+    // No skeleton at all → wrap everything
+    html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">${viewport}${cairo}${baseStyle}</head><body>${html}</body></html>`;
+  }
+  return html;
+}
+
 const PlatformBuilder = () => {
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [input, setInput] = useState("");
@@ -648,7 +672,10 @@ const PlatformBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [projectTitle, setProjectTitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const safeHtml = useMemo(() => wrapWithSafeShell(html), [html]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -723,7 +750,7 @@ const PlatformBuilder = () => {
   };
 
   const downloadHtml = () => {
-    const blob = new Blob([html], { type: "text/html" });
+    const blob = new Blob([safeHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -857,8 +884,15 @@ const PlatformBuilder = () => {
                   size="sm"
                   variant="ghost"
                   onClick={() => {
-                    const w = window.open("", "_blank");
-                    if (w) { w.document.write(html); w.document.close(); }
+                    const blob = new Blob([safeHtml], { type: "text/html;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const w = window.open(url, "_blank");
+                    if (!w) {
+                      // popup blocked → fallback document.write
+                      const w2 = window.open("", "_blank");
+                      if (w2) { w2.document.open(); w2.document.write(safeHtml); w2.document.close(); }
+                    }
+                    setTimeout(() => URL.revokeObjectURL(url), 60_000);
                   }}
                   className="text-white/70"
                   title="فتح في نافذة جديدة"
@@ -869,12 +903,28 @@ const PlatformBuilder = () => {
             )}
           </div>
           {html ? (
-            <iframe
-              srcDoc={html}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
-              title="platform-preview"
-              className="flex-1 w-full bg-white"
-            />
+            <div className="flex-1 bg-gradient-to-br from-[#0b0b1a] via-[#101028] to-[#0b0b1a] p-4 overflow-auto">
+              <div className="bg-white rounded-xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(34,211,238,0.45)] ring-1 ring-white/10 h-full flex flex-col">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-100 to-slate-200 border-b border-slate-300/60 flex-shrink-0">
+                  <div className="flex gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="flex-1 mx-3 px-3 py-1 rounded-md bg-white/80 border border-slate-300/50 text-[10px] text-slate-500 font-mono truncate" dir="ltr">
+                    preview · ai-platform.local
+                  </div>
+                </div>
+                <iframe
+                  key={safeHtml.length}
+                  srcDoc={safeHtml}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+                  title="platform-preview"
+                  className="flex-1 w-full bg-white border-0"
+                  onLoad={() => setPreviewError(false)}
+                />
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-white/30 p-8">
               <Code2 className="w-20 h-20 mb-4 opacity-50" />

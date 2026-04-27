@@ -108,6 +108,7 @@ function defaultCoreFiles(analysis: any, schema: any, supabaseUrl: string, supab
 <link rel="stylesheet" href="assets/css/components.css">
 <link rel="stylesheet" href="assets/css/animations.css">
 <link rel="stylesheet" href="assets/css/responsive.css">
+<style>html,body{background:#0f0f23;color:#fff;margin:0;min-height:100vh;font-family:'Cairo',system-ui,sans-serif}#app:empty::before{content:'جارٍ تحميل المنصة...';display:flex;align-items:center;justify-content:center;min-height:100vh;color:#a78bfa;font-size:1.1rem;font-weight:600}</style>
 </head>
 <body>
 <div id="app"></div>
@@ -786,11 +787,15 @@ async function pageHome(){
       <div style="font-size:2rem;font-weight:900" class="gradient-text">\${c}</div>
     </div>
   \`).join('');
-  // Load unique hero from pages/home.html (custom per-platform branding)
+  // Load unique hero from window.__PROJECT_PAGES__ (works in srcDoc/blob/about:blank)
   let hero = '';
   try {
-    const r = await fetch('pages/home.html');
-    if (r.ok) hero = await r.text();
+    if (window.__PROJECT_PAGES__ && window.__PROJECT_PAGES__['home']) {
+      hero = window.__PROJECT_PAGES__['home'];
+    } else {
+      const r = await fetch('pages/home.html');
+      if (r.ok) hero = await r.text();
+    }
   } catch {}
   if (!hero || hero.includes('class="card"><h2>الرئيسية')) {
     hero = \`<div class="card mb-6 animate-fade-in" style="background:linear-gradient(135deg,hsl(var(--primary)/.15),hsl(var(--primary-2)/.1));border-color:hsl(var(--primary)/.3)">
