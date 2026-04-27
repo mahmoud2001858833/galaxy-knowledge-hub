@@ -61,7 +61,7 @@ const TechCodingPlatform = () => {
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t && TAB_ALIASES[t] && TAB_ALIASES[t] !== tab) {
+    if (t && TAB_ALIASES[t] && allowedTabs.includes(TAB_ALIASES[t]) && TAB_ALIASES[t] !== tab) {
       setTab(TAB_ALIASES[t]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
