@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "ai-code" | "fix-code" | "build-platform";
+type Tab = "ai-code" | "fix-code" | "build-platform" | "platform-eval";
 
 const LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
