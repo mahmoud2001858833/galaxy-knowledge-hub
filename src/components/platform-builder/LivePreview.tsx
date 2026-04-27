@@ -24,11 +24,8 @@ export default function LivePreview({ html }: { html: string }) {
   const [iframeKey, setIframeKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Inject console interceptor into HTML
-  const instrumentedHtml = html
-    ? html.replace(
-        "</body>",
-        `<script>
+  // Inject console interceptor + ensure body exists with white background fallback
+  const consoleScript = `<script>
         (function(){
           const send = (level, args) => {
             try { parent.postMessage({ __preview_log: true, level, args: args.map(a => {
@@ -42,9 +39,27 @@ export default function LivePreview({ html }: { html: string }) {
           window.addEventListener('error', e => send('error', [e.message + ' @ ' + e.filename + ':' + e.lineno]));
           window.addEventListener('unhandledrejection', e => send('error', ['Unhandled: ' + (e.reason?.message || e.reason)]));
         })();
-        </script></body>`
-      )
-    : "";
+        </script>`;
+
+  let instrumentedHtml = "";
+  if (html) {
+    instrumentedHtml = html;
+    // Ensure html has a body close tag — if missing, append fallbacks
+    if (instrumentedHtml.includes("</body>")) {
+      instrumentedHtml = instrumentedHtml.replace("</body>", `${consoleScript}</body>`);
+    } else if (instrumentedHtml.includes("</html>")) {
+      instrumentedHtml = instrumentedHtml.replace("</html>", `${consoleScript}</html>`);
+    } else {
+      instrumentedHtml = instrumentedHtml + consoleScript;
+    }
+    // Force a white-ish base so transparent generated bodies don't show as black
+    if (!/background\s*:/i.test(instrumentedHtml.slice(0, 2000))) {
+      instrumentedHtml = instrumentedHtml.replace(
+        /<head([^>]*)>/i,
+        `<head$1><style>html,body{min-height:100%;background:#ffffff;color:#0f172a;margin:0}</style>`
+      );
+    }
+  }
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -62,8 +77,18 @@ export default function LivePreview({ html }: { html: string }) {
   };
 
   const openInNewTab = () => {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    window.open(URL.createObjectURL(blob), "_blank");
+    if (!html) return;
+    // Use document.write to avoid blob URL sandbox blank-screen issues
+    const w = window.open("", "_blank");
+    if (!w) {
+      // Popup blocked → fallback to blob URL
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      window.open(URL.createObjectURL(blob), "_blank");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
   };
 
   const errorCount = logs.filter((l) => l.level === "error").length;
@@ -135,23 +160,34 @@ export default function LivePreview({ html }: { html: string }) {
         </div>
       </div>
 
-      {/* Iframe area */}
-      <div className="flex-1 bg-neutral-900 flex items-center justify-center overflow-auto p-2">
+      {/* Iframe area — elegant browser-window frame */}
+      <div className="flex-1 bg-gradient-to-br from-[#0b0b1a] via-[#101028] to-[#0b0b1a] flex items-center justify-center overflow-auto p-4">
         <div
-          className="bg-white shadow-2xl transition-all duration-300 rounded-md overflow-hidden"
+          className="bg-white shadow-[0_30px_80px_-20px_rgba(139,92,246,0.45)] ring-1 ring-white/10 transition-all duration-300 rounded-xl overflow-hidden flex flex-col"
           style={{
             width: SIZES[device].w,
             maxWidth: "100%",
             height: "100%",
-            minHeight: 480,
+            minHeight: 520,
           }}
         >
+          {/* Mini browser chrome */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-100 to-slate-200 border-b border-slate-300/60">
+            <div className="flex gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            </div>
+            <div className="flex-1 mx-3 px-3 py-1 rounded-md bg-white/80 border border-slate-300/50 text-[10px] text-slate-500 font-mono truncate" dir="ltr">
+              preview · {SIZES[device].label.toLowerCase()}
+            </div>
+          </div>
           <iframe
             key={iframeKey}
             ref={iframeRef}
             title="preview"
             srcDoc={instrumentedHtml}
-            className="w-full h-full border-0"
+            className="w-full flex-1 border-0 bg-white"
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
           />
         </div>

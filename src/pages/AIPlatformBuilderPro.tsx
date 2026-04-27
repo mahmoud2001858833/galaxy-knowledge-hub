@@ -325,8 +325,16 @@ export default function AIPlatformBuilderPro() {
   };
 
   const openNewTab = () => {
-    const blob = new Blob([finalHtml], { type: "text/html;charset=utf-8" });
-    window.open(URL.createObjectURL(blob), "_blank");
+    if (!finalHtml) return;
+    const w = window.open("", "_blank");
+    if (!w) {
+      const blob = new Blob([finalHtml], { type: "text/html;charset=utf-8" });
+      window.open(URL.createObjectURL(blob), "_blank");
+      return;
+    }
+    w.document.open();
+    w.document.write(finalHtml);
+    w.document.close();
   };
 
   const reset = () => {
