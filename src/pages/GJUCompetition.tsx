@@ -23,7 +23,7 @@ import {
   Circle, Clock, Aperture, Orbit, TestTubes,
   Hexagon, Snowflake, FlaskRound, Radiation,
   Scissors, Wind, Shield, Bug, Shapes, Dice1,
-  Wrench, ScanFace, ShoppingBag
+  Wrench, ScanFace, ShoppingBag, Download, FileText, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
