@@ -188,7 +188,12 @@ import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
 const RootLayout = () => {
-  const isGJUMode = typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true';
+  const location = useLocation();
+  const path = location.pathname || '';
+  const isGJURoute = path.startsWith('/gju') || path === '/gju-competition';
+  const isGJUMode =
+    isGJURoute ||
+    (typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true');
   return (
     <AutoReadWrapper>
       <ScrollToTop />
