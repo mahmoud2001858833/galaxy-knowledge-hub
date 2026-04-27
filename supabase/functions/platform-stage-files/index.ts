@@ -1466,36 +1466,28 @@ ${brand.extraCss || ''}`;
       ? `<div class="hero-decoration float-anim">${brand.heroDecorationSvg}</div>`
       : '';
 
-    const heroImageUrl = img(brand.heroImageQuery || (analysis?.platformName || 'modern abstract gradient'), 1200, 900);
+    // Try AI-generated hero image first; fall back to Unsplash
+    const topicForImage = analysis?.platformName || (description || "").slice(0, 80) || "platform";
+    const aiHero = await generateAIHeroImage(topicForImage, brand.heroImageQuery || "");
+    const heroImageUrl = aiHero || img(brand.heroImageQuery || (analysis?.platformName || 'modern abstract gradient'), 1600, 900);
+
+    const overlayTitle = (brand.heroTitle || analysis?.platformName || topicForImage || '').toString();
 
     const hero = `${headerHtml}
-<section class="hero-unique" style="padding:4rem 1.5rem 3rem;position:relative;overflow:hidden;min-height:80vh">
-  ${decoration}
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at top right,hsl(var(--primary)/.22),transparent 55%),radial-gradient(ellipse at bottom left,hsl(var(--primary-2)/.18),transparent 55%);pointer-events:none;z-index:0"></div>
-  <div class="hero-grid" style="position:relative;z-index:2;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.1fr 1fr;gap:3rem;align-items:center">
-    <div>
-      ${brand.heroBadge ? `<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;border-radius:999px;background:hsl(var(--surface)/.7);backdrop-filter:blur(10px);border:1px solid hsl(var(--primary)/.4);font-size:.85rem;margin-bottom:1.5rem;font-weight:600">${brand.heroBadge}</div>` : ''}
-      <h1 style="font-size:clamp(2.5rem,6vw,4.75rem);line-height:1.05;margin:0 0 1.25rem;font-weight:900;letter-spacing:-.02em">${titleHtml}</h1>
-      <p style="font-size:clamp(1.05rem,1.4vw,1.25rem);color:hsl(var(--text-muted));max-width:560px;margin:0 0 2.25rem;line-height:1.7">${brand.heroSubtitle || ''}</p>
-      <div style="display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:2rem">
-        <a href="#/signup" class="btn btn-primary pulse-anim" style="padding:1.1rem 2.1rem;font-weight:700;font-size:1.05rem;border-radius:999px;text-decoration:none;box-shadow:0 15px 40px -15px hsl(var(--primary)/.7)">${brand.heroCtaPrimary || 'ابدأ الآن'} ←</a>
-        <a href="#features" class="btn btn-ghost" style="padding:1.1rem 2.1rem;font-weight:600;border-radius:999px;border:1px solid hsl(var(--border));text-decoration:none;color:hsl(var(--text))">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
-      </div>
-      <div style="display:flex;align-items:center;gap:.75rem;color:hsl(var(--text-muted));font-size:.88rem">
-        <div style="display:flex">${[0,1,2,3].map(i=>`<div style="width:32px;height:32px;border-radius:50%;background:url('${img('person portrait', 80, 80)}&sig=${i}') center/cover;border:2px solid hsl(var(--bg));margin-right:-8px"></div>`).join('')}</div>
-        <span>★★★★★ &nbsp;<strong style="color:hsl(var(--text))">+10,000</strong> مستخدم سعيد</span>
-      </div>
-    </div>
-    <div style="position:relative;aspect-ratio:4/5;border-radius:calc(var(--radius) * 2);overflow:hidden;box-shadow:0 40px 100px -30px hsl(var(--primary)/.5);transform:rotate(2deg);background:url('${heroImageUrl}') center/cover">
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,hsl(var(--primary)/.25),transparent 60%)"></div>
-      <div class="float-anim" style="position:absolute;bottom:1.25rem;right:1.25rem;background:hsl(var(--bg)/.95);backdrop-filter:blur(20px);padding:1rem 1.25rem;border-radius:var(--radius);border:1px solid hsl(var(--border));display:flex;align-items:center;gap:.75rem;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)">
-        <div style="width:42px;height:42px;border-radius:12px;background:${g.button || 'var(--gradient-primary)'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.25rem">⚡</div>
-        <div><div style="font-weight:800;font-size:.95rem">${brandName}</div><div style="font-size:.8rem;color:hsl(var(--text-muted))">جاهز للانطلاق</div></div>
-      </div>
+<section class="hero-banner-ai" style="position:relative;width:100%;min-height:62vh;overflow:hidden;background:url('${heroImageUrl}') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,hsl(var(--bg)/.55) 0%,hsl(var(--bg)/.25) 40%,hsl(var(--bg)/.85) 100%);z-index:1"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,hsl(var(--bg)/.6) 100%);z-index:1"></div>
+  <div class="animate-fade-in" style="position:relative;z-index:2;text-align:center;padding:5rem 1.5rem;max-width:1100px">
+    ${brand.heroBadge ? `<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.2rem;border-radius:999px;background:hsl(var(--surface)/.85);backdrop-filter:blur(14px);border:1px solid hsl(var(--primary)/.5);font-size:.88rem;margin-bottom:1.5rem;font-weight:700;color:hsl(var(--text));box-shadow:0 8px 30px -10px hsl(var(--primary)/.5)">${brand.heroBadge}</div>` : ''}
+    <h1 style="font-size:clamp(2.6rem,7vw,5.5rem);line-height:1.04;margin:0 0 1.4rem;font-weight:900;letter-spacing:-.025em;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.45)">${overlayTitle}</h1>
+    <p style="font-size:clamp(1.05rem,1.5vw,1.35rem);color:rgba(255,255,255,.92);max-width:720px;margin:0 auto 2.4rem;line-height:1.7;text-shadow:0 2px 12px rgba(0,0,0,.5)">${brand.heroSubtitle || ''}</p>
+    <div style="display:flex;gap:.85rem;flex-wrap:wrap;justify-content:center">
+      <a href="#/signup" class="btn btn-primary pulse-anim" style="padding:1.1rem 2.2rem;font-weight:700;font-size:1.05rem;border-radius:999px;text-decoration:none;color:#fff;background:${g.button || 'var(--gradient-primary)'};box-shadow:0 18px 45px -15px hsl(var(--primary)/.8)">${brand.heroCtaPrimary || 'ابدأ الآن'} ←</a>
+      <a href="#features" class="btn btn-ghost" style="padding:1.1rem 2.2rem;font-weight:600;border-radius:999px;border:1px solid rgba(255,255,255,.4);text-decoration:none;color:#fff;backdrop-filter:blur(10px);background:rgba(255,255,255,.08)">${brand.heroCtaSecondary || 'تعرف أكثر'}</a>
     </div>
   </div>
 </section>
-<style>@media(max-width:880px){.hero-grid{grid-template-columns:1fr !important}.nav-links{display:none !important}}</style>
+<style>@media(max-width:880px){.hero-banner-ai{min-height:54vh}.nav-links{display:none !important}}</style>
 ${statsHtml}
 <section id="features" style="padding:5rem 1.5rem;max-width:1280px;margin:0 auto">
   <div style="text-align:center;margin-bottom:3rem">
