@@ -641,6 +641,30 @@ const CodeFixerStudio = () => {
 };
 
 /* ============================== PLATFORM BUILDER ============================== */
+// Wraps any AI-generated HTML with a safe shell so the preview never goes black,
+// always has a viewport, base font, and a visible background even before the AI styles load.
+function wrapWithSafeShell(raw: string): string {
+  if (!raw) return "";
+  let html = raw.trim();
+  // Strip accidental markdown fences
+  html = html.replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  const baseStyle = `<style id="__safe_shell__">html,body{background:#ffffff;color:#0f172a;margin:0;min-height:100vh;font-family:'Cairo','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}body:empty::before{content:'جارٍ تشغيل المنصة...';display:flex;align-items:center;justify-content:center;min-height:100vh;color:#7c3aed;font-size:1.1rem;font-weight:700}img{max-width:100%}</style>`;
+  const viewport = `<meta name="viewport" content="width=device-width,initial-scale=1">`;
+  const cairo = `<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">`;
+
+  // If it has <head>, inject base style FIRST so AI styles still win on cascade
+  if (/<head[^>]*>/i.test(html)) {
+    html = html.replace(/<head([^>]*)>/i, `<head$1>${viewport}${cairo}${baseStyle}`);
+  } else if (/<html[^>]*>/i.test(html)) {
+    html = html.replace(/<html([^>]*)>/i, `<html$1><head>${viewport}${cairo}${baseStyle}</head>`);
+  } else {
+    // No skeleton at all → wrap everything
+    html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">${viewport}${cairo}${baseStyle}</head><body>${html}</body></html>`;
+  }
+  return html;
+}
+
 const PlatformBuilder = () => {
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [input, setInput] = useState("");
@@ -648,7 +672,10 @@ const PlatformBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [projectTitle, setProjectTitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const safeHtml = useMemo(() => wrapWithSafeShell(html), [html]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
