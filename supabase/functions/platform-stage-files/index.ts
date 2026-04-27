@@ -108,6 +108,7 @@ function defaultCoreFiles(analysis: any, schema: any, supabaseUrl: string, supab
 <link rel="stylesheet" href="assets/css/components.css">
 <link rel="stylesheet" href="assets/css/animations.css">
 <link rel="stylesheet" href="assets/css/responsive.css">
+<style>html,body{background:#0f0f23;color:#fff;margin:0;min-height:100vh;font-family:'Cairo',system-ui,sans-serif}#app:empty::before{content:'جارٍ تحميل المنصة...';display:flex;align-items:center;justify-content:center;min-height:100vh;color:#a78bfa;font-size:1.1rem;font-weight:600}</style>
 </head>
 <body>
 <div id="app"></div>
