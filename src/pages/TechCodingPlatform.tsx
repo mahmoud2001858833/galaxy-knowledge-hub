@@ -884,8 +884,15 @@ const PlatformBuilder = () => {
                   size="sm"
                   variant="ghost"
                   onClick={() => {
-                    const w = window.open("", "_blank");
-                    if (w) { w.document.write(html); w.document.close(); }
+                    const blob = new Blob([safeHtml], { type: "text/html;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const w = window.open(url, "_blank");
+                    if (!w) {
+                      // popup blocked → fallback document.write
+                      const w2 = window.open("", "_blank");
+                      if (w2) { w2.document.open(); w2.document.write(safeHtml); w2.document.close(); }
+                    }
+                    setTimeout(() => URL.revokeObjectURL(url), 60_000);
                   }}
                   className="text-white/70"
                   title="فتح في نافذة جديدة"
@@ -896,12 +903,28 @@ const PlatformBuilder = () => {
             )}
           </div>
           {html ? (
-            <iframe
-              srcDoc={html}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
-              title="platform-preview"
-              className="flex-1 w-full bg-white"
-            />
+            <div className="flex-1 bg-gradient-to-br from-[#0b0b1a] via-[#101028] to-[#0b0b1a] p-4 overflow-auto">
+              <div className="bg-white rounded-xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(34,211,238,0.45)] ring-1 ring-white/10 h-full flex flex-col">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-100 to-slate-200 border-b border-slate-300/60 flex-shrink-0">
+                  <div className="flex gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="flex-1 mx-3 px-3 py-1 rounded-md bg-white/80 border border-slate-300/50 text-[10px] text-slate-500 font-mono truncate" dir="ltr">
+                    preview · ai-platform.local
+                  </div>
+                </div>
+                <iframe
+                  key={safeHtml.length}
+                  srcDoc={safeHtml}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+                  title="platform-preview"
+                  className="flex-1 w-full bg-white border-0"
+                  onLoad={() => setPreviewError(false)}
+                />
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-white/30 p-8">
               <Code2 className="w-20 h-20 mb-4 opacity-50" />
