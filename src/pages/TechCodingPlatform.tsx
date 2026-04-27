@@ -891,4 +891,124 @@ const PlatformBuilder = () => {
   );
 };
 
+/* ============================== PLATFORM EVALUATOR ============================== */
+const PlatformEvaluator = () => {
+  const [url, setUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{
+    score: number;
+    strengths: string[];
+    weaknesses: string[];
+    suggestions: string[];
+    summary: string;
+  } | null>(null);
+
+  const evaluate = async () => {
+    if (!description.trim() || description.trim().length < 20) {
+      toast.error("اكتب وصفاً للمنصة (20 حرف على الأقل)");
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const prompt = `قيّم منصة الويب التالية بشكل احترافي وحيادي.\n\nالرابط: ${url || "غير محدد"}\nالوصف: ${description}\n\nأعد JSON صارم بهذا الشكل بدون أي شرح:\n{\n  "score": رقم من 0 إلى 100,\n  "strengths": ["نقطة قوة 1", ...],\n  "weaknesses": ["نقطة ضعف 1", ...],\n  "suggestions": ["اقتراح تحسين 1", ...],\n  "summary": "ملخص نهائي بالعربية في 2-3 جمل"\n}\n\nركّز على: تجربة المستخدم، التصميم، الأداء، إمكانية الوصول، القيمة الفعلية، الاحترافية.`;
+
+      const { data, error } = await supabase.functions.invoke("ai-assistant", {
+        body: { messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } },
+      });
+      if (error) throw error;
+      const raw = (data as any)?.message || (data as any)?.content || (data as any)?.text || "";
+      const cleaned = String(raw).replace(/```json|```/g, "").trim();
+      setResult(JSON.parse(cleaned));
+      toast.success("تم تقييم المنصة بنجاح");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("تعذّر التقييم: " + (e?.message || "خطأ غير معروف"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="max-w-3xl mx-auto space-y-6"
+    >
+      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl p-6 shadow-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-bold">تقييم المنصات بالذكاء الاصطناعي</h2>
+        </div>
+        <p className="text-white/60 text-sm mb-6">
+          أدخل رابط منصتك ووصفها لتحصل على تقييم احترافي شامل مع نقاط القوة والضعف واقتراحات التحسين.
+        </p>
+
+        <label className="text-xs text-white/60 mb-1 block">رابط المنصة (اختياري)</label>
+        <Input
+          dir="ltr"
+          placeholder="https://example.com"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="bg-black/40 border-white/10 text-white mb-4"
+        />
+
+        <label className="text-xs text-white/60 mb-1 block">وصف المنصة وأهدافها</label>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="مثال: منصة تعليمية للأطفال تركز على تعلّم الرياضيات بأسلوب تفاعلي..."
+          className="bg-black/40 border-white/10 text-white min-h-[140px] resize-none mb-4"
+        />
+
+        <Button
+          onClick={evaluate}
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 shadow-lg shadow-pink-500/30"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          <span className="mr-2">{loading ? "جارٍ التقييم..." : "قيّم منصتي الآن"}</span>
+        </Button>
+      </div>
+
+      {result && (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-500/10 to-pink-500/10 p-8 text-center">
+            <div className="text-7xl font-black bg-gradient-to-r from-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+              {result.score}/100
+            </div>
+            <p className="text-white/80 mt-3 leading-relaxed">{result.summary}</p>
+          </div>
+
+          <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+            <h3 className="text-base font-bold text-emerald-300 mb-3">✓ نقاط القوة</h3>
+            <ul className="space-y-2 text-white/80 text-sm">
+              {result.strengths?.map((s, i) => <li key={i}>• {s}</li>)}
+            </ul>
+          </div>
+
+          <div className="rounded-3xl border border-orange-500/20 bg-orange-500/5 p-6">
+            <h3 className="text-base font-bold text-orange-300 mb-3">⚠ نقاط تحتاج تحسين</h3>
+            <ul className="space-y-2 text-white/80 text-sm">
+              {result.weaknesses?.map((s, i) => <li key={i}>• {s}</li>)}
+            </ul>
+          </div>
+
+          <div className="rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6">
+            <h3 className="text-base font-bold text-cyan-300 mb-3">💡 اقتراحات التحسين</h3>
+            <ul className="space-y-2 text-white/80 text-sm">
+              {result.suggestions?.map((s, i) => <li key={i}>• {s}</li>)}
+            </ul>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
+
 export default TechCodingPlatform;
+
