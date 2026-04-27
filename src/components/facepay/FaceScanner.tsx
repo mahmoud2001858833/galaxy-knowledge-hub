@@ -88,18 +88,19 @@ export const FaceScanner = ({ mode, expectedEmbedding, onComplete, onReject, onC
         setTimeout(() => onComplete(avg), 700);
       }
     } else if (expectedEmbedding && expectedEmbedding.length) {
-      const s = faceMatchScore(emb, expectedEmbedding);
+      // Only the face that is well-centered in the frame is considered.
+      const s = isCentered ? faceMatchScore(emb, expectedEmbedding) : 0;
       setScore(s);
 
-        if (s >= MATCH_THRESHOLD) {
+      if (isCentered && s >= MATCH_THRESHOLD) {
         matchStreakRef.current += 1;
         lowStreakRef.current = 0;
-        } else if (s >= MATCH_THRESHOLD - 0.035) {
-          matchStreakRef.current = Math.max(0, matchStreakRef.current - 1);
-          lowStreakRef.current = 0;
+      } else if (isCentered && s >= MATCH_THRESHOLD - 0.025) {
+        matchStreakRef.current = Math.max(0, matchStreakRef.current - 1);
+        lowStreakRef.current = 0;
       } else {
         matchStreakRef.current = 0;
-          if (s < MATCH_THRESHOLD - 0.12) lowStreakRef.current += 1;
+        if (!isCentered || s < MATCH_THRESHOLD - 0.10) lowStreakRef.current += 1;
       }
       setStreak(matchStreakRef.current);
       setProgress(Math.min(100, (matchStreakRef.current / REQUIRED_MATCHES) * 100));
