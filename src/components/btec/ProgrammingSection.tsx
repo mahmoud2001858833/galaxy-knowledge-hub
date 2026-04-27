@@ -33,7 +33,7 @@ const ProgrammingSection = () => {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && VALID_TABS.includes(tab) && tab !== activeTab) {
+    if (tab && allowedTabs.includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
