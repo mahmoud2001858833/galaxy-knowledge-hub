@@ -35,16 +35,29 @@ const TAB_ALIASES: Record<string, Tab> = {
   "ai-code": "ai-code",
   "ai-assistant": "ai-code",
   "fix-code": "fix-code",
+  "code-fixer": "fix-code",
   "build-platform": "build-platform",
+  "platform-eval": "platform-eval",
+};
+
+// Detect GJU mode (route-based or session)
+const isGJUContext = () => {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname || "";
+  return p.startsWith("/gju") || sessionStorage.getItem("gju_mode") === "true";
 };
 
 const TechCodingPlatform = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isGJU = isGJUContext();
+  const allowedTabs: Tab[] = isGJU ? ["fix-code", "platform-eval"] : ["ai-code", "fix-code", "build-platform"];
   const requestedTab = searchParams.get("tab");
-  const [tab, setTab] = useState<Tab>(
-    requestedTab && TAB_ALIASES[requestedTab] ? TAB_ALIASES[requestedTab] : "ai-code"
-  );
+  const initial: Tab =
+    requestedTab && TAB_ALIASES[requestedTab] && allowedTabs.includes(TAB_ALIASES[requestedTab])
+      ? TAB_ALIASES[requestedTab]
+      : (isGJU ? "fix-code" : "ai-code");
+  const [tab, setTab] = useState<Tab>(initial);
 
   useEffect(() => {
     const t = searchParams.get("tab");
