@@ -653,6 +653,31 @@ const GJUCompetition = () => {
               </button>
             </motion.div>
 
+            {/* Download buttons: marketing video + presentation */}
+            <motion.div
+              className="flex flex-wrap items-center justify-center gap-3 mb-10 pointer-events-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75, duration: 0.6 }}
+            >
+              <a
+                href="/downloads/future-of-technology.mp4"
+                download="Future_of_Technology.mp4"
+                className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 text-white font-bold text-sm shadow-[0_8px_30px_-8px_rgba(139,92,246,0.6)] hover:shadow-[0_10px_40px_-8px_rgba(139,92,246,0.9)] hover:scale-[1.03] transition-all duration-300"
+              >
+                <Play className="w-4 h-4" />
+                {lang === 'en' ? 'Download Promo Video (MP4)' : 'تحميل الفيديو التسويقي (MP4)'}
+              </a>
+              <a
+                href="/downloads/future-of-technology.pptx"
+                download="Future_of_Technology.pptx"
+                className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/15 bg-white/[0.05] backdrop-blur-md text-white/90 font-bold text-sm hover:bg-white/[0.10] hover:border-white/30 hover:text-white transition-all duration-300"
+              >
+                <BookOpen className="w-4 h-4" />
+                {lang === 'en' ? 'Download Presentation (PPTX)' : 'تحميل العرض التقديمي (PPTX)'}
+              </a>
+            </motion.div>
+
             {/* Stats with gradient borders */}
             <motion.div
               className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto mb-16 pointer-events-auto"
