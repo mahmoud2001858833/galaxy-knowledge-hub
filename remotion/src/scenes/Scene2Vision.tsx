@@ -7,9 +7,9 @@ const cairo = loadCairo("normal", { weights: ["700", "900"], subsets: ["arabic"]
 const orbitron = loadOrbitron("normal", { weights: ["700", "900"] });
 
 const stats = [
-  { num: "+50", label: "أداة ذكية", color: C.primary },
-  { num: "10×", label: "سرعة الإنجاز", color: C.accent },
-  { num: "100%", label: "دعم العربية", color: C.accent2 },
+  { num: "+200", label: "أداة تعليمية", color: C.primary },
+  { num: "+150", label: "محاكاة تفاعلية", color: C.accent },
+  { num: "+125", label: "أداة ذكاء اصطناعي", color: C.accent2 },
 ];
 
 const StatCard: React.FC<{ s: typeof stats[number]; delay: number }> = ({ s, delay }) => {
@@ -40,7 +40,7 @@ const StatCard: React.FC<{ s: typeof stats[number]; delay: number }> = ({ s, del
         <div
           style={{
             fontFamily: orbitron.fontFamily,
-            fontSize: 140,
+            fontSize: 120,
             fontWeight: 900,
             color: s.color,
             lineHeight: 1,
@@ -53,7 +53,7 @@ const StatCard: React.FC<{ s: typeof stats[number]; delay: number }> = ({ s, del
         <div
           style={{
             fontFamily: cairo.fontFamily,
-            fontSize: 32,
+            fontSize: 28,
             color: C.text,
             marginTop: 16,
             fontWeight: 700,
