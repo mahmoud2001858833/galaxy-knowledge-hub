@@ -276,7 +276,13 @@ const ToolCard = ({ tool, index, lang }: { tool: typeof aiTools[0]; index: numbe
       transition={{ delay: index * 0.06, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       onMouseMove={handleMouse}
       onMouseLeave={handleLeave}
-      onClick={() => navigate(tool.link)}
+      onClick={() => {
+        if ((tool as any).external) {
+          window.open(tool.link, '_blank', 'noopener,noreferrer');
+        } else {
+          navigate(tool.link);
+        }
+      }}
       style={{ rotateX, rotateY, transformPerspective: 800 }}
       className="group cursor-pointer relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-all duration-500 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-2xl hover:shadow-black/20"
     >
