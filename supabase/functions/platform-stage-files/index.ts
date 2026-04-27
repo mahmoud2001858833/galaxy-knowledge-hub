@@ -465,10 +465,10 @@ window.DB = (function(){
   try {
 ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
       const data = samples[${JSON.stringify(t)}] || [{name:'عنصر تجريبي 1'},{name:'عنصر تجريبي 2'},{name:'عنصر تجريبي 3'}];
-      data.forEach(d => { try { DB.table(${JSON.stringify(t)}).insert(d); } catch (e: any){} });
+      data.forEach(d => { try { DB.table(${JSON.stringify(t)}).insert(d); } catch (e){} });
     }`).join("\n")}
     localStorage.setItem('app_seeded_v2','1');
-  } catch (e: any){ console.warn('seed', e); }
+    } catch (e){ console.warn('seed', e); }
 })();`;
 
   // ============ Auth: uses unified "password" field ============
@@ -576,7 +576,7 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
     input.onchange = async () => {
       const f = input.files[0]; if (!f) return;
       try { const text = await f.text(); DB.import(text); Toast.success('تم الاستيراد'); setTimeout(()=>location.reload(), 800); }
-      catch (e: any){ Toast.error('ملف غير صالح'); }
+      catch (e){ Toast.error('ملف غير صالح'); }
     };
     input.click();
   }
@@ -589,14 +589,14 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
 
   const notificationsJs = `window.Notifications = {
   send(userId, title, body, type='info'){
-    try { DB.table('notifications').insert({ user_id: userId, title, body: body||'', type, read: false }); } catch (e: any){}
+    try { DB.table('notifications').insert({ user_id: userId, title, body: body||'', type, read: false }); } catch (e){}
   },
   unreadCount(userId){
     try { return DB.table('notifications').where(n => n.user_id===userId && !n.read).count(); } catch { return 0; }
   },
-  markRead(id){ try { DB.table('notifications').update(id, { read: true }); } catch (e: any){} },
+  markRead(id){ try { DB.table('notifications').update(id, { read: true }); } catch (e){} },
   markAllRead(userId){
-    try { DB.table('notifications').where(n => n.user_id===userId && !n.read).get().forEach(n => DB.table('notifications').update(n.id, { read: true })); } catch (e: any){}
+    try { DB.table('notifications').where(n => n.user_id===userId && !n.read).get().forEach(n => DB.table('notifications').update(n.id, { read: true })); } catch (e){}
   }
 };`;
 
