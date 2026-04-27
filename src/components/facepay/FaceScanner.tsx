@@ -13,14 +13,16 @@ interface FaceScannerProps {
   ctaLabel?: string;
 }
 
-// Demo-friendly identity threshold. Accepts the same face despite angle/lighting changes.
-const MATCH_THRESHOLD = 0.86;
+// Strict identity threshold — only the registered face should pass.
+const MATCH_THRESHOLD = 0.92;
 // Number of consecutive matching frames required to accept identity (anti-glitch).
-const REQUIRED_MATCHES = 5;
+const REQUIRED_MATCHES = 9;
 // Time window for verify before auto-rejecting (ms)
 const VERIFY_TIMEOUT_MS = 18000;
 // Number of clearly-low-score frames in a row that triggers an immediate reject
-const REJECT_STREAK = 90;
+const REJECT_STREAK = 45;
+// Maximum allowed distance of face center from frame center (normalized 0..1)
+const CENTER_TOLERANCE = 0.18;
 
 /**
  * Reusable face scanner. In `enroll` mode it samples ~25 stable landmark
