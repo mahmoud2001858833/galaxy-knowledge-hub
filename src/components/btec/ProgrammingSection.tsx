@@ -61,20 +61,20 @@ const ProgrammingSection = () => {
           className="mb-8"
         >
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(isGJU ? '/gju-competition' : '/')}
             variant="outline"
             className="mb-6 gap-2 bg-white/5 hover:bg-white/10 border-white/20"
           >
             <ArrowLeft className="w-4 h-4" />
-            العودة لذروة العلم
+            {isGJU ? 'العودة لمستقبل التكنولوجيا' : 'العودة لذروة العلم'}
           </Button>
 
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold mb-4 bg-gradient-to-l from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              منصة البرمجة المتطورة
+              {isGJU ? 'مساعد البرمجة الذكي' : 'منصة البرمجة المتطورة'}
             </h1>
             <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-              مساعد ذكي، تصحيح الأكواد، تحويل الرياضيات لكود، وبناء منصاتك الخاصة
+              {isGJU ? 'تصحيح الأكواد بالذكاء الاصطناعي وتقييم المنصات الاحترافي' : 'مساعد ذكي، تصحيح الأكواد، تحويل الرياضيات لكود، وبناء منصاتك الخاصة'}
             </p>
           </div>
         </motion.div>
