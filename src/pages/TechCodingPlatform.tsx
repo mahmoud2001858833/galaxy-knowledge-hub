@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "ai-code" | "fix-code" | "build-platform";
+type Tab = "ai-code" | "fix-code" | "build-platform" | "platform-eval";
 
 const LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
@@ -35,20 +35,33 @@ const TAB_ALIASES: Record<string, Tab> = {
   "ai-code": "ai-code",
   "ai-assistant": "ai-code",
   "fix-code": "fix-code",
+  "code-fixer": "fix-code",
   "build-platform": "build-platform",
+  "platform-eval": "platform-eval",
+};
+
+// Detect GJU mode (route-based or session)
+const isGJUContext = () => {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname || "";
+  return p.startsWith("/gju") || sessionStorage.getItem("gju_mode") === "true";
 };
 
 const TechCodingPlatform = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isGJU = isGJUContext();
+  const allowedTabs: Tab[] = isGJU ? ["fix-code", "platform-eval"] : ["ai-code", "fix-code", "build-platform"];
   const requestedTab = searchParams.get("tab");
-  const [tab, setTab] = useState<Tab>(
-    requestedTab && TAB_ALIASES[requestedTab] ? TAB_ALIASES[requestedTab] : "ai-code"
-  );
+  const initial: Tab =
+    requestedTab && TAB_ALIASES[requestedTab] && allowedTabs.includes(TAB_ALIASES[requestedTab])
+      ? TAB_ALIASES[requestedTab]
+      : (isGJU ? "fix-code" : "ai-code");
+  const [tab, setTab] = useState<Tab>(initial);
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t && TAB_ALIASES[t] && TAB_ALIASES[t] !== tab) {
+    if (t && TAB_ALIASES[t] && allowedTabs.includes(TAB_ALIASES[t]) && TAB_ALIASES[t] !== tab) {
       setTab(TAB_ALIASES[t]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,11 +135,14 @@ const TechCodingPlatform = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap gap-3 justify-center mb-8"
           >
-            {[
-              { id: "ai-code" as Tab, icon: Sparkles, label: "كتابة الكود بالذكاء الاصطناعي", gradient: "from-violet-500 to-purple-600" },
-              { id: "fix-code" as Tab, icon: Wrench, label: "تصليح الكود", gradient: "from-amber-500 to-orange-600" },
-              { id: "build-platform" as Tab, icon: Bot, label: "بناء منصة كاملة بالـAI", gradient: "from-cyan-500 to-blue-600" },
-            ].map((t) => {
+            {(
+              [
+                { id: "ai-code" as Tab, icon: Sparkles, label: "كتابة الكود بالذكاء الاصطناعي", gradient: "from-violet-500 to-purple-600" },
+                { id: "fix-code" as Tab, icon: Wrench, label: "تصليح الكود", gradient: "from-amber-500 to-orange-600" },
+                { id: "build-platform" as Tab, icon: Bot, label: "بناء منصة كاملة بالـAI", gradient: "from-cyan-500 to-blue-600" },
+                { id: "platform-eval" as Tab, icon: Sparkles, label: "تقييم المنصات", gradient: "from-fuchsia-500 to-pink-600" },
+              ] as const
+            ).filter((t) => allowedTabs.includes(t.id)).map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
               return (
@@ -162,6 +178,7 @@ const TechCodingPlatform = () => {
             {tab === "ai-code" && <AICodeStudio key="ai-code" />}
             {tab === "fix-code" && <CodeFixerStudio key="fix-code" />}
             {tab === "build-platform" && <PlatformBuilder key="build-platform" />}
+            {tab === "platform-eval" && <PlatformEvaluator key="platform-eval" />}
           </AnimatePresence>
         </main>
       </div>
@@ -874,4 +891,124 @@ const PlatformBuilder = () => {
   );
 };
 
+/* ============================== PLATFORM EVALUATOR ============================== */
+const PlatformEvaluator = () => {
+  const [url, setUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{
+    score: number;
+    strengths: string[];
+    weaknesses: string[];
+    suggestions: string[];
+    summary: string;
+  } | null>(null);
+
+  const evaluate = async () => {
+    if (!description.trim() || description.trim().length < 20) {
+      toast.error("اكتب وصفاً للمنصة (20 حرف على الأقل)");
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const prompt = `قيّم منصة الويب التالية بشكل احترافي وحيادي.\n\nالرابط: ${url || "غير محدد"}\nالوصف: ${description}\n\nأعد JSON صارم بهذا الشكل بدون أي شرح:\n{\n  "score": رقم من 0 إلى 100,\n  "strengths": ["نقطة قوة 1", ...],\n  "weaknesses": ["نقطة ضعف 1", ...],\n  "suggestions": ["اقتراح تحسين 1", ...],\n  "summary": "ملخص نهائي بالعربية في 2-3 جمل"\n}\n\nركّز على: تجربة المستخدم، التصميم، الأداء، إمكانية الوصول، القيمة الفعلية، الاحترافية.`;
+
+      const { data, error } = await supabase.functions.invoke("ai-assistant", {
+        body: { messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } },
+      });
+      if (error) throw error;
+      const raw = (data as any)?.message || (data as any)?.content || (data as any)?.text || "";
+      const cleaned = String(raw).replace(/```json|```/g, "").trim();
+      setResult(JSON.parse(cleaned));
+      toast.success("تم تقييم المنصة بنجاح");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("تعذّر التقييم: " + (e?.message || "خطأ غير معروف"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="max-w-3xl mx-auto space-y-6"
+    >
+      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl p-6 shadow-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-bold">تقييم المنصات بالذكاء الاصطناعي</h2>
+        </div>
+        <p className="text-white/60 text-sm mb-6">
+          أدخل رابط منصتك ووصفها لتحصل على تقييم احترافي شامل مع نقاط القوة والضعف واقتراحات التحسين.
+        </p>
+
+        <label className="text-xs text-white/60 mb-1 block">رابط المنصة (اختياري)</label>
+        <Input
+          dir="ltr"
+          placeholder="https://example.com"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="bg-black/40 border-white/10 text-white mb-4"
+        />
+
+        <label className="text-xs text-white/60 mb-1 block">وصف المنصة وأهدافها</label>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="مثال: منصة تعليمية للأطفال تركز على تعلّم الرياضيات بأسلوب تفاعلي..."
+          className="bg-black/40 border-white/10 text-white min-h-[140px] resize-none mb-4"
+        />
+
+        <Button
+          onClick={evaluate}
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 shadow-lg shadow-pink-500/30"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          <span className="mr-2">{loading ? "جارٍ التقييم..." : "قيّم منصتي الآن"}</span>
+        </Button>
+      </div>
+
+      {result && (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-500/10 to-pink-500/10 p-8 text-center">
+            <div className="text-7xl font-black bg-gradient-to-r from-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+              {result.score}/100
+            </div>
+            <p className="text-white/80 mt-3 leading-relaxed">{result.summary}</p>
+          </div>
+
+          <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+            <h3 className="text-base font-bold text-emerald-300 mb-3">✓ نقاط القوة</h3>
+            <ul className="space-y-2 text-white/80 text-sm">
+              {result.strengths?.map((s, i) => <li key={i}>• {s}</li>)}
+            </ul>
+          </div>
+
+          <div className="rounded-3xl border border-orange-500/20 bg-orange-500/5 p-6">
+            <h3 className="text-base font-bold text-orange-300 mb-3">⚠ نقاط تحتاج تحسين</h3>
+            <ul className="space-y-2 text-white/80 text-sm">
+              {result.weaknesses?.map((s, i) => <li key={i}>• {s}</li>)}
+            </ul>
+          </div>
+
+          <div className="rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6">
+            <h3 className="text-base font-bold text-cyan-300 mb-3">💡 اقتراحات التحسين</h3>
+            <ul className="space-y-2 text-white/80 text-sm">
+              {result.suggestions?.map((s, i) => <li key={i}>• {s}</li>)}
+            </ul>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
+
 export default TechCodingPlatform;
+
