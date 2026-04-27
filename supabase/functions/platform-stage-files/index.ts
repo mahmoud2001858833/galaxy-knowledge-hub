@@ -629,7 +629,7 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
       const reply = d.reply || d.text || d.message || '';
       if (reply) history.push({ role:'assistant', content: reply });
       return reply || 'لم يصل رد من المساعد.';
-    } catch (e: any){ return '⚠️ تعذر الاتصال: '+e.message; }
+    } catch (e){ return '⚠️ تعذر الاتصال: '+(e?.message || 'خطأ غير معروف'); }
   }
   function reset(){ history.length = 0; }
   return { ask, reset, history: () => [...history] };
@@ -727,7 +727,7 @@ ${tableNames.map((t) => `    if (DB.table(${JSON.stringify(t)}).count() === 0) {
     app.style.opacity = '0';
     setTimeout(async () => {
       try { await route.handler(); renderNav(); FloatingAI.mount(); }
-      catch (e: any){ console.error(e); Toast.error(e.message||'خطأ'); }
+      catch (e){ console.error(e); Toast.error(e?.message||'خطأ'); }
       app.style.transition = 'opacity .25s'; app.style.opacity = '1';
     }, 80);
   }
@@ -834,7 +834,7 @@ function pageLogin(){
     try {
       await Auth.login({ email: fd.get('email'), password: fd.get('password'), remember: fd.get('remember')==='on' });
       Toast.success('أهلاً بك!'); location.hash='#/';
-    } catch (err: any){ Toast.error(err.message); }
+    } catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
 }
 
@@ -861,7 +861,7 @@ function pageSignup(){
       await Auth.register({ name: fd.get('name'), email: fd.get('email'), password: fd.get('password'), remember: true });
       Toast.success('تم إنشاء الحساب 🎉');
       location.hash='#/';
-    } catch (err: any){ Toast.error(err.message); }
+    } catch (err){ Toast.error(err?.message || 'خطأ'); }
   });
 }
 
