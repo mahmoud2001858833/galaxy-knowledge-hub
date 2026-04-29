@@ -63,6 +63,15 @@ const EducationSection = () => {
       borderColor: "border-blue-500/30",
       link: "/scientific-platforms"
     },
+    {
+      title: "شجرة الذاكرة",
+      icon: "🌳",
+      description: "مشروع تفاعلي يجسّد المفاهيم الستة للذكاء الاصطناعي عبر شجرة ميكانيكية مُعاد تدويرها",
+      image: "/memory-tree/memory-tree-hero.jpg",
+      color: "from-emerald-700/20 to-amber-600/20",
+      borderColor: "border-amber-500/40",
+      link: "/memory-tree"
+    },
   ];
 
 
