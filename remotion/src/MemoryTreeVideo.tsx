@@ -867,7 +867,7 @@ export const DURATIONS = {
   sum: 300,
 };
 
-const TRANSITION_FRAMES = 22;
+const TRANSITION_FRAMES = 28;
 // TransitionSeries: total = sum(durations) - transitions*(N-1)
 const SEGMENTS = [
   DURATIONS.d_open,
