@@ -711,32 +711,122 @@ const SceneSummary: React.FC = () => {
   );
 };
 
+// =============== CHAPTER DIVIDER ===============
+const ChapterDivider: React.FC<{ kicker: string; title: string; subtitle: string }> = ({
+  kicker,
+  title,
+  subtitle,
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const sp = spring({ frame, fps, config: { damping: 18, stiffness: 110 } });
+  const titleY = interpolate(sp, [0, 1], [50, 0]);
+  const op = interpolate(frame, [0, 18], [0, 1], { extrapolateRight: "clamp" });
+  const lineW = interpolate(frame, [12, 50], [0, 700], { extrapolateRight: "clamp" });
+  const subOp = interpolate(frame, [30, 60], [0, 1], { extrapolateRight: "clamp" });
+  const exit = interpolate(frame, [80, 100], [1, 0.94], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return (
+    <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", opacity: op, transform: `scale(${exit})` }}>
+      <TopBrand />
+      {/* Decorative gold ring */}
+      <div
+        style={{
+          position: "absolute",
+          width: 720,
+          height: 720,
+          borderRadius: "50%",
+          border: `1px solid ${GOLD_LIGHT}`,
+          opacity: 0.5,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: 560,
+          height: 560,
+          borderRadius: "50%",
+          border: `1px solid ${GOLD}`,
+          opacity: 0.35,
+        }}
+      />
+      <div style={{ textAlign: "center", direction: "rtl", zIndex: 2 }}>
+        <div
+          style={{
+            fontFamily: CAIRO,
+            color: GOLD,
+            fontSize: 28,
+            letterSpacing: 14,
+            marginBottom: 30,
+            fontWeight: 700,
+          }}
+        >
+          {kicker}
+        </div>
+        <div
+          style={{
+            transform: `translateY(${titleY}px)`,
+            fontFamily: AMIRI,
+            fontWeight: 700,
+            fontSize: 130,
+            color: DARK,
+            lineHeight: 1.05,
+            textShadow: "0 4px 16px rgba(0,0,0,0.18)",
+          }}
+        >
+          {title}
+        </div>
+        <div
+          style={{
+            width: lineW,
+            height: 3,
+            background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
+            margin: "26px auto",
+          }}
+        />
+        <div
+          style={{
+            opacity: subOp,
+            fontFamily: CAIRO,
+            fontSize: 34,
+            color: ACCENT,
+            fontWeight: 400,
+          }}
+        >
+          {subtitle}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // =============== Composition ===============
 export const DURATIONS = {
-  s1: 150, // title 5s
-  s2: 210, // idea 7s
-  s3: 240, // anatomy 8s
-  s4: 240, // how-it-works 8s
-  c1: 180, // concept training 6s
-  c2: 180,
-  c3: 180,
-  c4: 180,
-  c5: 180,
-  c6: 180,
-  sum: 300, // summary 10s
+  d_open: 90,    // افتتاحية divider 3s
+  s1: 150,       // title
+  s2: 210,       // idea
+  d_how: 90,     // آلية التطبيق divider
+  s3: 240,       // anatomy
+  s4: 240,       // how-it-works
+  c1: 180, c2: 180, c3: 180, c4: 180, c5: 180, c6: 180,
+  d_end: 90,     // الخاتمة divider
+  sum: 300,
 };
+
+const TRANSITION_FRAMES = 22;
+// TransitionSeries: total = sum(durations) - transitions*(N-1)
+const SEGMENTS = [
+  DURATIONS.d_open,
+  DURATIONS.s1,
+  DURATIONS.s2,
+  DURATIONS.d_how,
+  DURATIONS.s3,
+  DURATIONS.s4,
+  DURATIONS.c1, DURATIONS.c2, DURATIONS.c3, DURATIONS.c4, DURATIONS.c5, DURATIONS.c6,
+  DURATIONS.d_end,
+  DURATIONS.sum,
+];
 export const TOTAL =
-  DURATIONS.s1 +
-  DURATIONS.s2 +
-  DURATIONS.s3 +
-  DURATIONS.s4 +
-  DURATIONS.c1 +
-  DURATIONS.c2 +
-  DURATIONS.c3 +
-  DURATIONS.c4 +
-  DURATIONS.c5 +
-  DURATIONS.c6 +
-  DURATIONS.sum;
+  SEGMENTS.reduce((a, b) => a + b, 0) - TRANSITION_FRAMES * (SEGMENTS.length - 1);
 
 const concepts: ConceptProps[] = [
   {
@@ -789,31 +879,89 @@ const concepts: ConceptProps[] = [
   },
 ];
 
-export const MemoryTreeVideo: React.FC = () => {
-  let from = 0;
-  const seq = (d: number, child: React.ReactNode) => {
-    const node = (
-      <Sequence from={from} durationInFrames={d} key={from}>
-        {child}
-      </Sequence>
-    );
-    from += d;
-    return node;
-  };
+// Helper: alternating transitions for variety
+const makeTransition = (i: number) => {
+  const presentations = [
+    fade(),
+    slide({ direction: "from-right" }),
+    fade(),
+    wipe({ direction: "from-bottom-right" }),
+    slide({ direction: "from-left" }),
+    fade(),
+  ];
+  return presentations[i % presentations.length];
+};
 
-  const items: React.ReactNode[] = [];
-  items.push(seq(DURATIONS.s1, <Scene1Title />));
-  items.push(seq(DURATIONS.s2, <Scene2Idea />));
-  items.push(seq(DURATIONS.s3, <Scene3Anatomy />));
-  items.push(seq(DURATIONS.s4, <Scene4How />));
-  const cd = [DURATIONS.c1, DURATIONS.c2, DURATIONS.c3, DURATIONS.c4, DURATIONS.c5, DURATIONS.c6];
-  concepts.forEach((c, i) => items.push(seq(cd[i], <ConceptScene {...c} />)));
-  items.push(seq(DURATIONS.sum, <SceneSummary />));
+export const MemoryTreeVideo: React.FC = () => {
+  const scenes: { d: number; node: React.ReactNode }[] = [
+    {
+      d: DURATIONS.d_open,
+      node: (
+        <ChapterDivider
+          kicker="CHAPTER  ·  ١"
+          title="افتتاحية"
+          subtitle="مشروع حديقة الحسن التعليمية"
+        />
+      ),
+    },
+    { d: DURATIONS.s1, node: <Scene1Title /> },
+    { d: DURATIONS.s2, node: <Scene2Idea /> },
+    {
+      d: DURATIONS.d_how,
+      node: (
+        <ChapterDivider
+          kicker="CHAPTER  ·  ٢"
+          title="آليّة التطبيق"
+          subtitle="كيف صُنعت الشجرة وكيف تشتغل"
+        />
+      ),
+    },
+    { d: DURATIONS.s3, node: <Scene3Anatomy /> },
+    { d: DURATIONS.s4, node: <Scene4How /> },
+    ...concepts.map((c, i) => ({
+      d: [DURATIONS.c1, DURATIONS.c2, DURATIONS.c3, DURATIONS.c4, DURATIONS.c5, DURATIONS.c6][i],
+      node: <ConceptScene {...c} />,
+    })),
+    {
+      d: DURATIONS.d_end,
+      node: (
+        <ChapterDivider
+          kicker="CHAPTER  ·  ٣"
+          title="خلاصة الرحلة"
+          subtitle="ست مفاهيم تجسّدت في غصن واحد"
+        />
+      ),
+    },
+    { d: DURATIONS.sum, node: <SceneSummary /> },
+  ];
 
   return (
     <AbsoluteFill>
       <Background />
-      {items}
+      {/* Background music spans entire video */}
+      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.85} />
+      <TransitionSeries>
+        {scenes.map((s, i) => {
+          const items: React.ReactNode[] = [
+            <TransitionSeries.Sequence key={`s-${i}`} durationInFrames={s.d}>
+              {s.node}
+            </TransitionSeries.Sequence>,
+          ];
+          if (i < scenes.length - 1) {
+            items.push(
+              <TransitionSeries.Transition
+                key={`t-${i}`}
+                presentation={makeTransition(i)}
+                timing={springTiming({
+                  config: { damping: 200, stiffness: 100 },
+                  durationInFrames: TRANSITION_FRAMES,
+                })}
+              />
+            );
+          }
+          return items;
+        })}
+      </TransitionSeries>
     </AbsoluteFill>
   );
 };
