@@ -30,7 +30,7 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: process.env.OUT || "/mnt/documents/memory-tree-explainer_v2.mp4",
+  outputLocation: process.env.OUT || "/mnt/documents/memory-tree-explainer_v5.mp4",
   puppeteerInstance: browser,
   muted: false,
   audioCodec: "mp3",

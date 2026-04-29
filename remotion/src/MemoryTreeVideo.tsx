@@ -14,6 +14,8 @@ import { TransitionSeries, springTiming, linearTiming } from "@remotion/transiti
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
+import { clockWipe } from "@remotion/transitions/clock-wipe";
+import { flip } from "@remotion/transitions/flip";
 import { loadFont as loadCairo } from "@remotion/google-fonts/Cairo";
 import { loadFont as loadAmiri } from "@remotion/google-fonts/Amiri";
 
@@ -177,33 +179,40 @@ const TopBrand: React.FC = () => (
   </div>
 );
 
-// =============== SCENE 1 — Title ===============
+// =============== SCENE 1 — Title (split layout, no overlap) ===============
 const Scene1Title: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const titleY = spring({ frame, fps, config: { damping: 18, stiffness: 90 } });
-  const titleYpx = interpolate(titleY, [0, 1], [60, 0]);
-  const subOp = interpolate(frame, [30, 60], [0, 1], { extrapolateRight: "clamp" });
-  const lineW = interpolate(frame, [40, 90], [0, 800], { extrapolateRight: "clamp" });
-  const treeOp = interpolate(frame, [60, 110], [0, 1], { extrapolateRight: "clamp" });
-  const treeScale = interpolate(frame, [60, 150], [0.92, 1.0]);
+  // Tree appears first, alone & centered, then slides to the right side.
+  const treeOp = interpolate(frame, [0, 35], [0, 1], { extrapolateRight: "clamp" });
+  const treeShift = spring({ frame: frame - 55, fps, config: { damping: 22, stiffness: 80 } });
+  const treeX = interpolate(treeShift, [0, 1], [0, 360]); // moves right
+  const treeScale = interpolate(frame, [0, 60, 150], [0.9, 1.02, 1.0]);
+
+  // Title appears AFTER tree has moved aside.
+  const titleSpring = spring({ frame: frame - 70, fps, config: { damping: 18, stiffness: 90 } });
+  const titleX = interpolate(titleSpring, [0, 1], [-80, 0]);
+  const titleOp = interpolate(frame, [70, 100], [0, 1], { extrapolateRight: "clamp" });
+  const lineW = interpolate(frame, [95, 145], [0, 520], { extrapolateRight: "clamp" });
+  const subOp = interpolate(frame, [110, 140], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill>
       <TopBrand />
-      {/* Tree fills the lower 75% of the frame, text sits in the top band only */}
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 40 }}>
+      {/* Tree on right half */}
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
         <div
           style={{
             position: "relative",
             width: "100%",
-            height: "78%",
+            height: "85%",
             display: "flex",
-            alignItems: "flex-end",
+            alignItems: "center",
             justifyContent: "center",
+            transform: `translateX(${treeX}px)`,
           }}
         >
-          <TreeStage scale={0.85} intensity={treeOp} />
+          <TreeStage scale={0.78} intensity={treeOp} />
           <Img
             src={staticFile("images/memory-tree.png")}
             style={{
@@ -218,50 +227,70 @@ const Scene1Title: React.FC = () => {
           />
         </div>
       </AbsoluteFill>
-      {/* Top text band — kept above the tree, never overlapping */}
+      {/* Title text — left column only, never crosses center */}
       <div
         style={{
           position: "absolute",
-          top: 130,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          transform: `translateY(${titleYpx}px)`,
-          opacity: interpolate(frame, [0, 20], [0, 1]),
+          top: 0,
+          bottom: 0,
+          left: 100,
+          width: 760,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          textAlign: "right",
+          direction: "rtl",
+          opacity: titleOp,
+          transform: `translateX(${titleX}px)`,
         }}
       >
         <div
           style={{
-            fontFamily: AMIRI,
+            fontFamily: CAIRO,
             fontWeight: 700,
-            fontSize: 96,
-            color: DARK,
-            direction: "rtl",
-            textShadow: "0 4px 14px rgba(0,0,0,0.18)",
-            lineHeight: 1,
+            fontSize: 22,
+            letterSpacing: 8,
+            color: GOLD,
+            marginBottom: 18,
           }}
         >
-          شَجَرَة الذَّاكِرَة
+          THE  MEMORY  TREE
+        </div>
+        <div
+          style={{
+            fontFamily: AMIRI,
+            fontWeight: 700,
+            fontSize: 130,
+            color: DARK,
+            lineHeight: 1.0,
+            textShadow: "0 4px 14px rgba(0,0,0,0.18)",
+          }}
+        >
+          شَجَرَة
+          <br />
+          الذَّاكِرَة
         </div>
         <div
           style={{
             width: lineW,
             height: 3,
-            background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
-            margin: "14px auto",
+            background: `linear-gradient(90deg, ${GOLD}, transparent)`,
+            margin: "26px 0",
           }}
         />
         <div
           style={{
             opacity: subOp,
             fontFamily: CAIRO,
-            fontSize: 28,
+            fontSize: 30,
             color: ACCENT,
-            direction: "rtl",
             fontWeight: 400,
+            lineHeight: 1.5,
           }}
         >
-          آلة حية تُجسِّد الذكاء الاصطناعي
+          آلة حيّة تُجسِّد الذكاء الاصطناعي
+          <br />
+          بين يدَي الطفل
         </div>
       </div>
     </AbsoluteFill>
@@ -322,22 +351,23 @@ const Scene2Idea: React.FC = () => {
   );
 };
 
-// =============== SCENE 3 — Anatomy / Components ===============
+// =============== SCENE 3 — Anatomy / Components (split: tree LEFT, cards RIGHT) ===============
 const Scene3Anatomy: React.FC = () => {
   const frame = useCurrentFrame();
   const op = interpolate(frame, [0, 20], [0, 1]);
-  const treeScale = interpolate(frame, [0, 90], [0.95, 1.05]);
+  const treeScale = interpolate(frame, [0, 120], [0.96, 1.02]);
   const parts = [
-    { t: "الجِذع", d: "خشب الجوز · هيكل الذكاء", color: "#7A4A1F", delay: 30, side: "right", y: 280 },
-    { t: "العَجلة المركزية", d: "دماغ الشجرة · يدور مع كل سؤال", color: GOLD, delay: 55, side: "right", y: 480 },
-    { t: "القَوارير الملوّنة", d: "كل قارورة = ذكرى مخزّنة", color: "#28a8c9", delay: 80, side: "left", y: 280 },
-    { t: "الصَّنابير الثلاثة", d: "ماء الأسئلة · بداية التدريب", color: ACCENT, delay: 105, side: "left", y: 480 },
-    { t: "الأجراس النحاسية", d: "صوت الاسترجاع", color: "#C09040", delay: 130, side: "right", y: 680 },
-    { t: "الحوض البلوري", d: "مكان مزج الأفكار", color: "#5A8C3C", delay: 155, side: "left", y: 680 },
+    { t: "الجِذع", d: "خشب الجوز · هيكل الذكاء", color: "#7A4A1F", delay: 30 },
+    { t: "العَجلة المركزية", d: "دماغ الشجرة · يدور مع كل سؤال", color: GOLD, delay: 50 },
+    { t: "القَوارير الملوّنة", d: "كل قارورة = ذكرى مخزّنة", color: "#28a8c9", delay: 70 },
+    { t: "الصَّنابير الثلاثة", d: "ماء الأسئلة · بداية التدريب", color: ACCENT, delay: 90 },
+    { t: "الأجراس النحاسية", d: "صوت الاسترجاع", color: "#C09040", delay: 110 },
+    { t: "الحوض البلوري", d: "مكان مزج الأفكار", color: "#5A8C3C", delay: 130 },
   ];
   return (
     <AbsoluteFill style={{ opacity: op }}>
       <TopBrand />
+      {/* Section title — top center, well above tree zone */}
       <div
         style={{
           position: "absolute",
@@ -346,55 +376,80 @@ const Scene3Anatomy: React.FC = () => {
           textAlign: "center",
           fontFamily: CAIRO,
           fontWeight: 900,
-          fontSize: 60,
+          fontSize: 56,
           color: DARK,
           direction: "rtl",
         }}
       >
         مكوّنات الشجرة
+        <div style={{ width: 200, height: 3, background: GOLD, margin: "12px auto 0" }} />
       </div>
-      <TreeStage scale={0.9} intensity={1} />
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 80 }}>
+
+      {/* LEFT half: tree only */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 220,
+          bottom: 80,
+          width: "48%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <TreeStage scale={0.7} intensity={1} />
         <Img
           src={staticFile("images/memory-tree.png")}
           style={{
-            height: "72%",
+            height: "100%",
             objectFit: "contain",
             transform: `scale(${treeScale})`,
             filter: "drop-shadow(0 30px 40px rgba(80,50,20,0.4))",
+            position: "relative",
+            zIndex: 2,
           }}
         />
-      </AbsoluteFill>
-      {parts.map((p, i) => {
-        const pop = interpolate(frame, [p.delay, p.delay + 20], [0, 1], { extrapolateRight: "clamp" });
-        const px = interpolate(frame, [p.delay, p.delay + 25], [p.side === "right" ? -80 : 80, 0], {
-          extrapolateRight: "clamp",
-        });
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: p.y,
-              [p.side]: 80,
-              opacity: pop,
-              transform: `translateX(${px}px)`,
-              direction: "rtl",
-              textAlign: p.side === "right" ? "right" : "left",
-              background: "rgba(253, 248, 235, 0.92)",
-              padding: "16px 24px",
-              borderRadius: 10,
-              borderRight: p.side === "right" ? `5px solid ${p.color}` : "none",
-              borderLeft: p.side === "left" ? `5px solid ${p.color}` : "none",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
-              maxWidth: 400,
-            }}
-          >
-            <div style={{ fontFamily: CAIRO, fontWeight: 900, fontSize: 32, color: p.color }}>{p.t}</div>
-            <div style={{ fontFamily: CAIRO, fontSize: 20, color: DARK, marginTop: 4 }}>{p.d}</div>
-          </div>
-        );
-      })}
+      </div>
+
+      {/* RIGHT half: 6 organized label cards */}
+      <div
+        style={{
+          position: "absolute",
+          right: 80,
+          top: 240,
+          width: "44%",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 18,
+          direction: "rtl",
+        }}
+      >
+        {parts.map((p, i) => {
+          const pop = interpolate(frame, [p.delay, p.delay + 22], [0, 1], { extrapolateRight: "clamp" });
+          const px = interpolate(frame, [p.delay, p.delay + 28], [60, 0], { extrapolateRight: "clamp" });
+          return (
+            <div
+              key={i}
+              style={{
+                opacity: pop,
+                transform: `translateX(${px}px)`,
+                background: "rgba(253, 248, 235, 0.96)",
+                padding: "20px 22px",
+                borderRadius: 12,
+                borderRight: `5px solid ${p.color}`,
+                boxShadow: "0 8px 22px rgba(0,0,0,0.14)",
+                textAlign: "right",
+              }}
+            >
+              <div style={{ fontFamily: CAIRO, fontWeight: 900, fontSize: 28, color: p.color }}>{p.t}</div>
+              <div style={{ fontFamily: CAIRO, fontSize: 18, color: DARK, marginTop: 4, lineHeight: 1.5 }}>
+                {p.d}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </AbsoluteFill>
   );
 };
@@ -812,7 +867,7 @@ export const DURATIONS = {
   sum: 300,
 };
 
-const TRANSITION_FRAMES = 22;
+const TRANSITION_FRAMES = 28;
 // TransitionSeries: total = sum(durations) - transitions*(N-1)
 const SEGMENTS = [
   DURATIONS.d_open,
@@ -879,17 +934,24 @@ const concepts: ConceptProps[] = [
   },
 ];
 
-// Helper: alternating transitions for variety
+// Helper: cinematic, content-aware transitions
 const makeTransition = (i: number) => {
   const presentations = [
-    fade(),
-    slide({ direction: "from-right" }),
-    fade(),
-    wipe({ direction: "from-bottom-right" }),
-    slide({ direction: "from-left" }),
-    fade(),
+    fade(),                                  // 0 → 1   chapter1 → title
+    slide({ direction: "from-right" }),      // 1 → 2   title → idea
+    fade(),                                  // 2 → 3   idea → chapter2
+    clockWipe({ width: 1920, height: 1080 }),// 3 → 4   chapter2 → anatomy
+    wipe({ direction: "from-bottom-right" }),// 4 → 5   anatomy → how
+    flip(),                                  // 5 → 6   how → c1
+    slide({ direction: "from-right" }),      // 6 → 7   c1 → c2
+    slide({ direction: "from-right" }),      // 7 → 8
+    slide({ direction: "from-right" }),      // 8 → 9
+    slide({ direction: "from-right" }),      // 9 → 10
+    slide({ direction: "from-right" }),      // 10 → 11
+    fade(),                                  // 11 → 12  c6 → chapter3
+    clockWipe({ width: 1920, height: 1080 }),// 12 → 13  chapter3 → summary
   ];
-  return presentations[i % presentations.length];
+  return presentations[i] ?? fade();
 };
 
 export const MemoryTreeVideo: React.FC = () => {
@@ -935,11 +997,20 @@ export const MemoryTreeVideo: React.FC = () => {
     { d: DURATIONS.sum, node: <SceneSummary /> },
   ];
 
+  const FADE_IN = 60;
+  const FADE_OUT = 90;
   return (
     <AbsoluteFill>
       <Background />
-      {/* Background music spans entire video */}
-      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.85} />
+      {/* Background music with smooth fade-in / fade-out */}
+      <Audio
+        src={staticFile("audio/bg-music.mp3")}
+        volume={(f) => {
+          const inV = Math.min(1, f / FADE_IN);
+          const outV = Math.min(1, Math.max(0, (TOTAL - f) / FADE_OUT));
+          return Math.min(inV, outV) * 0.85;
+        }}
+      />
       <TransitionSeries>
         {scenes.map((s, i) => {
           const items: React.ReactNode[] = [
@@ -948,14 +1019,21 @@ export const MemoryTreeVideo: React.FC = () => {
             </TransitionSeries.Sequence>,
           ];
           if (i < scenes.length - 1) {
+            // Vary timing: chapter dividers + clockWipes feel best with linear,
+            // slides/flip with spring for snap.
+            const isLinear = i === 2 || i === 3 || i === 11 || i === 12;
             items.push(
               <TransitionSeries.Transition
                 key={`t-${i}`}
                 presentation={makeTransition(i)}
-                timing={springTiming({
-                  config: { damping: 200, stiffness: 100 },
-                  durationInFrames: TRANSITION_FRAMES,
-                })}
+                timing={
+                  isLinear
+                    ? linearTiming({ durationInFrames: TRANSITION_FRAMES + 6 })
+                    : springTiming({
+                        config: { damping: 200, stiffness: 100 },
+                        durationInFrames: TRANSITION_FRAMES,
+                      })
+                }
               />
             );
           }
