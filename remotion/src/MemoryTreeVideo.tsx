@@ -191,69 +191,79 @@ const Scene1Title: React.FC = () => {
   return (
     <AbsoluteFill>
       <TopBrand />
-      <TreeStage scale={1} intensity={treeOp} />
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
+      {/* Tree fills the lower 75% of the frame, text sits in the top band only */}
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 40 }}>
         <div
           style={{
-            opacity: treeOp,
-            transform: `scale(${treeScale})`,
-            position: "absolute",
-            inset: 0,
+            position: "relative",
+            width: "100%",
+            height: "78%",
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "center",
-            paddingBottom: 60,
           }}
         >
+          <TreeStage scale={0.85} intensity={treeOp} />
           <Img
             src={staticFile("images/memory-tree.png")}
-            style={{ height: "82%", objectFit: "contain", filter: "drop-shadow(0 40px 50px rgba(80,50,20,0.45))" }}
+            style={{
+              opacity: treeOp,
+              transform: `scale(${treeScale})`,
+              height: "100%",
+              objectFit: "contain",
+              filter: "drop-shadow(0 40px 50px rgba(80,50,20,0.45))",
+              position: "relative",
+              zIndex: 2,
+            }}
           />
+        </div>
+      </AbsoluteFill>
+      {/* Top text band — kept above the tree, never overlapping */}
+      <div
+        style={{
+          position: "absolute",
+          top: 130,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          transform: `translateY(${titleYpx}px)`,
+          opacity: interpolate(frame, [0, 20], [0, 1]),
+        }}
+      >
+        <div
+          style={{
+            fontFamily: AMIRI,
+            fontWeight: 700,
+            fontSize: 96,
+            color: DARK,
+            direction: "rtl",
+            textShadow: "0 4px 14px rgba(0,0,0,0.18)",
+            lineHeight: 1,
+          }}
+        >
+          شَجَرَة الذَّاكِرَة
         </div>
         <div
           style={{
-            position: "absolute",
-            top: 150,
-            width: "100%",
-            textAlign: "center",
-            transform: `translateY(${titleYpx}px)`,
-            opacity: interpolate(frame, [0, 20], [0, 1]),
+            width: lineW,
+            height: 3,
+            background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
+            margin: "14px auto",
+          }}
+        />
+        <div
+          style={{
+            opacity: subOp,
+            fontFamily: CAIRO,
+            fontSize: 28,
+            color: ACCENT,
+            direction: "rtl",
+            fontWeight: 400,
           }}
         >
-          <div
-            style={{
-              fontFamily: AMIRI,
-              fontWeight: 700,
-              fontSize: 140,
-              color: DARK,
-              direction: "rtl",
-              textShadow: "0 4px 16px rgba(0,0,0,0.2)",
-            }}
-          >
-            شَجَرَة الذَّاكِرَة
-          </div>
-          <div
-            style={{
-              width: lineW,
-              height: 3,
-              background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
-              margin: "20px auto",
-            }}
-          />
-          <div
-            style={{
-              opacity: subOp,
-              fontFamily: CAIRO,
-              fontSize: 36,
-              color: ACCENT,
-              direction: "rtl",
-              fontWeight: 400,
-            }}
-          >
-            آلة حية تُجسِّد الذكاء الاصطناعي
-          </div>
+          آلة حية تُجسِّد الذكاء الاصطناعي
         </div>
-      </AbsoluteFill>
+      </div>
     </AbsoluteFill>
   );
 };
