@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const ASSETS = '/memory-tree';
+const PROPOSAL_PDF = `${ASSETS}/Memory_Tree_Official_Proposal.pdf?v=2`;
 
 const concepts = [
   { icon: Brain, title: 'التدريب', color: 'from-emerald-500 to-green-700',
@@ -130,7 +131,7 @@ const MemoryTree: React.FC = () => {
               <PlayCircle className="w-5 h-5 ml-2" />
               شاهد الفيديو
             </Button>
-            <a href={`${ASSETS}/Memory_Tree_Official_Proposal.pdf`} download>
+            <a href={PROPOSAL_PDF} download="Memory_Tree_Official_Proposal.pdf">
               <Button
                 size="lg" variant="outline"
                 className="border-2 border-[#F5EDD8] text-[#F5EDD8] hover:bg-[#F5EDD8] hover:text-[#1F3A2E] font-bold text-lg px-8 py-6 rounded-2xl bg-transparent"
@@ -431,8 +432,8 @@ const MemoryTree: React.FC = () => {
               <Card className="p-10 rounded-2xl border-2 border-[#C9A24A] bg-white text-center">
                 <FileText className="w-20 h-20 text-[#C9A24A] mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-[#1F3A2E] mb-2">المقترح الرسمي</h3>
-                <p className="text-[#5C3A1E] mb-6">وثيقة 11 صفحة موجّهة للمجلس الأعلى للعلوم والتكنولوجيا</p>
-                <a href={`${ASSETS}/Memory_Tree_Official_Proposal.pdf`} download>
+                <p className="text-[#5C3A1E] mb-6">وثيقة رسمية موجّهة للسيدة سحر فاخوري — إعداد الطالب محمود محمد جوارنة</p>
+                <a href={PROPOSAL_PDF} download="Memory_Tree_Official_Proposal.pdf">
                   <Button size="lg" className="bg-[#1F3A2E] hover:bg-[#2D5841] text-[#F5EDD8]">
                     <Download className="w-4 h-4 ml-2" /> حمّل المقترح الرسمي
                   </Button>
