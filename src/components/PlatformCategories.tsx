@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ChevronLeft, Settings, GraduationCap, Sparkles, Building2 } from 'lucide-react';
+import { ChevronLeft, Settings, GraduationCap, Sparkles, Building2, Trees } from 'lucide-react';
 import managementBg from '@/assets/management-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
@@ -100,6 +100,19 @@ const PlatformCategories = () => {
       link: '/smart-city',
       platformsCount: 3,
       image: educationBg
+    },
+    {
+      id: 'memory-tree',
+      title: 'شجرة الذاكرة',
+      icon: Trees,
+      description: 'مشروع تفاعلي يجسّد المفاهيم الستة للذكاء الاصطناعي عبر شجرة ميكانيكية مُعاد تدويرها',
+      gradient: 'from-emerald-700/30 to-amber-600/30',
+      borderColor: 'border-amber-500/40',
+      iconColor: 'text-amber-400',
+      glowColor: 'shadow-amber-500/50',
+      link: '/memory-tree',
+      platformsCount: 1,
+      image: '/memory-tree/memory-tree-hero.jpg'
     }
   ];
 
