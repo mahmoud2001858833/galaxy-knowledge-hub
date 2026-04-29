@@ -26,40 +26,127 @@ const ACCENT = "#8C1E32";
 const Background: React.FC = () => {
   const frame = useCurrentFrame();
   const drift = Math.sin(frame / 80) * 4;
+  const glow = 0.5 + Math.sin(frame / 60) * 0.08;
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(ellipse at 50% 30%, ${CREAM_LIGHT} 0%, ${CREAM} 50%, #EFE3C8 100%)`,
+        background: `
+          radial-gradient(ellipse 80% 60% at 50% 35%, #FFF6E0 0%, ${CREAM_LIGHT} 35%, ${CREAM} 65%, #E8D9B8 100%),
+          linear-gradient(180deg, #F4E8CC 0%, #E2CFA0 100%)
+        `,
       }}
     >
-      {/* subtle gold grain dots */}
-      <AbsoluteFill style={{ opacity: 0.08 }}>
+      {/* warm spotlight */}
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(circle at 50% 40%, rgba(255,220,140,${glow}) 0%, transparent 55%)`,
+          mixBlendMode: "screen",
+        }}
+      />
+      {/* gold grain dots */}
+      <AbsoluteFill style={{ opacity: 0.07 }}>
         <svg width="100%" height="100%">
           <defs>
-            <pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse">
+            <pattern id="dots" width="44" height="44" patternUnits="userSpaceOnUse">
               <circle cx="2" cy="2" r="1" fill={GOLD} />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#dots)" transform={`translate(${drift} 0)`} />
         </svg>
       </AbsoluteFill>
-      {/* gold ornament frame */}
+      {/* floor shadow */}
       <div
         style={{
           position: "absolute",
-          inset: 40,
-          border: `2px solid ${GOLD}`,
-          borderRadius: 4,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 220,
+          background: "linear-gradient(180deg, transparent 0%, rgba(50,32,18,0.25) 100%)",
         }}
       />
+      {/* gold double frame */}
+      <div style={{ position: "absolute", inset: 40, border: `2px solid ${GOLD}`, borderRadius: 6 }} />
+      <div style={{ position: "absolute", inset: 56, border: `1px solid ${GOLD_LIGHT}`, borderRadius: 4 }} />
+      {/* corner ornaments */}
+      {[
+        { top: 56, left: 56 },
+        { top: 56, right: 56 },
+        { bottom: 56, left: 56 },
+        { bottom: 56, right: 56 },
+      ].map((pos, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            ...pos,
+            width: 40,
+            height: 40,
+            border: `2px solid ${GOLD}`,
+            transform: "rotate(45deg)",
+            background: `radial-gradient(circle, ${GOLD_LIGHT}55, transparent 70%)`,
+          }}
+        />
+      ))}
+    </AbsoluteFill>
+  );
+};
+
+// Premium staging backdrop placed BEHIND the tree image
+const TreeStage: React.FC<{ scale?: number; intensity?: number }> = ({ scale = 1, intensity = 1 }) => {
+  const frame = useCurrentFrame();
+  const sway = Math.sin(frame / 40) * 0.3;
+  return (
+    <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
       <div
         style={{
-          position: "absolute",
-          inset: 56,
-          border: `1px solid ${GOLD_LIGHT}`,
-          borderRadius: 2,
+          position: "relative",
+          width: 1100 * scale,
+          height: 1100 * scale,
+          transform: `rotate(${sway}deg)`,
         }}
-      />
+      >
+        {/* radial halo */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `radial-gradient(circle at 50% 45%, rgba(255,220,150,${0.55 * intensity}) 0%, rgba(210,178,110,${0.25 * intensity}) 35%, transparent 65%)`,
+            borderRadius: "50%",
+            filter: "blur(2px)",
+          }}
+        />
+        {/* light rays */}
+        <svg width="100%" height="100%" viewBox="-50 -50 100 100" style={{ position: "absolute", inset: 0, opacity: 0.18 * intensity }}>
+          {Array.from({ length: 24 }).map((_, i) => {
+            const a = (i / 24) * Math.PI * 2;
+            return (
+              <line
+                key={i}
+                x1={0}
+                y1={0}
+                x2={Math.cos(a) * 60}
+                y2={Math.sin(a) * 60}
+                stroke={GOLD}
+                strokeWidth={0.4}
+              />
+            );
+          })}
+        </svg>
+        {/* concentric rings */}
+        {[0.95, 0.78, 0.6].map((s, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              inset: `${(1 - s) * 50}%`,
+              border: `1px solid ${GOLD_LIGHT}`,
+              borderRadius: "50%",
+              opacity: 0.35 - i * 0.08,
+            }}
+          />
+        ))}
+      </div>
     </AbsoluteFill>
   );
 };
