@@ -183,6 +183,7 @@ import AIFutureStore from './pages/AIFutureStore';
 import RoboticsGenerator from './pages/RoboticsGenerator';
 import JordanDigitalTwin from './pages/JordanDigitalTwin';
 import HassanGardenAI from './pages/HassanGardenAI';
+import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
 import './App.css';
 
@@ -923,6 +924,10 @@ const router = createBrowserRouter([
       {
         path: 'hassan-garden-ai',
         element: <PublicRoute><HassanGardenAI /></PublicRoute>,
+      },
+      {
+        path: 'memory-tree',
+        element: <PublicRoute><MemoryTree /></PublicRoute>,
       },
       {
         path: 'cancer-detection',
