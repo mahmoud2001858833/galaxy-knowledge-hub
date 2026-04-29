@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Img,
   Sequence,
   interpolate,
@@ -9,6 +10,10 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { TransitionSeries, springTiming, linearTiming } from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
+import { slide } from "@remotion/transitions/slide";
+import { wipe } from "@remotion/transitions/wipe";
 import { loadFont as loadCairo } from "@remotion/google-fonts/Cairo";
 import { loadFont as loadAmiri } from "@remotion/google-fonts/Amiri";
 
