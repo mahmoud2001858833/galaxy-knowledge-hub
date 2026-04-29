@@ -179,33 +179,40 @@ const TopBrand: React.FC = () => (
   </div>
 );
 
-// =============== SCENE 1 — Title ===============
+// =============== SCENE 1 — Title (split layout, no overlap) ===============
 const Scene1Title: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const titleY = spring({ frame, fps, config: { damping: 18, stiffness: 90 } });
-  const titleYpx = interpolate(titleY, [0, 1], [60, 0]);
-  const subOp = interpolate(frame, [30, 60], [0, 1], { extrapolateRight: "clamp" });
-  const lineW = interpolate(frame, [40, 90], [0, 800], { extrapolateRight: "clamp" });
-  const treeOp = interpolate(frame, [60, 110], [0, 1], { extrapolateRight: "clamp" });
-  const treeScale = interpolate(frame, [60, 150], [0.92, 1.0]);
+  // Tree appears first, alone & centered, then slides to the right side.
+  const treeOp = interpolate(frame, [0, 35], [0, 1], { extrapolateRight: "clamp" });
+  const treeShift = spring({ frame: frame - 55, fps, config: { damping: 22, stiffness: 80 } });
+  const treeX = interpolate(treeShift, [0, 1], [0, 360]); // moves right
+  const treeScale = interpolate(frame, [0, 60, 150], [0.9, 1.02, 1.0]);
+
+  // Title appears AFTER tree has moved aside.
+  const titleSpring = spring({ frame: frame - 70, fps, config: { damping: 18, stiffness: 90 } });
+  const titleX = interpolate(titleSpring, [0, 1], [-80, 0]);
+  const titleOp = interpolate(frame, [70, 100], [0, 1], { extrapolateRight: "clamp" });
+  const lineW = interpolate(frame, [95, 145], [0, 520], { extrapolateRight: "clamp" });
+  const subOp = interpolate(frame, [110, 140], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill>
       <TopBrand />
-      {/* Tree fills the lower 75% of the frame, text sits in the top band only */}
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 40 }}>
+      {/* Tree on right half */}
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
         <div
           style={{
             position: "relative",
             width: "100%",
-            height: "78%",
+            height: "85%",
             display: "flex",
-            alignItems: "flex-end",
+            alignItems: "center",
             justifyContent: "center",
+            transform: `translateX(${treeX}px)`,
           }}
         >
-          <TreeStage scale={0.85} intensity={treeOp} />
+          <TreeStage scale={0.78} intensity={treeOp} />
           <Img
             src={staticFile("images/memory-tree.png")}
             style={{
@@ -220,50 +227,70 @@ const Scene1Title: React.FC = () => {
           />
         </div>
       </AbsoluteFill>
-      {/* Top text band — kept above the tree, never overlapping */}
+      {/* Title text — left column only, never crosses center */}
       <div
         style={{
           position: "absolute",
-          top: 130,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          transform: `translateY(${titleYpx}px)`,
-          opacity: interpolate(frame, [0, 20], [0, 1]),
+          top: 0,
+          bottom: 0,
+          left: 100,
+          width: 760,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          textAlign: "right",
+          direction: "rtl",
+          opacity: titleOp,
+          transform: `translateX(${titleX}px)`,
         }}
       >
         <div
           style={{
-            fontFamily: AMIRI,
+            fontFamily: CAIRO,
             fontWeight: 700,
-            fontSize: 96,
-            color: DARK,
-            direction: "rtl",
-            textShadow: "0 4px 14px rgba(0,0,0,0.18)",
-            lineHeight: 1,
+            fontSize: 22,
+            letterSpacing: 8,
+            color: GOLD,
+            marginBottom: 18,
           }}
         >
-          شَجَرَة الذَّاكِرَة
+          THE  MEMORY  TREE
+        </div>
+        <div
+          style={{
+            fontFamily: AMIRI,
+            fontWeight: 700,
+            fontSize: 130,
+            color: DARK,
+            lineHeight: 1.0,
+            textShadow: "0 4px 14px rgba(0,0,0,0.18)",
+          }}
+        >
+          شَجَرَة
+          <br />
+          الذَّاكِرَة
         </div>
         <div
           style={{
             width: lineW,
             height: 3,
-            background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
-            margin: "14px auto",
+            background: `linear-gradient(90deg, ${GOLD}, transparent)`,
+            margin: "26px 0",
           }}
         />
         <div
           style={{
             opacity: subOp,
             fontFamily: CAIRO,
-            fontSize: 28,
+            fontSize: 30,
             color: ACCENT,
-            direction: "rtl",
             fontWeight: 400,
+            lineHeight: 1.5,
           }}
         >
-          آلة حية تُجسِّد الذكاء الاصطناعي
+          آلة حيّة تُجسِّد الذكاء الاصطناعي
+          <br />
+          بين يدَي الطفل
         </div>
       </div>
     </AbsoluteFill>
