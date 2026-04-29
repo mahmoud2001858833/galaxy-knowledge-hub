@@ -186,6 +186,7 @@ const Scene1Title: React.FC = () => {
   return (
     <AbsoluteFill>
       <TopBrand />
+      <TreeStage scale={1} intensity={treeOp} />
       <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
         <div
           style={{
@@ -194,13 +195,14 @@ const Scene1Title: React.FC = () => {
             position: "absolute",
             inset: 0,
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
+            paddingBottom: 60,
           }}
         >
           <Img
-            src={staticFile("images/tree.jpg")}
-            style={{ height: "85%", objectFit: "contain", filter: "drop-shadow(0 30px 40px rgba(0,0,0,0.25))" }}
+            src={staticFile("images/memory-tree.png")}
+            style={{ height: "82%", objectFit: "contain", filter: "drop-shadow(0 40px 50px rgba(80,50,20,0.45))" }}
           />
         </div>
         <div
@@ -220,7 +222,7 @@ const Scene1Title: React.FC = () => {
               fontSize: 140,
               color: DARK,
               direction: "rtl",
-              textShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              textShadow: "0 4px 16px rgba(0,0,0,0.2)",
             }}
           >
             شَجَرَة الذَّاكِرَة
@@ -336,14 +338,15 @@ const Scene3Anatomy: React.FC = () => {
       >
         مكوّنات الشجرة
       </div>
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
+      <TreeStage scale={0.9} intensity={1} />
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 80 }}>
         <Img
-          src={staticFile("images/tree.jpg")}
+          src={staticFile("images/memory-tree.png")}
           style={{
-            height: "75%",
+            height: "72%",
             objectFit: "contain",
             transform: `scale(${treeScale})`,
-            filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.2))",
+            filter: "drop-shadow(0 30px 40px rgba(80,50,20,0.4))",
           }}
         />
       </AbsoluteFill>
