@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const ASSETS = '/memory-tree';
+const PROPOSAL_PDF = `${ASSETS}/Memory_Tree_Official_Proposal.pdf?v=2`;
 
 const concepts = [
   { icon: Brain, title: 'التدريب', color: 'from-emerald-500 to-green-700',
@@ -130,7 +131,7 @@ const MemoryTree: React.FC = () => {
               <PlayCircle className="w-5 h-5 ml-2" />
               شاهد الفيديو
             </Button>
-            <a href={`${ASSETS}/Memory_Tree_Official_Proposal.pdf`} download>
+            <a href={PROPOSAL_PDF} download="Memory_Tree_Official_Proposal.pdf">
               <Button
                 size="lg" variant="outline"
                 className="border-2 border-[#F5EDD8] text-[#F5EDD8] hover:bg-[#F5EDD8] hover:text-[#1F3A2E] font-bold text-lg px-8 py-6 rounded-2xl bg-transparent"
