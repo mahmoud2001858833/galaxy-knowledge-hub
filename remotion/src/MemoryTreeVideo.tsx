@@ -997,11 +997,20 @@ export const MemoryTreeVideo: React.FC = () => {
     { d: DURATIONS.sum, node: <SceneSummary /> },
   ];
 
+  const FADE_IN = 60;
+  const FADE_OUT = 90;
   return (
     <AbsoluteFill>
       <Background />
-      {/* Background music spans entire video */}
-      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.85} />
+      {/* Background music with smooth fade-in / fade-out */}
+      <Audio
+        src={staticFile("audio/bg-music.mp3")}
+        volume={(f) => {
+          const inV = Math.min(1, f / FADE_IN);
+          const outV = Math.min(1, Math.max(0, (TOTAL - f) / FADE_OUT));
+          return Math.min(inV, outV) * 0.85;
+        }}
+      />
       <TransitionSeries>
         {scenes.map((s, i) => {
           const items: React.ReactNode[] = [
@@ -1010,14 +1019,21 @@ export const MemoryTreeVideo: React.FC = () => {
             </TransitionSeries.Sequence>,
           ];
           if (i < scenes.length - 1) {
+            // Vary timing: chapter dividers + clockWipes feel best with linear,
+            // slides/flip with spring for snap.
+            const isLinear = i === 2 || i === 3 || i === 11 || i === 12;
             items.push(
               <TransitionSeries.Transition
                 key={`t-${i}`}
                 presentation={makeTransition(i)}
-                timing={springTiming({
-                  config: { damping: 200, stiffness: 100 },
-                  durationInFrames: TRANSITION_FRAMES,
-                })}
+                timing={
+                  isLinear
+                    ? linearTiming({ durationInFrames: TRANSITION_FRAMES + 6 })
+                    : springTiming({
+                        config: { damping: 200, stiffness: 100 },
+                        durationInFrames: TRANSITION_FRAMES,
+                      })
+                }
               />
             );
           }
