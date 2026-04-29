@@ -14,6 +14,8 @@ import { TransitionSeries, springTiming, linearTiming } from "@remotion/transiti
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
+import { clockWipe } from "@remotion/transitions/clock-wipe";
+import { flip } from "@remotion/transitions/flip";
 import { loadFont as loadCairo } from "@remotion/google-fonts/Cairo";
 import { loadFont as loadAmiri } from "@remotion/google-fonts/Amiri";
 
