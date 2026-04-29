@@ -934,17 +934,24 @@ const concepts: ConceptProps[] = [
   },
 ];
 
-// Helper: alternating transitions for variety
+// Helper: cinematic, content-aware transitions
 const makeTransition = (i: number) => {
   const presentations = [
-    fade(),
-    slide({ direction: "from-right" }),
-    fade(),
-    wipe({ direction: "from-bottom-right" }),
-    slide({ direction: "from-left" }),
-    fade(),
+    fade(),                                  // 0 → 1   chapter1 → title
+    slide({ direction: "from-right" }),      // 1 → 2   title → idea
+    fade(),                                  // 2 → 3   idea → chapter2
+    clockWipe({ width: 1920, height: 1080 }),// 3 → 4   chapter2 → anatomy
+    wipe({ direction: "from-bottom-right" }),// 4 → 5   anatomy → how
+    flip(),                                  // 5 → 6   how → c1
+    slide({ direction: "from-right" }),      // 6 → 7   c1 → c2
+    slide({ direction: "from-right" }),      // 7 → 8
+    slide({ direction: "from-right" }),      // 8 → 9
+    slide({ direction: "from-right" }),      // 9 → 10
+    slide({ direction: "from-right" }),      // 10 → 11
+    fade(),                                  // 11 → 12  c6 → chapter3
+    clockWipe({ width: 1920, height: 1080 }),// 12 → 13  chapter3 → summary
   ];
-  return presentations[i % presentations.length];
+  return presentations[i] ?? fade();
 };
 
 export const MemoryTreeVideo: React.FC = () => {
