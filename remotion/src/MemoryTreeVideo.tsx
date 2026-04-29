@@ -351,22 +351,23 @@ const Scene2Idea: React.FC = () => {
   );
 };
 
-// =============== SCENE 3 — Anatomy / Components ===============
+// =============== SCENE 3 — Anatomy / Components (split: tree LEFT, cards RIGHT) ===============
 const Scene3Anatomy: React.FC = () => {
   const frame = useCurrentFrame();
   const op = interpolate(frame, [0, 20], [0, 1]);
-  const treeScale = interpolate(frame, [0, 90], [0.95, 1.05]);
+  const treeScale = interpolate(frame, [0, 120], [0.96, 1.02]);
   const parts = [
-    { t: "الجِذع", d: "خشب الجوز · هيكل الذكاء", color: "#7A4A1F", delay: 30, side: "right", y: 280 },
-    { t: "العَجلة المركزية", d: "دماغ الشجرة · يدور مع كل سؤال", color: GOLD, delay: 55, side: "right", y: 480 },
-    { t: "القَوارير الملوّنة", d: "كل قارورة = ذكرى مخزّنة", color: "#28a8c9", delay: 80, side: "left", y: 280 },
-    { t: "الصَّنابير الثلاثة", d: "ماء الأسئلة · بداية التدريب", color: ACCENT, delay: 105, side: "left", y: 480 },
-    { t: "الأجراس النحاسية", d: "صوت الاسترجاع", color: "#C09040", delay: 130, side: "right", y: 680 },
-    { t: "الحوض البلوري", d: "مكان مزج الأفكار", color: "#5A8C3C", delay: 155, side: "left", y: 680 },
+    { t: "الجِذع", d: "خشب الجوز · هيكل الذكاء", color: "#7A4A1F", delay: 30 },
+    { t: "العَجلة المركزية", d: "دماغ الشجرة · يدور مع كل سؤال", color: GOLD, delay: 50 },
+    { t: "القَوارير الملوّنة", d: "كل قارورة = ذكرى مخزّنة", color: "#28a8c9", delay: 70 },
+    { t: "الصَّنابير الثلاثة", d: "ماء الأسئلة · بداية التدريب", color: ACCENT, delay: 90 },
+    { t: "الأجراس النحاسية", d: "صوت الاسترجاع", color: "#C09040", delay: 110 },
+    { t: "الحوض البلوري", d: "مكان مزج الأفكار", color: "#5A8C3C", delay: 130 },
   ];
   return (
     <AbsoluteFill style={{ opacity: op }}>
       <TopBrand />
+      {/* Section title — top center, well above tree zone */}
       <div
         style={{
           position: "absolute",
@@ -375,55 +376,80 @@ const Scene3Anatomy: React.FC = () => {
           textAlign: "center",
           fontFamily: CAIRO,
           fontWeight: 900,
-          fontSize: 60,
+          fontSize: 56,
           color: DARK,
           direction: "rtl",
         }}
       >
         مكوّنات الشجرة
+        <div style={{ width: 200, height: 3, background: GOLD, margin: "12px auto 0" }} />
       </div>
-      <TreeStage scale={0.9} intensity={1} />
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 80 }}>
+
+      {/* LEFT half: tree only */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 220,
+          bottom: 80,
+          width: "48%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <TreeStage scale={0.7} intensity={1} />
         <Img
           src={staticFile("images/memory-tree.png")}
           style={{
-            height: "72%",
+            height: "100%",
             objectFit: "contain",
             transform: `scale(${treeScale})`,
             filter: "drop-shadow(0 30px 40px rgba(80,50,20,0.4))",
+            position: "relative",
+            zIndex: 2,
           }}
         />
-      </AbsoluteFill>
-      {parts.map((p, i) => {
-        const pop = interpolate(frame, [p.delay, p.delay + 20], [0, 1], { extrapolateRight: "clamp" });
-        const px = interpolate(frame, [p.delay, p.delay + 25], [p.side === "right" ? -80 : 80, 0], {
-          extrapolateRight: "clamp",
-        });
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: p.y,
-              [p.side]: 80,
-              opacity: pop,
-              transform: `translateX(${px}px)`,
-              direction: "rtl",
-              textAlign: p.side === "right" ? "right" : "left",
-              background: "rgba(253, 248, 235, 0.92)",
-              padding: "16px 24px",
-              borderRadius: 10,
-              borderRight: p.side === "right" ? `5px solid ${p.color}` : "none",
-              borderLeft: p.side === "left" ? `5px solid ${p.color}` : "none",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
-              maxWidth: 400,
-            }}
-          >
-            <div style={{ fontFamily: CAIRO, fontWeight: 900, fontSize: 32, color: p.color }}>{p.t}</div>
-            <div style={{ fontFamily: CAIRO, fontSize: 20, color: DARK, marginTop: 4 }}>{p.d}</div>
-          </div>
-        );
-      })}
+      </div>
+
+      {/* RIGHT half: 6 organized label cards */}
+      <div
+        style={{
+          position: "absolute",
+          right: 80,
+          top: 240,
+          width: "44%",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 18,
+          direction: "rtl",
+        }}
+      >
+        {parts.map((p, i) => {
+          const pop = interpolate(frame, [p.delay, p.delay + 22], [0, 1], { extrapolateRight: "clamp" });
+          const px = interpolate(frame, [p.delay, p.delay + 28], [60, 0], { extrapolateRight: "clamp" });
+          return (
+            <div
+              key={i}
+              style={{
+                opacity: pop,
+                transform: `translateX(${px}px)`,
+                background: "rgba(253, 248, 235, 0.96)",
+                padding: "20px 22px",
+                borderRadius: 12,
+                borderRight: `5px solid ${p.color}`,
+                boxShadow: "0 8px 22px rgba(0,0,0,0.14)",
+                textAlign: "right",
+              }}
+            >
+              <div style={{ fontFamily: CAIRO, fontWeight: 900, fontSize: 28, color: p.color }}>{p.t}</div>
+              <div style={{ fontFamily: CAIRO, fontSize: 18, color: DARK, marginTop: 4, lineHeight: 1.5 }}>
+                {p.d}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </AbsoluteFill>
   );
 };
