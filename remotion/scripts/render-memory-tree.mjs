@@ -33,7 +33,7 @@ await renderMedia({
   outputLocation: process.env.OUT || "/mnt/documents/memory-tree-explainer_v2.mp4",
   puppeteerInstance: browser,
   muted: false,
-  audioCodec: "aac",
+  audioCodec: "mp3",
   concurrency: 1,
   onProgress: ({ progress }) => {
     if (Math.floor(progress * 100) % 10 === 0) console.log(`progress: ${Math.round(progress * 100)}%`);
