@@ -1,61 +1,66 @@
-## المشكلة
 
-يوجد بانيان للمنصات في المشروع وكلاهما يعاني من نفس الأعراض (شاشة سوداء/فارغة):
+## الهدف
+إنشاء صفحة عربية متكاملة (RTL) باسم **"شجرة الذاكرة"** داخل منصة ذروة العلم تعرض المشروع بشكل احترافي وتفاعلي، مع ربط الموارد الجاهزة (الفيديوهات، البوستر، البريزنتيشن، PDF الرسمي) في مكان واحد.
 
-1. **`TechCodingPlatform > PlatformBuilder`** (المستخدم في GJU) — يستدعي `tech-ai-platform-builder` ويعرض HTML واحد في `<iframe srcDoc>`.
-2. **`AIPlatformBuilderPro`** — يولّد ٢٠+ ملف ويعرضها عبر `LivePreview`.
+## الموقع والمسار
+- **الملف الجديد:** `src/pages/MemoryTree.tsx`
+- **المسار (Route):** `/memory-tree`
+- **التسجيل في الراوتر:** إضافة المسار في `src/App.tsx` بجانب `hassan-garden-ai`
+- **رابط الدخول:** بطاقة جديدة بعنوان "🌳 شجرة الذاكرة" داخل صفحة `EducationSection.tsx` (قسم المنصات التعليمية) لتظهر للمستخدمين
 
-### الأسباب الجذرية
+## هيكل الصفحة (أقسام scroll مع Framer Motion)
 
-- **Builder (A)**: الـ iframe يستخدم `srcDoc` بدون أي fallback CSS، إذا أنتج النموذج HTML بدون `background` صريح للـ body فالخلفية تُورث من والدها الأسود ⇒ شاشة سوداء حتى لو كان المحتوى موجوداً. كذلك `document.write` في تبويب جديد يفشل أحياناً (cross-origin / popup blocker / تفريغ الـ document بعد الكتابة).
-- **Builder (B)**: داخل `srcDoc` لا يوجد URL أساسي، فـ `fetch('pages/home.html')` في `pageHome` يفشل دائماً ⇒ يُعرض fallback صغير جداً يبدو وكأن الصفحة فارغة. الأسوأ أن الـ hero الفاخر المُولّد بالـ AI (`brand.hero`) موجود في `window.__PROJECT_PAGES__['home']` لكن لا أحد يقرأه.
-- مشكلة عامة: لا يوجد آلية كشف "لم يُرسم شيء بعد X مللي ثانية" لعرض رسالة خطأ واضحة بدلاً من شاشة سوداء.
+1. **Hero Section** — خلفية متدرجة (أخضر غابي + ذهبي) مع:
+   - عنوان كبير: "شجرة الذاكرة"
+   - وصف موجز: مشروع تعليمي تفاعلي يجسّد مفاهيم الذكاء الاصطناعي
+   - شارة: "حديقة الحسن التعليمية × ذروة العلم"
+   - زرّان: "شاهد الفيديو" / "حمّل المقترح الرسمي"
 
-## الحل
+2. **ما هي شجرة الذاكرة؟** — بطاقة وصف + صورة `memory-tree-hero.jpg`
 
-### ١. إصلاح PlatformBuilder في `TechCodingPlatform.tsx`
-- لفّ كل HTML مُستلم بـ `wrapWithSafeShell()` تضمن:
-  - وجود `<!doctype html>` و`<head>` و`<meta viewport>`.
-  - حقن CSS أساسي: `html,body{background:#fff;color:#0f172a;margin:0;font-family:system-ui,'Cairo',sans-serif;min-height:100%}` قبل أي ستايل من النموذج.
-  - حقن interceptor للأخطاء يرسل `postMessage` للأب لعرض رسالة بدل الشاشة السوداء.
-- استبدال "فتح في تبويب جديد" بطريقة آمنة: إنشاء `Blob` من HTML المُغلَّف ثم `window.open(URL.createObjectURL(blob))` (بدلاً من `document.write`).
-- إضافة شريط متصفح أنيق حول الـ iframe (مثل `LivePreview`): أزرار تحكم ملوّنة + شريط عنوان وهمي + ظلال احترافية + تدرّج خلفي حول الإطار.
-- إضافة "watchdog": إذا لم يصل أي `console.log` أو لم يُحقن DOM داخل الـ iframe خلال ٣ ثوانٍ بعد التحميل، نعرض شارة "لم تُحمّل المعاينة — اضغط لإعادة المحاولة".
+3. **المفاهيم الستة للذكاء الاصطناعي** — شبكة بطاقات (6 بطاقات):
+   التدريب، التعزيز، الاسترجاع، الترابط، التحيّز، الهلوسة — مع أيقونات Lucide وتدرجات لونية
 
-### ٢. إصلاح `pageHome` المُولَّد في `supabase/functions/platform-stage-files/index.ts`
-- في `appJs`، استبدال:
-  ```js
-  try { const r = await fetch('pages/home.html'); if (r.ok) hero = await r.text(); } catch {}
-  ```
-  بـ:
-  ```js
-  hero = (window.__PROJECT_PAGES__ && window.__PROJECT_PAGES__['home']) || '';
-  ```
-  بحيث يُحمّل الـ hero الفاخر فوراً من الـ object العام (يعمل في srcDoc وفي blob URL وفي تبويب جديد).
-- نفس الإصلاح لأي `fetch('pages/...')` آخر في الراوتر/الصفحات (تعديل `routerJs` ليستخدم `window.__PROJECT_PAGES__` كأولوية).
-- ضمان أن `<body>` يحمل خلفية افتراضية حتى قبل تحميل الـ CSS: تعديل `indexHtml` ليتضمّن `<style>html,body{background:#0f0f23;color:#fff;margin:0;min-height:100vh}</style>` في الـ head.
+4. **الآلية التشغيلية (6 خطوات)** — Timeline عمودي:
+   التحضير ← التدريب ← التكرار ← الاسترجاع ← الترابط ← الهلوسة
 
-### ٣. تحسين `LivePreview.tsx`
-- إضافة watchdog بعد ٢٫٥ ثانية: إن لم يصل أي log من iframe ولم يتم رسم شيء، نظهر زر "إعادة المحاولة + فتح في تبويب جديد" مع رسالة واضحة.
-- التأكد من أن fallback الخلفية البيضاء يُحقن دائماً (وليس فقط إذا لم تُذكر `background` في أول 2KB).
-- استخدام `Blob URL` لـ "فتح في تبويب جديد" كحل أساسي بدلاً من `document.write` (أكثر استقراراً).
+5. **التشريح العلمي** — جدول يربط القطعة الميكانيكية بالمفهوم الذكي
 
-### ٤. تحسين `tech-ai-platform-builder` (اختياري لكن موصى به)
-- إضافة fallback في حال فشل استخراج كود HTML من رد النموذج: إن لم يحتوِ على `<html` نلفّه تلقائياً بقالب جاهز يحتوي على Tailwind + خلفية بيضاء + Cairo + رسالة الـ AI كنص.
+6. **الموارد والمستلزمات** — بطاقات للمواد (الخشب المعاد تدويره، التروس، أصباغ CMY...) + ميزانية تقديرية ~180 د.أ + جدول زمني (4 أسابيع)
 
-## الملفات المُعدَّلة
+7. **مؤشرات الأثر (KPIs)** — أرقام متحركة (Counter): +85% فهم مفاهيمي، عدد الطلاب، ساعات تفاعل...
 
-```text
-src/pages/TechCodingPlatform.tsx              (PlatformBuilder: shell + watchdog + شريط متصفح)
-src/components/platform-builder/LivePreview.tsx   (watchdog + Blob URL للتبويب الجديد + خلفية أصلب)
-supabase/functions/platform-stage-files/index.ts  (pageHome من window.__PROJECT_PAGES__ + خلفية افتراضية)
-supabase/functions/tech-ai-platform-builder/index.ts (fallback wrapping إذا لم يكن HTML كاملاً)
-```
+8. **معرض الوسائط** — تبويبات (Tabs) لعرض:
+   - **فيديو شارح:** مضمّن من `/memory-tree-explainer_v5.mp4`
+   - **بوستر:** عرض `memory-tree-poster_v3.png` مع زر تحميل PDF
+   - **البريزنتيشن:** زر تحميل `memory-tree-presentation_v3.pptx`
+   - **المقترح الرسمي:** زر تحميل `Memory_Tree_Official_Proposal.pdf`
 
-## النتيجة المتوقعة
+9. **خاتمة + إسناد** — "تم إنشاء المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين"
 
-- ستظهر المعاينة بخلفية بيضاء/داكنة حسب التصميم المُولَّد، لا شاشة سوداء أبداً.
-- الـ Hero الفاخر المُولَّد بالـ AI سيظهر فوراً في الصفحة الرئيسية للبناء متعدد الملفات.
-- "فتح في تبويب جديد" سيعرض المنصة كاملة دون شاشة بيضاء/سوداء.
-- في حال أي خطأ سيظهر إشعار واضح + زر إعادة محاولة بدلاً من فراغ صامت.
-- إطار معاينة احترافي بشريط متصفح مصغّر وظلال ملوّنة في كلا البانيين.
+## نقل ملفات الوسائط للموقع
+نسخ الأصول من `/mnt/documents/` إلى `public/memory-tree/` ليتم تقديمها عبر الموقع:
+- `memory-tree-hero.jpg`
+- `memory-tree-explainer_v5.mp4`
+- `memory-tree-poster_v3.png` + `memory-tree-poster_v3.pdf`
+- `memory-tree-presentation_v3.pptx`
+- `Memory_Tree_Official_Proposal.pdf`
+
+## التفاصيل التقنية
+- **التصميم:** Tailwind + shadcn `Card`, `Button`, `Tabs`, `Badge` + framer-motion للتنقلات
+- **اللغة:** عربي RTL بالكامل، خط النظام (`font-arabic` إن وُجد)
+- **الألوان:** تدرج "Warm Museum" — أخضر غابة (#1F3A2E)، ذهبي (#C9A24A)، كريمي (#F5EDD8)، جوزي (#5C3A1E) — متناسق مع البوستر والـPDF الرسمي
+- **SEO:** مكوّن `<SEO>` بعنوان ووصف مناسبين
+- **Navbar/Footer:** استخدام `Navbar` و`Footer` الموجودين للحفاظ على هوية ذروة العلم
+- **Responsive:** يعمل على الموبايل (شبكة بطاقات تتحول لعمود واحد)
+
+## الملفات التي ستُعدّل/تُنشأ
+1. `src/pages/MemoryTree.tsx` — جديد (الصفحة الرئيسية)
+2. `src/App.tsx` — إضافة import + route `/memory-tree`
+3. `src/pages/EducationSection.tsx` — إضافة بطاقة "شجرة الذاكرة" في قائمة المنصات
+4. `public/memory-tree/*` — نسخ ملفات الوسائط (5 ملفات)
+
+## ما هو خارج النطاق
+- لا تعديل على وضع GJU 3030 (معزول)
+- لا إضافة جدول قاعدة بيانات (الصفحة عرضية فقط)
+- لا تغيير على مكوّنات الـCapacitor للأندرويد
