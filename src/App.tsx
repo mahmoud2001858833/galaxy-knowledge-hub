@@ -185,6 +185,20 @@ import JordanDigitalTwin from './pages/JordanDigitalTwin';
 import HassanGardenAI from './pages/HassanGardenAI';
 import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
+import DamijLayout from './pages/damij/DamijLayout';
+import DamijLanding from './pages/damij/DamijLanding';
+import BrailleHome from './pages/damij/braille/BrailleHome';
+import TextToBraille from './pages/damij/braille/TextToBraille';
+import BrailleToText from './pages/damij/braille/BrailleToText';
+import BrailleLearn from './pages/damij/braille/BrailleLearn';
+import AutismHome from './pages/damij/autism/AutismHome';
+import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
+import AutismTherapy from './pages/damij/autism/AutismTherapy';
+import AutismProfile from './pages/damij/autism/AutismProfile';
+import ADHDHome from './pages/damij/adhd/ADHDHome';
+import ADHDScreening from './pages/damij/adhd/ADHDScreening';
+import ADHDTraining from './pages/damij/adhd/ADHDTraining';
+import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
