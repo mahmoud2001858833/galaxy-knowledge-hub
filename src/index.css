@@ -430,3 +430,15 @@ body {
   border-radius: 4px;
   padding: 2px 4px;
 }
+
+/* === Damij isolated platform tokens === */
+.damij-root {
+  --damij-primary: 207 53% 36%;     /* #2C5F8D */
+  --damij-accent: 47 88% 66%;       /* #F6D55C */
+  --damij-accent-2: 174 47% 46%;    /* #3CAEA3 */
+  --damij-warm: 18 80% 60%;         /* warm coral */
+  --damij-bg: 42 50% 96%;           /* cream */
+  --damij-bg-2: 174 30% 92%;
+  --damij-surface: 0 0% 100%;
+  --damij-text: 215 35% 18%;
+}
