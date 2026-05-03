@@ -205,7 +205,7 @@ import './App.css';
 const RootLayout = () => {
   const location = useLocation();
   const path = location.pathname || '';
-  const isGJURoute = path.startsWith('/gju') || path === '/gju-competition';
+  const isGJURoute = path.startsWith('/gju') || path === '/gju-competition' || path.startsWith('/damij');
   const isGJUMode =
     isGJURoute ||
     (typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true');
