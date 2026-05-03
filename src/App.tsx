@@ -205,9 +205,11 @@ import './App.css';
 const RootLayout = () => {
   const location = useLocation();
   const path = location.pathname || '';
-  const isGJURoute = path.startsWith('/gju') || path === '/gju-competition' || path.startsWith('/damij');
+  const isDamijRoute = path.startsWith('/damij');
+  const isGJURoute = path.startsWith('/gju') || path === '/gju-competition';
+  const isIsolatedRoute = isGJURoute || isDamijRoute;
   const isGJUMode =
-    isGJURoute ||
+    isIsolatedRoute ||
     (typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true');
   return (
     <AutoReadWrapper>
@@ -216,7 +218,7 @@ const RootLayout = () => {
       {!isGJUMode && <WelcomeGuide />}
       {!isGJUMode && <PlatformGuideAssistant />}
       {!isGJUMode && <AccessibilityPanel />}
-      {isGJUMode && <GJUFloatingNav />}
+      {isGJUMode && !isDamijRoute && <GJUFloatingNav />}
     </AutoReadWrapper>
   );
 };
