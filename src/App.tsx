@@ -204,7 +204,7 @@ import './App.css';
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
 const RootLayout = () => {
   const location = useLocation();
-  const path = location.pathname || '';
+  const path = (location.pathname || '').toLowerCase();
   const isDamijRoute = path.startsWith('/damij');
   const isGJURoute = path.startsWith('/gju') || path === '/gju-competition';
   const isIsolatedRoute = isGJURoute || isDamijRoute;
