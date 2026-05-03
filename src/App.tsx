@@ -185,15 +185,31 @@ import JordanDigitalTwin from './pages/JordanDigitalTwin';
 import HassanGardenAI from './pages/HassanGardenAI';
 import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
+import DamijLayout from './pages/damij/DamijLayout';
+import DamijLanding from './pages/damij/DamijLanding';
+import BrailleHome from './pages/damij/braille/BrailleHome';
+import TextToBraille from './pages/damij/braille/TextToBraille';
+import BrailleToText from './pages/damij/braille/BrailleToText';
+import BrailleLearn from './pages/damij/braille/BrailleLearn';
+import AutismHome from './pages/damij/autism/AutismHome';
+import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
+import AutismTherapy from './pages/damij/autism/AutismTherapy';
+import AutismProfile from './pages/damij/autism/AutismProfile';
+import ADHDHome from './pages/damij/adhd/ADHDHome';
+import ADHDScreening from './pages/damij/adhd/ADHDScreening';
+import ADHDTraining from './pages/damij/adhd/ADHDTraining';
+import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
 const RootLayout = () => {
   const location = useLocation();
   const path = location.pathname || '';
+  const isDamijRoute = path.startsWith('/damij');
   const isGJURoute = path.startsWith('/gju') || path === '/gju-competition';
+  const isIsolatedRoute = isGJURoute || isDamijRoute;
   const isGJUMode =
-    isGJURoute ||
+    isIsolatedRoute ||
     (typeof window !== 'undefined' && sessionStorage.getItem('gju_mode') === 'true');
   return (
     <AutoReadWrapper>
@@ -202,7 +218,7 @@ const RootLayout = () => {
       {!isGJUMode && <WelcomeGuide />}
       {!isGJUMode && <PlatformGuideAssistant />}
       {!isGJUMode && <AccessibilityPanel />}
-      {isGJUMode && <GJUFloatingNav />}
+      {isGJUMode && !isDamijRoute && <GJUFloatingNav />}
     </AutoReadWrapper>
   );
 };
@@ -932,6 +948,25 @@ const router = createBrowserRouter([
       {
         path: 'cancer-detection',
         element: <PublicRoute><CancerDetection /></PublicRoute>,
+      },
+      {
+        path: 'damij',
+        element: <PublicRoute><DamijLayout /></PublicRoute>,
+        children: [
+          { index: true, element: <DamijLanding /> },
+          { path: 'braille', element: <BrailleHome /> },
+          { path: 'braille/text-to-braille', element: <TextToBraille /> },
+          { path: 'braille/braille-to-text', element: <BrailleToText /> },
+          { path: 'braille/learn', element: <BrailleLearn /> },
+          { path: 'autism', element: <AutismHome /> },
+          { path: 'autism/diagnosis', element: <AutismDiagnosis /> },
+          { path: 'autism/therapy', element: <AutismTherapy /> },
+          { path: 'autism/profile', element: <AutismProfile /> },
+          { path: 'adhd', element: <ADHDHome /> },
+          { path: 'adhd/screening', element: <ADHDScreening /> },
+          { path: 'adhd/training', element: <ADHDTraining /> },
+          { path: 'dashboard', element: <DamijDashboard /> },
+        ],
       },
       {
         path: '*',

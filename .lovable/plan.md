@@ -1,66 +1,93 @@
-
 ## الهدف
-إنشاء صفحة عربية متكاملة (RTL) باسم **"شجرة الذاكرة"** داخل منصة ذروة العلم تعرض المشروع بشكل احترافي وتفاعلي، مع ربط الموارد الجاهزة (الفيديوهات، البوستر، البريزنتيشن، PDF الرسمي) في مكان واحد.
+إنشاء منصة فرعية معزولة بالكامل داخل ذروة العلم باسم مقترح: **"دامج" (Damij) — منصة التعليم الدامج والتشخيص الذكي**، تكون صفحاتها وتنقلها وهويتها البصرية مستقلة تماماً عن منصة ذروة العلم الرئيسية (لا روابط رجوع إلى الرئيسية، لا Navbar/Footer العام، نمط GJU 3030 المعزول).
 
-## الموقع والمسار
-- **الملف الجديد:** `src/pages/MemoryTree.tsx`
-- **المسار (Route):** `/memory-tree`
-- **التسجيل في الراوتر:** إضافة المسار في `src/App.tsx` بجانب `hassan-garden-ai`
-- **رابط الدخول:** بطاقة جديدة بعنوان "🌳 شجرة الذاكرة" داخل صفحة `EducationSection.tsx` (قسم المنصات التعليمية) لتظهر للمستخدمين
+ملاحظة مهمة: سيتم إنشاء **البنية الكاملة (الواجهات والصفحات والتنقل والـ routes)** فقط، بدون أي منطق ذكاء اصطناعي حقيقي أو edge functions أو جداول قاعدة بيانات — كل الأقسام تكون جاهزة للبناء لاحقاً (Placeholders + UI كامل).
 
-## هيكل الصفحة (أقسام scroll مع Framer Motion)
+## البنية المقترحة
 
-1. **Hero Section** — خلفية متدرجة (أخضر غابي + ذهبي) مع:
-   - عنوان كبير: "شجرة الذاكرة"
-   - وصف موجز: مشروع تعليمي تفاعلي يجسّد مفاهيم الذكاء الاصطناعي
-   - شارة: "حديقة الحسن التعليمية × ذروة العلم"
-   - زرّان: "شاهد الفيديو" / "حمّل المقترح الرسمي"
+### 1) Routes جديدة (تُسجّل في `src/App.tsx` خارج layout الرئيسي تماماً، على نمط GJU)
+- `/damij` — البوابة الرئيسية (Landing)
+- `/damij/braille` — نظام دمج لغة بريل
+  - `/damij/braille/text-to-braille`
+  - `/damij/braille/braille-to-text`
+  - `/damij/braille/learn`
+- `/damij/autism` — نظام التوحد
+  - `/damij/autism/diagnosis` (تحديد النوع — placeholder)
+  - `/damij/autism/therapy` (الألعاب التفاعلية — placeholder)
+  - `/damij/autism/profile` (ملف الطفل)
+- `/damij/adhd` — نظام ADHD
+  - `/damij/adhd/screening` (التشخيص التفريقي — placeholder)
+  - `/damij/adhd/training` (تمارين علاجية — placeholder)
+- `/damij/dashboard` — لوحة المختص/ولي الأمر (Placeholder)
 
-2. **ما هي شجرة الذاكرة؟** — بطاقة وصف + صورة `memory-tree-hero.jpg`
+### 2) العزل الكامل (نفس استراتيجية GJU 3030)
+- توسيع شرط `isGJURoute` في `RootLayout` ليشمل `/damij` ⇒ يخفي `WelcomeGuide`, `PlatformGuideAssistant`, `AccessibilityPanel`، ولا يظهر Navbar/Footer العام.
+- تعيين `sessionStorage.setItem('damij_mode', 'true')` عند الدخول.
+- `DamijLayout` خاص (Outlet + DamijFloatingNav + DamijFooter مصغّر داخلي فقط).
+- لا يوجد أي زر "العودة إلى ذروة العلم" داخل المنصة (حسب memory: GJU isolation pattern).
 
-3. **المفاهيم الستة للذكاء الاصطناعي** — شبكة بطاقات (6 بطاقات):
-   التدريب، التعزيز، الاسترجاع، الترابط، التحيّز، الهلوسة — مع أيقونات Lucide وتدرجات لونية
+### 3) الملفات الجديدة
 
-4. **الآلية التشغيلية (6 خطوات)** — Timeline عمودي:
-   التحضير ← التدريب ← التكرار ← الاسترجاع ← الترابط ← الهلوسة
+```text
+src/pages/damij/
+  DamijLanding.tsx           ← بوابة + 3 بطاقات للأنظمة الثلاثة
+  DamijLayout.tsx            ← layout معزول (خلفية، خط، تنقل)
+  braille/
+    BrailleHome.tsx
+    TextToBraille.tsx        ← UI input/output placeholder
+    BrailleToText.tsx        ← UI رفع صورة/نص placeholder
+    BrailleLearn.tsx         ← شبكة حروف بريل تعليمية (ثابتة)
+  autism/
+    AutismHome.tsx
+    AutismDiagnosis.tsx      ← نموذج أسئلة تجريبي + شاشة نتيجة placeholder
+    AutismTherapy.tsx        ← شبكة ألعاب علاجية (بطاقات placeholder)
+    AutismProfile.tsx
+  adhd/
+    ADHDHome.tsx
+    ADHDScreening.tsx        ← استبيان placeholder
+    ADHDTraining.tsx         ← تمارين تركيز placeholder
+  dashboard/
+    DamijDashboard.tsx       ← بطاقات إحصاءات placeholder
 
-5. **التشريح العلمي** — جدول يربط القطعة الميكانيكية بالمفهوم الذكي
+src/components/damij/
+  DamijFloatingNav.tsx       ← تنقل عائم بين الأنظمة الثلاثة
+  DamijHero.tsx
+  SystemCard.tsx             ← بطاقة نظام (أيقونة/عنوان/وصف/CTA)
+  FeatureCard.tsx
+  PlaceholderPanel.tsx       ← لوحة "قيد التطوير" أنيقة لكل أداة
 
-6. **الموارد والمستلزمات** — بطاقات للمواد (الخشب المعاد تدويره، التروس، أصباغ CMY...) + ميزانية تقديرية ~180 د.أ + جدول زمني (4 أسابيع)
+src/i18n/damij/translations.ts  ← (اختياري) نصوص عربية مركزية
+```
 
-7. **مؤشرات الأثر (KPIs)** — أرقام متحركة (Counter): +85% فهم مفاهيمي، عدد الطلاب، ساعات تفاعل...
+### 4) الهوية البصرية (مستقلة)
+- لوحة ألوان دافئة هادئة مناسبة للتعليم الخاص: أزرق هادئ (#2C5F8D)، أخضر فيروزي (#3CAEA3)، أصفر دافئ (#F6D55C)، خلفية كريمية (#FAF6EE).
+- خط عربي واضح كبير (Tajawal/Cairo) مع تباين عالٍ ودعم Dyslexic-friendly.
+- زر تبديل سريع لـ "وضع الراحة البصرية" (Cream/Dark) داخل DamijLayout فقط.
+- جميع الصفحات RTL.
 
-8. **معرض الوسائط** — تبويبات (Tabs) لعرض:
-   - **فيديو شارح:** مضمّن من `/memory-tree-explainer_v5.mp4`
-   - **بوستر:** عرض `memory-tree-poster_v3.png` مع زر تحميل PDF
-   - **البريزنتيشن:** زر تحميل `memory-tree-presentation_v3.pptx`
-   - **المقترح الرسمي:** زر تحميل `Memory_Tree_Official_Proposal.pdf`
+### 5) محتوى البوابة `/damij` (Landing)
+- Hero: اسم المنصة + شعار "تعليم يحتضن كل طفل".
+- 3 بطاقات كبيرة متساوية: بريل / التوحد / ADHD — كل بطاقة تأخذ المستخدم لفرعها.
+- شريط مزايا (4 أيقونات): تشخيص ذكي، علاج تفاعلي، تحويل إشارة↔نص، تقارير لولي الأمر.
+- خاتمة: "تم إنشاء المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين" (حسب القاعدة الثابتة).
 
-9. **خاتمة + إسناد** — "تم إنشاء المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين"
+### 6) إضافة مدخل في صفحة ذروة العلم الرئيسية
+- بطاقة جديدة في `src/components/PlatformCategories.tsx` بعنوان "دامج — التعليم الخاص الذكي" تُحوّل إلى `/damij` (تفتح في نفس النافذة لكن المنصة معزولة بصرياً).
 
-## نقل ملفات الوسائط للموقع
-نسخ الأصول من `/mnt/documents/` إلى `public/memory-tree/` ليتم تقديمها عبر الموقع:
-- `memory-tree-hero.jpg`
-- `memory-tree-explainer_v5.mp4`
-- `memory-tree-poster_v3.png` + `memory-tree-poster_v3.pdf`
-- `memory-tree-presentation_v3.pptx`
-- `Memory_Tree_Official_Proposal.pdf`
+### 7) ما سيكون Placeholder صراحةً
+- كل أزرار "ابدأ التشخيص"، "حلل النص"، "ابدأ اللعبة" تعرض `PlaceholderPanel` بنص: "هذه الأداة قيد التطوير — البنية جاهزة لربط النموذج لاحقاً."
+- لا استدعاءات Supabase أو AI Gateway في هذه الجولة.
 
-## التفاصيل التقنية
-- **التصميم:** Tailwind + shadcn `Card`, `Button`, `Tabs`, `Badge` + framer-motion للتنقلات
-- **اللغة:** عربي RTL بالكامل، خط النظام (`font-arabic` إن وُجد)
-- **الألوان:** تدرج "Warm Museum" — أخضر غابة (#1F3A2E)، ذهبي (#C9A24A)، كريمي (#F5EDD8)، جوزي (#5C3A1E) — متناسق مع البوستر والـPDF الرسمي
-- **SEO:** مكوّن `<SEO>` بعنوان ووصف مناسبين
-- **Navbar/Footer:** استخدام `Navbar` و`Footer` الموجودين للحفاظ على هوية ذروة العلم
-- **Responsive:** يعمل على الموبايل (شبكة بطاقات تتحول لعمود واحد)
+## ما هو خارج النطاق (لاحقاً)
+- منطق تحويل بريل الفعلي / كاميرا OCR.
+- نماذج تشخيص التوحد و ADHD وقاعدة الأسئلة المعتمدة سريرياً.
+- ألعاب علاجية تفاعلية فعلية.
+- جداول قاعدة بيانات وحسابات مستخدمين.
+- تعديل أي شيء في GJU 3030 أو Capacitor.
 
-## الملفات التي ستُعدّل/تُنشأ
-1. `src/pages/MemoryTree.tsx` — جديد (الصفحة الرئيسية)
-2. `src/App.tsx` — إضافة import + route `/memory-tree`
-3. `src/pages/EducationSection.tsx` — إضافة بطاقة "شجرة الذاكرة" في قائمة المنصات
-4. `public/memory-tree/*` — نسخ ملفات الوسائط (5 ملفات)
+## ملفات سيتم تعديلها
+1. `src/App.tsx` — إضافة imports + Route group لـ `/damij/*` خارج RootLayout الافتراضي + توسيع `isGJURoute` لتغطية `/damij`.
+2. `src/components/PlatformCategories.tsx` — إضافة بطاقة "دامج".
+3. إنشاء كل الملفات في `src/pages/damij/**` و `src/components/damij/**` كما في الشجرة أعلاه.
 
-## ما هو خارج النطاق
-- لا تعديل على وضع GJU 3030 (معزول)
-- لا إضافة جدول قاعدة بيانات (الصفحة عرضية فقط)
-- لا تغيير على مكوّنات الـCapacitor للأندرويد
+هل تعتمد هذه البنية بهذا الاسم ("دامج") والمسار `/damij`؟
