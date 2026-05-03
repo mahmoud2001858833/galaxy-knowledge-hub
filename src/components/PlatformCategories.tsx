@@ -113,6 +113,19 @@ const PlatformCategories = () => {
       link: '/memory-tree',
       platformsCount: 1,
       image: '/memory-tree/memory-tree-hero.jpg'
+    },
+    {
+      id: 'damij',
+      title: 'دامج — التعليم الخاص الذكي',
+      icon: HeartHandshake,
+      description: 'منصة مستقلة لدمج بريل، تشخيص وعلاج التوحد، والتشخيص التفريقي لـ ADHD',
+      gradient: 'from-sky-600/30 to-teal-600/30',
+      borderColor: 'border-teal-500/40',
+      iconColor: 'text-teal-300',
+      glowColor: 'shadow-teal-500/50',
+      link: '/damij',
+      platformsCount: 3,
+      image: educationBg
     }
   ];
 
