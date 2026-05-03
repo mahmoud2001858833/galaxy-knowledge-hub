@@ -950,6 +950,25 @@ const router = createBrowserRouter([
         element: <PublicRoute><CancerDetection /></PublicRoute>,
       },
       {
+        path: 'damij',
+        element: <PublicRoute><DamijLayout /></PublicRoute>,
+        children: [
+          { index: true, element: <DamijLanding /> },
+          { path: 'braille', element: <BrailleHome /> },
+          { path: 'braille/text-to-braille', element: <TextToBraille /> },
+          { path: 'braille/braille-to-text', element: <BrailleToText /> },
+          { path: 'braille/learn', element: <BrailleLearn /> },
+          { path: 'autism', element: <AutismHome /> },
+          { path: 'autism/diagnosis', element: <AutismDiagnosis /> },
+          { path: 'autism/therapy', element: <AutismTherapy /> },
+          { path: 'autism/profile', element: <AutismProfile /> },
+          { path: 'adhd', element: <ADHDHome /> },
+          { path: 'adhd/screening', element: <ADHDScreening /> },
+          { path: 'adhd/training', element: <ADHDTraining /> },
+          { path: 'dashboard', element: <DamijDashboard /> },
+        ],
+      },
+      {
         path: '*',
         element: <NotFound />,
       }
