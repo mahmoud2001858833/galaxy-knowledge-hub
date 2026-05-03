@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { ChevronLeft, Settings, GraduationCap, Sparkles, Building2, Trees } from 'lucide-react';
+import { ChevronLeft, Settings, GraduationCap, Sparkles, Building2, Trees, HeartHandshake } from 'lucide-react';
 import managementBg from '@/assets/management-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
