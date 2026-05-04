@@ -971,6 +971,7 @@ const router = createBrowserRouter([
           { path: 'braille/text-to-braille', element: <TextToBraille /> },
           { path: 'braille/braille-to-text', element: <BrailleToText /> },
           { path: 'braille/learn', element: <BrailleLearn /> },
+          { path: 'braille/universal', element: <UniversalBrailleConverter /> },
           { path: 'autism', element: <AutismHome /> },
           { path: 'autism/diagnosis', element: <AutismDiagnosis /> },
           { path: 'autism/therapy', element: <AutismTherapy /> },
