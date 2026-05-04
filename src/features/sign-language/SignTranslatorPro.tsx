@@ -418,12 +418,43 @@ const SignTranslatorPro: React.FC = () => {
   const runText2Sign = async () => {
     if (!t2sInput.trim()) return;
     setT2sLoading(true);
+    setT2sResult(null);
+    setActiveWordIdx(null);
     try {
-      const r = await callAI('text2sign', t2sInput, { signSystem });
-      setT2sOutput(r);
+      const { data, error } = await supabase.functions.invoke('damij-sign-translate', {
+        body: {
+          text: t2sInput,
+          mode: 'text2sign',
+          signSystem,
+          outputLang: t2sLang.code,
+          outputLangName: t2sLang.name,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setT2sResult((data as any).result);
+      toast.success('تمت الترجمة إلى الإشارات بنجاح');
     } catch (e: any) { toast.error(e?.message || 'فشل التحويل'); }
     finally { setT2sLoading(false); }
   };
+
+  const playWordSequence = async () => {
+    if (!t2sResult) return;
+    for (let i = 0; i < t2sResult.words.length; i++) {
+      setActiveWordIdx(i);
+      speakText(t2sResult.words[i].word, t2sLang.code);
+      await new Promise(r => setTimeout(r, 1100));
+    }
+    setActiveWordIdx(null);
+  };
+
+  const filteredT2sLangs = t2sLangQuery
+    ? SPOKEN_LANGUAGES.filter(l =>
+        l.name.toLowerCase().includes(t2sLangQuery.toLowerCase()) ||
+        l.nativeName.toLowerCase().includes(t2sLangQuery.toLowerCase()) ||
+        l.code.toLowerCase().includes(t2sLangQuery.toLowerCase()),
+      )
+    : SPOKEN_LANGUAGES;
 
   return (
     <div className="space-y-6">
