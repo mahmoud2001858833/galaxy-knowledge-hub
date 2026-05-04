@@ -86,6 +86,14 @@ const SignTranslatorPro: React.FC = () => {
 
   useEffect(() => {
     getCameraSupport().then(setCameraSupport).catch(() => {});
+    // Pre-warm MediaPipe model in the background so detection starts
+    // instantly when the user enables the camera.
+    if (!handLandmarkerRef.current) {
+      // call the lazy initializer; ignore errors here, retry on real start
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      initHand().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── Gesture classification (lifted from original page) ───
