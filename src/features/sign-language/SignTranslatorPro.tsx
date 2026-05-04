@@ -81,8 +81,19 @@ const SignTranslatorPro: React.FC = () => {
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
-  const [t2sOutput, setT2sOutput] = useState('');
   const [t2sLoading, setT2sLoading] = useState(false);
+  const [t2sLang, setT2sLang] = useState<SpokenLang>(
+    SPOKEN_LANGUAGES.find(l => l.code === 'ar-SA') || SPOKEN_LANGUAGES[0],
+  );
+  const [t2sLangQuery, setT2sLangQuery] = useState('');
+  const [t2sResult, setT2sResult] = useState<{
+    translated_text: string;
+    language: string;
+    sign_system: string;
+    words: { word: string; sign_emoji: string; description: string; fingerspelling: { letter: string; sign: string }[] }[];
+    alphabet_chart: { letter: string; sign: string; emoji: string }[];
+  } | null>(null);
+  const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
 
   // ─ tab
   const [tab, setTab] = useState<'sign2text' | 'text2sign'>('sign2text');
@@ -407,12 +418,43 @@ const SignTranslatorPro: React.FC = () => {
   const runText2Sign = async () => {
     if (!t2sInput.trim()) return;
     setT2sLoading(true);
+    setT2sResult(null);
+    setActiveWordIdx(null);
     try {
-      const r = await callAI('text2sign', t2sInput, { signSystem });
-      setT2sOutput(r);
+      const { data, error } = await supabase.functions.invoke('damij-sign-translate', {
+        body: {
+          text: t2sInput,
+          mode: 'text2sign',
+          signSystem,
+          outputLang: t2sLang.code,
+          outputLangName: t2sLang.name,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setT2sResult((data as any).result);
+      toast.success('تمت الترجمة إلى الإشارات بنجاح');
     } catch (e: any) { toast.error(e?.message || 'فشل التحويل'); }
     finally { setT2sLoading(false); }
   };
+
+  const playWordSequence = async () => {
+    if (!t2sResult) return;
+    for (let i = 0; i < t2sResult.words.length; i++) {
+      setActiveWordIdx(i);
+      speakText(t2sResult.words[i].word, t2sLang.code);
+      await new Promise(r => setTimeout(r, 1100));
+    }
+    setActiveWordIdx(null);
+  };
+
+  const filteredT2sLangs = t2sLangQuery
+    ? SPOKEN_LANGUAGES.filter(l =>
+        l.name.toLowerCase().includes(t2sLangQuery.toLowerCase()) ||
+        l.nativeName.toLowerCase().includes(t2sLangQuery.toLowerCase()) ||
+        l.code.toLowerCase().includes(t2sLangQuery.toLowerCase()),
+      )
+    : SPOKEN_LANGUAGES;
 
   return (
     <div className="space-y-6">
@@ -618,37 +660,143 @@ const SignTranslatorPro: React.FC = () => {
           </div>
         </div>
       ) : (
-        // Text → Sign mode
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/15 space-y-4">
-            <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2"><Type className="w-4 h-4" /> اكتب جملة بأي لغة</h3>
-            <textarea
-              value={t2sInput}
-              onChange={(e) => setT2sInput(e.target.value)}
-              rows={6}
-              placeholder="مثال: مرحباً، كيف حالك اليوم؟"
-              className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-lg"
-              dir="auto"
-            />
-            <button
-              onClick={runText2Sign}
-              disabled={t2sLoading || !t2sInput.trim()}
-              className="w-full py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {t2sLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-              حوّل إلى تعليمات إشارة بنظام {signSystem}
-            </button>
+        // Text → Sign mode (PRO)
+        <div className="space-y-6">
+          {/* Top controls */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Input + language picker */}
+            <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/15 space-y-4">
+              <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                <Type className="w-4 h-4" /> اكتب جملة بأي لغة
+              </h3>
+              <textarea
+                value={t2sInput}
+                onChange={(e) => setT2sInput(e.target.value)}
+                rows={5}
+                placeholder="مثال: مرحباً، كيف حالك اليوم؟"
+                className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-lg"
+                dir="auto"
+              />
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Globe className="w-4 h-4" /> ترجمة الإشارات إلى لغة:
+                  <span className="ms-auto text-xs font-normal text-slate-500">
+                    المختارة: {t2sLang.flag} {t2sLang.nativeName}
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={t2sLangQuery}
+                  onChange={(e) => setT2sLangQuery(e.target.value)}
+                  placeholder="ابحث عن لغة (عربي، English, Français, 中文…)"
+                  className="w-full p-2.5 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-sm"
+                />
+                <select
+                  value={t2sLang.code}
+                  onChange={(e) => setT2sLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
+                  size={6}
+                  className="w-full p-2 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-sm"
+                >
+                  {filteredT2sLangs.map(l => (
+                    <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name} ({l.code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={runText2Sign}
+                disabled={t2sLoading || !t2sInput.trim()}
+                className="w-full py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {t2sLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                ترجم إلى {t2sLang.nativeName} + إشارات {signSystem}
+              </button>
+            </div>
+
+            <div className="bg-gradient-to-br from-[hsl(var(--damij-primary))]/5 to-emerald-50 rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Languages className="w-4 h-4" /> الترجمة إلى {t2sLang.flag} {t2sLang.nativeName}
+                </h3>
+                {t2sResult && (
+                  <div className="flex gap-1">
+                    <button onClick={() => speakText(t2sResult.translated_text, t2sLang.code)} className="p-2 rounded-lg hover:bg-white" title="نطق"><Volume2 className="w-4 h-4" /></button>
+                    <button onClick={() => copyText(t2sResult.translated_text)} className="p-2 rounded-lg hover:bg-white" title="نسخ"><Copy className="w-4 h-4" /></button>
+                  </div>
+                )}
+              </div>
+              <div className="min-h-[80px] p-3 rounded-xl bg-white text-xl leading-relaxed font-medium" dir="auto">
+                {t2sResult?.translated_text || <span className="text-slate-400">ستظهر الترجمة هنا قبل عرض الإشارات…</span>}
+              </div>
+              {t2sResult && (
+                <button
+                  onClick={playWordSequence}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" /> تشغيل تتابع الإشارات
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-[hsl(var(--damij-primary))]/5 to-emerald-50 rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/20">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2"><Check className="w-4 h-4" /> التعليمات الحركية</h3>
-              {t2sOutput && <button onClick={() => copyText(t2sOutput)} className="p-2 rounded-lg hover:bg-white"><Copy className="w-4 h-4" /></button>}
+          {t2sResult && (
+            <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/15">
+              <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-4">
+                <Hand className="w-4 h-4" /> إشارة لكل كلمة ({t2sResult.words.length}) — نظام {t2sResult.sign_system}
+              </h3>
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {t2sResult.words.map((w, i) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => { setActiveWordIdx(i); speakText(w.word, t2sLang.code); }}
+                    whileHover={{ scale: 1.03 }}
+                    className={`text-right p-4 rounded-2xl border-2 transition-all ${
+                      activeWordIdx === i
+                        ? 'border-[hsl(var(--damij-primary))] bg-[hsl(var(--damij-primary))]/10 shadow-lg'
+                        : 'border-slate-200 bg-slate-50 hover:border-[hsl(var(--damij-primary))]/40'
+                    }`}
+                    dir="auto"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-4xl">{w.sign_emoji}</span>
+                      <span className="text-xs font-bold text-slate-400">#{i + 1}</span>
+                    </div>
+                    <div className="font-bold text-lg text-[hsl(var(--damij-primary))] mb-1">{w.word}</div>
+                    <div className="text-xs text-slate-600 leading-snug">{w.description}</div>
+                    {w.fingerspelling?.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200">
+                        <div className="text-[10px] text-slate-500 mb-1">تهجئة بالأحرف:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {w.fingerspelling.map((f, j) => (
+                            <span key={j} className="px-1.5 py-0.5 bg-white rounded text-xs border border-slate-200">
+                              {f.sign} {f.letter}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
             </div>
-            <div className="min-h-[200px] p-3 rounded-xl bg-white text-base leading-loose whitespace-pre-wrap" dir="auto">
-              {t2sOutput || <span className="text-slate-400">ستظهر هنا تعليمات أداء الإشارات خطوة بخطوة…</span>}
+          )}
+
+          {t2sResult && t2sResult.alphabet_chart?.length > 0 && (
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200">
+              <h3 className="font-bold text-amber-800 flex items-center gap-2 mb-4">
+                <Type className="w-4 h-4" /> أبجدية إشارات الحروف ({t2sResult.alphabet_chart.length})
+              </h3>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {t2sResult.alphabet_chart.map((a, i) => (
+                  <div key={i} className="bg-white rounded-xl p-2 text-center border border-amber-200" title={a.sign} dir="auto">
+                    <div className="text-2xl">{a.emoji}</div>
+                    <div className="font-bold text-lg text-amber-900">{a.letter}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
