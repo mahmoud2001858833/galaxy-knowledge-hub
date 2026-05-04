@@ -147,9 +147,11 @@ const SignTranslatorPro: React.FC = () => {
     if (iU && mU && rU && pU && (tExt || spread)) {
       const palmDown = w.y < im.y && (im.y - w.y) > 0.06;
       if (palmDown && tExt) return { gesture: 'flat_hand_down', confidence: 0.83 };
+      if (tExt && spread) return { gesture: 'five_fingers', confidence: 0.92 };
       return { gesture: 'open_palm', confidence: 0.94 };
     }
     if (iU && mU && rU && pU && !tExt && !spread && cnt === 4) return { gesture: 'four_fingers', confidence: 0.85 };
+    if (tExt && iU && !mU && !rU && !pU) return { gesture: 'finger_gun', confidence: 0.84 };
     if (iU && mU && rU && !pU && cnt === 3) return { gesture: 'three_fingers', confidence: 0.88 };
     const imD = dist(it, mt);
     if (iU && mU && !rU && !pU && imD < 0.035) return { gesture: 'crossed_fingers', confidence: 0.82 };
