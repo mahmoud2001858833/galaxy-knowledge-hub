@@ -224,3 +224,9 @@ verify_jwt = false
 [functions.damij-sign-translate]
 verify_jwt = false
 
+
+[functions.braille-convert]
+verify_jwt = false
+
+[functions.braille-fetch-url]
+verify_jwt = false
