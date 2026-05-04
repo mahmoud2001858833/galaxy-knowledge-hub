@@ -191,6 +191,7 @@ import BrailleHome from './pages/damij/braille/BrailleHome';
 import TextToBraille from './pages/damij/braille/TextToBraille';
 import BrailleToText from './pages/damij/braille/BrailleToText';
 import BrailleLearn from './pages/damij/braille/BrailleLearn';
+import UniversalBrailleConverter from './pages/damij/braille/UniversalBrailleConverter';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
 import AutismTherapy from './pages/damij/autism/AutismTherapy';
