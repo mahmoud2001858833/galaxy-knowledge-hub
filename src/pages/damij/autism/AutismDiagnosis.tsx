@@ -63,6 +63,50 @@ const AutismDiagnosis: React.FC = () => {
     setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]); setReport(null);
   };
 
+  const buildLocalReport = (
+    qr: ReturnType<typeof scoreQuestionnaire> | null,
+    insights: ReturnType<typeof summarizeGames>,
+  ): AIReport => {
+    const ds = qr?.domainScores;
+    const flags: string[] = [];
+    const obs: string[] = [];
+    insights.forEach((i) => {
+      if (i.concernLevel === 'high') flags.push(`${i.label}: ${i.metricSummary}`);
+      else if (i.concernLevel !== 'na') obs.push(`${i.label}: ${i.metricSummary}`);
+    });
+    const band = qr?.riskBand ?? (flags.length >= 2 ? 'refer' : flags.length >= 1 ? 'monitor' : 'low');
+    const summary =
+      band === 'refer'
+        ? 'النتائج الأولية تُظهر مؤشرات متعددة تستحق تقييماً متخصصاً من فريق نمائي مختص.'
+        : band === 'monitor'
+        ? 'هناك بعض المؤشرات التي تستدعي المتابعة الدورية وملاحظة التطور.'
+        : 'المؤشرات منخفضة بشكل عام؛ يُنصح بمتابعة معالم النمو الطبيعية.';
+    return {
+      risk_band: band,
+      summary_ar: summary + ' (تقرير محلي — تعذّر الاتصال بالذكاء الاصطناعي.)',
+      domain_scores: {
+        social_communication: ds?.social_communication?.pct ?? 0,
+        restricted_repetitive: ds?.restricted_repetitive?.pct ?? 0,
+        sensory: ds?.sensory?.pct ?? 0,
+        language: ds?.language?.pct ?? 0,
+        play: ds?.play?.pct ?? 0,
+      },
+      observations: obs.length ? obs : ['تم احتساب النتائج محلياً من الاستبيان والألعاب.'],
+      red_flags: flags,
+      strengths: insights.filter((i) => i.concernLevel === 'low').map((i) => i.label),
+      recommendations: [
+        'مراجعة طبيب الأطفال لمناقشة النتائج.',
+        'متابعة معالم النمو وفق إرشادات CDC.',
+        band !== 'low' ? 'طلب تقييم متخصص (نمائي/سلوكي).' : 'إعادة الفحص بعد عدة أشهر إذا ظهرت ملاحظات.',
+      ],
+      next_steps: [
+        'حفظ/طباعة التقرير ومشاركته مع المختص.',
+        'تسجيل ملاحظات يومية لمدة أسبوعين.',
+      ],
+      citations: AUTISM_SOURCES.slice(0, 4).map((s) => ({ title: `[${s.org}] ${s.title}`, url: s.url })),
+    };
+  };
+
   const startAnalysis = async (finalGames: GameResult[]) => {
     setStep('analyzing');
     const questionnaireResult =
@@ -80,15 +124,17 @@ const AutismDiagnosis: React.FC = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (!data?.report) throw new Error('Empty report');
       setReport(data.report);
       setStep('report');
     } catch (e: any) {
-      console.error(e);
+      console.error('AI report failed, using local fallback:', e);
       const msg = e?.message ?? '';
-      if (msg.includes('429')) toast.error('الخدمة مشغولة الآن، حاول بعد قليل.');
-      else if (msg.includes('402')) toast.error('انتهى الرصيد. يرجى إعادة شحن AI.');
-      else toast.error('تعذّر إنتاج التقرير: ' + msg);
-      setStep(path === 'games' ? 'games' : 'questionnaire');
+      if (msg.includes('429')) toast.warning('الخدمة مشغولة — تم إنشاء تقرير محلي.');
+      else if (msg.includes('402')) toast.warning('انتهى رصيد AI — تم إنشاء تقرير محلي.');
+      else toast.warning('تعذّر الاتصال بالذكاء الاصطناعي — تم إنشاء تقرير محلي.');
+      setReport(buildLocalReport(questionnaireResult, gameInsights));
+      setStep('report');
     }
   };
 
