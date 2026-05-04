@@ -1,160 +1,86 @@
-# خطة تطوير قاموس الإشارة العالمي 🌍
+## Goal
 
-تحويل `SignDictionary.tsx` من واجهة تجريبية بـ12 كلمة إلى **قاموس عالمي احترافي** يدعم 100+ لغة و آلاف المصطلحات منظّمة بالفئات، مع شرح الإشارة بصرياً وصوتياً لكل كلمة.
+Upgrade the Text → Sign mode in `SignTranslatorPro.tsx` so that:
+1. Signs appear **immediately under the translated (English/target) sentence** as an inline strip — no need to scroll.
+2. Symbols are **realistic hand illustrations** (SVG line-art handshapes) instead of plain emojis.
+3. Playback is more effective: synchronized word highlight + motion arrows + smoother sequencing.
 
 ---
 
-## 1. تجربة المستخدم (UX Flow)
+## What to build
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│  شريط علوي: نظام الإشارة [ArSL ▾]   لغة العرض [العربية ▾]│
-├─────────────────────────────────────────────────────────┤
-│  🔍 بحث ذكي (يبحث في كل اللغات + المرادفات)             │
-├──────────────┬──────────────────────────────────────────┤
-│  الفئات      │  شبكة الكلمات                            │
-│  • تحيات     │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐         │
-│  • عائلة     │  │ ✋  │ │ 🙏 │ │ 👋 │ │ 🤝 │         │
-│  • طعام      │  │مرحبا│ │شكرا│ │وداعا│ │صديق│         │
-│  • أرقام     │  └─────┘ └─────┘ └─────┘ └─────┘         │
-│  • أبجدية    │  ...                                     │
-│  • طقس       │                                          │
-│  • مدرسة     │  [انقر لفتح بطاقة تفصيلية]              │
-│  • طب        │                                          │
-│  • مهن       │                                          │
-│  • مشاعر     │                                          │
-│  ... 25+     │                                          │
-└──────────────┴──────────────────────────────────────────┘
+### 1. Realistic handshape library (local SVGs)
+Create `src/features/sign-language/handshapes/` with curated SVG hand illustrations:
+- **Fingerspelling A–Z** (26 SVGs, ASL alphabet style — usable as universal fingerspelling base).
+- **Common sign primitives** (~30 SVGs): open_palm, fist, point, victory, thumbs_up/down, ok, love (ILY), call_me, prayer, wave, flat_hand, pinch, claw, bent_hand, spread_hand, etc.
+- Each SVG: monochrome line-art on transparent background, ~120×120, designed to match across the set (uniform stroke, same hand orientation).
+- Index file `handshapes/index.ts` exporting `HANDSHAPES: Record<HandshapeId, { svg: string; label: string }>` plus a `getHandshape(id)` helper with fallback.
+
+Source: Generate via Lovable AI image gen with strict prompt ("clean black line-art right hand, white background, ASL letter X, no text, centered") then trace/clean. (Done at build-time by the agent and committed as static assets — no runtime calls.)
+
+### 2. AI returns handshape IDs (not just emojis)
+Update `supabase/functions/damij-sign-translate/index.ts` `text2sign` mode to also return:
+```json
+{
+  "words": [{
+    "word": "...",
+    "handshape_id": "open_palm",          // primary handshape from library
+    "movement": "wave_horizontal",        // one of: none|tap|wave_h|wave_v|circle|push|pull|up|down
+    "two_handed": false,
+    "sign_emoji": "✋",                   // kept as fallback
+    "description": "...",
+    "fingerspelling": [{ "letter": "H", "handshape_id": "asl_h" }, ...]
+  }],
+  "alphabet_chart": [{ "letter": "...", "handshape_id": "asl_x", "sign": "..." }]
+}
 ```
+Prompt enumerates the allowed `handshape_id` values so the model picks from the library.
 
-عند النقر على كلمة → **Modal/Sheet** يفتح يعرض:
-- الكلمة باللغة المختارة + إيموجي الإشارة الكبير
-- وصف حركي مفصّل (كيف تؤدّى في النظام المختار)
-- تهجئة بالأحرف (إن لزم)
-- نطق صوتي (TTS)
-- الترجمات في 5 لغات شائعة
-- الفئة + كلمات مشابهة
+### 3. New `<HandSignCard>` component
+`src/features/sign-language/HandSignCard.tsx`:
+- Renders the SVG handshape inline (`dangerouslySetInnerHTML` from the indexed SVG string, colored via `currentColor`).
+- Overlays a small motion arrow (↔ ↕ ↻ → ←) based on `movement`, animated with framer-motion when the card is "active".
+- Shows the word + phonetic transliteration underneath.
+- Active state: scale 1.1, ring, subtle shadow, animated motion arrow loop.
 
----
+### 4. Inline strip under the English translation
+In `SignTranslatorPro.tsx` text2sign tab:
+- Right under the translated text box, render a **horizontally scrollable strip** of `HandSignCard`s (one per word) — visible immediately, no separate section needed.
+- Keep the existing detailed grid + alphabet chart **below** the strip for deeper inspection.
+- `playWordSequence` highlights the matching card in the strip and auto-scrolls it into view, synced with TTS per word; configurable speed (slow/normal/fast).
+- Two-handed signs render two SVGs side-by-side with a small connector.
 
-## 2. البنية المعرفية (Data Architecture)
-
-### قاعدة بيانات الكلمات (محلية + AI)
-
-ملف ثابت `src/features/sign-language/dictionary.ts` يحتوي **~600 مصطلح أساسي** بالعربية مقسّمة إلى **25 فئة**:
-
-| الفئة | عدد تقريبي | أمثلة |
-|------|----------|--------|
-| تحيات وآداب | 30 | مرحبا، شكرا، عفوا، آسف، تشرفنا |
-| الأسرة | 25 | أم، أب، أخ، جد، عم، خال، زوج |
-| الأرقام (0-100) | 35 | صفر، واحد، عشرة، مئة، ألف |
-| الأبجدية | 28+26 | الحروف العربية + اللاتينية |
-| الألوان | 15 | أحمر، أزرق، أخضر، ذهبي |
-| الطعام والشراب | 50 | خبز، ماء، أرز، تفاح، شاي |
-| الجسم والصحة | 40 | رأس، يد، قلب، ألم، طبيب |
-| المدرسة والتعلّم | 45 | كتاب، قلم، معلم، طالب، امتحان |
-| المنزل | 30 | بيت، باب، نافذة، مطبخ |
-| الزمن | 25 | اليوم، أمس، غداً، ساعة |
-| الطقس | 15 | شمس، مطر، ثلج، حار، بارد |
-| الحيوانات | 30 | قط، كلب، أسد، طائر |
-| المهن | 30 | طبيب، مهندس، معلم، شرطي |
-| المشاعر | 25 | فرح، حزن، غضب، حب، خوف |
-| المواصلات | 20 | سيارة، طائرة، قطار |
-| الرياضة | 20 | كرة قدم، سباحة، جري |
-| الدين | 25 | الله، صلاة، صوم، قرآن |
-| التكنولوجيا | 20 | حاسوب، هاتف، إنترنت |
-| الطبيعة | 25 | شجرة، جبل، بحر، نهر |
-| الاتجاهات | 15 | يمين، يسار، فوق، تحت |
-| الأفعال الشائعة | 50 | أكل، شرب، نام، ذهب، عمل |
-| الصفات | 30 | كبير، صغير، جميل، سريع |
-| طوارئ | 15 | ساعدوني، حريق، شرطة، إسعاف |
-| سفر وسياحة | 20 | فندق، مطار، جواز، بنك |
-| تسوّق ومال | 20 | سوق، سعر، دينار، حساب |
-
-**كل مصطلح**: `{ id, ar, category, emoji, motion_ar }` فقط — الترجمات والوصف التفصيلي تُجلب من AI عند الفتح وتُخزّن في cache.
-
-### طبقة AI (Edge Function `damij-dict-lookup`)
-- **Input**: `{ word_id, ar_word, target_lang, sign_system }`
-- **Output JSON**:
-  ```json
-  {
-    "translations": { "en": "Hello", "fr": "Bonjour", ... 8 langs },
-    "description": "وصف حركي مفصّل بلغة العرض",
-    "fingerspelling": [{ "letter": "...", "sign": "..." }],
-    "synonyms": ["..."],
-    "example_sentence": "..."
-  }
-  ```
-- يستخدم **Lovable AI Gateway** (`google/gemini-2.5-flash`) — نفس آلية الفولباك الموجودة (429 → fallback)
-- تخزين النتائج في `localStorage` (`damij_dict_cache_v1`) لتسريع الزيارات اللاحقة
-
-### Cache + بحث متعدد اللغات
-- عند تغيير لغة العرض → نُترجم **عناوين** الكلمات الـ600 دفعة واحدة عبر AI batch (15 كلمة لكل طلب) ونخزّنها → بحث فوري بأي لغة بعدها
-- البحث يطابق: العربي + الترجمة الحالية + المرادفات
+### 5. Fingerspelling row
+For words flagged as fingerspelling (proper nouns, numbers), render letter-by-letter using the same `HandSignCard` with `asl_*` handshapes — same realistic style — replacing the current text-only chips.
 
 ---
 
-## 3. الميزات الاحترافية
+## Files
 
-1. **بحث ذكي متعدد اللغات** — يبحث في عنوان الكلمة، ترجمتها للغة المختارة، والمرادفات، مع تمييز النص المطابق.
-2. **فلترة بالفئات** — شريط جانبي تفاعلي مع عدّاد لكل فئة.
-3. **بطاقة تفصيلية (Sheet/Modal)**:
-   - إيموجي إشارة كبير (4xl)
-   - عنوان بلغتين (المختارة + العربية)
-   - وصف حركة مفصّل من AI حسب نظام الإشارة
-   - تهجئة الحروف للأسماء/الأرقام
-   - زر TTS بلغة العرض
-   - 5 ترجمات سريعة (EN, FR, ES, ZH, TR)
-   - مثال جملة استعمال
-   - "كلمات مشابهة" (3 من نفس الفئة)
-4. **مفضّلة (Favorites)** — حفظ في localStorage مع فئة "⭐ مفضلتي".
-5. **تحميل تدريجي** — أول 60 كلمة فقط، باقي بـ Infinite Scroll.
-6. **وضع عرض الشبكة/القائمة** — Toggle.
-7. **مزامنة مع المترجم** — زر "أضف إلى نص" يأخذك إلى تبويب نص↔إشارة محمّلاً بالكلمة.
+**New**
+- `src/features/sign-language/handshapes/index.ts`
+- `src/features/sign-language/handshapes/*.svg` (~55 files: 26 alphabet + ~30 primitives)
+- `src/features/sign-language/HandSignCard.tsx`
+
+**Edited**
+- `supabase/functions/damij-sign-translate/index.ts` — extend `text2sign` schema with `handshape_id`, `movement`, `two_handed`; provide enum list in the prompt.
+- `src/features/sign-language/SignTranslatorPro.tsx` — add inline strip under translated text, wire `playWordSequence` to scroll/highlight strip, replace emoji-only cards with `HandSignCard`, add playback speed selector.
+
+No DB or routing changes.
 
 ---
 
-## 4. الملفات المتأثرة
+## Technical notes
 
-### جديدة
-- `src/features/sign-language/dictionary.ts` — قاعدة 600 مصطلح + 25 فئة (ثابتة)
-- `src/features/sign-language/dictionaryCache.ts` — منطق LocalStorage cache + batch translate
-- `src/features/sign-language/WordDetailSheet.tsx` — البطاقة التفصيلية
-- `supabase/functions/damij-dict-lookup/index.ts` — AI lookup للكلمة (JSON)
-- `supabase/functions/damij-dict-translate-batch/index.ts` — ترجمة دفعية للعناوين
-
-### معدّلة
-- `src/pages/damij/sign/SignDictionary.tsx` — إعادة بناء كاملة
-- `supabase/config.toml` — تسجيل الـ functions الجديدة
-
-### مُعاد استخدامها (لا تتغيّر)
-- `src/features/sign-language/languages.ts` — قائمة الـ100+ لغة
-- `src/features/sign-language/signSystems.ts` — أنظمة الإشارة
+- SVGs are static assets imported as raw strings (`?raw` Vite import) so they can be inlined and themed via CSS `currentColor`.
+- Motion arrows are pure framer-motion overlays — no extra deps.
+- AI prompt change is additive; old fields (`sign_emoji`, `description`, `fingerspelling`) remain so legacy UI keeps working during rollout.
+- Fallback chain per word: `handshape_id` SVG → `sign_emoji` → first-letter alphabet SVG.
+- Generation of the SVG asset library is a one-time agent step using Lovable AI image gen with consistent prompts; output cleaned and committed.
 
 ---
 
-## 5. التفاصيل التقنية
-
-- **Stack**: React + TypeScript + Tailwind + Framer Motion + shadcn `Sheet/Dialog`
-- **AI**: Lovable AI Gateway (`LOVABLE_API_KEY` موجود)، model: `google/gemini-2.5-flash`، `response_format: json_object`
-- **Auth**: Edge functions تبقى public (verify_jwt = false) كما باقي functions الإشارة
-- **التخزين**: localStorage فقط (لا حاجة لجداول DB). مفتاح مع version: `damij_dict_v1_{lang}_{system}`
-- **الأداء**: lazy load للترجمات، debounce للبحث (250ms)، virtualization اختياري إذا تجاوزت 200 بطاقة معروضة
-- **الإمكانية**: TTS عبر `window.speechSynthesis` بلغة الـBCP-47 المختارة
-- **الفولباك**: عند 429 من AI Gateway، عرض البيانات الأساسية (العربي + الإيموجي + المرادف) فقط مع toast واضح
-
----
-
-## 6. الخطوات التنفيذية (بالترتيب)
-
-1. إنشاء `dictionary.ts` بالـ600 كلمة و25 فئة
-2. إنشاء edge function `damij-dict-translate-batch` للترجمة الدفعية
-3. إنشاء edge function `damij-dict-lookup` لتفاصيل كلمة واحدة
-4. إنشاء `dictionaryCache.ts` (تحميل، حفظ، تحديث)
-5. إنشاء `WordDetailSheet.tsx`
-6. إعادة بناء `SignDictionary.tsx` بالواجهة الجديدة
-7. تحديث `supabase/config.toml`
-
----
-
-**اعتمد لأبدأ التنفيذ مباشرة.**
+## Out of scope
+- 3D avatar hands (too heavy, deferred).
+- Real video clips per sign (storage/licensing).
+- Editing existing Sign → Text camera flow.
