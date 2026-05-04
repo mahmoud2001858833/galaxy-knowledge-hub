@@ -10,6 +10,8 @@ import { filterGesture, buildSentence, type DetectedToken } from './gestureFilte
 import { SPOKEN_LANGUAGES, type SpokenLang } from './languages';
 import { SIGN_SYSTEMS } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
+import HandSignCard from './HandSignCard';
+import type { Movement } from './handshapes';
 
 // ── Gesture vocabulary (Arabic) ──
 const gestureToArabic: Record<string, { text: string; emoji: string; description: string }> = {
