@@ -305,8 +305,10 @@ const SignTranslatorPro: React.FC = () => {
             else stableGestureRef.current = { gesture: r.gesture, count: 1 };
             const t = Date.now();
             const diff = lastFiredGestureRef.current !== r.gesture;
-            const cool = t - lastGestureTimeRef.current > 1800;
-            if (stableGestureRef.current.count >= 5 && (diff || cool)) {
+            const cool = t - lastGestureTimeRef.current > 1100;
+            // First gesture fires faster (3 stable frames), subsequent need 4
+            const need = lastFiredGestureRef.current === null ? 3 : 4;
+            if (stableGestureRef.current.count >= need && (diff || cool)) {
               handleGestureDetected(r.gesture, r.confidence);
               lastGestureTimeRef.current = t;
               lastFiredGestureRef.current = r.gesture;
