@@ -452,10 +452,16 @@ const SignTranslatorPro: React.FC = () => {
 
   const playWordSequence = async () => {
     if (!t2sResult) return;
+    const delay = playSpeed === 'slow' ? 1600 : playSpeed === 'fast' ? 700 : 1100;
     for (let i = 0; i < t2sResult.words.length; i++) {
       setActiveWordIdx(i);
       speakText(t2sResult.words[i].word, t2sLang.code);
-      await new Promise(r => setTimeout(r, 1100));
+      // Auto-scroll the active card into view in the inline strip.
+      requestAnimationFrame(() => {
+        const el = stripRef.current?.querySelector(`[data-word-idx="${i}"]`) as HTMLElement | null;
+        el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+      await new Promise(r => setTimeout(r, delay));
     }
     setActiveWordIdx(null);
   };
