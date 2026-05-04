@@ -90,9 +90,19 @@ const SignTranslatorPro: React.FC = () => {
     translated_text: string;
     language: string;
     sign_system: string;
-    words: { word: string; sign_emoji: string; description: string; fingerspelling: { letter: string; sign: string }[] }[];
-    alphabet_chart: { letter: string; sign: string; emoji: string }[];
+    words: {
+      word: string;
+      sign_emoji: string;
+      description: string;
+      handshape_id?: string;
+      movement?: string;
+      two_handed?: boolean;
+      fingerspelling: { letter: string; sign: string; handshape_id?: string }[];
+    }[];
+    alphabet_chart: { letter: string; sign: string; emoji: string; handshape_id?: string }[];
   } | null>(null);
+  const [playSpeed, setPlaySpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
+  const stripRef = React.useRef<HTMLDivElement>(null);
   const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
 
   // ─ tab
