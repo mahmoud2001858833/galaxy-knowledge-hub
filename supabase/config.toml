@@ -221,3 +221,6 @@ verify_jwt = false
 
 [functions.medical-condition-checker]
 verify_jwt = false
+[functions.damij-sign-translate]
+verify_jwt = false
+
