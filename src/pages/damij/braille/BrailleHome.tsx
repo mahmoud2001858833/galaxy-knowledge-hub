@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, ArrowLeftRight, BookOpen, FileText, Globe } from 'lucide-react';
+import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 
 const BrailleHome: React.FC = () => (
@@ -19,6 +19,7 @@ const BrailleHome: React.FC = () => (
       <SystemCard to="/damij/braille/universal" icon={Globe} title="محوّل بريل العالمي ✨" description="حوّل أي ملف (PDF, Word, PPT, Excel, صور) أو صفحة ويب أو نص إلى بريل بأكثر من 100 لغة، مع دعم المستوى الأول والثاني (الاختزالي)." />
       <SystemCard to="/damij/braille/text-to-braille" icon={ArrowLeftRight} title="من النص إلى بريل" description="حوّل أي نص عربي/إنجليزي إلى رموز بريل قابلة للقراءة والطباعة." />
       <SystemCard to="/damij/braille/braille-to-text" icon={FileText} title="من بريل إلى نص + قراءة صوتية" description="صوّر صفحة بريل ورقية بالكاميرا أو ارفع صورة، وحوّلها إلى نص رقمي قابل للقراءة الصوتية بأكثر من لغة." />
+      <SystemCard to="/damij/braille/tactile" icon={Shapes} title="رسومات تكتيلية للطباعة 🖨️" description="ولّد أو حوّل أشكالاً هندسية وخرائط جغرافية وجزيئات كيميائية ورسوماً بيانية إلى رسوم تكتيلية جاهزة للطباعة على ورق منتفخ أو طابعة بريل، أو افهم رسماً تكتيلياً موجوداً." />
       <SystemCard to="/damij/braille/learn" icon={BookOpen} title="تعلّم بريل" description="جدول الحروف والأرقام بطريقة بريل مع نطق صوتي." />
     </div>
   </div>
