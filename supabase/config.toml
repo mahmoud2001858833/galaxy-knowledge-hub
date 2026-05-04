@@ -241,3 +241,6 @@ verify_jwt = false
 
 [functions.autism-screen-analyze]
 verify_jwt = false
+
+[functions.braille-tactile-generate]
+verify_jwt = false
