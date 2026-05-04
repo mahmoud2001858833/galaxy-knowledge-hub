@@ -30,6 +30,9 @@ const gestureToArabic: Record<string, { text: string; emoji: string; description
   prayer: { text: 'شكراً', emoji: '🙏', description: 'كفان متلاصقان' },
   crossed_fingers: { text: 'إن شاء الله', emoji: '🤞', description: 'سبابة ووسطى متشابكتان' },
   flat_hand_down: { text: 'اهدأ', emoji: '🫳', description: 'كف مسطح للأسفل' },
+  five_fingers: { text: 'خمسة', emoji: '5️⃣', description: 'خمسة أصابع مفرودة' },
+  finger_gun: { text: 'انتباه', emoji: '👈', description: 'إبهام وسبابة كالمسدس' },
+  waving: { text: 'وداعاً', emoji: '👋', description: 'تلويح باليد' },
 };
 
 const HAND_CONNECTIONS = [
@@ -86,6 +89,14 @@ const SignTranslatorPro: React.FC = () => {
 
   useEffect(() => {
     getCameraSupport().then(setCameraSupport).catch(() => {});
+    // Pre-warm MediaPipe model in the background so detection starts
+    // instantly when the user enables the camera.
+    if (!handLandmarkerRef.current) {
+      // call the lazy initializer; ignore errors here, retry on real start
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      initHand().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── Gesture classification (lifted from original page) ───
@@ -136,9 +147,11 @@ const SignTranslatorPro: React.FC = () => {
     if (iU && mU && rU && pU && (tExt || spread)) {
       const palmDown = w.y < im.y && (im.y - w.y) > 0.06;
       if (palmDown && tExt) return { gesture: 'flat_hand_down', confidence: 0.83 };
+      if (tExt && spread) return { gesture: 'five_fingers', confidence: 0.92 };
       return { gesture: 'open_palm', confidence: 0.94 };
     }
     if (iU && mU && rU && pU && !tExt && !spread && cnt === 4) return { gesture: 'four_fingers', confidence: 0.85 };
+    if (tExt && iU && !mU && !rU && !pU) return { gesture: 'finger_gun', confidence: 0.84 };
     if (iU && mU && rU && !pU && cnt === 3) return { gesture: 'three_fingers', confidence: 0.88 };
     const imD = dist(it, mt);
     if (iU && mU && !rU && !pU && imD < 0.035) return { gesture: 'crossed_fingers', confidence: 0.82 };
@@ -305,8 +318,10 @@ const SignTranslatorPro: React.FC = () => {
             else stableGestureRef.current = { gesture: r.gesture, count: 1 };
             const t = Date.now();
             const diff = lastFiredGestureRef.current !== r.gesture;
-            const cool = t - lastGestureTimeRef.current > 1800;
-            if (stableGestureRef.current.count >= 5 && (diff || cool)) {
+            const cool = t - lastGestureTimeRef.current > 1100;
+            // First gesture fires faster (3 stable frames), subsequent need 4
+            const need = lastFiredGestureRef.current === null ? 3 : 4;
+            if (stableGestureRef.current.count >= need && (diff || cool)) {
               handleGestureDetected(r.gesture, r.confidence);
               lastGestureTimeRef.current = t;
               lastFiredGestureRef.current = r.gesture;
@@ -345,10 +360,10 @@ const SignTranslatorPro: React.FC = () => {
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       setCameraActive(true);
-      const hl = await initHand();
+      const hl = handLandmarkerRef.current ?? await initHand();
       setIsLoading(false);
       startLoop(hl);
-      toast.success('الكاميرا جاهزة. أظهر يدك للبدء');
+      toast.success('الكاميرا جاهزة. ابدأ بالإشارة فوراً ✋');
     } catch (e: any) {
       console.error(e);
       setError(mapCameraError(e, cameraSupport) || e?.message || 'حدث خطأ');
@@ -361,10 +376,9 @@ const SignTranslatorPro: React.FC = () => {
     streamRef.current = null;
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     animationFrameRef.current = null;
-    try { handLandmarkerRef.current?.close?.(); } catch {}
-    handLandmarkerRef.current = null;
+    // keep handLandmarkerRef alive for instant restart
     if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraActive(false); setHandDetected(false); setMediapipeReady(false);
+    setCameraActive(false); setHandDetected(false);
     setConfidence(0); setFps(0); setHandsCount(0);
   };
 
