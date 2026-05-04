@@ -30,6 +30,9 @@ const gestureToArabic: Record<string, { text: string; emoji: string; description
   prayer: { text: 'شكراً', emoji: '🙏', description: 'كفان متلاصقان' },
   crossed_fingers: { text: 'إن شاء الله', emoji: '🤞', description: 'سبابة ووسطى متشابكتان' },
   flat_hand_down: { text: 'اهدأ', emoji: '🫳', description: 'كف مسطح للأسفل' },
+  five_fingers: { text: 'خمسة', emoji: '5️⃣', description: 'خمسة أصابع مفرودة' },
+  finger_gun: { text: 'انتباه', emoji: '👈', description: 'إبهام وسبابة كالمسدس' },
+  waving: { text: 'وداعاً', emoji: '👋', description: 'تلويح باليد' },
 };
 
 const HAND_CONNECTIONS = [
