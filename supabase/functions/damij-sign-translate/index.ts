@@ -33,6 +33,19 @@ const buildPrompt = (b: Body) => {
   const lang = b.outputLangName ?? b.outputLang ?? "Arabic";
   const langCode = b.outputLang ?? "ar";
   const sys = b.signSystem ?? "ArSL";
+  const HANDSHAPES = [
+    // ASL fingerspelling
+    "asl_a","asl_b","asl_c","asl_d","asl_e","asl_f","asl_g","asl_h","asl_i","asl_j",
+    "asl_k","asl_l","asl_m","asl_n","asl_o","asl_p","asl_q","asl_r","asl_s","asl_t",
+    "asl_u","asl_v","asl_w","asl_x","asl_y","asl_z",
+    // primitives
+    "open_palm","flat_hand","flat_hand_down","fist","thumbs_up","thumbs_down",
+    "point","point_up","point_down","point_right","point_left",
+    "victory","three","four","five","one","two",
+    "ok","love","call_me","rock","pinch","claw","bent_hand","spread_hand",
+    "prayer","wave","finger_gun","crossed_fingers",
+  ].join(", ");
+  const MOVEMENTS = "none, tap, wave_h, wave_v, circle, push, pull, up, down";
   return `You are a world-class sign language interpreter expert in 100+ sign systems including ASL, BSL, ArSL, LSF, DGS, JSL, CSL, Auslan, ISL, LSE, and many more.
 
 TASK: Convert the user's text into a professional step-by-step sign language guide using the "${sys}" sign system. Render ALL textual fields in ${lang} (BCP-47: ${langCode}).
@@ -42,18 +55,21 @@ PROCEDURE:
 2. Split the translated sentence into individual words (in order).
 3. For EACH word, produce:
    - "word": the word in ${lang} script
-   - "sign_emoji": a single best-matching emoji that visually represents the sign motion (✋ 👆 👍 🤟 🙏 👋 🤲 🫳 🫶 🤝 ✊ 👌 ✌️ etc.)
+   - "handshape_id": MUST be exactly ONE of: ${HANDSHAPES}. Pick the closest visual handshape primitive to the sign in ${sys}. If the word is a proper noun/number you will fingerspell, set "open_palm".
+   - "movement": MUST be exactly ONE of: ${MOVEMENTS}. Describes the principal motion of the sign.
+   - "two_handed": boolean — true if the sign uses both hands.
+   - "sign_emoji": a single best-matching emoji as a fallback (✋ 👆 👍 🤟 🙏 👋 🤲 🫳 🫶 🤝 ✊ 👌 ✌️ etc.)
    - "description": a concise one-line motion description in ${lang} (how to perform the sign in ${sys})
-   - "fingerspelling": ONLY include if the word is a proper noun, number, or has no standard sign — array of {"letter": <single grapheme in ${lang} script>, "sign": <emoji or short tag>}. Otherwise return [].
-4. Also produce a top-level "alphabet_chart" array of EACH unique letter in the translated sentence (in ${lang} script) with {"letter", "sign": short description of the handshape in ${sys}, "emoji"}.
+   - "fingerspelling": ONLY include if the word is a proper noun, number, or has no standard sign — array of {"letter": <single grapheme in ${lang} script>, "handshape_id": one of the asl_* ids above, "sign": <emoji or short tag>}. Otherwise return [].
+4. Also produce a top-level "alphabet_chart" array of EACH unique letter in the translated sentence (in ${lang} script) with {"letter", "handshape_id": closest asl_* id, "sign": short description of the handshape in ${sys}, "emoji"}.
 
 OUTPUT FORMAT — return ONLY valid minified JSON, no markdown, no commentary:
 {
   "translated_text": "<full translated sentence in ${lang}>",
   "language": "${langCode}",
   "sign_system": "${sys}",
-  "words": [ { "word": "...", "sign_emoji": "...", "description": "...", "fingerspelling": [] } ],
-  "alphabet_chart": [ { "letter": "...", "sign": "...", "emoji": "..." } ]
+  "words": [ { "word": "...", "handshape_id": "...", "movement": "...", "two_handed": false, "sign_emoji": "...", "description": "...", "fingerspelling": [] } ],
+  "alphabet_chart": [ { "letter": "...", "handshape_id": "...", "sign": "...", "emoji": "..." } ]
 }
 
 Input text: ${b.text}`;
