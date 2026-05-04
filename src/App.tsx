@@ -199,6 +199,18 @@ import ADHDHome from './pages/damij/adhd/ADHDHome';
 import ADHDScreening from './pages/damij/adhd/ADHDScreening';
 import ADHDTraining from './pages/damij/adhd/ADHDTraining';
 import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
+import SignHome from './pages/damij/sign/SignHome';
+import SignTranslator from './pages/damij/sign/SignTranslator';
+import SignDictionary from './pages/damij/sign/SignDictionary';
+import SignLearn from './pages/damij/sign/SignLearn';
+import SensoryHome from './pages/damij/sensory/SensoryHome';
+import SensoryUpload from './pages/damij/sensory/SensoryUpload';
+import SensoryOutput from './pages/damij/sensory/SensoryOutput';
+import ClinicalHome from './pages/damij/clinical/ClinicalHome';
+import ClinicalCases from './pages/damij/clinical/ClinicalCases';
+import ClinicalLab from './pages/damij/clinical/ClinicalLab';
+import ClinicalReports from './pages/damij/clinical/ClinicalReports';
+import SourcesLibrary from './pages/damij/sources/SourcesLibrary';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -966,6 +978,18 @@ const router = createBrowserRouter([
           { path: 'adhd/screening', element: <ADHDScreening /> },
           { path: 'adhd/training', element: <ADHDTraining /> },
           { path: 'dashboard', element: <DamijDashboard /> },
+          { path: 'sign', element: <SignHome /> },
+          { path: 'sign/translator', element: <SignTranslator /> },
+          { path: 'sign/dictionary', element: <SignDictionary /> },
+          { path: 'sign/learn', element: <SignLearn /> },
+          { path: 'sensory', element: <SensoryHome /> },
+          { path: 'sensory/upload', element: <SensoryUpload /> },
+          { path: 'sensory/output', element: <SensoryOutput /> },
+          { path: 'clinical', element: <ClinicalHome /> },
+          { path: 'clinical/cases', element: <ClinicalCases /> },
+          { path: 'clinical/lab', element: <ClinicalLab /> },
+          { path: 'clinical/reports', element: <ClinicalReports /> },
+          { path: 'sources', element: <SourcesLibrary /> },
         ],
       },
       {

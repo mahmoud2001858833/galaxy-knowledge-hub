@@ -1,93 +1,158 @@
-## الهدف
-إنشاء منصة فرعية معزولة بالكامل داخل ذروة العلم باسم مقترح: **"دامج" (Damij) — منصة التعليم الدامج والتشخيص الذكي**، تكون صفحاتها وتنقلها وهويتها البصرية مستقلة تماماً عن منصة ذروة العلم الرئيسية (لا روابط رجوع إلى الرئيسية، لا Navbar/Footer العام، نمط GJU 3030 المعزول).
+# منصة "دامج" (Damij) — التعليم الدامج والتشخيص الذكي
+## رؤية موسّعة + بنية تقنية + ملف ترشيح لجائزة زايد للاستدامة
 
-ملاحظة مهمة: سيتم إنشاء **البنية الكاملة (الواجهات والصفحات والتنقل والـ routes)** فقط، بدون أي منطق ذكاء اصطناعي حقيقي أو edge functions أو جداول قاعدة بيانات — كل الأقسام تكون جاهزة للبناء لاحقاً (Placeholders + UI كامل).
+---
 
-## البنية المقترحة
+## 1) الهوية والاسم
 
-### 1) Routes جديدة (تُسجّل في `src/App.tsx` خارج layout الرئيسي تماماً، على نمط GJU)
-- `/damij` — البوابة الرئيسية (Landing)
-- `/damij/braille` — نظام دمج لغة بريل
-  - `/damij/braille/text-to-braille`
-  - `/damij/braille/braille-to-text`
-  - `/damij/braille/learn`
-- `/damij/autism` — نظام التوحد
-  - `/damij/autism/diagnosis` (تحديد النوع — placeholder)
-  - `/damij/autism/therapy` (الألعاب التفاعلية — placeholder)
-  - `/damij/autism/profile` (ملف الطفل)
-- `/damij/adhd` — نظام ADHD
-  - `/damij/adhd/screening` (التشخيص التفريقي — placeholder)
-  - `/damij/adhd/training` (تمارين علاجية — placeholder)
-- `/damij/dashboard` — لوحة المختص/ولي الأمر (Placeholder)
+- **الاسم الرسمي:** **دامِج (Damij)** — "حيث يحتضن التعليم كل طفل"
+- **الاسم الفرعي البحثي:** *Inclusive Sensory Bridge Platform*
+- **الشعار الإستراتيجي:** "حِسٌّ بديل، فرصة متساوية، علم بلا حواجز."
+- المنصة معزولة بصرياً وتقنياً عن ذروة العلم الرئيسية (نفس نمط GJU 3030).
 
-### 2) العزل الكامل (نفس استراتيجية GJU 3030)
-- توسيع شرط `isGJURoute` في `RootLayout` ليشمل `/damij` ⇒ يخفي `WelcomeGuide`, `PlatformGuideAssistant`, `AccessibilityPanel`، ولا يظهر Navbar/Footer العام.
-- تعيين `sessionStorage.setItem('damij_mode', 'true')` عند الدخول.
-- `DamijLayout` خاص (Outlet + DamijFloatingNav + DamijFooter مصغّر داخلي فقط).
-- لا يوجد أي زر "العودة إلى ذروة العلم" داخل المنصة (حسب memory: GJU isolation pattern).
+---
 
-### 3) الملفات الجديدة
+## 2) المحاور الستة (توسعة احترافية)
+
+### المحور 1 — مترجم لغة الإشارة العالمي (Sign↔Text↔Speech)
+- **اتجاهين:** كاميرا ⟶ نص/صوت  |  نص/صوت ⟶ أفاتار 3D يؤدي الإشارة.
+- **+100 لغة منطوقة:** عربي، إنجليزي، أوردو، فرنسي، ألماني، إسباني... عبر طبقة ترجمة وسيطة (Lovable AI).
+- **6 أنظمة إشارة مدعومة مبدئياً:** ArSL (عربية موحّدة)، ASL، BSL، LSF، DGS، PSL — قابلة للتوسعة.
+- يستخدم MediaPipe Holistic + مُصنِّف إيماءات (مرحلة لاحقة) — في هذه الجولة: واجهة كاملة + Placeholder.
+
+### المحور 2 — تشخيص وعلاج التوحّد (Autism)
+- **التشخيص بالألعاب التفاعلية** بدل الاستبيانات الجافة (ألعاب انتباه مشترك، تتبّع بصري، تقليد، تواصل عاطفي).
+- **تصنيف النوع/المستوى** وفق DSM-5 + معايير M-CHAT-R و ADOS-2 (مصادر موثقة فقط).
+- **خطة علاج بالألعاب** مخصصة حسب التصنيف (ABA-inspired games).
+- **ملف الطفل (Child Profile):** تتبّع تقدّم زمني + تقارير لولي الأمر والمختص.
+
+### المحور 3 — تشخيص وعلاج فرط الحركة وتشتت الانتباه (ADHD)
+- **فحص تفريقي** مبني على Conners-3 و Vanderbilt (واجهة فحص تفاعلية).
+- **تمارين تدريب الانتباه:** Stroop، N-Back، CPT، Go/No-Go — كلها مُلَعْبَنة (Gamified).
+- **تقارير أداء أسبوعية** + توصيات للمعلم وولي الأمر.
+
+### المحور 4 — مترجم بريل عالمي (Universal Braille)
+- نص ⟶ بريل (Grade 1 و Grade 2) لأي لغة في العالم (Unicode Braille).
+- صورة بريل ⟶ نص (OCR لبريل).
+- مكتبة تعليم بريل تفاعلية + بطاقات لمسية قابلة للطباعة 3D.
+
+### المحور 5 — الجسر الحسّي العكسي (Reverse Sensory Bridge) ⭐ الجوهر المبتكر
+- المستخدم يرفع **أي محتوى** (نص/صورة/فيديو/صوت/PDF)، فيُترجَم تلقائياً إلى الحاسة المتاحة:
+  - **للأصم:** نص مبسّط + بطاقات PECS + أفاتار إشارة.
+  - **للكفيف:** TTS + وصف صوتي للصور (Image Captioning) + بريل قابل للطباعة.
+  - **للأصم-الكفيف:** ملفات بريل ملموسة + اهتزاز إيقاعي (Haptic Morse).
+  - **للتوحّد/ADHD:** تبسيط لغوي + تقطيع بصري + إزالة المشتتات.
+- نقطة فريدة عالمياً: **حلٌّ واحد لجميع الإعاقات** بدل 5 منصات منفصلة.
+
+### المحور 6 — مختبر المحاكاة السريرية (Clinical Simulation Lab) ⭐ جديد
+- بيئة افتراضية للطلاب والمعلمين ومختصي التربية الخاصة لتجريب **بروتوكولات تقييم وعلاج** على حالات افتراضية.
+- مسار: اختر حالة ⟶ شغّل Procedure ⟶ شاهد Results ⟶ حلّل Details ⟶ احفظ التقرير.
+- يدعم البحث العلمي المدرسي (مادة لجائزة زايد + معارض العلوم).
+
+---
+
+## 3) المصادر الموثقة (مرجعية ستُعرض داخل المنصة)
+- DSM-5-TR (APA 2022)، M-CHAT-R/F، ADOS-2، Conners-3، Vanderbilt ADHD Scale.
+- WHO ICF-CY (تصنيف وظائف الأطفال).
+- UNESCO Inclusive Education Guidelines.
+- Unicode Braille Standard (ISO/TR 11548).
+- WFD (World Federation of the Deaf) — معايير لغات الإشارة.
+- المستخدم سيرفع مصادر إضافية ⟶ نضيفها لقسم **"التوثيق العلمي"** داخل كل محور.
+
+---
+
+## 4) ما سيتم بناؤه في هذه الجولة (Code)
+
+### أ) توسيع البنية الحالية لـ `/damij`
+بنية الـ routes الحالية موجودة. نضيف:
 
 ```text
-src/pages/damij/
-  DamijLanding.tsx           ← بوابة + 3 بطاقات للأنظمة الثلاثة
-  DamijLayout.tsx            ← layout معزول (خلفية، خط، تنقل)
-  braille/
-    BrailleHome.tsx
-    TextToBraille.tsx        ← UI input/output placeholder
-    BrailleToText.tsx        ← UI رفع صورة/نص placeholder
-    BrailleLearn.tsx         ← شبكة حروف بريل تعليمية (ثابتة)
-  autism/
-    AutismHome.tsx
-    AutismDiagnosis.tsx      ← نموذج أسئلة تجريبي + شاشة نتيجة placeholder
-    AutismTherapy.tsx        ← شبكة ألعاب علاجية (بطاقات placeholder)
-    AutismProfile.tsx
-  adhd/
-    ADHDHome.tsx
-    ADHDScreening.tsx        ← استبيان placeholder
-    ADHDTraining.tsx         ← تمارين تركيز placeholder
-  dashboard/
-    DamijDashboard.tsx       ← بطاقات إحصاءات placeholder
-
-src/components/damij/
-  DamijFloatingNav.tsx       ← تنقل عائم بين الأنظمة الثلاثة
-  DamijHero.tsx
-  SystemCard.tsx             ← بطاقة نظام (أيقونة/عنوان/وصف/CTA)
-  FeatureCard.tsx
-  PlaceholderPanel.tsx       ← لوحة "قيد التطوير" أنيقة لكل أداة
-
-src/i18n/damij/translations.ts  ← (اختياري) نصوص عربية مركزية
+/damij/sign           ← مترجم لغة الإشارة (جديد)
+  /damij/sign/translator
+  /damij/sign/dictionary
+  /damij/sign/learn
+/damij/sensory        ← الجسر الحسّي العكسي (جديد - الجوهر)
+  /damij/sensory/upload
+  /damij/sensory/output
+/damij/clinical       ← مختبر المحاكاة السريرية (جديد)
+  /damij/clinical/cases
+  /damij/clinical/lab
+  /damij/clinical/reports
+/damij/sources        ← مكتبة المصادر الموثقة (جديد)
 ```
 
-### 4) الهوية البصرية (مستقلة)
-- لوحة ألوان دافئة هادئة مناسبة للتعليم الخاص: أزرق هادئ (#2C5F8D)، أخضر فيروزي (#3CAEA3)، أصفر دافئ (#F6D55C)، خلفية كريمية (#FAF6EE).
-- خط عربي واضح كبير (Tajawal/Cairo) مع تباين عالٍ ودعم Dyslexic-friendly.
-- زر تبديل سريع لـ "وضع الراحة البصرية" (Cream/Dark) داخل DamijLayout فقط.
-- جميع الصفحات RTL.
+### ب) ملفات جديدة
+```text
+src/pages/damij/sign/{SignHome,SignTranslator,SignDictionary,SignLearn}.tsx
+src/pages/damij/sensory/{SensoryHome,SensoryUpload,SensoryOutput}.tsx
+src/pages/damij/clinical/{ClinicalHome,ClinicalCases,ClinicalLab,ClinicalReports}.tsx
+src/pages/damij/sources/SourcesLibrary.tsx
+src/components/damij/{SignAvatar3D,SensoryModeSwitcher,ClinicalCaseCard,SourceCitation}.tsx
+src/data/damij/{signLanguages.ts,clinicalCases.ts,scientificSources.ts}
+```
 
-### 5) محتوى البوابة `/damij` (Landing)
-- Hero: اسم المنصة + شعار "تعليم يحتضن كل طفل".
-- 3 بطاقات كبيرة متساوية: بريل / التوحد / ADHD — كل بطاقة تأخذ المستخدم لفرعها.
-- شريط مزايا (4 أيقونات): تشخيص ذكي، علاج تفاعلي، تحويل إشارة↔نص، تقارير لولي الأمر.
-- خاتمة: "تم إنشاء المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين" (حسب القاعدة الثابتة).
+### ج) تحديثات
+- `DamijLanding.tsx` — إعادة تصميم الشاشة الرئيسية لعرض **6 محاور** بدل 3 (شبكة 3×2 أنيقة).
+- `DamijFloatingNav.tsx` — تحديث التنقل ليشمل المحاور الستة.
+- `index.css` — إضافة tokens hsl لهوية دامج (لو لم تكن مكتملة).
 
-### 6) إضافة مدخل في صفحة ذروة العلم الرئيسية
-- بطاقة جديدة في `src/components/PlatformCategories.tsx` بعنوان "دامج — التعليم الخاص الذكي" تُحوّل إلى `/damij` (تفتح في نفس النافذة لكن المنصة معزولة بصرياً).
+### د) ما سيظل Placeholder احترافي (UI كامل + بدون منطق AI الآن)
+- محرّك تعرّف الإشارة الفعلي، OCR بريل، تصنيفات DSM-5، محرّك الألعاب التفاعلية.
+- سبب: نبني الأساس البصري والمعماري أولاً ثم نربط الـ Edge Functions بمراحل لاحقة.
 
-### 7) ما سيكون Placeholder صراحةً
-- كل أزرار "ابدأ التشخيص"، "حلل النص"، "ابدأ اللعبة" تعرض `PlaceholderPanel` بنص: "هذه الأداة قيد التطوير — البنية جاهزة لربط النموذج لاحقاً."
-- لا استدعاءات Supabase أو AI Gateway في هذه الجولة.
+---
 
-## ما هو خارج النطاق (لاحقاً)
-- منطق تحويل بريل الفعلي / كاميرا OCR.
-- نماذج تشخيص التوحد و ADHD وقاعدة الأسئلة المعتمدة سريرياً.
-- ألعاب علاجية تفاعلية فعلية.
-- جداول قاعدة بيانات وحسابات مستخدمين.
-- تعديل أي شيء في GJU 3030 أو Capacitor.
+## 5) ملف الترشيح (Proposal + Abstract) لجائزة زايد للاستدامة
 
-## ملفات سيتم تعديلها
-1. `src/App.tsx` — إضافة imports + Route group لـ `/damij/*` خارج RootLayout الافتراضي + توسيع `isGJURoute` لتغطية `/damij`.
-2. `src/components/PlatformCategories.tsx` — إضافة بطاقة "دامج".
-3. إنشاء كل الملفات في `src/pages/damij/**` و `src/components/damij/**` كما في الشجرة أعلاه.
+سيتم توليد ملفين PDF احترافيين في `/mnt/documents/`:
 
-هل تعتمد هذه البنية بهذا الاسم ("دامج") والمسار `/damij`؟
+### ملف 1: `Damij_Abstract_AR_EN.pdf` (4 صفحات)
+- العنوان + الفئة (Global High Schools).
+- ملخص 250 كلمة عربي + 250 كلمة إنجليزي.
+- الأثر المتوقع بأرقام (SDG 3, 4, 10).
+- صورة غلاف احترافية مولّدة بـ Lovable AI.
+
+### ملف 2: `Damij_Full_Proposal_AR.pdf` (15-20 صفحة)
+الأقسام:
+1. **الغلاف** + شعار المدرسة + شعار الجائزة.
+2. **الملخص التنفيذي.**
+3. **المشكلة:** فجوة التعليم الدامج في العالم العربي (إحصاءات WHO/UNESCO).
+4. **الحل:** المحاور الستة بشرح مفصّل + Mockups من المنصة.
+5. **الابتكار:** الجسر الحسّي العكسي — لماذا لا يوجد له مثيل عالمي.
+6. **الأثر:** عدد المستفيدين، SDGs، قابلية التوسع للوطن العربي.
+7. **خارطة الطريق:** Q1 إطلاق MVP، Q2 ربط الـ AI، Q3 تجارب ميدانية، Q4 توسعة.
+8. **الميزانية:** ~750 USD للنموذج الأولي + خطة استخدام جائزة 100K USD.
+9. **الفريق:** طلاب مدرسة عنبه الثانية الشاملة للبنين.
+10. **المصادر العلمية الموثقة.**
+11. **صور** Screenshots من المنصة الحقيقية.
+
+### كيفية التوليد
+- يستخدم سكربت `lovable_ai` لتوليد:
+  - 6 صور غلاف احترافية (Hero لكل محور) — بدون نص/أحرف عربية حسب القاعدة الثابتة.
+  - صورة غلاف رئيسية للـ Proposal.
+- يستخدم `reportlab` لبناء PDF عربي/إنجليزي مع دعم RTL وخط Tajawal.
+- QA إجباري: تحويل كل صفحة إلى صورة وفحصها قبل التسليم.
+
+---
+
+## 6) ترتيب التنفيذ بعد الموافقة
+
+1. توسيع `DamijLanding` + `DamijFloatingNav` للمحاور الستة.
+2. إنشاء صفحات `sign/`, `sensory/`, `clinical/`, `sources/` (UI كامل + Placeholder).
+3. تحديث `App.tsx` بإضافة الـ routes الجديدة داخل عزل دامج.
+4. توليد صور Hero الست بـ Lovable AI (text-free).
+5. توليد PDF الـ Abstract (AR+EN).
+6. توليد PDF الـ Full Proposal العربي.
+7. QA بصري لكل الصفحات + تسليم الملفات في `/mnt/documents/` كـ `presentation-artifact`.
+
+---
+
+## 7) ما هو خارج النطاق (مرحلة لاحقة)
+- منطق AI الفعلي لتعرّف الإشارة، OCR بريل، تصنيف DSM-5.
+- جداول قاعدة بيانات لحفظ تقدّم الأطفال (تحتاج Auth أولاً).
+- نسخة إنجليزية كاملة من الـ Full Proposal (متاحة عند الطلب).
+- تطبيق موبايل Capacitor (المنصة تعمل عبر المتصفح ومتجاوبة).
+
+---
+
+**هل تعتمد هذه الخطة بمحاورها الستة + ملفّي PDF (Abstract + Full Proposal بالعربي)، أم تريد تعديل اسم المنصة أو حذف/إضافة محور قبل البدء؟**
