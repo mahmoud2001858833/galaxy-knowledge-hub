@@ -14,7 +14,7 @@ const AutismHome: React.FC = () => (
       </p>
     </header>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <SystemCard to="/damij/autism/diagnosis" icon={ClipboardList} title="تشخيص نوع التوحد" description="استبيان ذكي لتحديد طيف التوحد المناسب." accent="hsl(var(--damij-accent-2))" />
+      <SystemCard to="/damij/autism/diagnosis" icon={ClipboardList} title="تشخيص نوع التوحد" description="فحص أولي شامل: استبيان معتمد + ألعاب تفاعلية + تقرير AI مبني على CDC و AAP و NICE و WHO." accent="hsl(var(--damij-accent-2))" />
       <SystemCard to="/damij/autism/therapy" icon={Gamepad2} title="العلاج التفاعلي" description="مكتبة ألعاب علاجية مخصصة لكل حالة." accent="hsl(var(--damij-accent-2))" />
       <SystemCard to="/damij/autism/profile" icon={UserCircle} title="ملف الطفل" description="سجل التقدم والملاحظات والتقارير." accent="hsl(var(--damij-accent-2))" />
     </div>
