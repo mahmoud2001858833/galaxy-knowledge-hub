@@ -355,10 +355,10 @@ const SignTranslatorPro: React.FC = () => {
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       setCameraActive(true);
-      const hl = await initHand();
+      const hl = handLandmarkerRef.current ?? await initHand();
       setIsLoading(false);
       startLoop(hl);
-      toast.success('الكاميرا جاهزة. أظهر يدك للبدء');
+      toast.success('الكاميرا جاهزة. ابدأ بالإشارة فوراً ✋');
     } catch (e: any) {
       console.error(e);
       setError(mapCameraError(e, cameraSupport) || e?.message || 'حدث خطأ');
