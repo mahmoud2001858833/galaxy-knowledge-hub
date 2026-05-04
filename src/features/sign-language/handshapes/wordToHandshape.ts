@@ -103,7 +103,6 @@ const WORD_MAP: Record<string, SignVisual> = {
   'عمرة':  { handshape: 'fist', movement: 'circle' },
   'ما شاء الله': { handshape: 'spread_hand', movement: 'up' },
   'إن شاء الله': { handshape: 'crossed_fingers', movement: 'up' },
-  'الحمد لله': { handshape: 'spread_hand', movement: 'up', twoHanded: true } as SignVisual,
   'شكر لله': { handshape: 'prayer', movement: 'tap_chest', twoHanded: true },
 };
 
