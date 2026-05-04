@@ -1,83 +1,79 @@
-# خطة: مترجم لغة الإشارة الاحترافي داخل دامج
+## الهدف
 
-نقل المترجم الموجود في `SignLanguagePage` (مستقبل التكنولوجيا) إلى `/damij/sign/translator` مع تطوير ضخم: دعم +100 لغة منطوقة، +12 نظام إشارة عالمي، طبقة ذكاء اصطناعي (Gemini) للترجمة والتصحيح اللغوي، وواجهة فاخرة تتناسب مع هوية دامج.
+ترقية قسم بريل في منصة "دامج" بمحوّل عالمي احترافي يحوّل **أي ملف** (PDF, Word, PowerPoint, Excel, TXT, صورة بالـ OCR) أو **أي صفحة ويب** إلى بريل بـ **مئة لغة**، مع دعم **المستويين الأول (Grade 1) والثاني (Grade 2 - الاختزالي)**، وإمكانية تنزيل الناتج كـ `.brf` أو PDF أو طباعة.
 
----
+## ملاحظة أمنية حول مفتاح Gemini
 
-## 1) ما سيُبنى
+المفتاح `AIzaSyD4...` لا يجب أن يوضع في الكود (سيُسرَّب علناً في الواجهة الأمامية). سأخزّنه كـ **secret** بإسم `BRAILLE_GEMINI_API_KEY` في Supabase ويُستخدم فقط داخل Edge Function. (إن أردت سأستخدم `LOVABLE_API_KEY` المجاني بديلاً ولكن طلبت مفتاحك صراحة، فسأعتمد مفتاحك مع fallback تلقائي للـ Lovable Gateway عند 429.)
 
-### أ) مكوّن جديد قابل للمشاركة
-`src/features/sign-language/SignTranslatorPro.tsx` — مترجم متطور يحتوي:
-- **كاميرا حية** (MediaPipe + filterGesture الحالي) لكشف الإيماءات.
-- **شريط ترجمة فورية** يظهر النص العربي + ترجمة موازية لأي لغة من 100+ لغة.
-- **محرّك Gemini AI** لـ:
-  1. تصحيح الجمل العربية الناتجة من الإشارات (نحوياً وأسلوبياً).
-  2. ترجمة فورية إلى أي من 100 لغة.
-  3. توليد رموز/Emoji توضيحية لكل كلمة.
-  4. وضع عكسي (نص ⟶ تعليمات إشارة مفصّلة + Avatar emoji).
-- **قاموس موسّع** بأكثر من 100 إيماءة (الموجود + إضافات).
-- **معامل ثقة Confidence Meter** ومخطط نشاط حي.
-- **سجل المحادثة** قابل للتصدير (PDF/نصي) ونسخ سريع.
-- **TTS** ينطق النص بأي لغة عبر Web Speech API.
+## الواجهة الجديدة `/damij/braille/universal`
 
-### ب) دعم اللغات (100+)
-ملف `src/features/sign-language/languages.ts` يحتوي قائمة BCP-47 شاملة:
-العربية، الإنجليزية، الفرنسية، الإسبانية، الألمانية، الإيطالية، الصينية (مبسّطة/تقليدية)، اليابانية، الكورية، الهندية، الأوردو، الفارسية، التركية، الروسية، البرتغالية، الهولندية، السويدية، النرويجية، الدنماركية، الفنلندية، البولندية، التشيكية، اليونانية، العبرية، التايلاندية، الفيتنامية، الإندونيسية، الماليزية، الفلبينية، السواحيلية، الأمهرية، الهاوسا، اليوروبا، الزولو... (قائمة كاملة 100+).
+تبويب واحد في `BrailleHome` بعنوان "محوّل بريل العالمي" يفتح صفحة فيها 3 مصادر إدخال:
 
-### ج) دعم أنظمة الإشارة (12+)
-ArSL (عربية موحّدة)، ASL (أمريكية)، BSL (بريطانية)، LSF (فرنسية)، DGS (ألمانية)، LSE (إسبانية)، JSL (يابانية)، CSL (صينية)، ISL (هندية)، PSL (باكستانية)، Auslan (أسترالية)، NZSL (نيوزيلندية)، Libras (برازيلية)، International Sign.
+1. **ملف** — يدعم `.pdf .docx .pptx .xlsx .txt .md .rtf .csv .html .epub` + صور `.png .jpg .webp` (OCR).
+2. **رابط ويب** — لصق URL لجلب نصّ الصفحة.
+3. **نص مباشر** — للصق سريع.
 
-### د) Edge Function آمنة
-`supabase/functions/damij-sign-translate/index.ts`:
-- تستقبل: `{ text, sourceLang, targetLang, mode: 'translate'|'correct'|'text2sign' }`.
-- تنادي Gemini عبر **Lovable AI Gateway** (لا نضع مفتاح المستخدم في الكود — نستخدم `LOVABLE_API_KEY` المُدار).
-- ترجع JSON منظّم (نص مُترجم + توضيح + رموز).
-- معالجة 429/402 مع رسائل واضحة.
+خيارات:
+- **اللغة**: قائمة 100+ لغة (نعيد استخدام `SPOKEN_LANGUAGES` من مترجم الإشارة).
+- **المستوى**: Grade 1 (حرف-حرف) أو Grade 2 (اختزالي قياسي UEB/عربي/فرنسي…).
+- **الكود**: 6-dot أو 8-dot (Computer Braille).
+- **الاتجاه**: LTR/RTL تلقائي حسب اللغة.
 
-> **ملاحظة مهمة حول المفتاح:** لن نضع مفتاح Google API الذي شاركته في الكود (مخاطرة أمنية كبيرة — أي زائر سيستطيع سرقته من المتصفح). البديل الأفضل والمجاني: **Lovable AI Gateway** (مفعّل بالفعل، يستخدم Gemini نفسه). لو أصرّيت على استخدام مفتاحك الشخصي، نخزّنه كـ Supabase Secret ونناديه فقط من Edge Function (لا تظهر في الواجهة).
+عرض النتائج:
+- نص بريل بالرموز Unicode `⠁⠃⠉` بخط كبير قابل للنسخ.
+- النص الأصلي بجانبه (مزامنة سطر-بسطر).
+- أزرار: نسخ، تنزيل `.brf`، تنزيل PDF (A4 مجهَّز للطباعة بمسافات بريل قياسية)، طباعة، نطق صوتي.
 
-### هـ) صفحة دامج
-تحديث `src/pages/damij/sign/SignTranslator.tsx` لاستبدال الـ Placeholder الحالي بـ `<SignTranslatorPro />` كاملاً مع هوية دامج (ألوان `--damij-primary`، خطوط، حركات).
-
----
-
-## 2) تفاصيل تقنية مختصرة
+## التنفيذ التقني
 
 ```text
-[Camera] → MediaPipe Holistic → gestureFilter → كلمة عربية خام
-                                                    ↓
-                                          Gemini (تصحيح + ترجمة)
-                                                    ↓
-                              نص عربي مهذّب + ترجمة بأي لغة + TTS
+client (UniversalBrailleConverter.tsx)
+  ├─ اختيار المصدر (file / url / text)
+  ├─ استخراج النص محلياً عند الإمكان
+  │    ├─ pdf  → pdfjs-dist
+  │    ├─ docx → mammoth
+  │    ├─ xlsx → xlsx (sheetjs)
+  │    ├─ pptx → jszip + xml parse
+  │    ├─ html/url → DOMParser (عبر edge function لتجاوز CORS)
+  │    └─ image → Tesseract.js (OCR متعدد اللغات)
+  ├─ POST /functions/v1/braille-convert
+  │    body: { text, lang, grade, dots }
+  └─ يعرض الناتج + تنزيل
 ```
 
-- نعيد استخدام `filterGesture` و `buildSentence` و `camera.ts` الموجودة.
-- القاموس الموسّع: دمج قاموس `SignLanguagePage` (≈100 كلمة) مع إضافات جديدة.
-- التخزين المؤقت للترجمات في `localStorage` لتقليل النداءات.
-- Debounce 800ms قبل إرسال الجملة للـ Gemini.
+### Edge Function: `supabase/functions/braille-convert/index.ts`
+- يستقبل `{ text, lang, grade, dots }`.
+- لمستوى **Grade 1**: تحويل حتمي محلي عبر جدول mapping داخل الـ function (ASCII-Braille + جداول عربي/فرنسي/روسي… المضمّنة).
+- لمستوى **Grade 2** (الاختزالي): يستدعي Gemini عبر مفتاحك مع برومبت دقيق يطلب الإخراج بصيغة Unicode Braille فقط مع التزام معايير LBU/UEB/Arabic Braille Authority؛ يضيف verification step للتأكد من أن كل المحارف من نطاق `U+2800–U+28FF`.
+- عند 429 → fallback تلقائي إلى Lovable AI Gateway (`google/gemini-2.5-flash`).
+- لجلب الويب: مسار إضافي `mode: "fetch_url"` يُنزّل الصفحة على السيرفر ويُعيد النص النظيف.
 
----
+### Edge Function: `supabase/functions/braille-fetch-url/index.ts`
+- يجلب صفحة الويب (لتجاوز CORS) ويستخرج النص الأساسي عبر Readability-like بسيط.
 
-## 3) الملفات المتأثّرة
+## الملفات
 
 **جديدة:**
-- `src/features/sign-language/SignTranslatorPro.tsx`
-- `src/features/sign-language/languages.ts` (100+ لغة)
-- `src/features/sign-language/signSystems.ts` (12+ نظام)
-- `src/features/sign-language/extendedDictionary.ts`
-- `supabase/functions/damij-sign-translate/index.ts`
+- `src/pages/damij/braille/UniversalBrailleConverter.tsx`
+- `src/features/braille/brailleTables.ts` (جداول Grade 1 لـ ar/en/fr/es/ru/de/it…)
+- `src/features/braille/extractText.ts` (PDF/DOCX/XLSX/PPTX/Image)
+- `src/features/braille/brailleExport.ts` (`.brf` + PDF عبر jsPDF)
+- `supabase/functions/braille-convert/index.ts`
+- `supabase/functions/braille-fetch-url/index.ts`
 
-**معدّلة:**
-- `src/pages/damij/sign/SignTranslator.tsx` ← يستخدم المكوّن الجديد.
-- `src/pages/damij/sign/SignHome.tsx` ← إبراز المميزات الجديدة.
+**تعديل:**
+- `src/pages/damij/braille/BrailleHome.tsx` (إضافة بطاقة "محوّل بريل العالمي")
+- `src/App.tsx` (إضافة المسار)
+- `supabase/config.toml` (تسجيل الـ functions)
 
----
+**Secret يُضاف:** `BRAILLE_GEMINI_API_KEY` = المفتاح المُقدَّم.
 
-## 4) خارج النطاق (مرحلة لاحقة)
-- أفاتار 3D حقيقي يؤدّي الإشارة (الآن: emoji + تعليمات نصية مفصّلة).
-- تدريب نموذج إيماءات مخصّص لكل نظام إشارة (الآن: نظام موحّد + ترجمة لغوية).
+## الحزم المطلوب تثبيتها
+`pdfjs-dist`, `mammoth`, `xlsx`, `tesseract.js`, `jszip`, `jspdf` (موجود غالباً).
 
----
+## خارج النطاق
+- لا نتعامل مع طابعات بريل فيزيائية (BRF جاهز للإرسال إليها).
+- لا نخزّن الملفات المرفوعة في Supabase Storage (معالجة فورية في الذاكرة).
 
-## 5) سؤال قبل البدء
-هل تعتمد استخدام **Lovable AI Gateway** (آمن ومجاني ضمن حصتك) بدل وضع مفتاح Google في الكود؟ لو موافق، أبدأ التنفيذ مباشرة بعد موافقتك على الخطة.
+اعتمد لأبدأ التنفيذ.
