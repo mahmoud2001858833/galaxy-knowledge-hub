@@ -19,7 +19,9 @@ interface Body {
 
 const buildPrompt = (b: Body) => {
   if (b.mode === "translate") {
-    return `Translate the following Arabic text into ${b.targetLangName ?? b.targetLang} faithfully and naturally. Return ONLY the translated text, no quotes, no commentary.\n\nText: ${b.text}`;
+    const lang = b.targetLangName ?? b.targetLang ?? "English";
+    const code = b.targetLang ?? "en";
+    return `You are a professional translator. Translate the Arabic text below into ${lang} (BCP-47: ${code}).\n\nSTRICT RULES:\n- Output ONLY in ${lang}. Do NOT reply in Arabic unless ${lang} is Arabic.\n- Use the native script of ${lang} (e.g. Latin for English/French, Cyrillic for Russian, Hangul for Korean, Kanji/Kana for Japanese, etc.).\n- Keep it natural, faithful, concise. No quotes, no romanization unless the language uses Latin script, no commentary, no labels.\n\nArabic text: ${b.text}\n\n${lang} translation:`;
   }
   if (b.mode === "correct") {
     return `أنت مدقّق لغوي عربي. لديك تتابع كلمات نُتجت من ترجمة لغة الإشارة وقد تكون مفككة. أعد صياغتها كجملة عربية فصيحة قصيرة وواضحة، دون إضافة معلومات جديدة. أعد فقط النص المصحَّح بدون أي شرح.\n\nالنص: ${b.text}`;
