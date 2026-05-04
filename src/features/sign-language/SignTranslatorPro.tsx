@@ -81,8 +81,19 @@ const SignTranslatorPro: React.FC = () => {
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
-  const [t2sOutput, setT2sOutput] = useState('');
   const [t2sLoading, setT2sLoading] = useState(false);
+  const [t2sLang, setT2sLang] = useState<SpokenLang>(
+    SPOKEN_LANGUAGES.find(l => l.code === 'ar-SA') || SPOKEN_LANGUAGES[0],
+  );
+  const [t2sLangQuery, setT2sLangQuery] = useState('');
+  const [t2sResult, setT2sResult] = useState<{
+    translated_text: string;
+    language: string;
+    sign_system: string;
+    words: { word: string; sign_emoji: string; description: string; fingerspelling: { letter: string; sign: string }[] }[];
+    alphabet_chart: { letter: string; sign: string; emoji: string }[];
+  } | null>(null);
+  const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
 
   // ─ tab
   const [tab, setTab] = useState<'sign2text' | 'text2sign'>('sign2text');
