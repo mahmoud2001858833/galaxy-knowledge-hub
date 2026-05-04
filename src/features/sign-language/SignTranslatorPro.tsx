@@ -10,6 +10,8 @@ import { filterGesture, buildSentence, type DetectedToken } from './gestureFilte
 import { SPOKEN_LANGUAGES, type SpokenLang } from './languages';
 import { SIGN_SYSTEMS } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
+import HandSignCard from './HandSignCard';
+import type { Movement } from './handshapes';
 
 // ── Gesture vocabulary (Arabic) ──
 const gestureToArabic: Record<string, { text: string; emoji: string; description: string }> = {
@@ -90,9 +92,19 @@ const SignTranslatorPro: React.FC = () => {
     translated_text: string;
     language: string;
     sign_system: string;
-    words: { word: string; sign_emoji: string; description: string; fingerspelling: { letter: string; sign: string }[] }[];
-    alphabet_chart: { letter: string; sign: string; emoji: string }[];
+    words: {
+      word: string;
+      sign_emoji: string;
+      description: string;
+      handshape_id?: string;
+      movement?: string;
+      two_handed?: boolean;
+      fingerspelling: { letter: string; sign: string; handshape_id?: string }[];
+    }[];
+    alphabet_chart: { letter: string; sign: string; emoji: string; handshape_id?: string }[];
   } | null>(null);
+  const [playSpeed, setPlaySpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
+  const stripRef = React.useRef<HTMLDivElement>(null);
   const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
 
   // ─ tab
@@ -440,10 +452,16 @@ const SignTranslatorPro: React.FC = () => {
 
   const playWordSequence = async () => {
     if (!t2sResult) return;
+    const delay = playSpeed === 'slow' ? 1600 : playSpeed === 'fast' ? 700 : 1100;
     for (let i = 0; i < t2sResult.words.length; i++) {
       setActiveWordIdx(i);
       speakText(t2sResult.words[i].word, t2sLang.code);
-      await new Promise(r => setTimeout(r, 1100));
+      // Auto-scroll the active card into view in the inline strip.
+      requestAnimationFrame(() => {
+        const el = stripRef.current?.querySelector(`[data-word-idx="${i}"]`) as HTMLElement | null;
+        el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+      await new Promise(r => setTimeout(r, delay));
     }
     setActiveWordIdx(null);
   };
@@ -729,6 +747,47 @@ const SignTranslatorPro: React.FC = () => {
               <div className="min-h-[80px] p-3 rounded-xl bg-white text-xl leading-relaxed font-medium" dir="auto">
                 {t2sResult?.translated_text || <span className="text-slate-400">ستظهر الترجمة هنا قبل عرض الإشارات…</span>}
               </div>
+
+              {/* INLINE SIGN STRIP — appears immediately under the translation */}
+              {t2sResult && (
+                <div className="rounded-xl bg-white/70 border border-[hsl(var(--damij-primary))]/15 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-[hsl(var(--damij-primary))] flex items-center gap-1">
+                      <Hand className="w-3.5 h-3.5" /> تتابع الإشارات ({t2sResult.words.length})
+                    </span>
+                    <div className="flex items-center gap-1 text-xs">
+                      <span className="text-slate-500">السرعة:</span>
+                      {(['slow','normal','fast'] as const).map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setPlaySpeed(s)}
+                          className={`px-2 py-0.5 rounded-md font-bold transition ${
+                            playSpeed === s ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {s === 'slow' ? 'بطيء' : s === 'fast' ? 'سريع' : 'عادي'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div ref={stripRef} className="flex gap-2 overflow-x-auto pb-2 scroll-smooth" dir="ltr">
+                    {t2sResult.words.map((w, i) => (
+                      <div key={i} data-word-idx={i}>
+                        <HandSignCard
+                          word={w.word}
+                          handshapeId={w.handshape_id}
+                          movement={(w.movement as Movement) || 'none'}
+                          twoHanded={w.two_handed}
+                          active={activeWordIdx === i}
+                          size={80}
+                          onClick={() => { setActiveWordIdx(i); speakText(w.word, t2sLang.code); }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {t2sResult && (
                 <button
                   onClick={playWordSequence}
@@ -743,7 +802,7 @@ const SignTranslatorPro: React.FC = () => {
           {t2sResult && (
             <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/15">
               <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-4">
-                <Hand className="w-4 h-4" /> إشارة لكل كلمة ({t2sResult.words.length}) — نظام {t2sResult.sign_system}
+                <Hand className="w-4 h-4" /> تفاصيل كل كلمة ({t2sResult.words.length}) — نظام {t2sResult.sign_system}
               </h3>
               <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {t2sResult.words.map((w, i) => (
@@ -759,7 +818,14 @@ const SignTranslatorPro: React.FC = () => {
                     dir="auto"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-4xl">{w.sign_emoji}</span>
+                      <HandSignCard
+                        word={w.word}
+                        handshapeId={w.handshape_id}
+                        movement={(w.movement as Movement) || 'none'}
+                        twoHanded={w.two_handed}
+                        active={activeWordIdx === i}
+                        size={70}
+                      />
                       <span className="text-xs font-bold text-slate-400">#{i + 1}</span>
                     </div>
                     <div className="font-bold text-lg text-[hsl(var(--damij-primary))] mb-1">{w.word}</div>
@@ -767,11 +833,9 @@ const SignTranslatorPro: React.FC = () => {
                     {w.fingerspelling?.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-slate-200">
                         <div className="text-[10px] text-slate-500 mb-1">تهجئة بالأحرف:</div>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1.5">
                           {w.fingerspelling.map((f, j) => (
-                            <span key={j} className="px-1.5 py-0.5 bg-white rounded text-xs border border-slate-200">
-                              {f.sign} {f.letter}
-                            </span>
+                            <HandSignCard key={j} word={f.letter} letter={f.letter} size={48} />
                           ))}
                         </div>
                       </div>
@@ -787,12 +851,16 @@ const SignTranslatorPro: React.FC = () => {
               <h3 className="font-bold text-amber-800 flex items-center gap-2 mb-4">
                 <Type className="w-4 h-4" /> أبجدية إشارات الحروف ({t2sResult.alphabet_chart.length})
               </h3>
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {t2sResult.alphabet_chart.map((a, i) => (
-                  <div key={i} className="bg-white rounded-xl p-2 text-center border border-amber-200" title={a.sign} dir="auto">
-                    <div className="text-2xl">{a.emoji}</div>
-                    <div className="font-bold text-lg text-amber-900">{a.letter}</div>
-                  </div>
+                  <HandSignCard
+                    key={i}
+                    word={a.letter}
+                    letter={a.letter}
+                    handshapeId={a.handshape_id}
+                    size={64}
+                    caption={a.sign}
+                  />
                 ))}
               </div>
             </div>
