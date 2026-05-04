@@ -236,3 +236,6 @@ verify_jwt = false
 [functions.braille-fetch-url]
 verify_jwt = false
 
+[functions.braille-ocr]
+verify_jwt = false
+

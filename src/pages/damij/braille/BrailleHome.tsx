@@ -18,7 +18,7 @@ const BrailleHome: React.FC = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <SystemCard to="/damij/braille/universal" icon={Globe} title="محوّل بريل العالمي ✨" description="حوّل أي ملف (PDF, Word, PPT, Excel, صور) أو صفحة ويب أو نص إلى بريل بأكثر من 100 لغة، مع دعم المستوى الأول والثاني (الاختزالي)." />
       <SystemCard to="/damij/braille/text-to-braille" icon={ArrowLeftRight} title="من النص إلى بريل" description="حوّل أي نص عربي/إنجليزي إلى رموز بريل قابلة للقراءة والطباعة." />
-      <SystemCard to="/damij/braille/braille-to-text" icon={FileText} title="من بريل إلى نص" description="ارفع صورة أو أدخل رموز بريل واحصل على النص المكتوب." />
+      <SystemCard to="/damij/braille/braille-to-text" icon={FileText} title="من بريل إلى نص + قراءة صوتية" description="صوّر صفحة بريل ورقية بالكاميرا أو ارفع صورة، وحوّلها إلى نص رقمي قابل للقراءة الصوتية بأكثر من لغة." />
       <SystemCard to="/damij/braille/learn" icon={BookOpen} title="تعلّم بريل" description="جدول الحروف والأرقام بطريقة بريل مع نطق صوتي." />
     </div>
   </div>
