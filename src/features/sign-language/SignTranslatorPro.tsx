@@ -371,10 +371,9 @@ const SignTranslatorPro: React.FC = () => {
     streamRef.current = null;
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     animationFrameRef.current = null;
-    try { handLandmarkerRef.current?.close?.(); } catch {}
-    handLandmarkerRef.current = null;
+    // keep handLandmarkerRef alive for instant restart
     if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraActive(false); setHandDetected(false); setMediapipeReady(false);
+    setCameraActive(false); setHandDetected(false);
     setConfidence(0); setFps(0); setHandsCount(0);
   };
 
