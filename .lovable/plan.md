@@ -1,148 +1,122 @@
 ## Goal
 
-Rebuild **تشخيص نوع التوحد** (`/damij/autism/diagnosis`) into a professional, two-pronged screening experience:
+Add a **Tactile Graphics** module to نظام بريل العالمي that lets users:
 
-1. **Questionnaire screening** based on caregiver-reported items aligned with **DSM-5** social-communication & restricted/repetitive behavior domains and the **M-CHAT-R/F** style scoring (validated for 16–30 months) plus an SRS-2 inspired path for older children.
-2. **Play-based observation** — a set of mini-games that passively measure response to name, joint attention, eye-tracking-style gaze targets, repetitive pattern preference, sensory tolerance, social reciprocity, and pragmatic language — then feed the metrics to AI for analysis.
-
-The output is an AI-generated, source-grounded report in Arabic with: domain scores, risk band (low / monitor / refer for evaluation), specific observations, recommended next steps, and citations to **CDC, AAP, NICE CG170, WHO**. The report makes it explicit that this is a **screening aid, not a diagnosis** — final diagnosis requires a qualified clinician (per CDC).
+1. **Generate** printable tactile diagrams from a description (geometric shapes, function graphs, geographic outlines, chemical molecules, biology figures, anything else) — output as high-contrast **SVG** + a **print-ready PDF** with bold raised-line outlines, large braille-labeled legend, and a textual key page. The output is designed for swell-paper / embosser printing where black ink raises on heating.
+2. **Upload** an existing diagram image (textbook figure, map, chemistry molecule, math graph) and convert it into the same tactile-ready SVG + PDF, with all visible labels OCR'd, translated to the chosen language, and rendered in **braille** alongside the simplified outline.
+3. **Reverse mode**: upload a photo of a **tactile/braille diagram** and have the AI describe the figure (what shape/map/molecule it represents) plus extract any braille labels back into readable text + audio.
 
 ---
 
 ## What to build
 
-### 1. New autism feature module — `src/features/autism/`
+### 1. New page — `src/pages/damij/braille/TactileGraphics.tsx`
 
-- `screeningItems.ts` — Arabic questionnaire bank, three age tracks:
-  - **Toddler (16–30 mo)** — 20 items modeled on M-CHAT-R structure (yes/no, weighted; loss-of-skills critical items).
-  - **Child (3–11 y)** — 25 items covering social communication, repetitive behaviors, sensory, and play.
-  - **Adolescent/Adult (12+)** — 20 items inspired by AQ-style self/parent report.
-  Each item: `{ id, ageTrack, domain, text, scale: 'yesno' | '4pt', critical?, scoreMap }`.
-- `playGames.ts` — Registry of 6 mini-games with deterministic metrics:
-  1. **Response to Name** — audio cue at random intervals; measures reaction time + miss rate (proxy for joint attention).
-  2. **Joint Attention** — animated character looks at a target; user must tap where it's looking. Measures gaze-following accuracy.
-  3. **Pattern vs. Social** — split-screen choice between a spinning geometric pattern and a smiling face video loop; measures dwell-time ratio.
-  4. **Repetitive Match** — matching game where one option always rewards a fixed repetitive motion; tracks tendency to repeat preferred pattern after rule change.
-  5. **Emotion Recognition** — 8 facial expression cards; measures accuracy + reaction time.
-  6. **Sensory Tolerance** — gradually intensifying sound/animation; user taps to "stop"; measures tolerance threshold.
-  Each game returns `{ gameId, metrics: Record<string,number>, durationMs }`.
-- `scoringEngine.ts` — Local pre-AI scoring:
-  - M-CHAT-R-style cutoffs for toddler track (low <3, medium 3–7, high ≥8; criticals upweighted).
-  - Domain rollups for child/adult tracks.
-  - Game-metric normalization to z-scores against built-in reference ranges (documented in code comments with source).
-- `sources.ts` — Canonical citation list (CDC pages, AAP guideline, NICE CG170, WHO fact sheet & caregiver training) used by both UI and prompt.
-
-### 2. Edge function `supabase/functions/autism-screen-analyze/index.ts`
-
-- Input: `{ ageTrack, demographics, questionnaireScore, questionnaireAnswers, gameResults, locale }`.
-- Uses Gemini 2.5 Flash via the **new dedicated key** (see step 5).
-- System prompt:
-  - Grounds analysis in DSM-5 ASD criteria + CDC/AAP/NICE/WHO guidance (full source URLs embedded).
-  - Forbids language that claims a diagnosis; must use risk-band + recommendation phrasing.
-  - Returns strict JSON: `{ risk_band, summary_ar, domain_scores: { social_communication, restricted_repetitive, sensory, language, play }, observations: string[], red_flags: string[], strengths: string[], recommendations: string[], next_steps: string[], citations: { title, url }[] }`.
-- Lovable AI Gateway fallback on 429/quota errors (per project memory rule).
-- CORS, input validation, error surfacing.
-
-### 3. Page rewrite `src/pages/damij/autism/AutismDiagnosis.tsx`
-
-Multi-step wizard (no external nav, all in one route):
+Single-page module with three tabs:
 
 ```
-Step 1 — Intro & Consent
-  - Explain it is a screening aid, not a diagnosis (CDC source link).
-  - Caregiver/self toggle, child age input → selects ageTrack.
-  - Privacy note: data stays local unless user saves.
-
-Step 2 — Path picker
-  - "تقييم بالأسئلة" (questionnaire only)
-  - "تقييم باللعب" (play games only)
-  - "تقييم شامل" (both — recommended)
-
-Step 3 — Questionnaire (if selected)
-  - One question at a time, progress bar, domain chip, ability to go back.
-  - Critical-item flagging shown subtly to clinician-mode toggle.
-
-Step 4 — Play games (if selected)
-  - Game launcher grid; each game opens in a focused modal/overlay.
-  - Each game self-contained component under src/features/autism/games/.
-  - Persists per-game metrics in component state.
-  - Skip option per game (reported in metrics).
-
-Step 5 — AI analysis
-  - Loading screen with reassuring copy + cited sources list.
-  - Calls edge function; handles 429/402/timeout with friendly Arabic toast.
-
-Step 6 — Report
-  - Risk-band hero (color-coded: green/amber/red) with bold disclaimer.
-  - Domain radar chart (using existing recharts in repo if present, else simple SVG).
-  - Sections: Observations, Red flags, Strengths, Recommendations, Next steps.
-  - "اطبع التقرير" → window.print with print stylesheet.
-  - Source citations footer with clickable links.
-  - Reset button to start over.
+┌──────────────────────────────────────────────────────┐
+│  توليد رسم تكتيلي  │  تحويل ملف  │  وصف رسم تكتيلي    │
+└──────────────────────────────────────────────────────┘
 ```
 
-### 4. Game components — `src/features/autism/games/`
+**Tab 1 — Generate**
+- Category picker (chips): شكل هندسي / رسم بياني / خريطة جغرافية / جزيء كيميائي / رسم بيولوجي / أخرى
+- Prompt textarea (Arabic): "مثلث متساوي الأضلاع طول ضلعه 5 سم مع زواياه" / "خريطة الأردن مع المحافظات" / "جزيء الماء H₂O".
+- Language for braille labels (reuse `SPOKEN_LANGUAGES`).
+- Grade 1 / Grade 2 toggle.
+- Paper size (A4 / A3 / Letter) + label size.
+- "Generate" → calls `braille-tactile-generate` edge function.
+- Result panel: SVG preview (high-contrast B/W), legend table (label → braille), and buttons: "تنزيل SVG", "تنزيل PDF للطباعة", "نسخ النص بالبريل".
 
-- `ResponseToName.tsx`, `JointAttention.tsx`, `PatternVsSocial.tsx`, `RepetitiveMatch.tsx`, `EmotionRecognition.tsx`, `SensoryTolerance.tsx`.
-- Each: ~150–250 LoC, accessible (ARIA labels, large hit targets), 60–120 second sessions, returns metrics via `onComplete`.
-- All visuals built from CSS/SVG/Lottie-free shapes — no copyrighted faces. The Emotion Recognition game uses neutral emoji-style SVG faces drawn in code.
+**Tab 2 — Convert file**
+- Drag-and-drop or pick: PNG/JPG/PDF (use existing `extractFromFile` for PDF text + send rendered page image for vector trace).
+- Same options panel as Tab 1.
+- Pipeline: image → AI (Gemini Vision) returns `{ description, labels[], simplified_svg, suggested_braille_labels }` → render tactile SVG + PDF.
 
-### 5. Secret
+**Tab 3 — Describe tactile diagram (reverse)**
+- Upload a photo of a printed tactile/braille graphic.
+- AI returns: figure type, plain-language description (Arabic), any braille labels decoded into text, recommended audio narration. TTS button to read it aloud.
 
-The user supplied a Gemini key. Add a **new** runtime secret `AUTISM_GEMINI_API_KEY` (so it stays isolated from Braille/other modules). Edge function reads it first, falls back to `LOVABLE_API_KEY` via gateway.
+### 2. New feature folder — `src/features/braille/tactile/`
+
+- `unicodeBraille.ts` — Map characters (Latin, Arabic, digits, punctuation) to Unicode braille dot patterns (`⠀`–`⡿`). Reuse mapping logic if present in existing `extractText`/`brailleExport`; otherwise implement standard Grade 1 mappings (UEB English; Arabic per Unified Arabic Braille).
+- `tactileSvg.ts` — Helpers that take an AI-returned structured figure (shapes, polylines, points + label anchors) and produce a clean black-outline SVG sized for the chosen paper. Stroke width ≥ 1.2mm equivalent at print resolution. Labels rendered as Unicode braille text with sufficient spacing per BANA tactile graphics guidelines.
+- `tactilePdf.ts` — Uses existing `pdf-lib` (already used by `brailleExport`) to embed the SVG (via `svg2pdf.js` if installed, else rasterize through canvas) onto an A4 page plus a second page with a numbered legend (printed text + braille). Also outputs `.brf` companion for the legend so an embosser can render labels.
+- `tactileTypes.ts` — TypeScript types for the AI contract.
+
+### 3. Edge function — `supabase/functions/braille-tactile-generate/index.ts`
+
+- Modes: `generate` (text → figure), `convert_image` (image → tactile figure), `describe` (image → description + decode labels).
+- Uses dedicated **new** secret `BRAILLE_TACTILE_GEMINI_API_KEY` (the key the user just supplied), Gemini 2.5 Flash (vision-capable). Lovable AI Gateway fallback on quota/429.
+- Strict JSON schema via tool-calling:
+  ```
+  {
+    title, description, paper: "A4|A3|Letter",
+    elements: [
+      { kind: "circle"|"polygon"|"polyline"|"path"|"line"|"point",
+        coords: number[], label_id?: string, stroke_mm?: number, dashed?: boolean }
+    ],
+    labels: [{ id, text, braille, position: [x,y], leader_to: [x,y] }],
+    legend: [{ id, text, braille, notes? }],
+    safety_notes
+  }
+  ```
+- System prompt enforces: BANA-style simplification (no shading, no fine detail, max ~7 labels per page, leader lines straight, labels never overlap shapes), Arabic-first, and "no diagnosis/medical claims" guardrail not relevant here.
+
+### 4. Add Tactile card to `BrailleHome.tsx`
+
+Add a fifth `SystemCard` linking to `/damij/braille/tactile` with icon `Shapes` and Arabic copy: "رسومات تكتيلية للطباعة — أشكال هندسية وخرائط وجزيئات قابلة للمس".
+
+### 5. Routing
+
+Register route `/damij/braille/tactile` in `src/App.tsx` next to the other braille routes.
 
 ### 6. `supabase/config.toml`
 
-Register `[functions.autism-screen-analyze] verify_jwt = false`.
+Add `[functions.braille-tactile-generate] verify_jwt = false`.
 
-### 7. Update `AutismHome.tsx`
+### 7. Secret
 
-Refresh the Diagnosis card description to mention the new questionnaire + play-based + AI-report features.
+Add new runtime secret `BRAILLE_TACTILE_GEMINI_API_KEY` (one prompt to user during build).
 
 ---
 
 ## Files
 
 **New**
-- `src/features/autism/screeningItems.ts`
-- `src/features/autism/playGames.ts`
-- `src/features/autism/scoringEngine.ts`
-- `src/features/autism/sources.ts`
-- `src/features/autism/games/ResponseToName.tsx`
-- `src/features/autism/games/JointAttention.tsx`
-- `src/features/autism/games/PatternVsSocial.tsx`
-- `src/features/autism/games/RepetitiveMatch.tsx`
-- `src/features/autism/games/EmotionRecognition.tsx`
-- `src/features/autism/games/SensoryTolerance.tsx`
-- `src/features/autism/ReportView.tsx`
-- `supabase/functions/autism-screen-analyze/index.ts`
+- `src/pages/damij/braille/TactileGraphics.tsx`
+- `src/features/braille/tactile/unicodeBraille.ts`
+- `src/features/braille/tactile/tactileSvg.ts`
+- `src/features/braille/tactile/tactilePdf.ts`
+- `src/features/braille/tactile/tactileTypes.ts`
+- `supabase/functions/braille-tactile-generate/index.ts`
 
 **Edited**
-- `src/pages/damij/autism/AutismDiagnosis.tsx` — full rewrite as wizard
-- `src/pages/damij/autism/AutismHome.tsx` — card description tweak
-- `supabase/config.toml` — register new function
+- `src/pages/damij/braille/BrailleHome.tsx` — add the new card
+- `src/App.tsx` — register the new route
+- `supabase/config.toml` — register the function
 
 **Secret**
-- Add `AUTISM_GEMINI_API_KEY` (one prompt to user during the build).
+- `BRAILLE_TACTILE_GEMINI_API_KEY`
 
 ---
 
 ## Technical notes
 
-- **Disclaimer is non-negotiable**: every page step and the AI report itself state that this is a screening aid; final diagnosis requires DSM-5-trained clinician evaluation per CDC.
-- **No medical claims** in code or AI output beyond what the source guidelines support.
-- **Sources file** is a single source of truth used by (a) UI footer, (b) edge-function prompt, (c) AI report citations, ensuring consistency.
-- Game metrics are normalized in `scoringEngine.ts` against documented reference ranges; ranges are conservative defaults sourced from open-access screening literature, with comments pointing to the relevant CDC/AAP/NICE pages. The AI is instructed to treat these as non-diagnostic indicators.
-- AI temperature kept low (0.2) and JSON-mode enforced for consistent reports.
-- All UI strings in Arabic (RTL); page reuses `--damij-primary` tokens.
-- Charts: prefer existing `recharts` if installed; otherwise lightweight inline SVG radar (≤80 LoC).
-- Print stylesheet hides nav and renders the report at A4-friendly width.
+- **SVG → PDF**: prefer `svg-to-pdfkit`/`svg2pdf.js` if already installed. Otherwise rasterize the SVG to a canvas at 300 DPI and embed as PNG via `pdf-lib`. Inspect `package.json` first.
+- **Stroke**: 2px @ 300 DPI = ~0.17 mm; for embossing/swell-paper use 4–6 px (≈ 0.34–0.5 mm) and ensure black-on-white only.
+- **Braille labels**: Unicode braille glyphs render correctly on screen but may not on printers; therefore the PDF also includes the legend as separate plain-text + braille blocks so users can also produce a `.brf` companion for an embosser.
+- **Paper sizes**: A4 default. The PDF page split: figure on page 1 (centered, 80% area), legend on page 2 (text + braille two-column).
+- **Reverse mode** uses Gemini Vision to recognize the figure plus run a braille decode pass (re-using prompt patterns from `braille-ocr` function).
+- Rate-limit handling: surface 402/429 toasts in Arabic.
+- All UI Arabic, RTL, uses existing `--damij-*` tokens.
 
 ---
 
 ## Out of scope
 
-- Persisting reports to Supabase (can be added later — the current rewrite stores in component state and lets the user print/save).
-- Multi-session longitudinal tracking.
-- Voice-based screening (would require speech recognition setup).
-- Editing the existing `AutismTherapy` and `AutismProfile` pages.
+- Actually driving an embosser/printer over USB (requires native bridge).
+- 3D printing of tactile models.
+- Real-time editing of generated SVG (user can re-prompt instead).
+- Persisting generated diagrams to Supabase (initial version is in-memory + downloads).
