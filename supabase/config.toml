@@ -244,3 +244,6 @@ verify_jwt = false
 
 [functions.braille-tactile-generate]
 verify_jwt = false
+
+[functions.braille-tutor-ai]
+verify_jwt = false
