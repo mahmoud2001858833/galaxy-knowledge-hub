@@ -128,6 +128,7 @@ const AutismDiagnosis: React.FC = () => {
       if (data?.error) throw new Error(data.error);
       if (!data?.report) throw new Error('Empty report');
       setReport(data.report);
+      await persistProfile(data.report);
       setStep('report');
     } catch (e: any) {
       console.error('AI report failed, using local fallback:', e);
