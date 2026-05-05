@@ -1,122 +1,145 @@
-## Goal
+# خطة: تحسين تشخيص التوحد + توليد ألعاب علاجية تفاعلية بالذكاء الاصطناعي
 
-Add a **Tactile Graphics** module to نظام بريل العالمي that lets users:
+## الجزء الأول: تحسين التشخيص وتحديد نوع التوحد
 
-1. **Generate** printable tactile diagrams from a description (geometric shapes, function graphs, geographic outlines, chemical molecules, biology figures, anything else) — output as high-contrast **SVG** + a **print-ready PDF** with bold raised-line outlines, large braille-labeled legend, and a textual key page. The output is designed for swell-paper / embosser printing where black ink raises on heating.
-2. **Upload** an existing diagram image (textbook figure, map, chemistry molecule, math graph) and convert it into the same tactile-ready SVG + PDF, with all visible labels OCR'd, translated to the chosen language, and rendered in **braille** alongside the simplified outline.
-3. **Reverse mode**: upload a photo of a **tactile/braille diagram** and have the AI describe the figure (what shape/map/molecule it represents) plus extract any braille labels back into readable text + audio.
+### 1. توسيع الاستبيان والمؤشرات
+- إضافة أدوات فحص مرجعية إضافية بجانب M-CHAT-R الحالي:
+  - **SCQ** (Social Communication Questionnaire) للأعمار >4 سنوات
+  - **AQ-10** للمراهقين/البالغين
+  - **CARS-2** عناصر مختصرة لتقدير الشدة
+- تقسيم الأسئلة لـ 5 محاور بدل المحاور الحالية: تواصل اجتماعي، سلوك مقيّد/متكرر، حسي، لغة، لعب/خيال — مع وزن لكل سؤال.
+
+### 2. تحديد "نوع/ملف" التوحد (Profile)
+بناءً على DSM-5 (لا يوجد أنواع رسمية بعد 2013، لكن نعرض **ملف وظيفي** + **مستوى دعم**):
+- **مستوى الدعم** (Level 1/2/3) وفق DSM-5
+- **الملف الوظيفي**:
+  - اجتماعي–تواصلي بارز
+  - حسي بارز (فرط/نقص حسي)
+  - سلوكي–تكراري بارز
+  - لغوي بارز (تأخر/انتقائي)
+  - مختلط
+- **الملف المعرفي**: عالي الأداء / متوسط / يحتاج دعماً مكثفاً
+
+### 3. تحسين edge function `autism-screen-analyze`
+- استخدام مفتاح Gemini الجديد (يُحفظ كـ secret `AUTISM_GEMINI_API_KEY_V2`) — **لن يُكتب في الكود**
+- توسيع schema الإخراج ليشمل:
+  - `support_level`: 1 | 2 | 3
+  - `functional_profile`: string
+  - `cognitive_profile`: string
+  - `confidence_score`: 0-100
+  - `recommended_game_tracks`: string[] (تُمرر لمولّد الألعاب)
+- تحسين prompt ليطلب تبرير كل تصنيف بمؤشرات محددة من الاستبيان والألعاب.
+
+### 4. تحسين عرض التقرير
+- بطاقة "الملف الوظيفي" واضحة + مستوى الدعم
+- رسم رادار للمحاور الخمسة
+- زر **"ابدأ خطة العلاج التفاعلية المخصصة"** ينقل لمولّد الألعاب
 
 ---
 
-## What to build
+## الجزء الثاني: نظام العلاج بالألعاب التفاعلية المولّدة بالـ AI
 
-### 1. New page — `src/pages/damij/braille/TactileGraphics.tsx`
-
-Single-page module with three tabs:
-
+### 1. بنية النظام
 ```
-┌──────────────────────────────────────────────────────┐
-│  توليد رسم تكتيلي  │  تحويل ملف  │  وصف رسم تكتيلي    │
-└──────────────────────────────────────────────────────┘
+ملف الطفل (نوع/مستوى) 
+  → AI Game Generator (edge function)
+    → خطة علاجية: 4 مراحل × عدة ألعاب
+      → عرض اللعبة + تتبع التقدم
+        → تكييف تلقائي حسب الأداء
 ```
 
-**Tab 1 — Generate**
-- Category picker (chips): شكل هندسي / رسم بياني / خريطة جغرافية / جزيء كيميائي / رسم بيولوجي / أخرى
-- Prompt textarea (Arabic): "مثلث متساوي الأضلاع طول ضلعه 5 سم مع زواياه" / "خريطة الأردن مع المحافظات" / "جزيء الماء H₂O".
-- Language for braille labels (reuse `SPOKEN_LANGUAGES`).
-- Grade 1 / Grade 2 toggle.
-- Paper size (A4 / A3 / Letter) + label size.
-- "Generate" → calls `braille-tactile-generate` edge function.
-- Result panel: SVG preview (high-contrast B/W), legend table (label → braille), and buttons: "تنزيل SVG", "تنزيل PDF للطباعة", "نسخ النص بالبريل".
+### 2. المراحل الأربع (Therapy Stages)
+1. **التأسيس** — انتباه، استجابة للاسم، تتبع بصري
+2. **التفاعل** — انتباه مشترك، تقليد، تواصل بصري
+3. **التواصل** — تمييز مشاعر، طلبات، حوار بسيط
+4. **الدمج** — لعب رمزي، حل مشكلات اجتماعية، مرونة معرفية
 
-**Tab 2 — Convert file**
-- Drag-and-drop or pick: PNG/JPG/PDF (use existing `extractFromFile` for PDF text + send rendered page image for vector trace).
-- Same options panel as Tab 1.
-- Pipeline: image → AI (Gemini Vision) returns `{ description, labels[], simplified_svg, suggested_braille_labels }` → render tactile SVG + PDF.
+### 3. مكتبة ألعاب موسّعة (قوالب جاهزة + مولّدة)
+أضف هذه الألعاب التفاعلية الفعلية (React + Canvas/Framer Motion):
+- 🎯 **تتبع الفقاعات** (انتباه بصري)
+- 👀 **انظر معي** (انتباه مشترك مع شخصية متحركة)
+- 😊 **بطاقات المشاعر** (تمييز انفعالات)
+- 🔊 **عالم الأصوات الهادئة** (تنظيم حسي سمعي)
+- 🧩 **رتّب القصة** (تسلسل أحداث)
+- 🪞 **المرآة السحرية** (تقليد حركات/تعابير)
+- 🔁 **غيّر القاعدة** (مرونة معرفية)
+- 🎨 **ارسم ما تشعر** (تعبير حسي–انفعالي)
+- 🗣️ **اطلب لتحصل** (طلبات وظيفية)
+- 👫 **اختر الرد المناسب** (سيناريوهات اجتماعية)
+- 🎵 **الإيقاع المتبادل** (turn-taking)
+- 🔍 **اعثر على الفرق** (انتباه للتفاصيل)
 
-**Tab 3 — Describe tactile diagram (reverse)**
-- Upload a photo of a printed tactile/braille graphic.
-- AI returns: figure type, plain-language description (Arabic), any braille labels decoded into text, recommended audio narration. TTS button to read it aloud.
+### 4. AI Game Generator — edge function جديدة `autism-generate-therapy-plan`
+المدخلات: ملف الطفل (نوع، مستوى، نقاط ضعف/قوة)
+المخرجات (JSON عبر tool calling):
+```json
+{
+  "plan_title": "...",
+  "stages": [
+    {
+      "stage": 1,
+      "title": "التأسيس",
+      "rationale": "...",
+      "games": [
+        {
+          "template_id": "bubble_tracking",
+          "title_ar": "...",
+          "instructions_ar": "...",
+          "difficulty": "easy|medium|hard",
+          "duration_sec": 60,
+          "target_skill": "...",
+          "success_criteria": "...",
+          "adaptations": ["إذا فقد الانتباه: قلل عدد الفقاعات", "..."]
+        }
+      ]
+    }
+  ]
+}
+```
+- يستخدم نفس secret `AUTISM_GEMINI_API_KEY_V2` مع fallback إلى Lovable Gateway (`google/gemini-2.5-flash`).
+- system prompt يضمن أن الألعاب تطابق نوع التوحد ومستوى الدعم.
 
-### 2. New feature folder — `src/features/braille/tactile/`
+### 5. التكيّف الديناميكي (Adaptive Loop)
+- بعد كل لعبة: حفظ نتيجة (دقة، زمن، تخلي عن المهمة) في جدول جديد.
+- زر **"اقترح لعبة تالية"** يرسل النتائج للـ AI الذي يولّد لعبة/تعديل صعوبة.
 
-- `unicodeBraille.ts` — Map characters (Latin, Arabic, digits, punctuation) to Unicode braille dot patterns (`⠀`–`⡿`). Reuse mapping logic if present in existing `extractText`/`brailleExport`; otherwise implement standard Grade 1 mappings (UEB English; Arabic per Unified Arabic Braille).
-- `tactileSvg.ts` — Helpers that take an AI-returned structured figure (shapes, polylines, points + label anchors) and produce a clean black-outline SVG sized for the chosen paper. Stroke width ≥ 1.2mm equivalent at print resolution. Labels rendered as Unicode braille text with sufficient spacing per BANA tactile graphics guidelines.
-- `tactilePdf.ts` — Uses existing `pdf-lib` (already used by `brailleExport`) to embed the SVG (via `svg2pdf.js` if installed, else rasterize through canvas) onto an A4 page plus a second page with a numbered legend (printed text + braille). Also outputs `.brf` companion for the legend so an embosser can render labels.
-- `tactileTypes.ts` — TypeScript types for the AI contract.
+### 6. قاعدة البيانات (جديد)
+جداول:
+- `autism_child_profiles` — معلومات الطفل + الملف التشخيصي
+- `autism_therapy_plans` — الخطط المولّدة (jsonb)
+- `autism_game_sessions` — سجل كل جلسة لعب (نتائج، ملاحظات)
+RLS: المستخدم يرى فقط بيانات أطفاله.
 
-### 3. Edge function — `supabase/functions/braille-tactile-generate/index.ts`
-
-- Modes: `generate` (text → figure), `convert_image` (image → tactile figure), `describe` (image → description + decode labels).
-- Uses dedicated **new** secret `BRAILLE_TACTILE_GEMINI_API_KEY` (the key the user just supplied), Gemini 2.5 Flash (vision-capable). Lovable AI Gateway fallback on quota/429.
-- Strict JSON schema via tool-calling:
-  ```
-  {
-    title, description, paper: "A4|A3|Letter",
-    elements: [
-      { kind: "circle"|"polygon"|"polyline"|"path"|"line"|"point",
-        coords: number[], label_id?: string, stroke_mm?: number, dashed?: boolean }
-    ],
-    labels: [{ id, text, braille, position: [x,y], leader_to: [x,y] }],
-    legend: [{ id, text, braille, notes? }],
-    safety_notes
-  }
-  ```
-- System prompt enforces: BANA-style simplification (no shading, no fine detail, max ~7 labels per page, leader lines straight, labels never overlap shapes), Arabic-first, and "no diagnosis/medical claims" guardrail not relevant here.
-
-### 4. Add Tactile card to `BrailleHome.tsx`
-
-Add a fifth `SystemCard` linking to `/damij/braille/tactile` with icon `Shapes` and Arabic copy: "رسومات تكتيلية للطباعة — أشكال هندسية وخرائط وجزيئات قابلة للمس".
-
-### 5. Routing
-
-Register route `/damij/braille/tactile` in `src/App.tsx` next to the other braille routes.
-
-### 6. `supabase/config.toml`
-
-Add `[functions.braille-tactile-generate] verify_jwt = false`.
-
-### 7. Secret
-
-Add new runtime secret `BRAILLE_TACTILE_GEMINI_API_KEY` (one prompt to user during build).
-
----
-
-## Files
-
-**New**
-- `src/pages/damij/braille/TactileGraphics.tsx`
-- `src/features/braille/tactile/unicodeBraille.ts`
-- `src/features/braille/tactile/tactileSvg.ts`
-- `src/features/braille/tactile/tactilePdf.ts`
-- `src/features/braille/tactile/tactileTypes.ts`
-- `supabase/functions/braille-tactile-generate/index.ts`
-
-**Edited**
-- `src/pages/damij/braille/BrailleHome.tsx` — add the new card
-- `src/App.tsx` — register the new route
-- `supabase/config.toml` — register the function
-
-**Secret**
-- `BRAILLE_TACTILE_GEMINI_API_KEY`
+### 7. صفحات/مكونات جديدة
+- `src/pages/damij/autism/AutismTherapyPlan.tsx` — عرض الخطة المولّدة بمراحلها
+- `src/pages/damij/autism/AutismGamePlayer.tsx` — مشغّل اللعبة الموحّد
+- `src/features/autism/games/templates/` — 12 قالب لعبة تفاعلي جديد
+- `src/features/autism/therapyEngine.ts` — منطق التكيّف
+- تحديث `AutismTherapy.tsx` ليعرض الخطة المخصصة بدل القائمة الثابتة "قريباً"
 
 ---
 
-## Technical notes
+## التفاصيل التقنية
 
-- **SVG → PDF**: prefer `svg-to-pdfkit`/`svg2pdf.js` if already installed. Otherwise rasterize the SVG to a canvas at 300 DPI and embed as PNG via `pdf-lib`. Inspect `package.json` first.
-- **Stroke**: 2px @ 300 DPI = ~0.17 mm; for embossing/swell-paper use 4–6 px (≈ 0.34–0.5 mm) and ensure black-on-white only.
-- **Braille labels**: Unicode braille glyphs render correctly on screen but may not on printers; therefore the PDF also includes the legend as separate plain-text + braille blocks so users can also produce a `.brf` companion for an embosser.
-- **Paper sizes**: A4 default. The PDF page split: figure on page 1 (centered, 80% area), legend on page 2 (text + braille two-column).
-- **Reverse mode** uses Gemini Vision to recognize the figure plus run a braille decode pass (re-using prompt patterns from `braille-ocr` function).
-- Rate-limit handling: surface 402/429 toasts in Arabic.
-- All UI Arabic, RTL, uses existing `--damij-*` tokens.
+### Secrets
+- يجب إضافة `AUTISM_GEMINI_API_KEY_V2` عبر أداة الأسرار (سيُطلب منك تأكيد عند البناء).
+- **مهم أمنياً**: لن أضع المفتاح في الكود مطلقاً — سيُحفظ كـ Supabase secret فقط.
+
+### Edge Functions
+- `autism-screen-analyze` (تحسين)
+- `autism-generate-therapy-plan` (جديد)
+- `autism-adapt-next-game` (جديد — للتكيّف بعد كل جلسة)
+
+### Migrations
+3 جداول جديدة + RLS policies (المستخدم يدير بياناته فقط).
+
+### تقنيات اللعب
+- Framer Motion للتحريك
+- Web Audio API للأصوات الهادئة
+- Canvas للألعاب الرسومية
+- TTS العربية الموجود مسبقاً (`useTextToSpeech`) لتعليمات صوتية
 
 ---
 
-## Out of scope
-
-- Actually driving an embosser/printer over USB (requires native bridge).
-- 3D printing of tactile models.
-- Real-time editing of generated SVG (user can re-prompt instead).
-- Persisting generated diagrams to Supabase (initial version is in-memory + downloads).
+## ملاحظة مهمة
+المنصة **فحص أولي وأدوات دعم تعليمي** — ليست تشخيصاً طبياً. سيظل التنبيه ظاهراً في كل تقرير وكل خطة علاجية بأن التشخيص النهائي يتطلب فريقاً سريرياً مختصاً (وفق CDC/AAP/NICE).
