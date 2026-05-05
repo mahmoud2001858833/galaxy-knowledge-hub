@@ -1,8 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { AUTISM_SOURCES, SCREENING_DISCLAIMER_AR } from './sources';
 
 export interface AIReport {
   risk_band: 'low' | 'monitor' | 'refer';
+  support_level?: 1 | 2 | 3;
+  functional_profile?: string;
+  cognitive_profile?: string;
+  confidence_score?: number;
+  recommended_game_tracks?: string[];
   summary_ar: string;
   domain_scores: {
     social_communication: number;
@@ -18,6 +25,17 @@ export interface AIReport {
   next_steps: string[];
   citations: { title: string; url: string }[];
 }
+
+const PROFILE_LABEL: Record<string, string> = {
+  social_communication: 'تواصلي–اجتماعي',
+  sensory: 'حسي بارز',
+  restricted_repetitive: 'سلوكي–تكراري',
+  language: 'لغوي بارز',
+  mixed: 'مختلط',
+  high_functioning: 'عالي الأداء',
+  moderate: 'متوسط',
+  needs_substantial_support: 'يحتاج دعماً مكثفاً',
+};
 
 const BAND: Record<AIReport['risk_band'], { color: string; label: string; bg: string }> = {
   low: { color: '#16A34A', label: 'منخفض — مؤشرات قليلة', bg: 'bg-green-50' },
