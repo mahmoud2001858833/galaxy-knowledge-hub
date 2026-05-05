@@ -196,6 +196,8 @@ import TactileGraphics from './pages/damij/braille/TactileGraphics';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
 import AutismTherapy from './pages/damij/autism/AutismTherapy';
+import AutismTherapyPlan from './pages/damij/autism/AutismTherapyPlan';
+import AutismGamePlayer from './pages/damij/autism/AutismGamePlayer';
 import AutismProfile from './pages/damij/autism/AutismProfile';
 import ADHDHome from './pages/damij/adhd/ADHDHome';
 import ADHDScreening from './pages/damij/adhd/ADHDScreening';
@@ -977,6 +979,8 @@ const router = createBrowserRouter([
           { path: 'autism', element: <AutismHome /> },
           { path: 'autism/diagnosis', element: <AutismDiagnosis /> },
           { path: 'autism/therapy', element: <AutismTherapy /> },
+          { path: 'autism/plan', element: <AutismTherapyPlan /> },
+          { path: 'autism/play', element: <AutismGamePlayer /> },
           { path: 'autism/profile', element: <AutismProfile /> },
           { path: 'adhd', element: <ADHDHome /> },
           { path: 'adhd/screening', element: <ADHDScreening /> },

@@ -464,6 +464,143 @@ export type Database = {
         }
         Relationships: []
       }
+      autism_child_profiles: {
+        Row: {
+          age_track: string | null
+          age_years: number | null
+          child_name: string
+          cognitive_profile: string | null
+          created_at: string
+          functional_profile: string | null
+          id: string
+          last_report: Json | null
+          support_level: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_track?: string | null
+          age_years?: number | null
+          child_name: string
+          cognitive_profile?: string | null
+          created_at?: string
+          functional_profile?: string | null
+          id?: string
+          last_report?: Json | null
+          support_level?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_track?: string | null
+          age_years?: number | null
+          child_name?: string
+          cognitive_profile?: string | null
+          created_at?: string
+          functional_profile?: string | null
+          id?: string
+          last_report?: Json | null
+          support_level?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      autism_game_sessions: {
+        Row: {
+          abandoned: boolean | null
+          accuracy: number | null
+          child_profile_id: string | null
+          created_at: string
+          difficulty: string | null
+          duration_sec: number | null
+          id: string
+          notes: string | null
+          plan_id: string | null
+          raw_metrics: Json | null
+          stage: number | null
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          abandoned?: boolean | null
+          accuracy?: number | null
+          child_profile_id?: string | null
+          created_at?: string
+          difficulty?: string | null
+          duration_sec?: number | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          raw_metrics?: Json | null
+          stage?: number | null
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          abandoned?: boolean | null
+          accuracy?: number | null
+          child_profile_id?: string | null
+          created_at?: string
+          difficulty?: string | null
+          duration_sec?: number | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          raw_metrics?: Json | null
+          stage?: number | null
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_game_sessions_child_profile_id_fkey"
+            columns: ["child_profile_id"]
+            isOneToOne: false
+            referencedRelation: "autism_child_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autism_game_sessions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "autism_therapy_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autism_therapy_plans: {
+        Row: {
+          child_profile_id: string | null
+          created_at: string
+          id: string
+          plan: Json
+          user_id: string
+        }
+        Insert: {
+          child_profile_id?: string | null
+          created_at?: string
+          id?: string
+          plan: Json
+          user_id: string
+        }
+        Update: {
+          child_profile_id?: string | null
+          created_at?: string
+          id?: string
+          plan?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_therapy_plans_child_profile_id_fkey"
+            columns: ["child_profile_id"]
+            isOneToOne: false
+            referencedRelation: "autism_child_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       btec_custom_platforms: {
         Row: {
           created_at: string | null

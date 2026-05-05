@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, ClipboardList, Gamepad2, Sparkles, Loader2, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +45,7 @@ const inferTrack = (ageMonths: number): AgeTrack => {
 };
 
 const AutismDiagnosis: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('intro');
   const [name, setName] = useState('');
   const [ageMonths, setAgeMonths] = useState(36);
@@ -107,6 +109,38 @@ const AutismDiagnosis: React.FC = () => {
     };
   };
 
+  const persistProfile = async (rep: AIReport) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const profileData: any = {
+        child_name: name || 'طفل',
+        age_years: Math.round(ageMonths / 12),
+        age_track: track,
+        support_level: (rep as any).support_level ?? null,
+        functional_profile: (rep as any).functional_profile ?? null,
+        cognitive_profile: (rep as any).cognitive_profile ?? null,
+        last_report: rep as any,
+      };
+      let profileId: string | null = null;
+      if (user) {
+        const { data } = await supabase.from('autism_child_profiles')
+          .insert({ ...profileData, user_id: user.id })
+          .select('id').single();
+        profileId = data?.id ?? null;
+      }
+      localStorage.setItem('autism_active_profile', JSON.stringify({
+        profile_id: profileId,
+        child_name: profileData.child_name,
+        age_years: profileData.age_years,
+        support_level: profileData.support_level,
+        functional_profile: profileData.functional_profile,
+        cognitive_profile: profileData.cognitive_profile,
+        recommended_game_tracks: (rep as any).recommended_game_tracks ?? [],
+        notes_summary: rep.summary_ar,
+      }));
+    } catch (e) { console.warn('persistProfile failed', e); }
+  };
+
   const startAnalysis = async (finalGames: GameResult[]) => {
     setStep('analyzing');
     const questionnaireResult =
@@ -126,6 +160,7 @@ const AutismDiagnosis: React.FC = () => {
       if (data?.error) throw new Error(data.error);
       if (!data?.report) throw new Error('Empty report');
       setReport(data.report);
+      await persistProfile(data.report);
       setStep('report');
     } catch (e: any) {
       console.error('AI report failed, using local fallback:', e);
@@ -133,7 +168,9 @@ const AutismDiagnosis: React.FC = () => {
       if (msg.includes('429')) toast.warning('الخدمة مشغولة — تم إنشاء تقرير محلي.');
       else if (msg.includes('402')) toast.warning('انتهى رصيد AI — تم إنشاء تقرير محلي.');
       else toast.warning('تعذّر الاتصال بالذكاء الاصطناعي — تم إنشاء تقرير محلي.');
-      setReport(buildLocalReport(questionnaireResult, gameInsights));
+      const local = buildLocalReport(questionnaireResult, gameInsights);
+      setReport(local);
+      await persistProfile(local);
       setStep('report');
     }
   };
