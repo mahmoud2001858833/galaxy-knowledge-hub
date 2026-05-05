@@ -1,145 +1,83 @@
-# خطة: تحسين تشخيص التوحد + توليد ألعاب علاجية تفاعلية بالذكاء الاصطناعي
+# Interactive Braille Learning (تعلم بريل التفاعلي)
 
-## الجزء الأول: تحسين التشخيص وتحديد نوع التوحد
+A new module added to the Universal Braille system, offering graded lessons, a virtual 6-key braille keyboard, a simulated braille display panel (for sighted + screen-reader users), and continuous reading speed/accuracy measurement.
 
-### 1. توسيع الاستبيان والمؤشرات
-- إضافة أدوات فحص مرجعية إضافية بجانب M-CHAT-R الحالي:
-  - **SCQ** (Social Communication Questionnaire) للأعمار >4 سنوات
-  - **AQ-10** للمراهقين/البالغين
-  - **CARS-2** عناصر مختصرة لتقدير الشدة
-- تقسيم الأسئلة لـ 5 محاور بدل المحاور الحالية: تواصل اجتماعي، سلوك مقيّد/متكرر، حسي، لغة، لعب/خيال — مع وزن لكل سؤال.
+## Where it lives
 
-### 2. تحديد "نوع/ملف" التوحد (Profile)
-بناءً على DSM-5 (لا يوجد أنواع رسمية بعد 2013، لكن نعرض **ملف وظيفي** + **مستوى دعم**):
-- **مستوى الدعم** (Level 1/2/3) وفق DSM-5
-- **الملف الوظيفي**:
-  - اجتماعي–تواصلي بارز
-  - حسي بارز (فرط/نقص حسي)
-  - سلوكي–تكراري بارز
-  - لغوي بارز (تأخر/انتقائي)
-  - مختلط
-- **الملف المعرفي**: عالي الأداء / متوسط / يحتاج دعماً مكثفاً
+- New route: `/damij/braille/interactive-learn`
+- New card on `BrailleHome` (and a quick link on `UniversalBrailleConverter`) titled **"تعلم بريل التفاعلي 🎓"**
+- All existing braille pages remain unchanged.
 
-### 3. تحسين edge function `autism-screen-analyze`
-- استخدام مفتاح Gemini الجديد (يُحفظ كـ secret `AUTISM_GEMINI_API_KEY_V2`) — **لن يُكتب في الكود**
-- توسيع schema الإخراج ليشمل:
-  - `support_level`: 1 | 2 | 3
-  - `functional_profile`: string
-  - `cognitive_profile`: string
-  - `confidence_score`: 0-100
-  - `recommended_game_tracks`: string[] (تُمرر لمولّد الألعاب)
-- تحسين prompt ليطلب تبرير كل تصنيف بمؤشرات محددة من الاستبيان والألعاب.
+## Architecture
 
-### 4. تحسين عرض التقرير
-- بطاقة "الملف الوظيفي" واضحة + مستوى الدعم
-- رسم رادار للمحاور الخمسة
-- زر **"ابدأ خطة العلاج التفاعلية المخصصة"** ينقل لمولّد الألعاب
-
----
-
-## الجزء الثاني: نظام العلاج بالألعاب التفاعلية المولّدة بالـ AI
-
-### 1. بنية النظام
 ```
-ملف الطفل (نوع/مستوى) 
-  → AI Game Generator (edge function)
-    → خطة علاجية: 4 مراحل × عدة ألعاب
-      → عرض اللعبة + تتبع التقدم
-        → تكييف تلقائي حسب الأداء
+src/pages/damij/braille/
+  InteractiveBrailleLearn.tsx          ← main page (tabs: lessons / write / read / test)
+src/features/braille/learn/
+  brailleAlphabet.ts                   ← Arabic letters + dot patterns (1-6) + name
+  lessons.ts                           ← graded curriculum (3 levels)
+  testWords.ts                         ← 100 random Arabic test words
+  useBrailleKeyboard.ts                ← hook: maps F D S / J K L → dots 3 2 1 / 4 5 6
+  BrailleCellDisplay.tsx               ← visual + ARIA description of a cell
+  BrailleKeyboardPad.tsx               ← on-screen visual of the 6 keys + state
+  ReadingPanel.tsx                     ← simulated braille display (multiple cells)
+  SpeedAccuracyMeter.tsx               ← live WPM + accuracy + timer
+supabase/functions/
+  braille-tutor-ai/index.ts            ← Gemini-powered hints, lesson explanations, tips
 ```
 
-### 2. المراحل الأربع (Therapy Stages)
-1. **التأسيس** — انتباه، استجابة للاسم، تتبع بصري
-2. **التفاعل** — انتباه مشترك، تقليد، تواصل بصري
-3. **التواصل** — تمييز مشاعر، طلبات، حوار بسيط
-4. **الدمج** — لعب رمزي، حل مشكلات اجتماعية، مرونة معرفية
+## 1. Graded lessons (الدروس المتدرجة)
 
-### 3. مكتبة ألعاب موسّعة (قوالب جاهزة + مولّدة)
-أضف هذه الألعاب التفاعلية الفعلية (React + Canvas/Framer Motion):
-- 🎯 **تتبع الفقاعات** (انتباه بصري)
-- 👀 **انظر معي** (انتباه مشترك مع شخصية متحركة)
-- 😊 **بطاقات المشاعر** (تمييز انفعالات)
-- 🔊 **عالم الأصوات الهادئة** (تنظيم حسي سمعي)
-- 🧩 **رتّب القصة** (تسلسل أحداث)
-- 🪞 **المرآة السحرية** (تقليد حركات/تعابير)
-- 🔁 **غيّر القاعدة** (مرونة معرفية)
-- 🎨 **ارسم ما تشعر** (تعبير حسي–انفعالي)
-- 🗣️ **اطلب لتحصل** (طلبات وظيفية)
-- 👫 **اختر الرد المناسب** (سيناريوهات اجتماعية)
-- 🎵 **الإيقاع المتبادل** (turn-taking)
-- 🔍 **اعثر على الفرق** (انتباه للتفاصيل)
+Three levels with sequential lessons. Each lesson has: title, objective, theory text, interactive exercises (write the letter, read the cell, match), and an AI-generated explanation/tip on demand.
 
-### 4. AI Game Generator — edge function جديدة `autism-generate-therapy-plan`
-المدخلات: ملف الطفل (نوع، مستوى، نقاط ضعف/قوة)
-المخرجات (JSON عبر tool calling):
-```json
-{
-  "plan_title": "...",
-  "stages": [
-    {
-      "stage": 1,
-      "title": "التأسيس",
-      "rationale": "...",
-      "games": [
-        {
-          "template_id": "bubble_tracking",
-          "title_ar": "...",
-          "instructions_ar": "...",
-          "difficulty": "easy|medium|hard",
-          "duration_sec": 60,
-          "target_skill": "...",
-          "success_criteria": "...",
-          "adaptations": ["إذا فقد الانتباه: قلل عدد الفقاعات", "..."]
-        }
-      ]
-    }
-  ]
-}
-```
-- يستخدم نفس secret `AUTISM_GEMINI_API_KEY_V2` مع fallback إلى Lovable Gateway (`google/gemini-2.5-flash`).
-- system prompt يضمن أن الألعاب تطابق نوع التوحد ومستوى الدعم.
+- **Level 1 — مبتدئ**: braille cell anatomy (6 dots), dot numbering, simple letters (ا ب ت ث ج), how a letter is formed.
+- **Level 2 — متوسط**: remaining alphabet, numbers, forming short words, reading simple sentences.
+- **Level 3 — متقدم**: Grade 2 contractions (الاختزالي), punctuation, complex rules.
 
-### 5. التكيّف الديناميكي (Adaptive Loop)
-- بعد كل لعبة: حفظ نتيجة (دقة، زمن، تخلي عن المهمة) في جدول جديد.
-- زر **"اقترح لعبة تالية"** يرسل النتائج للـ AI الذي يولّد لعبة/تعديل صعوبة.
+Progress (current lesson + completion) is stored in `localStorage` to keep it isolated and offline-friendly.
 
-### 6. قاعدة البيانات (جديد)
-جداول:
-- `autism_child_profiles` — معلومات الطفل + الملف التشخيصي
-- `autism_therapy_plans` — الخطط المولّدة (jsonb)
-- `autism_game_sessions` — سجل كل جلسة لعب (نتائج، ملاحظات)
-RLS: المستخدم يرى فقط بيانات أطفاله.
+## 2. Virtual 6-key keyboard (لوحة المفاتيح الافتراضية)
 
-### 7. صفحات/مكونات جديدة
-- `src/pages/damij/autism/AutismTherapyPlan.tsx` — عرض الخطة المولّدة بمراحلها
-- `src/pages/damij/autism/AutismGamePlayer.tsx` — مشغّل اللعبة الموحّد
-- `src/features/autism/games/templates/` — 12 قالب لعبة تفاعلي جديد
-- `src/features/autism/therapyEngine.ts` — منطق التكيّف
-- تحديث `AutismTherapy.tsx` ليعرض الخطة المخصصة بدل القائمة الثابتة "قريباً"
+- Keys mapped exactly as the user requested:
+  - Left hand: `S → dot 3`, `D → dot 2`, `F → dot 1`
+  - Right hand: `J → dot 4`, `K → dot 5`, `L → dot 6`
+- Chord detection: dots pressed simultaneously (released together) form one cell.
+- Immediate feedback after each chord:
+  - Correct → toast "أحسنت، كتبت حرف (X)" + success sound.
+  - Wrong → toast "خطأ — الحرف الصحيح هو (X)" + soft buzz (Web Audio short tone) + visual highlight of the missing/extra dots.
+- On-screen `BrailleKeyboardPad` shows the 6 keys lighting up live so users can also click/tap them on touch devices.
 
----
+## 3. Simulated braille display (لوحة محاكاة لشاشة بريل)
 
-## التفاصيل التقنية
+A reading panel that renders a row of braille cells.
 
-### Secrets
-- يجب إضافة `AUTISM_GEMINI_API_KEY_V2` عبر أداة الأسرار (سيُطلب منك تأكيد عند البناء).
-- **مهم أمنياً**: لن أضع المفتاح في الكود مطلقاً — سيُحفظ كـ Supabase secret فقط.
+- **Sighted users**: large visual cells with raised/empty dots, color-highlighted active cell.
+- **Blind users / screen readers**: every cell has an `aria-label` like "النقاط 1 و2 و4 بارزة — حرف ن"; a "نطق التشكيل" button reads the active cell out loud via the existing `useTextToSpeech` hook.
+- Auto-advance with adjustable speed; arrow keys to navigate cells manually.
 
-### Edge Functions
-- `autism-screen-analyze` (تحسين)
-- `autism-generate-therapy-plan` (جديد)
-- `autism-adapt-next-game` (جديد — للتكيّف بعد كل جلسة)
+## 4. Continuous speed & accuracy (قياس مستمر)
 
-### Migrations
-3 جداول جديدة + RLS policies (المستخدم يدير بياناته فقط).
+- Live metrics while typing/reading: characters per minute, accuracy %, error count.
+- **Auto-correction**: as soon as a wrong chord is pressed, immediate audio + vibration (`navigator.vibrate`) feedback — no waiting for end of word.
+- **Timed test**:
+  - 100 random Arabic words bundled in `testWords.ts`.
+  - "ابدأ الاختبار" picks 5 random words, starts a 30-second timer.
+  - At end: score = weighted (speed × accuracy), with AI-generated personalized feedback from `braille-tutor-ai` ("ركّز على النقاط 4 و5"...).
 
-### تقنيات اللعب
-- Framer Motion للتحريك
-- Web Audio API للأصوات الهادئة
-- Canvas للألعاب الرسومية
-- TTS العربية الموجود مسبقاً (`useTextToSpeech`) لتعليمات صوتية
+## 5. Gemini AI integration
 
----
+- Edge function `braille-tutor-ai` calls Gemini with the provided key.
+- Used for: lesson explanations on demand, hints when the learner is stuck, and end-of-test personalized feedback.
+- The provided Gemini key is stored as a new Supabase secret named **`BRAILLE_LEARN_GEMINI_KEY`** (added via the secret tool, not committed to code). Function reads it via `Deno.env.get`.
 
-## ملاحظة مهمة
-المنصة **فحص أولي وأدوات دعم تعليمي** — ليست تشخيصاً طبياً. سيظل التنبيه ظاهراً في كل تقرير وكل خطة علاجية بأن التشخيص النهائي يتطلب فريقاً سريرياً مختصاً (وفق CDC/AAP/NICE).
+## Accessibility
+
+- Full RTL Arabic UI matching the existing damij theme.
+- All interactive elements have ARIA labels.
+- Works with the existing `AccessibilityPanel` (TTS, high contrast, reduce motion).
+- Keyboard-only navigation supported throughout.
+
+## Out of scope
+
+- No database tables — progress is local only (no auth requirement).
+- Does not modify any existing braille page logic; only adds a card link in `BrailleHome` and a small CTA in `UniversalBrailleConverter`.
