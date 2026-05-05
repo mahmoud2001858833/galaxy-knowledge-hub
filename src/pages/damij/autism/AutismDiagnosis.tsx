@@ -168,7 +168,9 @@ const AutismDiagnosis: React.FC = () => {
       if (msg.includes('429')) toast.warning('الخدمة مشغولة — تم إنشاء تقرير محلي.');
       else if (msg.includes('402')) toast.warning('انتهى رصيد AI — تم إنشاء تقرير محلي.');
       else toast.warning('تعذّر الاتصال بالذكاء الاصطناعي — تم إنشاء تقرير محلي.');
-      setReport(buildLocalReport(questionnaireResult, gameInsights));
+      const local = buildLocalReport(questionnaireResult, gameInsights);
+      setReport(local);
+      await persistProfile(local);
       setStep('report');
     }
   };
