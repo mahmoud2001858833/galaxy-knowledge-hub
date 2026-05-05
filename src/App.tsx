@@ -196,6 +196,8 @@ import TactileGraphics from './pages/damij/braille/TactileGraphics';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
 import AutismTherapy from './pages/damij/autism/AutismTherapy';
+import AutismTherapyPlan from './pages/damij/autism/AutismTherapyPlan';
+import AutismGamePlayer from './pages/damij/autism/AutismGamePlayer';
 import AutismProfile from './pages/damij/autism/AutismProfile';
 import ADHDHome from './pages/damij/adhd/ADHDHome';
 import ADHDScreening from './pages/damij/adhd/ADHDScreening';
