@@ -343,7 +343,13 @@ const AutismDiagnosis: React.FC = () => {
 
       {step === 'games' && (() => {
         const game = GAMES[gameIndex];
+        if (!game) return null;
         const Cmp = GAME_COMPONENTS[game.id];
+        if (!Cmp) {
+          // skip unknown game
+          setTimeout(() => handleGameComplete({}, 0, true), 0);
+          return null;
+        }
         return (
           <div>
             <div className="flex justify-between items-center mb-4">
