@@ -45,6 +45,7 @@ const inferTrack = (ageMonths: number): AgeTrack => {
 };
 
 const AutismDiagnosis: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('intro');
   const [name, setName] = useState('');
   const [ageMonths, setAgeMonths] = useState(36);
