@@ -979,6 +979,8 @@ const router = createBrowserRouter([
           { path: 'autism', element: <AutismHome /> },
           { path: 'autism/diagnosis', element: <AutismDiagnosis /> },
           { path: 'autism/therapy', element: <AutismTherapy /> },
+          { path: 'autism/plan', element: <AutismTherapyPlan /> },
+          { path: 'autism/play', element: <AutismGamePlayer /> },
           { path: 'autism/profile', element: <AutismProfile /> },
           { path: 'adhd', element: <ADHDHome /> },
           { path: 'adhd/screening', element: <ADHDScreening /> },
