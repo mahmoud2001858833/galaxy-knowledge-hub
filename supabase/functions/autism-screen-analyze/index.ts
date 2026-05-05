@@ -1,7 +1,8 @@
-// Autism screening AI analyzer.
-// Uses dedicated Gemini key (AUTISM_GEMINI_API_KEY). Falls back to Lovable
-// AI Gateway on quota errors. Output is grounded in CDC/AAP/NICE/WHO and
-// must use risk-band language (never "diagnosis").
+// Autism screening AI analyzer (v2).
+// Returns risk_band + DSM-5 support level + functional/cognitive profile +
+// recommended game tracks for the AI therapy generator.
+// Primary key: AUTISM_GEMINI_API_KEY_V2 (with fallback to AUTISM_GEMINI_API_KEY,
+// then Lovable AI Gateway on quota errors).
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,11 +14,11 @@ const SOURCES = `
 - CDC How is Autism Diagnosed: https://www.cdc.gov/autism/diagnosis/index.html
 - CDC Clinical Screening: https://www.cdc.gov/autism/hcp/screening/index.html
 - CDC Treatment & Intervention: https://www.cdc.gov/autism/treatment/index.html
-- CDC Accessing Services: https://www.cdc.gov/autism/services/index.html
 - AAP (Hyman et al., 2020): https://publications.aap.org/pediatrics/article/145/1/e20193447/36917
 - NICE CG170: https://www.nice.org.uk/guidance/cg170
 - WHO Autism Fact Sheet: https://www.who.int/news-room/fact-sheets/detail/autism-spectrum-disorders
 - WHO Caregiver Skills Training: https://www.who.int/teams/mental-health-and-substance-use/policy-law-rights/caregiver-skills-training
+- DSM-5 ASD Severity Levels (APA, 2013)
 `;
 
 const SYSTEM_PROMPT = `أنت مساعد متخصص في تحليل نتائج فحص أولي لطيف التوحد.
@@ -25,23 +26,30 @@ const SYSTEM_PROMPT = `أنت مساعد متخصص في تحليل نتائج �
 ${SOURCES}
 
 قواعد صارمة:
-1. لا تُصدر تشخيصاً أبداً. استخدم لغة "مؤشرات" و"يستحق المتابعة" و"يُنصح بتقييم متخصص".
-2. التشخيص النهائي وفق DSM-5 يتطلب فريقاً سريرياً متعدد التخصصات (CDC).
-3. اربط ملاحظاتك بالمجالات: التواصل الاجتماعي، السلوك المقيّد/المتكرر، الحس، اللغة، اللعب.
-4. التوصيات يجب أن تشمل: التدخل المبكر (خصوصاً تحت 3 سنوات وفق CDC)، تدريب مقدمي الرعاية (WHO CST)، التدخلات النفسية-الاجتماعية المبنية على اللعب (NICE).
-5. إذا كان النطاق "refer"، اذكر صراحةً ضرورة مراجعة طبيب أطفال نمائي أو فريق تشخيص مختص.
-6. اكتب بالعربية الفصحى الواضحة، مع ذكر الأرقام بالأرقام العربية الغربية (1, 2, 3).
-7. أعد الإجابة كـ JSON صرف وفق المخطط المطلوب فقط، دون أي نص خارج JSON.`;
+1. لا تُصدر تشخيصاً نهائياً. استخدم لغة "مؤشرات" و"مستوى دعم تقديري" و"يُنصح بتقييم متخصص".
+2. التشخيص النهائي وفق DSM-5 يتطلب فريقاً سريرياً متعدد التخصصات.
+3. حدّد مستوى الدعم التقديري (1/2/3) وفق DSM-5 بناءً على شدة المؤشرات.
+4. حدّد الملف الوظيفي السائد: social_communication | sensory | restricted_repetitive | language | mixed
+5. حدّد الملف المعرفي التقديري: high_functioning | moderate | needs_substantial_support
+6. أعطِ confidence_score (0-100) يعكس وضوح المؤشرات.
+7. اقترح recommended_game_tracks (3-5) من: attention, joint_attention, emotion, sensory_regulation, imitation, sequencing, flexibility, requesting, social_scenarios, turn_taking
+8. اكتب بالعربية الفصحى الواضحة، أرقام عربية غربية (1, 2, 3).
+9. أعد JSON صرف فقط وفق schema، دون نص خارجي.`;
 
 const TOOL_SCHEMA = {
   type: 'function',
   function: {
     name: 'autism_report',
-    description: 'تقرير فحص أولي لطيف التوحد',
+    description: 'تقرير فحص أولي موسّع لطيف التوحد',
     parameters: {
       type: 'object',
       properties: {
         risk_band: { type: 'string', enum: ['low', 'monitor', 'refer'] },
+        support_level: { type: 'integer', enum: [1, 2, 3] },
+        functional_profile: { type: 'string', enum: ['social_communication', 'sensory', 'restricted_repetitive', 'language', 'mixed'] },
+        cognitive_profile: { type: 'string', enum: ['high_functioning', 'moderate', 'needs_substantial_support'] },
+        confidence_score: { type: 'number' },
+        recommended_game_tracks: { type: 'array', items: { type: 'string' } },
         summary_ar: { type: 'string' },
         domain_scores: {
           type: 'object',
@@ -68,7 +76,7 @@ const TOOL_SCHEMA = {
           },
         },
       },
-      required: ['risk_band', 'summary_ar', 'domain_scores', 'observations', 'red_flags', 'strengths', 'recommendations', 'next_steps', 'citations'],
+      required: ['risk_band', 'support_level', 'functional_profile', 'cognitive_profile', 'confidence_score', 'recommended_game_tracks', 'summary_ar', 'domain_scores', 'observations', 'red_flags', 'strengths', 'recommendations', 'next_steps', 'citations'],
     },
   },
 };
@@ -80,7 +88,7 @@ async function callGemini(apiKey: string, userPrompt: string): Promise<any> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT + '\n\nأعد JSON فقط بالشكل التالي:\n' + JSON.stringify(TOOL_SCHEMA.function.parameters) }] },
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT + '\n\nأعد JSON فقط وفق:\n' + JSON.stringify(TOOL_SCHEMA.function.parameters) }] },
       generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
     }),
   });
@@ -133,23 +141,35 @@ Deno.serve(async (req) => {
     const userPrompt = `بيانات الفحص الأولي:
 - المسار العمري: ${ageTrack}
 - البيانات الديموغرافية: ${JSON.stringify(demographics ?? {})}
-- نتيجة الاستبيان (محسوبة محلياً وفق هيكلية M-CHAT-R و DSM-5):
-${JSON.stringify(questionnaireResult ?? null, null, 2)}
-- ملاحظات الألعاب التفاعلية (مؤشرات سلوكية، ليست تشخيصية):
-${JSON.stringify(gameInsights ?? [], null, 2)}
+- نتيجة الاستبيان: ${JSON.stringify(questionnaireResult ?? null, null, 2)}
+- ملاحظات الألعاب: ${JSON.stringify(gameInsights ?? [], null, 2)}
 
-حلّل هذه البيانات وأعطِ تقريراً عربياً متكاملاً وفق المخطط المطلوب، مستنداً للمصادر المذكورة، مع قائمة citations تحتوي على روابط فعلية من تلك المصادر فقط.`;
+حلّل هذه البيانات وأعطِ تقريراً عربياً متكاملاً يشمل: المستوى التقديري للدعم وفق DSM-5، الملف الوظيفي والمعرفي، ومسارات الألعاب الموصى بها لخطة العلاج التفاعلية.`;
 
-    const geminiKey = Deno.env.get('AUTISM_GEMINI_API_KEY');
-    let report: any;
+    const keys = [
+      Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
+      Deno.env.get('AUTISM_GEMINI_API_KEY'),
+    ].filter(Boolean) as string[];
+
+    let report: any = null;
     let provider = 'gemini';
-    try {
-      if (!geminiKey) throw new Error('No Gemini key');
-      report = await callGemini(geminiKey, userPrompt);
-    } catch (e) {
-      console.warn('Gemini failed, falling back to Lovable Gateway:', e);
+    let lastErr: any = null;
+    for (const k of keys) {
+      try {
+        report = await callGemini(k, userPrompt);
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.warn('Gemini key failed:', e);
+      }
+    }
+    if (!report) {
       provider = 'gateway';
-      report = await callGateway(userPrompt);
+      try {
+        report = await callGateway(userPrompt);
+      } catch (e) {
+        throw lastErr ?? e;
+      }
     }
 
     return new Response(JSON.stringify({ report, provider }), {
