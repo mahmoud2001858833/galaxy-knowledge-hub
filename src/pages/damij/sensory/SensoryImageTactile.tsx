@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
 import { loadHapticSettings, patternFor, intensityScale } from './hapticSettings';
+import { hapticPlay, hapticStop, isHapticLocked } from './hapticBus';
 
 interface TactileRegion {
   label: string;
@@ -79,13 +80,13 @@ const SensoryImageTactile: React.FC = () => {
 
   const stopHumming = () => {
     if (hummingRef.current) { clearInterval(hummingRef.current); hummingRef.current = null; }
-    if (vibrate) navigator.vibrate(0);
+    if (vibrate) hapticStop();
   };
   const startHumming = (ms = 25, gap = 80) => {
     stopHumming();
     if (!vibrate) return;
     const k = intensityScale(settingsRef.current.textureHum);
-    hummingRef.current = window.setInterval(() => navigator.vibrate(Math.max(6, Math.round(ms * k))), gap);
+    hummingRef.current = window.setInterval(() => hapticPlay('hum', Math.max(6, Math.round(ms * k))), gap);
   };
   // Texture-aware humming: rough = irregular ticks, smooth = continuous low,
   // dotted = very fast short pulses (like Braille paper).
@@ -95,9 +96,9 @@ const SensoryImageTactile: React.FC = () => {
     const k = intensityScale(settingsRef.current.textureHum);
     const sc = (n: number) => Math.max(4, Math.round(n * k));
     if (kind === 'smooth') {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(18)), 60);
+      hummingRef.current = window.setInterval(() => hapticPlay('hum', sc(18)), 60);
     } else if (kind === 'dotted') {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(8)), 35);
+      hummingRef.current = window.setInterval(() => hapticPlay('hum', sc(8)), 35);
     } else if (kind === 'rough') {
       hummingRef.current = window.setInterval(() => {
         const burst = [
@@ -105,10 +106,10 @@ const SensoryImageTactile: React.FC = () => {
           10 + Math.random() * 15, 35 + Math.random() * 40,
           15 + Math.random() * 20,
         ].map(n => sc(n));
-        navigator.vibrate(burst);
+        hapticPlay('hum', burst);
       }, 220);
     } else {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(25)), 80);
+      hummingRef.current = window.setInterval(() => hapticPlay('hum', sc(25)), 80);
     }
   };
   useEffect(() => () => { stopHumming(); stopFocusPulse(); }, []);
@@ -120,12 +121,12 @@ const SensoryImageTactile: React.FC = () => {
     if (now - lastErrorRef.current < 400) return;
     lastErrorRef.current = now;
     // Disturbed/jittery pattern (like wrong password)
-    navigator.vibrate(patternFor('errorPattern', settingsRef.current.errorPattern));
+    hapticPlay('cue', patternFor('errorPattern', settingsRef.current.errorPattern), { lockMs: 250 });
     logToolUse('haptic');
   };
   const cueSuccess = () => {
     if (!vibrate) return;
-    navigator.vibrate(patternFor('successPattern', settingsRef.current.successPattern));
+    hapticPlay('cue', patternFor('successPattern', settingsRef.current.successPattern), { lockMs: 300 });
     logToolUse('haptic');
   };
   const focusEngagedRef = useRef<{ id: number | null; gap: number; over: boolean }>({ id: null, gap: 500, over: false });
@@ -142,12 +143,12 @@ const SensoryImageTactile: React.FC = () => {
     setFocusIdx(idx);
     if (!vibrate) return;
     // Ambient gentle pulse (attracts attention from anywhere on the canvas)
-    focusPulseRef.current = window.setInterval(() => navigator.vibrate(patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
+    focusPulseRef.current = window.setInterval(() => hapticPlay('pulse', patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
   };
   // While finger is over the focus region, accelerate the pulse rate
   const tickFocusEngaged = () => {
     if (!vibrate) return;
-    navigator.vibrate(70);
+    hapticPlay('pulse', 70);
     // Accelerate: shrink gap toward 80ms minimum
     focusEngagedRef.current.gap = Math.max(80, focusEngagedRef.current.gap - 35);
     if (focusEngagedRef.current.id) clearInterval(focusEngagedRef.current.id);
@@ -167,7 +168,7 @@ const SensoryImageTactile: React.FC = () => {
     stopFocusEngaged();
     // Restore ambient pulse if focus is still active
     if (focusIdx !== null && vibrate) {
-      focusPulseRef.current = window.setInterval(() => navigator.vibrate(patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
+      focusPulseRef.current = window.setInterval(() => hapticPlay('pulse', patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
     }
   };
   // Pick a connect-exercise target (random region) and clear status
@@ -199,7 +200,7 @@ const SensoryImageTactile: React.FC = () => {
     const perfectRounds = totals.times.length; // counted in onSuccess only when 0 errors
     setTrainingSummary({ score: totals.score, errors: totals.errors, total: totals.total, avgTime, perfectRounds });
     setTrainingMode(false); setConnectTarget(null); setConnectStatus('idle');
-    if (vibrate) navigator.vibrate([80, 100, 80, 100, 200, 100, 300]);
+    if (vibrate) hapticPlay('cue', [80, 100, 80, 100, 200, 100, 300], { lockMs: 400 });
   };
   const onTrainingRoundSuccess = () => {
     const elapsed = Math.max(0, performance.now() - roundStartedAt);
@@ -257,7 +258,7 @@ const SensoryImageTactile: React.FC = () => {
     if (Math.abs(ms - lastIntensityRef.current) < 6) return;
     lastIntensityRef.current = ms;
     lastVisualRef.current = now;
-    navigator.vibrate(ms);
+    if (!isHapticLocked()) navigator.vibrate(ms);
   };
 
   const onFile = (f: File) => {
@@ -506,7 +507,7 @@ const SensoryImageTactile: React.FC = () => {
                       }
                       // Geometric mapping mode
                       if (idx !== currentRegionRef.current) {
-                        if (vibrate) navigator.vibrate(patternFor('edgeClick', settingsRef.current.edgeClick)); // edge click
+                        if (vibrate) hapticPlay('edge', patternFor('edgeClick', settingsRef.current.edgeClick)); // edge click
                         currentRegionRef.current = idx;
                         if (region) {
                           if (textureMapping) startTextureHumming(classifyTexture(region.texture));
