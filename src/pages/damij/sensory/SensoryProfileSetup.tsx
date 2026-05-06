@@ -128,19 +128,26 @@ const SensoryProfileSetup: React.FC = () => {
         setLearningStyle(p.learningStyle ?? '');
         setLanguageLevel(p.languageLevel ?? '');
         setFocus(p.focus ?? '');
+        setFontFamily(p.fontFamily ?? '');
+        setFontSize(p.fontSize ?? '');
+        setColorScheme(p.colorScheme ?? '');
+        setSpeechRate(p.speechRate ?? '');
+        setAvatarSpeed(p.avatarSpeed ?? '');
         setPreferTouch(!!p.preferTouch);
       }
     } catch {}
   }, []);
 
   const save = () => {
-    if (!vision || !hearing || !motor || !learningStyle || !languageLevel || !focus) {
+    if (!vision || !hearing || !motor || !learningStyle || !languageLevel || !focus
+        || !fontFamily || !fontSize || !colorScheme || !speechRate || !avatarSpeed) {
       toast.error('يرجى تعبئة جميع الحقول لإنشاء ملفك الحسّي');
       return;
     }
     const profile: SensoryProfile = {
       vision, hearing, motor,
       learningStyle, languageLevel, focus,
+      fontFamily, fontSize, colorScheme, speechRate, avatarSpeed,
       preferTouch,
       cognitive: focus === 'easily_distracted' || focus === 'low_attention' ? 'adhd' : 'normal',
       savedAt: new Date().toISOString(),
@@ -200,6 +207,13 @@ const SensoryProfileSetup: React.FC = () => {
         <Section icon={Brain} title="٤. نمط التعلّم المفضّل" value={learningStyle} onChange={(v) => setLearningStyle(v as LearningStyle)} opts={LEARNING_OPTS} />
         <Section icon={BookOpen} title="٥. مستوى اللغة" value={languageLevel} onChange={(v) => setLanguageLevel(v as LanguageLevel)} opts={LANGUAGE_OPTS} />
         <Section icon={Focus} title="٦. القدرة على التركيز" value={focus} onChange={(v) => setFocus(v as FocusLevel)} opts={FOCUS_OPTS} />
+
+        <div className="text-xs font-bold text-[hsl(var(--damij-primary))]/70 uppercase tracking-wider mt-4">القسم الثالث · الإعدادات التقنية المخصّصة (الواجهة)</div>
+        <Section icon={Type} title="٧. نوع الخط" value={fontFamily} onChange={(v) => setFontFamily(v as FontFamily)} opts={FONT_FAMILY_OPTS} />
+        <Section icon={Type} title="٨. حجم الخط" value={fontSize} onChange={(v) => setFontSize(v as FontSize)} opts={FONT_SIZE_OPTS} />
+        <Section icon={Palette} title="٩. نظام الألوان والتباين" value={colorScheme} onChange={(v) => setColorScheme(v as ColorScheme)} opts={COLOR_OPTS} />
+        <Section icon={Gauge} title="١٠. سرعة نطق الصوت" value={speechRate} onChange={(v) => setSpeechRate(v as SpeedLevel)} opts={SPEED_OPTS} />
+        <Section icon={Gauge} title="١١. سرعة الأفاتار (لغة الإشارة)" value={avatarSpeed} onChange={(v) => setAvatarSpeed(v as SpeedLevel)} opts={SPEED_OPTS} />
 
         <label className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-[hsl(var(--damij-primary))]/10 cursor-pointer">
           <input type="checkbox" checked={preferTouch} onChange={e => setPreferTouch(e.target.checked)}
