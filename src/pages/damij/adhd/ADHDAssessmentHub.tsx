@@ -4,9 +4,9 @@ import { ArrowLeft, Brain, Eye, Layers, ShieldAlert } from 'lucide-react';
 
 const TESTS = [
   { to: '/damij/adhd/assessment/cpt', icon: Brain, title: 'اختبار CPT', desc: 'الانتباه المستمر · على غرار Conners CPT-3', ready: true, color: 'from-violet-500 to-fuchsia-500' },
-  { to: '#', icon: Layers, title: 'N-Back', desc: 'الذاكرة العاملة · 1-back و 2-back', ready: false, color: 'from-blue-500 to-indigo-500' },
-  { to: '#', icon: Eye, title: 'Stroop', desc: 'الكفّ المعرفي · ألوان متضاربة', ready: false, color: 'from-emerald-500 to-teal-500' },
-  { to: '#', icon: ShieldAlert, title: 'Go / No-Go', desc: 'التحكم بالاندفاع · d-prime', ready: false, color: 'from-rose-500 to-pink-500' },
+  { to: '/damij/adhd/assessment/nback', icon: Layers, title: 'N-Back', desc: 'الذاكرة العاملة · 1-back و 2-back', ready: true, color: 'from-blue-500 to-indigo-500' },
+  { to: '/damij/adhd/assessment/stroop', icon: Eye, title: 'Stroop', desc: 'الكفّ المعرفي · ألوان متضاربة', ready: true, color: 'from-emerald-500 to-teal-500' },
+  { to: '/damij/adhd/assessment/gonogo', icon: ShieldAlert, title: 'Go / No-Go', desc: 'التحكم بالاندفاع · أخطاء اندفاع', ready: true, color: 'from-rose-500 to-pink-500' },
 ];
 
 const ADHDAssessmentHub: React.FC = () => {

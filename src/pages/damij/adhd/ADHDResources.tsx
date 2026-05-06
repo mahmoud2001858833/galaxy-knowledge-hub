@@ -14,6 +14,10 @@ const REFS = [
   { cat: 'كتب', name: 'Russell A. Barkley — Taking Charge of ADHD', url: 'https://www.guilford.com/books/Taking-Charge-of-ADHD/Russell-Barkley/9781462542673' },
   { cat: 'تقييم', name: 'Conners CPT-3', url: 'https://www.mhs.com/MHS-Assessment?prodname=cpt3' },
   { cat: 'تقييم', name: 'TOVA Test', url: 'https://www.tovatest.com/' },
+  { cat: 'تقييم', name: 'Kirchner (1958) — Age differences in short-term retention (N-Back)', url: 'https://psycnet.apa.org/record/1959-06769-001' },
+  { cat: 'تقييم', name: 'Jaeggi et al. (2008) — Improving fluid intelligence with training on working memory', url: 'https://www.pnas.org/doi/10.1073/pnas.0801268105' },
+  { cat: 'تقييم', name: 'Stroop (1935) — Studies of interference in serial verbal reactions', url: 'https://psychclassics.yorku.ca/Stroop/' },
+  { cat: 'تقييم', name: 'Newman et al. (1985) — Passive avoidance learning (Go/No-Go)', url: 'https://pubmed.ncbi.nlm.nih.gov/4031228/' },
 ];
 
 const ADHDResources: React.FC = () => {
