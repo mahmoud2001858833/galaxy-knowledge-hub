@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Ear, Hand, Brain, BookOpen, Focus, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, Ear, Hand, Brain, BookOpen, Focus, Sparkles, ArrowLeft, CheckCircle2, Type, Palette, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 
 export type VisionState = 'normal' | 'total_blind' | 'partial_blind' | 'low_vision' | 'color_blind' | 'photosensitive';
@@ -9,6 +9,10 @@ export type MotorState = 'mouse' | 'eye_tracking' | 'voice' | 'switch';
 export type LearningStyle = 'visual' | 'text' | 'audio' | 'mixed';
 export type LanguageLevel = 'simplified' | 'academic' | 'illustrated' | 'sign_simplified';
 export type FocusLevel = 'normal' | 'easily_distracted' | 'low_attention';
+export type FontFamily = 'default' | 'dyslexic' | 'large_clear' | 'naskh';
+export type FontSize = 'sm' | 'md' | 'lg' | 'xl';
+export type ColorScheme = 'light' | 'dark' | 'high_contrast' | 'cream' | 'blue_dark';
+export type SpeedLevel = 'slow' | 'normal' | 'fast';
 
 export interface SensoryProfile {
   vision: VisionState;
@@ -17,6 +21,11 @@ export interface SensoryProfile {
   learningStyle?: LearningStyle;
   languageLevel?: LanguageLevel;
   focus?: FocusLevel;
+  fontFamily?: FontFamily;
+  fontSize?: FontSize;
+  colorScheme?: ColorScheme;
+  speechRate?: SpeedLevel;
+  avatarSpeed?: SpeedLevel;
   preferTouch?: boolean;
   cognitive?: 'normal' | 'autism' | 'adhd';
   savedAt: string;
@@ -67,6 +76,34 @@ const FOCUS_OPTS: { v: FocusLevel; t: string; d: string }[] = [
   { v: 'low_attention', t: 'انتباه منخفض', d: 'محتوى مقسم لخطوات قصيرة' },
 ];
 
+const FONT_FAMILY_OPTS: { v: FontFamily; t: string; d: string }[] = [
+  { v: 'default', t: 'الخط الافتراضي', d: 'خط النظام المعتاد' },
+  { v: 'dyslexic', t: 'خط عسر القراءة', d: 'OpenDyslexic — يقلّل تشابه الحروف' },
+  { v: 'large_clear', t: 'خط واضح كبير', d: 'مسافات عريضة وأطراف واضحة' },
+  { v: 'naskh', t: 'خط النسخ التقليدي', d: 'مريح للقراءة المطوّلة بالعربية' },
+];
+
+const FONT_SIZE_OPTS: { v: FontSize; t: string; d: string }[] = [
+  { v: 'sm', t: 'صغير', d: '14px' },
+  { v: 'md', t: 'متوسط', d: '16px (افتراضي)' },
+  { v: 'lg', t: 'كبير', d: '20px' },
+  { v: 'xl', t: 'كبير جداً', d: '24px لضعف النظر' },
+];
+
+const COLOR_OPTS: { v: ColorScheme; t: string; d: string }[] = [
+  { v: 'light', t: 'فاتح كلاسيكي', d: 'نص داكن على خلفية بيضاء' },
+  { v: 'dark', t: 'داكن مريح', d: 'يقلّل إجهاد العين' },
+  { v: 'high_contrast', t: 'تباين عالٍ', d: 'أبيض/أصفر على أسود' },
+  { v: 'cream', t: 'كريمي/عسر القراءة', d: 'خلفية كريمية تقلّل الوهج' },
+  { v: 'blue_dark', t: 'أبيض على أزرق داكن', d: 'مريح ومخصّص لضعف النظر' },
+];
+
+const SPEED_OPTS: { v: SpeedLevel; t: string; d: string }[] = [
+  { v: 'slow', t: 'بطيء', d: 'مناسب لمن يحتاج وقتاً للاستيعاب' },
+  { v: 'normal', t: 'طبيعي', d: 'السرعة المعتادة' },
+  { v: 'fast', t: 'سريع', d: 'لمستخدمين متقدّمين' },
+];
+
 const SensoryProfileSetup: React.FC = () => {
   const navigate = useNavigate();
   const [vision, setVision] = useState<VisionState | ''>('');
@@ -75,6 +112,11 @@ const SensoryProfileSetup: React.FC = () => {
   const [learningStyle, setLearningStyle] = useState<LearningStyle | ''>('');
   const [languageLevel, setLanguageLevel] = useState<LanguageLevel | ''>('');
   const [focus, setFocus] = useState<FocusLevel | ''>('');
+  const [fontFamily, setFontFamily] = useState<FontFamily | ''>('');
+  const [fontSize, setFontSize] = useState<FontSize | ''>('');
+  const [colorScheme, setColorScheme] = useState<ColorScheme | ''>('');
+  const [speechRate, setSpeechRate] = useState<SpeedLevel | ''>('');
+  const [avatarSpeed, setAvatarSpeed] = useState<SpeedLevel | ''>('');
   const [preferTouch, setPreferTouch] = useState(false);
 
   useEffect(() => {
