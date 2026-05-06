@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, Play, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { Loader2, Play, ArrowRight, CheckCircle2, Sparkles, RefreshCw, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TEMPLATE_META } from '@/features/autism/games/templates/registry';
