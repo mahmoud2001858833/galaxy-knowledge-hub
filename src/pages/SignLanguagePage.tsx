@@ -11,7 +11,6 @@ import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from '@/features/sign-language/camera';
-import LearnSignsTab from '@/features/sign-language/LearnSignsTab';
 import TextToSignTab from '@/features/sign-language/TextToSignTab';
 import { filterGesture, cleanGestureText, buildSentence, type DetectedToken } from '@/features/sign-language/gestureFilter';
 import { GraduationCap, Type } from 'lucide-react';
