@@ -880,45 +880,63 @@ const SignTranslatorPro: React.FC = () => {
         <div className="space-y-6">
           {/* Top controls */}
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Input + language picker */}
+            {/* Input panel */}
             <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/15 space-y-4">
-              <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                <Type className="w-4 h-4" /> اكتب جملة بأي لغة
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Type className="w-4 h-4" /> اكتب أو أملِ جملة بـ {t2sLang.flag} {t2sLang.nativeName}
+                </h3>
+                <button
+                  onClick={toggleFavorite}
+                  className="p-2 rounded-lg hover:bg-slate-100"
+                  title="حفظ كمفضّلة"
+                >
+                  {favorites.includes(t2sInput) ? <Star className="w-4 h-4 fill-amber-400 text-amber-400" /> : <StarOff className="w-4 h-4 text-slate-400" />}
+                </button>
+              </div>
               <textarea
                 value={t2sInput}
                 onChange={(e) => setT2sInput(e.target.value)}
-                rows={5}
-                placeholder="مثال: مرحباً، كيف حالك اليوم؟"
+                rows={4}
+                placeholder={`مثال بـ ${t2sLang.nativeName}: ${t2sLang.code.startsWith('ar') ? 'مرحباً، كيف حالك؟' : t2sLang.code.startsWith('en') ? 'Hello, how are you?' : '...'}`}
                 className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-lg"
                 dir="auto"
               />
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> ترجمة الإشارات إلى لغة:
-                  <span className="ms-auto text-xs font-normal text-slate-500">
-                    المختارة: {t2sLang.flag} {t2sLang.nativeName}
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={t2sLangQuery}
-                  onChange={(e) => setT2sLangQuery(e.target.value)}
-                  placeholder="ابحث عن لغة (عربي، English, Français, 中文…)"
-                  className="w-full p-2.5 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-sm"
-                />
-                <select
-                  value={t2sLang.code}
-                  onChange={(e) => setT2sLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
-                  size={6}
-                  className="w-full p-2 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-sm"
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={recording ? stopVoiceInput : startVoiceInput}
+                  className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 ${recording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                 >
-                  {filteredT2sLangs.map(l => (
-                    <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name} ({l.code})</option>
-                  ))}
-                </select>
+                  {recording ? <><MicOff className="w-4 h-4" /> إيقاف التسجيل</> : <><Mic className="w-4 h-4" /> إدخال صوتي</>}
+                </button>
+                <button
+                  onClick={() => setT2sInput('')}
+                  disabled={!t2sInput}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" /> مسح
+                </button>
               </div>
+
+              {favorites.length > 0 && (
+                <div>
+                  <div className="text-xs font-bold text-slate-500 mb-1">مفضّلاتك:</div>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {favorites.map((f, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setT2sInput(f)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs hover:bg-amber-100 max-w-[200px] truncate"
+                        dir="auto"
+                        title={f}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={runText2Sign}
@@ -926,7 +944,7 @@ const SignTranslatorPro: React.FC = () => {
                 className="w-full py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {t2sLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                ترجم إلى {t2sLang.nativeName} + إشارات {signSystem}
+                ترجم إلى إشارات {signSystem}
               </button>
             </div>
 
