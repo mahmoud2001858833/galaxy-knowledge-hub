@@ -35,6 +35,19 @@ const ClinicalHome: React.FC = () => {
     finally { setSeeding(false); }
   };
 
+  const [seedingMed, setSeedingMed] = useState(false);
+  const seedMedical = async () => {
+    setSeedingMed(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('clinical-seed-medical', { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const total = (data?.status || []).reduce((a: number, s: any) => a + (s.added_cases || 0), 0);
+      toast.success(`تم إضافة ${total} حالة طبية جديدة`);
+    } catch (e: any) { toast.error(e?.message ?? 'تعذّر التوليد'); }
+    finally { setSeedingMed(false); }
+  };
+
   const empty = stats.cases === 0;
 
   return (
