@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Image as ImageIcon, Volume2, Hand, Printer, Smartphone, Vibrate, ArrowRight, Loader2, Download } from 'lucide-react';
+import { Upload, Image as ImageIcon, Volume2, Hand, Printer, Smartphone, Vibrate, ArrowRight, Loader2, Download, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
+import { loadHapticSettings, patternFor, intensityScale } from './hapticSettings';
 
 interface TactileRegion {
   label: string;
