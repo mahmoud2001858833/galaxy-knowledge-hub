@@ -1,14 +1,9 @@
-import React, { useRef, useState } from 'react';
-import { Upload, FileText, Image as ImageIcon, Video, Volume2, Loader2, Eye, Ear, Hand, Brain, Sparkles, Play, Pause, Vibrate } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, FileText, Image as ImageIcon, Video, Volume2, Loader2, Eye, Ear, Hand, Sparkles, Play, Pause, Vibrate, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface Profile {
-  vision: 'normal' | 'low' | 'none';
-  hearing: 'normal' | 'low' | 'none';
-  cognitive: 'normal' | 'autism' | 'adhd';
-  preferTouch: boolean;
-}
+import { PROFILE_KEY, type SensoryProfile } from './SensoryProfileSetup';
 
 interface Result {
   summary?: string;
@@ -23,6 +18,17 @@ interface Result {
   vibration?: number[];
 }
 
+const VISION_LABELS: Record<string, string> = {
+  normal: 'بصر طبيعي', total_blind: 'كفيف كلي', partial_blind: 'كفيف جزئي',
+  low_vision: 'ضعف نظر', color_blind: 'عمى ألوان', photosensitive: 'حساسية للضوء',
+};
+const HEARING_LABELS: Record<string, string> = {
+  normal: 'سمع طبيعي', deaf: 'أصم', hard_of_hearing: 'ضعف سمع', cochlear: 'زراعة قوقعة',
+};
+const MOTOR_LABELS: Record<string, string> = {
+  mouse: 'فأرة/لمس', eye_tracking: 'تتبّع العين', voice: 'أوامر صوتية', switch: 'مفتاح واحد',
+};
+
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -35,13 +41,24 @@ const fileToBase64 = (file: File): Promise<string> =>
   });
 
 const SensoryUpload: React.FC = () => {
-  const [profile, setProfile] = useState<Profile>({ vision: 'normal', hearing: 'normal', cognitive: 'normal', preferTouch: false });
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<SensoryProfile | null>(null);
   const [text, setText] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (!raw) { navigate('/damij/sensory/profile', { replace: true }); return; }
+      setProfile(JSON.parse(raw));
+    } catch {
+      navigate('/damij/sensory/profile', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async () => {
     if (!text && !file) {
@@ -51,7 +68,19 @@ const SensoryUpload: React.FC = () => {
     setLoading(true);
     setResult(null);
     try {
-      const payload: any = { profile };
+      const visionMap: Record<string, string> = { normal: 'normal', total_blind: 'none', partial_blind: 'none', low_vision: 'low', color_blind: 'normal', photosensitive: 'low' };
+      const hearingMap: Record<string, string> = { normal: 'normal', deaf: 'none', hard_of_hearing: 'low', cochlear: 'low' };
+      const payload: any = {
+        profile: {
+          vision: visionMap[profile!.vision] ?? 'normal',
+          hearing: hearingMap[profile!.hearing] ?? 'normal',
+          cognitive: profile!.cognitive ?? 'normal',
+          preferTouch: profile!.preferTouch || profile!.motor === 'voice' || profile!.motor === 'switch',
+          motor: profile!.motor,
+          visionDetail: profile!.vision,
+          hearingDetail: profile!.hearing,
+        },
+      };
       if (text.trim()) payload.text = text.trim();
       if (file) {
         if (file.size > 15 * 1024 * 1024) {
@@ -97,19 +126,7 @@ const SensoryUpload: React.FC = () => {
     }
   };
 
-  const ToggleGroup: React.FC<{ label: string; value: string; onChange: (v: any) => void; opts: { v: string; t: string; icon?: any }[] }> = ({ label, value, onChange, opts }) => (
-    <div>
-      <div className="text-sm font-bold text-[hsl(var(--damij-primary))] mb-2">{label}</div>
-      <div className="flex flex-wrap gap-2">
-        {opts.map(o => (
-          <button key={o.v} type="button" onClick={() => onChange(o.v)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${value === o.v ? 'bg-[hsl(var(--damij-primary))] text-white shadow' : 'bg-white text-[hsl(var(--damij-primary))] border border-[hsl(var(--damij-primary))]/20'}`}>
-            {o.icon && <o.icon className="w-4 h-4" />} {o.t}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+  if (!profile) return null;
 
   return (
     <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto" dir="rtl">
@@ -121,21 +138,25 @@ const SensoryUpload: React.FC = () => {
         <p className="text-[hsl(var(--damij-text))]/70 mt-2">نص، صورة، صوت، أو فيديو → نطق + بريل + إشارة + اهتزاز + بطاقات بصرية</p>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 shadow-lg border border-[hsl(var(--damij-primary))]/10 mb-6">
-        <h2 className="font-bold text-lg text-[hsl(var(--damij-primary))] mb-4">1) عرّف ملفك الحسّي</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <ToggleGroup label="حاسة البصر" value={profile.vision} onChange={v => setProfile(p => ({ ...p, vision: v }))}
-            opts={[{ v: 'normal', t: 'طبيعي', icon: Eye }, { v: 'low', t: 'ضعيف' }, { v: 'none', t: 'كفيف' }]} />
-          <ToggleGroup label="حاسة السمع" value={profile.hearing} onChange={v => setProfile(p => ({ ...p, hearing: v }))}
-            opts={[{ v: 'normal', t: 'طبيعي', icon: Ear }, { v: 'low', t: 'ضعيف' }, { v: 'none', t: 'أصم' }]} />
-          <ToggleGroup label="النمط الإدراكي" value={profile.cognitive} onChange={v => setProfile(p => ({ ...p, cognitive: v }))}
-            opts={[{ v: 'normal', t: 'عام', icon: Brain }, { v: 'autism', t: 'توحّد' }, { v: 'adhd', t: 'ADHD' }]} />
-          <div className="flex items-end">
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-[hsl(var(--damij-surface))] w-full">
-              <input type="checkbox" checked={profile.preferTouch} onChange={e => setProfile(p => ({ ...p, preferTouch: e.target.checked }))} className="w-5 h-5 accent-[hsl(var(--damij-primary))]" />
-              <Hand className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
-              <span className="font-semibold text-[hsl(var(--damij-primary))]">يفضّل البريل والاهتزاز</span>
-            </label>
+      <div className="bg-white rounded-3xl p-5 shadow-lg border border-[hsl(var(--damij-primary))]/10 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-lg text-[hsl(var(--damij-primary))]">ملفك الحسّي</h2>
+          <button onClick={() => navigate('/damij/sensory/profile')} className="inline-flex items-center gap-1 text-sm text-[hsl(var(--damij-primary))] hover:underline">
+            <Settings className="w-4 h-4" /> تعديل
+          </button>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl bg-[hsl(var(--damij-surface))] flex items-center gap-2">
+            <Eye className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
+            <div><div className="text-xs text-[hsl(var(--damij-text))]/60">البصر</div><div className="font-bold text-[hsl(var(--damij-primary))]">{VISION_LABELS[profile.vision]}</div></div>
+          </div>
+          <div className="p-3 rounded-xl bg-[hsl(var(--damij-surface))] flex items-center gap-2">
+            <Ear className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
+            <div><div className="text-xs text-[hsl(var(--damij-text))]/60">السمع</div><div className="font-bold text-[hsl(var(--damij-primary))]">{HEARING_LABELS[profile.hearing]}</div></div>
+          </div>
+          <div className="p-3 rounded-xl bg-[hsl(var(--damij-surface))] flex items-center gap-2">
+            <Hand className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
+            <div><div className="text-xs text-[hsl(var(--damij-text))]/60">التحكّم</div><div className="font-bold text-[hsl(var(--damij-primary))]">{MOTOR_LABELS[profile.motor]}</div></div>
           </div>
         </div>
       </div>
