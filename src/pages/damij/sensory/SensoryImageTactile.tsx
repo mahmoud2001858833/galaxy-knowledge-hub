@@ -499,7 +499,7 @@ const SensoryImageTactile: React.FC = () => {
                       }
                       // Geometric mapping mode
                       if (idx !== currentRegionRef.current) {
-                        if (vibrate) navigator.vibrate([15, 20, 15]); // edge click
+                        if (vibrate) navigator.vibrate(patternFor('edgeClick', settingsRef.current.edgeClick)); // edge click
                         currentRegionRef.current = idx;
                         if (region) {
                           if (textureMapping) startTextureHumming(classifyTexture(region.texture));
