@@ -214,6 +214,7 @@ import ADHDDiagnosticReport from './pages/damij/adhd/ADHDDiagnosticReport';
 import ADHDProgramSetup from './pages/damij/adhd/ADHDProgramSetup';
 import ADHDProgramCalendar from './pages/damij/adhd/ADHDProgramCalendar';
 import ADHDProgramDay from './pages/damij/adhd/ADHDProgramDay';
+import ADHDMonthlyTracker from './pages/damij/adhd/ADHDMonthlyTracker';
 import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
 import SignHome from './pages/damij/sign/SignHome';
 import SignTranslator from './pages/damij/sign/SignTranslator';
@@ -999,6 +1000,7 @@ const router = createBrowserRouter([
           { path: 'adhd/program/setup', element: <ADHDProgramSetup /> },
           { path: 'adhd/program/:programId', element: <ADHDProgramCalendar /> },
           { path: 'adhd/program/:programId/day/:dayId', element: <ADHDProgramDay /> },
+          { path: 'adhd/monthly', element: <ADHDMonthlyTracker /> },
           { path: 'dashboard', element: <DamijDashboard /> },
           { path: 'sign', element: <SignHome /> },
           { path: 'sign/translator', element: <SignTranslator /> },
