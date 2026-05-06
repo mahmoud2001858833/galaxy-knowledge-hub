@@ -218,6 +218,7 @@ import SensoryImageTactile from './pages/damij/sensory/SensoryImageTactile';
 import SensoryInteractionLog from './pages/damij/sensory/SensoryInteractionLog';
 import SensoryHapticSettings from './pages/damij/sensory/SensoryHapticSettings';
 import SensoryUnifiedComm from './pages/damij/sensory/SensoryUnifiedComm';
+import SensoryTriSense from './pages/damij/sensory/SensoryTriSense';
 import { installInteractionTracking } from './pages/damij/sensory/interactionLog';
 if (typeof window !== 'undefined') { try { installInteractionTracking(); } catch {} }
 import ClinicalHome from './pages/damij/clinical/ClinicalHome';
