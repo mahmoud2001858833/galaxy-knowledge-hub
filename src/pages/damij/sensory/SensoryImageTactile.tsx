@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
 import { loadHapticSettings, patternFor, intensityScale } from './hapticSettings';
+import { hapticPlay, hapticStop, isHapticLocked } from './hapticBus';
 
 interface TactileRegion {
   label: string;
