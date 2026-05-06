@@ -28,6 +28,139 @@ const WEEK_DAYS_AR = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع'
 
 const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
 
+// ============================================================
+// Score normalization
+// ------------------------------------------------------------
+// Different sources (games, neuro tests, training) emit scores
+// on different scales. To compare days fairly we:
+//  1. Group records by source "type" (game_key / test_type / training).
+//  2. For each type, derive a robust scale (p10..p90) within the
+//     user's monthly data (fallback to assumed bounds when too few).
+//  3. Map each raw score to 0..100 using that scale.
+//  4. For tests where lower is better (rt, omission/commission),
+//     invert before normalization.
+// Daily "avg performance" = mean of per-type daily means → fair
+// comparison even when the day mixes a quick game with a long test.
+// ============================================================
+
+type NormRecord = { day: string; type: string; norm: number; raw: number };
+
+const percentile = (sorted: number[], p: number) => {
+  if (!sorted.length) return 0;
+  const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(p * (sorted.length - 1))));
+  return sorted[idx];
+};
+
+const normalize = (raw: number, lo: number, hi: number) => {
+  if (hi - lo < 1e-6) return 50;
+  const v = ((raw - lo) / (hi - lo)) * 100;
+  return Math.max(0, Math.min(100, v));
+};
+
+// Per-type domain knowledge: assumed [min,max] when sample is small,
+// and whether higher raw is better.
+const TYPE_PROFILE: Record<string, { lo: number; hi: number; higherBetter: boolean }> = {
+  // Games: engine score is bounded ~[-50,150] but typically 0..100
+  'game:default':       { lo: 0,   hi: 100, higherBetter: true },
+  // Training sessions
+  'training:default':   { lo: 0,   hi: 100, higherBetter: true },
+  // Neuro tests — metric chosen per type
+  'test:cpt':           { lo: 0,   hi: 1,   higherBetter: true },  // accuracy
+  'test:nback':         { lo: 0,   hi: 100, higherBetter: true },  // accuracy %
+  'test:stroop':        { lo: 0,   hi: 600, higherBetter: false }, // ms effect (invert)
+  'test:gonogo':        { lo: 0,   hi: 100, higherBetter: true },  // noGoAccuracy %
+};
+
+const extractTestRaw = (t: any): { value: number; profile: string } | null => {
+  const m = t.metrics || {};
+  switch (t.test_type) {
+    case 'cpt':    return m.accuracy != null ? { value: Number(m.accuracy), profile: 'test:cpt' } : null;
+    case 'nback':  return m.accuracy != null ? { value: Number(m.accuracy), profile: 'test:nback' } : null;
+    case 'stroop': return m.stroopEffect != null ? { value: Number(m.stroopEffect), profile: 'test:stroop' } : null;
+    case 'gonogo': return m.noGoAccuracy != null ? { value: Number(m.noGoAccuracy), profile: 'test:gonogo' } : null;
+    default: return null;
+  }
+};
+
+const buildNormalizedRecords = (
+  games: any[], tests: any[], trainings: any[]
+): NormRecord[] => {
+  // Bucket raw values per "type-key" so each game_key gets its own scale.
+  const buckets = new Map<string, { raws: number[]; profile: string; higherBetter: boolean }>();
+
+  const addRaw = (key: string, raw: number, profile: string, higherBetter: boolean) => {
+    if (!buckets.has(key)) buckets.set(key, { raws: [], profile, higherBetter });
+    buckets.get(key)!.raws.push(raw);
+  };
+
+  games.forEach((g) => {
+    const s = Number(g.score);
+    if (!isNaN(s)) addRaw(`game:${g.game_key || 'default'}`, s, 'game:default', true);
+  });
+  trainings.forEach((t) => {
+    const s = Number(t.score);
+    if (!isNaN(s)) addRaw(`training:${t.activity_type || 'default'}`, s, 'training:default', true);
+  });
+  tests.forEach((t) => {
+    const ex = extractTestRaw(t);
+    if (ex) {
+      const prof = TYPE_PROFILE[ex.profile];
+      addRaw(`${ex.profile}`, ex.value, ex.profile, prof.higherBetter);
+    }
+  });
+
+  // Compute scale per bucket (robust: p10..p90 if ≥4 samples, else profile defaults).
+  const scales = new Map<string, { lo: number; hi: number; higherBetter: boolean }>();
+  buckets.forEach((b, key) => {
+    const sorted = [...b.raws].sort((a, b) => a - b);
+    const fallback = TYPE_PROFILE[b.profile] || TYPE_PROFILE['game:default'];
+    let lo = fallback.lo, hi = fallback.hi;
+    if (sorted.length >= 4) {
+      lo = Math.min(lo, percentile(sorted, 0.10));
+      hi = Math.max(hi, percentile(sorted, 0.90));
+    }
+    scales.set(key, { lo, hi, higherBetter: b.higherBetter });
+  });
+
+  const out: NormRecord[] = [];
+  const pushNorm = (date: string, key: string, raw: number) => {
+    const sc = scales.get(key);
+    if (!sc) return;
+    let n = normalize(raw, sc.lo, sc.hi);
+    if (!sc.higherBetter) n = 100 - n;
+    out.push({ day: date, type: key, norm: n, raw });
+  };
+
+  games.forEach((g) => {
+    const s = Number(g.score);
+    if (!isNaN(s)) pushNorm(g.created_at.slice(0, 10), `game:${g.game_key || 'default'}`, s);
+  });
+  trainings.forEach((t) => {
+    const s = Number(t.score);
+    if (!isNaN(s)) pushNorm(t.created_at.slice(0, 10), `training:${t.activity_type || 'default'}`, s);
+  });
+  tests.forEach((t) => {
+    const ex = extractTestRaw(t);
+    if (ex) pushNorm(t.created_at.slice(0, 10), ex.profile, ex.value);
+  });
+
+  return out;
+};
+
+const dailyAverage = (records: NormRecord[], date: string): number | null => {
+  const today = records.filter((r) => r.day === date);
+  if (!today.length) return null;
+  // Mean of per-type means → balanced (1 long test won't outweigh many quick games)
+  const byType = new Map<string, number[]>();
+  today.forEach((r) => {
+    if (!byType.has(r.type)) byType.set(r.type, []);
+    byType.get(r.type)!.push(r.norm);
+  });
+  const typeMeans: number[] = [];
+  byType.forEach((arr) => typeMeans.push(arr.reduce((a, b) => a + b, 0) / arr.length));
+  return Math.round(typeMeans.reduce((a, b) => a + b, 0) / typeMeans.length);
+};
+
 const ADHDMonthlyTracker: React.FC = () => {
   const nav = useNavigate();
   const today = new Date();
@@ -65,9 +198,15 @@ const ADHDMonthlyTracker: React.FC = () => {
     })();
   }, [monthStart.getTime(), monthEnd.getTime()]);
 
+  // Build normalized records once for the month
+  const normRecords = useMemo(
+    () => buildNormalizedRecords(games, tests, trainings),
+    [games, tests, trainings]
+  );
+
   // Build calendar grid
   const cells: DayCell[] = useMemo(() => {
-    const firstWeekday = monthStart.getDay(); // 0..6 (Sun)
+    const firstWeekday = monthStart.getDay();
     const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
     const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
     const arr: DayCell[] = [];
@@ -81,11 +220,7 @@ const ADHDMonthlyTracker: React.FC = () => {
       const dayAssess = assessments.filter((x) => x.created_at?.slice(0, 10) === key);
       const dayReps = dayReports.filter((x) => x.created_at?.slice(0, 10) === key);
       const dayTrain = trainings.filter((x) => x.created_at?.slice(0, 10) === key);
-      const scores = [
-        ...dayGames.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-        ...dayTrain.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-      ];
-      const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+      const avgScore = dailyAverage(normRecords, key);
       const total = dayGames.length + dayTests.length + dayAssess.length + dayTrain.length;
       const intensity = total === 0 ? 0 : total < 2 ? 1 : total < 4 ? 2 : total < 6 ? 3 : 4;
       arr.push({
@@ -101,7 +236,7 @@ const ADHDMonthlyTracker: React.FC = () => {
       });
     }
     return arr;
-  }, [monthStart, games, tests, assessments, dayReports, trainings]);
+  }, [monthStart, games, tests, assessments, dayReports, trainings, normRecords]);
 
   // Daily performance line (avg score per day in month)
   const performanceSeries = useMemo(() => {
@@ -137,12 +272,10 @@ const ADHDMonthlyTracker: React.FC = () => {
   const stats = useMemo(() => {
     const activeDays = cells.filter((c) => c.inMonth && (c.games + c.tests + c.reports) > 0).length;
     const totalActivities = games.length + tests.length + assessments.length + trainings.length;
-    const allScores = [
-      ...games.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-      ...trainings.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-    ];
-    const avgScore = allScores.length ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
-    const bestScore = allScores.length ? Math.max(...allScores) : 0;
+    // Use normalized daily averages (already weighted per type) for fair monthly mean
+    const dailyAvgs = cells.filter((c) => c.inMonth && c.avgScore !== null).map((c) => c.avgScore as number);
+    const avgScore = dailyAvgs.length ? Math.round(dailyAvgs.reduce((a, b) => a + b, 0) / dailyAvgs.length) : 0;
+    const bestScore = dailyAvgs.length ? Math.max(...dailyAvgs) : 0;
     return { activeDays, totalActivities, avgScore, bestScore };
   }, [cells, games, tests, assessments, trainings]);
 
