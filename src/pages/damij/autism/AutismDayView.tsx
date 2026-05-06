@@ -20,6 +20,7 @@ const AutismDayView: React.FC = () => {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [report, setReport] = useState<any>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [regenerating, setRegenerating] = useState<null | 'games' | 'report'>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
