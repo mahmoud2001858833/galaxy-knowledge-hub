@@ -28,8 +28,8 @@ const CodeFixerSection = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('btec-code-fixer', {
-        body: { code }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'code-fixer', code }
       });
 
       if (error) throw error;

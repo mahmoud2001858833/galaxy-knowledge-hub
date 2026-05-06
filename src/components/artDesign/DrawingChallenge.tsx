@@ -77,7 +77,8 @@ const DrawingChallenge = () => {
 
       // Get AI prompt
       const { data: promptData, error: promptError } = await supabase.functions.invoke(
-        "drawing-challenge-prompt"
+        "art-service",
+        { body: { action: "drawing-prompt" } }
       );
 
       if (promptError) throw promptError;

@@ -58,12 +58,6 @@ import BTECStudentProjects from './components/btec/BTECStudentProjects';
 import CodeFixerSection from './components/btec/CodeFixerSection';
 import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
 import BuildPlatformSection from './components/btec/BuildPlatformSection';
-import ArabicLanguage from './pages/ArabicLanguage';
-import ArabicLanguagePlatform from './pages/ArabicLanguagePlatform';
-import ArabicGrammarSection from './pages/ArabicGrammarSection';
-import ArabicMorphologySection from './pages/ArabicMorphologySection';
-import ArabicProsodySection from './pages/ArabicProsodySection';
-import ArabicCriticismSection from './pages/ArabicCriticismSection';
 import EnglishLanguage from './pages/EnglishLanguage';
 import ScientificSimulations from './pages/ScientificSimulations';
 import ScientificSimulationsHub from './pages/ScientificSimulationsHub';
@@ -132,19 +126,11 @@ import MedicalAssistant from './pages/MedicalAssistant';
 import AdministratorsTeachers from './pages/AdministratorsTeachers';
 import ArtDesign from './pages/ArtDesign';
 import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
-import GrammarBasicsSection from "./pages/GrammarBasicsSection";
-import GrammarLibrarySection from "./pages/GrammarLibrarySection";
-import GrammarSubsectionsPage from "./pages/GrammarSubsectionsPage";
-import MorphologyBasicsSection from "./pages/MorphologyBasicsSection";
-import MorphologyRootsSection from "./pages/MorphologyRootsSection";
-import MorphologyDerivativesSection from "./pages/MorphologyDerivativesSection";
-import MorphologySubsectionsPage from "./pages/MorphologySubsectionsPage";
 import CommunicationBridge from './pages/CommunicationBridge';
 import JordanTawjihi from './pages/JordanTawjihi';
 import JordanTawjihiHistory from './pages/JordanTawjihiHistory';
 import JordanTawjihiReligion from './pages/JordanTawjihiReligion';
 import JordanTawjihiEnglish from './pages/JordanTawjihiEnglish';
-import JordanTawjihiArabic from './pages/JordanTawjihiArabic';
 import TeacherRegistration from './pages/TeacherRegistration';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherAssignments from './pages/TeacherAssignments';
@@ -166,7 +152,7 @@ import ConversationView from './pages/ConversationView';
 import SchoolMagazine from './pages/SchoolMagazine';
 import NewsDetail from './pages/NewsDetail';
 import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
-import ProtectedArabicLanguagePlatform from './pages/ProtectedArabicLanguagePlatform';
+
 import AIPlatformBuilder from './pages/AIPlatformBuilder';
 import PublishedProject from './pages/PublishedProject';
 import TenantSettings from './pages/TenantSettings';
@@ -388,10 +374,6 @@ const router = createBrowserRouter([
         element: <PublicRoute><JordanTawjihiEnglish /></PublicRoute>,
       },
       {
-        path: 'jordan-tawjihi/arabic',
-        element: <PublicRoute><JordanTawjihiArabic /></PublicRoute>,
-      },
-      {
         path: 'btec',
         element: <PublicRoute><BTEC /></PublicRoute>,
       },
@@ -422,50 +404,6 @@ const router = createBrowserRouter([
       {
         path: 'btec/it/build-platform',
         element: <PublicRoute><BuildPlatformSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-language',
-        element: <AuthGuard><ArabicLanguage /></AuthGuard>,
-      },
-      {
-        path: 'arabic-platform',
-        element: <PublicRoute><ProtectedArabicLanguagePlatform /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/grammar',
-        element: <PublicRoute><GrammarSubsectionsPage /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology',
-        element: <PublicRoute><MorphologySubsectionsPage /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/prosody',
-        element: <PublicRoute><ArabicProsodySection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/criticism',
-        element: <PublicRoute><ArabicCriticismSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/grammar/basics',
-        element: <PublicRoute><GrammarBasicsSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/grammar/library',
-        element: <PublicRoute><GrammarLibrarySection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology/basics',
-        element: <PublicRoute><MorphologyBasicsSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology/roots',
-        element: <PublicRoute><MorphologyRootsSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology/derivatives',
-        element: <PublicRoute><MorphologyDerivativesSection /></PublicRoute>,
       },
       {
         path: 'english-language',

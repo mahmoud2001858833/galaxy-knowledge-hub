@@ -108,8 +108,8 @@ const BuildPlatformSection = () => {
 
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('btec-programming-assistant', {
-        body: { prompt: `في سياق بناء منصة مخصصة: ${aiPrompt}` }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'programming-assistant', prompt: `في سياق بناء منصة مخصصة: ${aiPrompt}` }
       });
 
       if (error) throw error;

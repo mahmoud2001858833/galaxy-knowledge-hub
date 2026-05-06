@@ -58,11 +58,8 @@ const RateYourArt = () => {
 
     setIsEvaluating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("rate-your-art", {
-        body: { 
-          imageUrl: uploadedImage,
-          description: description.trim()
-        }
+      const { data, error } = await supabase.functions.invoke("art-service", {
+        body: { action: "rate-art", imageUrl: uploadedImage, description: description.trim() }
       });
 
       if (error) throw error;

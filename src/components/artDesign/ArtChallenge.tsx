@@ -17,7 +17,7 @@ const ArtChallenge = () => {
   const startChallenge = async () => {
     setIsGettingPrompt(true);
     try {
-      const { data, error } = await supabase.functions.invoke("art-challenge-prompt");
+      const { data, error } = await supabase.functions.invoke("art-service", { body: { action: "challenge-prompt" } });
       
       if (error) throw error;
       
@@ -72,11 +72,8 @@ const ArtChallenge = () => {
 
     setIsEvaluating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("art-challenge-evaluate", {
-        body: { 
-          imageUrl: uploadedImage,
-          prompt: challengePrompt 
-        }
+      const { data, error } = await supabase.functions.invoke("art-service", {
+        body: { action: "challenge-evaluate", imageUrl: uploadedImage, prompt: challengePrompt }
       });
 
       if (error) throw error;

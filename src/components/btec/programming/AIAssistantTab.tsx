@@ -45,8 +45,8 @@ const AIAssistantTab = () => {
     
     try {
       console.log('Sending question:', question);
-      const { data, error } = await supabase.functions.invoke('btec-programming-assistant', {
-        body: { prompt: question }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'programming-assistant', prompt: question }
       });
 
       console.log('Response data:', data);

@@ -172,8 +172,8 @@ const BuildPlatformTab = () => {
     setAiResponse('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('btec-programming-assistant', {
-        body: { prompt: aiPrompt }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'programming-assistant', prompt: aiPrompt }
       });
 
       if (error) throw error;
