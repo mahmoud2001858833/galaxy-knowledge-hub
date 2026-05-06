@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera, CameraOff, Hand, Volume2, Trash2, AlertCircle, Loader2,
   Activity, Languages, Sparkles, Copy, Wand2, Globe, Zap, Type, Check,
+  Mic, MicOff, Settings2, Play, Pause, SkipForward, SkipBack, RotateCw,
+  Star, StarOff, Download, Share2, FlipHorizontal, ArrowLeftRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from './camera';
@@ -12,6 +14,7 @@ import { SIGN_SYSTEMS } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
+
 
 // ── Gesture vocabulary (Arabic) ──
 const gestureToArabic: Record<string, { text: string; emoji: string; description: string }> = {
