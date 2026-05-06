@@ -287,35 +287,41 @@ const SensoryImageTactile: React.FC = () => {
                 {/* Tactile model */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
                   <h3 className="font-bold mb-2 flex items-center gap-2"><Hand className="w-5 h-5 text-purple-600"/> النموذج اللمسي</h3>
-                  <div className="flex items-center justify-between mb-2 text-xs">
+                  <div className="flex flex-col gap-1 mb-2 text-xs">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={geoMapping} onChange={(e) => setGeoMapping(e.target.checked)} />
                       <span>تضاريس الشكل (نبضة عند الحواف + همهمة داخل الشكل)</span>
+                    </label>
+                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={visualMapping} onChange={(e) => setVisualMapping(e.target.checked)} />
+                      <span>بصمة اللون (غامق = اهتزاز قوي، فاتح = خفيف، تدرّج متناسب)</span>
                     </label>
                   </div>
                   <canvas
                     ref={canvasRef}
                     className="w-full rounded-xl border touch-none"
-                    onPointerLeave={() => { stopHumming(); currentRegionRef.current = null; }}
-                    onPointerUp={() => { stopHumming(); currentRegionRef.current = null; }}
+                    onPointerLeave={() => { stopHumming(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
+                    onPointerUp={() => { stopHumming(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
                     onPointerMove={(e) => {
-                      if (!hapticEnabled || !result.tactileRegions || !canvasRef.current) return;
+                      if (!hapticEnabled || !canvasRef.current) return;
                       const rect = canvasRef.current.getBoundingClientRect();
                       const px = ((e.clientX - rect.left) / rect.width) * 100;
                       const py = ((e.clientY - rect.top) / rect.height) * 100;
+                      // Visual color mapping (independent layer)
+                      if (visualMapping) applyVisualHaptic(px, py);
+                      if (!result.tactileRegions) return;
                       const idx = result.tactileRegions.findIndex(r =>
                         px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h
                       );
                       if (!geoMapping) {
-                        if (idx >= 0) triggerHaptic(result.tactileRegions[idx].elevation * 2, 80, 'continuous');
+                        if (!visualMapping && idx >= 0) triggerHaptic(result.tactileRegions[idx].elevation * 2, 80, 'continuous');
                         return;
                       }
                       // Geometric mapping mode
                       if (idx !== currentRegionRef.current) {
-                        // Crossed an edge → sharp click
                         if (vibrate) navigator.vibrate([15, 20, 15]);
                         currentRegionRef.current = idx;
-                        if (idx >= 0) startHumming(); else stopHumming();
+                        if (idx >= 0 && !visualMapping) startHumming(); else if (idx < 0) stopHumming();
                       }
                     }}
                   />
