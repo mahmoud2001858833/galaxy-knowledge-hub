@@ -33,6 +33,8 @@ import VisualLibrary from './pages/VisualLibrary';
 import UploadImagePage from './pages/UploadImagePage';
 import ScientificJournal from './pages/ScientificJournal';
 import UploadJournalPage from './pages/UploadJournalPage';
+import TeacherAchievements from './pages/TeacherAchievements';
+import TeacherAchievementDetail from './pages/TeacherAchievementDetail';
 import StudyOrganization from './pages/StudyOrganization';
 import ChatRooms from './pages/ChatRooms';
 import Auth from './pages/Auth';
@@ -499,6 +501,14 @@ const router = createBrowserRouter([
       {
         path: 'study-organization',
         element: <AuthGuard><StudyOrganization /></AuthGuard>,
+      },
+      {
+        path: 'teacher-achievements',
+        element: <PublicRoute><TeacherAchievements /></PublicRoute>,
+      },
+      {
+        path: 'teacher-achievements/:slug',
+        element: <PublicRoute><TeacherAchievementDetail /></PublicRoute>,
       },
       {
         path: 'spaced-repetition',

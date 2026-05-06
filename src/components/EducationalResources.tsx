@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain, Sparkles } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain, Sparkles, Award } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
@@ -10,6 +10,13 @@ const EducationalResources = () => {
   const { t, dir } = useLanguage();
   
   const resources = [
+    {
+      title: '🏆 إنجازات المعلمين للمنصة',
+      icon: Award,
+      description: 'لوحة شرف لإسهامات معلمي مدرسة عنبه في إثراء المنصة',
+      link: '/teacher-achievements',
+      gradient: 'from-amber-500 to-orange-600'
+    },
     {
       title: '🎨 إنشاء الصور التعليمية',
       icon: Sparkles,

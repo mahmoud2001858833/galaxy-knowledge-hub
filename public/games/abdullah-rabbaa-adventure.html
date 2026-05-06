@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مغامرة الأساطير 3D - عالم الجبال</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #87ceeb; }
+        
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .stats { 
+            background: rgba(0,0,0,0.6); 
+            padding: 15px 25px; 
+            border-radius: 15px; 
+            font-size: 24px; 
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .teacher-credit {
+            font-size: 20px;
+            color: #ffd700; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-weight: bold;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            margin-top: 10px;
+            padding-top: 10px;
+            text-align: center;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 30px;
+            text-align: center;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 15, 15, 0.98);
+            color: white;
+            padding: 40px;
+            border-radius: 25px;
+            display: none;
+            text-align: center;
+            border: 3px solid #f1c40f;
+            box-shadow: 0 0 50px rgba(241, 196, 15, 0.2);
+            z-index: 100;
+            min-width: 350px;
+        }
+
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7));
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200;
+            color: white;
+        }
+
+        .main-title {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: #3498db;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+        }
+
+        .big-credit {
+            font-size: 32px;
+            color: #f1c40f;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .math-options {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-top: 25px;
+            direction: ltr;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            transition: all 0.3s;
+            pointer-events: auto;
+            box-shadow: 0 4px 0 #1e8449;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #1e8449; background: #2ecc71; }
+        button:active { transform: translateY(2px); box-shadow: 0 0 0 #1e8449; }
+
+        #mute-btn { background: rgba(255,255,255,0.15); font-size: 14px; margin-top: 10px; box-shadow: none; padding: 8px; }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 12px; height: 12px;
+            border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; opacity: 0.7;
+        }
+
+        #quiz-math-part {
+            color: #f1c40f;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            direction: ltr;
+            display: block;
+            margin: 15px 0;
+            font-size: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .arabic-text {
+            direction: rtl;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 class="main-title">مغامرة الأساطير 3D</h1>
+        <div class="big-credit">إعداد المعلم: عبدالله الرباع</div>
+        <button onclick="startFullGame()">ابدأ الرحلة بين الجبال</button>
+        <p style="margin-top: 20px; opacity: 0.8;">بيئة جديدة: الجبال الشاهقة والموسيقى المحسنة</p>
+    </div>
+
+    <div id="crosshair"></div>
+    
+    <div id="ui-container">
+        <div class="stats">
+            <div>الجواهر: <span id="score">0</span></div>
+            <div>المحاولات: <span id="lives">5</span></div>
+            <div class="teacher-credit">إعداد المعلم عبدالله الرباع</div>
+            <button id="mute-btn" onclick="toggleMute()">كتم الصوت 🔊</button>
+        </div>
+    </div>
+
+    <div id="instructions">
+        WASD للتحرك | Space للقفز | حل الأسئلة لتجاوز القمم!
+    </div>
+
+    <div id="quiz-modal" class="modal">
+        <h3 id="quiz-title" style="color: #3498db;">تحدي العباقرة!</h3>
+        <div id="quiz-question-container">
+            <span class="arabic-text" id="quiz-text-part"></span>
+            <span id="quiz-math-part"></span>
+        </div>
+        <div class="math-options" id="quiz-options"></div>
+        <div id="feedback" style="margin-top: 20px; height: 24px; font-weight: bold;"></div>
+        <div class="teacher-credit" style="font-size: 16px;">إعداد المعلم عبدالله الرباع</div>
+    </div>
+
+    <div id="continue-modal" class="modal">
+        <h2 style="color: #e67e22;">انتبه! لقد سقطت من الجبل</h2>
+        <p style="font-size: 18px;">المحاولات المتبقية: <span id="modal-lives" style="font-weight: bold; color: #e74c3c;">5</span></p>
+        <button onclick="respawnPlayer()">العودة لآخر منصة</button>
+        <div class="teacher-credit" style="font-size: 16px;">إعداد المعلم عبدالله الرباع</div>
+    </div>
+
+    <div id="win-screen" class="modal">
+        <h1 style="color: #f1c40f; font-size: 50px;">🏆 بطل الجبال! 🏆</h1>
+        <p style="font-size: 24px;">لقد وصلت لقمة الأساطير بنجاح!</p>
+        <div style="font-size: 22px; margin: 20px 0;">مجموع الجواهر: <span id="final-score" style="color: #f1c40f;">0</span></div>
+        <div class="big-credit" style="font-size: 24px;">إعداد المعلم: عبدالله الرباع</div>
+        <button onclick="location.reload()">إعادة المغامرة</button>
+    </div>
+
+    <div id="game-over" class="modal">
+        <h1 style="color: #ff4444; font-size: 40px;">انتهت المحاولات!</h1>
+        <p>الجبال قاسية، حاول مرة أخرى لتصل للقمة</p>
+        <div class="big-credit" style="font-size: 24px; margin: 20px 0;">إعداد المعلم: عبدالله الرباع</div>
+        <button onclick="location.reload()">إعادة التجربة</button>
+    </div>
+
+    <script>
+        let scene, camera, renderer, player, clock;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+        let velocity = new THREE.Vector3();
+        let score = 0, lives = 5;
+        let lastSafePosition = new THREE.Vector3(0, 2, 0);
+        let coins = [], platforms = [], clouds = [], grassBlades = [], mountainMeshes = [];
+        let yaw = new THREE.Object3D(), pitch = new THREE.Object3D(); 
+        let isDead = false, isQuizActive = false, gameStarted = false, isWon = false;
+        let trophy;
+
+        const mathQuestions = [
+            { text: "ما هو ناتج العملية التالية؟", math: "sqrt(144) = ?", a: ["10", "11", "12", "14"], correct: 2 },
+            { text: "احسب ناتج المعادلة التالية:", math: "(5 + 3) * 2 = ?", a: ["11", "13", "16", "21"], correct: 2 },
+            { text: "ما هو مجموع زوايا الشكل الرباعي؟", math: "Sum of angles = ?", a: ["180", "270", "360", "540"], correct: 2 },
+            { text: "احسب القيمة المذكورة (25% من 80):", math: "25% * 80 = ?", a: ["10", "20", "30", "40"], correct: 1 },
+            { text: "أوجد قيمة x في المعادلة التالية:", math: "2x - 4 = 10", a: ["x = 3", "x = 5", "x = 7", "x = 14"], correct: 2 },
+            { text: "ما هو أصغر عدد أولي؟", math: "Min Prime Number = ?", a: ["0", "1", "2", "3"], correct: 2 },
+            { text: "احسب ناتج القوة التالية:", math: "7^2 = ?", a: ["14", "47", "49", "56"], correct: 2 },
+            { text: "ما هو مجموع زوايا المثلث؟", math: "60 + 60 + 60 = ?", a: ["120", "180", "200", "240"], correct: 1 },
+            { text: "أوجد ناتج عملية القسمة:", math: "100 / 0.5 = ?", a: ["50", "150", "200", "500"], correct: 2 },
+            { text: "أوجد مساحة المستطيل التالي:", math: "6 cm * 4 cm = ?", a: ["10 cm2", "20 cm2", "24 cm2", "36 cm2"], correct: 2 },
+            { text: "أوجد القيمة المجهولة x:", math: "75 + x = 200", a: ["x = 115", "x = 125", "x = 135", "x = 150"], correct: 1 },
+            { text: "الرمز الروماني X يمثل الرقم:", math: "X = ?", a: ["1", "5", "10", "50"], correct: 2 }
+        ];
+
+        const shuffledQuestions = [...mathQuestions].sort(() => Math.random() - 0.5);
+        let audioCtx = null, isMuted = false;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            startBackgroundMusic();
+        }
+
+        function playSound(type) {
+            if (isMuted || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            if (type === 'jump') {
+                createSynthNote(220, 'triangle', 0.2, 0.1, 440);
+            } else if (type === 'correct') {
+                createSynthNote(523.25, 'sine', 0.1, 0.1);
+                setTimeout(() => createSynthNote(659.25, 'sine', 0.1, 0.1), 100);
+                setTimeout(() => createSynthNote(783.99, 'sine', 0.2, 0.1), 200);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((f, i) => setTimeout(() => createSynthNote(f, 'square', 0.3, 0.05), i * 150));
+            } else if (type === 'wrong') {
+                createSynthNote(150, 'sawtooth', 0.4, 0.2, 50);
+            } else if (type === 'coin') {
+                createSynthNote(987.77, 'sine', 0.1, 0.05, 1318.51);
+            }
+        }
+
+        // Helper for cleaner sounds
+        function createSynthNote(freq, type, duration, vol, endFreq) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            if(endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
+            
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function startBackgroundMusic() {
+            // Ambient Mountain Chords (C Major / G Major feel)
+            const chords = [
+                [261.63, 329.63, 392.00], // C
+                [349.23, 440.00, 523.25], // F
+                [392.00, 493.88, 587.33], // G
+                [329.63, 415.30, 493.88]  // E major for tension
+            ];
+            
+            let chordIndex = 0;
+            
+            function playChordStep() {
+                if (isMuted || !audioCtx || isDead || isQuizActive || !gameStarted || isWon) {
+                    setTimeout(playChordStep, 1000);
+                    return;
+                }
+
+                const now = audioCtx.currentTime;
+                const currentChord = chords[chordIndex];
+                
+                currentChord.forEach(freq => {
+                    const osc = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    g.gain.setValueAtTime(0, now);
+                    g.gain.linearRampToValueAtTime(0.03, now + 1); // Fade in
+                    g.gain.linearRampToValueAtTime(0, now + 4); // Fade out
+                    osc.connect(g);
+                    g.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 4);
+                });
+
+                // Soft rhythmic "pings"
+                if (Math.random() > 0.5) {
+                    const pingFreq = currentChord[Math.floor(Math.random()*currentChord.length)] * 2;
+                    createSynthNote(pingFreq, 'triangle', 2, 0.02);
+                }
+
+                chordIndex = (chordIndex + 1) % chords.length;
+                setTimeout(playChordStep, 4000); // Wait for next chord
+            }
+            
+            playChordStep();
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? 'تشغيل الصوت 🔇' : 'كتم الصوت 🔊';
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.0008);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+            scene.add(yaw); yaw.add(pitch); pitch.add(camera);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            clock = new THREE.Clock();
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            
+            const sun = new THREE.DirectionalLight(0xffeedd, 1.2);
+            sun.position.set(100, 200, 100); 
+            sun.castShadow = true;
+            sun.shadow.camera.left = -200; sun.shadow.camera.right = 200;
+            sun.shadow.camera.top = 200; sun.shadow.camera.bottom = -200;
+            scene.add(sun);
+
+            createSunDisk();
+            createMountains();
+
+            const pGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.4, 16);
+            player = new THREE.Mesh(pGeo, new THREE.MeshPhongMaterial({ color: 0x2980b9 }));
+            player.position.set(0, 5, 0); player.castShadow = true;
+            scene.add(player);
+
+            createGround();
+            createLevel();
+            createClouds();
+            createForest();
+
+            document.addEventListener('keydown', e => handleKey(e, true));
+            document.addEventListener('keyup', e => handleKey(e, false));
+            document.addEventListener('mousemove', onMouseMove);
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animate();
+        }
+
+        function createSunDisk() {
+            const sunGroup = new THREE.Group();
+            const sunGeo = new THREE.SphereGeometry(25, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd44 });
+            const sunDisk = new THREE.Mesh(sunGeo, sunMat);
+            sunGroup.add(sunDisk);
+
+            const glowGeo = new THREE.SphereGeometry(45, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.3 });
+            const glow = new THREE.Mesh(glowGeo, glowMat);
+            sunGroup.add(glow);
+
+            sunGroup.position.set(-400, 400, -800);
+            scene.add(sunGroup);
+        }
+
+        function createMountains() {
+            const mtMat = new THREE.MeshPhongMaterial({ color: 0x4b6d7a, flatShading: true });
+            const snowMat = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true });
+
+            for(let i = 0; i < 20; i++) {
+                const angle = (i / 20) * Math.PI * 2;
+                const dist = 600 + Math.random() * 400;
+                const height = 200 + Math.random() * 350;
+                const radius = 100 + Math.random() * 150;
+
+                const mtGroup = new THREE.Group();
+                const mtBase = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 4), mtMat);
+                mtGroup.add(mtBase);
+
+                const snowCap = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.3, height * 0.3, 4), snowMat);
+                snowCap.position.y = height * 0.35;
+                mtGroup.add(snowCap);
+
+                mtGroup.position.set(Math.cos(angle) * dist, height/2 - 20, Math.sin(angle) * dist);
+                mtGroup.rotation.y = Math.random() * Math.PI;
+                scene.add(mtGroup);
+                mountainMeshes.push(mtGroup);
+            }
+        }
+
+        function startFullGame() {
+            gameStarted = true;
+            document.getElementById('start-screen').style.display = 'none';
+            document.body.requestPointerLock();
+            initAudio();
+        }
+
+        function createGround() {
+            const groundGeo = new THREE.PlaneGeometry(3000, 3000);
+            const groundMat = new THREE.MeshPhongMaterial({ color: 0x2d5a27 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -10;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function createTrophy(x, y, z) {
+            const group = new THREE.Group();
+            const goldMat = new THREE.MeshPhongMaterial({ color: 0xf1c40f, shininess: 80 });
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1, 0.4, 16), goldMat);
+            group.add(base);
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16), goldMat);
+            stem.position.y = 0.8;
+            group.add(stem);
+            const bowl = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), goldMat);
+            bowl.position.y = 1.6; bowl.rotation.x = Math.PI;
+            group.add(bowl);
+            group.position.set(x, y, z);
+            scene.add(group);
+            trophy = group;
+            const light = new THREE.PointLight(0xf1c40f, 2, 15);
+            light.position.set(x, y + 2, z);
+            scene.add(light);
+        }
+
+        function createLevel() {
+            addPlatform(0, -0.5, 0, 15, 15, 0x3d8c40, -1);
+            let lastX = 0, lastY = -0.5, lastZ = 0;
+            const platformCount = 12;
+            for(let i = 0; i < platformCount; i++) {
+                const angle = (i * 0.6);
+                const distance = 13 + Math.random() * 3; 
+                let px = lastX + Math.cos(angle) * distance;
+                let pz = lastZ + Math.sin(angle) * distance;
+                let py = lastY + 2.5; 
+                const p = addPlatform(px, py, pz, 10, 10, 0x27ae60, i); 
+                addGrassToPlatform(p, 10, 10);
+                if (i === platformCount - 1) {
+                    createTrophy(px, py + 1.5, pz);
+                    p.material.color.set(0xf1c40f); 
+                } else {
+                    addCoin(px, py + 2.5, pz);
+                }
+                lastX = px; lastY = py; lastZ = pz;
+            }
+        }
+
+        function addPlatform(x, y, z, w, d, color, idx) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 1, d), new THREE.MeshPhongMaterial({ color }));
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            mesh.userData = { quizIdx: idx, visited: false };
+            scene.add(mesh);
+            platforms.push(mesh);
+            return mesh;
+        }
+
+        function addIndividualGrass(x, y, z, parent) {
+            const grassMat = new THREE.MeshPhongMaterial({ color: 0x55aa55, side: THREE.DoubleSide });
+            const h = 0.3 + Math.random() * 0.5;
+            const blade = new THREE.Mesh(new THREE.PlaneGeometry(0.15, h), grassMat);
+            blade.position.set(x, y + h/2, z);
+            blade.rotation.y = Math.random() * Math.PI;
+            blade.userData = { phase: Math.random() * Math.PI * 2 };
+            parent.add(blade);
+            grassBlades.push(blade);
+        }
+
+        function addGrassToPlatform(platform, width, depth) {
+            for(let i = 0; i < 20; i++) {
+                const x = (Math.random()-0.5)*(width-1);
+                const z = (Math.random()-0.5)*(depth-1);
+                addIndividualGrass(x, 0.5, z, platform);
+            }
+        }
+
+        function addCoin(x, y, z) {
+            const coin = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.12, 8, 16), new THREE.MeshPhongMaterial({ color: 0xf1c40f }));
+            coin.position.set(x, y, z);
+            scene.add(coin);
+            coins.push(coin);
+        }
+
+        function onMouseMove(e) {
+            if (document.pointerLockElement === document.body && !isQuizActive && !isWon && gameStarted) {
+                yaw.rotation.y -= e.movementX * 0.002;
+                pitch.rotation.x -= e.movementY * 0.002;
+                pitch.rotation.x = Math.max(-1.4, Math.min(1.4, pitch.rotation.x));
+            }
+        }
+
+        function handleKey(e, down) {
+            if (isQuizActive || isDead || isWon || !gameStarted) return;
+            switch (e.code) {
+                case 'KeyW': moveForward = down; break;
+                case 'KeyS': moveBackward = down; break;
+                case 'KeyA': moveLeft = down; break;
+                case 'KeyD': moveRight = down; break;
+                case 'Space': 
+                    if (down && canJump) { 
+                        velocity.y = 16; 
+                        canJump = false; 
+                        playSound('jump'); 
+                    } 
+                    break;
+            }
+        }
+
+        function showQuiz(idx, platformPos) {
+            if (idx === -1) return;
+            isQuizActive = true;
+            velocity.set(0, 0, 0); 
+            moveForward = moveBackward = moveLeft = moveRight = false;
+            player.position.set(platformPos.x, platformPos.y + 1.25, platformPos.z);
+            document.exitPointerLock();
+
+            const qData = shuffledQuestions[idx % shuffledQuestions.length];
+            document.getElementById('quiz-text-part').innerText = qData.text;
+            document.getElementById('quiz-math-part').innerText = qData.math;
+
+            const optionsDiv = document.getElementById('quiz-options');
+            optionsDiv.innerHTML = '';
+            document.getElementById('feedback').innerText = '';
+            qData.a.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(i, qData.correct);
+                optionsDiv.appendChild(btn);
+            });
+            document.getElementById('quiz-modal').style.display = 'block';
+        }
+
+        function checkAnswer(chosen, correct) {
+            const feedback = document.getElementById('feedback');
+            if (chosen === correct) {
+                playSound('correct');
+                feedback.style.color = "#2ecc71";
+                feedback.innerText = "رائع! إجابة صحيحة";
+                setTimeout(() => {
+                    isQuizActive = false;
+                    document.getElementById('quiz-modal').style.display = 'none';
+                    document.body.requestPointerLock();
+                }, 800);
+            } else {
+                playSound('wrong');
+                feedback.style.color = "#e74c3c";
+                feedback.innerText = "خطأ! حاول التركيز أكثر";
+                lives--; updateUI();
+                if (lives <= 0) gameOver();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('lives').innerText = lives;
+            document.getElementById('modal-lives').innerText = lives;
+            document.getElementById('score').innerText = score;
+        }
+
+        function winGame() {
+            isWon = true;
+            document.exitPointerLock();
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('win-screen').style.display = 'block';
+            playSound('win');
+        }
+
+        function respawnPlayer() {
+            isDead = false;
+            document.getElementById('continue-modal').style.display = 'none';
+            player.position.copy(lastSafePosition);
+            player.position.y += 2.5;
+            velocity.set(0, 0, 0);
+            document.body.requestPointerLock();
+        }
+
+        function gameOver() {
+            isDead = true;
+            document.getElementById('quiz-modal').style.display = 'none';
+            document.getElementById('game-over').style.display = 'block';
+            document.exitPointerLock();
+        }
+
+        function createTree(x, y, z) {
+            const tree = new THREE.Group();
+            const trunkHeight = 3.0;
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.5, 0.7, trunkHeight, 8), 
+                new THREE.MeshPhongMaterial({ color: 0x5d4037 })
+            );
+            trunk.position.y = trunkHeight / 2; 
+            tree.add(trunk);
+            
+            const leavesHeight = 6.0;
+            const leaves = new THREE.Mesh(
+                new THREE.ConeGeometry(2.5, leavesHeight, 8), 
+                new THREE.MeshPhongMaterial({ color: 0x2d5a27 })
+            );
+            leaves.position.y = trunkHeight + (leavesHeight / 3); 
+            tree.add(leaves);
+            
+            tree.position.set(x, y, z);
+            return tree;
+        }
+
+        function createForest() {
+            for(let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 250;
+                scene.add(createTree(Math.cos(angle) * dist, -10, Math.sin(angle) * dist));
+            }
+        }
+
+        function createClouds() {
+            for(let i = 0; i < 30; i++) {
+                const cloud = new THREE.Group();
+                const mat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+                for(let j = 0; j < 4; j++) {
+                    const part = new THREE.Mesh(new THREE.SphereGeometry(4 + Math.random()*2, 8, 8), mat);
+                    part.position.set(j * 3, Math.random()*3, Math.random()*2);
+                    cloud.add(part);
+                }
+                cloud.position.set((Math.random()-0.5)*1500, 100 + Math.random()*50, (Math.random()-0.5)*1500);
+                cloud.userData = { speed: 0.04 + Math.random()*0.08 };
+                scene.add(cloud);
+                clouds.push(cloud);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+            const time = performance.now() * 0.002;
+
+            clouds.forEach(c => {
+                c.position.x += c.userData.speed;
+                if(c.position.x > 750) c.position.x = -750;
+            });
+
+            grassBlades.forEach(b => {
+                b.rotation.x = 0.2 * Math.sin(time + b.userData.phase);
+            });
+
+            if (trophy) {
+                trophy.rotation.y += 0.03;
+                trophy.position.y += Math.sin(time * 4) * 0.004;
+            }
+
+            if (!isDead && !isQuizActive && !isWon && gameStarted) {
+                velocity.x -= velocity.x * 10 * delta;
+                velocity.z -= velocity.z * 10 * delta;
+                velocity.y -= 38 * delta;
+
+                camera.updateMatrixWorld();
+                const rightVector = new THREE.Vector3();
+                rightVector.setFromMatrixColumn(camera.matrixWorld, 0);
+                rightVector.y = 0; rightVector.normalize();
+                const forwardVector = new THREE.Vector3();
+                forwardVector.setFromMatrixColumn(camera.matrixWorld, 2);
+                forwardVector.y = 0; forwardVector.normalize(); forwardVector.negate(); 
+
+                if (moveForward) velocity.add(forwardVector.clone().multiplyScalar(180 * delta));
+                if (moveBackward) velocity.sub(forwardVector.clone().multiplyScalar(180 * delta));
+                if (moveRight) velocity.add(rightVector.clone().multiplyScalar(180 * delta));
+                if (moveLeft) velocity.sub(rightVector.clone().multiplyScalar(180 * delta));
+
+                player.position.x += velocity.x * delta;
+                player.position.z += velocity.z * delta;
+                player.position.y += velocity.y * delta;
+
+                let onGround = false;
+                platforms.forEach(p => {
+                    let playerBottom = player.position.y - 0.7;
+                    let platformTop = p.position.y + 0.5;
+                    if (Math.abs(player.position.x - p.position.x) < 5.4 && 
+                        Math.abs(player.position.z - p.position.z) < 5.4) {
+                        if (player.position.y > p.position.y && playerBottom <= platformTop + 0.1 && velocity.y <= 0.1) {
+                            player.position.y = platformTop + 0.7;
+                            velocity.y = 0;
+                            onGround = true;
+                            if (p.userData.quizIdx !== -1 && !p.userData.visited) {
+                                p.userData.visited = true; 
+                                lastSafePosition.copy(p.position);
+                                showQuiz(p.userData.quizIdx, p.position);
+                            }
+                        }
+                    }
+                });
+                canJump = onGround;
+
+                if (trophy && player.position.distanceTo(trophy.position) < 2) {
+                    winGame();
+                }
+
+                coins.forEach((c, i) => {
+                    c.rotation.y += 0.05;
+                    if (player.position.distanceTo(c.position) < 1.5) {
+                        scene.remove(c); coins.splice(i, 1);
+                        score++; updateUI(); playSound('coin');
+                    }
+                });
+                yaw.position.copy(player.position); yaw.position.y += 0.6;
+            }
+
+            if (player.position.y < -40 && !isDead && !isWon && gameStarted) { 
+                isDead = true; document.exitPointerLock();
+                if (lives > 1) {
+                    lives--; updateUI();
+                    document.getElementById('continue-modal').style.display = 'block';
+                } else { gameOver(); }
+            }
+            renderer.render(scene, camera);
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
