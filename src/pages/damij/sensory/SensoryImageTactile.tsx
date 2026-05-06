@@ -93,6 +93,7 @@ const SensoryImageTactile: React.FC = () => {
 
   const onFile = (f: File) => {
     setFile(f); setResult(null);
+    pixelCanvasRef.current = null;
     setImgUrl(URL.createObjectURL(f));
   };
 
