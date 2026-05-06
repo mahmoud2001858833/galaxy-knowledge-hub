@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Search, Filter, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { CATEGORIES, CategoryKey, ClinicalCase, SEVERITY_LABEL, CATEGORY_LABEL, CATEGORY_EMOJI } from '@/features/clinical/types';
+import { CATEGORIES, CategoryKey, ClinicalCase, SEVERITY_LABEL, CATEGORY_LABEL, CATEGORY_EMOJI, CATEGORY_GROUP } from '@/features/clinical/types';
 
 const ClinicalCases: React.FC = () => {
   const [cases, setCases] = useState<ClinicalCase[]>([]);
