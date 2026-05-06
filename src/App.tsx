@@ -1018,6 +1018,7 @@ const router = createBrowserRouter([
           { path: 'sensory/log', element: <SensoryInteractionLog /> },
           { path: 'sensory/haptic-settings', element: <SensoryHapticSettings /> },
           { path: 'sensory/unified-comm', element: <SensoryUnifiedComm /> },
+          { path: 'sensory/tri-sense', element: <SensoryTriSense /> },
           { path: 'clinical', element: <ClinicalHome /> },
           { path: 'clinical/cases', element: <ClinicalCases /> },
           { path: 'clinical/lab', element: <ClinicalLab /> },
