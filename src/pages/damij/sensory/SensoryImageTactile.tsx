@@ -34,13 +34,18 @@ const SensoryImageTactile: React.FC = () => {
   const [geoMapping, setGeoMapping] = useState(true);
   const [visualMapping, setVisualMapping] = useState(true);
   const [textureMapping, setTextureMapping] = useState(true);
+  const [focusIdx, setFocusIdx] = useState<number | null>(null);
+  const [connectTarget, setConnectTarget] = useState<number | null>(null);
+  const [connectStatus, setConnectStatus] = useState<'idle' | 'wrong' | 'success'>('idle');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixelCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const currentRegionRef = useRef<number | null>(null);
   const hummingRef = useRef<number | null>(null);
+  const focusPulseRef = useRef<number | null>(null);
   const lastVisualRef = useRef<number>(0);
   const lastIntensityRef = useRef<number>(0);
+  const lastErrorRef = useRef<number>(0);
   const mobile = isMobile();
   const vibrate = hasVibration();
 
