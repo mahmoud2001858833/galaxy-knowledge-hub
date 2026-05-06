@@ -211,9 +211,13 @@ const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending
                 </div>
               </div>
             </>
-          ) : (
+          ) : tab === 'try' ? (
             <div className="p-3">
               <InterventionTryPanel sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
+            </div>
+          ) : (
+            <div className="p-3">
+              <DeviceLauncher sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
             </div>
           )}
         </section>
