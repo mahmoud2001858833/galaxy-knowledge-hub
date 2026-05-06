@@ -455,7 +455,10 @@ const SensoryImageTactile: React.FC = () => {
                           cueError();
                         }
                       }
-                    }}
+                      // Focus-point engagement: accelerate pulse while finger is over it
+                      if (focusIdx !== null) {
+                        if (idx === focusIdx) enterFocus(); else leaveFocus();
+                      }
                   />
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <button onClick={downloadModel} className="px-3 py-2 rounded-lg bg-gray-100 text-sm font-bold inline-flex items-center justify-center gap-2">
