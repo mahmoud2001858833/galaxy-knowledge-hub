@@ -66,6 +66,11 @@ const ClinicalHome: React.FC = () => {
           {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {empty ? 'توليد الحالات والبروتوكولات' : 'توسيع المحتوى'}
         </button>
+        <button onClick={seedMedical} disabled={seedingMed}
+          className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-60">
+          {seedingMed ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
+          توسيع المحتوى الطبي (قلب، عظام…)
+        </button>
         <Link to="/damij/clinical/lab" className="px-4 py-2 rounded-xl bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center gap-2">
           <FlaskConical className="w-4 h-4" /> ابدأ تجربة جديدة
         </Link>
