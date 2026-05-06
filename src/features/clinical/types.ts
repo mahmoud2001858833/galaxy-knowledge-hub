@@ -1,9 +1,26 @@
 export const CATEGORIES = [
-  { key: 'asd',            ar: 'اضطراب طيف التوحد',     emoji: '🧩' },
-  { key: 'adhd',           ar: 'فرط الحركة وتشتت الانتباه', emoji: '⚡' },
-  { key: 'hearing',        ar: 'الإعاقة السمعية',         emoji: '👂' },
-  { key: 'visual',         ar: 'الإعاقة البصرية',         emoji: '👁️' },
-  { key: 'learning_other', ar: 'صعوبات تعلّم وتأخر لغوي', emoji: '📚' },
+  // ذوو الاحتياجات الخاصة
+  { key: 'asd',            ar: 'اضطراب طيف التوحد',         emoji: '🧩', group: 'special' },
+  { key: 'adhd',           ar: 'فرط الحركة وتشتت الانتباه',  emoji: '⚡', group: 'special' },
+  { key: 'hearing',        ar: 'الإعاقة السمعية',            emoji: '👂', group: 'special' },
+  { key: 'visual',         ar: 'الإعاقة البصرية',            emoji: '👁️', group: 'special' },
+  { key: 'learning_other', ar: 'صعوبات تعلّم وتأخر لغوي',    emoji: '📚', group: 'special' },
+  // التخصصات الطبية
+  { key: 'cardiology',     ar: 'أمراض القلب',               emoji: '❤️', group: 'medical' },
+  { key: 'orthopedics',    ar: 'العظام والمفاصل',            emoji: '🦴', group: 'medical' },
+  { key: 'neurology',      ar: 'الأعصاب',                    emoji: '🧠', group: 'medical' },
+  { key: 'pulmonology',    ar: 'الجهاز التنفسي',             emoji: '🫁', group: 'medical' },
+  { key: 'nephrology',     ar: 'الكلى',                      emoji: '💧', group: 'medical' },
+  { key: 'endocrinology',  ar: 'الغدد والسكري',              emoji: '⚖️', group: 'medical' },
+  { key: 'gastro',         ar: 'الجهاز الهضمي',              emoji: '🩺', group: 'medical' },
+  { key: 'emergency',      ar: 'الطوارئ',                   emoji: '🚑', group: 'medical' },
+  { key: 'pediatrics',     ar: 'الأطفال',                   emoji: '👶', group: 'medical' },
+  { key: 'obgyn',          ar: 'النساء والولادة',            emoji: '🤰', group: 'medical' },
+  { key: 'dermatology',    ar: 'الجلدية',                    emoji: '🧴', group: 'medical' },
+  { key: 'ophthalmology',  ar: 'العيون',                     emoji: '👁', group: 'medical' },
+  { key: 'ent',            ar: 'الأنف والأذن والحنجرة',      emoji: '👃', group: 'medical' },
+  { key: 'psychiatry',     ar: 'الطب النفسي',               emoji: '💭', group: 'medical' },
+  { key: 'internal',       ar: 'الباطنية',                   emoji: '🩻', group: 'medical' },
 ] as const;
 
 export type CategoryKey = typeof CATEGORIES[number]['key'];
@@ -25,10 +42,12 @@ export interface ClinicalProtocol {
 }
 
 export interface ClinicalSession {
-  id: string; user_id: string; case_id: string; protocol_id: string;
+  id: string; user_id: string; case_id: string; protocol_id: string | null;
   status: 'in_progress' | 'completed' | 'aborted';
   current_step: number; attention: number; anxiety: number; progress: number;
   started_at: string; ended_at?: string;
+  mode?: 'guided' | 'free';
+  free_intent?: any;
 }
 
 export interface ClinicalReport {
@@ -42,3 +61,4 @@ export interface ClinicalReport {
 export const SEVERITY_LABEL: Record<string, string> = { mild: 'خفيفة', moderate: 'متوسطة', severe: 'شديدة' };
 export const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.ar]));
 export const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.emoji]));
+export const CATEGORY_GROUP: Record<string, 'special' | 'medical'> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.group as any]));

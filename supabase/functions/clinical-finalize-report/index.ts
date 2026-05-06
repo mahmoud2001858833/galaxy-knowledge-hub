@@ -48,18 +48,22 @@ Deno.serve(async (req) => {
 
     const [cRes, pRes, eRes] = await Promise.all([
       fetch(rest(`/clinical_cases?id=eq.${session.case_id}&select=*`), { headers: svcHeaders() }),
-      fetch(rest(`/clinical_protocols?id=eq.${session.protocol_id}&select=*`), { headers: svcHeaders() }),
+      session.protocol_id
+        ? fetch(rest(`/clinical_protocols?id=eq.${session.protocol_id}&select=*`), { headers: svcHeaders() })
+        : Promise.resolve(new Response('[]')),
       fetch(rest(`/clinical_session_events?session_id=eq.${sessionId}&order=t_ms.asc&select=*`), { headers: svcHeaders() }),
     ]);
     const [c] = await cRes.json();
-    const [p] = await pRes.json();
+    const pArr = await (pRes as Response).json();
+    const fi = session.free_intent || {};
+    const p = pArr[0] || { name_ar: 'تجربة حرّة', short_ar: fi.title || '' };
     const events = await eRes.json();
 
     const log = events.map((e: any) => `t=${e.t_ms}ms [${e.actor}/${e.event_type}] ${JSON.stringify(e.payload).slice(0, 200)} | A=${e.attention} X=${e.anxiety} P=${e.progress}`).join('\n');
 
     const prompt = `الحالة: ${c.name_ar} (${c.age_years} سنة، ${c.gender}، فئة ${c.category}، شدة ${c.severity})
 الملخص: ${c.summary_ar}
-البروتوكول: ${p.name_ar} — ${p.short_ar}
+البروتوكول: ${p.name_ar} — ${p.short_ar}${session.mode === 'free' ? `\nنمط: تجربة حرّة. التدخّل: ${fi.title || ''} ${fi.details ? '— ' + fi.details : ''} ${fi.dose ? '• جرعة ' + fi.dose : ''} ${fi.duration ? '• مدّة ' + fi.duration : ''}` : ''}
 المؤشرات النهائية: انتباه ${session.attention} • قلق ${session.anxiety} • تقدّم ${session.progress}
 
 سجل الجلسة الكامل:

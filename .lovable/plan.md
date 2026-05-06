@@ -1,115 +1,111 @@
-# خطة تطوير نظام ADHD الكامل
+## الهدف
 
-## 1) إصلاح شريط التنقّل المكسور
+1. إضافة خيار **"تجربة حرة"** (Free Experiment) في صفحة المختبر السريري — يبدأ من فكرة المستخدم (جهاز/تدخل) ويوجّهه عبر شاشات حتى تشغيل المحاكاة الفعلية ورؤية النتائج.
+2. إصلاح **مكتبة الحالات الافتراضية** بحيث تظهر فيها فعلياً حالات القلب، العظام، والتخصصات الطبية الأخرى المولّدة من `clinical-seed-medical` (حالياً مفقودة لأن الفلاتر تعرض 5 فئات فقط من ذوي الاحتياجات).
 
-في الصورة يظهر شريط `DamijFloatingNav` فوق بطاقات الاستبيان لأنه ثابت أسفل الشاشة بدون أي padding سفلي للصفحات. سنقوم بـ:
+---
 
-- إضافة `pb-28` على حاوية صفحات ADHD (وكل صفحات damij الفرعية الطويلة) لمنع تغطية المحتوى.
-- جعل النّاف يظهر بـ glassmorphism أنحف وحدوده شفافة، مع زر إخفاء/إظهار صغير.
-- على الشاشات الصغيرة: تمرير أفقي ناعم بدل اللفّ.
-- التأكّد أنه لا يظهر في الصفحات الفرعية الكاملة (Game Player, Test runner) عبر `hideOnRoutes`.
+## 1) مكتبة الحالات — إصلاح ظهور التخصصات الطبية
 
-## 2) إعادة تصميم الاستبيان (Vanderbilt / SNAP-IV / ASRS)
+**المشكلة:** `src/features/clinical/types.ts` يُعرّف 5 فئات فقط (`asd, adhd, hearing, visual, learning_other`)، لكن قاعدة البيانات تحتوي 15 تخصصاً إضافياً (cardiology, orthopedics, neurology…). صفحة `ClinicalCases.tsx` تستخدم هذه القائمة في القائمة المنسدلة وفي عرض البطاقة (الإيموجي/الاسم)، فالحالات الطبية موجودة لكن بدون تسمية وقد لا تظهر إن كان فلتر الفئة لا يعرضها.
 
-السلوك الحالي: قائمة طويلة جامدة. الجديد:
+**الإصلاح:**
+- في `types.ts` نضيف 15 تخصصاً جديداً مع إيموجي:
+  - cardiology ❤️ "أمراض القلب"
+  - orthopedics 🦴 "العظام والمفاصل"
+  - neurology 🧠 "الأعصاب"
+  - pulmonology 🫁 "الجهاز التنفسي"
+  - nephrology 💧 "الكلى"
+  - endocrinology ⚖️ "الغدد والسكري"
+  - gastro 🩺 "الجهاز الهضمي"
+  - emergency 🚑 "الطوارئ"
+  - pediatrics 👶 "الأطفال"
+  - obgyn 🤰 "النساء والولادة"
+  - dermatology 🧴 "الجلدية"
+  - ophthalmology 👁️ "العيون"
+  - ent 👂 "الأنف والأذن والحنجرة"
+  - psychiatry 💭 "الطب النفسي"
+  - internal 🩻 "الباطنية"
+- نقسم القائمة في `ClinicalCases.tsx` إلى مجموعتين في الـ select: "ذوو الاحتياجات الخاصة" و"التخصصات الطبية" (`<optgroup>`).
+- نضيف فلتر سريع بأزرار للأقسام الكبرى (الكل / تربية خاصة / طبي).
 
-- عرض **سؤال واحد لكل شاشة** مع شريط تقدّم دائري وعدّاد (X / N).
-- **خيارات إجابة بأزرار كبيرة ملوّنة** (أبداً/أحياناً/غالباً/دائماً) مع أيقونات Emotion، تنبض عند الاختيار.
-- انتقال تلقائي للسؤال التالي بعد 250ms مع `framer-motion` slide.
-- زر رجوع، حفظ تلقائي في `localStorage` ضدّ فقدان التقدم.
-- وضع **"تشخيص سريع"** (5 أسئلة AI-curated) مقابل **"تشخيص شامل"** (الاستبيان الكامل).
+**ملف:** `ClinicalHome.tsx` — نضيف زراً "توسيع المحتوى الطبي" يستدعي `clinical-seed-medical` (موجود) عندما تكون الفئات الطبية فارغة.
 
-## 3) شاشة النتيجة الجديدة (Results 2.0)
+---
 
-بدل التقرير النصي، صفحة بصرية:
+## 2) تجربة حرة (Free Experiment)
 
-- **بطاقة هوية** (الاسم، العمر، الأداة، التاريخ).
-- **مقياس قطّاعي دائري** للنتيجة الكلية مع منطقة (طبيعي / حدّي / احتمال مرتفع).
-- **رادار ثلاثي**: Inattention / Hyperactivity / Impulsivity (Recharts).
-- **رادار 6-محاور** عند توفر بيانات الألعاب: Attention, Impulse Control, Working Memory, Cognitive Flexibility, Reaction Time, Sustained Focus.
-- **خط زمني** للمقارنة مع المحاولات السابقة.
-- **توصيات AI** مرتبة حسب الأولوية (سلوكي / صفّي / إحالة طبية).
-- **PDF Export** بزر واحد + رابط مشاركة آمن للأهل.
-- إخلاء مسؤولية + روابط مصادر.
+تدفّق جديد بثلاث شاشات:
 
-## 4) التشخيص عبر الألعاب (Game-Based Screening)
-
-بطارية من 6 ألعاب مصمّمة سريرياً، كلّ لعبة تستهدف عرَضاً ADHD محدّداً، مع تسجيل لحظي لكل حركة:
-
-| اللعبة | الجهاز | المؤشّر السريري |
-|---|---|---|
-| **Forest Hunter** | Sustained CPT | Sustained Attention, Omission errors |
-| **Stop the Rocket** | Stop-Signal Task | Impulse Control, SSRT |
-| **Color Chaos** | Stroop تفاعلي | Cognitive Flexibility |
-| **Memory Garden** | Visual N-Back | Working Memory |
-| **Reaction Reflex** | Simple/Choice RT | Processing Speed, Variability |
-| **Switcheroo** | Task-Switching | Set-shifting, Perseveration |
-
-كل لعبة:
-- مدة 90–180 ثانية، رسوم متحركة، مؤثرات صوتية.
-- جدول `adhd_game_sessions` يحفظ كل حدث (timestamp, response, correct, RT) كـ jsonb.
-- Edge function `adhd-game-analyze` يحوّل الجلسات إلى Z-scores مقارنة بمعايير العمر، ويستخرج 6 مؤشرات.
-- شاشة **"تشخيص باللعب"** تشغّل الـ 6 ألعاب بالتسلسل ثم تعرض **تقرير AI شامل** يدمج نتائج الألعاب + الاستبيان (إن وُجد) ويُخرج فئة DSM-5 المرشّحة.
-
-## 5) برنامج العلاج المولّد بالذكاء الاصطناعي (نمط نظام التوحد)
-
-نسخة كاملة من بنية `autism_programs` لكن لـ ADHD:
-
-- **إعداد البرنامج** (`/damij/adhd/program/setup`): عمر، شدة، أعراض غالبة، وقت يومي متاح، أهداف الأهل/المعلم → يُرسل لـ `adhd-program-generate` (Gemini 2.5 Pro) ينشئ خطة 4–12 أسبوعاً.
-- **يومياً**: 3–5 ألعاب علاجية مولّدة ديناميكياً (تختلف عن ألعاب التشخيص — ألعاب تدريب: Pomodoro Quest, Calm Breath, Token Hunt, Mindful Maze, Working-Memory Builder...).
-- **تتبّع 100%**: كل نقرة، RT، إجابة، نسبة النجاح، الوقت المستغرق → `adhd_game_sessions`.
-- **تقرير يوم تلقائي** عبر `adhd-day-analyze`: نقاط قوة، تحديات، توصية لليوم التالي.
-- **تكيّف ذكي**: إذا فشل الطفل في لعبة 3 أيام متتالية، edge function `adhd-program-adapt` يبدّلها بأخرى أبسط.
-- **لوحة الأهل** (`/damij/adhd/program/[id]`): تقويم كامل، شارات إنجاز، رسوم تقدّم 6-محاور أسبوعياً، رابط مشاركة للمعلم.
-
-## 6) جدول الصفحات والمسارات الجديدة
-
-```
-/damij/adhd                    → Home (محدّث + بطاقة "تشخيص باللعب" + بطاقة "البرنامج العلاجي")
-/damij/adhd/screening          → اختيار الأداة (محدّث)
-/damij/adhd/screening/:key     → الاستبيان الجديد (سؤال/شاشة)
-/damij/adhd/screening/result/:id → النتيجة 2.0
-/damij/adhd/games              → بطارية الألعاب التشخيصية (جديد)
-/damij/adhd/games/:gameId      → اللعبة المنفردة
-/damij/adhd/games/report/:sid  → التقرير الموحّد (ألعاب + استبيان)
-/damij/adhd/program/setup      → إنشاء برنامج علاجي (جديد)
-/damij/adhd/program/:id        → لوحة البرنامج
-/damij/adhd/program/:id/day/:d → يوم العلاج (تشغيل الألعاب)
-/damij/adhd/program/share/:tok → عرض عام للأهل/المعلم
+```text
+المختبر السريري
+   │
+   ├─ "تجربة جاهزة" → اختر حالة → اختر بروتوكول → جلسة (التدفّق الحالي)
+   │
+   └─ "تجربة حرّة" (جديد) ────────────────────────────────────
+        ① اختر نوع التدخّل/الجهاز (Stethoscope, ECG, AED, دواء,
+            تمرين، تقنية تواصل، حسّي، سلوكي …)
+        ② صندوق محادثة يصف فيه التفاصيل (الجرعة/التقنية/المعاملات)
+            + أزرار سريعة لإضافة قراءات الأجهزة
+        ③ اختر المريض من المكتبة (أي حالة من 200+)
+        ④ تشغيل: يفتح جلسة حقيقية + يطبّق التدخّل تلقائياً
+            ويعرض النتائج (vitals, ردّ المريض، تفسير AI)
+            ويتيح المتابعة في الجلسة (chat + أجهزة) كالمعتاد
 ```
 
-## التفاصيل التقنية
+### الواجهات الجديدة (فرونت إند فقط)
 
-**جداول جديدة (Postgres):**
-- `adhd_game_sessions` (user_id, child_profile_id, game_key, mode 'screening'|'therapy', events jsonb, summary jsonb, score, started_at, ended_at)
-- `adhd_screening_results` (user_id, instrument_key, answers jsonb, totals jsonb, ai_report text, created_at)
-- `adhd_programs` (user_id, child_profile_id, weeks, focus_areas[], status, share_token, ai_plan jsonb)
-- `adhd_program_days` (program_id, day_index, scheduled_for, status, summary jsonb)
-- `adhd_program_games` (day_id, game_key, params jsonb, order_index, target_metric, completed bool)
-- `adhd_day_reports` (program_id, day_id, ai_report, metrics jsonb, recommendations text)
-- جميعها بـ RLS (owner-only) + سياسة قراءة عامة عبر `share_token` للبرامج/الأيام/التقارير.
+- `src/pages/damij/clinical/ClinicalFreeExperiment.tsx` — Wizard من 3-4 خطوات بـ `framer-motion`:
+  1. اختيار نوع التجربة (شبكة بطاقات: جهاز / دواء / تدخل سلوكي / تدخل حسّي / تمرين بدني / تواصل).
+  2. صندوق محادثة (Textarea + chips للقراءات): اسم/جرعة/مدة/ملاحظات. AI تحقق سريع.
+  3. اختيار المريض: نفس واجهة بطاقات `ClinicalCases` مصغّرة، مع بحث وفلاتر (قسم طبي، عمر، شدّة).
+  4. شاشة التشغيل: تنشئ جلسة جديدة عبر صفّ `clinical_sessions` (ببروتوكول وهمي/حر) ثم تستدعي إجراء التدخّل وتفتح صفحة `ClinicalLabSession` بنفس المسار الحالي مع علم `freeMode=true`.
 
-**Edge Functions جديدة:**
-- `adhd-game-analyze` — يحوّل events → metrics (mean RT, RT-CV, omission/commission errors, d-prime).
-- `adhd-screening-report` — Gemini Flash يولّد تقرير تفسيري للاستبيان.
-- `adhd-combined-report` — يدمج ألعاب + استبيان → فئة DSM-5 مرجّحة + توصيات.
-- `adhd-program-generate` — Gemini 2.5 Pro ينشئ خطة كاملة (أيام × ألعاب × معاملات).
-- `adhd-day-analyze` — تقرير يومي.
-- `adhd-program-adapt` — تعديل البرنامج بناءً على الأداء.
+- `ClinicalLab.tsx`: نحوّله إلى صفحة اختيار بين زرّين كبيرين: **تجربة جاهزة** و **تجربة حرّة** بدلاً من الإعادة المباشرة لمكتبة الحالات.
 
-**مكوّنات React جديدة:**
-- `QuestionRunner.tsx` — محرّك السؤال-بشاشة.
-- `ResultDashboard.tsx` — صفحة النتيجة 2.0 مع Recharts.
-- `games/` — 6 ألعاب تشخيص + 5 ألعاب علاج (canvas/framer-motion).
-- `useGameLogger.ts` — Hook لتسجيل كل حدث لحظياً ودفعه عند انتهاء اللعبة.
-- `ProgramCalendar.tsx` — تقويم البرنامج العلاجي.
+- `ClinicalHome.tsx`: نضيف بطاقة خامسة "تجربة حرّة" بجانب البطاقات الأربع الموجودة.
 
-**إصلاح النّاف:** `DamijFloatingNav` يستقبل prop `hideOnRoutes` ويُضاف padding سفلي عام `<Outlet>` wrapper بـ `pb-28`.
+### الباك إند
 
-## الترتيب المُقترح للتنفيذ
-1. إصلاح النّاف + padding (سريع).
-2. الهجرة (الجداول الستة + RLS).
-3. QuestionRunner + ResultDashboard.
-4. بطارية الألعاب التشخيصية الست + edge function التحليل.
-5. مولّد البرنامج العلاجي + الألعاب العلاجية + التقارير اليومية.
-6. لوحة الأهل + رابط المشاركة + تصدير PDF.
+- نعيد استخدام:
+  - `clinical-device-use` للأجهزة (يعمل أصلاً مع أي جلسة).
+  - `clinical-intervention-trial` للتدخلات الدوائية/السلوكية (موجودة من البذور `clinical-seed-interventions`).
+  - `clinical-patient-turn` للمحادثة بعد تطبيق التجربة.
+  - `clinical-finalize-report` لإنشاء تقرير في النهاية (نفس التدفّق).
+
+- **هجرة بسيطة (migration واحدة):**
+  - إضافة عمود `mode TEXT DEFAULT 'guided'` على `clinical_sessions` لتمييز `free` من `guided`.
+  - السماح بأن يكون `protocol_id` قابلاً للقيمة NULL (في حال التجربة الحرّة بلا بروتوكول رسمي).
+  - لا تغييرات على RLS — تبقى نفس السياسات.
+
+- **Edge function جديدة (اختيارية صغيرة):** `clinical-free-start` تستقبل `{ caseId, intent, details, deviceKey?, interventionKey? }` تنشئ جلسة `mode='free'`، تسجّل حدثاً افتتاحياً، وتعيد `sessionId` ثم تستدعي داخلياً `clinical-device-use` أو `clinical-intervention-trial` لتطبيق التدخل الأوّل.
+
+### في صفحة الجلسة `ClinicalLabSession`
+
+- إذا `session.mode === 'free'`: نخفي شريط خطوات البروتوكول، ونعرض بدلاً منه شريط "نوع التجربة" والمعاملات الأولى، مع إبقاء كل شيء آخر (المحادثة، DeviceLauncher، InterventionTryPanel، إنهاء التقرير).
+
+---
+
+## الملفات المُعدّلة/الجديدة
+
+**مُعدّلة:**
+- `src/features/clinical/types.ts` — توسيع CATEGORIES.
+- `src/pages/damij/clinical/ClinicalCases.tsx` — `<optgroup>` + فلاتر مجموعات.
+- `src/pages/damij/clinical/ClinicalHome.tsx` — بطاقة "تجربة حرّة" + زر بذر طبي.
+- `src/pages/damij/clinical/ClinicalLab.tsx` — اختيار بين جاهزة/حرّة.
+- `src/pages/damij/clinical/ClinicalLabSession.tsx` — دعم وضع `free`.
+- `src/App.tsx` — مسار `/damij/clinical/free`.
+
+**جديدة:**
+- `src/pages/damij/clinical/ClinicalFreeExperiment.tsx` — Wizard 4 خطوات.
+- `supabase/functions/clinical-free-start/index.ts` — تهيئة جلسة حرّة.
+- `supabase/migrations/<ts>_clinical_free_mode.sql` — `mode` + nullable protocol.
+
+---
+
+## ملاحظات تنفيذية
+
+- لا يوجد تعديل على نظام التوحد/فرط الحركة.
+- لا تعديل على الويب الأساسي خارج قسم Damij السريري.
+- نلتزم بلون التصميم (`hsl(var(--damij-*))`) وعدم استعمال ألوان مباشرة.
+- النصوص بالعربية ودعم RTL مفعّل.

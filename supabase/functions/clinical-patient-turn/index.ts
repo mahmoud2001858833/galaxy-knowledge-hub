@@ -46,11 +46,20 @@ Deno.serve(async (req) => {
 
     const [cRes, pRes, eRes] = await Promise.all([
       fetch(rest(`/clinical_cases?id=eq.${session.case_id}&select=*`), { headers: svcHeaders() }),
-      fetch(rest(`/clinical_protocols?id=eq.${session.protocol_id}&select=*`), { headers: svcHeaders() }),
+      session.protocol_id
+        ? fetch(rest(`/clinical_protocols?id=eq.${session.protocol_id}&select=*`), { headers: svcHeaders() })
+        : Promise.resolve(new Response('[]')),
       fetch(rest(`/clinical_session_events?session_id=eq.${sessionId}&order=t_ms.desc&limit=12&select=*`), { headers: svcHeaders() }),
     ]);
     const [c] = await cRes.json();
-    const [p] = await pRes.json();
+    const pArr = await (pRes as Response).json();
+    const isFree = session.mode === 'free';
+    const fi = session.free_intent || {};
+    const p = pArr[0] || {
+      name_ar: 'تجربة حرّة',
+      short_ar: '',
+      steps: [{ title_ar: fi.title || 'تدخّل حرّ', instruction_ar: fi.details || 'طبّق التدخّل وراقب الاستجابة', success_ar: 'استجابة إيجابية بدون آثار سلبية' }],
+    };
     const events = (await eRes.json()).reverse();
 
     const step = (p.steps || [])[session.current_step] || (p.steps || [])[0] || {};

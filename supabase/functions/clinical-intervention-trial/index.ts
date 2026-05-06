@@ -67,13 +67,17 @@ Deno.serve(async (req) => {
 
     const [cRes, pRes, iRes] = await Promise.all([
       fetch(rest(`/clinical_cases?id=eq.${session.case_id}&select=*`), { headers: svcHeaders() }),
-      fetch(rest(`/clinical_protocols?id=eq.${session.protocol_id}&select=*`), { headers: svcHeaders() }),
+      session.protocol_id
+        ? fetch(rest(`/clinical_protocols?id=eq.${session.protocol_id}&select=*`), { headers: svcHeaders() })
+        : Promise.resolve(new Response('[]')),
       interventionId
         ? fetch(rest(`/clinical_interventions_catalog?id=eq.${interventionId}&select=*`), { headers: svcHeaders() })
         : Promise.resolve(new Response('[]')),
     ]);
     const [c] = await cRes.json();
-    const [p] = await pRes.json();
+    const pArr = await (pRes as Response).json();
+    const fi = session.free_intent || {};
+    const p = pArr[0] || { name_ar: session.mode === 'free' ? `تجربة حرّة: ${fi.title || ''}` : '—' };
     const interv = interventionId ? (await (iRes as Response).json())[0] : null;
 
     const interventionLabel = interv?.name_ar || customLabel || 'تدخّل غير محدّد';

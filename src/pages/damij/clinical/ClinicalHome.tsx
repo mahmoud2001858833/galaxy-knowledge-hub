@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FlaskConical, FileBarChart, ClipboardList, ArrowLeft, Sparkles, Loader2, GitCompare, LayoutDashboard } from 'lucide-react';
+import { FlaskConical, FileBarChart, ClipboardList, ArrowLeft, Sparkles, Loader2, GitCompare, LayoutDashboard, Beaker, Stethoscope } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const cards = [
-  { to: '/damij/clinical/cases', icon: ClipboardList, title: 'مكتبة الحالات الافتراضية', desc: 'أكثر من 60 حالة موزّعة على 5 فئات سريرية مع فلترة متقدّمة.' },
+  { to: '/damij/clinical/cases', icon: ClipboardList, title: 'مكتبة الحالات الافتراضية', desc: 'أكثر من 200 حالة في 5 فئات تربية خاصة و15 تخصصاً طبياً.' },
+  { to: '/damij/clinical/free', icon: Beaker, title: 'تجربة حرّة', desc: 'صمّم تجربتك: اختر التدخّل، أدخل التفاصيل، اختر المريض، شاهد النتائج.' },
   { to: '/damij/clinical/dashboard', icon: LayoutDashboard, title: 'لوحة جلساتي', desc: 'كل جلساتك وتقاريرك السابقة مع رسوم تقدّمك السريري.' },
   { to: '/damij/clinical/compare', icon: GitCompare, title: 'مقارنة بين تجارب', desc: 'حلّل تطوّر مهاراتك بمقارنة جلستين أو أكثر بـ AI.' },
   { to: '/damij/clinical/reports', icon: FileBarChart, title: 'تقاريري', desc: 'كل التقارير الكاملة جاهزة للعرض والتنزيل PDF والمشاركة.' },
@@ -34,6 +35,19 @@ const ClinicalHome: React.FC = () => {
     finally { setSeeding(false); }
   };
 
+  const [seedingMed, setSeedingMed] = useState(false);
+  const seedMedical = async () => {
+    setSeedingMed(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('clinical-seed-medical', { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const total = (data?.status || []).reduce((a: number, s: any) => a + (s.added_cases || 0), 0);
+      toast.success(`تم إضافة ${total} حالة طبية جديدة`);
+    } catch (e: any) { toast.error(e?.message ?? 'تعذّر التوليد'); }
+    finally { setSeedingMed(false); }
+  };
+
   const empty = stats.cases === 0;
 
   return (
@@ -51,6 +65,11 @@ const ClinicalHome: React.FC = () => {
           className="px-4 py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-sm font-bold flex items-center gap-2 disabled:opacity-60">
           {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {empty ? 'توليد الحالات والبروتوكولات' : 'توسيع المحتوى'}
+        </button>
+        <button onClick={seedMedical} disabled={seedingMed}
+          className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-60">
+          {seedingMed ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
+          توسيع المحتوى الطبي (قلب، عظام…)
         </button>
         <Link to="/damij/clinical/lab" className="px-4 py-2 rounded-xl bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center gap-2">
           <FlaskConical className="w-4 h-4" /> ابدأ تجربة جديدة

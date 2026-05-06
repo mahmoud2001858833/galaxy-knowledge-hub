@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Search, Filter, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { CATEGORIES, CategoryKey, ClinicalCase, SEVERITY_LABEL, CATEGORY_LABEL, CATEGORY_EMOJI } from '@/features/clinical/types';
+import { CATEGORIES, CategoryKey, ClinicalCase, SEVERITY_LABEL, CATEGORY_LABEL, CATEGORY_EMOJI, CATEGORY_GROUP } from '@/features/clinical/types';
 
 const ClinicalCases: React.FC = () => {
   const [cases, setCases] = useState<ClinicalCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState<CategoryKey | 'all'>('all');
+  const [grp, setGrp] = useState<'all' | 'special' | 'medical'>('all');
   const [sev, setSev] = useState<'all' | 'mild' | 'moderate' | 'severe'>('all');
   const [age, setAge] = useState<'all' | 'child' | 'preteen' | 'teen'>('all');
   const [q, setQ] = useState('');
@@ -19,6 +20,7 @@ const ClinicalCases: React.FC = () => {
   })(); }, []);
 
   const filtered = useMemo(() => cases.filter(c => {
+    if (grp !== 'all' && CATEGORY_GROUP[c.category] !== grp) return false;
     if (cat !== 'all' && c.category !== cat) return false;
     if (sev !== 'all' && c.severity !== sev) return false;
     if (age !== 'all') {
@@ -28,7 +30,7 @@ const ClinicalCases: React.FC = () => {
     }
     if (q && !`${c.name_ar} ${c.summary_ar}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
-  }), [cases, cat, sev, age, q]);
+  }), [cases, cat, grp, sev, age, q]);
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin" /></div>;
 
@@ -36,6 +38,15 @@ const ClinicalCases: React.FC = () => {
     <div className="px-6 pt-10 pb-16 max-w-6xl mx-auto" dir="rtl">
       <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-2">مكتبة الحالات الافتراضية</h1>
       <p className="text-slate-600 mb-6">{filtered.length} حالة من أصل {cases.length}</p>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {([['all','الكل'],['special','تربية خاصة'],['medical','تخصصات طبية']] as const).map(([k,l]) => (
+          <button key={k} onClick={() => { setGrp(k as any); setCat('all'); }}
+            className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-all ${grp===k ? 'bg-[hsl(var(--damij-primary))] text-white border-[hsl(var(--damij-primary))]' : 'bg-white text-slate-700 border-slate-200 hover:border-[hsl(var(--damij-primary))]/40'}`}>
+            {l}
+          </button>
+        ))}
+      </div>
 
       <div className="grid sm:grid-cols-4 gap-2 mb-6">
         <div className="relative sm:col-span-1">
@@ -45,7 +56,12 @@ const ClinicalCases: React.FC = () => {
         </div>
         <select value={cat} onChange={e => setCat(e.target.value as any)} className="px-3 py-2 rounded-lg border bg-white text-sm">
           <option value="all">كل الفئات</option>
-          {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.emoji} {c.ar}</option>)}
+          <optgroup label="ذوو الاحتياجات الخاصة">
+            {CATEGORIES.filter(c => c.group === 'special').map(c => <option key={c.key} value={c.key}>{c.emoji} {c.ar}</option>)}
+          </optgroup>
+          <optgroup label="التخصصات الطبية">
+            {CATEGORIES.filter(c => c.group === 'medical').map(c => <option key={c.key} value={c.key}>{c.emoji} {c.ar}</option>)}
+          </optgroup>
         </select>
         <select value={sev} onChange={e => setSev(e.target.value as any)} className="px-3 py-2 rounded-lg border bg-white text-sm">
           <option value="all">كل الشدّات</option>
