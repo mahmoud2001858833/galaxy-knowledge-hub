@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ADHDGameEngine from '@/features/adhd/games/ADHDGameEngine';
-import { getGame, SCREENING_BATTERY } from '@/features/adhd/games/registry';
+import { getGame, SCREENING_BATTERY, THERAPY_SEQUENCE } from '@/features/adhd/games/registry';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -11,6 +11,7 @@ const ADHDGamePlay: React.FC = () => {
   const { gameKey = '' } = useParams();
   const [params] = useSearchParams();
   const isBattery = params.get('battery') === '1';
+  const seqMode = params.get('seq'); // 'therapy'
   const programGameId = params.get('pg') || undefined;
   const programDayId = params.get('day') || undefined;
   const navigate = useNavigate();
@@ -56,6 +57,17 @@ const ADHDGamePlay: React.FC = () => {
         setDone(true);
         setTimeout(() => {
           if (next) navigate(`/damij/adhd/games/play/${next}?battery=1`);
+          else navigate('/damij/adhd/games');
+        }, 1200);
+      } else if (seqMode === 'therapy') {
+        const raw = localStorage.getItem('adhd_therapy_progress');
+        const arr: string[] = raw ? JSON.parse(raw) : [];
+        if (!arr.includes(gameKey)) arr.push(gameKey);
+        localStorage.setItem('adhd_therapy_progress', JSON.stringify(arr));
+        const next = THERAPY_SEQUENCE.find(k => !arr.includes(k));
+        setDone(true);
+        setTimeout(() => {
+          if (next) navigate(`/damij/adhd/games/play/${next}?seq=therapy`);
           else navigate('/damij/adhd/games');
         }, 1200);
       } else if (programDayId) {
