@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Sparkles, Eye, Ear, Hand, Brain, Image as ImageIcon, Vibrate } from 'lucide-react';
+import { Upload, Sparkles, Eye, Ear, Hand, Brain, Image as ImageIcon, Vibrate, Activity } from 'lucide-react';
 
 const SensoryHome: React.FC = () => (
   <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto">
@@ -40,6 +40,11 @@ const SensoryHome: React.FC = () => (
         <div className="flex items-center gap-2 mb-2"><ImageIcon className="w-7 h-7"/><Vibrate className="w-6 h-6"/></div>
         <h3 className="font-bold text-lg mb-1">صورة → وصف صوتي + لمسي ✨ جديد</h3>
         <p className="text-sm opacity-90">تحليل صورة + وصف صوتي + نموذج لمسي للطباعة + اهتزاز تفاعلي</p>
+      </Link>
+      <Link to="/damij/sensory/log" className="p-6 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2">
+        <Activity className="w-7 h-7 mb-2"/>
+        <h3 className="font-bold text-lg mb-1">سجل التفاعل والتعلّم المستمر</h3>
+        <p className="text-sm opacity-90">شاهد أدواتك المفضّلة، علامات الإجهاد، والاختصارات — يتعلّم النظام تلقائياً ليخصّص تجربتك</p>
       </Link>
     </div>
   </div>
