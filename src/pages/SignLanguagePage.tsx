@@ -741,14 +741,10 @@ const SignLanguagePage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'camera'} className="w-full">
-          <TabsList className="w-full max-w-3xl mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1">
+          <TabsList className="w-full max-w-3xl mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-3 h-auto p-1 gap-1">
             <TabsTrigger value="camera" className="data-[state=active]:bg-indigo-600 py-2.5">
               <Camera className="ml-2 h-4 w-4" />
               الكاميرا
-            </TabsTrigger>
-            <TabsTrigger value="learn" className="data-[state=active]:bg-indigo-600 py-2.5">
-              <GraduationCap className="ml-2 h-4 w-4" />
-              تعلّم
             </TabsTrigger>
             <TabsTrigger value="text-to-sign" className="data-[state=active]:bg-indigo-600 py-2.5">
               <Type className="ml-2 h-4 w-4" />
