@@ -1,79 +1,117 @@
-# خطة تطوير نظام ألعاب التوحد الذكي
+# خطة: مختبر المحاكاة السريرية الاحترافي (إصدار شامل)
 
-## 1) قاعدة البيانات (Supabase)
+بيئة محاكاة سريرية متكاملة لطلاب التربية الخاصة والبحث العلمي، تغطي خمس فئات سريرية كبرى، مع مريض ذكي حواري وسيناريوهات مكتوبة وتقارير AI شاملة قابلة للتصدير والمقارنة. كل المحرّكات تعمل عبر Gemini مع Lovable Gateway كاحتياط.
 
-جداول جديدة:
-- `autism_programs`: البرنامج الكامل لكل طفل (child_profile_id, share_token فريد، start_date, total_days، status). يُولَّد **مرة واحدة** ويُحفَظ.
-- `autism_program_days`: يوم رقم N داخل البرنامج (program_id, day_index, theme_ar, focus_skill).
-- `autism_program_games`: قائمة الألعاب لكل يوم (day_id, order_index, template_id, title_ar, instructions_ar, difficulty, duration_sec, target_skill, ai_config jsonb).
-- `autism_game_moves`: تتبّع كل حركة يقوم بها الطفل أثناء اللعبة (session_id, t_ms, event_type, payload jsonb, is_correct).
-- `autism_day_reports`: تقرير AI يومي (day_id, summary_ar, strengths, weaknesses, score, generated_at).
-- `autism_progress_snapshots`: مؤشرات تطور أسبوعية/شهرية مقارنة ببداية البرنامج.
+---
 
-تعديلات:
-- `autism_game_sessions`: إضافة `program_id`, `day_id`, `move_count`, `wrong_attempts`, `time_to_first_action_ms`.
+## 1. الفئات السريرية المغطّاة
 
-سياسات RLS: كل طفل يخص ولي أمره (user_id). صفحة المشاركة تُقرأ عبر `share_token` ضمن سياسة عامة محدودة (select فقط على الجداول اللازمة).
+| الفئة | البروتوكولات/الأدوات |
+|---|---|
+| اضطراب طيف التوحد (ASD) | M-CHAT-R/F، ADOS-2 (Modules 1-4)، CARS-2، ABA (DTT/NET)، PECS، Floortime |
+| ADHD | Vanderbilt، Conners-3، SNAP-IV، CPT، تدخلات سلوكية تنفيذية |
+| الإعاقة السمعية | Pure-Tone Audiogram، Speech Audiometry، AVT، قراءة الشفاه، تقييم لغة الإشارة |
+| الإعاقة البصرية | Functional Vision Assessment، تقييم بريل، تدريب O&M |
+| صعوبات تعلم/تأخر لغوي/شلل دماغي | DLD screen، Dyslexia (RAN/Phonological)، GMFCS، Bayley-III |
 
-## 2) Edge Functions
+المحتوى الأولي: 60 حالة افتراضية + 40 بروتوكولاً، قابلة للتوسعة لاحقاً.
 
-- `autism-generate-program` (جديدة): تأخذ ملف الطفل + مدة البرنامج (أسابيع/أشهر) وتُولّد الجدول الكامل دفعة واحدة بنموذج Gemini مع تنوّع قوالب الألعاب وتدرّج الصعوبة، وتُخزّنه في `autism_programs/days/games`. لا يعاد التوليد لاحقًا.
-- `autism-analyze-day` (جديدة): تستقبل سجلات `autism_game_moves` لليوم وتنتج تقرير أداء + توصيات.
-- `autism-analyze-progress` (جديدة): تقارن آخر أسبوع/شهر مع البداية وتعطي مؤشرات تطور.
-- `autism-screen-analyze` (تحسين): استبيان أعمق (أسئلة سلوكية + قياسات من ألعاب الفحص الحالية) لرفع دقة تحديد المستوى الوظيفي.
+---
 
-كل الوظائف تستخدم Lovable AI Gateway (لا نضع أي API key مكشوف؛ سنتجاهل المفتاح المُرسَل في الرسالة لأسباب أمنية).
-
-## 3) قوالب ألعاب جديدة لتقليل التكرار
-
-نضيف قوالب جديدة عالية الجودة بجانب الموجودة:
-- `memory_grid` ذاكرة بصرية، `cause_effect` سبب/نتيجة، `sorting_categories` تصنيف، `feelings_story` قصة مشاعر، `breath_balloon` تنظيم تنفس، `mirror_draw` تقليد رسم، `daily_routine` تسلسل يومي، `safe_choices` سلامة، `eye_contact_focus` تركيز على الوجوه.
-
-كل قالب يبلّغ الـAI بكل حركة عبر `onMove({type, payload, isCorrect})` يتم تجميعها في batch وحفظها في `autism_game_moves`.
-
-تحديث `templates/types.ts` لإضافة `onMove`، وتحديث `AutismGamePlayer` لتمرير المُسجِّل وحفظ الحركات.
-
-## 4) الواجهات (Frontend)
-
-- `AutismProgramSetup.tsx`: اختيار مدة البرنامج (أسبوعين/شهر/شهرين/3 أشهر) → استدعاء `autism-generate-program` مرة واحدة.
-- `AutismProgramCalendar.tsx` (الصفحة الرئيسية بعد التوليد): جدول كامل بكل الأيام مع حالة (مكتمل/جاري/مغلق حتى تاريخه)، نسبة الإنجاز، زر دخول لكل يوم.
-- `AutismDayView.tsx`: قائمة ألعاب اليوم مع تقدّم، أزرار تشغيل، وعند انتهاء آخر لعبة يظهر تقرير اليوم.
-- تحديث `AutismGamePlayer.tsx`: بعد إنهاء اللعبة يظهر زرّان: **اللعبة التالية في نفس اليوم** و **العودة لقائمة اليوم** بدون إعادة توليد.
-- `AutismChildPage.tsx` (`/autism/c/:shareToken`): صفحة دائمة لكل طفل تعرض البرنامج كاملاً + تقدمه.
-- `AutismProgressDashboard.tsx`: رسوم بيانية لتطور المهارات، توقّع التحسن بعد شهر مبني على ميل الأداء.
-- زر **نسخ الرابط المختصر** في صفحة الطفل (يستخدم `share_token`).
-- أيقونة في هيدر `DamijLayout` (طفل) → تفتح صفحة الطفل النشط مباشرة.
-- مشغّل موسيقى خلفية هادئة (تشغيل/إيقاف/مستوى صوت) كمكوّن `BackgroundMusicPlayer` متاح داخل صفحات الألعاب، مع 3-4 مقاطع هادئة في `public/autism-music/`.
-
-## 5) تتبّع AI لكل حركة
-
-- خطّاف `useGameMoveLogger(sessionId)` يجمع الأحداث محليًا ثم يرسلها دفعة عند انتهاء اللعبة.
-- `autism-analyze-day` يستقبل كل حركات اليوم (صحيحة وخاطئة) ويصدر:
-  - الأنماط (تسرّع، تردّد، نوع الأخطاء المتكررة).
-  - مهارات تحسّنت/تحتاج تركيز.
-  - توصيات للجلسة التالية.
-
-## 6) تحسين اختبار الفحص
-
-- إضافة محاور: حسّي، حركي دقيق، لغوي، تواصل بصري، مرونة معرفية.
-- مزج درجات الاستبيان مع مقاييس ألعاب الفحص (زمن الاستجابة، ثبات الانتباه) لإصدار **مستوى دعم DSM-5 أدق + ملف وظيفي مفصّل** يُغذّي مولّد البرنامج.
-
-## تفاصيل تقنية
+## 2. تدفّق الجلسة
 
 ```text
-[Setup] -> generate-program (1x) -> programs/days/games  ──┐
-                                                           ▼
-[Calendar] -> [Day] -> [Game] --moves--> game_moves -> analyze-day -> day_reports
-                                                           │
-                                              analyze-progress -> snapshots
+[1] اختر حالة  →  [2] اختر بروتوكول  →  [3] جلسة تفاعلية  →  [4] تقرير AI
+                                              |
+                                              ├─ مريض AI حواري (نص + صوت)
+                                              ├─ سيناريو ثابت (خطوات + مهلات)
+                                              ├─ قياسات لحظية (انتباه/قلق/تقدّم)
+                                              └─ سجل أحداث Move-by-move
 ```
 
-- **حول مفتاح Gemini المُرسَل**: لن نخزّنه في الكود لأسباب أمنية. سنعتمد `LOVABLE_API_KEY` الموجود (Lovable AI Gateway) ونمائل آلية fallback القائمة.
-- جميع التعديلات تحترم RLS وتعزل بيانات كل ولي أمر، مع مسار قراءة عام عبر `share_token` فقط.
-- لا تغييرات على بنية القسم الرئيسي للمنصة، التغييرات محصورة داخل `damij/autism`.
+داخل الجلسة:
+- مريض AI حواري بطابع شخصية الحالة، مع TTS عربي وإدخال صوتي.
+- ثلاث قضبان حيّة (انتباه/قلق/تقدّم) تتغيّر حسب جودة التدخل.
+- خط زمني للأحداث وتعليقات المُيسّر.
+- أزرار سريرية (تعزيز إيجابي / Prompt جسدي / تعديل صعوبة / استراحة حسّية) تؤثر فعلياً على المؤشرات.
 
-## نقاط تحتاج تأكيدك
+---
 
-1. مدة البرنامج الافتراضية المعروضة في الخيارات: (أسبوعان / شهر / شهران / 3 أشهر) — هل نضيف **مخصص**؟
-2. الموسيقى: هل تريدها تعمل تلقائيًا عند بدء كل لعبة، أم تشغيل يدوي فقط؟
-3. الرابط المختصر: عام (يفتح بدون تسجيل دخول للقراءة فقط) أم يتطلب تسجيل دخول ولي الأمر؟
+## 3. مكونات الواجهة
+
+| الصفحة | المسار |
+|---|---|
+| Hub | `/damij/clinical` |
+| مكتبة الحالات | `/damij/clinical/cases` |
+| تفاصيل الحالة | `/damij/clinical/case/:id` |
+| المختبر الحي | `/damij/clinical/lab/:sessionId` |
+| التقرير | `/damij/clinical/report/:reportId` |
+| المقارنات | `/damij/clinical/compare` |
+| لوحة الطالب | `/damij/clinical/dashboard` |
+| تقرير عام (مشاركة) | `/clinical/r/:token` |
+
+---
+
+## 4. التفاصيل التقنية
+
+### 4.1 قاعدة البيانات (migration واحدة)
+- `clinical_cases` — الاسم، العمر، الفئة، الشدة، شخصية المريض، تاريخ مرضي وملف حسّي JSONB.
+- `clinical_protocols` — الفئة، خطوات JSONB، معايير، مرجع DSM-5/ICF/WHO.
+- `clinical_sessions` — case_id, protocol_id, started_at, ended_at, status, metrics_snapshot.
+- `clinical_session_events` — timestamp, actor, event_type, payload, attention/anxiety/progress.
+- `clinical_reports` — score, diagnosis_ar, strengths, weaknesses, recommendations, references, full_text, share_token.
+- RLS: المستخدم يرى جلساته/تقاريره فقط؛ الحالات والبروتوكولات قراءة عامة؛ مشاركة عبر share_token دون مصادقة.
+
+### 4.2 Edge Functions (Gemini + احتياط Lovable Gateway)
+1. `clinical-seed-content` — يولّد 60 حالة و40 بروتوكولاً مرة واحدة (idempotent).
+2. `clinical-patient-turn` — كل دور حواري للمريض الذكي: يرجع رد المريض + Δ مؤشرات + ملاحظة سريرية.
+3. `clinical-finalize-report` — تقرير سريري شامل عند انتهاء الجلسة.
+4. `clinical-compare-sessions` — تحليل مقارن بين عدة جلسات.
+
+### 4.3 الواجهة الأمامية
+- TTS عربي عبر `useArabicSpeech` + إدخال صوتي بـ Web Speech API.
+- رسوم لحظية بـ Recharts (Line/Radar/Bar).
+- PDF عبر `src/lib/pdfExport.ts` للتقرير ولوحة الطالب.
+- مشاركة عامة على `/clinical/r/:token`.
+- فلترة الحالات بفئة/عمر/شدّة + بحث نصي.
+
+### 4.4 الجودة
+- Streaming SSE لردود المريض الحواري.
+- TanStack Query للتخزين المؤقت.
+- معالجة 429/402 وعرض Toast واضح.
+- التحقق بـ Zod في Edge Functions.
+
+---
+
+## 5. ما سيتم إنشاؤه/تعديله
+
+جديد:
+- `supabase/migrations/<ts>_clinical_lab.sql`
+- `supabase/functions/clinical-seed-content/index.ts`
+- `supabase/functions/clinical-patient-turn/index.ts`
+- `supabase/functions/clinical-finalize-report/index.ts`
+- `supabase/functions/clinical-compare-sessions/index.ts`
+- `src/pages/damij/clinical/ClinicalCaseDetail.tsx`
+- `src/pages/damij/clinical/ClinicalLabSession.tsx`
+- `src/pages/damij/clinical/ClinicalReport.tsx`
+- `src/pages/damij/clinical/ClinicalCompare.tsx`
+- `src/pages/damij/clinical/ClinicalDashboard.tsx`
+- `src/pages/damij/clinical/ClinicalPublicReport.tsx`
+- `src/features/clinical/` (types, scoring, hooks: useLiveMetrics, usePatientChat, useSessionEvents)
+
+تحديث:
+- `ClinicalHome.tsx` و`ClinicalCases.tsx` و`ClinicalLab.tsx` و`ClinicalReports.tsx`
+- `src/App.tsx` (المسارات الجديدة)
+
+---
+
+## 6. تقدير الاستهلاك
+
+العمل الكثيف (60 حالة + 40 بروتوكولاً + 4 Edge Functions + 7 صفحات + DB + نظام حواري حي + PDF + مقارنات) يستهلك ~100 Credits كما طلبت، والنتيجة مختبر سريري متكامل جاهز للاستخدام البحثي.
+
+---
+
+## 7. المتطلبات
+- `GEMINI_API_KEY` متوفر بالفعل، لا حاجة لمفاتيح جديدة.
+
+اضغط "Implement plan" لبدء التنفيذ.
