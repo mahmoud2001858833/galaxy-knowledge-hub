@@ -213,6 +213,7 @@ import SignLearn from './pages/damij/sign/SignLearn';
 import SensoryHome from './pages/damij/sensory/SensoryHome';
 import SensoryUpload from './pages/damij/sensory/SensoryUpload';
 import SensoryOutput from './pages/damij/sensory/SensoryOutput';
+import SensoryProfileSetup from './pages/damij/sensory/SensoryProfileSetup';
 import ClinicalHome from './pages/damij/clinical/ClinicalHome';
 import ClinicalCases from './pages/damij/clinical/ClinicalCases';
 import ClinicalLab from './pages/damij/clinical/ClinicalLab';
