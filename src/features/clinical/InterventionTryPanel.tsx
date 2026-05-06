@@ -214,17 +214,28 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
           {Array.isArray(result.timeline) && result.timeline.length > 0 && (
             <div>
               <div className="text-xs font-bold mb-1">📈 الخط الزمني المتوقَّع</div>
-              <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
-                {result.timeline.map((t: any, i: number) => (
-                  <div key={i} className="p-1.5 rounded-lg bg-white border">
-                    <div className="font-bold">{t.t}</div>
-                    <div className="text-emerald-600">⚡{t.attention}</div>
-                    <div className="text-rose-600">😟{t.anxiety}</div>
-                    <div className="text-sky-600">📈{t.progress}</div>
-                    <div className="mt-1 text-slate-500 line-clamp-2">{t.symptoms_ar}</div>
-                  </div>
-                ))}
+              <div className="h-44 bg-white rounded-lg border p-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={result.timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#eef2f7" strokeDasharray="3 3" />
+                    <XAxis dataKey="t" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                    <Tooltip contentStyle={{ fontSize: 11, direction: 'rtl' }} />
+                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                    <Line type="monotone" dataKey="attention" name="الانتباه" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="anxiety" name="القلق" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="progress" name="التقدّم" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
+              <ul className="mt-2 space-y-1 text-[11px]">
+                {result.timeline.map((t: any, i: number) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="font-bold text-slate-600 w-12 shrink-0">{t.t}</span>
+                    <span className="text-slate-700">{t.symptoms_ar}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
