@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ClinicalCase, ClinicalProtocol, ClinicalSession } from '@/features/clinical/types';
 import InterventionTryPanel from '@/features/clinical/InterventionTryPanel';
+import DeviceLauncher from '@/features/clinical/devices/DeviceLauncher';
 
 const QUICK_ACTIONS = [
   { key: 'reinforce', ar: 'تعزيز إيجابي 👍' },
