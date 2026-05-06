@@ -986,7 +986,7 @@ const SignTranslatorPro: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  <div ref={stripRef} className="flex gap-2 overflow-x-auto pb-2 scroll-smooth" dir="ltr">
+                  <div ref={stripRef} className={`flex gap-2 overflow-x-auto pb-2 scroll-smooth ${mirrorHand ? '[&>div]:scale-x-[-1]' : ''}`} dir="ltr">
                     {t2sResult.words.map((w, i) => (
                       <div key={i} data-word-idx={i}>
                         <HandSignCard
@@ -995,7 +995,7 @@ const SignTranslatorPro: React.FC = () => {
                           movement={(w.movement as Movement) || 'none'}
                           twoHanded={w.two_handed}
                           active={activeWordIdx === i}
-                          size={80}
+                          size={signSize === 'sm' ? 64 : signSize === 'lg' ? 110 : 84}
                           onClick={() => { setActiveWordIdx(i); speakText(w.word, t2sLang.code); }}
                         />
                       </div>
@@ -1005,12 +1005,44 @@ const SignTranslatorPro: React.FC = () => {
               )}
 
               {t2sResult && (
-                <button
-                  onClick={playWordSequence}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" /> تشغيل تتابع الإشارات
-                </button>
+                <div className="space-y-2">
+                  {/* Player controls */}
+                  <div className="flex items-center justify-center gap-2">
+                    <button onClick={() => stepWord(-1)} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="السابق"><SkipBack className="w-4 h-4" /></button>
+                    {isPlaying ? (
+                      <button onClick={stopPlayback} className="px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold flex items-center gap-2"><Pause className="w-4 h-4" /> إيقاف</button>
+                    ) : (
+                      <button onClick={playWordSequence} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2"><Play className="w-4 h-4" /> تشغيل التتابع</button>
+                    )}
+                    <button onClick={() => { setActiveWordIdx(0); }} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="إعادة"><RotateCw className="w-4 h-4" /></button>
+                    <button onClick={() => stepWord(1)} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="التالي"><SkipForward className="w-4 h-4" /></button>
+                  </div>
+
+                  {/* Tools */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                    <button
+                      onClick={() => setMirrorHand(v => !v)}
+                      className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 ${mirrorHand ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-slate-100 text-slate-700'}`}
+                      title="عكس اتجاه اليد"
+                    >
+                      <FlipHorizontal className="w-3.5 h-3.5" /> {mirrorHand ? 'يسرى' : 'يمنى'}
+                    </button>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                      <span className="text-slate-500">الحجم:</span>
+                      {(['sm','md','lg'] as const).map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setSignSize(s)}
+                          className={`px-2 rounded ${signSize === s ? 'bg-white shadow font-bold' : ''}`}
+                        >
+                          {s === 'sm' ? 'صغير' : s === 'lg' ? 'كبير' : 'عادي'}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={downloadResult} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center gap-1"><Download className="w-3.5 h-3.5" /> تنزيل</button>
+                    <button onClick={shareResult} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center gap-1"><Share2 className="w-3.5 h-3.5" /> مشاركة</button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
