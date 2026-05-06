@@ -62,24 +62,36 @@ Deno.serve(async (req) => {
       move_event_types: [...new Set(moves.map((m: any) => m.event_type))],
     };
 
-    const key = Deno.env.get('LOVABLE_API_KEY');
-    if (!key) throw new Error('LOVABLE_API_KEY missing');
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: 'بيانات اليوم:\n' + JSON.stringify(summary) },
-        ],
-        tools: [{ type: 'function', function: { name: 'report', parameters: SCHEMA } }],
-        tool_choice: { type: 'function', function: { name: 'report' } },
-      }),
-    });
-    if (!aiResp.ok) throw new Error(`AI ${aiResp.status}: ${await aiResp.text()}`);
-    const data = await aiResp.json();
-    const report = JSON.parse(data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? '{}');
+    const geminiKeys = [
+      Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
+      Deno.env.get('AUTISM_GEMINI_API_KEY'),
+      Deno.env.get('GEMINI_API_KEY'),
+    ].filter(Boolean) as string[];
+    if (!geminiKeys.length) throw new Error('Gemini API key missing');
+    const userPrompt = SYSTEM + '\n\nأعد JSON فقط وفق:\n' + JSON.stringify(SCHEMA) + '\n\nبيانات اليوم:\n' + JSON.stringify(summary);
+    let report: any = null;
+    let aiErr: any = null;
+    for (const model of ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']) {
+      for (const gk of geminiKeys) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gk}`;
+          const aiResp = await fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+              generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
+            }),
+          });
+          if (!aiResp.ok) throw new Error(`Gemini ${aiResp.status}: ${await aiResp.text()}`);
+          const data = await aiResp.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+          report = JSON.parse(text);
+          break;
+        } catch (e) { aiErr = e; console.warn(`Gemini ${model} failed`, (e as Error).message); }
+      }
+      if (report) break;
+    }
+    if (!report) throw aiErr ?? new Error('Gemini unavailable');
 
     // Upsert report
     await fetch(`${supabaseUrl}/rest/v1/autism_day_reports?on_conflict=day_id`, {

@@ -66,24 +66,39 @@ function buildSchema(totalDays: number) {
   };
 }
 
-async function callGateway(prompt: string, schema: any): Promise<any> {
-  const key = Deno.env.get('LOVABLE_API_KEY');
-  if (!key) throw new Error('LOVABLE_API_KEY missing');
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+async function callGeminiOnce(apiKey: string, prompt: string, schema: any, model: string): Promise<any> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const resp = await fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }],
-      tools: [{ type: 'function', function: { name: 'program', description: 'برنامج علاجي', parameters: schema } }],
-      tool_choice: { type: 'function', function: { name: 'program' } },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      systemInstruction: { parts: [{ text: SYSTEM + '\n\nأعد JSON فقط وفق المخطط:\n' + JSON.stringify(schema) }] },
+      generationConfig: { temperature: 0.4, responseMimeType: 'application/json' },
     }),
   });
-  if (!resp.ok) throw new Error(`Gateway ${resp.status}: ${await resp.text()}`);
+  if (!resp.ok) throw new Error(`Gemini ${resp.status}: ${await resp.text()}`);
   const data = await resp.json();
-  const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  if (!args) throw new Error('No tool call');
-  return JSON.parse(args);
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  return JSON.parse(text);
+}
+
+async function callGateway(prompt: string, schema: any): Promise<any> {
+  const keys = [
+    Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
+    Deno.env.get('AUTISM_GEMINI_API_KEY'),
+    Deno.env.get('GEMINI_API_KEY'),
+  ].filter(Boolean) as string[];
+  if (!keys.length) throw new Error('Gemini API key missing');
+  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+  let lastErr: any = null;
+  for (const model of models) {
+    for (const k of keys) {
+      try { return await callGeminiOnce(k, prompt, schema, model); }
+      catch (e) { lastErr = e; console.warn(`Gemini ${model} failed`, (e as Error).message); }
+    }
+  }
+  throw lastErr ?? new Error('Gemini unavailable');
 }
 
 // Builds program in chunks (gateway might struggle with 60+ days at once)
