@@ -102,9 +102,9 @@ Deno.serve(async (req) => {
 
     const isJson = body.mode === "text2sign";
     const payload: any = {
-      model: "google/gemini-2.5-flash",
+      model: isJson ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: "You are a precise linguistic assistant for the Damij inclusive education platform." },
+        { role: "system", content: "You are a precise multilingual linguistic and sign-language expert assistant for the Damij inclusive education platform." },
         { role: "user", content: buildPrompt(body) },
       ],
     };
