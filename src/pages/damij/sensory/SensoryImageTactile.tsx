@@ -33,6 +33,7 @@ const SensoryImageTactile: React.FC = () => {
   const [speakingMerged, setSpeakingMerged] = useState(false);
   const [geoMapping, setGeoMapping] = useState(true);
   const [visualMapping, setVisualMapping] = useState(true);
+  const [textureMapping, setTextureMapping] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixelCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -43,6 +44,16 @@ const SensoryImageTactile: React.FC = () => {
   const mobile = isMobile();
   const vibrate = hasVibration();
 
+  // Classify a texture string into a haptic family
+  type TextureKind = 'rough' | 'smooth' | 'dotted' | 'default';
+  const classifyTexture = (t?: string): TextureKind => {
+    const s = (t || '').toLowerCase();
+    if (/خشن|صخر|جبل|حجر|خشب|قاسي|rough|rock|mountain|stone|wood|bark|coarse/.test(s)) return 'rough';
+    if (/ناعم|حرير|ماء|سائل|زجاج|smooth|silk|water|liquid|glass|soft/.test(s)) return 'smooth';
+    if (/منقط|نقاط|بريل|حبيبات|رمل|dot|braille|sand|grain|bumpy|stipple/.test(s)) return 'dotted';
+    return 'default';
+  };
+
   const stopHumming = () => {
     if (hummingRef.current) { clearInterval(hummingRef.current); hummingRef.current = null; }
     if (vibrate) navigator.vibrate(0);
@@ -51,6 +62,29 @@ const SensoryImageTactile: React.FC = () => {
     stopHumming();
     if (!vibrate) return;
     hummingRef.current = window.setInterval(() => navigator.vibrate(ms), gap);
+  };
+  // Texture-aware humming: rough = irregular ticks, smooth = continuous low,
+  // dotted = very fast short pulses (like Braille paper).
+  const startTextureHumming = (kind: TextureKind) => {
+    stopHumming();
+    if (!vibrate) return;
+    if (kind === 'smooth') {
+      hummingRef.current = window.setInterval(() => navigator.vibrate(18), 60);
+    } else if (kind === 'dotted') {
+      hummingRef.current = window.setInterval(() => navigator.vibrate(8), 35);
+    } else if (kind === 'rough') {
+      // Irregular gear-tick pattern
+      hummingRef.current = window.setInterval(() => {
+        const burst = [
+          12 + Math.random() * 18, 25 + Math.random() * 30,
+          10 + Math.random() * 15, 35 + Math.random() * 40,
+          15 + Math.random() * 20,
+        ].map(Math.round);
+        navigator.vibrate(burst);
+      }, 220);
+    } else {
+      hummingRef.current = window.setInterval(() => navigator.vibrate(25), 80);
+    }
   };
   useEffect(() => () => stopHumming(), []);
 
