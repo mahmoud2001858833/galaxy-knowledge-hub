@@ -703,36 +703,23 @@ const SignTranslatorPro: React.FC = () => {
         </button>
       </div>
 
-      {/* Language selectors */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
-          <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
-            <Hand className="w-4 h-4" /> نظام الإشارة ({SIGN_SYSTEMS.length})
-          </label>
-          <select
-            value={signSystem}
-            onChange={(e) => setSignSystem(e.target.value)}
-            className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white"
-          >
-            {SIGN_SYSTEMS.map(s => (
-              <option key={s.code} value={s.code}>{s.nativeName} — {s.code} · {s.region}</option>
-            ))}
-          </select>
-        </div>
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
-          <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
-            <Globe className="w-4 h-4" /> اللغة المستهدفة ({SPOKEN_LANGUAGES.length}+ لغة)
-          </label>
-          <select
-            value={targetLang.code}
-            onChange={(e) => setTargetLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
-            className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white"
-          >
-            {SPOKEN_LANGUAGES.map(l => (
-              <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name}</option>
-            ))}
-          </select>
-        </div>
+      {/* Compact language summary + change button */}
+      <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-3 flex flex-wrap items-center gap-3">
+        <span className="px-3 py-1.5 rounded-lg bg-[hsl(var(--damij-primary))]/10 text-[hsl(var(--damij-primary))] font-bold text-sm flex items-center gap-1">
+          <Hand className="w-4 h-4" /> {SIGN_SYSTEMS.find(s => s.code === signSystem)?.nativeName || signSystem}
+        </span>
+        <span className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center gap-1">
+          <Languages className="w-4 h-4" /> إشارة ← {targetLang.flag} {targetLang.nativeName}
+        </span>
+        <span className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 font-bold text-sm flex items-center gap-1">
+          <Type className="w-4 h-4" /> نص ← {t2sLang.flag} {t2sLang.nativeName}
+        </span>
+        <button
+          onClick={() => { setLangConfirmed(false); }}
+          className="ms-auto px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold flex items-center gap-1"
+        >
+          <Settings2 className="w-4 h-4" /> تغيير اللغات
+        </button>
       </div>
 
       {tab === 'sign2text' ? (
