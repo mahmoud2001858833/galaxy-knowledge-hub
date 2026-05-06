@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FlaskConical, FileBarChart, ClipboardList, ArrowLeft, Sparkles, Loader2, GitCompare, LayoutDashboard } from 'lucide-react';
+import { FlaskConical, FileBarChart, ClipboardList, ArrowLeft, Sparkles, Loader2, GitCompare, LayoutDashboard, Beaker, Stethoscope } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const cards = [
-  { to: '/damij/clinical/cases', icon: ClipboardList, title: 'مكتبة الحالات الافتراضية', desc: 'أكثر من 60 حالة موزّعة على 5 فئات سريرية مع فلترة متقدّمة.' },
+  { to: '/damij/clinical/cases', icon: ClipboardList, title: 'مكتبة الحالات الافتراضية', desc: 'أكثر من 200 حالة في 5 فئات تربية خاصة و15 تخصصاً طبياً.' },
+  { to: '/damij/clinical/free', icon: Beaker, title: 'تجربة حرّة', desc: 'صمّم تجربتك: اختر التدخّل، أدخل التفاصيل، اختر المريض، شاهد النتائج.' },
   { to: '/damij/clinical/dashboard', icon: LayoutDashboard, title: 'لوحة جلساتي', desc: 'كل جلساتك وتقاريرك السابقة مع رسوم تقدّمك السريري.' },
   { to: '/damij/clinical/compare', icon: GitCompare, title: 'مقارنة بين تجارب', desc: 'حلّل تطوّر مهاراتك بمقارنة جلستين أو أكثر بـ AI.' },
   { to: '/damij/clinical/reports', icon: FileBarChart, title: 'تقاريري', desc: 'كل التقارير الكاملة جاهزة للعرض والتنزيل PDF والمشاركة.' },
