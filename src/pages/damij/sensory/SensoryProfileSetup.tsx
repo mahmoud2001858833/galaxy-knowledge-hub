@@ -72,6 +72,9 @@ const SensoryProfileSetup: React.FC = () => {
   const [vision, setVision] = useState<VisionState | ''>('');
   const [hearing, setHearing] = useState<HearingState | ''>('');
   const [motor, setMotor] = useState<MotorState | ''>('');
+  const [learningStyle, setLearningStyle] = useState<LearningStyle | ''>('');
+  const [languageLevel, setLanguageLevel] = useState<LanguageLevel | ''>('');
+  const [focus, setFocus] = useState<FocusLevel | ''>('');
   const [preferTouch, setPreferTouch] = useState(false);
 
   useEffect(() => {
@@ -80,19 +83,24 @@ const SensoryProfileSetup: React.FC = () => {
       if (raw) {
         const p: SensoryProfile = JSON.parse(raw);
         setVision(p.vision); setHearing(p.hearing); setMotor(p.motor);
+        setLearningStyle(p.learningStyle ?? '');
+        setLanguageLevel(p.languageLevel ?? '');
+        setFocus(p.focus ?? '');
         setPreferTouch(!!p.preferTouch);
       }
     } catch {}
   }, []);
 
   const save = () => {
-    if (!vision || !hearing || !motor) {
-      toast.error('يرجى تعبئة الحقول الثلاثة لإنشاء ملفك الحسّي');
+    if (!vision || !hearing || !motor || !learningStyle || !languageLevel || !focus) {
+      toast.error('يرجى تعبئة جميع الحقول لإنشاء ملفك الحسّي');
       return;
     }
     const profile: SensoryProfile = {
-      vision, hearing, motor, preferTouch,
-      cognitive: 'normal',
+      vision, hearing, motor,
+      learningStyle, languageLevel, focus,
+      preferTouch,
+      cognitive: focus === 'easily_distracted' || focus === 'low_attention' ? 'adhd' : 'normal',
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
