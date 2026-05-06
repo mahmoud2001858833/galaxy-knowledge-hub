@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, CheckCircle2, Lock, Play, Copy, Share2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Lock, Play, Copy, ExternalLink, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,11 +34,25 @@ const AutismProgramCalendar: React.FC = () => {
     return Math.max(1, Math.min(program.total_days, diff));
   })();
 
+  const shareUrl = program ? `${window.location.origin}/autism/c/${program.share_token}` : '';
+
   const copyShare = async () => {
     if (!program) return;
-    const url = `${window.location.origin}/autism/c/${program.share_token}`;
-    await navigator.clipboard.writeText(url);
-    toast.success('تم نسخ رابط الطفل');
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      toast.success('تم نسخ رابط الطفل', {
+        description: shareUrl,
+        action: { label: 'فتح', onClick: () => window.open(shareUrl, '_blank', 'noopener,noreferrer') },
+      });
+    } catch {
+      toast.error('تعذّر النسخ، انسخ الرابط يدوياً: ' + shareUrl);
+    }
   };
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-[hsl(var(--damij-accent-2))]" /></div>;
@@ -51,7 +65,15 @@ const AutismProgramCalendar: React.FC = () => {
         <p className="text-slate-600 mt-2">{program.summary_ar}</p>
         <div className="flex flex-wrap gap-2 mt-4">
           <button onClick={copyShare} className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm flex items-center gap-1">
-            <Copy className="w-4 h-4" /> نسخ الرابط المختصر
+            <Copy className="w-4 h-4" /> نسخ رابط متابعة الطفل
+          </button>
+          <a href={shareUrl} target="_blank" rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm flex items-center gap-1">
+            <ExternalLink className="w-4 h-4" /> فتح الصفحة العامة
+          </a>
+          <button onClick={() => navigate(`/damij/autism/program/${programId}/dashboard`)}
+            className="px-3 py-1.5 rounded-lg bg-[hsl(var(--damij-primary))] text-white text-sm font-bold flex items-center gap-1">
+            <BarChart3 className="w-4 h-4" /> لوحة التقدم
           </button>
           <span className="px-3 py-1.5 rounded-lg bg-[hsl(var(--damij-accent-2))]/10 text-[hsl(var(--damij-primary))] text-sm font-bold">
             اليوم {today} من {program.total_days}
