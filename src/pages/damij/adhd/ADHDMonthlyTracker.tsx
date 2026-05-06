@@ -272,12 +272,10 @@ const ADHDMonthlyTracker: React.FC = () => {
   const stats = useMemo(() => {
     const activeDays = cells.filter((c) => c.inMonth && (c.games + c.tests + c.reports) > 0).length;
     const totalActivities = games.length + tests.length + assessments.length + trainings.length;
-    const allScores = [
-      ...games.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-      ...trainings.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-    ];
-    const avgScore = allScores.length ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
-    const bestScore = allScores.length ? Math.max(...allScores) : 0;
+    // Use normalized daily averages (already weighted per type) for fair monthly mean
+    const dailyAvgs = cells.filter((c) => c.inMonth && c.avgScore !== null).map((c) => c.avgScore as number);
+    const avgScore = dailyAvgs.length ? Math.round(dailyAvgs.reduce((a, b) => a + b, 0) / dailyAvgs.length) : 0;
+    const bestScore = dailyAvgs.length ? Math.max(...dailyAvgs) : 0;
     return { activeDays, totalActivities, avgScore, bestScore };
   }, [cells, games, tests, assessments, trainings]);
 
