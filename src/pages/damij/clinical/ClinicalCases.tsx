@@ -8,6 +8,7 @@ const ClinicalCases: React.FC = () => {
   const [cases, setCases] = useState<ClinicalCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState<CategoryKey | 'all'>('all');
+  const [grp, setGrp] = useState<'all' | 'special' | 'medical'>('all');
   const [sev, setSev] = useState<'all' | 'mild' | 'moderate' | 'severe'>('all');
   const [age, setAge] = useState<'all' | 'child' | 'preteen' | 'teen'>('all');
   const [q, setQ] = useState('');
@@ -19,6 +20,7 @@ const ClinicalCases: React.FC = () => {
   })(); }, []);
 
   const filtered = useMemo(() => cases.filter(c => {
+    if (grp !== 'all' && CATEGORY_GROUP[c.category] !== grp) return false;
     if (cat !== 'all' && c.category !== cat) return false;
     if (sev !== 'all' && c.severity !== sev) return false;
     if (age !== 'all') {
@@ -28,7 +30,7 @@ const ClinicalCases: React.FC = () => {
     }
     if (q && !`${c.name_ar} ${c.summary_ar}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
-  }), [cases, cat, sev, age, q]);
+  }), [cases, cat, grp, sev, age, q]);
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin" /></div>;
 
