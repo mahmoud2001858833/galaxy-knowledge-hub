@@ -409,8 +409,8 @@ const SensoryImageTactile: React.FC = () => {
                   <canvas
                     ref={canvasRef}
                     className="w-full rounded-xl border touch-none"
-                    onPointerLeave={() => { stopHumming(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
-                    onPointerUp={() => { stopHumming(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
+                    onPointerLeave={() => { stopHumming(); leaveFocus(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
+                    onPointerUp={() => { stopHumming(); leaveFocus(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
                     onPointerMove={(e) => {
                       if (!hapticEnabled || !canvasRef.current) return;
                       const rect = canvasRef.current.getBoundingClientRect();
