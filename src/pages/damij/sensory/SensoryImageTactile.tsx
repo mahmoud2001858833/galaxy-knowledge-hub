@@ -37,6 +37,16 @@ const SensoryImageTactile: React.FC = () => {
   const [focusIdx, setFocusIdx] = useState<number | null>(null);
   const [connectTarget, setConnectTarget] = useState<number | null>(null);
   const [connectStatus, setConnectStatus] = useState<'idle' | 'wrong' | 'success'>('idle');
+  // Training mode state
+  const [trainingMode, setTrainingMode] = useState(false);
+  const [trainingTotal, setTrainingTotal] = useState(5);
+  const [trainingRound, setTrainingRound] = useState(0); // completed rounds
+  const [trainingErrors, setTrainingErrors] = useState(0);
+  const [trainingScore, setTrainingScore] = useState(0);
+  const [roundErrors, setRoundErrors] = useState(0);
+  const [roundStartedAt, setRoundStartedAt] = useState<number>(0);
+  const [trainingTimes, setTrainingTimes] = useState<number[]>([]);
+  const [trainingSummary, setTrainingSummary] = useState<null | { score: number; errors: number; total: number; avgTime: number; perfectRounds: number }>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixelCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -152,11 +162,56 @@ const SensoryImageTactile: React.FC = () => {
     }
   };
   // Pick a connect-exercise target (random region) and clear status
+  const pickRandomTarget = (excludeIdx: number | null = null) => {
+    if (!result?.tactileRegions?.length) return null;
+    const n = result.tactileRegions.length;
+    if (n === 1) return 0;
+    let t = Math.floor(Math.random() * n);
+    if (excludeIdx !== null) while (t === excludeIdx) t = Math.floor(Math.random() * n);
+    return t;
+  };
   const startConnectExercise = () => {
-    if (!result?.tactileRegions?.length) return;
-    const t = Math.floor(Math.random() * result.tactileRegions.length);
-    setConnectTarget(t); setConnectStatus('idle');
-    toast.info(`وصّل إصبعك إلى: ${result.tactileRegions[t].label}`);
+    const t = pickRandomTarget();
+    if (t === null) return;
+    setConnectTarget(t); setConnectStatus('idle'); setRoundErrors(0); setRoundStartedAt(performance.now());
+    toast.info(`وصّل إصبعك إلى: ${result!.tactileRegions![t].label}`);
+  };
+  const startTraining = () => {
+    if (!result?.tactileRegions?.length) { toast.error('حلّل صورة أولاً'); return; }
+    setTrainingMode(true); setTrainingRound(0); setTrainingErrors(0); setTrainingScore(0);
+    setTrainingTimes([]); setTrainingSummary(null);
+    const t = pickRandomTarget();
+    if (t === null) return;
+    setConnectTarget(t); setConnectStatus('idle'); setRoundErrors(0); setRoundStartedAt(performance.now());
+    toast.info(`جولة 1/${trainingTotal} — وصّل إصبعك إلى: ${result.tactileRegions[t].label}`);
+  };
+  const finishTraining = (totals: { score: number; errors: number; total: number; times: number[] }) => {
+    const avgTime = totals.times.length ? Math.round(totals.times.reduce((a, b) => a + b, 0) / totals.times.length) : 0;
+    const perfectRounds = totals.times.length; // counted in onSuccess only when 0 errors
+    setTrainingSummary({ score: totals.score, errors: totals.errors, total: totals.total, avgTime, perfectRounds });
+    setTrainingMode(false); setConnectTarget(null); setConnectStatus('idle');
+    if (vibrate) navigator.vibrate([80, 100, 80, 100, 200, 100, 300]);
+  };
+  const onTrainingRoundSuccess = () => {
+    const elapsed = Math.max(0, performance.now() - roundStartedAt);
+    const points = roundErrors === 0 ? 10 : Math.max(2, 10 - roundErrors * 2);
+    const isPerfect = roundErrors === 0;
+    const nextScore = trainingScore + points;
+    const nextErrors = trainingErrors + roundErrors;
+    const nextRound = trainingRound + 1;
+    const nextTimes = isPerfect ? [...trainingTimes, elapsed] : trainingTimes;
+    setTrainingScore(nextScore); setTrainingErrors(nextErrors); setTrainingRound(nextRound); setTrainingTimes(nextTimes);
+    if (nextRound >= trainingTotal) {
+      finishTraining({ score: nextScore, errors: nextErrors, total: trainingTotal, times: nextTimes });
+    } else {
+      const t = pickRandomTarget(connectTarget);
+      if (t === null) return;
+      setRoundErrors(0); setRoundStartedAt(performance.now()); setConnectStatus('idle'); setConnectTarget(t);
+      toast.info(`جولة ${nextRound + 1}/${trainingTotal} — ${result!.tactileRegions![t].label}`);
+    }
+  };
+  const cancelTraining = () => {
+    setTrainingMode(false); setConnectTarget(null); setConnectStatus('idle');
   };
 
   // Sample color at canvas-relative percentage. Returns { lum 0-1, rgb }
@@ -449,9 +504,12 @@ const SensoryImageTactile: React.FC = () => {
                       // Connect-exercise instructional cues
                       if (connectTarget !== null) {
                         if (idx === connectTarget && connectStatus !== 'success') {
-                          cueSuccess(); setConnectStatus('success'); toast.success('أحسنت! وصلت للمكان الصحيح');
+                          cueSuccess(); setConnectStatus('success');
+                          if (trainingMode) onTrainingRoundSuccess();
+                          else toast.success('أحسنت! وصلت للمكان الصحيح');
                         } else if (region && idx !== connectTarget && connectStatus !== 'success') {
                           if (connectStatus !== 'wrong') setConnectStatus('wrong');
+                          if (trainingMode) setRoundErrors(v => v + 1);
                           cueError();
                         }
                       }
@@ -468,7 +526,55 @@ const SensoryImageTactile: React.FC = () => {
                     <button onClick={printModel} className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm font-bold inline-flex items-center justify-center gap-2">
                       <Printer className="w-4 h-4"/> طباعة لمسية
                     </button>
-                  </div>
+                    </div>
+
+                    {/* Training mode */}
+                    <div className="mb-3 p-2 rounded-lg bg-white border border-amber-200">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs font-bold text-amber-800">وضع التدريب — درجات وعدّ أخطاء</p>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs">عدد الجولات:</label>
+                          <select
+                            disabled={trainingMode}
+                            value={trainingTotal}
+                            onChange={(e) => setTrainingTotal(Number(e.target.value))}
+                            className="text-xs border rounded px-1 py-0.5"
+                          >
+                            {[3, 5, 7, 10].map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {!trainingMode ? (
+                          <button onClick={startTraining} className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold">
+                            ابدأ وضع التدريب
+                          </button>
+                        ) : (
+                          <button onClick={cancelTraining} className="px-3 py-1.5 rounded-lg bg-gray-200 text-xs">إنهاء التدريب</button>
+                        )}
+                      </div>
+                      {trainingMode && (
+                        <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
+                          <div className="bg-amber-50 rounded p-1"><div className="font-bold">{trainingRound + 1}/{trainingTotal}</div><div>الجولة</div></div>
+                          <div className="bg-green-50 rounded p-1"><div className="font-bold text-green-700">{trainingScore}</div><div>النقاط</div></div>
+                          <div className="bg-red-50 rounded p-1"><div className="font-bold text-red-700">{trainingErrors + roundErrors}</div><div>الأخطاء</div></div>
+                          <div className="bg-blue-50 rounded p-1"><div className="font-bold text-blue-700">{roundErrors}</div><div>هذه الجولة</div></div>
+                        </div>
+                      )}
+                      {trainingSummary && (
+                        <div className="mt-2 p-2 rounded-lg bg-gradient-to-l from-purple-50 to-amber-50 border border-purple-200 text-xs">
+                          <p className="font-bold text-purple-800 mb-1">📊 ملخص التدريب</p>
+                          <ul className="space-y-0.5">
+                            <li>الدرجة النهائية: <b className="text-green-700">{trainingSummary.score}/{trainingSummary.total * 10}</b></li>
+                            <li>إجمالي الأخطاء: <b className="text-red-700">{trainingSummary.errors}</b></li>
+                            <li>جولات بدون أخطاء: <b className="text-purple-700">{trainingSummary.perfectRounds}/{trainingSummary.total}</b></li>
+                            <li>متوسط زمن الجولة المثالية: <b>{(trainingSummary.avgTime / 1000).toFixed(1)}ث</b></li>
+                            <li>التقدير: <b>{trainingSummary.score >= trainingSummary.total * 9 ? 'ممتاز ⭐' : trainingSummary.score >= trainingSummary.total * 7 ? 'جيد جداً 👏' : trainingSummary.score >= trainingSummary.total * 5 ? 'جيد' : 'يحتاج تدريباً إضافياً'}</b></li>
+                          </ul>
+                          <button onClick={() => setTrainingSummary(null)} className="mt-2 text-xs text-purple-600 underline">إغلاق</button>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Instructional cues controls */}
                   <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
