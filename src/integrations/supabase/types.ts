@@ -1552,6 +1552,256 @@ export type Database = {
           },
         ]
       }
+      clinical_cases: {
+        Row: {
+          age_years: number
+          category: string
+          code: string
+          created_at: string
+          gender: string | null
+          history_ar: string | null
+          id: string
+          name_ar: string
+          patient_persona_ar: string
+          presenting_signs_ar: string[] | null
+          reference_ar: string | null
+          sensory_profile: Json | null
+          severity: string
+          summary_ar: string
+        }
+        Insert: {
+          age_years: number
+          category: string
+          code: string
+          created_at?: string
+          gender?: string | null
+          history_ar?: string | null
+          id?: string
+          name_ar: string
+          patient_persona_ar: string
+          presenting_signs_ar?: string[] | null
+          reference_ar?: string | null
+          sensory_profile?: Json | null
+          severity: string
+          summary_ar: string
+        }
+        Update: {
+          age_years?: number
+          category?: string
+          code?: string
+          created_at?: string
+          gender?: string | null
+          history_ar?: string | null
+          id?: string
+          name_ar?: string
+          patient_persona_ar?: string
+          presenting_signs_ar?: string[] | null
+          reference_ar?: string | null
+          sensory_profile?: Json | null
+          severity?: string
+          summary_ar?: string
+        }
+        Relationships: []
+      }
+      clinical_protocols: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          goal_ar: string
+          id: string
+          name_ar: string
+          reference_ar: string | null
+          scoring: Json | null
+          short_ar: string
+          steps: Json
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          goal_ar: string
+          id?: string
+          name_ar: string
+          reference_ar?: string | null
+          scoring?: Json | null
+          short_ar: string
+          steps?: Json
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          goal_ar?: string
+          id?: string
+          name_ar?: string
+          reference_ar?: string | null
+          scoring?: Json | null
+          short_ar?: string
+          steps?: Json
+        }
+        Relationships: []
+      }
+      clinical_reports: {
+        Row: {
+          created_at: string
+          diagnosis_ar: string | null
+          id: string
+          recommendations_ar: string[] | null
+          references_ar: string[] | null
+          rubric: Json | null
+          score: number
+          session_id: string
+          share_token: string
+          strengths_ar: string[] | null
+          summary_ar: string
+          user_id: string
+          weaknesses_ar: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          diagnosis_ar?: string | null
+          id?: string
+          recommendations_ar?: string[] | null
+          references_ar?: string[] | null
+          rubric?: Json | null
+          score?: number
+          session_id: string
+          share_token?: string
+          strengths_ar?: string[] | null
+          summary_ar: string
+          user_id: string
+          weaknesses_ar?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          diagnosis_ar?: string | null
+          id?: string
+          recommendations_ar?: string[] | null
+          references_ar?: string[] | null
+          rubric?: Json | null
+          score?: number
+          session_id?: string
+          share_token?: string
+          strengths_ar?: string[] | null
+          summary_ar?: string
+          user_id?: string
+          weaknesses_ar?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_reports_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "clinical_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_session_events: {
+        Row: {
+          actor: string
+          anxiety: number | null
+          attention: number | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          progress: number | null
+          session_id: string
+          t_ms: number
+        }
+        Insert: {
+          actor: string
+          anxiety?: number | null
+          attention?: number | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          progress?: number | null
+          session_id: string
+          t_ms: number
+        }
+        Update: {
+          actor?: string
+          anxiety?: number | null
+          attention?: number | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          progress?: number | null
+          session_id?: string
+          t_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_session_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_sessions: {
+        Row: {
+          anxiety: number
+          attention: number
+          case_id: string
+          current_step: number
+          ended_at: string | null
+          id: string
+          progress: number
+          protocol_id: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          anxiety?: number
+          attention?: number
+          case_id: string
+          current_step?: number
+          ended_at?: string | null
+          id?: string
+          progress?: number
+          protocol_id: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          anxiety?: number
+          attention?: number
+          case_id?: string
+          current_step?: number
+          ended_at?: string | null
+          id?: string
+          progress?: number
+          protocol_id?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_sessions_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
           created_at: string
