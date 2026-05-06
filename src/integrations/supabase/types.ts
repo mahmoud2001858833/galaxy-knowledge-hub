@@ -506,51 +506,160 @@ export type Database = {
         }
         Relationships: []
       }
+      autism_day_reports: {
+        Row: {
+          day_id: string
+          generated_at: string
+          id: string
+          raw: Json | null
+          recommendations_ar: Json | null
+          score: number | null
+          strengths_ar: Json | null
+          summary_ar: string | null
+          user_id: string
+          weaknesses_ar: Json | null
+        }
+        Insert: {
+          day_id: string
+          generated_at?: string
+          id?: string
+          raw?: Json | null
+          recommendations_ar?: Json | null
+          score?: number | null
+          strengths_ar?: Json | null
+          summary_ar?: string | null
+          user_id: string
+          weaknesses_ar?: Json | null
+        }
+        Update: {
+          day_id?: string
+          generated_at?: string
+          id?: string
+          raw?: Json | null
+          recommendations_ar?: Json | null
+          score?: number | null
+          strengths_ar?: Json | null
+          summary_ar?: string | null
+          user_id?: string
+          weaknesses_ar?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_day_reports_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: true
+            referencedRelation: "autism_program_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autism_game_moves: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          is_correct: boolean | null
+          payload: Json | null
+          program_game_id: string | null
+          session_id: string | null
+          t_ms: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          is_correct?: boolean | null
+          payload?: Json | null
+          program_game_id?: string | null
+          session_id?: string | null
+          t_ms?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_correct?: boolean | null
+          payload?: Json | null
+          program_game_id?: string | null
+          session_id?: string | null
+          t_ms?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_game_moves_program_game_id_fkey"
+            columns: ["program_game_id"]
+            isOneToOne: false
+            referencedRelation: "autism_program_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       autism_game_sessions: {
         Row: {
           abandoned: boolean | null
           accuracy: number | null
           child_profile_id: string | null
           created_at: string
+          day_id: string | null
           difficulty: string | null
           duration_sec: number | null
           id: string
+          move_count: number | null
           notes: string | null
           plan_id: string | null
+          program_game_id: string | null
+          program_id: string | null
           raw_metrics: Json | null
           stage: number | null
           template_id: string
+          time_to_first_action_ms: number | null
           user_id: string
+          wrong_attempts: number | null
         }
         Insert: {
           abandoned?: boolean | null
           accuracy?: number | null
           child_profile_id?: string | null
           created_at?: string
+          day_id?: string | null
           difficulty?: string | null
           duration_sec?: number | null
           id?: string
+          move_count?: number | null
           notes?: string | null
           plan_id?: string | null
+          program_game_id?: string | null
+          program_id?: string | null
           raw_metrics?: Json | null
           stage?: number | null
           template_id: string
+          time_to_first_action_ms?: number | null
           user_id: string
+          wrong_attempts?: number | null
         }
         Update: {
           abandoned?: boolean | null
           accuracy?: number | null
           child_profile_id?: string | null
           created_at?: string
+          day_id?: string | null
           difficulty?: string | null
           duration_sec?: number | null
           id?: string
+          move_count?: number | null
           notes?: string | null
           plan_id?: string | null
+          program_game_id?: string | null
+          program_id?: string | null
           raw_metrics?: Json | null
           stage?: number | null
           template_id?: string
+          time_to_first_action_ms?: number | null
           user_id?: string
+          wrong_attempts?: number | null
         }
         Relationships: [
           {
@@ -561,10 +670,175 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "autism_game_sessions_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "autism_program_days"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "autism_game_sessions_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "autism_therapy_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autism_game_sessions_program_game_id_fkey"
+            columns: ["program_game_id"]
+            isOneToOne: false
+            referencedRelation: "autism_program_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autism_game_sessions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "autism_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autism_program_days: {
+        Row: {
+          created_at: string
+          day_index: number
+          focus_skill_ar: string | null
+          id: string
+          program_id: string
+          rationale_ar: string | null
+          theme_ar: string | null
+        }
+        Insert: {
+          created_at?: string
+          day_index: number
+          focus_skill_ar?: string | null
+          id?: string
+          program_id: string
+          rationale_ar?: string | null
+          theme_ar?: string | null
+        }
+        Update: {
+          created_at?: string
+          day_index?: number
+          focus_skill_ar?: string | null
+          id?: string
+          program_id?: string
+          rationale_ar?: string | null
+          theme_ar?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "autism_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autism_program_games: {
+        Row: {
+          adaptations_ar: Json | null
+          ai_config: Json | null
+          created_at: string
+          day_id: string
+          difficulty: string | null
+          duration_sec: number | null
+          id: string
+          instructions_ar: string | null
+          order_index: number
+          success_criteria_ar: string | null
+          target_skill_ar: string | null
+          template_id: string
+          title_ar: string
+        }
+        Insert: {
+          adaptations_ar?: Json | null
+          ai_config?: Json | null
+          created_at?: string
+          day_id: string
+          difficulty?: string | null
+          duration_sec?: number | null
+          id?: string
+          instructions_ar?: string | null
+          order_index: number
+          success_criteria_ar?: string | null
+          target_skill_ar?: string | null
+          template_id: string
+          title_ar: string
+        }
+        Update: {
+          adaptations_ar?: Json | null
+          ai_config?: Json | null
+          created_at?: string
+          day_id?: string
+          difficulty?: string | null
+          duration_sec?: number | null
+          id?: string
+          instructions_ar?: string | null
+          order_index?: number
+          success_criteria_ar?: string | null
+          target_skill_ar?: string | null
+          template_id?: string
+          title_ar?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_program_games_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "autism_program_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autism_programs: {
+        Row: {
+          child_profile_id: string
+          created_at: string
+          id: string
+          share_token: string
+          start_date: string
+          status: string
+          summary_ar: string | null
+          title_ar: string | null
+          total_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          child_profile_id: string
+          created_at?: string
+          id?: string
+          share_token?: string
+          start_date?: string
+          status?: string
+          summary_ar?: string | null
+          title_ar?: string | null
+          total_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          child_profile_id?: string
+          created_at?: string
+          id?: string
+          share_token?: string
+          start_date?: string
+          status?: string
+          summary_ar?: string | null
+          title_ar?: string | null
+          total_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autism_programs_child_profile_id_fkey"
+            columns: ["child_profile_id"]
+            isOneToOne: false
+            referencedRelation: "autism_child_profiles"
             referencedColumns: ["id"]
           },
         ]
