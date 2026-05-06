@@ -79,6 +79,19 @@ const AutismDayView: React.FC = () => {
     finally { setGeneratingReport(false); }
   };
 
+  const regenerate = async (mode: 'games' | 'report') => {
+    if (!confirm(mode === 'games' ? 'سيتم استبدال ألعاب هذا اليوم وحذف تقريره. متابعة؟' : 'سيتم حذف تقرير اليوم لتوليده من جديد. متابعة؟')) return;
+    setRegenerating(mode);
+    try {
+      const { data, error } = await supabase.functions.invoke('autism-regenerate-day', { body: { dayId, mode } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(mode === 'games' ? 'تم توليد ألعاب جديدة لهذا اليوم' : 'تم حذف التقرير، يمكنك توليده الآن');
+      await load();
+    } catch (e: any) { toast.error(e?.message ?? 'تعذّر التنفيذ'); }
+    finally { setRegenerating(null); }
+  };
+
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin" /></div>;
   if (!day) return <div className="text-center pt-20">اليوم غير موجود</div>;
 
@@ -93,6 +106,21 @@ const AutismDayView: React.FC = () => {
         <h1 className="text-2xl font-bold text-[hsl(var(--damij-primary))]">{day.theme_ar}</h1>
         <p className="text-slate-600 mt-1">{day.rationale_ar}</p>
         <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-[hsl(var(--damij-accent-2))]/10 text-[hsl(var(--damij-primary))] font-bold">المهارة: {day.focus_skill_ar}</span>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button onClick={() => regenerate('games')} disabled={!!regenerating}
+            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm flex items-center gap-1 hover:border-[hsl(var(--damij-accent-2))]/40">
+            {regenerating === 'games' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            إعادة توليد ألعاب اليوم
+          </button>
+          {report && (
+            <button onClick={() => regenerate('report')} disabled={!!regenerating}
+              className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm flex items-center gap-1 hover:border-[hsl(var(--damij-accent-2))]/40">
+              {regenerating === 'report' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              إعادة توليد تقرير اليوم
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="space-y-3 mb-8">
