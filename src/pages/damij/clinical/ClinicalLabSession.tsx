@@ -116,56 +116,86 @@ const ClinicalLabSession: React.FC = () => {
         <div className="text-xs text-slate-500">الخطوة {session.current_step + 1}/{steps}: {step.title_ar}</div>
       </header>
 
+      <Tabs c={c} p={p} session={session} events={events} step={step}
+        msg={msg} setMsg={setMsg} sending={sending} sendTurn={sendTurn}
+        listening={listening} toggleVoice={toggleVoice} speak={speak} logRef={logRef}
+        sessionId={sessionId!} reload={load} />
+    </div>
+  );
+};
+
+const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload }) => {
+  const [tab, setTab] = useState<'chat' | 'try'>('chat');
+  return (
+    <>
+      <div className="mb-3 inline-flex p-1 rounded-xl bg-slate-100 border">
+        <button onClick={() => setTab('chat')}
+          className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'chat' ? 'bg-white shadow font-bold' : ''}`}>
+          <MessageSquare className="w-4 h-4" /> المحادثة
+        </button>
+        <button onClick={() => setTab('try')}
+          className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'try' ? 'bg-white shadow font-bold' : ''}`}>
+          <FlaskConical className="w-4 h-4" /> جرّب تدخّلاً 🧪
+        </button>
+      </div>
+
       <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-        {/* Conversation */}
-        <section className="rounded-3xl bg-white border flex flex-col h-[60vh]">
-          <div className="p-3 border-b bg-slate-50 rounded-t-3xl">
-            <div className="text-sm font-bold text-[hsl(var(--damij-primary))]">📋 {step.instruction_ar}</div>
-            <div className="text-xs text-slate-500 mt-1">معيار النجاح: {step.success_ar}</div>
-          </div>
-          <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-2">
-            {events.length === 0 && <div className="text-center text-slate-400 text-sm pt-10">ابدأ بإعطاء التعليمة للمريض الافتراضي…</div>}
-            {events.map((e) => (
-              <div key={e.id} className={`flex ${e.actor === 'student' ? 'justify-start' : e.actor === 'patient' ? 'justify-end' : 'justify-center'}`}>
-                <div className={`max-w-[85%] p-2 rounded-xl text-sm ${
-                  e.actor === 'student' ? 'bg-sky-50 border border-sky-200'
-                  : e.actor === 'patient' ? 'bg-emerald-50 border border-emerald-200'
-                  : 'bg-amber-50 border border-amber-200 text-xs italic'
-                }`}>
-                  <div className="text-[10px] opacity-60 mb-0.5">
-                    {e.actor === 'student' ? '👨‍🎓 الطالب' : e.actor === 'patient' ? `🧒 ${c.name_ar}` : '🧠 ملاحظة سريرية'}
+        <section className="rounded-3xl bg-white border flex flex-col min-h-[60vh]">
+          {tab === 'chat' ? (
+            <>
+              <div className="p-3 border-b bg-slate-50 rounded-t-3xl">
+                <div className="text-sm font-bold text-[hsl(var(--damij-primary))]">📋 {step.instruction_ar}</div>
+                <div className="text-xs text-slate-500 mt-1">معيار النجاح: {step.success_ar}</div>
+              </div>
+              <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[55vh]">
+                {events.length === 0 && <div className="text-center text-slate-400 text-sm pt-10">ابدأ بإعطاء التعليمة للمريض الافتراضي…</div>}
+                {events.map((e: any) => (
+                  <div key={e.id} className={`flex ${e.actor === 'student' ? 'justify-start' : e.actor === 'patient' ? 'justify-end' : 'justify-center'}`}>
+                    <div className={`max-w-[85%] p-2 rounded-xl text-sm ${
+                      e.actor === 'student' ? 'bg-sky-50 border border-sky-200'
+                      : e.actor === 'patient' ? 'bg-emerald-50 border border-emerald-200'
+                      : 'bg-amber-50 border border-amber-200 text-xs italic'
+                    }`}>
+                      <div className="text-[10px] opacity-60 mb-0.5">
+                        {e.actor === 'student' ? '👨‍🎓 الطالب' : e.actor === 'patient' ? `🧒 ${c.name_ar}` : '🧠 ملاحظة سريرية'}
+                      </div>
+                      {e.event_type === 'clinical_note' ? e.payload?.note : (e.payload?.say || e.payload?.action)}
+                      {e.actor === 'patient' && e.payload?.say && (
+                        <button onClick={() => speak(e.payload.say)} className="mr-2 text-[10px] opacity-60 inline-flex items-center gap-0.5">
+                          <Volume2 className="w-3 h-3" /> استمع
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {e.event_type === 'clinical_note' ? e.payload?.note : (e.payload?.say || e.payload?.action)}
-                  {e.actor === 'patient' && e.payload?.say && (
-                    <button onClick={() => speak(e.payload.say)} className="mr-2 text-[10px] opacity-60 inline-flex items-center gap-0.5">
-                      <Volume2 className="w-3 h-3" /> استمع
-                    </button>
-                  )}
+                ))}
+              </div>
+              <div className="p-3 border-t space-y-2">
+                <div className="flex flex-wrap gap-1">
+                  {QUICK_ACTIONS.map(a => (
+                    <button key={a.key} disabled={sending} onClick={() => sendTurn(a.ar)}
+                      className="text-xs px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50">{a.ar}</button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={toggleVoice} className={`p-2 rounded-lg border ${listening ? 'bg-rose-100 border-rose-300' : 'bg-white'}`}>
+                    {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                  <input value={msg} onChange={e => setMsg(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && sendTurn()}
+                    placeholder="اكتب ما ستقوله للمريض…"
+                    className="flex-1 px-3 py-2 rounded-lg border bg-white text-sm" />
+                  <button onClick={() => sendTurn()} disabled={sending || (!msg)}
+                    className="px-3 py-2 rounded-lg bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center gap-1 disabled:opacity-50">
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} إرسال
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="p-3 border-t space-y-2">
-            <div className="flex flex-wrap gap-1">
-              {QUICK_ACTIONS.map(a => (
-                <button key={a.key} disabled={sending} onClick={() => sendTurn(a.ar)}
-                  className="text-xs px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50">{a.ar}</button>
-              ))}
+            </>
+          ) : (
+            <div className="p-3">
+              <InterventionTryPanel sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={toggleVoice} className={`p-2 rounded-lg border ${listening ? 'bg-rose-100 border-rose-300' : 'bg-white'}`}>
-                {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-              <input value={msg} onChange={e => setMsg(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && sendTurn()}
-                placeholder="اكتب ما ستقوله للمريض…"
-                className="flex-1 px-3 py-2 rounded-lg border bg-white text-sm" />
-              <button onClick={() => sendTurn()} disabled={sending || (!msg)}
-                className="px-3 py-2 rounded-lg bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center gap-1 disabled:opacity-50">
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} إرسال
-              </button>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* Sidebar metrics */}
