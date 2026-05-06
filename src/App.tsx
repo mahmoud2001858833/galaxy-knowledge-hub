@@ -232,6 +232,12 @@ import ClinicalHome from './pages/damij/clinical/ClinicalHome';
 import ClinicalCases from './pages/damij/clinical/ClinicalCases';
 import ClinicalLab from './pages/damij/clinical/ClinicalLab';
 import ClinicalReports from './pages/damij/clinical/ClinicalReports';
+import ClinicalCaseDetail from './pages/damij/clinical/ClinicalCaseDetail';
+import ClinicalLabSession from './pages/damij/clinical/ClinicalLabSession';
+import ClinicalReport from './pages/damij/clinical/ClinicalReport';
+import ClinicalDashboard from './pages/damij/clinical/ClinicalDashboard';
+import ClinicalCompare from './pages/damij/clinical/ClinicalCompare';
+import ClinicalPublicReport from './pages/damij/clinical/ClinicalPublicReport';
 import SourcesLibrary from './pages/damij/sources/SourcesLibrary';
 import './App.css';
 
@@ -1039,6 +1045,12 @@ const router = createBrowserRouter([
           { path: 'clinical/cases', element: <ClinicalCases /> },
           { path: 'clinical/lab', element: <ClinicalLab /> },
           { path: 'clinical/reports', element: <ClinicalReports /> },
+          { path: 'clinical/case/:caseId', element: <ClinicalCaseDetail /> },
+          { path: 'clinical/lab/:sessionId', element: <ClinicalLabSession /> },
+          { path: 'clinical/report/:reportId', element: <ClinicalReport /> },
+          { path: 'clinical/dashboard', element: <ClinicalDashboard /> },
+          { path: 'clinical/compare', element: <ClinicalCompare /> },
+          { path: 'clinical/public/:token', element: <ClinicalPublicReport /> },
           { path: 'sources', element: <SourcesLibrary /> },
         ],
       },
