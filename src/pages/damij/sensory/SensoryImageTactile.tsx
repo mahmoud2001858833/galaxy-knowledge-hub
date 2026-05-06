@@ -108,7 +108,7 @@ const SensoryImageTactile: React.FC = () => {
         navigator.vibrate(burst);
       }, 220);
     } else {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(25), 80);
+      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(25)), 80);
     }
   };
   useEffect(() => () => { stopHumming(); stopFocusPulse(); }, []);
