@@ -415,10 +415,10 @@ const SensoryImageTactile: React.FC = () => {
                         }
                       }
                       // Connect-exercise instructional cues
-                      if (connectTarget !== null && connectStatus !== 'success') {
-                        if (idx === connectTarget) {
-                          if (connectStatus !== 'success') { cueSuccess(); setConnectStatus('success'); toast.success('أحسنت! وصلت للمكان الصحيح'); }
-                        } else if (region && idx !== connectTarget) {
+                      if (connectTarget !== null) {
+                        if (idx === connectTarget && connectStatus !== 'success') {
+                          cueSuccess(); setConnectStatus('success'); toast.success('أحسنت! وصلت للمكان الصحيح');
+                        } else if (region && idx !== connectTarget && connectStatus !== 'success') {
                           if (connectStatus !== 'wrong') setConnectStatus('wrong');
                           cueError();
                         }
