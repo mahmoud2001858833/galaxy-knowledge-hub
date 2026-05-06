@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, Copy, CheckCircle2 } from 'lucide-react';
+import { Loader2, Copy, CheckCircle2, Bell, BellOff, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { exportElementToPdf } from '@/lib/pdfExport';
 
 const AutismChildPage: React.FC = () => {
   const { token } = useParams();
