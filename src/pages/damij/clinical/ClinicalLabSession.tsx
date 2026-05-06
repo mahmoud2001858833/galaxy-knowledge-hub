@@ -126,10 +126,10 @@ const ClinicalLabSession: React.FC = () => {
 };
 
 const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload, finalize, finalizing }) => {
-  const [tab, setTab] = useState<'chat' | 'try'>('chat');
+  const [tab, setTab] = useState<'chat' | 'try' | 'devices'>('chat');
   return (
     <>
-      <div className="mb-3 inline-flex p-1 rounded-xl bg-slate-100 border">
+      <div className="mb-3 inline-flex p-1 rounded-xl bg-slate-100 border flex-wrap">
         <button onClick={() => setTab('chat')}
           className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'chat' ? 'bg-white shadow font-bold' : ''}`}>
           <MessageSquare className="w-4 h-4" /> المحادثة
@@ -137,6 +137,10 @@ const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending
         <button onClick={() => setTab('try')}
           className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'try' ? 'bg-white shadow font-bold' : ''}`}>
           <FlaskConical className="w-4 h-4" /> جرّب تدخّلاً 🧪
+        </button>
+        <button onClick={() => setTab('devices')}
+          className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'devices' ? 'bg-white shadow font-bold' : ''}`}>
+          🩺 الأجهزة
         </button>
       </div>
 
