@@ -58,6 +58,13 @@ const SensoryImageTactile: React.FC = () => {
   const lastIntensityRef = useRef<number>(0);
   const lastErrorRef = useRef<number>(0);
   const mobile = isMobile();
+  const settingsRef = useRef(loadHapticSettings());
+  // Refresh settings each time component focuses (in case user updated them)
+  useEffect(() => {
+    const refresh = () => { settingsRef.current = loadHapticSettings(); };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
   const vibrate = hasVibration();
 
   // Classify a texture string into a haptic family
