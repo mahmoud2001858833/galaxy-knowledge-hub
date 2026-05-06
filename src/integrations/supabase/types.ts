@@ -89,6 +89,150 @@ export type Database = {
         }
         Relationships: []
       }
+      adhd_day_reports: {
+        Row: {
+          ai_report: string | null
+          created_at: string
+          day_id: string
+          id: string
+          metrics: Json | null
+          program_id: string
+          recommendations: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_report?: string | null
+          created_at?: string
+          day_id: string
+          id?: string
+          metrics?: Json | null
+          program_id: string
+          recommendations?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_report?: string | null
+          created_at?: string
+          day_id?: string
+          id?: string
+          metrics?: Json | null
+          program_id?: string
+          recommendations?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adhd_day_reports_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "adhd_program_days"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adhd_day_reports_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "adhd_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adhd_diagnostic_reports: {
+        Row: {
+          ai_report: string | null
+          battery_session_ids: string[]
+          child_profile_id: string | null
+          created_at: string
+          dsm_category: string | null
+          id: string
+          metrics: Json
+          recommendations: Json | null
+          screening_id: string | null
+          share_token: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_report?: string | null
+          battery_session_ids?: string[]
+          child_profile_id?: string | null
+          created_at?: string
+          dsm_category?: string | null
+          id?: string
+          metrics?: Json
+          recommendations?: Json | null
+          screening_id?: string | null
+          share_token?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_report?: string | null
+          battery_session_ids?: string[]
+          child_profile_id?: string | null
+          created_at?: string
+          dsm_category?: string | null
+          id?: string
+          metrics?: Json
+          recommendations?: Json | null
+          screening_id?: string | null
+          share_token?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adhd_game_sessions: {
+        Row: {
+          child_profile_id: string | null
+          created_at: string
+          difficulty: number | null
+          duration_ms: number | null
+          ended_at: string | null
+          events: Json
+          game_key: string
+          id: string
+          metrics: Json
+          mode: string
+          program_game_id: string | null
+          score: number | null
+          started_at: string
+          summary: Json
+          user_id: string
+        }
+        Insert: {
+          child_profile_id?: string | null
+          created_at?: string
+          difficulty?: number | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          events?: Json
+          game_key: string
+          id?: string
+          metrics?: Json
+          mode?: string
+          program_game_id?: string | null
+          score?: number | null
+          started_at?: string
+          summary?: Json
+          user_id: string
+        }
+        Update: {
+          child_profile_id?: string | null
+          created_at?: string
+          difficulty?: number | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          events?: Json
+          game_key?: string
+          id?: string
+          metrics?: Json
+          mode?: string
+          program_game_id?: string | null
+          score?: number | null
+          started_at?: string
+          summary?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       adhd_interventions: {
         Row: {
           active: boolean
@@ -152,6 +296,142 @@ export type Database = {
           metrics?: Json
           test_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      adhd_program_days: {
+        Row: {
+          created_at: string
+          day_index: number
+          id: string
+          program_id: string
+          scheduled_for: string | null
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          created_at?: string
+          day_index: number
+          id?: string
+          program_id: string
+          scheduled_for?: string | null
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          created_at?: string
+          day_index?: number
+          id?: string
+          program_id?: string
+          scheduled_for?: string | null
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adhd_program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "adhd_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adhd_program_games: {
+        Row: {
+          best_score: number | null
+          completed: boolean
+          created_at: string
+          day_id: string
+          description: string | null
+          game_key: string
+          id: string
+          order_index: number
+          params: Json | null
+          target_metric: string | null
+          title: string | null
+        }
+        Insert: {
+          best_score?: number | null
+          completed?: boolean
+          created_at?: string
+          day_id: string
+          description?: string | null
+          game_key: string
+          id?: string
+          order_index?: number
+          params?: Json | null
+          target_metric?: string | null
+          title?: string | null
+        }
+        Update: {
+          best_score?: number | null
+          completed?: boolean
+          created_at?: string
+          day_id?: string
+          description?: string | null
+          game_key?: string
+          id?: string
+          order_index?: number
+          params?: Json | null
+          target_metric?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adhd_program_games_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "adhd_program_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adhd_programs: {
+        Row: {
+          ai_plan: Json | null
+          child_age: number | null
+          child_name: string | null
+          child_profile_id: string | null
+          created_at: string
+          daily_minutes: number | null
+          focus_areas: string[] | null
+          id: string
+          share_token: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          weeks: number
+        }
+        Insert: {
+          ai_plan?: Json | null
+          child_age?: number | null
+          child_name?: string | null
+          child_profile_id?: string | null
+          created_at?: string
+          daily_minutes?: number | null
+          focus_areas?: string[] | null
+          id?: string
+          share_token?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          weeks?: number
+        }
+        Update: {
+          ai_plan?: Json | null
+          child_age?: number | null
+          child_name?: string | null
+          child_profile_id?: string | null
+          created_at?: string
+          daily_minutes?: number | null
+          focus_areas?: string[] | null
+          id?: string
+          share_token?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          weeks?: number
         }
         Relationships: []
       }
