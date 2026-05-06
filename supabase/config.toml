@@ -235,3 +235,16 @@ verify_jwt = false
 
 [functions.sensory-image-tactile]
 verify_jwt = false
+
+[functions.adhd-game-analyze]
+verify_jwt = false
+
+[functions.adhd-combined-report]
+verify_jwt = false
+
+[functions.adhd-program-generate]
+verify_jwt = true
+
+[functions.adhd-day-analyze]
+verify_jwt = false
+
