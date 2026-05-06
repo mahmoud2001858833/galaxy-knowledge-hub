@@ -235,6 +235,7 @@ if (typeof window !== 'undefined') { try { installInteractionTracking(); } catch
 import ClinicalHome from './pages/damij/clinical/ClinicalHome';
 import ClinicalCases from './pages/damij/clinical/ClinicalCases';
 import ClinicalLab from './pages/damij/clinical/ClinicalLab';
+import ClinicalFreeExperiment from './pages/damij/clinical/ClinicalFreeExperiment';
 import ClinicalReports from './pages/damij/clinical/ClinicalReports';
 import ClinicalCaseDetail from './pages/damij/clinical/ClinicalCaseDetail';
 import ClinicalLabSession from './pages/damij/clinical/ClinicalLabSession';
