@@ -38,6 +38,23 @@ const ADHDDashboard: React.FC = () => {
     rt: n.metrics?.meanRT ?? 0,
   }));
 
+  const nbackData = neuro.filter((n) => n.test_type === 'nback').map((n) => ({
+    date: new Date(n.created_at).toLocaleDateString('ar'),
+    accuracy: n.metrics?.accuracy ?? 0,
+    dPrime: n.metrics?.dPrime ?? 0,
+  }));
+
+  const stroopData = neuro.filter((n) => n.test_type === 'stroop').map((n) => ({
+    date: new Date(n.created_at).toLocaleDateString('ar'),
+    effect: n.metrics?.stroopEffect ?? 0,
+  }));
+
+  const gngData = neuro.filter((n) => n.test_type === 'gonogo').map((n) => ({
+    date: new Date(n.created_at).toLocaleDateString('ar'),
+    commissions: n.metrics?.commissionErrors ?? 0,
+    noGoAcc: n.metrics?.noGoAccuracy ?? 0,
+  }));
+
   const trainData = training.map((t) => ({
     date: new Date(t.created_at).toLocaleDateString('ar'),
     score: Number(t.score) || 0,
