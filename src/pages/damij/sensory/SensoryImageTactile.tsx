@@ -37,6 +37,16 @@ const SensoryImageTactile: React.FC = () => {
   const [focusIdx, setFocusIdx] = useState<number | null>(null);
   const [connectTarget, setConnectTarget] = useState<number | null>(null);
   const [connectStatus, setConnectStatus] = useState<'idle' | 'wrong' | 'success'>('idle');
+  // Training mode state
+  const [trainingMode, setTrainingMode] = useState(false);
+  const [trainingTotal, setTrainingTotal] = useState(5);
+  const [trainingRound, setTrainingRound] = useState(0); // completed rounds
+  const [trainingErrors, setTrainingErrors] = useState(0);
+  const [trainingScore, setTrainingScore] = useState(0);
+  const [roundErrors, setRoundErrors] = useState(0);
+  const [roundStartedAt, setRoundStartedAt] = useState<number>(0);
+  const [trainingTimes, setTrainingTimes] = useState<number[]>([]);
+  const [trainingSummary, setTrainingSummary] = useState<null | { score: number; errors: number; total: number; avgTime: number; perfectRounds: number }>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixelCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
