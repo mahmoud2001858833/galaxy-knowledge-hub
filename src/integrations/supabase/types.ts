@@ -14,6 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
+      adhd_assessments: {
+        Row: {
+          ai_report: string | null
+          completed_by: string
+          created_at: string
+          id: string
+          instrument: string
+          raw_responses: Json
+          scores: Json
+          severity: string | null
+          subject_age: number | null
+          subtype: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_report?: string | null
+          completed_by?: string
+          created_at?: string
+          id?: string
+          instrument: string
+          raw_responses?: Json
+          scores?: Json
+          severity?: string | null
+          subject_age?: number | null
+          subtype?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_report?: string | null
+          completed_by?: string
+          created_at?: string
+          id?: string
+          instrument?: string
+          raw_responses?: Json
+          scores?: Json
+          severity?: string | null
+          subject_age?: number | null
+          subtype?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adhd_daily_reports: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          overall_rating: number | null
+          report_date: string
+          targets: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          overall_rating?: number | null
+          report_date?: string
+          targets?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          overall_rating?: number | null
+          report_date?: string
+          targets?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adhd_interventions: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          details: Json
+          ended_at: string | null
+          id: string
+          started_at: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          details?: Json
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          details?: Json
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adhd_neuro_tests: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          id: string
+          metrics: Json
+          test_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          metrics?: Json
+          test_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          metrics?: Json
+          test_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adhd_training_sessions: {
+        Row: {
+          created_at: string
+          details: Json
+          duration_seconds: number
+          exercise: string
+          id: string
+          level: number
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          duration_seconds?: number
+          exercise: string
+          id?: string
+          level?: number
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          duration_seconds?: number
+          exercise?: string
+          id?: string
+          level?: number
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_teacher_access: {
         Row: {
           access_level: Database["public"]["Enums"]["admin_teacher_access_level"]
