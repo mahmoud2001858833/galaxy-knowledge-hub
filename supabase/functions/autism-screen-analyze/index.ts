@@ -81,50 +81,71 @@ const TOOL_SCHEMA = {
   },
 };
 
-async function callGemini(apiKey: string, userPrompt: string): Promise<any> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT + '\n\nأعد JSON فقط وفق:\n' + JSON.stringify(TOOL_SCHEMA.function.parameters) }] },
-      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-    }),
-  });
-  if (!resp.ok) {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function callGemini(apiKey: string, userPrompt: string, model = 'gemini-2.5-flash'): Promise<any> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  let lastErr: any = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT + '\n\nأعد JSON فقط وفق:\n' + JSON.stringify(TOOL_SCHEMA.function.parameters) }] },
+        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+      }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return JSON.parse(text);
+    }
     const t = await resp.text();
-    throw new Error(`Gemini ${resp.status}: ${t}`);
+    lastErr = new Error(`Gemini ${resp.status}: ${t}`);
+    // Retry on overload/rate-limit
+    if (resp.status === 503 || resp.status === 429) {
+      await sleep(800 * (attempt + 1));
+      continue;
+    }
+    throw lastErr;
   }
-  const data = await resp.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  return JSON.parse(text);
+  throw lastErr;
 }
 
-async function callGateway(userPrompt: string): Promise<any> {
+async function callGateway(userPrompt: string, model = 'google/gemini-2.5-flash'): Promise<any> {
   const key = Deno.env.get('LOVABLE_API_KEY');
   if (!key) throw new Error('LOVABLE_API_KEY missing');
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-      tools: [TOOL_SCHEMA],
-      tool_choice: { type: 'function', function: { name: 'autism_report' } },
-    }),
-  });
-  if (!resp.ok) {
+  let lastErr: any = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        tools: [TOOL_SCHEMA],
+        tool_choice: { type: 'function', function: { name: 'autism_report' } },
+      }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+      if (!args) throw new Error('No tool call returned');
+      return JSON.parse(args);
+    }
     const t = await resp.text();
-    throw new Error(`Gateway ${resp.status}: ${t}`);
+    lastErr = new Error(`Gateway ${resp.status}: ${t}`);
+    if (resp.status === 503 || resp.status === 429) {
+      await sleep(800 * (attempt + 1));
+      continue;
+    }
+    throw lastErr;
   }
-  const data = await resp.json();
-  const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  if (!args) throw new Error('No tool call returned');
-  return JSON.parse(args);
+  throw lastErr;
 }
 
 Deno.serve(async (req) => {
