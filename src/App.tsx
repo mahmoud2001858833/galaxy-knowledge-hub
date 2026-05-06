@@ -388,10 +388,6 @@ const router = createBrowserRouter([
         element: <PublicRoute><JordanTawjihiEnglish /></PublicRoute>,
       },
       {
-        path: 'jordan-tawjihi/arabic',
-        element: <PublicRoute><JordanTawjihiArabic /></PublicRoute>,
-      },
-      {
         path: 'btec',
         element: <PublicRoute><BTEC /></PublicRoute>,
       },
@@ -422,50 +418,6 @@ const router = createBrowserRouter([
       {
         path: 'btec/it/build-platform',
         element: <PublicRoute><BuildPlatformSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-language',
-        element: <AuthGuard><ArabicLanguage /></AuthGuard>,
-      },
-      {
-        path: 'arabic-platform',
-        element: <PublicRoute><ProtectedArabicLanguagePlatform /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/grammar',
-        element: <PublicRoute><GrammarSubsectionsPage /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology',
-        element: <PublicRoute><MorphologySubsectionsPage /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/prosody',
-        element: <PublicRoute><ArabicProsodySection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/criticism',
-        element: <PublicRoute><ArabicCriticismSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/grammar/basics',
-        element: <PublicRoute><GrammarBasicsSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/grammar/library',
-        element: <PublicRoute><GrammarLibrarySection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology/basics',
-        element: <PublicRoute><MorphologyBasicsSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology/roots',
-        element: <PublicRoute><MorphologyRootsSection /></PublicRoute>,
-      },
-      {
-        path: 'arabic-platform/morphology/derivatives',
-        element: <PublicRoute><MorphologyDerivativesSection /></PublicRoute>,
       },
       {
         path: 'english-language',
