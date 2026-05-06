@@ -78,19 +78,27 @@ const SignTranslatorPro: React.FC = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
 
-  // ─ language picks
-  const [signSystem, setSignSystem] = useState<string>('ArSL');
+  // ─ language picks (persisted)
+  const LS_KEY = 'damij.sign.langPrefs.v1';
+  const loadPrefs = () => {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch { return null; }
+  };
+  const initial = loadPrefs();
+  const [signSystem, setSignSystem] = useState<string>(initial?.signSystem || 'ArSL');
   const [targetLang, setTargetLang] = useState<SpokenLang>(
-    SPOKEN_LANGUAGES.find(l => l.code === 'en-US') || SPOKEN_LANGUAGES[1],
+    SPOKEN_LANGUAGES.find(l => l.code === (initial?.targetLang || 'en-US')) || SPOKEN_LANGUAGES[1],
   );
+  const [t2sLang, setT2sLang] = useState<SpokenLang>(
+    SPOKEN_LANGUAGES.find(l => l.code === (initial?.t2sLang || 'ar-SA')) || SPOKEN_LANGUAGES[0],
+  );
+  const [langConfirmed, setLangConfirmed] = useState<boolean>(!!initial?.confirmed);
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
   const [t2sLoading, setT2sLoading] = useState(false);
-  const [t2sLang, setT2sLang] = useState<SpokenLang>(
-    SPOKEN_LANGUAGES.find(l => l.code === 'ar-SA') || SPOKEN_LANGUAGES[0],
-  );
   const [t2sLangQuery, setT2sLangQuery] = useState('');
+  const [signSysQuery, setSignSysQuery] = useState('');
+  const [targetLangQuery, setTargetLangQuery] = useState('');
   const [t2sResult, setT2sResult] = useState<{
     translated_text: string;
     language: string;
@@ -107,8 +115,18 @@ const SignTranslatorPro: React.FC = () => {
     alphabet_chart: { letter: string; sign: string; emoji: string; handshape_id?: string }[];
   } | null>(null);
   const [playSpeed, setPlaySpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playAbortRef = useRef<{ stop: boolean }>({ stop: false });
   const stripRef = React.useRef<HTMLDivElement>(null);
   const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
+  const [mirrorHand, setMirrorHand] = useState(false);
+  const [signSize, setSignSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('damij.sign.favorites') || '[]'); } catch { return []; }
+  });
+  const [recording, setRecording] = useState(false);
+  const recogRef = useRef<any>(null);
+
 
   // ─ tab
   const [tab, setTab] = useState<'sign2text' | 'text2sign'>('sign2text');
