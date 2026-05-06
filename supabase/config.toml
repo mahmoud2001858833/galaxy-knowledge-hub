@@ -247,3 +247,6 @@ verify_jwt = false
 
 [functions.braille-tutor-ai]
 verify_jwt = false
+
+[functions.sensory-bridge-transform]
+verify_jwt = false
