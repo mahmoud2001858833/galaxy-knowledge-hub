@@ -32,7 +32,7 @@ const fmt = (s: number) => {
 
 const YouTubeSignTranslator: React.FC = () => {
   const [url, setUrl] = useState('');
-  const [targetLang, setTargetLang] = useState('ar');
+  const [targetLang, setTargetLang] = useState('ar-SA');
   const [signSystem, setSignSystem] = useState('ArSL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
