@@ -31,8 +31,8 @@ const CodeFixerTab = () => {
     
     try {
       console.log('Fixing code:', originalCode.substring(0, 50) + '...');
-      const { data, error } = await supabase.functions.invoke('btec-code-fixer', {
-        body: { code: originalCode }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'code-fixer', code: originalCode }
       });
 
       console.log('Response data:', data);

@@ -30,8 +30,8 @@ const MathToCodeTab = () => {
     
     try {
       console.log('Converting operation:', operation, 'to', language);
-      const { data, error } = await supabase.functions.invoke('btec-math-to-code', {
-        body: { operation, language }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'math-to-code', operation, language }
       });
 
       console.log('Response data:', data);

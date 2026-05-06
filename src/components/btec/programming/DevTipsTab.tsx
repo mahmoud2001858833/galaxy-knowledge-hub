@@ -37,8 +37,8 @@ const DevTipsTab = () => {
         : projectDescription;
 
       console.log('Getting dev tips for:', combinedDescription.substring(0, 50) + '...');
-      const { data, error } = await supabase.functions.invoke('btec-dev-tips', {
-        body: { project_description: combinedDescription }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'dev-tips', project_description: combinedDescription }
       });
 
       console.log('Response data:', data);

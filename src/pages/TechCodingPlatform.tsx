@@ -201,8 +201,8 @@ const AICodeStudio = () => {
     if (!prompt.trim()) return toast.error("اكتب وصفاً للكود");
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("tech-ai-code-gen", {
-        body: { prompt, language, existingCode: code.startsWith("//") ? "" : code },
+      const { data, error } = await supabase.functions.invoke("dev-assistant-service", {
+        body: { action: "tech-code-gen", prompt, language, existingCode: code.startsWith("//") ? "" : code },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -510,8 +510,8 @@ const CodeFixerStudio = () => {
     if (!code.trim()) return toast.error("ألصق الكود أو ارفع ملفاً");
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("tech-ai-code-fix", {
-        body: { code, language, errorMessage: errMsg },
+      const { data, error } = await supabase.functions.invoke("dev-assistant-service", {
+        body: { action: "tech-code-fix", code, language, errorMessage: errMsg },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

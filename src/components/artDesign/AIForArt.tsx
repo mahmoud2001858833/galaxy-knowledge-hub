@@ -34,8 +34,8 @@ const AIForArt = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("art-ai-assistant", {
-        body: { question: input },
+      const { data, error } = await supabase.functions.invoke("art-service", {
+        body: { action: "ai-assistant", question: input },
       });
 
       if (error) throw error;

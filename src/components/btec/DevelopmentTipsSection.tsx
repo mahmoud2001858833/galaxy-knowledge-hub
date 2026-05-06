@@ -34,8 +34,8 @@ const DevelopmentTipsSection = () => {
         ? `${projectDescription}\n\nرابط المشروع: ${projectUrl}`
         : projectDescription;
 
-      const { data, error } = await supabase.functions.invoke('btec-dev-tips', {
-        body: { project_description: fullDescription }
+      const { data, error } = await supabase.functions.invoke('dev-assistant-service', {
+        body: { action: 'dev-tips', project_description: fullDescription }
       });
 
       if (error) throw error;
