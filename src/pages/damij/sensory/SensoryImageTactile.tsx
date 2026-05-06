@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Image as ImageIcon, Volume2, Hand, Printer, Smartphone, Vibrate, ArrowRight, Loader2, Download } from 'lucide-react';
+import { Upload, Image as ImageIcon, Volume2, Hand, Printer, Smartphone, Vibrate, ArrowRight, Loader2, Download, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
+import { loadHapticSettings, patternFor, intensityScale } from './hapticSettings';
 
 interface TactileRegion {
   label: string;
@@ -57,6 +58,13 @@ const SensoryImageTactile: React.FC = () => {
   const lastIntensityRef = useRef<number>(0);
   const lastErrorRef = useRef<number>(0);
   const mobile = isMobile();
+  const settingsRef = useRef(loadHapticSettings());
+  // Refresh settings each time component focuses (in case user updated them)
+  useEffect(() => {
+    const refresh = () => { settingsRef.current = loadHapticSettings(); };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
   const vibrate = hasVibration();
 
   // Classify a texture string into a haptic family
@@ -76,29 +84,31 @@ const SensoryImageTactile: React.FC = () => {
   const startHumming = (ms = 25, gap = 80) => {
     stopHumming();
     if (!vibrate) return;
-    hummingRef.current = window.setInterval(() => navigator.vibrate(ms), gap);
+    const k = intensityScale(settingsRef.current.textureHum);
+    hummingRef.current = window.setInterval(() => navigator.vibrate(Math.max(6, Math.round(ms * k))), gap);
   };
   // Texture-aware humming: rough = irregular ticks, smooth = continuous low,
   // dotted = very fast short pulses (like Braille paper).
   const startTextureHumming = (kind: TextureKind) => {
     stopHumming();
     if (!vibrate) return;
+    const k = intensityScale(settingsRef.current.textureHum);
+    const sc = (n: number) => Math.max(4, Math.round(n * k));
     if (kind === 'smooth') {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(18), 60);
+      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(18)), 60);
     } else if (kind === 'dotted') {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(8), 35);
+      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(8)), 35);
     } else if (kind === 'rough') {
-      // Irregular gear-tick pattern
       hummingRef.current = window.setInterval(() => {
         const burst = [
           12 + Math.random() * 18, 25 + Math.random() * 30,
           10 + Math.random() * 15, 35 + Math.random() * 40,
           15 + Math.random() * 20,
-        ].map(Math.round);
+        ].map(n => sc(n));
         navigator.vibrate(burst);
       }, 220);
     } else {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(25), 80);
+      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(25)), 80);
     }
   };
   useEffect(() => () => { stopHumming(); stopFocusPulse(); }, []);
@@ -110,13 +120,12 @@ const SensoryImageTactile: React.FC = () => {
     if (now - lastErrorRef.current < 400) return;
     lastErrorRef.current = now;
     // Disturbed/jittery pattern (like wrong password)
-    navigator.vibrate([40, 50, 40, 50, 80, 40, 40]);
+    navigator.vibrate(patternFor('errorPattern', settingsRef.current.errorPattern));
     logToolUse('haptic');
   };
   const cueSuccess = () => {
     if (!vibrate) return;
-    // Calm rhythmic celebration
-    navigator.vibrate([60, 90, 60, 90, 180]);
+    navigator.vibrate(patternFor('successPattern', settingsRef.current.successPattern));
     logToolUse('haptic');
   };
   const focusEngagedRef = useRef<{ id: number | null; gap: number; over: boolean }>({ id: null, gap: 500, over: false });
@@ -133,7 +142,7 @@ const SensoryImageTactile: React.FC = () => {
     setFocusIdx(idx);
     if (!vibrate) return;
     // Ambient gentle pulse (attracts attention from anywhere on the canvas)
-    focusPulseRef.current = window.setInterval(() => navigator.vibrate([60, 240]), 700);
+    focusPulseRef.current = window.setInterval(() => navigator.vibrate(patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
   };
   // While finger is over the focus region, accelerate the pulse rate
   const tickFocusEngaged = () => {
@@ -158,7 +167,7 @@ const SensoryImageTactile: React.FC = () => {
     stopFocusEngaged();
     // Restore ambient pulse if focus is still active
     if (focusIdx !== null && vibrate) {
-      focusPulseRef.current = window.setInterval(() => navigator.vibrate([60, 240]), 700);
+      focusPulseRef.current = window.setInterval(() => navigator.vibrate(patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
     }
   };
   // Pick a connect-exercise target (random region) and clear status
@@ -370,9 +379,14 @@ const SensoryImageTactile: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-16 max-w-6xl mx-auto" dir="rtl">
-      <Link to="/damij/sensory" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] mb-4 hover:underline">
-        <ArrowRight className="w-4 h-4" /> رجوع
-      </Link>
+      <div className="flex items-center justify-between mb-4">
+        <Link to="/damij/sensory" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] hover:underline">
+          <ArrowRight className="w-4 h-4" /> رجوع
+        </Link>
+        <Link to="/damij/sensory/haptic-settings" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 text-sm font-bold hover:bg-orange-200">
+          <Settings className="w-4 h-4" /> إعدادات الاهتزاز
+        </Link>
+      </div>
 
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 mb-3">
@@ -492,7 +506,7 @@ const SensoryImageTactile: React.FC = () => {
                       }
                       // Geometric mapping mode
                       if (idx !== currentRegionRef.current) {
-                        if (vibrate) navigator.vibrate([15, 20, 15]); // edge click
+                        if (vibrate) navigator.vibrate(patternFor('edgeClick', settingsRef.current.edgeClick)); // edge click
                         currentRegionRef.current = idx;
                         if (region) {
                           if (textureMapping) startTextureHumming(classifyTexture(region.texture));
