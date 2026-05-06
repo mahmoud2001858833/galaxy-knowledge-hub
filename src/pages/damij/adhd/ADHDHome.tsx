@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, Brain, Dumbbell, ListChecks, BookMarked, BarChart3, ShieldCheck } from 'lucide-react';
+import { Activity, Brain, Dumbbell, ListChecks, BookMarked, BarChart3, ShieldCheck, Calendar } from 'lucide-react';
 
 const MODULES = [
   {
@@ -45,11 +45,19 @@ const MODULES = [
     badge: 'AAP 2019',
   },
   {
+    to: '/damij/adhd/monthly',
+    icon: Calendar,
+    title: 'المتابعة الشهرية',
+    description: 'لوحة شهرية تعرض تقدّمك اليومي، اختباراتك، وتحسّن أدائك بشكل بياني.',
+    accent: 'from-rose-500 to-pink-600',
+    badge: 'شهرياً',
+  },
+  {
     to: '/damij/adhd/dashboard',
     icon: BarChart3,
     title: 'المتابعة الطولية',
     description: 'مخطّطات تطوّر الأعراض والأداء عبر الزمن.',
-    accent: 'from-rose-500 to-pink-600',
+    accent: 'from-fuchsia-500 to-purple-600',
     badge: 'Recharts',
   },
   {
