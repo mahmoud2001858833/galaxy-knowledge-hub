@@ -84,25 +84,27 @@ const SensoryImageTactile: React.FC = () => {
   const startHumming = (ms = 25, gap = 80) => {
     stopHumming();
     if (!vibrate) return;
-    hummingRef.current = window.setInterval(() => navigator.vibrate(ms), gap);
+    const k = intensityScale(settingsRef.current.textureHum);
+    hummingRef.current = window.setInterval(() => navigator.vibrate(Math.max(6, Math.round(ms * k))), gap);
   };
   // Texture-aware humming: rough = irregular ticks, smooth = continuous low,
   // dotted = very fast short pulses (like Braille paper).
   const startTextureHumming = (kind: TextureKind) => {
     stopHumming();
     if (!vibrate) return;
+    const k = intensityScale(settingsRef.current.textureHum);
+    const sc = (n: number) => Math.max(4, Math.round(n * k));
     if (kind === 'smooth') {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(18), 60);
+      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(18)), 60);
     } else if (kind === 'dotted') {
-      hummingRef.current = window.setInterval(() => navigator.vibrate(8), 35);
+      hummingRef.current = window.setInterval(() => navigator.vibrate(sc(8)), 35);
     } else if (kind === 'rough') {
-      // Irregular gear-tick pattern
       hummingRef.current = window.setInterval(() => {
         const burst = [
           12 + Math.random() * 18, 25 + Math.random() * 30,
           10 + Math.random() * 15, 35 + Math.random() * 40,
           15 + Math.random() * 20,
-        ].map(Math.round);
+        ].map(n => sc(n));
         navigator.vibrate(burst);
       }, 220);
     } else {
