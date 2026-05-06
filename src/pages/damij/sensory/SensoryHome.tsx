@@ -51,6 +51,11 @@ const SensoryHome: React.FC = () => (
         <h3 className="font-bold text-lg mb-1">ثلاثي الحواس · صوت + نص + إشارة ✨ جديد</h3>
         <p className="text-sm opacity-90">تفريغ المحاضرات تلقائياً مع علامات زمنية دقيقة، ومنطقة مخصّصة لعرض لغة الإشارة لطلاب الصمّ.</p>
       </Link>
+      <Link to="/damij/sensory/adaptive-ui" className="p-6 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2 ring-2 ring-amber-300/40">
+        <div className="flex items-center gap-2 mb-2"><Wand2 className="w-7 h-7"/><Eye className="w-6 h-6"/><Type className="w-6 h-6"/></div>
+        <h3 className="font-bold text-lg mb-1">الواجهة التكيّفية الذكية ✨ جديد</h3>
+        <p className="text-sm opacity-90">تغيّر الألوان والأحجام وسرعة العرض وكثافة المحفّزات تلقائياً وفق ملفك الحسّي وحالتك اللحظية (وقت اليوم + الإضاءة المحيطة).</p>
+      </Link>
       <Link to="/damij/sensory/log" className="p-6 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2">
         <Activity className="w-7 h-7 mb-2"/>
         <h3 className="font-bold text-lg mb-1">سجل التفاعل والتعلّم المستمر</h3>
