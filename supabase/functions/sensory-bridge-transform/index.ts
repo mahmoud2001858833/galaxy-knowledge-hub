@@ -29,6 +29,9 @@ interface Profile {
   hearing?: "none" | "low" | "normal";
   cognitive?: "autism" | "adhd" | "normal";
   preferTouch?: boolean;
+  learningStyle?: "visual" | "text" | "audio" | "mixed";
+  languageLevel?: "simplified" | "academic" | "illustrated" | "sign_simplified";
+  focus?: "normal" | "easily_distracted" | "low_attention";
 }
 
 const PROFILE_INSTRUCTIONS = (p: Profile) => {
@@ -40,6 +43,15 @@ const PROFILE_INSTRUCTIONS = (p: Profile) => {
   if (p.cognitive === "autism") lines.push("- توحّد: لغة حرفية، جمل قصيرة، خطوات مرقّمة، بدون مجاز.");
   if (p.cognitive === "adhd") lines.push("- ADHD: نقاط مختصرة جداً، تمييز الفكرة الأساسية، إزالة المشتتات.");
   if (p.preferTouch) lines.push("- يفضّل اللمس: ركّز على بريل ونمط اهتزاز واضح.");
+  if (p.learningStyle === "visual") lines.push("- نمط بصري: أكثر من بطاقات PECS وأيقونات، وقلّل النص.");
+  if (p.learningStyle === "text") lines.push("- نمط نصي: ركّز على نصّ منظم بعناوين وقوائم.");
+  if (p.learningStyle === "audio") lines.push("- نمط سمعي: حسّن نص التلاوة (narration) ليكون انسيابياً وغنياً بالشرح.");
+  if (p.languageLevel === "simplified") lines.push("- لغة مبسّطة: كلمات قصيرة ومفردات يومية، تجنّب المصطلحات.");
+  if (p.languageLevel === "academic") lines.push("- لغة أكاديمية: حافظ على المصطلحات العلمية الدقيقة.");
+  if (p.languageLevel === "illustrated") lines.push("- تحويل لرسوم: أكثر من بطاقات PECS وصف أي مفهوم برسم/أيقونة.");
+  if (p.languageLevel === "sign_simplified") lines.push("- إشارة مبسّطة: قدّم قائمة كلمات مفتاحية قابلة للترجمة بالإشارة فقط.");
+  if (p.focus === "easily_distracted") lines.push("- تشتّت انتباه: نقاط مختصرة جداً وبدون حشو.");
+  if (p.focus === "low_attention") lines.push("- انتباه منخفض: قسّم المحتوى لخطوات صغيرة ومرقّمة (٣–٥ خطوات).");
   return lines.join("\n") || "- مستخدم عام.";
 };
 
