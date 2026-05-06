@@ -39,6 +39,7 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
   const [result, setResult] = useState<any>(null);
   const [trialId, setTrialId] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [search, setSearch] = useState('');
 
   const loadItems = async () => {
     if (cat === 'custom') { setItems([]); return; }
