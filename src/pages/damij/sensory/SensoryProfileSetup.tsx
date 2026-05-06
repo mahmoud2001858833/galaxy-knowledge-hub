@@ -14,6 +14,9 @@ export interface SensoryProfile {
   vision: VisionState;
   hearing: HearingState;
   motor: MotorState;
+  learningStyle?: LearningStyle;
+  languageLevel?: LanguageLevel;
+  focus?: FocusLevel;
   preferTouch?: boolean;
   cognitive?: 'normal' | 'autism' | 'adhd';
   savedAt: string;
