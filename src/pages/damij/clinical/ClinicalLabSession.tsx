@@ -119,12 +119,13 @@ const ClinicalLabSession: React.FC = () => {
       <Tabs c={c} p={p} session={session} events={events} step={step}
         msg={msg} setMsg={setMsg} sending={sending} sendTurn={sendTurn}
         listening={listening} toggleVoice={toggleVoice} speak={speak} logRef={logRef}
-        sessionId={sessionId!} reload={load} />
+        sessionId={sessionId!} reload={load}
+        finalize={finalize} finalizing={finalizing} />
     </div>
   );
 };
 
-const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload }) => {
+const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload, finalize, finalizing }) => {
   const [tab, setTab] = useState<'chat' | 'try'>('chat');
   return (
     <>
