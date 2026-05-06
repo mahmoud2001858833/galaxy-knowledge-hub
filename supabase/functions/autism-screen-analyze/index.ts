@@ -175,22 +175,34 @@ Deno.serve(async (req) => {
     let report: any = null;
     let provider = 'gemini';
     let lastErr: any = null;
-    for (const k of keys) {
-      try {
-        report = await callGemini(k, userPrompt);
-        break;
-      } catch (e) {
-        lastErr = e;
-        console.warn('Gemini key failed:', e);
+
+    const geminiModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    for (const model of geminiModels) {
+      for (const k of keys) {
+        try {
+          report = await callGemini(k, userPrompt, model);
+          break;
+        } catch (e) {
+          lastErr = e;
+          console.warn(`Gemini ${model} key failed:`, (e as Error).message);
+        }
       }
+      if (report) break;
     }
+
     if (!report) {
       provider = 'gateway';
-      try {
-        report = await callGateway(userPrompt);
-      } catch (e) {
-        throw lastErr ?? e;
+      const gwModels = ['google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite'];
+      for (const m of gwModels) {
+        try {
+          report = await callGateway(userPrompt, m);
+          break;
+        } catch (e) {
+          lastErr = e;
+          console.warn(`Gateway ${m} failed:`, (e as Error).message);
+        }
       }
+      if (!report) throw lastErr ?? new Error('AI providers unavailable');
     }
 
     return new Response(JSON.stringify({ report, provider }), {
@@ -199,9 +211,14 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error('autism-screen-analyze error:', e);
     const msg = e instanceof Error ? e.message : 'خطأ غير معروف';
-    const status = msg.includes('429') ? 429 : msg.includes('402') ? 402 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
-      status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const friendly = msg.includes('503') || msg.toLowerCase().includes('overload') || msg.toLowerCase().includes('unavailable')
+      ? 'نماذج الذكاء الاصطناعي مشغولة حالياً بسبب ضغط مرتفع. يرجى المحاولة بعد دقيقة.'
+      : msg.includes('429')
+      ? 'تم تجاوز الحصة المسموحة مؤقتاً. حاول بعد قليل.'
+      : msg;
+    // Always return 200 so the client receives the friendly message instead of a generic non-2xx
+    return new Response(JSON.stringify({ error: friendly, raw: msg }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
