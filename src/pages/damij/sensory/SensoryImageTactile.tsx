@@ -165,7 +165,7 @@ const SensoryImageTactile: React.FC = () => {
     stopFocusEngaged();
     // Restore ambient pulse if focus is still active
     if (focusIdx !== null && vibrate) {
-      focusPulseRef.current = window.setInterval(() => navigator.vibrate([60, 240]), 700);
+      focusPulseRef.current = window.setInterval(() => navigator.vibrate(patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
     }
   };
   // Pick a connect-exercise target (random region) and clear status
