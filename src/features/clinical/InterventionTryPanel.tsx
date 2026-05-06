@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Sparkles, AlertTriangle, CheckCircle2, Pill, Brain, Headphones, Eye, Ear, ClipboardList, MessageCircle, Wand2 } from 'lucide-react';
+import { Loader2, Sparkles, AlertTriangle, CheckCircle2, Pill, Brain, Headphones, Eye, Ear, ClipboardList, MessageCircle, Wand2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 
 export const INTERVENTION_CATEGORIES = [
   { key: 'medication',  ar: 'دواء',         icon: Pill },
@@ -38,6 +39,7 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
   const [result, setResult] = useState<any>(null);
   const [trialId, setTrialId] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [search, setSearch] = useState('');
 
   const loadItems = async () => {
     if (cat === 'custom') { setItems([]); return; }
@@ -130,20 +132,28 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border bg-white max-h-64 overflow-y-auto">
-          {loading && <div className="p-4 text-center text-sm text-slate-500"><Loader2 className="inline w-4 h-4 animate-spin" /> تحميل…</div>}
-          {!loading && items.length === 0 && (
-            <div className="p-4 text-center text-xs text-slate-500">
-              لا توجد عناصر مناسبة بعد. اطلب من المشرف توليد كتالوج التدخّلات، أو استخدم "مخصّص".
-            </div>
-          )}
-          {items.map((it) => (
-            <button key={it.id} onClick={() => setSelected(it)}
-              className={`w-full text-right p-2.5 border-b last:border-0 hover:bg-slate-50 ${selected?.id === it.id ? 'bg-sky-50' : ''}`}>
-              <div className="text-sm font-bold">{it.name_ar} {it.evidence_level && <span className="text-[10px] text-emerald-600 mr-1">[{it.evidence_level}]</span>}</div>
-              {it.short_ar && <div className="text-xs text-slate-500 line-clamp-2">{it.short_ar}</div>}
-            </button>
-          ))}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث في الكتالوج…"
+              className="w-full pr-7 pl-3 py-1.5 rounded-lg border bg-white text-xs" />
+          </div>
+          <div className="rounded-xl border bg-white max-h-64 overflow-y-auto">
+            {loading && <div className="p-4 text-center text-sm text-slate-500"><Loader2 className="inline w-4 h-4 animate-spin" /> تحميل…</div>}
+            {!loading && items.filter(it => !search || it.name_ar.includes(search) || (it.short_ar || '').includes(search) || (it.name_en || '').toLowerCase().includes(search.toLowerCase())).length === 0 && (
+              <div className="p-4 text-center text-xs text-slate-500">
+                لا توجد عناصر مطابقة. جرّب بحثاً مختلفاً أو استخدم "مخصّص".
+              </div>
+            )}
+            {items.filter(it => !search || it.name_ar.includes(search) || (it.short_ar || '').includes(search) || (it.name_en || '').toLowerCase().includes(search.toLowerCase())).map((it) => (
+              <button key={it.id} onClick={() => setSelected(it)}
+                className={`w-full text-right p-2.5 border-b last:border-0 hover:bg-slate-50 ${selected?.id === it.id ? 'bg-sky-50' : ''}`}>
+                <div className="text-sm font-bold">{it.name_ar} {it.evidence_level && <span className="text-[10px] text-emerald-600 mr-1">[{it.evidence_level}]</span>}</div>
+                {it.short_ar && <div className="text-xs text-slate-500 line-clamp-2">{it.short_ar}</div>}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -204,17 +214,28 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
           {Array.isArray(result.timeline) && result.timeline.length > 0 && (
             <div>
               <div className="text-xs font-bold mb-1">📈 الخط الزمني المتوقَّع</div>
-              <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
-                {result.timeline.map((t: any, i: number) => (
-                  <div key={i} className="p-1.5 rounded-lg bg-white border">
-                    <div className="font-bold">{t.t}</div>
-                    <div className="text-emerald-600">⚡{t.attention}</div>
-                    <div className="text-rose-600">😟{t.anxiety}</div>
-                    <div className="text-sky-600">📈{t.progress}</div>
-                    <div className="mt-1 text-slate-500 line-clamp-2">{t.symptoms_ar}</div>
-                  </div>
-                ))}
+              <div className="h-44 bg-white rounded-lg border p-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={result.timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#eef2f7" strokeDasharray="3 3" />
+                    <XAxis dataKey="t" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                    <Tooltip contentStyle={{ fontSize: 11, direction: 'rtl' }} />
+                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                    <Line type="monotone" dataKey="attention" name="الانتباه" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="anxiety" name="القلق" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="progress" name="التقدّم" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
+              <ul className="mt-2 space-y-1 text-[11px]">
+                {result.timeline.map((t: any, i: number) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="font-bold text-slate-600 w-12 shrink-0">{t.t}</span>
+                    <span className="text-slate-700">{t.symptoms_ar}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
