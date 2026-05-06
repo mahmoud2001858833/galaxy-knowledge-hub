@@ -526,7 +526,55 @@ const SensoryImageTactile: React.FC = () => {
                     <button onClick={printModel} className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm font-bold inline-flex items-center justify-center gap-2">
                       <Printer className="w-4 h-4"/> طباعة لمسية
                     </button>
-                  </div>
+                    </div>
+
+                    {/* Training mode */}
+                    <div className="mb-3 p-2 rounded-lg bg-white border border-amber-200">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs font-bold text-amber-800">وضع التدريب — درجات وعدّ أخطاء</p>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs">عدد الجولات:</label>
+                          <select
+                            disabled={trainingMode}
+                            value={trainingTotal}
+                            onChange={(e) => setTrainingTotal(Number(e.target.value))}
+                            className="text-xs border rounded px-1 py-0.5"
+                          >
+                            {[3, 5, 7, 10].map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {!trainingMode ? (
+                          <button onClick={startTraining} className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold">
+                            ابدأ وضع التدريب
+                          </button>
+                        ) : (
+                          <button onClick={cancelTraining} className="px-3 py-1.5 rounded-lg bg-gray-200 text-xs">إنهاء التدريب</button>
+                        )}
+                      </div>
+                      {trainingMode && (
+                        <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
+                          <div className="bg-amber-50 rounded p-1"><div className="font-bold">{trainingRound + 1}/{trainingTotal}</div><div>الجولة</div></div>
+                          <div className="bg-green-50 rounded p-1"><div className="font-bold text-green-700">{trainingScore}</div><div>النقاط</div></div>
+                          <div className="bg-red-50 rounded p-1"><div className="font-bold text-red-700">{trainingErrors + roundErrors}</div><div>الأخطاء</div></div>
+                          <div className="bg-blue-50 rounded p-1"><div className="font-bold text-blue-700">{roundErrors}</div><div>هذه الجولة</div></div>
+                        </div>
+                      )}
+                      {trainingSummary && (
+                        <div className="mt-2 p-2 rounded-lg bg-gradient-to-l from-purple-50 to-amber-50 border border-purple-200 text-xs">
+                          <p className="font-bold text-purple-800 mb-1">📊 ملخص التدريب</p>
+                          <ul className="space-y-0.5">
+                            <li>الدرجة النهائية: <b className="text-green-700">{trainingSummary.score}/{trainingSummary.total * 10}</b></li>
+                            <li>إجمالي الأخطاء: <b className="text-red-700">{trainingSummary.errors}</b></li>
+                            <li>جولات بدون أخطاء: <b className="text-purple-700">{trainingSummary.perfectRounds}/{trainingSummary.total}</b></li>
+                            <li>متوسط زمن الجولة المثالية: <b>{(trainingSummary.avgTime / 1000).toFixed(1)}ث</b></li>
+                            <li>التقدير: <b>{trainingSummary.score >= trainingSummary.total * 9 ? 'ممتاز ⭐' : trainingSummary.score >= trainingSummary.total * 7 ? 'جيد جداً 👏' : trainingSummary.score >= trainingSummary.total * 5 ? 'جيد' : 'يحتاج تدريباً إضافياً'}</b></li>
+                          </ul>
+                          <button onClick={() => setTrainingSummary(null)} className="mt-2 text-xs text-purple-600 underline">إغلاق</button>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Instructional cues controls */}
                   <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
