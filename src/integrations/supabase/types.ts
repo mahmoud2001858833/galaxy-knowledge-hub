@@ -1603,6 +1603,101 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_intervention_trials: {
+        Row: {
+          ai_response: Json
+          applied_to_session: boolean
+          category: string
+          created_at: string
+          custom_label: string | null
+          id: string
+          intervention_id: string | null
+          params: Json
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          ai_response?: Json
+          applied_to_session?: boolean
+          category: string
+          created_at?: string
+          custom_label?: string | null
+          id?: string
+          intervention_id?: string | null
+          params?: Json
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          ai_response?: Json
+          applied_to_session?: boolean
+          category?: string
+          created_at?: string
+          custom_label?: string | null
+          id?: string
+          intervention_id?: string | null
+          params?: Json
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_intervention_trials_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_interventions_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_interventions_catalog: {
+        Row: {
+          category: string
+          condition_keys: string[]
+          contraindications_ar: string[]
+          created_at: string
+          default_params: Json
+          evidence_level: string | null
+          expected_effects: Json
+          id: string
+          mechanism_ar: string | null
+          name_ar: string
+          name_en: string | null
+          references_ar: string[]
+          short_ar: string | null
+        }
+        Insert: {
+          category: string
+          condition_keys?: string[]
+          contraindications_ar?: string[]
+          created_at?: string
+          default_params?: Json
+          evidence_level?: string | null
+          expected_effects?: Json
+          id?: string
+          mechanism_ar?: string | null
+          name_ar: string
+          name_en?: string | null
+          references_ar?: string[]
+          short_ar?: string | null
+        }
+        Update: {
+          category?: string
+          condition_keys?: string[]
+          contraindications_ar?: string[]
+          created_at?: string
+          default_params?: Json
+          evidence_level?: string | null
+          expected_effects?: Json
+          id?: string
+          mechanism_ar?: string | null
+          name_ar?: string
+          name_en?: string | null
+          references_ar?: string[]
+          short_ar?: string | null
+        }
+        Relationships: []
+      }
       clinical_protocols: {
         Row: {
           category: string
