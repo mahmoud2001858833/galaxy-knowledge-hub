@@ -31,8 +31,8 @@ const SensoryHome: React.FC = () => (
     </div>
 
     <div className="text-center">
-      <Link to="/damij/sensory/upload" className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
-        <Upload className="w-6 h-6" /> ابدأ التحويل الآن
+      <Link to="/damij/sensory/profile" className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
+        <Upload className="w-6 h-6" /> ابدأ — أنشئ ملفك الحسّي ثم ارفع المحتوى
       </Link>
     </div>
   </div>
