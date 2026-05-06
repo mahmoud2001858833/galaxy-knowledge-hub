@@ -171,15 +171,25 @@ const AutismDayView: React.FC = () => {
       )}
 
       {report && (
-        <section className="rounded-3xl p-6 bg-gradient-to-br from-emerald-50 to-sky-50 border border-emerald-200">
-          <h2 className="text-xl font-bold text-[hsl(var(--damij-primary))] mb-2">تقرير اليوم • {Math.round(report.score)}/100</h2>
-          <p className="text-slate-700 mb-4">{report.summary_ar}</p>
-          <div className="grid sm:grid-cols-3 gap-3 text-sm">
-            <div className="bg-white rounded-xl p-3"><div className="font-bold text-emerald-700 mb-1">نقاط قوة</div><ul className="list-disc pr-4 space-y-1">{report.strengths_ar?.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>
-            <div className="bg-white rounded-xl p-3"><div className="font-bold text-amber-700 mb-1">نقاط ضعف</div><ul className="list-disc pr-4 space-y-1">{report.weaknesses_ar?.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>
-            <div className="bg-white rounded-xl p-3"><div className="font-bold text-sky-700 mb-1">توصيات للغد</div><ul className="list-disc pr-4 space-y-1">{report.recommendations_ar?.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>
+        <>
+          <div className="flex justify-end mt-4 mb-2">
+            <button onClick={exportPdf} disabled={exporting}
+              className="px-3 py-1.5 rounded-lg bg-[hsl(var(--damij-primary))] text-white text-sm font-bold flex items-center gap-1">
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              تصدير تقرير اليوم PDF
+            </button>
           </div>
-        </section>
+          <section ref={reportRef} className="rounded-3xl p-6 bg-gradient-to-br from-emerald-50 to-sky-50 border border-emerald-200">
+            <h2 className="text-xl font-bold text-[hsl(var(--damij-primary))] mb-2">تقرير اليوم • {Math.round(report.score)}/100</h2>
+            <div className="text-xs text-slate-500 mb-2">{day.theme_ar} • المهارة: {day.focus_skill_ar}</div>
+            <p className="text-slate-700 mb-4">{report.summary_ar}</p>
+            <div className="grid sm:grid-cols-3 gap-3 text-sm">
+              <div className="bg-white rounded-xl p-3"><div className="font-bold text-emerald-700 mb-1">نقاط قوة</div><ul className="list-disc pr-4 space-y-1">{report.strengths_ar?.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>
+              <div className="bg-white rounded-xl p-3"><div className="font-bold text-amber-700 mb-1">نقاط ضعف</div><ul className="list-disc pr-4 space-y-1">{report.weaknesses_ar?.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>
+              <div className="bg-white rounded-xl p-3"><div className="font-bold text-sky-700 mb-1">توصيات للغد</div><ul className="list-disc pr-4 space-y-1">{report.recommendations_ar?.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
