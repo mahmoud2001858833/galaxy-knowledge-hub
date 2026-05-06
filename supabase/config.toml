@@ -203,6 +203,9 @@ verify_jwt = false
 [functions.damij-sign-translate]
 verify_jwt = false
 
+[functions.damij-youtube-sign]
+verify_jwt = false
+
 [functions.damij-dict-translate-batch]
 verify_jwt = false
 
