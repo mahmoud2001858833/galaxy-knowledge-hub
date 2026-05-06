@@ -152,7 +152,7 @@ import ConversationView from './pages/ConversationView';
 import SchoolMagazine from './pages/SchoolMagazine';
 import NewsDetail from './pages/NewsDetail';
 import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
-import ProtectedArabicLanguagePlatform from './pages/ProtectedArabicLanguagePlatform';
+
 import AIPlatformBuilder from './pages/AIPlatformBuilder';
 import PublishedProject from './pages/PublishedProject';
 import TenantSettings from './pages/TenantSettings';
