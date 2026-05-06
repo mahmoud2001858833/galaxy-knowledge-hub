@@ -2379,9 +2379,11 @@ export type Database = {
           case_id: string
           current_step: number
           ended_at: string | null
+          free_intent: Json | null
           id: string
+          mode: string
           progress: number
-          protocol_id: string
+          protocol_id: string | null
           started_at: string
           status: string
           user_id: string
@@ -2392,9 +2394,11 @@ export type Database = {
           case_id: string
           current_step?: number
           ended_at?: string | null
+          free_intent?: Json | null
           id?: string
+          mode?: string
           progress?: number
-          protocol_id: string
+          protocol_id?: string | null
           started_at?: string
           status?: string
           user_id: string
@@ -2405,9 +2409,11 @@ export type Database = {
           case_id?: string
           current_step?: number
           ended_at?: string | null
+          free_intent?: Json | null
           id?: string
+          mode?: string
           progress?: number
-          protocol_id?: string
+          protocol_id?: string | null
           started_at?: string
           status?: string
           user_id?: string
