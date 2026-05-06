@@ -504,9 +504,12 @@ const SensoryImageTactile: React.FC = () => {
                       // Connect-exercise instructional cues
                       if (connectTarget !== null) {
                         if (idx === connectTarget && connectStatus !== 'success') {
-                          cueSuccess(); setConnectStatus('success'); toast.success('أحسنت! وصلت للمكان الصحيح');
+                          cueSuccess(); setConnectStatus('success');
+                          if (trainingMode) onTrainingRoundSuccess();
+                          else toast.success('أحسنت! وصلت للمكان الصحيح');
                         } else if (region && idx !== connectTarget && connectStatus !== 'success') {
                           if (connectStatus !== 'wrong') setConnectStatus('wrong');
+                          if (trainingMode) setRoundErrors(v => v + 1);
                           cueError();
                         }
                       }
