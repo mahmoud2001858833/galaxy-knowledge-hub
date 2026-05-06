@@ -140,7 +140,7 @@ const SensoryImageTactile: React.FC = () => {
     setFocusIdx(idx);
     if (!vibrate) return;
     // Ambient gentle pulse (attracts attention from anywhere on the canvas)
-    focusPulseRef.current = window.setInterval(() => navigator.vibrate([60, 240]), 700);
+    focusPulseRef.current = window.setInterval(() => navigator.vibrate(patternFor('focusPulse', settingsRef.current.focusPulse)), 700);
   };
   // While finger is over the focus region, accelerate the pulse rate
   const tickFocusEngaged = () => {
