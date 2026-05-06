@@ -325,6 +325,10 @@ const router = createBrowserRouter([
         element: <PublicRoute><Index /></PublicRoute>,
       },
       {
+        path: 'autism/c/:token',
+        element: <AutismChildPage />,
+      },
+      {
         path: 'auth',
         element: <PublicRoute><Auth /></PublicRoute>,
       },
