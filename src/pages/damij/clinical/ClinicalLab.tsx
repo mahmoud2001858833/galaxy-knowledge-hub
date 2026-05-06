@@ -1,27 +1,19 @@
 import React from 'react';
-import { PlayCircle, FileBarChart, ListChecks, Microscope } from 'lucide-react';
-import PlaceholderPanel from '@/components/damij/PlaceholderPanel';
+import { Link, useNavigate } from 'react-router-dom';
+import { FlaskConical, ClipboardList, ArrowRight } from 'lucide-react';
 
-const steps = [
-  { icon: ListChecks, t: 'Procedure', d: 'حدّد البروتوكول والأدوات' },
-  { icon: PlayCircle, t: 'Run', d: 'شغّل الجلسة على الحالة الافتراضية' },
-  { icon: Microscope, t: 'Details', d: 'حلّل الاستجابات لحظة بلحظة' },
-  { icon: FileBarChart, t: 'Result', d: 'احصل على تقرير نهائي قابل للتصدير' },
-];
-
-const ClinicalLab: React.FC = () => (
-  <div className="px-6 pt-12 pb-16 max-w-5xl mx-auto">
-    <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-8">مختبر التجربة السريرية</h1>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      {steps.map((s, i) => (
-        <div key={i} className="p-5 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 text-center">
-          <s.icon className="w-9 h-9 mx-auto mb-2 text-[hsl(var(--damij-primary))]" />
-          <h3 className="font-bold text-[hsl(var(--damij-primary))]">{s.t}</h3>
-          <p className="text-xs text-[hsl(var(--damij-text))]/70 mt-1">{s.d}</p>
-        </div>
-      ))}
+// Lab landing — directs to choose a case first
+const ClinicalLab: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="px-6 pt-12 pb-16 max-w-3xl mx-auto text-center" dir="rtl">
+      <FlaskConical className="w-16 h-16 mx-auto text-[hsl(var(--damij-accent-2))] mb-4" />
+      <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-3">ابدأ تجربة سريرية</h1>
+      <p className="text-slate-600 mb-6">اختر حالة من المكتبة ثم اختر بروتوكولاً مناسباً لبدء جلسة محاكاة تفاعلية.</p>
+      <Link to="/damij/clinical/cases" className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold">
+        <ClipboardList className="w-5 h-5" /> اختر حالة
+      </Link>
     </div>
-    <PlaceholderPanel description="محرّك المحاكاة سيُربط بمرحلة لاحقة. ستتمكن هنا من تشغيل بروتوكولات DSM-5 و ADOS-2 على حالات افتراضية ومراقبة الاستجابات الزمنية." />
-  </div>
-);
+  );
+};
 export default ClinicalLab;
