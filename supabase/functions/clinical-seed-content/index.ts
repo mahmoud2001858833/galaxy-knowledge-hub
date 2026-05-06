@@ -99,75 +99,81 @@ function protocolSchema(n: number) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    // Skip if already seeded (idempotent)
-    const headRes = await fetch(rest('/clinical_cases?select=id&limit=1'), { headers: svcHeaders() });
-    const existing = await headRes.json();
-    if (Array.isArray(existing) && existing.length > 0 && req.method !== 'POST') {
-      return new Response(JSON.stringify({ skipped: true, message: 'محتوى موجود' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
     let force = false;
     try { const body = await req.json(); force = !!body?.force; } catch {}
-    if (Array.isArray(existing) && existing.length > 0 && !force) {
-      return new Response(JSON.stringify({ skipped: true, message: 'محتوى موجود' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+
+    // Per-category status
+    const status: Record<string, { cases: number; protocols: number }> = {};
+    for (const cat of CATEGORIES) {
+      const cR = await fetch(rest(`/clinical_cases?select=id&category=eq.${cat.key}`), { headers: svcHeaders() });
+      const pR = await fetch(rest(`/clinical_protocols?select=id&category=eq.${cat.key}`), { headers: svcHeaders() });
+      const cArr = await cR.json(); const pArr = await pR.json();
+      status[cat.key] = { cases: Array.isArray(cArr) ? cArr.length : 0, protocols: Array.isArray(pArr) ? pArr.length : 0 };
     }
 
     let totalCases = 0, totalProtocols = 0;
+    const errors: string[] = [];
 
     for (const cat of CATEGORIES) {
+      const have = status[cat.key];
       // Cases
-      const caseData = await callGemini(
-        CASE_SYSTEM,
-        `صمّم ${cat.cases} حالة افتراضية فئة "${cat.ar}". تنوّع في العمر والشدة والجنس. لا تكرّر الأسماء.`,
-        caseSchema(cat.cases),
-      );
-      const caseRows = (caseData.cases || []).map((c: any, i: number) => ({
-        code: `${cat.key}-${Date.now().toString(36)}-${i}`,
-        category: cat.key,
-        name_ar: c.name_ar,
-        age_years: c.age_years,
-        gender: c.gender,
-        severity: c.severity,
-        summary_ar: c.summary_ar,
-        history_ar: c.history_ar,
-        sensory_profile: c.sensory_profile ?? {},
-        presenting_signs_ar: c.presenting_signs_ar ?? [],
-        patient_persona_ar: c.patient_persona_ar,
-        reference_ar: c.reference_ar,
-      }));
-      if (caseRows.length) {
-        const r = await fetch(rest('/clinical_cases'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(caseRows) });
-        if (!r.ok) console.error('cases insert', cat.key, await r.text());
-        else totalCases += caseRows.length;
+      if (have.cases === 0 || force) {
+        try {
+          const caseData = await callGemini(
+            CASE_SYSTEM,
+            `صمّم ${cat.cases} حالة افتراضية فئة "${cat.ar}". تنوّع في العمر والشدة والجنس. لا تكرّر الأسماء.`,
+            caseSchema(cat.cases),
+          );
+          const caseRows = (caseData.cases || []).map((c: any, i: number) => ({
+            code: `${cat.key}-${Date.now().toString(36)}-${i}`,
+            category: cat.key,
+            name_ar: c.name_ar,
+            age_years: c.age_years,
+            gender: c.gender,
+            severity: c.severity,
+            summary_ar: c.summary_ar,
+            history_ar: c.history_ar,
+            sensory_profile: c.sensory_profile ?? {},
+            presenting_signs_ar: c.presenting_signs_ar ?? [],
+            patient_persona_ar: c.patient_persona_ar,
+            reference_ar: c.reference_ar,
+          }));
+          if (caseRows.length) {
+            const r = await fetch(rest('/clinical_cases'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(caseRows) });
+            if (!r.ok) errors.push(`cases ${cat.key}: ${await r.text()}`);
+            else totalCases += caseRows.length;
+          }
+        } catch (e) { errors.push(`cases ${cat.key}: ${(e as Error).message}`); }
       }
 
       // Protocols
-      const protoData = await callGemini(
-        PROTOCOL_SYSTEM,
-        `صمّم ${cat.protocols} بروتوكولاً سريرياً لفئة "${cat.ar}" يشمل أدوات تقييم وتدخلات معتمدة. اجعل الخطوات متسلسلة وقابلة للتنفيذ في 8-15 دقيقة.`,
-        protocolSchema(cat.protocols),
-      );
-      const protoRows = (protoData.protocols || []).map((p: any, i: number) => ({
-        code: `${cat.key}-p-${Date.now().toString(36)}-${i}`,
-        category: cat.key,
-        name_ar: p.name_ar,
-        short_ar: p.short_ar,
-        goal_ar: p.goal_ar,
-        steps: p.steps ?? [],
-        scoring: p.scoring ?? {},
-        reference_ar: p.reference_ar,
-      }));
-      if (protoRows.length) {
-        const r = await fetch(rest('/clinical_protocols'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(protoRows) });
-        if (!r.ok) console.error('protocols insert', cat.key, await r.text());
-        else totalProtocols += protoRows.length;
+      if (have.protocols === 0 || force) {
+        try {
+          const protoData = await callGemini(
+            PROTOCOL_SYSTEM,
+            `صمّم ${cat.protocols} بروتوكولاً سريرياً لفئة "${cat.ar}" يشمل أدوات تقييم وتدخلات معتمدة. اجعل الخطوات متسلسلة وقابلة للتنفيذ في 8-15 دقيقة.`,
+            protocolSchema(cat.protocols),
+          );
+          const protoRows = (protoData.protocols || []).map((p: any, i: number) => ({
+            code: `${cat.key}-p-${Date.now().toString(36)}-${i}`,
+            category: cat.key,
+            name_ar: p.name_ar,
+            short_ar: p.short_ar,
+            goal_ar: p.goal_ar,
+            steps: p.steps ?? [],
+            scoring: p.scoring ?? {},
+            reference_ar: p.reference_ar,
+          }));
+          if (protoRows.length) {
+            const r = await fetch(rest('/clinical_protocols'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(protoRows) });
+            if (!r.ok) errors.push(`protocols ${cat.key}: ${await r.text()}`);
+            else totalProtocols += protoRows.length;
+          }
+        } catch (e) { errors.push(`protocols ${cat.key}: ${(e as Error).message}`); }
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, cases: totalCases, protocols: totalProtocols }), {
+    return new Response(JSON.stringify({ ok: true, cases: totalCases, protocols: totalProtocols, errors }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
