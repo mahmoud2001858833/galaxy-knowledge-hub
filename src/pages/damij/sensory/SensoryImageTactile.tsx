@@ -31,10 +31,24 @@ const SensoryImageTactile: React.FC = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [hapticEnabled, setHapticEnabled] = useState(false);
   const [speakingMerged, setSpeakingMerged] = useState(false);
+  const [geoMapping, setGeoMapping] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const currentRegionRef = useRef<number | null>(null);
+  const hummingRef = useRef<number | null>(null);
   const mobile = isMobile();
   const vibrate = hasVibration();
+
+  const stopHumming = () => {
+    if (hummingRef.current) { clearInterval(hummingRef.current); hummingRef.current = null; }
+    if (vibrate) navigator.vibrate(0);
+  };
+  const startHumming = () => {
+    stopHumming();
+    if (!vibrate) return;
+    hummingRef.current = window.setInterval(() => navigator.vibrate(25), 80);
+  };
+  useEffect(() => () => stopHumming(), []);
 
   const onFile = (f: File) => {
     setFile(f); setResult(null);
