@@ -211,6 +211,7 @@ import ADHDResources from './pages/damij/adhd/ADHDResources';
 import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
 import SignHome from './pages/damij/sign/SignHome';
 import SignTranslator from './pages/damij/sign/SignTranslator';
+import YouTubeSignTranslator from './pages/damij/sign/YouTubeSignTranslator';
 import SensoryHome from './pages/damij/sensory/SensoryHome';
 import SensoryUpload from './pages/damij/sensory/SensoryUpload';
 import SensoryOutput from './pages/damij/sensory/SensoryOutput';
