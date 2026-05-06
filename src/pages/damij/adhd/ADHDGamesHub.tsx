@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Play, CheckCircle2, Sparkles, Loader2, ListOrdered, Brain, Heart } from 'lucide-react';
 import { GAMES, SCREENING_BATTERY, THERAPY_SEQUENCE, getGame } from '@/features/adhd/games/registry';
@@ -11,8 +11,9 @@ const ADHDGamesHub: React.FC = () => {
   const navigate = useNavigate();
   const [batteryProgress, setBatteryProgress] = useState<string[]>([]);
   const [therapyProgress, setTherapyProgress] = useState<string[]>([]);
+  const [sp] = useSearchParams();
   const [generating, setGenerating] = useState(false);
-  const [tab, setTab] = useState('diagnostic');
+  const [tab, setTab] = useState(sp.get('tab') === 'therapy' ? 'therapy' : 'diagnostic');
 
   useEffect(() => {
     try {
