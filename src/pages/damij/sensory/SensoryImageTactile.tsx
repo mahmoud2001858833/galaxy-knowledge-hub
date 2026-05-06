@@ -118,13 +118,12 @@ const SensoryImageTactile: React.FC = () => {
     if (now - lastErrorRef.current < 400) return;
     lastErrorRef.current = now;
     // Disturbed/jittery pattern (like wrong password)
-    navigator.vibrate([40, 50, 40, 50, 80, 40, 40]);
+    navigator.vibrate(patternFor('errorPattern', settingsRef.current.errorPattern));
     logToolUse('haptic');
   };
   const cueSuccess = () => {
     if (!vibrate) return;
-    // Calm rhythmic celebration
-    navigator.vibrate([60, 90, 60, 90, 180]);
+    navigator.vibrate(patternFor('successPattern', settingsRef.current.successPattern));
     logToolUse('haptic');
   };
   const focusEngagedRef = useRef<{ id: number | null; gap: number; over: boolean }>({ id: null, gap: 500, over: false });
