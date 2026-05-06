@@ -225,7 +225,7 @@ const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending
           </button>
         </aside>
       </div>
-    </div>
+    </>
   );
 };
 
