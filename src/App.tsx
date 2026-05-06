@@ -1019,6 +1019,7 @@ const router = createBrowserRouter([
           { path: 'clinical', element: <ClinicalHome /> },
           { path: 'clinical/cases', element: <ClinicalCases /> },
           { path: 'clinical/lab', element: <ClinicalLab /> },
+          { path: 'clinical/free', element: <ClinicalFreeExperiment /> },
           { path: 'clinical/reports', element: <ClinicalReports /> },
           { path: 'clinical/case/:caseId', element: <ClinicalCaseDetail /> },
           { path: 'clinical/lab/:sessionId', element: <ClinicalLabSession /> },
