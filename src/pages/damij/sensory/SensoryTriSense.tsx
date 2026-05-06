@@ -134,7 +134,7 @@ const SensoryTriSense: React.FC = () => {
     setSegments([]); setInterim(''); setElapsed(0);
     pauseAccumRef.current = 0;
     startedAtRef.current = performance.now();
-    try { r.start(); setRecording(true); setPaused(false); logToolUse('tri-sense-record'); }
+    try { r.start(); setRecording(true); setPaused(false); logToolUse('stt'); }
     catch { toast.error('تعذّر بدء التسجيل'); }
   };
 
@@ -181,7 +181,7 @@ const SensoryTriSense: React.FC = () => {
     u.onend = () => { setActiveId(null); };
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
-    logToolUse('tri-sense-tts');
+    logToolUse('tts');
   };
 
   const exportTranscript = () => {
