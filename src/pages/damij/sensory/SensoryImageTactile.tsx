@@ -109,15 +109,47 @@ const SensoryImageTactile: React.FC = () => {
     navigator.vibrate([60, 90, 60, 90, 180]);
     logToolUse('haptic');
   };
+  const focusEngagedRef = useRef<{ id: number | null; gap: number; over: boolean }>({ id: null, gap: 500, over: false });
   const stopFocusPulse = () => {
     if (focusPulseRef.current) { clearInterval(focusPulseRef.current); focusPulseRef.current = null; }
+    stopFocusEngaged();
+  };
+  const stopFocusEngaged = () => {
+    if (focusEngagedRef.current.id) { clearInterval(focusEngagedRef.current.id); }
+    focusEngagedRef.current = { id: null, gap: 500, over: false };
   };
   const startFocusPulse = (idx: number) => {
     stopFocusPulse();
     setFocusIdx(idx);
     if (!vibrate) return;
-    // Continuous gentle pulse to attract attention to focus point
-    focusPulseRef.current = window.setInterval(() => navigator.vibrate([90, 220]), 600);
+    // Ambient gentle pulse (attracts attention from anywhere on the canvas)
+    focusPulseRef.current = window.setInterval(() => navigator.vibrate([60, 240]), 700);
+  };
+  // While finger is over the focus region, accelerate the pulse rate
+  const tickFocusEngaged = () => {
+    if (!vibrate) return;
+    navigator.vibrate(70);
+    // Accelerate: shrink gap toward 80ms minimum
+    focusEngagedRef.current.gap = Math.max(80, focusEngagedRef.current.gap - 35);
+    if (focusEngagedRef.current.id) clearInterval(focusEngagedRef.current.id);
+    focusEngagedRef.current.id = window.setInterval(tickFocusEngaged, focusEngagedRef.current.gap);
+  };
+  const enterFocus = () => {
+    if (focusEngagedRef.current.over) return;
+    focusEngagedRef.current.over = true;
+    // Pause ambient pulse so the engaged one is clearly perceptible
+    if (focusPulseRef.current) { clearInterval(focusPulseRef.current); focusPulseRef.current = null; }
+    focusEngagedRef.current.gap = 500;
+    if (focusEngagedRef.current.id) clearInterval(focusEngagedRef.current.id);
+    focusEngagedRef.current.id = window.setInterval(tickFocusEngaged, focusEngagedRef.current.gap);
+  };
+  const leaveFocus = () => {
+    if (!focusEngagedRef.current.over) return;
+    stopFocusEngaged();
+    // Restore ambient pulse if focus is still active
+    if (focusIdx !== null && vibrate) {
+      focusPulseRef.current = window.setInterval(() => navigator.vibrate([60, 240]), 700);
+    }
   };
   // Pick a connect-exercise target (random region) and clear status
   const startConnectExercise = () => {
@@ -377,8 +409,8 @@ const SensoryImageTactile: React.FC = () => {
                   <canvas
                     ref={canvasRef}
                     className="w-full rounded-xl border touch-none"
-                    onPointerLeave={() => { stopHumming(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
-                    onPointerUp={() => { stopHumming(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
+                    onPointerLeave={() => { stopHumming(); leaveFocus(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
+                    onPointerUp={() => { stopHumming(); leaveFocus(); currentRegionRef.current = null; lastIntensityRef.current = 0; }}
                     onPointerMove={(e) => {
                       if (!hapticEnabled || !canvasRef.current) return;
                       const rect = canvasRef.current.getBoundingClientRect();
@@ -422,6 +454,10 @@ const SensoryImageTactile: React.FC = () => {
                           if (connectStatus !== 'wrong') setConnectStatus('wrong');
                           cueError();
                         }
+                      }
+                      // Focus-point engagement: accelerate pulse while finger is over it
+                      if (focusIdx !== null) {
+                        if (idx === focusIdx) enterFocus(); else leaveFocus();
                       }
                     }}
                   />
