@@ -11,6 +11,9 @@ const AutismChildPage: React.FC = () => {
   const [days, setDays] = useState<any[]>([]);
   const [reports, setReports] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { (async () => {
     if (!token) return;
@@ -26,6 +29,44 @@ const AutismChildPage: React.FC = () => {
     }
     setLoading(false);
   })(); }, [token]);
+
+  // Realtime notifications when a new day report is inserted
+  useEffect(() => {
+    if (!program || days.length === 0) return;
+    const dayIds = new Set(days.map(d => d.id));
+    const channel = supabase
+      .channel(`autism-child-${program.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'autism_day_reports' }, (payload: any) => {
+        const row = payload.new;
+        if (!dayIds.has(row.day_id)) return;
+        setReports(prev => ({ ...prev, [row.day_id]: row }));
+        const day = days.find(d => d.id === row.day_id);
+        const title = `🎉 يوم جديد مكتمل: ${day?.theme_ar ?? ''}`;
+        const body = `الدرجة ${Math.round(row.score)}/100 — ${row.summary_ar?.slice(0, 80) ?? ''}`;
+        toast.success(title, { description: body });
+        if (notifEnabled && 'Notification' in window && Notification.permission === 'granted') {
+          try { new Notification(title, { body, icon: '/favicon.ico' }); } catch {}
+        }
+        try { new Audio('/message-notification.mp3').play().catch(() => {}); } catch {}
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [program, days, notifEnabled]);
+
+  const enableNotifications = async () => {
+    if (!('Notification' in window)) { toast.error('متصفحك لا يدعم الإشعارات'); return; }
+    const p = await Notification.requestPermission();
+    if (p === 'granted') { setNotifEnabled(true); toast.success('تم تفعيل إشعارات تقدم الطفل'); }
+    else toast.error('تم رفض الإشعارات');
+  };
+
+  const exportPdf = async () => {
+    if (!printRef.current) return;
+    setExporting(true);
+    try { await exportElementToPdf(printRef.current, `child-progress-${program?.title_ar || ''}.pdf`); toast.success('تم التنزيل'); }
+    catch { toast.error('تعذّر إنشاء PDF'); }
+    finally { setExporting(false); }
+  };
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin" /></div>;
   if (!program) return <div className="text-center pt-20">رابط غير صالح</div>;
