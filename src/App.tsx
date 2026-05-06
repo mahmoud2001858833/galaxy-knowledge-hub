@@ -501,6 +501,14 @@ const router = createBrowserRouter([
         element: <AuthGuard><StudyOrganization /></AuthGuard>,
       },
       {
+        path: 'teacher-achievements',
+        element: <PublicRoute><TeacherAchievements /></PublicRoute>,
+      },
+      {
+        path: 'teacher-achievements/:slug',
+        element: <PublicRoute><TeacherAchievementDetail /></PublicRoute>,
+      },
+      {
         path: 'spaced-repetition',
         element: <PublicRoute><SpacedRepetitionSystem /></PublicRoute>,
       },
