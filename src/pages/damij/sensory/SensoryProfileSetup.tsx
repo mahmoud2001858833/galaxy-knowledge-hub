@@ -149,9 +149,15 @@ const SensoryProfileSetup: React.FC = () => {
       </div>
 
       <div className="space-y-5">
+        <div className="text-xs font-bold text-[hsl(var(--damij-primary))]/70 uppercase tracking-wider mt-2">القسم الأول · البيانات الوظيفية (الحواس)</div>
         <Section icon={Eye} title="١. الحالة البصرية" value={vision} onChange={(v) => setVision(v as VisionState)} opts={VISION_OPTS} />
         <Section icon={Ear} title="٢. الحالة السمعية" value={hearing} onChange={(v) => setHearing(v as HearingState)} opts={HEARING_OPTS} />
         <Section icon={Hand} title="٣. الحالة الحركية (طريقة التحكّم)" value={motor} onChange={(v) => setMotor(v as MotorState)} opts={MOTOR_OPTS} />
+
+        <div className="text-xs font-bold text-[hsl(var(--damij-primary))]/70 uppercase tracking-wider mt-4">القسم الثاني · التفضيلات الإدراكية (كيف تفهم؟)</div>
+        <Section icon={Brain} title="٤. نمط التعلّم المفضّل" value={learningStyle} onChange={(v) => setLearningStyle(v as LearningStyle)} opts={LEARNING_OPTS} />
+        <Section icon={BookOpen} title="٥. مستوى اللغة" value={languageLevel} onChange={(v) => setLanguageLevel(v as LanguageLevel)} opts={LANGUAGE_OPTS} />
+        <Section icon={Focus} title="٦. القدرة على التركيز" value={focus} onChange={(v) => setFocus(v as FocusLevel)} opts={FOCUS_OPTS} />
 
         <label className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-[hsl(var(--damij-primary))]/10 cursor-pointer">
           <input type="checkbox" checked={preferTouch} onChange={e => setPreferTouch(e.target.checked)}
