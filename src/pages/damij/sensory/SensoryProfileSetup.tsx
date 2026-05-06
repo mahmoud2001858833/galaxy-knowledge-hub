@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Ear, Hand, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, Ear, Hand, Brain, BookOpen, Focus, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export type VisionState = 'normal' | 'total_blind' | 'partial_blind' | 'low_vision' | 'color_blind' | 'photosensitive';
 export type HearingState = 'normal' | 'deaf' | 'hard_of_hearing' | 'cochlear';
 export type MotorState = 'mouse' | 'eye_tracking' | 'voice' | 'switch';
+export type LearningStyle = 'visual' | 'text' | 'audio' | 'mixed';
+export type LanguageLevel = 'simplified' | 'academic' | 'illustrated' | 'sign_simplified';
+export type FocusLevel = 'normal' | 'easily_distracted' | 'low_attention';
 
 export interface SensoryProfile {
   vision: VisionState;
   hearing: HearingState;
   motor: MotorState;
+  learningStyle?: LearningStyle;
+  languageLevel?: LanguageLevel;
+  focus?: FocusLevel;
   preferTouch?: boolean;
   cognitive?: 'normal' | 'autism' | 'adhd';
   savedAt: string;
@@ -41,11 +47,34 @@ const MOTOR_OPTS: { v: MotorState; t: string; d: string }[] = [
   { v: 'switch', t: 'مفتاح واحد', d: 'تنقّل تسلسلي بضغطة واحدة' },
 ];
 
+const LEARNING_OPTS: { v: LearningStyle; t: string; d: string }[] = [
+  { v: 'visual', t: 'صور ورسوم', d: 'يستوعب الصور والأيقونات أفضل' },
+  { v: 'text', t: 'نصوص مكتوبة', d: 'يفضّل القراءة الصامتة' },
+  { v: 'audio', t: 'صوت ونطق', d: 'يفضّل الاستماع' },
+  { v: 'mixed', t: 'مزيج متوازن', d: 'بين الصور والنص والصوت' },
+];
+
+const LANGUAGE_OPTS: { v: LanguageLevel; t: string; d: string }[] = [
+  { v: 'simplified', t: 'لغة مبسّطة', d: 'كلمات قصيرة ومألوفة' },
+  { v: 'academic', t: 'لغة أكاديمية', d: 'مصطلحات علمية دقيقة' },
+  { v: 'illustrated', t: 'تحويل لرسوم', d: 'تمثيل النص برسوم توضيحية' },
+  { v: 'sign_simplified', t: 'إشارة مبسّطة', d: 'كلمات إشارة مفتاحية فقط' },
+];
+
+const FOCUS_OPTS: { v: FocusLevel; t: string; d: string }[] = [
+  { v: 'normal', t: 'تركيز طبيعي', d: 'لا حاجة لتعديل الواجهة' },
+  { v: 'easily_distracted', t: 'تشتت انتباه', d: 'إزالة الحركات والمشتتات' },
+  { v: 'low_attention', t: 'انتباه منخفض', d: 'محتوى مقسم لخطوات قصيرة' },
+];
+
 const SensoryProfileSetup: React.FC = () => {
   const navigate = useNavigate();
   const [vision, setVision] = useState<VisionState | ''>('');
   const [hearing, setHearing] = useState<HearingState | ''>('');
   const [motor, setMotor] = useState<MotorState | ''>('');
+  const [learningStyle, setLearningStyle] = useState<LearningStyle | ''>('');
+  const [languageLevel, setLanguageLevel] = useState<LanguageLevel | ''>('');
+  const [focus, setFocus] = useState<FocusLevel | ''>('');
   const [preferTouch, setPreferTouch] = useState(false);
 
   useEffect(() => {
@@ -54,19 +83,24 @@ const SensoryProfileSetup: React.FC = () => {
       if (raw) {
         const p: SensoryProfile = JSON.parse(raw);
         setVision(p.vision); setHearing(p.hearing); setMotor(p.motor);
+        setLearningStyle(p.learningStyle ?? '');
+        setLanguageLevel(p.languageLevel ?? '');
+        setFocus(p.focus ?? '');
         setPreferTouch(!!p.preferTouch);
       }
     } catch {}
   }, []);
 
   const save = () => {
-    if (!vision || !hearing || !motor) {
-      toast.error('يرجى تعبئة الحقول الثلاثة لإنشاء ملفك الحسّي');
+    if (!vision || !hearing || !motor || !learningStyle || !languageLevel || !focus) {
+      toast.error('يرجى تعبئة جميع الحقول لإنشاء ملفك الحسّي');
       return;
     }
     const profile: SensoryProfile = {
-      vision, hearing, motor, preferTouch,
-      cognitive: 'normal',
+      vision, hearing, motor,
+      learningStyle, languageLevel, focus,
+      preferTouch,
+      cognitive: focus === 'easily_distracted' || focus === 'low_attention' ? 'adhd' : 'normal',
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
@@ -115,9 +149,15 @@ const SensoryProfileSetup: React.FC = () => {
       </div>
 
       <div className="space-y-5">
+        <div className="text-xs font-bold text-[hsl(var(--damij-primary))]/70 uppercase tracking-wider mt-2">القسم الأول · البيانات الوظيفية (الحواس)</div>
         <Section icon={Eye} title="١. الحالة البصرية" value={vision} onChange={(v) => setVision(v as VisionState)} opts={VISION_OPTS} />
         <Section icon={Ear} title="٢. الحالة السمعية" value={hearing} onChange={(v) => setHearing(v as HearingState)} opts={HEARING_OPTS} />
         <Section icon={Hand} title="٣. الحالة الحركية (طريقة التحكّم)" value={motor} onChange={(v) => setMotor(v as MotorState)} opts={MOTOR_OPTS} />
+
+        <div className="text-xs font-bold text-[hsl(var(--damij-primary))]/70 uppercase tracking-wider mt-4">القسم الثاني · التفضيلات الإدراكية (كيف تفهم؟)</div>
+        <Section icon={Brain} title="٤. نمط التعلّم المفضّل" value={learningStyle} onChange={(v) => setLearningStyle(v as LearningStyle)} opts={LEARNING_OPTS} />
+        <Section icon={BookOpen} title="٥. مستوى اللغة" value={languageLevel} onChange={(v) => setLanguageLevel(v as LanguageLevel)} opts={LANGUAGE_OPTS} />
+        <Section icon={Focus} title="٦. القدرة على التركيز" value={focus} onChange={(v) => setFocus(v as FocusLevel)} opts={FOCUS_OPTS} />
 
         <label className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-[hsl(var(--damij-primary))]/10 cursor-pointer">
           <input type="checkbox" checked={preferTouch} onChange={e => setPreferTouch(e.target.checked)}
