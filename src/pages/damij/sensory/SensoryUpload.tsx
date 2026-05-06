@@ -111,7 +111,8 @@ const SensoryUpload: React.FC = () => {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(txt);
     u.lang = 'ar-SA';
-    u.rate = profile.cognitive === 'autism' ? 0.85 : 1;
+    const speedMap = { slow: 0.75, normal: 1, fast: 1.3 } as const;
+    u.rate = profile.speechRate ? speedMap[profile.speechRate] : (profile.cognitive === 'autism' ? 0.85 : 1);
     u.onend = () => setSpeaking(false);
     setSpeaking(true);
     speechSynthesis.speak(u);
