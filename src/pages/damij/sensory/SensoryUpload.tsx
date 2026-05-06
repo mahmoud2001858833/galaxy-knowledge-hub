@@ -68,7 +68,19 @@ const SensoryUpload: React.FC = () => {
     setLoading(true);
     setResult(null);
     try {
-      const payload: any = { profile };
+      const visionMap: Record<string, string> = { normal: 'normal', total_blind: 'none', partial_blind: 'none', low_vision: 'low', color_blind: 'normal', photosensitive: 'low' };
+      const hearingMap: Record<string, string> = { normal: 'normal', deaf: 'none', hard_of_hearing: 'low', cochlear: 'low' };
+      const payload: any = {
+        profile: {
+          vision: visionMap[profile!.vision] ?? 'normal',
+          hearing: hearingMap[profile!.hearing] ?? 'normal',
+          cognitive: profile!.cognitive ?? 'normal',
+          preferTouch: profile!.preferTouch || profile!.motor === 'voice' || profile!.motor === 'switch',
+          motor: profile!.motor,
+          visionDetail: profile!.vision,
+          hearingDetail: profile!.hearing,
+        },
+      };
       if (text.trim()) payload.text = text.trim();
       if (file) {
         if (file.size > 15 * 1024 * 1024) {
