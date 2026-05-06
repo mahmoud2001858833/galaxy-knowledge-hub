@@ -132,20 +132,28 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border bg-white max-h-64 overflow-y-auto">
-          {loading && <div className="p-4 text-center text-sm text-slate-500"><Loader2 className="inline w-4 h-4 animate-spin" /> تحميل…</div>}
-          {!loading && items.length === 0 && (
-            <div className="p-4 text-center text-xs text-slate-500">
-              لا توجد عناصر مناسبة بعد. اطلب من المشرف توليد كتالوج التدخّلات، أو استخدم "مخصّص".
-            </div>
-          )}
-          {items.map((it) => (
-            <button key={it.id} onClick={() => setSelected(it)}
-              className={`w-full text-right p-2.5 border-b last:border-0 hover:bg-slate-50 ${selected?.id === it.id ? 'bg-sky-50' : ''}`}>
-              <div className="text-sm font-bold">{it.name_ar} {it.evidence_level && <span className="text-[10px] text-emerald-600 mr-1">[{it.evidence_level}]</span>}</div>
-              {it.short_ar && <div className="text-xs text-slate-500 line-clamp-2">{it.short_ar}</div>}
-            </button>
-          ))}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث في الكتالوج…"
+              className="w-full pr-7 pl-3 py-1.5 rounded-lg border bg-white text-xs" />
+          </div>
+          <div className="rounded-xl border bg-white max-h-64 overflow-y-auto">
+            {loading && <div className="p-4 text-center text-sm text-slate-500"><Loader2 className="inline w-4 h-4 animate-spin" /> تحميل…</div>}
+            {!loading && items.filter(it => !search || it.name_ar.includes(search) || (it.short_ar || '').includes(search) || (it.name_en || '').toLowerCase().includes(search.toLowerCase())).length === 0 && (
+              <div className="p-4 text-center text-xs text-slate-500">
+                لا توجد عناصر مطابقة. جرّب بحثاً مختلفاً أو استخدم "مخصّص".
+              </div>
+            )}
+            {items.filter(it => !search || it.name_ar.includes(search) || (it.short_ar || '').includes(search) || (it.name_en || '').toLowerCase().includes(search.toLowerCase())).map((it) => (
+              <button key={it.id} onClick={() => setSelected(it)}
+                className={`w-full text-right p-2.5 border-b last:border-0 hover:bg-slate-50 ${selected?.id === it.id ? 'bg-sky-50' : ''}`}>
+                <div className="text-sm font-bold">{it.name_ar} {it.evidence_level && <span className="text-[10px] text-emerald-600 mr-1">[{it.evidence_level}]</span>}</div>
+                {it.short_ar && <div className="text-xs text-slate-500 line-clamp-2">{it.short_ar}</div>}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
