@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, Play, ArrowRight, CheckCircle2, Sparkles, RefreshCw, FileText } from 'lucide-react';
+import { Loader2, Play, ArrowRight, CheckCircle2, Sparkles, RefreshCw, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TEMPLATE_META } from '@/features/autism/games/templates/registry';
+import { exportElementToPdf } from '@/lib/pdfExport';
 
 interface Game {
   id: string; order_index: number; template_id: string; title_ar: string;
