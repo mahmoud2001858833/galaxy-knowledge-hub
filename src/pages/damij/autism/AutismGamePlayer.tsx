@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, RotateCcw } from 'lucide-react';
+import { ArrowRight, CheckCircle2, RotateCcw, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TEMPLATE_REGISTRY, TEMPLATE_META } from '@/features/autism/games/templates/registry';
+import BackgroundMusicPlayer from '@/components/damij/BackgroundMusicPlayer';
 
 const AutismGamePlayer: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const AutismGamePlayer: React.FC = () => {
 
   if (!game) return null;
   const meta = TEMPLATE_META[game.template_id];
+  const dayBack = game.day_back || '/damij/autism/therapy';
 
   const handleComplete = async (metrics: { accuracy: number; raw?: any }, durationMs: number) => {
     setDone({ accuracy: metrics.accuracy, durationMs, raw: metrics.raw });
@@ -32,6 +34,9 @@ const AutismGamePlayer: React.FC = () => {
           user_id: user.id,
           child_profile_id: prof.profile_id ?? null,
           plan_id: game.planId ?? null,
+          program_id: game.program_id ?? null,
+          day_id: game.day_id ?? null,
+          program_game_id: game.program_game_id ?? null,
           template_id: game.template_id,
           stage: game.stage ?? null,
           difficulty: game.difficulty,
@@ -45,25 +50,64 @@ const AutismGamePlayer: React.FC = () => {
 
   const handleSkip = () => {
     toast.info('تم تخطّي اللعبة');
-    navigate('/damij/autism/therapy');
+    navigate(dayBack);
+  };
+
+  const goToNext = async () => {
+    if (game.next_game_index == null || !game.day_id) { navigate(dayBack); return; }
+    const { data: gs } = await supabase
+      .from('autism_program_games')
+      .select('*')
+      .eq('day_id', game.day_id)
+      .order('order_index');
+    const next = (gs || [])[game.next_game_index];
+    if (!next) { navigate(dayBack); return; }
+    const all = gs || [];
+    const idx = game.next_game_index;
+    const further = all[idx + 1];
+    sessionStorage.setItem('autism_active_game', JSON.stringify({
+      template_id: next.template_id,
+      title_ar: next.title_ar,
+      instructions_ar: next.instructions_ar,
+      target_skill_ar: next.target_skill_ar,
+      difficulty: next.difficulty,
+      duration_sec: next.duration_sec,
+      adaptations_ar: next.adaptations_ar,
+      program_game_id: next.id,
+      day_id: game.day_id,
+      program_id: game.program_id,
+      next_game_index: further ? idx + 1 : null,
+      day_back: dayBack,
+    }));
+    setDone(null);
+    setGame(null);
+    setTimeout(() => {
+      const raw = sessionStorage.getItem('autism_active_game');
+      if (raw) setGame(JSON.parse(raw));
+    }, 50);
   };
 
   if (done) {
     const pct = Math.round(done.accuracy * 100);
+    const hasNext = game.next_game_index != null;
     return (
       <div className="max-w-xl mx-auto pt-12 px-6 text-center" dir="rtl">
+        <BackgroundMusicPlayer />
         <CheckCircle2 className="w-20 h-20 mx-auto text-emerald-500 mb-4" />
         <h2 className="text-2xl font-bold mb-2">أحسنت!</h2>
         <p className="text-slate-600 mb-6">دقة الأداء: <strong>{pct}%</strong> • المدة: {Math.round(done.durationMs / 1000)} ثانية</p>
-        <div className="flex gap-3 justify-center">
-          <button onClick={() => { setDone(null); }}
-            className="px-5 py-3 rounded-xl bg-white border-2 border-slate-200 font-semibold flex items-center gap-2">
+        <div className="flex gap-3 justify-center flex-wrap">
+          <button onClick={() => setDone(null)} className="px-5 py-3 rounded-xl bg-white border-2 border-slate-200 font-semibold flex items-center gap-2">
             <RotateCcw className="w-4 h-4" /> إعادة
           </button>
-          <button onClick={() => navigate('/damij/autism/therapy')}
-            className="px-5 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold">
-            العودة للخطة
+          <button onClick={() => navigate(dayBack)} className="px-5 py-3 rounded-xl bg-white border-2 border-slate-200 font-semibold">
+            قائمة اليوم
           </button>
+          {hasNext && (
+            <button onClick={goToNext} className="px-6 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center gap-2">
+              اللعبة التالية <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
         </div>
         {game.adaptations_ar?.length > 0 && (
           <div className="mt-6 text-right bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -79,10 +123,10 @@ const AutismGamePlayer: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-6 pb-12 max-w-3xl mx-auto" dir="rtl">
+      <BackgroundMusicPlayer />
       <div className="flex items-center justify-between mb-4">
-        <button onClick={() => navigate('/damij/autism/therapy')}
-          className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm flex items-center gap-1">
-          <ArrowRight className="w-4 h-4" /> الخطة
+        <button onClick={() => navigate(dayBack)} className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm flex items-center gap-1">
+          <ArrowRight className="w-4 h-4" /> الرجوع
         </button>
         <div className="text-center">
           <h1 className="font-bold text-[hsl(var(--damij-primary))]">{meta?.emoji} {game.title_ar}</h1>
@@ -93,7 +137,7 @@ const AutismGamePlayer: React.FC = () => {
       <div className="bg-white rounded-3xl border border-[hsl(var(--damij-primary))]/10 overflow-hidden">
         {Component ? (
           <Component
-            key={game.template_id}
+            key={game.template_id + (game.program_game_id || '')}
             difficulty={game.difficulty}
             durationSec={game.duration_sec}
             instructions={game.instructions_ar}
