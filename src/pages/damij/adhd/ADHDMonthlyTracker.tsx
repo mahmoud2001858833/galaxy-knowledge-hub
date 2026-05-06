@@ -237,22 +237,6 @@ const ADHDMonthlyTracker: React.FC = () => {
     }
     return arr;
   }, [monthStart, games, tests, assessments, dayReports, trainings, normRecords]);
-      const total = dayGames.length + dayTests.length + dayAssess.length + dayTrain.length;
-      const intensity = total === 0 ? 0 : total < 2 ? 1 : total < 4 ? 2 : total < 6 ? 3 : 4;
-      arr.push({
-        date: key,
-        day: d.getDate(),
-        inMonth,
-        games: dayGames.length,
-        tests: dayTests.length + dayAssess.length,
-        assessments: dayAssess.length,
-        reports: dayReps.length,
-        avgScore,
-        intensity,
-      });
-    }
-    return arr;
-  }, [monthStart, games, tests, assessments, dayReports, trainings]);
 
   // Daily performance line (avg score per day in month)
   const performanceSeries = useMemo(() => {
