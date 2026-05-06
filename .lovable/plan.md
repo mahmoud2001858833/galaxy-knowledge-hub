@@ -1,72 +1,58 @@
-# خطة: إكمال اختبارات التقييم العصبي-النفسي
+# خطة تحسين متجر لغة الإشارة الذكي
 
-بناء الاختبارات الثلاثة المتبقية في `ADHDAssessmentHub` بمعايير معتمدة، مع حفظ النتائج في `adhd_neuro_tests` وعرضها في `ADHDDashboard`.
+## 1) حذف الميزات غير المرغوبة
+- حذف صفحة **قاموس الإشارة العالمي**: `src/pages/damij/sign/SignDictionary.tsx`.
+- حذف صفحة **تعلّم لغة الإشارة**: `src/pages/damij/sign/SignLearn.tsx` و `src/features/sign-language/LearnSignsTab.tsx` و `HandSignCard.tsx` و `WordDetailSheet.tsx` (مستخدمة فقط ضمن القاموس/التعلّم).
+- إزالة المسارات المرتبطة من `src/App.tsx` (`/damij/sign/dictionary`, `/damij/sign/learn`).
+- تبسيط `SignHome.tsx` ليعرض بطاقة واحدة فقط: **المترجم الفوري**، وتحديث العنوان والوصف ليعكسا التركيز على الترجمة الثنائية الاتجاه.
 
-## 1) N-Back (الذاكرة العاملة)
-**المرجع:** Kirchner 1958 / Jaeggi et al. 2008.
-**التصميم:**
-- وضعان: 1-Back و 2-Back (يختار المستخدم)
-- 30 محفّزاً (حروف عربية: ا ب ت ث ج ح خ د) كل 2.5 ثانية، عرض 500ms
-- المستخدم يضغط "تطابق" حين يطابق المحفّز الذي قبل n خطوات
-- 33% targets
+## 2) إعادة هيكلة المترجم الفوري `SignTranslatorPro.tsx`
 
-**المقاييس المحفوظة:**
-- `hits`, `misses`, `falseAlarms`, `correctRejections`
-- `accuracy %`, `dPrime` (إشارة-ضوضاء)، `meanRT`, `rtSD`
+### أ. خطوة اختيار اللغة أولاً (Gate)
+- عند فتح المترجم تظهر شاشة اختيار قبل أي شيء:
+  - **نظام لغة الإشارة المصدر/الهدف** (ArSL, ASL, BSL, LSF, DGS, LSE, LIS, JSL, KSL, CSL, ISL, PSL, TSL, RSL, Auslan, NZSL, Libras, LSM, IS).
+  - **اللغة المنطوقة/المكتوبة** (عربي، إنجليزي، فرنسي، ألماني، إسباني، إيطالي، ياباني، كوري، صيني، هندي، تركي، روسي، برتغالي…).
+- لا يتم عرض تبويبَي «كاميرا → نص» و «نص → إشارة» إلا بعد التأكيد.
+- زر «تغيير اللغة» يبقى ظاهراً في الأعلى لإعادة الاختيار.
+- حفظ الاختيار في `localStorage` لتذكّره عند العودة.
 
-**الملف:** `src/pages/damij/adhd/ADHDNBackTask.tsx`
+### ب. كاميرا → نص (Sign → Text)
+- عند الترجمة يتم تمرير `signSystem` و `spokenLang` للنموذج، فيتم تفسير الإشارات حسب رموز النظام المختار فقط (ArSL ≠ ASL ≠ BSL).
+- عرض اسم النظام النشط أعلى الكاميرا للوضوح.
 
-## 2) Stroop (الكفّ المعرفي)
-**المرجع:** Stroop 1935 / Golden Stroop Test.
-**التصميم:** ثلاث مراحل × 20 محفّزاً
-- **Word:** اسم لون أسود (قراءة)
-- **Color:** XXXX ملوّن (تسمية اللون)
-- **Interference:** كلمة لون بلون مختلف (تسمية اللون لا قراءة الكلمة)
-- 4 ألوان: أحمر/أخضر/أزرق/أصفر — اختيار من أزرار
+### ج. نص → إشارة (Text → Sign) — تحسين شامل
+**واجهة وأدوات جديدة في `TextToSignTab.tsx`:**
+- إدخال نص + إدخال صوتي (Speech-to-Text) باللغة المنطوقة المختارة.
+- شريط أدوات: سرعة العرض (0.5x–2x)، تكرار، إيقاف/تشغيل، تنقّل كلمة-كلمة، عكس اتجاه اليد (يمنى/يسرى)، حجم الأفاتار، خلفية فاتحة/داكنة.
+- زر تنزيل الترجمة كـ GIF/فيديو قصير، وزر مشاركة.
+- محرّر تتابع: يعرض الكلمات كبطاقات مرتّبة، يمكن سحبها لإعادة الترتيب أو حذف كلمة.
+- مكتبة مفضلات لحفظ الجمل المتكرّرة.
 
-**المقاييس:**
-- زمن استجابة + دقة لكل مرحلة
-- **Stroop Effect** = `meanRT(Interference) − meanRT(Color)` بالـ ms
-- نسبة الأخطاء في مرحلة التداخل
+**محرّك ترجمة موسّع (`signGlyphs.ts` جديد):**
+- قاموس داخلي لكل نظام إشارة يربط الكلمة/الحرف بـ glyph (صورة SVG/إيموجي يدّ + وصف حركة).
+- تغطية كاملة:
+  - الأبجدية والأرقام لكل نظام.
+  - +500 كلمة شائعة لكل لغة منطوقة (تحيّات، عائلة، طعام، مدرسة، طوارئ، مشاعر، أفعال، ضمائر، أيام/أشهر، ألوان، وسائل نقل، أرقام كبيرة…).
+  - علامات ترقيم وتعابير وجه (سؤال/تعجّب/نفي).
+- خوارزمية fallback: إن لم تتوفّر إشارة لكلمة → تهجئة بالأبجدية اليدوية للنظام المختار (Fingerspelling) بدلاً من تجاهلها.
+- استدعاء Edge Function `sign-translate` عند الحاجة لمعالجة الجمل الطويلة (Glossing) عبر LLM، مع تمرير `signSystem` ضمن الـ prompt.
 
-**الملف:** `src/pages/damij/adhd/ADHDStroopTask.tsx`
+### د. توحيد البيانات
+- `signSystems.ts` يبقى مرجع الأنظمة.
+- إضافة `spokenLanguages.ts` يضم اللغات المنطوقة المدعومة (code, name, nativeName, rtl).
+- إضافة `signGlyphs/<system>.json` لكل نظام (يبدأ بمحتوى أساسي ويُوسَّع تدريجياً، مع وسم coverage لإظهار نسبة التغطية للمستخدم).
 
-## 3) Go / No-Go (التحكم بالاندفاع)
-**المرجع:** Donders / Newman 1985.
-**التصميم:**
-- 60 محاولة، 75% Go (دائرة خضراء — اضغط) / 25% No-Go (مربع أحمر — لا تضغط)
-- 1500ms عرض + 500ms ISI
-- المهلة 1000ms للاستجابة
+## 3) Edge Function (اختياري لكن مُوصى به)
+- `supabase/functions/sign-translate/index.ts`: يستقبل `{ text, signSystem, spokenLang, direction }` ويعيد قائمة tokens (كل token = كلمة + glyph_id + fallback fingerspell). يستخدم Lovable AI Gateway.
 
-**المقاييس:**
-- `goAccuracy`, `noGoAccuracy` (= ضبط الاندفاع)
-- `commissionErrors` (الضغط على No-Go) — المؤشر الأهم في ADHD
-- `omissionErrors`, `meanRT_Go`, `rtVariability`
-- `dPrime` للحساسية
+## ملفات التأثير
+- جديدة: `src/features/sign-language/spokenLanguages.ts`, `src/features/sign-language/signGlyphs/*.ts`, `supabase/functions/sign-translate/index.ts`.
+- معدّلة: `src/App.tsx`, `src/pages/damij/sign/SignHome.tsx`, `src/pages/damij/sign/SignTranslator.tsx`, `src/features/sign-language/SignTranslatorPro.tsx`, `src/features/sign-language/TextToSignTab.tsx`, `src/features/sign-language/SignGlyph.tsx`.
+- محذوفة: `SignDictionary.tsx`, `SignLearn.tsx`, `LearnSignsTab.tsx`, `HandSignCard.tsx`, `WordDetailSheet.tsx`.
 
-**الملف:** `src/pages/damij/adhd/ADHDGoNoGoTask.tsx`
-
-## 4) البنية المشتركة
-- مكوّن `NeuroTestShell` بسيط: شاشة تعليمات → عدّ تنازلي 3..1 → تشغيل → نتيجة
-- مكوّن `NeuroResultCard`: عرض المقاييس + مقارنة بالمعدلات الطبيعية (من الأدبيات) + زر "حفظ النتيجة" + زر "إعادة"
-- حفظ في `adhd_neuro_tests` مع `test_type` ∈ `{cpt, nback, stroop, gonogo}` و `metrics` JSONB
-
-## 5) التحديثات المطلوبة
-- `ADHDAssessmentHub.tsx`: تفعيل البطاقات الثلاث (`ready: true`) + روابط
-- `App.tsx`: إضافة 3 مسارات
-  - `/damij/adhd/assessment/nback`
-  - `/damij/adhd/assessment/stroop`
-  - `/damij/adhd/assessment/gonogo`
-- `ADHDDashboard.tsx`: 3 رسوم بيانية إضافية (N-Back accuracy، Stroop effect، Go/No-Go commission)
-- `ADHDResources.tsx`: إضافة مراجع Kirchner، Stroop، Newman
-
-## 6) تفاصيل تقنية
-- Framer Motion للانتقالات
-- Tailwind + رموز التصميم `--damij-primary`, `--damij-warm`
-- لا تغييرات على RLS — الجدول `adhd_neuro_tests` موجود بالفعل
-- لا حاجة لـ Edge Functions — كل المنطق في الواجهة
-
-## 7) خارج النطاق
-- وحدات التدريب (Dual N-Back، Stop-Signal، إدراك الوقت) — لاحقاً
-- Daily Report Card — لاحقاً
-- معايرة معيارية لعمر/جنس — يُعرض دليل عام فقط
+## ملاحظة واقعية
+لا يمكن تقنياً تضمين «كل إشارة لكل لغة» في إصدار واحد (الأنظمة تحوي عشرات الآلاف من المفردات). الخطة توفّر:
+1) قاموس glyphs أساسي واسع لكل نظام (>500 كلمة + الأبجدية + الأرقام).
+2) Fingerspelling fallback يضمن ترجمة أي كلمة حتى لو لم تكن في القاموس.
+3) Edge Function تستفيد من LLM لتفكيك الجمل المعقّدة.
+هل توافق على هذه الخطة لأبدأ التنفيذ؟
