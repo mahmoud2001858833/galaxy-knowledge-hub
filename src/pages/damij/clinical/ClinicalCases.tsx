@@ -39,6 +39,15 @@ const ClinicalCases: React.FC = () => {
       <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-2">مكتبة الحالات الافتراضية</h1>
       <p className="text-slate-600 mb-6">{filtered.length} حالة من أصل {cases.length}</p>
 
+      <div className="flex flex-wrap gap-2 mb-4">
+        {([['all','الكل'],['special','تربية خاصة'],['medical','تخصصات طبية']] as const).map(([k,l]) => (
+          <button key={k} onClick={() => { setGrp(k as any); setCat('all'); }}
+            className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-all ${grp===k ? 'bg-[hsl(var(--damij-primary))] text-white border-[hsl(var(--damij-primary))]' : 'bg-white text-slate-700 border-slate-200 hover:border-[hsl(var(--damij-primary))]/40'}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
       <div className="grid sm:grid-cols-4 gap-2 mb-6">
         <div className="relative sm:col-span-1">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -47,7 +56,12 @@ const ClinicalCases: React.FC = () => {
         </div>
         <select value={cat} onChange={e => setCat(e.target.value as any)} className="px-3 py-2 rounded-lg border bg-white text-sm">
           <option value="all">كل الفئات</option>
-          {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.emoji} {c.ar}</option>)}
+          <optgroup label="ذوو الاحتياجات الخاصة">
+            {CATEGORIES.filter(c => c.group === 'special').map(c => <option key={c.key} value={c.key}>{c.emoji} {c.ar}</option>)}
+          </optgroup>
+          <optgroup label="التخصصات الطبية">
+            {CATEGORIES.filter(c => c.group === 'medical').map(c => <option key={c.key} value={c.key}>{c.emoji} {c.ar}</option>)}
+          </optgroup>
         </select>
         <select value={sev} onChange={e => setSev(e.target.value as any)} className="px-3 py-2 rounded-lg border bg-white text-sm">
           <option value="all">كل الشدّات</option>
