@@ -79,6 +79,9 @@ const SensoryUpload: React.FC = () => {
           motor: profile!.motor,
           visionDetail: profile!.vision,
           hearingDetail: profile!.hearing,
+          learningStyle: profile!.learningStyle,
+          languageLevel: profile!.languageLevel,
+          focus: profile!.focus,
         },
       };
       if (text.trim()) payload.text = text.trim();
