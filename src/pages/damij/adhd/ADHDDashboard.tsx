@@ -97,6 +97,44 @@ const ADHDDashboard: React.FC = () => {
           </ResponsiveContainer>
         </Card>
 
+        <Card title="N-Back — الدقة و d′" icon={Brain} empty={!nbackData.length}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={nbackData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} />
+              <Tooltip />
+              <Line type="monotone" dataKey="accuracy" stroke="#3b82f6" strokeWidth={2} name="الدقة %" />
+              <Line type="monotone" dataKey="dPrime" stroke="#6366f1" strokeWidth={2} name="d′" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="Stroop — أثر التداخل (ms)" icon={Activity} empty={!stroopData.length}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={stroopData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} />
+              <Tooltip />
+              <Line type="monotone" dataKey="effect" stroke="#10b981" strokeWidth={2} name="أثر Stroop" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="Go/No-Go — أخطاء الاندفاع" icon={Brain} empty={!gngData.length}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={gngData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} />
+              <Tooltip />
+              <Line type="monotone" dataKey="commissions" stroke="#ef4444" strokeWidth={2} name="أخطاء اندفاع" />
+              <Line type="monotone" dataKey="noGoAcc" stroke="#a855f7" strokeWidth={2} name="دقة No-Go %" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
         <Card title="نتائج جلسات التدريب" icon={BarChart3} empty={!trainData.length}>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={trainData}>
