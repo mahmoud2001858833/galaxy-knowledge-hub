@@ -219,8 +219,10 @@ import SensoryInteractionLog from './pages/damij/sensory/SensoryInteractionLog';
 import SensoryHapticSettings from './pages/damij/sensory/SensoryHapticSettings';
 import SensoryUnifiedComm from './pages/damij/sensory/SensoryUnifiedComm';
 import SensoryTriSense from './pages/damij/sensory/SensoryTriSense';
+import SensoryAdaptiveUI from './pages/damij/sensory/SensoryAdaptiveUI';
 import { installInteractionTracking } from './pages/damij/sensory/interactionLog';
-if (typeof window !== 'undefined') { try { installInteractionTracking(); } catch {} }
+import { initAdaptiveUI } from './pages/damij/sensory/adaptiveUI';
+if (typeof window !== 'undefined') { try { installInteractionTracking(); } catch {} try { initAdaptiveUI(); } catch {} }
 import ClinicalHome from './pages/damij/clinical/ClinicalHome';
 import ClinicalCases from './pages/damij/clinical/ClinicalCases';
 import ClinicalLab from './pages/damij/clinical/ClinicalLab';
