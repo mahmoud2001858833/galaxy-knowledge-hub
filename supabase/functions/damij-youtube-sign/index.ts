@@ -37,58 +37,97 @@ const decodeEntities = (s: string) =>
    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
    .replace(/<[^>]+>/g, "");
 
-async function fetchTranscript(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
-  const watchUrl = `https://www.youtube.com/watch?v=${videoId}&hl=en`;
-  const html = await fetch(watchUrl, {
-    headers: { "User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9" },
-  }).then(r => r.text()).catch(() => "");
-  if (!html) return null;
-
-  // Find captionTracks array in ytInitialPlayerResponse
-  const m = html.match(/"captionTracks":(\[.*?\])/);
-  if (!m) return null;
-  let tracks: any[] = [];
-  try { tracks = JSON.parse(m[1]); } catch { return null; }
-  if (!tracks.length) return null;
-
-  // Choose track: preferred lang exact, then preferred lang prefix, then first non-asr, then first
-  const pick =
-    (preferredLang && tracks.find(t => t.languageCode === preferredLang)) ||
-    (preferredLang && tracks.find(t => (t.languageCode || "").startsWith(preferredLang.split("-")[0]))) ||
-    tracks.find(t => t.kind !== "asr") ||
-    tracks[0];
-
-  const baseUrl: string = pick.baseUrl;
-  // Request JSON3 format for clean parsing
-  const url = baseUrl + "&fmt=json3";
-  const json = await fetch(url).then(r => r.json()).catch(() => null);
-  if (!json?.events) {
-    // Fallback to XML
-    const xml = await fetch(baseUrl).then(r => r.text()).catch(() => "");
-    if (!xml) return null;
+async function parseTimedText(baseUrl: string, lang: string): Promise<{ lang: string; segments: Segment[] } | null> {
+  const url = baseUrl.includes("fmt=") ? baseUrl : baseUrl + "&fmt=json3";
+  const json = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.json()).catch(() => null);
+  if (json?.events) {
     const segments: Segment[] = [];
-    const re = /<text start="([\d.]+)" dur="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g;
-    let mm;
-    while ((mm = re.exec(xml))) {
-      const text = decodeEntities(mm[3]).trim();
-      if (text) segments.push({ start: +mm[1], dur: +mm[2], text });
+    for (const ev of json.events) {
+      if (!ev.segs || ev.tStartMs == null) continue;
+      const text = ev.segs.map((s: any) => s.utf8 || "").join("").replace(/\n/g, " ").trim();
+      if (!text) continue;
+      segments.push({ start: ev.tStartMs / 1000, dur: (ev.dDurationMs ?? 2000) / 1000, text });
     }
-    return { lang: pick.languageCode, segments };
+    if (segments.length) return { lang, segments };
+  }
+  // XML fallback
+  const xml = await fetch(baseUrl, { headers: { "User-Agent": "Mozilla/5.0" } }).then(r => r.text()).catch(() => "");
+  if (!xml) return null;
+  const segments: Segment[] = [];
+  const re = /<text start="([\d.]+)" dur="([\d.]+)"[^>]*>([\s\S]*?)<\/text>/g;
+  let mm;
+  while ((mm = re.exec(xml))) {
+    const text = decodeEntities(mm[3]).trim();
+    if (text) segments.push({ start: +mm[1], dur: +mm[2], text });
+  }
+  return segments.length ? { lang, segments } : null;
+}
+
+async function tracksFromInnertube(videoId: string): Promise<any[]> {
+  // Public InnerTube key (used by youtube.com web client)
+  const KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+  const clients = [
+    { clientName: "ANDROID", clientVersion: "19.09.37", androidSdkVersion: 30 },
+    { clientName: "WEB", clientVersion: "2.20240726.00.00" },
+    { clientName: "IOS", clientVersion: "19.09.3" },
+  ];
+  for (const client of clients) {
+    try {
+      const r = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${KEY}&prettyPrint=false`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+        body: JSON.stringify({ videoId, context: { client } }),
+      });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const tracks = d?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (tracks?.length) return tracks;
+    } catch { /* try next */ }
+  }
+  return [];
+}
+
+async function fetchTranscript(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
+  // Strategy 1: scrape watch page
+  let tracks: any[] = [];
+  try {
+    const html = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, {
+      headers: { "User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9" },
+    }).then(r => r.text()).catch(() => "");
+    const m = html.match(/"captionTracks":(\[.*?\])/);
+    if (m) try { tracks = JSON.parse(m[1]); } catch {}
+  } catch {}
+
+  // Strategy 2: InnerTube API
+  if (!tracks.length) tracks = await tracksFromInnertube(videoId);
+
+  if (tracks.length) {
+    const pref = preferredLang?.split("-")[0];
+    const pick =
+      (pref && tracks.find(t => (t.languageCode || "") === pref)) ||
+      (pref && tracks.find(t => (t.languageCode || "").startsWith(pref))) ||
+      tracks.find(t => t.kind !== "asr") ||
+      tracks[0];
+    let baseUrl: string = pick.baseUrl;
+    // If we have a preferred lang and the picked track differs, use auto-translate (tlang=)
+    if (pref && pick.languageCode && !pick.languageCode.startsWith(pref)) {
+      baseUrl += `&tlang=${pref}`;
+    }
+    const out = await parseTimedText(baseUrl, pick.languageCode || "und");
+    if (out) return out;
   }
 
-  const segments: Segment[] = [];
-  for (const ev of json.events) {
-    if (!ev.segs || ev.tStartMs == null) continue;
-    const text = ev.segs.map((s: any) => s.utf8 || "").join("").replace(/\n/g, " ").trim();
-    if (!text) continue;
-    segments.push({
-      start: ev.tStartMs / 1000,
-      dur: (ev.dDurationMs ?? 2000) / 1000,
-      text,
-    });
+  // Strategy 3: direct timedtext for common languages
+  for (const lang of [preferredLang, "ar", "en"].filter(Boolean) as string[]) {
+    for (const extra of ["", "&kind=asr"]) {
+      const url = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}${extra}`;
+      const out = await parseTimedText(url, lang);
+      if (out) return out;
+    }
   }
-  return { lang: pick.languageCode, segments };
+  return null;
 }
+
 
 async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey: string): Promise<Segment[]> {
   // Translate all segments in one call to keep latency low.
