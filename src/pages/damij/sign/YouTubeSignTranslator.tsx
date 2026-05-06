@@ -175,8 +175,8 @@ const YouTubeSignTranslator: React.FC = () => {
             <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1"><Languages className="w-3.5 h-3.5" /> لغة الترجمة</label>
             <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}
               className="w-full h-11 rounded-xl border border-gray-200 px-2 text-sm bg-white">
-              {SPOKEN_LANGUAGES.map((l: any) => (
-                <option key={l.code} value={l.code}>{l.nameAr || l.name} ({l.code})</option>
+              {SPOKEN_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.flag} {l.nativeName}</option>
               ))}
             </select>
           </div>
@@ -184,8 +184,8 @@ const YouTubeSignTranslator: React.FC = () => {
             <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1"><Hand className="w-3.5 h-3.5" /> نظام الإشارة</label>
             <select value={signSystem} onChange={(e) => setSignSystem(e.target.value)}
               className="w-full h-11 rounded-xl border border-gray-200 px-2 text-sm bg-white">
-              {SIGN_SYSTEMS.map((s: any) => (
-                <option key={s.code} value={s.code}>{s.nameAr || s.name} ({s.code})</option>
+              {SIGN_SYSTEMS.map((s) => (
+                <option key={s.code} value={s.code}>{s.nativeName} ({s.code})</option>
               ))}
             </select>
           </div>
