@@ -1,0 +1,116 @@
+// One-shot seeder for the clinical device catalog (no AI — fixed list).
+import { corsHeaders, rest, svcHeaders } from '../_shared/gemini.ts';
+
+const DEVICES = [
+  // Diagnostic — interactive
+  { key:'ecg', name_ar:'تخطيط القلب الكهربائي (ECG)', name_en:'ECG/EKG', category:'diagnostic', ui_kind:'interactive_ecg',
+    applicable_specialties:['cardiology','emergency','internal','pediatrics'],
+    default_params:{ leads:'12', duration_sec:10, gain:'10mm/mV' },
+    description_ar:'يقيس النشاط الكهربائي للقلب ويرسم الموجات P-QRS-T.',
+    safety_ar:['تأكد من تنظيف الجلد','ثبّت الأقطاب جيداً','اطلب من المريض الاسترخاء'], icon:'Activity' },
+  { key:'aed', name_ar:'مزيل الرجفان الآلي (AED)', name_en:'AED', category:'therapeutic', ui_kind:'interactive_aed',
+    applicable_specialties:['emergency','cardiology'],
+    default_params:{ energy_j:200, mode:'auto' },
+    description_ar:'صدمة كهربائية لاستعادة النظم القلبي في حالات VF/pulseless VT.',
+    safety_ar:['ابتعد عن المريض قبل الصدمة (Stand clear)','لا تستخدمه على سطح مبلل','تابع CPR بعد الصدمة'], icon:'Zap' },
+  { key:'stethoscope', name_ar:'سمّاعة الطبيب', name_en:'Stethoscope', category:'exam', ui_kind:'interactive_stetho',
+    applicable_specialties:['cardiology','pulmonology','internal','pediatrics','emergency'],
+    default_params:{ region:'aortic', mode:'bell' },
+    description_ar:'الاستماع لأصوات القلب والرئتين والأمعاء.', safety_ar:['دفّئ السمّاعة قبل الفحص'], icon:'Ear' },
+  // Diagnostic — cards
+  { key:'pulse_ox', name_ar:'مقياس تشبع الأكسجين', name_en:'Pulse Oximeter', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['emergency','pulmonology','internal','pediatrics','cardiology'],
+    default_params:{ site:'finger' }, description_ar:'يقيس SpO₂ ومعدل النبض.',
+    safety_ar:['تجنّب الطلاء على الأظافر','افحص الإصبع المناسب'], icon:'Heart' },
+  { key:'glucometer', name_ar:'جهاز قياس السكر', name_en:'Glucometer', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['endocrinology','internal','emergency','pediatrics'],
+    default_params:{ sample:'capillary' }, description_ar:'قياس سكر الدم بقطرة من الإصبع.',
+    safety_ar:['عقّم الإصبع قبل الوخز','تخلّص من الإبرة بأمان'], icon:'Droplet' },
+  { key:'bp', name_ar:'جهاز قياس الضغط', name_en:'BP Cuff', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['cardiology','internal','emergency','obgyn','nephrology'],
+    default_params:{ arm:'right', position:'sitting' }, description_ar:'قياس ضغط الدم الانقباضي/الانبساطي.',
+    safety_ar:['الكفّة بمستوى القلب','اجلس 5 دقائق قبل القياس'], icon:'Gauge' },
+  { key:'thermometer', name_ar:'مقياس الحرارة', name_en:'Thermometer', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['internal','pediatrics','emergency'],
+    default_params:{ site:'oral' }, description_ar:'قياس درجة حرارة الجسم.', safety_ar:['عقّم بعد كل استخدام'], icon:'Thermometer' },
+  { key:'xray', name_ar:'عارض الأشعة السينية', name_en:'X-ray Viewer', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['orthopedics','pulmonology','emergency','internal'],
+    default_params:{ region:'chest' }, description_ar:'عرض وتفسير صور الأشعة السينية.',
+    safety_ar:['تأكد من حماية الحامل','قلّل الجرعة قدر الإمكان'], icon:'Image' },
+  { key:'ct', name_ar:'الأشعة المقطعية (CT)', name_en:'CT Scan', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['neurology','emergency','internal','pulmonology','orthopedics'],
+    default_params:{ region:'head', contrast:false }, description_ar:'صور مقطعية تفصيلية.',
+    safety_ar:['تحقّق من الحمل','تحقّق من حساسية الصبغة'], icon:'ScanLine' },
+  { key:'ultrasound', name_ar:'الموجات فوق الصوتية', name_en:'Ultrasound', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['obgyn','cardiology','internal','emergency','nephrology'],
+    default_params:{ probe:'curvilinear', region:'abdomen' }, description_ar:'تصوير بالموجات الصوتية.',
+    safety_ar:['استخدم جل التماس','نظّف المسبار بين المرضى'], icon:'Radio' },
+  { key:'otoscope', name_ar:'منظار الأذن', name_en:'Otoscope', category:'exam', ui_kind:'card',
+    applicable_specialties:['ent','pediatrics','internal'],
+    default_params:{ side:'right' }, description_ar:'فحص قناة الأذن وطبلة الأذن.',
+    safety_ar:['غيّر الرأس البلاستيكي بين المرضى','اسحب الأذن للأعلى وللخلف عند البالغين'], icon:'Ear' },
+  { key:'ophthalmoscope', name_ar:'منظار العين', name_en:'Ophthalmoscope', category:'exam', ui_kind:'card',
+    applicable_specialties:['ophthalmology','neurology','internal'],
+    default_params:{ side:'right' }, description_ar:'فحص قاع العين والعصب البصري.',
+    safety_ar:['اعتم الغرفة','لا تطل تسليط الضوء'], icon:'Eye' },
+  { key:'peak_flow', name_ar:'مقياس ذروة الجريان', name_en:'Peak Flow Meter', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['pulmonology','pediatrics','emergency'],
+    default_params:{ attempts:3 }, description_ar:'قياس أقصى جريان زفيري لمراقبة الربو.',
+    safety_ar:['عقّم القطعة الفموية'], icon:'Wind' },
+  { key:'spirometer', name_ar:'جهاز التنفس (Spirometer)', name_en:'Spirometer', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['pulmonology','internal'],
+    default_params:{}, description_ar:'يقيس FEV1 وFVC ووظائف الرئة.',
+    safety_ar:['موانع: نزف رئوي حديث، MI حديث'], icon:'Wind' },
+  { key:'urinalysis', name_ar:'تحليل البول السريع', name_en:'Urine Dipstick', category:'diagnostic', ui_kind:'card',
+    applicable_specialties:['nephrology','internal','obgyn','endocrinology'],
+    default_params:{}, description_ar:'فحص شريطي للبول (سكر، بروتين، دم، نتريت...).',
+    safety_ar:['عيّنة منتصف الإدرار'], icon:'TestTube' },
+  { key:'reflex_hammer', name_ar:'مطرقة المنعكسات', name_en:'Reflex Hammer', category:'exam', ui_kind:'card',
+    applicable_specialties:['neurology','orthopedics','internal'],
+    default_params:{ region:'patellar' }, description_ar:'فحص المنعكسات العميقة.', safety_ar:[], icon:'Hammer' },
+  { key:'rom', name_ar:'مدى الحركة (ROM)', name_en:'Range of Motion', category:'exam', ui_kind:'card',
+    applicable_specialties:['orthopedics','neurology'],
+    default_params:{ joint:'knee', motion:'flexion' }, description_ar:'قياس مدى حركة المفاصل.', safety_ar:['أوقف عند الألم الشديد'], icon:'Move' },
+  { key:'pain_map', name_ar:'خريطة الألم', name_en:'Pain Map', category:'exam', ui_kind:'card',
+    applicable_specialties:['orthopedics','neurology','internal','emergency'],
+    default_params:{ region:'lower_back', score:7 }, description_ar:'توطين شدة الألم وانتشاره.', safety_ar:[], icon:'Activity' },
+  // Therapeutic
+  { key:'cpr', name_ar:'الإنعاش القلبي الرئوي (CPR)', name_en:'CPR', category:'therapeutic', ui_kind:'card',
+    applicable_specialties:['emergency','cardiology'],
+    default_params:{ rate_per_min:110, depth_cm:5 }, description_ar:'ضغطات صدر وتنفس إنقاذ.',
+    safety_ar:['اضغط في وسط الصدر','اسمح للصدر بالعودة الكاملة'], icon:'Activity' },
+  { key:'splint', name_ar:'تجبير', name_en:'Splint/Cast', category:'therapeutic', ui_kind:'card',
+    applicable_specialties:['orthopedics','emergency'],
+    default_params:{ region:'forearm' }, description_ar:'تثبيت كسر أو إصابة.',
+    safety_ar:['افحص النبض والإحساس بعد التجبير'], icon:'Bone' },
+  { key:'iv', name_ar:'محلول وريدي (IV)', name_en:'IV/Infusion', category:'therapeutic', ui_kind:'card',
+    applicable_specialties:['emergency','internal','pediatrics','obgyn'],
+    default_params:{ fluid:'normal_saline', rate_ml_h:100 }, description_ar:'إعطاء سوائل/أدوية وريدياً.',
+    safety_ar:['عقّم الموقع','راقب التورّم'], icon:'Syringe' },
+  { key:'nebulizer', name_ar:'البخاخ (Nebulizer)', name_en:'Nebulizer', category:'therapeutic', ui_kind:'card',
+    applicable_specialties:['pulmonology','pediatrics','emergency'],
+    default_params:{ drug:'salbutamol', dose_mg:2.5 }, description_ar:'موسعات قصبية بالاستنشاق.',
+    safety_ar:['راقب النبض والرعشة'], icon:'Wind' },
+  { key:'oxygen', name_ar:'قناع الأكسجين', name_en:'Oxygen Mask', category:'therapeutic', ui_kind:'card',
+    applicable_specialties:['emergency','pulmonology','internal','pediatrics'],
+    default_params:{ flow_l_min:5, mask:'simple' }, description_ar:'إعطاء أكسجين تكميلي.',
+    safety_ar:['تجنّب الجرعة العالية في COPD المزمن'], icon:'Wind' },
+  { key:'suction', name_ar:'الشفط (Suction)', name_en:'Suction', category:'therapeutic', ui_kind:'card',
+    applicable_specialties:['emergency','ent','pulmonology'],
+    default_params:{ region:'oropharynx' }, description_ar:'إزالة الإفرازات لفتح المسلك الهوائي.',
+    safety_ar:['لا يتجاوز الشفط 10 ثوانٍ'], icon:'Droplet' },
+];
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  try {
+    const eRes = await fetch(rest('/clinical_devices?select=key'), { headers: svcHeaders() });
+    const existing = new Set(((await eRes.json()) as any[]).map((r) => r.key));
+    const toInsert = DEVICES.filter((d) => !existing.has(d.key));
+    if (toInsert.length === 0) return new Response(JSON.stringify({ status: 'all-present', count: existing.size }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    await fetch(rest('/clinical_devices'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(toInsert) });
+    return new Response(JSON.stringify({ inserted: toInsert.length, total: existing.size + toInsert.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+});
