@@ -91,7 +91,41 @@ const SensoryImageTactile: React.FC = () => {
       hummingRef.current = window.setInterval(() => navigator.vibrate(25), 80);
     }
   };
-  useEffect(() => () => stopHumming(), []);
+  useEffect(() => () => { stopHumming(); stopFocusPulse(); }, []);
+
+  // === Instructional cues (Section 4) ===
+  const cueError = () => {
+    if (!vibrate) return;
+    const now = performance.now();
+    if (now - lastErrorRef.current < 400) return;
+    lastErrorRef.current = now;
+    // Disturbed/jittery pattern (like wrong password)
+    navigator.vibrate([40, 50, 40, 50, 80, 40, 40]);
+    logToolUse('haptic');
+  };
+  const cueSuccess = () => {
+    if (!vibrate) return;
+    // Calm rhythmic celebration
+    navigator.vibrate([60, 90, 60, 90, 180]);
+    logToolUse('haptic');
+  };
+  const stopFocusPulse = () => {
+    if (focusPulseRef.current) { clearInterval(focusPulseRef.current); focusPulseRef.current = null; }
+  };
+  const startFocusPulse = (idx: number) => {
+    stopFocusPulse();
+    setFocusIdx(idx);
+    if (!vibrate) return;
+    // Continuous gentle pulse to attract attention to focus point
+    focusPulseRef.current = window.setInterval(() => navigator.vibrate([90, 220]), 600);
+  };
+  // Pick a connect-exercise target (random region) and clear status
+  const startConnectExercise = () => {
+    if (!result?.tactileRegions?.length) return;
+    const t = Math.floor(Math.random() * result.tactileRegions.length);
+    setConnectTarget(t); setConnectStatus('idle');
+    toast.info(`وصّل إصبعك إلى: ${result.tactileRegions[t].label}`);
+  };
 
   // Sample color at canvas-relative percentage. Returns { lum 0-1, rgb }
   const sampleColor = (px: number, py: number) => {
