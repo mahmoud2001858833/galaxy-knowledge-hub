@@ -379,9 +379,14 @@ const SensoryImageTactile: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-16 max-w-6xl mx-auto" dir="rtl">
-      <Link to="/damij/sensory" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] mb-4 hover:underline">
-        <ArrowRight className="w-4 h-4" /> رجوع
-      </Link>
+      <div className="flex items-center justify-between mb-4">
+        <Link to="/damij/sensory" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] hover:underline">
+          <ArrowRight className="w-4 h-4" /> رجوع
+        </Link>
+        <Link to="/damij/sensory/haptic-settings" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 text-sm font-bold hover:bg-orange-200">
+          <Settings className="w-4 h-4" /> إعدادات الاهتزاز
+        </Link>
+      </div>
 
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 mb-3">
