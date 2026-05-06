@@ -1603,6 +1603,84 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_device_uses: {
+        Row: {
+          ai_reading: Json
+          applied_to_session: boolean
+          created_at: string
+          device_key: string
+          id: string
+          params: Json
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          ai_reading?: Json
+          applied_to_session?: boolean
+          created_at?: string
+          device_key: string
+          id?: string
+          params?: Json
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          ai_reading?: Json
+          applied_to_session?: boolean
+          created_at?: string
+          device_key?: string
+          id?: string
+          params?: Json
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      clinical_devices: {
+        Row: {
+          applicable_specialties: string[]
+          category: string
+          created_at: string
+          default_params: Json
+          description_ar: string | null
+          icon: string | null
+          id: string
+          key: string
+          name_ar: string
+          name_en: string | null
+          safety_ar: string[]
+          ui_kind: string
+        }
+        Insert: {
+          applicable_specialties?: string[]
+          category: string
+          created_at?: string
+          default_params?: Json
+          description_ar?: string | null
+          icon?: string | null
+          id?: string
+          key: string
+          name_ar: string
+          name_en?: string | null
+          safety_ar?: string[]
+          ui_kind?: string
+        }
+        Update: {
+          applicable_specialties?: string[]
+          category?: string
+          created_at?: string
+          default_params?: Json
+          description_ar?: string | null
+          icon?: string | null
+          id?: string
+          key?: string
+          name_ar?: string
+          name_en?: string | null
+          safety_ar?: string[]
+          ui_kind?: string
+        }
+        Relationships: []
+      }
       clinical_intervention_trials: {
         Row: {
           ai_response: Json

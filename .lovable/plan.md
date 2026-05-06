@@ -1,58 +1,67 @@
-# خطة: وضع التجربة الحرّة داخل مختبر المحاكاة السريرية
+# خطة: توسعة المختبر السريري إلى منظومة طبية شاملة مع أجهزة تفاعلية
 
-## الهدف
-تمكين الطالب من اختيار/إدخال **دواء، علاج سلوكي، وسيلة مساعدة، إجراء تربوي، أو تدخّل حسّي** بشكل حر داخل الجلسة، ثم محاكاة استجابة المريض الافتراضي فوراً (تأثير قصير المدى وطويل المدى) مع تفسير سريري وتحذيرات أمان.
+## الأهداف
+- إضافة **15+ تخصصاً طبياً** بجانب فئات التربية الخاصة، في **نفس الكتالوج** الموحّد.
+- إضافة **أجهزة تفاعلية حقيقية** (ECG/AED/Stethoscope) ولوحات مبسّطة لباقي الأجهزة، كلها داخل تبويب جديد «🩺 الأجهزة والإجراءات» في صفحة الجلسة.
+- AI يحلّل قراءات الأجهزة ويعيد تفسيراً سريرياً + يحدّث مؤشرات المريض.
 
-## تجربة المستخدم (UX)
-في صفحة `ClinicalLabSession.tsx` يُضاف **تبويب جديد بجانب المحادثة** اسمه «جرّب تدخّلاً 🧪» يحتوي:
+## التخصصات الجديدة (تُضاف لجدول الفئات)
+cardiology • orthopedics • internal • neurology • pulmonology • nephrology • endocrinology • gastro • emergency • pediatrics • obgyn • dermatology • ophthalmology • ent • psychiatry
+(تنضمّ إلى: asd / adhd / hearing / visual / learning_other)
 
-1. **شريط فئات سريع**: دواء 💊 • علاج سلوكي 🧠 • وسيلة تواصل 🗣️ • تدخّل حسّي 🎧 • وسيلة بصرية/سمعية 👁️👂 • إجراء تربوي 📋 • مخصّص ✍️
-2. **قائمة مقترحات ذكية** مفلترة حسب فئة الحالة (ASD/ADHD/...). كل عنصر يحوي: الاسم، الجرعة/المدة الافتراضية، حقول قابلة للتعديل (جرعة، تكرار، مدة، شدة).
-3. **حقل حر** لكتابة أي تدخّل غير مدرج + اختيار "محاكاة فورية".
-4. **زر "جرّب الآن"** يستدعي edge function ويعرض:
-   - ردّ المريض اللفظي/السلوكي
-   - تغيّر المؤشرات (انتباه/قلق/تقدّم) + مؤشرات جديدة: **اليقظة، الأعراض الجانبية، الاستجابة العلاجية**
-   - **خط زمني متوقّع** (15 دقيقة / ساعة / يوم / أسبوع) مع رسم بياني صغير
-   - **تفسير سريري** + المراجع
-   - **تحذيرات أمان** (موانع، تفاعلات، جرعة زائدة) بلون أحمر
-   - زر «اعتمد كحدث في الجلسة» لتثبيته في سجل الأحداث.
+## التغييرات
 
-## التغييرات التقنية
-
-### 1) قاعدة البيانات (migration واحدة)
-- جدول `clinical_interventions_catalog`: كتالوج جاهز للتدخّلات
-  - الحقول الخاصة: `category` (medication/behavioral/sensory/aac/visual_aid/educational/custom)، `condition_keys` (مصفوفة من ASD/ADHD/...)، `name_ar`, `name_en`, `default_params` (jsonb: dose/freq/duration)، `mechanism_ar`, `expected_effects` (jsonb)، `contraindications_ar`، `references_ar`، `evidence_level`.
-- جدول `clinical_intervention_trials`: كل محاولة يجريها الطالب
-  - الحقول الخاصة: `session_id`, `user_id`, `intervention_id` (nullable للمخصّص)، `custom_label`، `params` (jsonb)، `ai_response` (jsonb كامل)، `applied_to_session` (bool)، `created_at`.
-- بذر الكتالوج لاحقاً عبر edge function (≈300 تدخّل لكل فئة → +1500 إجمالاً).
-- RLS: المستخدم يقرأ/يكتب محاولاته فقط؛ الكتالوج مقروء للجميع المصادَقين.
+### 1) قاعدة البيانات (migration)
+- توسعة `clinical_cases.category` و `clinical_protocols.category` (نص حر — لا حاجة لـ enum).
+- جدول جديد `clinical_devices`:
+  - `key` (ecg, aed, stethoscope, pulse_ox, glucometer, bp, xray, otoscope, ophthalmoscope, defib, cpr, splint, iv, nebulizer, oxygen, suction, neuro_exam, rom, pain_map…)
+  - `name_ar`, `name_en`, `category` (diagnostic | therapeutic | exam)
+  - `applicable_specialties` (text[])
+  - `ui_kind` (interactive_ecg | interactive_aed | interactive_stetho | card)
+  - `default_params` (jsonb)، `description_ar`، `safety_ar[]`
+- جدول `clinical_device_uses`: سجل كل استخدام جهاز ضمن جلسة (session_id, user_id, device_key, params, ai_reading jsonb, applied bool).
+- RLS: المستخدم يكتب/يقرأ سجلاته فقط؛ `clinical_devices` مقروء للجميع المصادَقين.
 
 ### 2) Edge Functions
-- **`clinical-intervention-trial`** (جديدة): تستقبل `{ sessionId, interventionId?, customLabel?, params }`، تحمّل الحالة + البروتوكول + سجل الجلسة، ترسل لـ Gemini مع schema صارم يُرجع:
+- **`clinical-device-use`** (جديدة): تستلم `{ sessionId, deviceKey, params, apply }`، تحمّل الحالة، ترسل لـ Gemini schema يُرجع:
   ```
-  { patient_say_ar, behavior_change_ar, immediate_metrics{...},
-    timeline:[{t:"15min"|"1h"|"1d"|"1w", attention,anxiety,progress,symptoms_ar}],
-    side_effects_ar[], safety_warnings_ar[], clinical_explanation_ar,
-    references_ar[], success_score(0-100) }
+  { reading_ar, vitals{hr,bp_sys,bp_dia,spo2,resp,temp,glucose}, 
+    waveform_hint?, interpretation_ar, abnormal_findings_ar[], 
+    recommended_next_steps_ar[], success_score, metric_deltas{attention,anxiety,progress} }
   ```
-  وتخزّن النتيجة في `clinical_intervention_trials`. عند `apply=true` تكتب أيضاً حدثاً في `clinical_session_events` وتحدّث مؤشرات الجلسة.
-- **`clinical-seed-interventions`** (جديدة، قابلة للاستئناف على غرار `clinical-seed-content`): تولّد كتالوج التدخّلات بالـ AI لكل فئة سريرية على دفعات.
+  وتخزّن في `clinical_device_uses`، وعند `apply=true` تكتب حدثاً في timeline المحادثة وتحدّث المؤشرات.
+- **`clinical-seed-medical`** (جديدة، قابلة للاستئناف): تولّد ~20 حالة و~10 بروتوكولات لكل تخصص جديد عبر دفعات.
+- **`clinical-seed-devices`** (جديدة): تزرع كتالوج الأجهزة (~25 جهازاً) دفعة واحدة.
 
-### 3) الواجهة (frontend فقط)
-- ملف جديد `src/features/clinical/interventions.ts`: أنواع TypeScript + ثوابت الفئات والأيقونات.
-- مكوّن جديد `src/features/clinical/InterventionTryPanel.tsx`: اللوحة الكاملة (شريط فئات + قائمة مقترحات + نموذج معاملات + بطاقة نتيجة + Recharts صغير للخط الزمني + زر «اعتمد»).
-- تعديل `ClinicalLabSession.tsx`: إضافة Tabs (محادثة | تجربة تدخّل) في القسم الرئيسي، وعرض اللوحة الجديدة دون التأثير على منطق المحادثة الحالي.
-- التحديثات الحيّة للمؤشرات تُعاد قراءتها بنفس `load()` الموجود.
+### 3) واجهة الأجهزة التفاعلية
+ملف جديد `src/features/clinical/devices/`:
+- `DeviceLauncher.tsx` — قائمة أجهزة مفلترة حسب تخصص الحالة + بحث.
+- `InteractiveECG.tsx` — Canvas يرسم موجات P-QRS-T حية بناءً على HR/rhythm من نتيجة AI (sinus, AF, VT, asystole…). يدعم تشغيل/إيقاف ورسم 12-lead مبسّط.
+- `InteractiveAED.tsx` — لوحة AED بزرّ Analyze + Shock + عدّاد CPR، مع رسالة صوتية «Stand clear».
+- `InteractiveStethoscope.tsx` — يشغّل ملفات صوت قلب/رئة (normal, murmur, wheeze, crackle) من Web Audio.
+- `DeviceCard.tsx` — بطاقة عامة لباقي الأجهزة: عرض المعاملات، زر «استخدم»، عرض القراءة + التفسير + الحيويات + توصيات.
 
-### 4) الأمان والاعتماد
-- التدخّلات الدوائية تُعرض دائماً مع شارة «محاكاة تعليمية — ليست وصفة طبية».
-- موانع الاستعمال تُحسب من `contraindications_ar` ومن `sensory_profile`/`age_years` للحالة.
+### 4) دمج بصفحة الجلسة
+في `ClinicalLabSession.tsx` يُضاف تبويب ثالث «🩺 الأجهزة» بجانب «المحادثة» و«جرّب تدخّلاً»، يستخدم نفس `Tabs`. زر «اعتمد كحدث» يضيف القراءة لسجل الجلسة.
 
-## الاحتساب (Credits)
-- كل محاولة تستهلك ~3 Credits (استدعاء Gemini واحد). البذر يستهلك دفعة واحدة (~50 Credits).
+### 5) دمج الكتالوج الموحّد
+في `InterventionTryPanel.tsx`:
+- حذف فلترة `condition_keys` الصارمة → السماح بفلترة حسب الفئة + بحث.
+- إضافة شريط تبديل «🧩 تربية خاصة | 🩺 طبي» يضبط مجموعة الفئات الظاهرة.
 
-## مخرجات قابلة للتحقّق بعد التنفيذ
-- تبويب «جرّب تدخّلاً» يظهر داخل `/damij/clinical/lab/:sessionId`.
-- إدخال «ميثيلفينيديت 10mg مرة يومياً» على حالة ADHD يُرجع تأثيراً + خط زمني + تحذيرات.
-- زر «اعتمد» يضيف حدثاً في سجل المحادثة ويحدّث المؤشرات.
-- جدول `clinical_intervention_trials` يمتلئ بسجلات المستخدم فقط.
+### 6) البذر
+بعد deploy:
+- `clinical-seed-devices` مرة واحدة (~25 جهازاً).
+- `clinical-seed-medical` يُستدعى تكرارياً حتى تكتمل الحالات/البروتوكولات لكل تخصص (مثل seed-content السابق).
+- `clinical-seed-interventions` (موجودة) تُستدعى مع condition_keys الموسّعة لتغذية أدوية التخصصات الجديدة.
+
+## مخرجات قابلة للتحقق
+- صفحة الجلسة تعرض 3 تبويبات: محادثة، جرّب تدخّلاً، الأجهزة.
+- اختيار حالة قلب → ECG حيّ يرسم موجات حقيقية + AI يفسّر «Sinus tachycardia 130 bpm».
+- AED يعرض رسالة Shock advised ويحدّث المؤشرات بعد الصدمة.
+- Stethoscope يشغّل صوت murmur حقيقي.
+- باقي الأجهزة (Glucometer, BP, X-ray viewer, Otoscope…) كبطاقات + قراءة AI فورية.
+- جدول `clinical_devices` يحوي 25+ جهازاً، و `clinical_cases` يحوي حالات لكل تخصص جديد.
+
+## الاستهلاك
+- استخدام جهاز = ~3 Credits. توليد 12-lead ECG = 1 استدعاء Gemini. البذر الكامل (15 تخصصاً × 30 عنصراً) = ~120 Credits على دفعات.
