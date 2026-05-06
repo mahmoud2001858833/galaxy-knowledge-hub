@@ -162,11 +162,56 @@ const SensoryImageTactile: React.FC = () => {
     }
   };
   // Pick a connect-exercise target (random region) and clear status
+  const pickRandomTarget = (excludeIdx: number | null = null) => {
+    if (!result?.tactileRegions?.length) return null;
+    const n = result.tactileRegions.length;
+    if (n === 1) return 0;
+    let t = Math.floor(Math.random() * n);
+    if (excludeIdx !== null) while (t === excludeIdx) t = Math.floor(Math.random() * n);
+    return t;
+  };
   const startConnectExercise = () => {
-    if (!result?.tactileRegions?.length) return;
-    const t = Math.floor(Math.random() * result.tactileRegions.length);
-    setConnectTarget(t); setConnectStatus('idle');
-    toast.info(`وصّل إصبعك إلى: ${result.tactileRegions[t].label}`);
+    const t = pickRandomTarget();
+    if (t === null) return;
+    setConnectTarget(t); setConnectStatus('idle'); setRoundErrors(0); setRoundStartedAt(performance.now());
+    toast.info(`وصّل إصبعك إلى: ${result!.tactileRegions![t].label}`);
+  };
+  const startTraining = () => {
+    if (!result?.tactileRegions?.length) { toast.error('حلّل صورة أولاً'); return; }
+    setTrainingMode(true); setTrainingRound(0); setTrainingErrors(0); setTrainingScore(0);
+    setTrainingTimes([]); setTrainingSummary(null);
+    const t = pickRandomTarget();
+    if (t === null) return;
+    setConnectTarget(t); setConnectStatus('idle'); setRoundErrors(0); setRoundStartedAt(performance.now());
+    toast.info(`جولة 1/${trainingTotal} — وصّل إصبعك إلى: ${result.tactileRegions[t].label}`);
+  };
+  const finishTraining = (totals: { score: number; errors: number; total: number; times: number[] }) => {
+    const avgTime = totals.times.length ? Math.round(totals.times.reduce((a, b) => a + b, 0) / totals.times.length) : 0;
+    const perfectRounds = totals.times.length; // counted in onSuccess only when 0 errors
+    setTrainingSummary({ score: totals.score, errors: totals.errors, total: totals.total, avgTime, perfectRounds });
+    setTrainingMode(false); setConnectTarget(null); setConnectStatus('idle');
+    if (vibrate) navigator.vibrate([80, 100, 80, 100, 200, 100, 300]);
+  };
+  const onTrainingRoundSuccess = () => {
+    const elapsed = Math.max(0, performance.now() - roundStartedAt);
+    const points = roundErrors === 0 ? 10 : Math.max(2, 10 - roundErrors * 2);
+    const isPerfect = roundErrors === 0;
+    const nextScore = trainingScore + points;
+    const nextErrors = trainingErrors + roundErrors;
+    const nextRound = trainingRound + 1;
+    const nextTimes = isPerfect ? [...trainingTimes, elapsed] : trainingTimes;
+    setTrainingScore(nextScore); setTrainingErrors(nextErrors); setTrainingRound(nextRound); setTrainingTimes(nextTimes);
+    if (nextRound >= trainingTotal) {
+      finishTraining({ score: nextScore, errors: nextErrors, total: trainingTotal, times: nextTimes });
+    } else {
+      const t = pickRandomTarget(connectTarget);
+      if (t === null) return;
+      setRoundErrors(0); setRoundStartedAt(performance.now()); setConnectStatus('idle'); setConnectTarget(t);
+      toast.info(`جولة ${nextRound + 1}/${trainingTotal} — ${result!.tactileRegions![t].label}`);
+    }
+  };
+  const cancelTraining = () => {
+    setTrainingMode(false); setConnectTarget(null); setConnectStatus('idle');
   };
 
   // Sample color at canvas-relative percentage. Returns { lum 0-1, rgb }
