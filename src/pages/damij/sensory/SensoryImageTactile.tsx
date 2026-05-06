@@ -414,6 +414,15 @@ const SensoryImageTactile: React.FC = () => {
                           stopHumming();
                         }
                       }
+                      // Connect-exercise instructional cues
+                      if (connectTarget !== null && connectStatus !== 'success') {
+                        if (idx === connectTarget) {
+                          if (connectStatus !== 'success') { cueSuccess(); setConnectStatus('success'); toast.success('أحسنت! وصلت للمكان الصحيح'); }
+                        } else if (region && idx !== connectTarget) {
+                          if (connectStatus !== 'wrong') setConnectStatus('wrong');
+                          cueError();
+                        }
+                      }
                     }}
                   />
                   <div className="grid grid-cols-2 gap-2 mt-3">
@@ -424,10 +433,43 @@ const SensoryImageTactile: React.FC = () => {
                       <Printer className="w-4 h-4"/> طباعة لمسية
                     </button>
                   </div>
+
+                  {/* Instructional cues controls */}
+                  <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                    <p className="text-xs font-bold text-amber-800 mb-2">تنبيهات تعليمية (Instructional cues)</p>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <button onClick={startConnectExercise} className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold">
+                        ابدأ تمرين توصيل
+                      </button>
+                      {connectTarget !== null && (
+                        <button onClick={() => { setConnectTarget(null); setConnectStatus('idle'); }} className="px-3 py-1.5 rounded-lg bg-gray-200 text-xs">إلغاء التمرين</button>
+                      )}
+                      <button onClick={cueSuccess} className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-bold">تجربة نجاح</button>
+                      <button onClick={cueError} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold">تجربة خطأ</button>
+                    </div>
+                    {result.tactileRegions && result.tactileRegions.length > 0 && (
+                      <div>
+                        <p className="text-xs text-amber-800 mb-1">نقطة تركيز نابضة (Pulse):</p>
+                        <div className="flex flex-wrap gap-1">
+                          {result.tactileRegions.map((r, i) => (
+                            <button key={i}
+                              onClick={() => focusIdx === i ? (stopFocusPulse(), setFocusIdx(null)) : startFocusPulse(i)}
+                              className={`px-2 py-1 rounded text-xs ${focusIdx === i ? 'bg-amber-600 text-white' : 'bg-white border border-amber-300'}`}>
+                              {focusIdx === i ? '⏸' : '★'} {r.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {result.tactileRegions && (
                     <ul className="mt-3 text-xs space-y-1 max-h-32 overflow-y-auto">
                       {result.tactileRegions.map((r, i) => (
-                        <li key={i}><b>{i+1}. {r.label}</b> — {r.texture} / ارتفاع {r.elevation}</li>
+                        <li key={i} className={focusIdx === i ? 'text-amber-700 font-bold' : ''}>
+                          <b>{i+1}. {r.label}</b> — {r.texture} / ارتفاع {r.elevation}
+                          {connectTarget === i && <span className="text-amber-600"> ← الهدف</span>}
+                        </li>
                       ))}
                     </ul>
                   )}
