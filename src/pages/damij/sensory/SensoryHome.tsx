@@ -41,6 +41,11 @@ const SensoryHome: React.FC = () => (
         <h3 className="font-bold text-lg mb-1">صورة → وصف صوتي + لمسي ✨ جديد</h3>
         <p className="text-sm opacity-90">تحليل صورة + وصف صوتي + نموذج لمسي للطباعة + اهتزاز تفاعلي</p>
       </Link>
+      <Link to="/damij/sensory/log" className="p-6 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2">
+        <Activity className="w-7 h-7 mb-2"/>
+        <h3 className="font-bold text-lg mb-1">سجل التفاعل والتعلّم المستمر</h3>
+        <p className="text-sm opacity-90">شاهد أدواتك المفضّلة، علامات الإجهاد، والاختصارات — يتعلّم النظام تلقائياً ليخصّص تجربتك</p>
+      </Link>
     </div>
   </div>
 );
