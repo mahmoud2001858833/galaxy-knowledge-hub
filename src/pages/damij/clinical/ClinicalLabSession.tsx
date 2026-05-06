@@ -34,12 +34,26 @@ const ClinicalLabSession: React.FC = () => {
     const { data: s } = await supabase.from('clinical_sessions').select('*').eq('id', sessionId).maybeSingle();
     if (!s) { setLoading(false); return; }
     setSession(s as any);
-    const [{ data: cd }, { data: pd }, { data: ev }] = await Promise.all([
+    const isFree = (s as any).mode === 'free';
+    const [{ data: cd }, pdRes, { data: ev }] = await Promise.all([
       supabase.from('clinical_cases').select('*').eq('id', (s as any).case_id).maybeSingle(),
-      supabase.from('clinical_protocols').select('*').eq('id', (s as any).protocol_id).maybeSingle(),
+      (s as any).protocol_id
+        ? supabase.from('clinical_protocols').select('*').eq('id', (s as any).protocol_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
       supabase.from('clinical_session_events').select('*').eq('session_id', sessionId).order('t_ms', { ascending: true }),
     ]);
-    setC(cd as any); setP(pd as any); setEvents((ev as any) || []);
+    setC(cd as any);
+    if (pdRes?.data) setP(pdRes.data as any);
+    else if (isFree) {
+      const intent = (s as any).free_intent || {};
+      setP({
+        id: 'free', code: 'free', category: (cd as any)?.category, name_ar: 'تجربة حرّة',
+        short_ar: '', goal_ar: intent.title || 'تجربة سريرية مفتوحة',
+        steps: [{ title_ar: intent.title || 'التدخّل الحرّ', instruction_ar: intent.details || 'طبّق التدخّل وراقب الاستجابة', duration_sec: 600, success_ar: 'استجابة إيجابية بدون آثار سلبية' }],
+        reference_ar: '',
+      } as any);
+    }
+    setEvents((ev as any) || []);
     setLoading(false);
   };
   useEffect(() => { load(); }, [sessionId]);
