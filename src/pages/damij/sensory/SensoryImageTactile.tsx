@@ -32,10 +32,14 @@ const SensoryImageTactile: React.FC = () => {
   const [hapticEnabled, setHapticEnabled] = useState(false);
   const [speakingMerged, setSpeakingMerged] = useState(false);
   const [geoMapping, setGeoMapping] = useState(true);
+  const [visualMapping, setVisualMapping] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pixelCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const currentRegionRef = useRef<number | null>(null);
   const hummingRef = useRef<number | null>(null);
+  const lastVisualRef = useRef<number>(0);
+  const lastIntensityRef = useRef<number>(0);
   const mobile = isMobile();
   const vibrate = hasVibration();
 
@@ -43,12 +47,49 @@ const SensoryImageTactile: React.FC = () => {
     if (hummingRef.current) { clearInterval(hummingRef.current); hummingRef.current = null; }
     if (vibrate) navigator.vibrate(0);
   };
-  const startHumming = () => {
+  const startHumming = (ms = 25, gap = 80) => {
     stopHumming();
     if (!vibrate) return;
-    hummingRef.current = window.setInterval(() => navigator.vibrate(25), 80);
+    hummingRef.current = window.setInterval(() => navigator.vibrate(ms), gap);
   };
   useEffect(() => () => stopHumming(), []);
+
+  // Sample color at canvas-relative percentage. Returns { lum 0-1, rgb }
+  const sampleColor = (px: number, py: number) => {
+    const img = imgRef.current;
+    if (!img || !img.naturalWidth) return null;
+    if (!pixelCanvasRef.current) {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d')!.drawImage(img, 0, 0);
+      pixelCanvasRef.current = c;
+    }
+    const c = pixelCanvasRef.current;
+    const x = Math.max(0, Math.min(c.width - 1, Math.round((px / 100) * c.width)));
+    const y = Math.max(0, Math.min(c.height - 1, Math.round((py / 100) * c.height)));
+    try {
+      const d = c.getContext('2d')!.getImageData(x, y, 1, 1).data;
+      const lum = (0.299 * d[0] + 0.587 * d[1] + 0.114 * d[2]) / 255;
+      return { lum, r: d[0], g: d[1], b: d[2] };
+    } catch { return null; }
+  };
+
+  // Visual mapping: dark = strong/long, light = soft/quick. Throttled.
+  const applyVisualHaptic = (px: number, py: number) => {
+    if (!hapticEnabled || !vibrate) return;
+    const now = performance.now();
+    if (now - lastVisualRef.current < 90) return;
+    const s = sampleColor(px, py);
+    if (!s) return;
+    // darkness 0..1 → intensity
+    const darkness = 1 - s.lum;
+    const ms = Math.round(8 + darkness * 90); // 8ms (light) → ~98ms (dark)
+    // Only re-vibrate if intensity changed enough → smooth gradient feel
+    if (Math.abs(ms - lastIntensityRef.current) < 6) return;
+    lastIntensityRef.current = ms;
+    lastVisualRef.current = now;
+    navigator.vibrate(ms);
+  };
 
   const onFile = (f: File) => {
     setFile(f); setResult(null);
