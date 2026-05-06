@@ -38,6 +38,23 @@ const ADHDDashboard: React.FC = () => {
     rt: n.metrics?.meanRT ?? 0,
   }));
 
+  const nbackData = neuro.filter((n) => n.test_type === 'nback').map((n) => ({
+    date: new Date(n.created_at).toLocaleDateString('ar'),
+    accuracy: n.metrics?.accuracy ?? 0,
+    dPrime: n.metrics?.dPrime ?? 0,
+  }));
+
+  const stroopData = neuro.filter((n) => n.test_type === 'stroop').map((n) => ({
+    date: new Date(n.created_at).toLocaleDateString('ar'),
+    effect: n.metrics?.stroopEffect ?? 0,
+  }));
+
+  const gngData = neuro.filter((n) => n.test_type === 'gonogo').map((n) => ({
+    date: new Date(n.created_at).toLocaleDateString('ar'),
+    commissions: n.metrics?.commissionErrors ?? 0,
+    noGoAcc: n.metrics?.noGoAccuracy ?? 0,
+  }));
+
   const trainData = training.map((t) => ({
     date: new Date(t.created_at).toLocaleDateString('ar'),
     score: Number(t.score) || 0,
@@ -76,6 +93,44 @@ const ADHDDashboard: React.FC = () => {
               <Tooltip />
               <Line type="monotone" dataKey="omission" stroke="#ef4444" strokeWidth={2} name="إغفال %" />
               <Line type="monotone" dataKey="commission" stroke="#a855f7" strokeWidth={2} name="اندفاع %" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="N-Back — الدقة و d′" icon={Brain} empty={!nbackData.length}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={nbackData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} />
+              <Tooltip />
+              <Line type="monotone" dataKey="accuracy" stroke="#3b82f6" strokeWidth={2} name="الدقة %" />
+              <Line type="monotone" dataKey="dPrime" stroke="#6366f1" strokeWidth={2} name="d′" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="Stroop — أثر التداخل (ms)" icon={Activity} empty={!stroopData.length}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={stroopData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} />
+              <Tooltip />
+              <Line type="monotone" dataKey="effect" stroke="#10b981" strokeWidth={2} name="أثر Stroop" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="Go/No-Go — أخطاء الاندفاع" icon={Brain} empty={!gngData.length}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={gngData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} />
+              <Tooltip />
+              <Line type="monotone" dataKey="commissions" stroke="#ef4444" strokeWidth={2} name="أخطاء اندفاع" />
+              <Line type="monotone" dataKey="noGoAcc" stroke="#a855f7" strokeWidth={2} name="دقة No-Go %" />
             </LineChart>
           </ResponsiveContainer>
         </Card>

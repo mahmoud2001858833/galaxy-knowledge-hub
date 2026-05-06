@@ -214,6 +214,9 @@ import ADHDInstrumentRunner from './pages/damij/adhd/ADHDInstrumentRunner';
 import ADHDScreeningReport from './pages/damij/adhd/ADHDScreeningReport';
 import ADHDAssessmentHub from './pages/damij/adhd/ADHDAssessmentHub';
 import ADHDCPTTask from './pages/damij/adhd/ADHDCPTTask';
+import ADHDNBackTask from './pages/damij/adhd/ADHDNBackTask';
+import ADHDStroopTask from './pages/damij/adhd/ADHDStroopTask';
+import ADHDGoNoGoTask from './pages/damij/adhd/ADHDGoNoGoTask';
 import ADHDTrainingHub from './pages/damij/adhd/ADHDTrainingHub';
 import ADHDFocusBuilder from './pages/damij/adhd/ADHDFocusBuilder';
 import ADHDInterventions from './pages/damij/adhd/ADHDInterventions';
@@ -1038,6 +1041,9 @@ const router = createBrowserRouter([
           { path: 'adhd/screening/:instrumentKey', element: <ADHDInstrumentRunner /> },
           { path: 'adhd/assessment', element: <ADHDAssessmentHub /> },
           { path: 'adhd/assessment/cpt', element: <ADHDCPTTask /> },
+          { path: 'adhd/assessment/nback', element: <ADHDNBackTask /> },
+          { path: 'adhd/assessment/stroop', element: <ADHDStroopTask /> },
+          { path: 'adhd/assessment/gonogo', element: <ADHDGoNoGoTask /> },
           { path: 'adhd/training', element: <ADHDTrainingHub /> },
           { path: 'adhd/training/focus', element: <ADHDFocusBuilder /> },
           { path: 'adhd/training/legacy', element: <ADHDTraining /> },
