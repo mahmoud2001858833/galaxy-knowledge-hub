@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Ear, Hand, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, Ear, Hand, Brain, BookOpen, Focus, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export type VisionState = 'normal' | 'total_blind' | 'partial_blind' | 'low_vision' | 'color_blind' | 'photosensitive';
 export type HearingState = 'normal' | 'deaf' | 'hard_of_hearing' | 'cochlear';
 export type MotorState = 'mouse' | 'eye_tracking' | 'voice' | 'switch';
+export type LearningStyle = 'visual' | 'text' | 'audio' | 'mixed';
+export type LanguageLevel = 'simplified' | 'academic' | 'illustrated' | 'sign_simplified';
+export type FocusLevel = 'normal' | 'easily_distracted' | 'low_attention';
 
 export interface SensoryProfile {
   vision: VisionState;
