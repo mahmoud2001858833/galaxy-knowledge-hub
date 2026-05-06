@@ -76,7 +76,7 @@ const ClinicalFreeExperiment: React.FC = () => {
       } as any);
 
       toast.success('بدأت التجربة');
-      navigate(`/damij/clinical/session/${(s as any).id}`);
+      navigate(`/damij/clinical/lab/${(s as any).id}`);
     } catch (e: any) {
       toast.error(e?.message ?? 'تعذّر بدء التجربة');
     } finally { setLaunching(false); }
