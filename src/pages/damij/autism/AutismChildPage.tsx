@@ -76,44 +76,59 @@ const AutismChildPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-20" dir="rtl">
-      <header className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))]">{program.title_ar}</h1>
-        <p className="text-slate-600 mt-2">{program.summary_ar}</p>
-        <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('تم نسخ الرابط'); }}
-          className="mt-4 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm inline-flex items-center gap-1">
-          <Copy className="w-4 h-4" /> نسخ الرابط
-        </button>
-      </header>
+      <div ref={printRef}>
+        <header className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[hsl(var(--damij-primary))]">{program.title_ar}</h1>
+          <p className="text-slate-600 mt-2 text-sm sm:text-base">{program.summary_ar}</p>
+        </header>
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
-        <div className="p-4 rounded-2xl bg-white border text-center">
-          <div className="text-2xl font-bold">{program.total_days}</div>
-          <div className="text-xs text-slate-500">إجمالي الأيام</div>
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-4 rounded-2xl bg-white border text-center">
+            <div className="text-2xl font-bold">{program.total_days}</div>
+            <div className="text-xs text-slate-500">إجمالي الأيام</div>
+          </div>
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+            <div className="text-2xl font-bold text-emerald-700">{completedCount}</div>
+            <div className="text-xs text-slate-500">مكتمل</div>
+          </div>
+          <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-center">
+            <div className="text-2xl font-bold text-sky-700">{Math.round(avgScore)}</div>
+            <div className="text-xs text-slate-500">متوسط الأداء</div>
+          </div>
         </div>
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-          <div className="text-2xl font-bold text-emerald-700">{completedCount}</div>
-          <div className="text-xs text-slate-500">مكتمل</div>
-        </div>
-        <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-center">
-          <div className="text-2xl font-bold text-sky-700">{Math.round(avgScore)}</div>
-          <div className="text-xs text-slate-500">متوسط الأداء</div>
+
+        <div className="space-y-2">
+          {days.map(d => {
+            const r = reports[d.id];
+            return (
+              <div key={d.id} className="p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[hsl(var(--damij-accent-2))]/10 text-[hsl(var(--damij-primary))] font-bold flex items-center justify-center">{d.day_index}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-sm truncate">{d.theme_ar}</div>
+                  <div className="text-xs text-slate-500 line-clamp-1">{d.focus_skill_ar}{r ? ` • ${r.summary_ar}` : ''}</div>
+                </div>
+                {r && <div className="flex items-center gap-1 text-emerald-700 text-sm font-bold shrink-0"><CheckCircle2 className="w-4 h-4" /> {Math.round(r.score)}</div>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="space-y-2">
-        {days.map(d => {
-          const r = reports[d.id];
-          return (
-            <div key={d.id} className="p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[hsl(var(--damij-accent-2))]/10 text-[hsl(var(--damij-primary))] font-bold flex items-center justify-center">{d.day_index}</div>
-              <div className="flex-1">
-                <div className="font-bold text-sm">{d.theme_ar}</div>
-                <div className="text-xs text-slate-500">{d.focus_skill_ar}</div>
-              </div>
-              {r && <div className="flex items-center gap-1 text-emerald-700 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> {Math.round(r.score)}</div>}
-            </div>
-          );
-        })}
+      <div className="flex flex-wrap justify-center gap-2 mt-6">
+        <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('تم نسخ الرابط'); }}
+          className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm inline-flex items-center gap-1">
+          <Copy className="w-4 h-4" /> نسخ الرابط
+        </button>
+        <button onClick={enableNotifications}
+          className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm inline-flex items-center gap-1">
+          {notifEnabled ? <Bell className="w-4 h-4 text-emerald-600" /> : <BellOff className="w-4 h-4" />}
+          {notifEnabled ? 'الإشعارات مفعّلة' : 'تفعيل إشعارات الوالدين'}
+        </button>
+        <button onClick={exportPdf} disabled={exporting}
+          className="px-4 py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-sm font-bold inline-flex items-center gap-1">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          تصدير PDF
+        </button>
       </div>
     </div>
   );
