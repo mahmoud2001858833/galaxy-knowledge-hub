@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Sparkles, Eye, Ear, Hand, Brain, Image as ImageIcon, Vibrate, Activity, Languages, Mic, Type } from 'lucide-react';
+import { Upload, Sparkles, Eye, Ear, Hand, Brain, Image as ImageIcon, Vibrate, Activity, Languages, Mic, Type, Wand2 } from 'lucide-react';
 
 const SensoryHome: React.FC = () => (
   <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto">
