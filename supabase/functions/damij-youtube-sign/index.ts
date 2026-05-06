@@ -152,22 +152,33 @@ async function fetchTranscript(videoId: string, preferredLang?: string): Promise
 
 
 async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey: string): Promise<Segment[]> {
-  // Translate all segments in one call to keep latency low.
-  const numbered = segments.map((s, i) => `${i + 1}. ${s.text}`).join("\n");
-  const prompt = `Translate the following numbered subtitle lines into ${targetLang} (BCP-47). Output ONLY the translations, same numbering, one per line, no commentary.\n\n${numbered}`;
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!r.ok) return segments;
-  const d = await r.json();
-  const raw: string = d?.choices?.[0]?.message?.content ?? "";
-  const lines = raw.split(/\r?\n/).map(l => l.replace(/^\s*\d+[.)\-] \s*/, "").trim()).filter(Boolean);
-  return segments.map((s, i) => ({ ...s, text: lines[i] || s.text }));
+  // Translate in chunks to avoid timeouts
+  const CHUNK = 40;
+  const out: Segment[] = [];
+  for (let i = 0; i < segments.length; i += CHUNK) {
+    const slice = segments.slice(i, i + CHUNK);
+    const numbered = slice.map((s, j) => `${j + 1}. ${s.text}`).join("\n");
+    const prompt = `Translate the following numbered subtitle lines into ${targetLang} (BCP-47). Output ONLY the translations, same numbering, one per line, no commentary.\n\n${numbered}`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: [{ role: "user", content: prompt }] }),
+      });
+      if (!r.ok) { out.push(...slice); continue; }
+      const d = await r.json();
+      const raw: string = d?.choices?.[0]?.message?.content ?? "";
+      const lines = raw.split(/\r?\n/).map(l => l.replace(/^\s*\d+[.)\-]\s*/, "").trim()).filter(Boolean);
+      out.push(...slice.map((s, j) => ({ ...s, text: lines[j] || s.text })));
+    } catch (e) {
+      console.error("translate chunk failed", e);
+      out.push(...slice);
+    } finally { clearTimeout(t); }
+  }
+  return out;
 }
 
 async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
