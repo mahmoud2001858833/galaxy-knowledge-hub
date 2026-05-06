@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, Send, Mic, MicOff, Sparkles, FastForward, ArrowRight, Volume2 } from 'lucide-react';
+import { Loader2, Send, Mic, MicOff, Sparkles, FastForward, ArrowRight, Volume2, MessageSquare, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ClinicalCase, ClinicalProtocol, ClinicalSession } from '@/features/clinical/types';
+import InterventionTryPanel from '@/features/clinical/InterventionTryPanel';
 
 const QUICK_ACTIONS = [
   { key: 'reinforce', ar: 'تعزيز إيجابي 👍' },
