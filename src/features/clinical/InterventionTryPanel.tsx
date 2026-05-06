@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Sparkles, AlertTriangle, CheckCircle2, Pill, Brain, Headphones, Eye, Ear, ClipboardList, MessageCircle, Wand2 } from 'lucide-react';
+import { Loader2, Sparkles, AlertTriangle, CheckCircle2, Pill, Brain, Headphones, Eye, Ear, ClipboardList, MessageCircle, Wand2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 
 export const INTERVENTION_CATEGORIES = [
   { key: 'medication',  ar: 'دواء',         icon: Pill },
