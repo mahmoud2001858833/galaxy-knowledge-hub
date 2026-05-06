@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera, CameraOff, Hand, Volume2, Trash2, AlertCircle, Loader2,
   Activity, Languages, Sparkles, Copy, Wand2, Globe, Zap, Type, Check,
+  Mic, MicOff, Settings2, Play, Pause, SkipForward, SkipBack, RotateCw,
+  Star, StarOff, Download, Share2, FlipHorizontal, ArrowLeftRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from './camera';
@@ -12,6 +14,7 @@ import { SIGN_SYSTEMS } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
+
 
 // ── Gesture vocabulary (Arabic) ──
 const gestureToArabic: Record<string, { text: string; emoji: string; description: string }> = {
@@ -75,19 +78,27 @@ const SignTranslatorPro: React.FC = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
 
-  // ─ language picks
-  const [signSystem, setSignSystem] = useState<string>('ArSL');
+  // ─ language picks (persisted)
+  const LS_KEY = 'damij.sign.langPrefs.v1';
+  const loadPrefs = () => {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch { return null; }
+  };
+  const initial = loadPrefs();
+  const [signSystem, setSignSystem] = useState<string>(initial?.signSystem || 'ArSL');
   const [targetLang, setTargetLang] = useState<SpokenLang>(
-    SPOKEN_LANGUAGES.find(l => l.code === 'en-US') || SPOKEN_LANGUAGES[1],
+    SPOKEN_LANGUAGES.find(l => l.code === (initial?.targetLang || 'en-US')) || SPOKEN_LANGUAGES[1],
   );
+  const [t2sLang, setT2sLang] = useState<SpokenLang>(
+    SPOKEN_LANGUAGES.find(l => l.code === (initial?.t2sLang || 'ar-SA')) || SPOKEN_LANGUAGES[0],
+  );
+  const [langConfirmed, setLangConfirmed] = useState<boolean>(!!initial?.confirmed);
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
   const [t2sLoading, setT2sLoading] = useState(false);
-  const [t2sLang, setT2sLang] = useState<SpokenLang>(
-    SPOKEN_LANGUAGES.find(l => l.code === 'ar-SA') || SPOKEN_LANGUAGES[0],
-  );
   const [t2sLangQuery, setT2sLangQuery] = useState('');
+  const [signSysQuery, setSignSysQuery] = useState('');
+  const [targetLangQuery, setTargetLangQuery] = useState('');
   const [t2sResult, setT2sResult] = useState<{
     translated_text: string;
     language: string;
@@ -104,8 +115,18 @@ const SignTranslatorPro: React.FC = () => {
     alphabet_chart: { letter: string; sign: string; emoji: string; handshape_id?: string }[];
   } | null>(null);
   const [playSpeed, setPlaySpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playAbortRef = useRef<{ stop: boolean }>({ stop: false });
   const stripRef = React.useRef<HTMLDivElement>(null);
   const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
+  const [mirrorHand, setMirrorHand] = useState(false);
+  const [signSize, setSignSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('damij.sign.favorites') || '[]'); } catch { return []; }
+  });
+  const [recording, setRecording] = useState(false);
+  const recogRef = useRef<any>(null);
+
 
   // ─ tab
   const [tab, setTab] = useState<'sign2text' | 'text2sign'>('sign2text');
@@ -452,27 +473,217 @@ const SignTranslatorPro: React.FC = () => {
 
   const playWordSequence = async () => {
     if (!t2sResult) return;
-    const delay = playSpeed === 'slow' ? 1600 : playSpeed === 'fast' ? 700 : 1100;
+    setIsPlaying(true);
+    playAbortRef.current.stop = false;
+    const delay = playSpeed === 'slow' ? 1700 : playSpeed === 'fast' ? 650 : 1100;
     for (let i = 0; i < t2sResult.words.length; i++) {
+      if (playAbortRef.current.stop) break;
       setActiveWordIdx(i);
       speakText(t2sResult.words[i].word, t2sLang.code);
-      // Auto-scroll the active card into view in the inline strip.
       requestAnimationFrame(() => {
         const el = stripRef.current?.querySelector(`[data-word-idx="${i}"]`) as HTMLElement | null;
         el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       });
       await new Promise(r => setTimeout(r, delay));
     }
+    setIsPlaying(false);
     setActiveWordIdx(null);
   };
 
-  const filteredT2sLangs = t2sLangQuery
+  const stopPlayback = () => {
+    playAbortRef.current.stop = true;
+    try { window.speechSynthesis.cancel(); } catch {}
+    setIsPlaying(false);
+  };
+
+  const stepWord = (dir: 1 | -1) => {
+    if (!t2sResult) return;
+    const next = Math.max(0, Math.min(t2sResult.words.length - 1, (activeWordIdx ?? -1) + dir));
+    setActiveWordIdx(next);
+    speakText(t2sResult.words[next].word, t2sLang.code);
+    requestAnimationFrame(() => {
+      const el = stripRef.current?.querySelector(`[data-word-idx="${next}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    });
+  };
+
+  const startVoiceInput = () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error('المتصفح لا يدعم الإدخال الصوتي'); return; }
+    try {
+      const r = new SR();
+      r.lang = t2sLang.code;
+      r.interimResults = true;
+      r.continuous = false;
+      r.onresult = (e: any) => {
+        let txt = '';
+        for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+        setT2sInput(txt);
+      };
+      r.onend = () => setRecording(false);
+      r.onerror = () => { setRecording(false); toast.error('تعذّر تسجيل الصوت'); };
+      r.start();
+      recogRef.current = r;
+      setRecording(true);
+    } catch { toast.error('فشل بدء الإدخال الصوتي'); }
+  };
+  const stopVoiceInput = () => { try { recogRef.current?.stop(); } catch {} setRecording(false); };
+
+  const toggleFavorite = () => {
+    if (!t2sInput.trim()) return;
+    const next = favorites.includes(t2sInput) ? favorites.filter(f => f !== t2sInput) : [t2sInput, ...favorites].slice(0, 30);
+    setFavorites(next);
+    localStorage.setItem('damij.sign.favorites', JSON.stringify(next));
+  };
+
+  const downloadResult = () => {
+    if (!t2sResult) return;
+    const blob = new Blob([JSON.stringify(t2sResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sign-${t2sResult.sign_system}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const shareResult = async () => {
+    if (!t2sResult) return;
+    const text = `${t2sResult.translated_text}\n\n${t2sResult.words.map(w => `${w.sign_emoji} ${w.word}`).join(' · ')}`;
+    try {
+      if ((navigator as any).share) await (navigator as any).share({ title: 'ترجمة لغة الإشارة', text });
+      else { navigator.clipboard.writeText(text); toast.success('تم النسخ للحافظة'); }
+    } catch {}
+  };
+
+  const confirmLanguages = () => {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      signSystem, targetLang: targetLang.code, t2sLang: t2sLang.code, confirmed: true,
+    }));
+    setLangConfirmed(true);
+  };
+
+  const filterLangs = (q: string) => q
     ? SPOKEN_LANGUAGES.filter(l =>
-        l.name.toLowerCase().includes(t2sLangQuery.toLowerCase()) ||
-        l.nativeName.toLowerCase().includes(t2sLangQuery.toLowerCase()) ||
-        l.code.toLowerCase().includes(t2sLangQuery.toLowerCase()),
+        l.name.toLowerCase().includes(q.toLowerCase()) ||
+        l.nativeName.toLowerCase().includes(q.toLowerCase()) ||
+        l.code.toLowerCase().includes(q.toLowerCase()),
       )
     : SPOKEN_LANGUAGES;
+  const filteredT2sLangs = filterLangs(t2sLangQuery);
+  const filteredTargetLangs = filterLangs(targetLangQuery);
+  const filteredSignSystems = signSysQuery
+    ? SIGN_SYSTEMS.filter(s =>
+        s.name.toLowerCase().includes(signSysQuery.toLowerCase()) ||
+        s.nativeName.toLowerCase().includes(signSysQuery.toLowerCase()) ||
+        s.code.toLowerCase().includes(signSysQuery.toLowerCase()) ||
+        s.region.toLowerCase().includes(signSysQuery.toLowerCase()),
+      )
+    : SIGN_SYSTEMS;
+
+  // ── Language gate screen ──
+  if (!langConfirmed) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-br from-[hsl(var(--damij-primary))]/10 to-emerald-50 rounded-3xl p-8 border border-[hsl(var(--damij-primary))]/20">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-primary))] flex items-center justify-center">
+              <Globe className="w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-[hsl(var(--damij-primary))] mb-1">اختر اللغات أولاً</h2>
+              <p className="text-[hsl(var(--damij-text))]/70">سيتم تفسير الإشارات وعرضها وفق رموز نظام اللغة الذي تختاره. كل نظام إشارة له رموز ودلالات مختلفة.</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            {/* Sign system */}
+            <div className="bg-white rounded-2xl p-4 border border-[hsl(var(--damij-primary))]/15">
+              <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
+                <Hand className="w-4 h-4" /> نظام لغة الإشارة
+              </label>
+              <input
+                value={signSysQuery}
+                onChange={(e) => setSignSysQuery(e.target.value)}
+                placeholder="ابحث (ASL، ArSL، LSF…)"
+                className="w-full p-2 mb-2 rounded-lg border border-slate-200 text-sm"
+              />
+              <select
+                value={signSystem}
+                onChange={(e) => setSignSystem(e.target.value)}
+                size={6}
+                className="w-full p-2 rounded-lg border border-slate-200 bg-white text-sm"
+              >
+                {filteredSignSystems.map(s => (
+                  <option key={s.code} value={s.code}>{s.nativeName} — {s.code} · {s.region}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-2">الإشارات ستُفسَّر برموز هذا النظام فقط.</p>
+            </div>
+
+            {/* Spoken language for sign→text translation */}
+            <div className="bg-white rounded-2xl p-4 border border-[hsl(var(--damij-primary))]/15">
+              <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
+                <Languages className="w-4 h-4" /> لغة ترجمة الإشارات (إشارة → نص)
+              </label>
+              <input
+                value={targetLangQuery}
+                onChange={(e) => setTargetLangQuery(e.target.value)}
+                placeholder="ابحث عن لغة"
+                className="w-full p-2 mb-2 rounded-lg border border-slate-200 text-sm"
+              />
+              <select
+                value={targetLang.code}
+                onChange={(e) => setTargetLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
+                size={6}
+                className="w-full p-2 rounded-lg border border-slate-200 bg-white text-sm"
+              >
+                {filteredTargetLangs.map(l => (
+                  <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Spoken language for text→sign */}
+            <div className="bg-white rounded-2xl p-4 border border-[hsl(var(--damij-primary))]/15">
+              <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
+                <Type className="w-4 h-4" /> لغة الإدخال (نص → إشارة)
+              </label>
+              <input
+                value={t2sLangQuery}
+                onChange={(e) => setT2sLangQuery(e.target.value)}
+                placeholder="ابحث عن لغة"
+                className="w-full p-2 mb-2 rounded-lg border border-slate-200 text-sm"
+              />
+              <select
+                value={t2sLang.code}
+                onChange={(e) => setT2sLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
+                size={6}
+                className="w-full p-2 rounded-lg border border-slate-200 bg-white text-sm"
+              >
+                {filteredT2sLangs.map(l => (
+                  <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              onClick={confirmLanguages}
+              className="px-6 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center gap-2 shadow-lg hover:shadow-xl transition"
+            >
+              <Check className="w-5 h-5" /> تأكيد ومتابعة إلى المترجم
+            </button>
+            <span className="text-sm text-slate-600">
+              المختار: <b>{signSystem}</b> · إشارة←{targetLang.flag} {targetLang.nativeName} · نص←{t2sLang.flag} {t2sLang.nativeName}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
@@ -492,36 +703,23 @@ const SignTranslatorPro: React.FC = () => {
         </button>
       </div>
 
-      {/* Language selectors */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
-          <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
-            <Hand className="w-4 h-4" /> نظام الإشارة ({SIGN_SYSTEMS.length})
-          </label>
-          <select
-            value={signSystem}
-            onChange={(e) => setSignSystem(e.target.value)}
-            className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white"
-          >
-            {SIGN_SYSTEMS.map(s => (
-              <option key={s.code} value={s.code}>{s.nativeName} — {s.code} · {s.region}</option>
-            ))}
-          </select>
-        </div>
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
-          <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
-            <Globe className="w-4 h-4" /> اللغة المستهدفة ({SPOKEN_LANGUAGES.length}+ لغة)
-          </label>
-          <select
-            value={targetLang.code}
-            onChange={(e) => setTargetLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
-            className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white"
-          >
-            {SPOKEN_LANGUAGES.map(l => (
-              <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name}</option>
-            ))}
-          </select>
-        </div>
+      {/* Compact language summary + change button */}
+      <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-3 flex flex-wrap items-center gap-3">
+        <span className="px-3 py-1.5 rounded-lg bg-[hsl(var(--damij-primary))]/10 text-[hsl(var(--damij-primary))] font-bold text-sm flex items-center gap-1">
+          <Hand className="w-4 h-4" /> {SIGN_SYSTEMS.find(s => s.code === signSystem)?.nativeName || signSystem}
+        </span>
+        <span className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center gap-1">
+          <Languages className="w-4 h-4" /> إشارة ← {targetLang.flag} {targetLang.nativeName}
+        </span>
+        <span className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 font-bold text-sm flex items-center gap-1">
+          <Type className="w-4 h-4" /> نص ← {t2sLang.flag} {t2sLang.nativeName}
+        </span>
+        <button
+          onClick={() => { setLangConfirmed(false); }}
+          className="ms-auto px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold flex items-center gap-1"
+        >
+          <Settings2 className="w-4 h-4" /> تغيير اللغات
+        </button>
       </div>
 
       {tab === 'sign2text' ? (
@@ -682,45 +880,63 @@ const SignTranslatorPro: React.FC = () => {
         <div className="space-y-6">
           {/* Top controls */}
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Input + language picker */}
+            {/* Input panel */}
             <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/15 space-y-4">
-              <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                <Type className="w-4 h-4" /> اكتب جملة بأي لغة
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Type className="w-4 h-4" /> اكتب أو أملِ جملة بـ {t2sLang.flag} {t2sLang.nativeName}
+                </h3>
+                <button
+                  onClick={toggleFavorite}
+                  className="p-2 rounded-lg hover:bg-slate-100"
+                  title="حفظ كمفضّلة"
+                >
+                  {favorites.includes(t2sInput) ? <Star className="w-4 h-4 fill-amber-400 text-amber-400" /> : <StarOff className="w-4 h-4 text-slate-400" />}
+                </button>
+              </div>
               <textarea
                 value={t2sInput}
                 onChange={(e) => setT2sInput(e.target.value)}
-                rows={5}
-                placeholder="مثال: مرحباً، كيف حالك اليوم؟"
+                rows={4}
+                placeholder={`مثال بـ ${t2sLang.nativeName}: ${t2sLang.code.startsWith('ar') ? 'مرحباً، كيف حالك؟' : t2sLang.code.startsWith('en') ? 'Hello, how are you?' : '...'}`}
                 className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-lg"
                 dir="auto"
               />
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> ترجمة الإشارات إلى لغة:
-                  <span className="ms-auto text-xs font-normal text-slate-500">
-                    المختارة: {t2sLang.flag} {t2sLang.nativeName}
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={t2sLangQuery}
-                  onChange={(e) => setT2sLangQuery(e.target.value)}
-                  placeholder="ابحث عن لغة (عربي، English, Français, 中文…)"
-                  className="w-full p-2.5 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-sm"
-                />
-                <select
-                  value={t2sLang.code}
-                  onChange={(e) => setT2sLang(SPOKEN_LANGUAGES.find(l => l.code === e.target.value)!)}
-                  size={6}
-                  className="w-full p-2 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-sm"
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={recording ? stopVoiceInput : startVoiceInput}
+                  className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 ${recording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                 >
-                  {filteredT2sLangs.map(l => (
-                    <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name} ({l.code})</option>
-                  ))}
-                </select>
+                  {recording ? <><MicOff className="w-4 h-4" /> إيقاف التسجيل</> : <><Mic className="w-4 h-4" /> إدخال صوتي</>}
+                </button>
+                <button
+                  onClick={() => setT2sInput('')}
+                  disabled={!t2sInput}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" /> مسح
+                </button>
               </div>
+
+              {favorites.length > 0 && (
+                <div>
+                  <div className="text-xs font-bold text-slate-500 mb-1">مفضّلاتك:</div>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {favorites.map((f, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setT2sInput(f)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs hover:bg-amber-100 max-w-[200px] truncate"
+                        dir="auto"
+                        title={f}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={runText2Sign}
@@ -728,7 +944,7 @@ const SignTranslatorPro: React.FC = () => {
                 className="w-full py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {t2sLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                ترجم إلى {t2sLang.nativeName} + إشارات {signSystem}
+                ترجم إلى إشارات {signSystem}
               </button>
             </div>
 
@@ -770,7 +986,7 @@ const SignTranslatorPro: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  <div ref={stripRef} className="flex gap-2 overflow-x-auto pb-2 scroll-smooth" dir="ltr">
+                  <div ref={stripRef} className={`flex gap-2 overflow-x-auto pb-2 scroll-smooth ${mirrorHand ? '[&>div]:scale-x-[-1]' : ''}`} dir="ltr">
                     {t2sResult.words.map((w, i) => (
                       <div key={i} data-word-idx={i}>
                         <HandSignCard
@@ -779,7 +995,7 @@ const SignTranslatorPro: React.FC = () => {
                           movement={(w.movement as Movement) || 'none'}
                           twoHanded={w.two_handed}
                           active={activeWordIdx === i}
-                          size={80}
+                          size={signSize === 'sm' ? 64 : signSize === 'lg' ? 110 : 84}
                           onClick={() => { setActiveWordIdx(i); speakText(w.word, t2sLang.code); }}
                         />
                       </div>
@@ -789,12 +1005,44 @@ const SignTranslatorPro: React.FC = () => {
               )}
 
               {t2sResult && (
-                <button
-                  onClick={playWordSequence}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" /> تشغيل تتابع الإشارات
-                </button>
+                <div className="space-y-2">
+                  {/* Player controls */}
+                  <div className="flex items-center justify-center gap-2">
+                    <button onClick={() => stepWord(-1)} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="السابق"><SkipBack className="w-4 h-4" /></button>
+                    {isPlaying ? (
+                      <button onClick={stopPlayback} className="px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold flex items-center gap-2"><Pause className="w-4 h-4" /> إيقاف</button>
+                    ) : (
+                      <button onClick={playWordSequence} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2"><Play className="w-4 h-4" /> تشغيل التتابع</button>
+                    )}
+                    <button onClick={() => { setActiveWordIdx(0); }} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="إعادة"><RotateCw className="w-4 h-4" /></button>
+                    <button onClick={() => stepWord(1)} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="التالي"><SkipForward className="w-4 h-4" /></button>
+                  </div>
+
+                  {/* Tools */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                    <button
+                      onClick={() => setMirrorHand(v => !v)}
+                      className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 ${mirrorHand ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-slate-100 text-slate-700'}`}
+                      title="عكس اتجاه اليد"
+                    >
+                      <FlipHorizontal className="w-3.5 h-3.5" /> {mirrorHand ? 'يسرى' : 'يمنى'}
+                    </button>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
+                      <span className="text-slate-500">الحجم:</span>
+                      {(['sm','md','lg'] as const).map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setSignSize(s)}
+                          className={`px-2 rounded ${signSize === s ? 'bg-white shadow font-bold' : ''}`}
+                        >
+                          {s === 'sm' ? 'صغير' : s === 'lg' ? 'كبير' : 'عادي'}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={downloadResult} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center gap-1"><Download className="w-3.5 h-3.5" /> تنزيل</button>
+                    <button onClick={shareResult} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center gap-1"><Share2 className="w-3.5 h-3.5" /> مشاركة</button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

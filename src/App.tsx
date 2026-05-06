@@ -211,8 +211,6 @@ import ADHDResources from './pages/damij/adhd/ADHDResources';
 import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
 import SignHome from './pages/damij/sign/SignHome';
 import SignTranslator from './pages/damij/sign/SignTranslator';
-import SignDictionary from './pages/damij/sign/SignDictionary';
-import SignLearn from './pages/damij/sign/SignLearn';
 import SensoryHome from './pages/damij/sensory/SensoryHome';
 import SensoryUpload from './pages/damij/sensory/SensoryUpload';
 import SensoryOutput from './pages/damij/sensory/SensoryOutput';
@@ -991,8 +989,6 @@ const router = createBrowserRouter([
           { path: 'dashboard', element: <DamijDashboard /> },
           { path: 'sign', element: <SignHome /> },
           { path: 'sign/translator', element: <SignTranslator /> },
-          { path: 'sign/dictionary', element: <SignDictionary /> },
-          { path: 'sign/learn', element: <SignLearn /> },
           { path: 'sensory', element: <SensoryHome /> },
           { path: 'sensory/profile', element: <SensoryProfileSetup /> },
           { path: 'sensory/upload', element: <SensoryUpload /> },

@@ -11,10 +11,9 @@ import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from '@/features/sign-language/camera';
-import LearnSignsTab from '@/features/sign-language/LearnSignsTab';
 import TextToSignTab from '@/features/sign-language/TextToSignTab';
 import { filterGesture, cleanGestureText, buildSentence, type DetectedToken } from '@/features/sign-language/gestureFilter';
-import { GraduationCap, Type } from 'lucide-react';
+import { Type } from 'lucide-react';
 
 // Extended sign language dictionary with more words and detailed descriptions
 const signDictionary = [
@@ -742,14 +741,10 @@ const SignLanguagePage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'camera'} className="w-full">
-          <TabsList className="w-full max-w-3xl mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1">
+          <TabsList className="w-full max-w-3xl mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-3 h-auto p-1 gap-1">
             <TabsTrigger value="camera" className="data-[state=active]:bg-indigo-600 py-2.5">
               <Camera className="ml-2 h-4 w-4" />
               الكاميرا
-            </TabsTrigger>
-            <TabsTrigger value="learn" className="data-[state=active]:bg-indigo-600 py-2.5">
-              <GraduationCap className="ml-2 h-4 w-4" />
-              تعلّم
             </TabsTrigger>
             <TabsTrigger value="text-to-sign" className="data-[state=active]:bg-indigo-600 py-2.5">
               <Type className="ml-2 h-4 w-4" />
@@ -1055,11 +1050,6 @@ const SignLanguagePage: React.FC = () => {
                 </Card>
               </div>
             </div>
-          </TabsContent>
-
-          {/* Learn Tab */}
-          <TabsContent value="learn">
-            <LearnSignsTab dictionary={signDictionary} categories={categories} speak={speakText} />
           </TabsContent>
 
           {/* Text-to-Sign Tab */}
