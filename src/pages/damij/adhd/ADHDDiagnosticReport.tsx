@@ -69,9 +69,14 @@ const ADHDDiagnosticReport: React.FC = () => {
         </div>
       )}
 
-      <button onClick={() => navigate('/damij/adhd/program/setup')} className="w-full p-4 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-2">
-        <Sparkles className="w-5 h-5" /> إنشاء برنامج علاجي مولّد بالذكاء الاصطناعي
-      </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button onClick={() => navigate('/damij/adhd/games?tab=therapy')} className="p-4 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition">
+          <Sparkles className="w-5 h-5" /> ابدأ العلاج بالألعاب الآن
+        </button>
+        <button onClick={() => navigate('/damij/adhd/program/setup')} className="p-4 rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition">
+          <FileText className="w-5 h-5" /> برنامج علاجي مخصّص بالذكاء الاصطناعي
+        </button>
+      </div>
     </div>
   );
 };
