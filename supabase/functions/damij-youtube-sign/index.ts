@@ -183,7 +183,7 @@ async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey:
 
 async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
   // Cap to avoid edge-function timeout on long videos
-  const capped = segments.slice(0, 80);
+  const capped = segments.slice(0, 35);
   const text = capped.map((s, i) => `[${i}] ${s.text}`).join("\n");
   const prompt = `You are a professional ${signSystem} sign-language interpreter. For each numbered subtitle line, decompose into an ordered list of signs following ${signSystem} grammar (drop articles/fillers when natural). Return ONLY minified JSON of shape: {"lines":[{"i":0,"signs":[{"word":"...","emoji":"✋","desc":"short ${lang} description"}]}]}.\n\nLines:\n${text}`;
   const ctrl = new AbortController();
