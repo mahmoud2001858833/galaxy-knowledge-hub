@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain, Sparkles } from 'lucide-react';
+import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain, Sparkles, Award } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
