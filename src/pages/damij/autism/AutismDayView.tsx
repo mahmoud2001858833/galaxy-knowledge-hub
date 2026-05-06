@@ -23,6 +23,18 @@ const AutismDayView: React.FC = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [regenerating, setRegenerating] = useState<null | 'games' | 'report'>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const exportPdf = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      await exportElementToPdf(reportRef.current, `report-day-${day?.day_index ?? ''}.pdf`);
+      toast.success('تم تنزيل تقرير اليوم PDF');
+    } catch { toast.error('تعذّر إنشاء PDF'); }
+    finally { setExporting(false); }
+  };
 
   const load = async () => {
     if (!dayId) return;
