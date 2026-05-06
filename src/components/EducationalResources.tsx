@@ -11,6 +11,13 @@ const EducationalResources = () => {
   
   const resources = [
     {
+      title: '🏆 إنجازات المعلمين للمنصة',
+      icon: Award,
+      description: 'لوحة شرف لإسهامات معلمي مدرسة عنبه في إثراء المنصة',
+      link: '/teacher-achievements',
+      gradient: 'from-amber-500 to-orange-600'
+    },
+    {
       title: '🎨 إنشاء الصور التعليمية',
       icon: Sparkles,
       description: 'أنشئ صوراً تعليمية احترافية بالذكاء الاصطناعي',
