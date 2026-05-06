@@ -57,6 +57,7 @@ const SensoryImageTactile: React.FC = () => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setResult(data as AnalysisResult);
+      logToolUse('image_analyze');
       toast.success('تم التحليل بنجاح');
     } catch (e: any) {
       toast.error(e?.message || 'فشل التحليل');
@@ -96,6 +97,7 @@ const SensoryImageTactile: React.FC = () => {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ar-SA'; u.rate = 0.95;
     window.speechSynthesis.speak(u);
+    logToolUse('tts');
   };
 
   const triggerHaptic = (intensity: number, duration: number, pattern: string) => {
@@ -105,6 +107,7 @@ const SensoryImageTactile: React.FC = () => {
     if (pattern === 'pulse') navigator.vibrate([d, 80, d]);
     else if (pattern === 'rhythm') navigator.vibrate([d, 60, d/2, 60, d]);
     else navigator.vibrate(d * (i / 5));
+    logToolUse('haptic');
   };
 
   const playMergedExperience = async () => {
@@ -130,6 +133,7 @@ const SensoryImageTactile: React.FC = () => {
   };
 
   const printModel = () => {
+    logToolUse('tactile_print');
     if (!canvasRef.current || !result) return;
     const dataUrl = canvasRef.current.toDataURL('image/png');
     const w = window.open('', '_blank');
