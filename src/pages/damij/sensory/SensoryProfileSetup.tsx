@@ -47,6 +47,26 @@ const MOTOR_OPTS: { v: MotorState; t: string; d: string }[] = [
   { v: 'switch', t: 'مفتاح واحد', d: 'تنقّل تسلسلي بضغطة واحدة' },
 ];
 
+const LEARNING_OPTS: { v: LearningStyle; t: string; d: string }[] = [
+  { v: 'visual', t: 'صور ورسوم', d: 'يستوعب الصور والأيقونات أفضل' },
+  { v: 'text', t: 'نصوص مكتوبة', d: 'يفضّل القراءة الصامتة' },
+  { v: 'audio', t: 'صوت ونطق', d: 'يفضّل الاستماع' },
+  { v: 'mixed', t: 'مزيج متوازن', d: 'بين الصور والنص والصوت' },
+];
+
+const LANGUAGE_OPTS: { v: LanguageLevel; t: string; d: string }[] = [
+  { v: 'simplified', t: 'لغة مبسّطة', d: 'كلمات قصيرة ومألوفة' },
+  { v: 'academic', t: 'لغة أكاديمية', d: 'مصطلحات علمية دقيقة' },
+  { v: 'illustrated', t: 'تحويل لرسوم', d: 'تمثيل النص برسوم توضيحية' },
+  { v: 'sign_simplified', t: 'إشارة مبسّطة', d: 'كلمات إشارة مفتاحية فقط' },
+];
+
+const FOCUS_OPTS: { v: FocusLevel; t: string; d: string }[] = [
+  { v: 'normal', t: 'تركيز طبيعي', d: 'لا حاجة لتعديل الواجهة' },
+  { v: 'easily_distracted', t: 'تشتت انتباه', d: 'إزالة الحركات والمشتتات' },
+  { v: 'low_attention', t: 'انتباه منخفض', d: 'محتوى مقسم لخطوات قصيرة' },
+];
+
 const SensoryProfileSetup: React.FC = () => {
   const navigate = useNavigate();
   const [vision, setVision] = useState<VisionState | ''>('');
