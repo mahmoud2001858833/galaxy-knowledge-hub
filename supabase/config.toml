@@ -48,9 +48,6 @@ verify_jwt = false
 [functions.arabic-essay-corrector]
 verify_jwt = false
 
-[functions.arabic-essay-generator]
-verify_jwt = false
-
 [functions.arabic-question-bank]
 verify_jwt = false
 
@@ -75,9 +72,6 @@ verify_jwt = false
 [functions.drawing-challenge-prompt]
 verify_jwt = false
 
-[functions.drawing-challenge-evaluate]
-verify_jwt = false
-
 [functions.art-challenge-prompt]
 verify_jwt = false
 
@@ -87,19 +81,10 @@ verify_jwt = false
 [functions.rate-your-art]
 verify_jwt = false
 
-[functions.upload-textbook-to-gemini]
-verify_jwt = false
-
-[functions.jordanian-assistant-search]
-verify_jwt = false
-
 [functions.jordanian-assistant-answer]
 verify_jwt = false
 
 [functions.generate-exam-questions]
-verify_jwt = false
-
-[functions.jordanian-assistant-analyze-image]
 verify_jwt = false
 
 [functions.extract-textbook-text]
@@ -162,9 +147,6 @@ verify_jwt = false
 [functions.text-to-speech]
 verify_jwt = false
 
-[functions.enhanced-text-to-speech]
-verify_jwt = false
-
 [functions.speech-analysis]
 verify_jwt = false
 
@@ -193,9 +175,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.tech-ai-platform-builder]
-verify_jwt = false
-
-[functions.platform-ai-proxy]
 verify_jwt = false
 
 [functions.platform-stage-analyze]
