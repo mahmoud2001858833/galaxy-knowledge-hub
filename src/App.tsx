@@ -202,6 +202,10 @@ import AutismTherapy from './pages/damij/autism/AutismTherapy';
 import AutismTherapyPlan from './pages/damij/autism/AutismTherapyPlan';
 import AutismGamePlayer from './pages/damij/autism/AutismGamePlayer';
 import AutismProfile from './pages/damij/autism/AutismProfile';
+import AutismProgramSetup from './pages/damij/autism/AutismProgramSetup';
+import AutismProgramCalendar from './pages/damij/autism/AutismProgramCalendar';
+import AutismDayView from './pages/damij/autism/AutismDayView';
+import AutismChildPage from './pages/damij/autism/AutismChildPage';
 import ADHDHome from './pages/damij/adhd/ADHDHome';
 import ADHDScreening from './pages/damij/adhd/ADHDScreening';
 import ADHDTraining from './pages/damij/adhd/ADHDTraining';
@@ -1004,6 +1008,9 @@ const router = createBrowserRouter([
           { path: 'autism/plan', element: <AutismTherapyPlan /> },
           { path: 'autism/play', element: <AutismGamePlayer /> },
           { path: 'autism/profile', element: <AutismProfile /> },
+          { path: 'autism/program/setup', element: <AutismProgramSetup /> },
+          { path: 'autism/program/:programId', element: <AutismProgramCalendar /> },
+          { path: 'autism/program/:programId/day/:dayId', element: <AutismDayView /> },
           { path: 'adhd', element: <ADHDHome /> },
           { path: 'adhd/screening', element: <ADHDScreening /> },
           { path: 'adhd/training', element: <ADHDTraining /> },
