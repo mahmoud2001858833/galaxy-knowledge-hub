@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Sparkles, Eye, Ear, Hand, Brain } from 'lucide-react';
+import { Upload, Sparkles, Eye, Ear, Hand, Brain, Image as ImageIcon, Vibrate } from 'lucide-react';
 
 const SensoryHome: React.FC = () => (
   <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto">
@@ -30,9 +30,16 @@ const SensoryHome: React.FC = () => (
       ))}
     </div>
 
-    <div className="text-center">
-      <Link to="/damij/sensory/profile" className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
-        <Upload className="w-6 h-6" /> ابدأ — أنشئ ملفك الحسّي ثم ارفع المحتوى
+    <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mb-6">
+      <Link to="/damij/sensory/profile" className="p-6 rounded-2xl bg-[hsl(var(--damij-primary))] text-white shadow-xl hover:-translate-y-1 transition-all">
+        <Upload className="w-8 h-8 mb-2"/>
+        <h3 className="font-bold text-lg mb-1">المحوّل الحسّي العام</h3>
+        <p className="text-sm opacity-90">ارفع نص/صوت/فيديو/PDF وحوّله للحاسة المناسبة</p>
+      </Link>
+      <Link to="/damij/sensory/image-tactile" className="p-6 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-xl hover:-translate-y-1 transition-all">
+        <div className="flex items-center gap-2 mb-2"><ImageIcon className="w-7 h-7"/><Vibrate className="w-6 h-6"/></div>
+        <h3 className="font-bold text-lg mb-1">صورة → وصف صوتي + لمسي ✨ جديد</h3>
+        <p className="text-sm opacity-90">تحليل صورة + وصف صوتي + نموذج لمسي للطباعة + اهتزاز تفاعلي</p>
       </Link>
     </div>
   </div>

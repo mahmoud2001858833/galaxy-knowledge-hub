@@ -214,6 +214,7 @@ import SensoryHome from './pages/damij/sensory/SensoryHome';
 import SensoryUpload from './pages/damij/sensory/SensoryUpload';
 import SensoryOutput from './pages/damij/sensory/SensoryOutput';
 import SensoryProfileSetup from './pages/damij/sensory/SensoryProfileSetup';
+import SensoryImageTactile from './pages/damij/sensory/SensoryImageTactile';
 import ClinicalHome from './pages/damij/clinical/ClinicalHome';
 import ClinicalCases from './pages/damij/clinical/ClinicalCases';
 import ClinicalLab from './pages/damij/clinical/ClinicalLab';
@@ -1007,6 +1008,7 @@ const router = createBrowserRouter([
           { path: 'sensory/profile', element: <SensoryProfileSetup /> },
           { path: 'sensory/upload', element: <SensoryUpload /> },
           { path: 'sensory/output', element: <SensoryOutput /> },
+          { path: 'sensory/image-tactile', element: <SensoryImageTactile /> },
           { path: 'clinical', element: <ClinicalHome /> },
           { path: 'clinical/cases', element: <ClinicalCases /> },
           { path: 'clinical/lab', element: <ClinicalLab /> },
