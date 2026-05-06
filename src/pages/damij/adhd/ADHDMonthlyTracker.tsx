@@ -198,9 +198,15 @@ const ADHDMonthlyTracker: React.FC = () => {
     })();
   }, [monthStart.getTime(), monthEnd.getTime()]);
 
+  // Build normalized records once for the month
+  const normRecords = useMemo(
+    () => buildNormalizedRecords(games, tests, trainings),
+    [games, tests, trainings]
+  );
+
   // Build calendar grid
   const cells: DayCell[] = useMemo(() => {
-    const firstWeekday = monthStart.getDay(); // 0..6 (Sun)
+    const firstWeekday = monthStart.getDay();
     const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
     const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
     const arr: DayCell[] = [];
@@ -214,11 +220,23 @@ const ADHDMonthlyTracker: React.FC = () => {
       const dayAssess = assessments.filter((x) => x.created_at?.slice(0, 10) === key);
       const dayReps = dayReports.filter((x) => x.created_at?.slice(0, 10) === key);
       const dayTrain = trainings.filter((x) => x.created_at?.slice(0, 10) === key);
-      const scores = [
-        ...dayGames.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-        ...dayTrain.map((x) => Number(x.score)).filter((v) => !isNaN(v)),
-      ];
-      const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+      const avgScore = dailyAverage(normRecords, key);
+      const total = dayGames.length + dayTests.length + dayAssess.length + dayTrain.length;
+      const intensity = total === 0 ? 0 : total < 2 ? 1 : total < 4 ? 2 : total < 6 ? 3 : 4;
+      arr.push({
+        date: key,
+        day: d.getDate(),
+        inMonth,
+        games: dayGames.length,
+        tests: dayTests.length + dayAssess.length,
+        assessments: dayAssess.length,
+        reports: dayReps.length,
+        avgScore,
+        intensity,
+      });
+    }
+    return arr;
+  }, [monthStart, games, tests, assessments, dayReports, trainings, normRecords]);
       const total = dayGames.length + dayTests.length + dayAssess.length + dayTrain.length;
       const intensity = total === 0 ? 0 : total < 2 ? 1 : total < 4 ? 2 : total < 6 ? 3 : 4;
       arr.push({
