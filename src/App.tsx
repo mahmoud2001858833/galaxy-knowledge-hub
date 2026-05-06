@@ -210,6 +210,15 @@ import AutismProgressDashboard from './pages/damij/autism/AutismProgressDashboar
 import ADHDHome from './pages/damij/adhd/ADHDHome';
 import ADHDScreening from './pages/damij/adhd/ADHDScreening';
 import ADHDTraining from './pages/damij/adhd/ADHDTraining';
+import ADHDInstrumentRunner from './pages/damij/adhd/ADHDInstrumentRunner';
+import ADHDScreeningReport from './pages/damij/adhd/ADHDScreeningReport';
+import ADHDAssessmentHub from './pages/damij/adhd/ADHDAssessmentHub';
+import ADHDCPTTask from './pages/damij/adhd/ADHDCPTTask';
+import ADHDTrainingHub from './pages/damij/adhd/ADHDTrainingHub';
+import ADHDFocusBuilder from './pages/damij/adhd/ADHDFocusBuilder';
+import ADHDInterventions from './pages/damij/adhd/ADHDInterventions';
+import ADHDDashboard from './pages/damij/adhd/ADHDDashboard';
+import ADHDResources from './pages/damij/adhd/ADHDResources';
 import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
 import SignHome from './pages/damij/sign/SignHome';
 import SignTranslator from './pages/damij/sign/SignTranslator';
