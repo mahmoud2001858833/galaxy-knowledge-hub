@@ -1,14 +1,9 @@
-import React, { useRef, useState } from 'react';
-import { Upload, FileText, Image as ImageIcon, Video, Volume2, Loader2, Eye, Ear, Hand, Brain, Sparkles, Play, Pause, Vibrate } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, FileText, Image as ImageIcon, Video, Volume2, Loader2, Eye, Ear, Hand, Sparkles, Play, Pause, Vibrate, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface Profile {
-  vision: 'normal' | 'low' | 'none';
-  hearing: 'normal' | 'low' | 'none';
-  cognitive: 'normal' | 'autism' | 'adhd';
-  preferTouch: boolean;
-}
+import { PROFILE_KEY, type SensoryProfile } from './SensoryProfileSetup';
 
 interface Result {
   summary?: string;
@@ -23,6 +18,17 @@ interface Result {
   vibration?: number[];
 }
 
+const VISION_LABELS: Record<string, string> = {
+  normal: 'بصر طبيعي', total_blind: 'كفيف كلي', partial_blind: 'كفيف جزئي',
+  low_vision: 'ضعف نظر', color_blind: 'عمى ألوان', photosensitive: 'حساسية للضوء',
+};
+const HEARING_LABELS: Record<string, string> = {
+  normal: 'سمع طبيعي', deaf: 'أصم', hard_of_hearing: 'ضعف سمع', cochlear: 'زراعة قوقعة',
+};
+const MOTOR_LABELS: Record<string, string> = {
+  mouse: 'فأرة/لمس', eye_tracking: 'تتبّع العين', voice: 'أوامر صوتية', switch: 'مفتاح واحد',
+};
+
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -35,13 +41,24 @@ const fileToBase64 = (file: File): Promise<string> =>
   });
 
 const SensoryUpload: React.FC = () => {
-  const [profile, setProfile] = useState<Profile>({ vision: 'normal', hearing: 'normal', cognitive: 'normal', preferTouch: false });
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<SensoryProfile | null>(null);
   const [text, setText] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (!raw) { navigate('/damij/sensory/profile', { replace: true }); return; }
+      setProfile(JSON.parse(raw));
+    } catch {
+      navigate('/damij/sensory/profile', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async () => {
     if (!text && !file) {
