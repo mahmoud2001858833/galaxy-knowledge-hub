@@ -45,25 +45,38 @@ const ADHDProgramDay: React.FC = () => {
     } catch (e: any) { toast.error(e.message); } finally { setGenerating(false); }
   };
 
+  const completedCount = games.filter(g => g.completed).length;
+
   return (
     <div className="px-4 sm:px-6 pt-10 pb-32 max-w-3xl mx-auto" dir="rtl">
       <button onClick={() => navigate(`/damij/adhd/program/${programId}`)} className="flex items-center gap-2 text-[hsl(var(--damij-primary))] mb-4 text-sm"><ArrowLeft className="w-4 h-4 rtl:rotate-180" /> رجوع للتقويم</button>
       <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-1">يوم {day?.day_index}</h1>
-      <p className="text-sm text-[hsl(var(--damij-text))]/70 mb-6">{games.filter(g=>g.completed).length} / {games.length} مكتملة</p>
+      <p className="text-sm text-[hsl(var(--damij-text))]/70 mb-3">{completedCount} / {games.length} مكتملة</p>
+      <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-6">
+        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${(completedCount / Math.max(1, games.length)) * 100}%` }} />
+      </div>
 
       <div className="space-y-3 mb-6">
         {games.map(pg => {
           const def = getGame(pg.game_key);
           if (!def) return null;
+          const handlePlay = () => {
+            if (pg.completed && !confirm('تم لعب هذه اللعبة سابقاً. هل تريد إعادتها؟')) return;
+            navigate(`/damij/adhd/games/play/${pg.game_key}?pg=${pg.id}&day=${dayId}`);
+          };
           return (
-            <div key={pg.id} className={`rounded-2xl p-4 bg-gradient-to-br ${def.color} text-white shadow-md flex items-center gap-3`}>
+            <div key={pg.id} className={`rounded-2xl p-4 bg-gradient-to-br ${def.color} text-white shadow-md flex items-center gap-3 ${pg.completed ? 'ring-2 ring-emerald-400' : ''}`}>
               <def.icon className="w-9 h-9" />
               <div className="flex-1">
-                <h4 className="font-bold">{pg.title || def.title}</h4>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-bold">{pg.title || def.title}</h4>
+                  {pg.completed && <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/95 text-emerald-700"><CheckCircle2 className="w-3 h-3" /> تم اللعب</span>}
+                </div>
                 <p className="text-xs opacity-90">{pg.description || def.description}</p>
               </div>
-              {pg.completed ? <CheckCircle2 className="w-6 h-6" /> :
-                <button onClick={() => navigate(`/damij/adhd/games/play/${pg.game_key}?pg=${pg.id}&day=${dayId}`)} className="bg-white/25 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1"><Play className="w-4 h-4" /> ابدأ</button>}
+              <button onClick={handlePlay} className="bg-white/25 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+                {pg.completed ? <><CheckCircle2 className="w-4 h-4" /> إعادة</> : <><Play className="w-4 h-4" /> ابدأ</>}
+              </button>
             </div>
           );
         })}
