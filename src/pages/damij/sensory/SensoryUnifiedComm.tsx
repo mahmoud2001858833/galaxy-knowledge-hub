@@ -350,31 +350,50 @@ const SensoryUnifiedComm: React.FC = () => {
           </button>
         </div>
 
-        {/* Sign Language */}
+        {/* Sign Language - WORDS & GESTURES */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-bold mb-2 inline-flex items-center gap-2"><Hand className="w-5 h-5 text-emerald-600"/> لغة الإشارة</h3>
-          <div className="min-h-[80px] p-3 rounded-xl bg-emerald-50">
-            {text ? (
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold inline-flex items-center gap-2"><Hand className="w-5 h-5 text-emerald-600"/> لغة الإشارة <span className="text-[10px] font-normal text-emerald-600">(حركات وإشارات)</span></h3>
+            {signTokens.length > 0 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                {recognizedCount}/{signTokens.length} إشارة
+              </span>
+            )}
+          </div>
+          <div className="min-h-[110px] p-3 rounded-xl bg-emerald-50">
+            {signTokens.length ? (
               <div className="flex flex-wrap gap-2">
-                {signLetters.map((c, i) => {
-                  const label = SIGN_LABELS[c];
+                {signTokens.map((t, i) => {
                   const active = i === signIdx;
-                  if (c === ' ') return <div key={i} className="w-3" />;
+                  const g = t.gesture;
+                  const motionClass = active && g
+                    ? (g.motion === 'wave'   ? 'animate-[wiggle_0.6s_ease-in-out_infinite]' :
+                       g.motion === 'shake'  ? 'animate-pulse' :
+                       g.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]' :
+                       g.motion === 'rise'   ? 'animate-bounce' :
+                       g.motion === 'tap'    ? 'animate-pulse' :
+                       g.motion === 'nod'    ? 'animate-bounce' :
+                       g.motion === 'point'  ? 'animate-pulse' :
+                       g.motion === 'open'   ? 'animate-pulse' :
+                       g.motion === 'bow'    ? 'animate-bounce' : '')
+                    : '';
                   return (
                     <div key={i}
-                      className={`w-12 h-12 rounded-lg border flex flex-col items-center justify-center transition ${active ? 'bg-emerald-600 text-white scale-110 shadow-lg' : 'bg-white border-emerald-200 text-emerald-800'}`}>
-                      <span className="text-lg font-bold">{c}</span>
-                      {label && <span className="text-[8px] opacity-70">{label}</span>}
+                      title={g?.desc || 'لا توجد إشارة معروفة لهذه الكلمة'}
+                      className={`min-w-[88px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-emerald-600 text-white border-emerald-700 scale-110 shadow-lg' : g ? 'bg-white border-emerald-200 text-emerald-800' : 'bg-gray-50 border-dashed border-gray-300 text-gray-400'}`}>
+                      <span className={`text-3xl ${motionClass}`}>{g ? g.emoji : '✋'}</span>
+                      <span className="text-xs font-bold">{t.word}</span>
+                      {g && <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-emerald-600/80'}`}>{g.desc}</span>}
                     </div>
                   );
                 })}
               </div>
-            ) : <span className="text-emerald-300 text-sm">ستظهر بطاقات الإشارة هنا...</span>}
+            ) : <span className="text-emerald-300 text-sm">ستظهر الحركات والإشارات هنا...</span>}
           </div>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex gap-2 flex-wrap">
             <button onClick={playSign} disabled={!text}
               className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50 inline-flex items-center gap-1">
-              <Play className="w-3 h-3" /> تشغيل تتابعي
+              <Play className="w-3 h-3" /> تشغيل الإشارات
             </button>
             <button onClick={stopSign} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 inline-flex items-center gap-1">
               <Square className="w-3 h-3" /> إيقاف
