@@ -17,6 +17,8 @@ const UniversalBrailleConverter: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [rawText, setRawText] = useState("");
+  const [brailleInput, setBrailleInput] = useState("");
+  const [decoded, setDecoded] = useState("");
   const [extracted, setExtracted] = useState("");
   const [braille, setBraille] = useState("");
   const [grade, setGrade] = useState<1 | 2>(1);
