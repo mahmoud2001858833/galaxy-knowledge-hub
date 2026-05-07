@@ -136,7 +136,15 @@ const ADHDHome: React.FC = () => {
       جميع الأدوات في هذا النظام للتثقيف ودعم القرار، ولا تُغني بأي شكل عن التقييم السريري
       من قِبل طبيب أو أخصائي نفسي مرخّص. يُوصى بمراجعة المختصّ عند ظهور أي علامة حمراء.
     </div>
+    {activeProgramId && (
+      <div className="mt-6">
+        <Link to={`/damij/adhd/program/${activeProgramId}`} className="block p-5 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold text-center shadow-lg hover:shadow-xl transition">
+          متابعة برنامجك العلاجي المحفوظ ←
+        </Link>
+      </div>
+    )}
   </div>
-);
+  );
+};
 
 export default ADHDHome;
