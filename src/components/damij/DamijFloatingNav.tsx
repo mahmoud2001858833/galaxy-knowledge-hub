@@ -29,16 +29,18 @@ const DamijFloatingNav: React.FC = () => {
   if (HIDDEN_PATTERNS.some((re) => re.test(pathname))) return null;
 
   return (
-    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-end gap-1.5">
+    <nav
+      className="fixed bottom-0 inset-x-0 z-50 flex items-end justify-center gap-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-[hsl(var(--damij-bg-2))] via-[hsl(var(--damij-bg-2))]/85 to-transparent"
+    >
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="bg-[hsl(var(--damij-primary))] text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg"
+        className="bg-[hsl(var(--damij-primary))] text-white rounded-full w-9 h-9 flex-shrink-0 flex items-center justify-center shadow-lg"
         aria-label={collapsed ? 'إظهار التنقل' : 'إخفاء التنقل'}
       >
         {collapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
       {!collapsed && (
-        <div className="bg-white/90 backdrop-blur-md shadow-2xl border border-[hsl(var(--damij-primary))]/15 rounded-2xl px-2 py-1.5 flex items-center gap-1 max-w-[92vw] overflow-x-auto">
+        <div className="bg-white/95 backdrop-blur-md shadow-2xl border border-[hsl(var(--damij-primary))]/15 rounded-2xl px-2 py-1.5 flex items-center gap-1 max-w-[92vw] overflow-x-auto">
           {items.map(({ to, icon: Icon, label }) => {
             const active = pathname === to || (to !== '/damij' && pathname.startsWith(to));
             return (
