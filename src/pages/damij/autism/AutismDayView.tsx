@@ -60,6 +60,10 @@ const AutismDayView: React.FC = () => {
   useEffect(() => { load(); }, [dayId]);
 
   const playGame = (g: Game, idx: number) => {
+    if (completed.has(g.id)) {
+      const ok = confirm('تم لعب هذه اللعبة سابقاً. هل تريد إعادتها؟');
+      if (!ok) return;
+    }
     const next = games[idx + 1];
     sessionStorage.setItem('autism_active_game', JSON.stringify({
       template_id: g.template_id,
