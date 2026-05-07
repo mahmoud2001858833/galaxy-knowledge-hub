@@ -297,33 +297,151 @@ function cleanBraille(s: string): string {
 }
 
 // ── Fetch URL: extract readable text ───────────────────────────────────────
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+  "Accept-Encoding": "identity",
+  "Cache-Control": "no-cache",
+  "Pragma": "no-cache",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Upgrade-Insecure-Requests": "1",
+};
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'")
+    .replace(/&copy;/g, "©").replace(/&reg;/g, "®").replace(/&hellip;/g, "…")
+    .replace(/&mdash;/g, "—").replace(/&ndash;/g, "–")
+    .replace(/&laquo;/g, "«").replace(/&raquo;/g, "»")
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch { return ""; } })
+    .replace(/&#(\d+);/g, (_, n) => { try { return String.fromCodePoint(parseInt(n, 10)); } catch { return ""; } });
+}
+
+function htmlToReadableText(html: string): { title: string; text: string } {
+  // Remove non-content blocks
+  let cleaned = html
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, " ")
+    .replace(/<header[\s\S]*?<\/header>/gi, " ")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+    .replace(/<aside[\s\S]*?<\/aside>/gi, " ")
+    .replace(/<form[\s\S]*?<\/form>/gi, " ");
+
+  const titleMatch = cleaned.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = titleMatch ? decodeEntities(titleMatch[1]).replace(/\s+/g, " ").trim() : "";
+
+  // Pick best content container: <article>, then <main>, then largest <div> with most text, else body
+  const article = cleaned.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1];
+  const main = cleaned.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1];
+  let container = article || main;
+
+  if (!container) {
+    // Find the largest <div> by inner text length
+    const divRegex = /<div[^>]*>([\s\S]*?)<\/div>/gi;
+    let best = ""; let bestLen = 0; let m: RegExpExecArray | null;
+    while ((m = divRegex.exec(cleaned)) !== null) {
+      const inner = m[1];
+      const txtLen = inner.replace(/<[^>]+>/g, "").length;
+      if (txtLen > bestLen) { bestLen = txtLen; best = inner; }
+    }
+    if (bestLen > 500) container = best;
+  }
+
+  if (!container) {
+    container = cleaned.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || cleaned;
+  }
+
+  // Preserve line breaks for block elements
+  const withBreaks = container
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6]|tr|article|section|blockquote)\s*>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "• ");
+
+  const text = decodeEntities(withBreaks.replace(/<[^>]+>/g, " "))
+    .replace(/[ \t\u00A0]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return { title, text };
+}
+
+async function fetchWithTimeout(url: string, ms: number, headers: Record<string, string>): Promise<Response> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { headers, redirect: "follow", signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 async function fetchUrlText(url: string): Promise<string> {
-  const r = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; DamijBrailleBot/1.0)",
-      Accept: "text/html,application/xhtml+xml",
-    },
-  });
-  if (!r.ok) throw new Error(`URL fetch failed: ${r.status}`);
-  const html = await r.text();
-  // crude readability: strip script/style, then tags
-  const noScript = html.replace(/<script[\s\S]*?<\/script>/gi, " ")
-                       .replace(/<style[\s\S]*?<\/style>/gi, " ")
-                       .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ");
-  // capture title
-  const titleMatch = noScript.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].trim() : "";
-  // prefer <article> / <main>
-  const main = noScript.match(/<(article|main)[^>]*>([\s\S]*?)<\/\1>/i)?.[2] ?? noScript;
-  const text = main.replace(/<[^>]+>/g, " ")
-                   .replace(/&nbsp;/g, " ")
-                   .replace(/&amp;/g, "&")
-                   .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-                   .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-                   .replace(/[ \t]+/g, " ")
-                   .replace(/\n{3,}/g, "\n\n")
-                   .trim();
-  return (title ? title + "\n\n" : "") + text;
+  let directError: string | null = null;
+  let directText = "";
+  let directTitle = "";
+
+  // 1) Try direct fetch with browser-like headers
+  try {
+    const r = await fetchWithTimeout(url, 15000, BROWSER_HEADERS);
+    if (!r.ok) {
+      if (r.status === 403 || r.status === 401) directError = "الموقع يرفض الجلب التلقائي (403)";
+      else if (r.status === 404) directError = "الصفحة غير موجودة (404)";
+      else if (r.status === 429) directError = "تم تجاوز حد الطلبات للموقع (429)";
+      else directError = `فشل الجلب (${r.status})`;
+    } else {
+      const ct = (r.headers.get("content-type") || "").toLowerCase();
+      const raw = await r.text();
+      if (ct.includes("text/plain") || (!ct.includes("html") && !ct.includes("xml"))) {
+        if (raw.trim().length > 0 && !ct.includes("pdf") && !ct.includes("octet-stream")) {
+          return raw.trim();
+        }
+      }
+      const { title, text } = htmlToReadableText(raw);
+      directTitle = title;
+      directText = text;
+    }
+  } catch (e: any) {
+    directError = e?.name === "AbortError" ? "انتهت مهلة الجلب" : (e?.message || "فشل الاتصال بالموقع");
+  }
+
+  if (directText && directText.length >= 200) {
+    return (directTitle ? directTitle + "\n\n" : "") + directText;
+  }
+
+  // 2) Fallback: r.jina.ai readability proxy (returns clean text for any page)
+  try {
+    const proxyUrl = `https://r.jina.ai/${url}`;
+    const r = await fetchWithTimeout(proxyUrl, 20000, {
+      "User-Agent": BROWSER_HEADERS["User-Agent"],
+      "Accept": "text/plain, text/markdown, */*",
+      "Accept-Language": BROWSER_HEADERS["Accept-Language"],
+    });
+    if (r.ok) {
+      const txt = (await r.text()).trim();
+      if (txt.length > 50) return txt;
+    }
+  } catch {
+    // ignore — handled below
+  }
+
+  // 3) If we have any direct text (even short), return it
+  if (directText && directText.length > 0) {
+    return (directTitle ? directTitle + "\n\n" : "") + directText;
+  }
+
+  throw new Error(directError || "تعذّر جلب صفحة الويب. قد يكون الموقع يحجب الجلب التلقائي أو يعتمد على JavaScript.");
 }
 
 Deno.serve(async (req) => {

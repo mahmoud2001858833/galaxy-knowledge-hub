@@ -64,14 +64,18 @@ const UniversalBrailleConverter: React.FC = () => {
         text = rawText.trim();
         if (!text) throw new Error("الرجاء إدخال نص");
       } else if (source === "url") {
-        if (!/^https?:\/\//i.test(url.trim())) throw new Error("أدخل رابطاً صحيحاً يبدأ بـ http(s)://");
+        let u = url.trim();
+        if (!u) throw new Error("الرجاء إدخال رابط");
+        if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+        try { new URL(u); } catch { throw new Error("الرابط غير صالح"); }
         setStep("جلب صفحة الويب…");
         const { data, error } = await supabase.functions.invoke("braille-convert", {
-          body: { mode: "fetch_url", url: url.trim() },
+          body: { mode: "fetch_url", url: u },
         });
         if (error) throw error;
         if ((data as any)?.error) throw new Error((data as any).error);
         text = (data as any).text || "";
+        if (!text.trim()) throw new Error("لم يتم استخراج أي نص من الصفحة");
       } else {
         if (!file) throw new Error("الرجاء اختيار ملف");
         text = await extractFromFile(file, langCode, setStep);
