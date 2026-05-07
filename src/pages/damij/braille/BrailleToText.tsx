@@ -3,7 +3,6 @@ import { Camera, Upload, Loader2, Volume2, Pause, Square, Copy, Download, Rotate
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SPOKEN_LANGUAGES } from '@/features/sign-language/languages';
-import BackToBrailleButton from '@/components/damij/BackToBrailleButton';
 
 interface OCRResult {
   is_braille: boolean;
@@ -188,7 +187,6 @@ const BrailleToText: React.FC = () => {
 
   return (
     <div className="px-6 pt-12 pb-12 max-w-6xl mx-auto space-y-6" dir="rtl">
-      <BackToBrailleButton />
       <header>
         <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-2">من بريل إلى نص + قراءة صوتية</h1>
         <p className="text-slate-600">صوّر صفحة بريل ورقية بالكاميرا أو ارفع صورة، وسيتم تحويلها لنص رقمي قابل للقراءة الصوتية باستخدام الذكاء الاصطناعي.</p>
