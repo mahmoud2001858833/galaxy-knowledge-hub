@@ -299,6 +299,10 @@ const UniversalBrailleConverter: React.FC = () => {
               <FileText className="w-4 h-4" /> النص بعد فك ترميز بريل ({lang.nativeName})
             </h3>
             <div className="flex gap-1 flex-wrap">
+              <button onClick={reConvertToBraille} disabled={reBusy} className="px-3 py-2 rounded-lg bg-[hsl(var(--damij-primary))] text-white text-xs font-bold flex items-center gap-1 disabled:opacity-60" title="إعادة التحويل إلى بريل">
+                {reBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                {reBusy ? "جارٍ…" : "إعادة إلى بريل"}
+              </button>
               <button onClick={() => speak(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نطق"><Volume2 className="w-4 h-4" /></button>
               <button onClick={() => copy(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نسخ"><Copy className="w-4 h-4" /></button>
               <button onClick={() => downloadText(decoded, `braille-decoded-${Date.now()}.txt`)} className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1" title="تنزيل">
