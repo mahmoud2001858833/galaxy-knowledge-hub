@@ -267,13 +267,6 @@ const SensoryUpload: React.FC = () => {
             </section>
           )}
 
-          {result.vibration && (
-            <section className="bg-white rounded-2xl p-5 shadow border border-[hsl(var(--damij-primary))]/10 text-center">
-              <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-2 flex items-center justify-center gap-2"><Vibrate className="w-5 h-5" /> الاهتزاز الإيقاعي</h3>
-              {result.rhythm && <p className="text-sm text-[hsl(var(--damij-text))]/70 mb-3">النمط: {result.rhythm}</p>}
-              <button onClick={vibrate} className="px-6 py-3 rounded-xl bg-[hsl(var(--damij-accent-2))] text-white font-bold">شغّل الاهتزاز</button>
-            </section>
-          )}
         </div>
       )}
     </div>
