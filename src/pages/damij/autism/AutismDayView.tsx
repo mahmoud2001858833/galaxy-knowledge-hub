@@ -60,6 +60,10 @@ const AutismDayView: React.FC = () => {
   useEffect(() => { load(); }, [dayId]);
 
   const playGame = (g: Game, idx: number) => {
+    if (completed.has(g.id)) {
+      const ok = confirm('تم لعب هذه اللعبة سابقاً. هل تريد إعادتها؟');
+      if (!ok) return;
+    }
     const next = games[idx + 1];
     sessionStorage.setItem('autism_active_game', JSON.stringify({
       template_id: g.template_id,
@@ -136,24 +140,35 @@ const AutismDayView: React.FC = () => {
         </div>
       </header>
 
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-bold text-[hsl(var(--damij-primary))]">تقدّم اليوم: {completed.size}/{games.length}</span>
+        <span className="text-slate-500">{Math.round((completed.size / Math.max(1, games.length)) * 100)}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-6">
+        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${(completed.size / Math.max(1, games.length)) * 100}%` }} />
+      </div>
+
       <div className="space-y-3 mb-8">
         {games.map((g, i) => {
           const meta = TEMPLATE_META[g.template_id];
           const done = completed.has(g.id);
           return (
-            <div key={g.id} className={`p-4 rounded-2xl border ${done ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+            <div key={g.id} className={`p-4 rounded-2xl border-2 transition ${done ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
                   <span className="text-3xl">{meta?.emoji ?? '🎮'}</span>
                   <div className="flex-1">
-                    <div className="font-bold text-[hsl(var(--damij-primary))]">{g.title_ar}</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-[hsl(var(--damij-primary))]">{g.title_ar}</span>
+                      {done && <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white"><CheckCircle2 className="w-3 h-3" /> تم اللعب</span>}
+                    </div>
                     <div className="text-xs text-slate-500 mb-1">{g.target_skill_ar} • {g.duration_sec}ث • {g.difficulty}</div>
                     <p className="text-sm text-slate-700">{g.instructions_ar}</p>
                   </div>
                 </div>
                 <button onClick={() => playGame(g, i)}
-                  className="px-4 py-2 rounded-xl bg-[hsl(var(--damij-accent-2))] text-white font-bold flex items-center gap-1 self-start">
-                  {done ? <CheckCircle2 className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  className={`px-4 py-2 rounded-xl font-bold flex items-center gap-1 self-start ${done ? 'bg-white border-2 border-emerald-300 text-emerald-700' : 'bg-[hsl(var(--damij-accent-2))] text-white'}`}>
+                  {done ? <RefreshCw className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   {done ? 'إعادة' : 'ابدأ'}
                 </button>
               </div>
