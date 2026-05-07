@@ -9,6 +9,7 @@ import { downloadText } from "@/features/braille/brailleExport";
 import type { TactileFigure, DescribeResult, PaperSize } from "@/features/braille/tactile/tactileTypes";
 import { PAPER_DIMS } from "@/features/braille/tactile/tactileTypes";
 import { HandSignCard } from "@/features/sign-language/HandSignCard";
+import BackToBrailleButton from "@/components/damij/BackToBrailleButton";
 
 type Tab = "generate" | "convert" | "describe";
 
@@ -213,6 +214,7 @@ const TactileGraphics: React.FC = () => {
 
   return (
     <div className="px-6 pt-10 pb-16 max-w-6xl mx-auto" dir="rtl">
+      <BackToBrailleButton />
       <Link to="/damij/braille" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] mb-6 hover:underline">
         <ArrowLeft className="w-4 h-4" /> العودة إلى نظام بريل
       </Link>

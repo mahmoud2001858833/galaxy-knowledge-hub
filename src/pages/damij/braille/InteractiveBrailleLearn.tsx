@@ -12,6 +12,7 @@ import { BrailleKeyboardPad } from '@/features/braille/learn/BrailleKeyboardPad'
 import { ReadingPanel } from '@/features/braille/learn/ReadingPanel';
 import { SpeedAccuracyMeter } from '@/features/braille/learn/SpeedAccuracyMeter';
 import { pickRandomWords } from '@/features/braille/learn/testWords';
+import BackToBrailleButton from '@/components/damij/BackToBrailleButton';
 
 type Tab = 'lessons' | 'write' | 'read' | 'test';
 
@@ -198,6 +199,7 @@ const InteractiveBrailleLearn: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-12 max-w-6xl mx-auto" dir="rtl">
+      <BackToBrailleButton />
       <div className="flex items-center gap-3 mb-6">
         <Link to="/damij/braille" className="p-2 rounded-lg hover:bg-[hsl(var(--damij-primary))]/10">
           <ArrowLeft className="w-5 h-5" />
