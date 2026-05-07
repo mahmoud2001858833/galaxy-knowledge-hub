@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SPOKEN_LANGUAGES } from "@/features/sign-language/languages";
 import { BrailleCellDisplay } from "@/features/braille/learn/BrailleCellDisplay";
 import type { Dots } from "@/features/braille/learn/brailleAlphabet";
+import BackToBrailleButton from "@/components/damij/BackToBrailleButton";
 
 type Direction = "to-braille" | "from-braille";
 
