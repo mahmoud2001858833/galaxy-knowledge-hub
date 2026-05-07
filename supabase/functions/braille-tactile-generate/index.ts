@@ -100,8 +100,26 @@ const describeSchema = {
         },
       },
       narration: { type: "string" },
+      sign_keywords: {
+        type: "array",
+        items: { type: "string" },
+        description: "5-10 short Arabic keywords summarizing the figure for sign-language rendering",
+      },
     },
     required: ["figure_type", "description", "decoded_labels", "narration"],
+  },
+};
+
+const translateSchema = {
+  name: "emit_translation",
+  description: "Translate text fields to a target language",
+  parameters: {
+    type: "object",
+    properties: {
+      description: { type: "string" },
+      narration: { type: "string" },
+    },
+    required: ["description", "narration"],
   },
 };
 
@@ -158,7 +176,8 @@ async function callLovable(userText: string, imageDataUrl: string | null, schema
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { mode, prompt, category, language, grade, paper, image_data_url } = await req.json();
+    const reqBody = await req.json();
+    const { mode, prompt, category, language, grade, paper, image_data_url } = reqBody;
 
     const paperLine = `Paper: ${paper || "A4"}. Use sensible width_mm/height_mm fitting that paper minus 15mm margins.`;
     const langLine = `Language for labels: ${language || "ar"}. Grade: ${grade || 1}.`;
@@ -192,13 +211,30 @@ Deno.serve(async (req) => {
 
     if (mode === "describe") {
       if (!image_data_url) throw new Error("image_data_url required");
-      const userText = `Describe this tactile/braille figure for a sighted teacher (Arabic). Identify figure type, decode any visible braille labels into text, and provide a short narration suitable for read-aloud.`;
+      const userText = `Describe this tactile/braille figure for a sighted teacher (Arabic). Identify figure type, decode any visible braille labels into text, and provide a short narration suitable for read-aloud. Also include a "sign_keywords" array of 5–10 short Arabic keywords that summarize the figure for sign-language rendering.`;
       const b64 = image_data_url.split(",")[1];
       const mime = image_data_url.match(/^data:([^;]+);/)?.[1] || "image/png";
       const parts = [{ text: userText }, { inlineData: { mimeType: mime, data: b64 } }];
       let args = await callGemini(parts, describeSchema);
       if (!args) args = await callLovable(userText, image_data_url, describeSchema);
       return new Response(JSON.stringify({ result: args }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (mode === "translate") {
+      const text: string = reqBody.text || "";
+      const narrationIn: string = reqBody.narration || "";
+      const target_lang: string = reqBody.target_lang || "en";
+      if (!text && !narrationIn) {
+        return new Response(JSON.stringify({ error: "no text" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userText = `Translate the following two fields to language code "${target_lang}". Preserve meaning, keep it natural and professional.\n\nDESCRIPTION:\n${text}\n\nNARRATION:\n${narrationIn}`;
+      let args = await callGemini([{ text: userText }], translateSchema);
+      if (!args) args = await callLovable(userText, null, translateSchema);
+      return new Response(JSON.stringify({ translation: args }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

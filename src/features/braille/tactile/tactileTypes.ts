@@ -42,6 +42,7 @@ export interface DescribeResult {
   description: string;
   decoded_labels: { braille: string; text: string }[];
   narration: string;
+  sign_keywords?: string[];
 }
 
 export const PAPER_DIMS: Record<PaperSize, { w: number; h: number }> = {
