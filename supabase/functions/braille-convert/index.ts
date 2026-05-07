@@ -174,6 +174,65 @@ Braille:`;
   return cleanBraille(out);
 }
 
+async function reverseBraille(braille: string, langName: string, langCode: string): Promise<string> {
+  const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+
+  const prompt = `You are an expert in worldwide Braille standards (UEB, Arabic Braille (LBU 2013), French, Spanish, Russian, Greek, etc.).
+Decode the following Unicode Braille (U+2800–U+28FF) into readable ${langName} (${langCode}) text.
+Handle BOTH Grade-1 (uncontracted) and Grade-2 (contracted) Braille intelligently.
+Output STRICT RULES:
+- Output ONLY the decoded plain text in ${langName}.
+- Preserve line breaks, spacing and punctuation.
+- Do NOT include any explanation, prefix, suffix, romanization, code fences, or quotes.
+
+Braille:
+${braille}
+
+Text:`;
+
+  if (userKey) {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+          }),
+        },
+      );
+      if (r.ok) {
+        const j = await r.json();
+        const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (out) return out.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
+      } else if (r.status !== 429) {
+        console.warn("Gemini reverse error", r.status, await r.text());
+      }
+    } catch (e) { console.warn("Gemini reverse failed", e); }
+  }
+
+  if (!lovableKey) throw new Error("No AI key available");
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: `Output only decoded ${langName} text. No explanations.` },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  if (r.status === 429) throw new Error("rate_limited");
+  if (r.status === 402) throw new Error("payment_required");
+  if (!r.ok) throw new Error("ai_error");
+  const j = await r.json();
+  return (j?.choices?.[0]?.message?.content?.trim() ?? "").replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
+}
+
 function cleanBraille(s: string): string {
   // Strip code fences, quotes, accidental Latin if mixed
   return s.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
@@ -228,6 +287,28 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ text: trimmed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (mode === "reverse") {
+      const braille: string = String(body?.braille ?? "");
+      const langCode: string = body?.langCode ?? "ar";
+      const langName: string = body?.langName ?? "Arabic";
+      if (!braille.trim()) {
+        return new Response(JSON.stringify({ error: "missing braille" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const text = await reverseBraille(braille, langName, langCode);
+        return new Response(JSON.stringify({ text, langCode }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        const msg = String(e?.message);
+        if (msg === "rate_limited") return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (msg === "payment_required") return new Response(JSON.stringify({ error: "نفذ الرصيد. أضف رصيداً من الإعدادات." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        throw e;
+      }
     }
 
     // mode === "convert"

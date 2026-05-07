@@ -10,13 +10,15 @@ import { SPOKEN_LANGUAGES } from "@/features/sign-language/languages";
 import { extractFromFile } from "@/features/braille/extractText";
 import { brailleToBrf, brailleToPdf, downloadText } from "@/features/braille/brailleExport";
 
-type Source = "file" | "url" | "text";
+type Source = "file" | "url" | "text" | "braille";
 
 const UniversalBrailleConverter: React.FC = () => {
   const [source, setSource] = useState<Source>("file");
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [rawText, setRawText] = useState("");
+  const [brailleInput, setBrailleInput] = useState("");
+  const [decoded, setDecoded] = useState("");
   const [extracted, setExtracted] = useState("");
   const [braille, setBraille] = useState("");
   const [grade, setGrade] = useState<1 | 2>(1);
@@ -29,7 +31,7 @@ const UniversalBrailleConverter: React.FC = () => {
   const lang = SPOKEN_LANGUAGES.find((l) => l.code === langCode) || SPOKEN_LANGUAGES[0];
 
   const reset = () => {
-    setExtracted(""); setBraille(""); setError(null);
+    setExtracted(""); setBraille(""); setDecoded(""); setError(null);
   };
 
   const handleFile = (f: File | null) => {
@@ -37,8 +39,23 @@ const UniversalBrailleConverter: React.FC = () => {
   };
 
   const run = async () => {
-    setError(null); setBusy(true); setBraille(""); setExtracted("");
+    setError(null); setBusy(true); setBraille(""); setExtracted(""); setDecoded("");
     try {
+      // Reverse: Braille → text
+      if (source === "braille") {
+        const b = brailleInput.trim();
+        if (!b) throw new Error("الرجاء إدخال نص بريل");
+        setStep("فك ترميز بريل…");
+        const { data, error } = await supabase.functions.invoke("braille-convert", {
+          body: { mode: "reverse", braille: b, langCode: langCode.split("-")[0], langName: lang.name },
+        });
+        if (error) throw error;
+        if ((data as any)?.error) throw new Error((data as any).error);
+        setDecoded((data as any).text || "");
+        toast.success("تم فك الترميز بنجاح");
+        return;
+      }
+
       // 1) Extract source text
       let text = "";
       if (source === "text") {
@@ -117,6 +134,7 @@ const UniversalBrailleConverter: React.FC = () => {
           { k: "file", icon: FileUp, label: "ملف" },
           { k: "url", icon: LinkIcon, label: "رابط ويب" },
           { k: "text", icon: Type, label: "نص مباشر" },
+          { k: "braille", icon: Eye, label: "بريل → نص" },
         ] as { k: Source; icon: any; label: string }[]).map(({ k, icon: Ic, label }) => (
           <button
             key={k}
@@ -180,7 +198,7 @@ const UniversalBrailleConverter: React.FC = () => {
             className="flex-1 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-            {busy ? step || "جارٍ المعالجة…" : "تحويل إلى بريل"}
+            {busy ? step || "جارٍ المعالجة…" : source === "braille" ? "فك ترميز إلى نص" : "تحويل إلى بريل"}
           </button>
         </div>
       </div>
@@ -233,12 +251,48 @@ const UniversalBrailleConverter: React.FC = () => {
             dir="auto"
           />
         )}
+        {source === "braille" && (
+          <textarea
+            value={brailleInput}
+            onChange={(e) => setBrailleInput(e.target.value)}
+            rows={6}
+            placeholder="ألصق نص بريل (⠁⠃⠉ ...) — يدعم المستوى الأول والثاني"
+            className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-2xl leading-loose font-mono"
+            dir="ltr"
+            style={{ fontFamily: '"Apple Braille", "Segoe UI Symbol", "Noto Sans Symbols 2", monospace' }}
+          />
+        )}
       </div>
 
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-2">
           <AlertCircle className="w-5 h-5" /> {error}
         </div>
+      )}
+
+      {/* Reverse result */}
+      {decoded && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/20"
+        >
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+              <FileText className="w-4 h-4" /> النص بعد فك ترميز بريل ({lang.nativeName})
+            </h3>
+            <div className="flex gap-1 flex-wrap">
+              <button onClick={() => speak(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نطق"><Volume2 className="w-4 h-4" /></button>
+              <button onClick={() => copy(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نسخ"><Copy className="w-4 h-4" /></button>
+              <button onClick={() => downloadText(decoded, `braille-decoded-${Date.now()}.txt`)} className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1" title="تنزيل">
+                <Download className="w-3 h-3" /> TXT
+              </button>
+            </div>
+          </div>
+          <div className="max-h-[420px] overflow-auto p-3 rounded-xl bg-slate-50 text-base leading-relaxed whitespace-pre-wrap" dir="auto">
+            {decoded}
+          </div>
+          <p className="text-xs text-slate-500 mt-2">عدد المحارف: {decoded.length.toLocaleString()}</p>
+        </motion.div>
       )}
 
       {/* Results */}
