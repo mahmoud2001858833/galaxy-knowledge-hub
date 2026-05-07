@@ -110,6 +110,22 @@ const UniversalBrailleConverter: React.FC = () => {
     } catch {}
   };
 
+  const reConvertToBraille = async () => {
+    if (!decoded.trim()) return;
+    setReBusy(true); setDecodedBraille("");
+    try {
+      const { data, error } = await supabase.functions.invoke("braille-convert", {
+        body: { mode: "convert", text: decoded, grade, langCode: langCode.split("-")[0], langName: lang.name },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setDecodedBraille((data as any).braille || "");
+      toast.success("تم إعادة التحويل إلى بريل");
+    } catch (e: any) {
+      toast.error(e?.message || "فشل إعادة التحويل");
+    } finally { setReBusy(false); }
+  };
+
   const fmt = (l: typeof lang) => `${l.flag} ${l.nativeName} — ${l.name}`;
 
   return (
