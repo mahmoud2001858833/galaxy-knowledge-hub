@@ -3,6 +3,7 @@ import { Camera, Upload, Loader2, Volume2, Pause, Square, Copy, Download, Rotate
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SPOKEN_LANGUAGES } from '@/features/sign-language/languages';
+import BackToBrailleButton from '@/components/damij/BackToBrailleButton';
 
 interface OCRResult {
   is_braille: boolean;
