@@ -230,6 +230,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (mode === "reverse") {
+      const braille: string = String(body?.braille ?? "");
+      const langCode: string = body?.langCode ?? "ar";
+      const langName: string = body?.langName ?? "Arabic";
+      if (!braille.trim()) {
+        return new Response(JSON.stringify({ error: "missing braille" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const text = await reverseBraille(braille, langName, langCode);
+        return new Response(JSON.stringify({ text, langCode }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        const msg = String(e?.message);
+        if (msg === "rate_limited") return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (msg === "payment_required") return new Response(JSON.stringify({ error: "نفذ الرصيد. أضف رصيداً من الإعدادات." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        throw e;
+      }
+    }
+
     // mode === "convert"
     const text: string = String(body?.text ?? "");
     const grade: 1 | 2 = body?.grade === 2 ? 2 : 1;
