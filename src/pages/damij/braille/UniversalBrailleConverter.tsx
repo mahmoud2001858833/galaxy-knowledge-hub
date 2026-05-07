@@ -39,8 +39,23 @@ const UniversalBrailleConverter: React.FC = () => {
   };
 
   const run = async () => {
-    setError(null); setBusy(true); setBraille(""); setExtracted("");
+    setError(null); setBusy(true); setBraille(""); setExtracted(""); setDecoded("");
     try {
+      // Reverse: Braille → text
+      if (source === "braille") {
+        const b = brailleInput.trim();
+        if (!b) throw new Error("الرجاء إدخال نص بريل");
+        setStep("فك ترميز بريل…");
+        const { data, error } = await supabase.functions.invoke("braille-convert", {
+          body: { mode: "reverse", braille: b, langCode: langCode.split("-")[0], langName: lang.name },
+        });
+        if (error) throw error;
+        if ((data as any)?.error) throw new Error((data as any).error);
+        setDecoded((data as any).text || "");
+        toast.success("تم فك الترميز بنجاح");
+        return;
+      }
+
       // 1) Extract source text
       let text = "";
       if (source === "text") {
