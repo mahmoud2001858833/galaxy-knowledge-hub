@@ -398,18 +398,50 @@ const SignTranslatorPro: React.FC = () => {
   const startCamera = async () => {
     try {
       setError(null); setDemoMode(false); setIsLoading(true); setLoadingStep('طلب إذن الكاميرا…');
+      // Get stream synchronously inside the user-gesture handler
       const stream = await getCameraStream();
       streamRef.current = stream;
       if (!videoRef.current) { stream.getTracks().forEach(t => t.stop()); throw new Error('Video element missing'); }
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+      // Mark camera active FIRST so the <video> is visible (display:none blocks frames in some browsers)
       setCameraActive(true);
+      const v = videoRef.current;
+      v.srcObject = stream;
+      v.muted = true;
+      (v as any).playsInline = true;
+      // Wait for metadata so we know videoWidth/Height before starting detection
+      setLoadingStep('تشغيل الفيديو…');
+      await new Promise<void>((resolve, reject) => {
+        let done = false;
+        const ok = () => { if (done) return; done = true; resolve(); };
+        const fail = (err: any) => { if (done) return; done = true; reject(err); };
+        v.onloadedmetadata = ok;
+        v.oncanplay = ok;
+        v.onerror = (e) => fail(e);
+        // safety timeout
+        setTimeout(ok, 4000);
+      });
+      try { await v.play(); } catch (err) {
+        console.warn('video.play() rejected, retrying after small delay', err);
+        await new Promise(r => setTimeout(r, 100));
+        await v.play();
+      }
+      setLoadingStep('تحضير نموذج التعرّف…');
       const hl = handLandmarkerRef.current ?? await initHand();
+      // Wait until the video really has frames
+      let tries = 0;
+      while (v.readyState < 2 && tries < 30) {
+        await new Promise(r => setTimeout(r, 100));
+        tries++;
+      }
       setIsLoading(false);
       startLoop(hl);
       toast.success('الكاميرا جاهزة. ابدأ بالإشارة فوراً ✋');
     } catch (e: any) {
-      console.error(e);
+      console.error('startCamera failed', e);
+      // cleanup partial stream
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+      setCameraActive(false);
       setError(mapCameraError(e, cameraSupport) || e?.message || 'حدث خطأ');
       setIsLoading(false);
     }
