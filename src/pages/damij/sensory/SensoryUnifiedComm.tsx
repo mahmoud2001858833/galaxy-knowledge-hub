@@ -89,9 +89,12 @@ const SensoryUnifiedComm: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, autoTTS]);
 
-  // Sign-language playback: step through WORDS/GESTURES (not letters)
-  const signTokens = tokenizeSigns(text);
-  const recognizedCount = signTokens.filter(t => t.gesture).length;
+  // Sign-language playback: step through WORDS/GESTURES (with spelling fallback)
+  const signTokens = useMemo(() => tokenizeSigns(text), [text]);
+  const recognizedCount = signTokens.filter(t => t.kind !== 'unknown').length;
+  const [signSpeed, setSignSpeed] = useState(1300);
+  const [showLib, setShowLib] = useState(false);
+  const [libQuery, setLibQuery] = useState('');
 
   const playSign = () => {
     stopSign();
@@ -102,7 +105,7 @@ const SensoryUnifiedComm: React.FC = () => {
       i++;
       if (i >= signTokens.length) { stopSign(); return; }
       setSignIdx(i);
-    }, 1100);
+    }, signSpeed);
     logToolUse('sign');
   };
   const stopSign = () => {
@@ -250,25 +253,42 @@ const SensoryUnifiedComm: React.FC = () => {
               <div className="flex flex-wrap gap-2">
                 {signTokens.map((t, i) => {
                   const active = i === signIdx;
-                  const g = t.gesture;
-                  const motionClass = active && g
-                    ? (g.motion === 'wave'   ? 'animate-[wiggle_0.6s_ease-in-out_infinite]' :
-                       g.motion === 'shake'  ? 'animate-pulse' :
-                       g.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]' :
-                       g.motion === 'rise'   ? 'animate-bounce' :
-                       g.motion === 'tap'    ? 'animate-pulse' :
-                       g.motion === 'nod'    ? 'animate-bounce' :
-                       g.motion === 'point'  ? 'animate-pulse' :
-                       g.motion === 'open'   ? 'animate-pulse' :
-                       g.motion === 'bow'    ? 'animate-bounce' : '')
-                    : '';
+                  if (t.kind === 'word') {
+                    const g = t.gesture;
+                    const motionClass = active
+                      ? (g.motion === 'wave'   ? 'animate-[wiggle_0.6s_ease-in-out_infinite]' :
+                         g.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]' :
+                         g.motion === 'rise' || g.motion === 'nod' || g.motion === 'bow' ? 'animate-bounce' :
+                         'animate-pulse')
+                      : '';
+                    return (
+                      <div key={i} title={g.desc}
+                        className={`min-w-[92px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-emerald-600 text-white border-emerald-700 scale-110 shadow-lg' : 'bg-white border-emerald-200 text-emerald-800'}`}>
+                        <span className={`text-3xl ${motionClass}`}>{g.emoji}</span>
+                        <span className="text-xs font-bold">{t.word}</span>
+                        <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-emerald-600/80'}`}>{g.desc}</span>
+                      </div>
+                    );
+                  }
+                  if (t.kind === 'spell') {
+                    return (
+                      <div key={i} title={`تهجئة: ${t.word}`}
+                        className={`min-w-[120px] px-2 py-2 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${active ? 'bg-amber-500 text-white border-amber-600 scale-110 shadow-lg' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+                        <div className="flex flex-wrap gap-0.5 justify-center">
+                          {t.letters.map((l, li) => (
+                            <span key={li} className="text-xl" title={`${l.letter}: ${l.sign.desc}`}>{l.sign.emoji}</span>
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold">{t.word}</span>
+                        <span className={`text-[9px] ${active ? 'text-white/90' : 'text-amber-700'}`}>تهجئة بالحروف</span>
+                      </div>
+                    );
+                  }
                   return (
-                    <div key={i}
-                      title={g?.desc || 'لا توجد إشارة معروفة لهذه الكلمة'}
-                      className={`min-w-[88px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-emerald-600 text-white border-emerald-700 scale-110 shadow-lg' : g ? 'bg-white border-emerald-200 text-emerald-800' : 'bg-gray-50 border-dashed border-gray-300 text-gray-400'}`}>
-                      <span className={`text-3xl ${motionClass}`}>{g ? g.emoji : '✋'}</span>
+                    <div key={i} className="min-w-[88px] px-2 py-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 flex flex-col items-center gap-1">
+                      <span className="text-3xl">✋</span>
                       <span className="text-xs font-bold">{t.word}</span>
-                      {g && <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-emerald-600/80'}`}>{g.desc}</span>}
+                      <span className="text-[9px]">غير معروفة</span>
                     </div>
                   );
                 })}
