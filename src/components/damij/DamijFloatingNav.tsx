@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Hand, Layers, Brain, Activity, Eye, FlaskConical, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -28,9 +29,18 @@ const DamijFloatingNav: React.FC = () => {
 
   if (HIDDEN_PATTERNS.some((re) => re.test(pathname))) return null;
 
-  return (
+  const navContent = (
     <nav
-      className="fixed bottom-0 inset-x-0 z-50 flex items-end justify-center gap-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-[hsl(var(--damij-bg-2))] via-[hsl(var(--damij-bg-2))]/85 to-transparent"
+      className="flex items-center justify-center gap-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-[hsl(var(--damij-bg-2))] via-[hsl(var(--damij-bg-2))]/85 to-transparent pointer-events-auto"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+      }}
     >
       <button
         onClick={() => setCollapsed((c) => !c)}
