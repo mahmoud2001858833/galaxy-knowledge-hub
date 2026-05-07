@@ -134,6 +134,7 @@ const UniversalBrailleConverter: React.FC = () => {
           { k: "file", icon: FileUp, label: "ملف" },
           { k: "url", icon: LinkIcon, label: "رابط ويب" },
           { k: "text", icon: Type, label: "نص مباشر" },
+          { k: "braille", icon: Eye, label: "بريل → نص" },
         ] as { k: Source; icon: any; label: string }[]).map(({ k, icon: Ic, label }) => (
           <button
             key={k}
