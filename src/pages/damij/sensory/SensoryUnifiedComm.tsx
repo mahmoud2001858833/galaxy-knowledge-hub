@@ -295,14 +295,25 @@ const SensoryUnifiedComm: React.FC = () => {
               </div>
             ) : <span className="text-emerald-300 text-sm">ستظهر الحركات والإشارات هنا...</span>}
           </div>
-          <div className="mt-2 flex gap-2 flex-wrap">
+          <div className="mt-2 flex gap-2 flex-wrap items-center">
             <button onClick={playSign} disabled={!text}
               className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50 inline-flex items-center gap-1">
-              <Play className="w-3 h-3" /> تشغيل الإشارات
+              <Play className="w-3 h-3" /> تشغيل
             </button>
             <button onClick={stopSign} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 inline-flex items-center gap-1">
               <Square className="w-3 h-3" /> إيقاف
             </button>
+            <button onClick={() => setShowLib(true)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
+              <BookOpen className="w-3 h-3" /> قاموس الإشارات
+            </button>
+            <label className="text-[11px] inline-flex items-center gap-1 ms-auto">
+              السرعة
+              <input type="range" min={700} max={2200} step={100}
+                value={signSpeed} onChange={e => setSignSpeed(+e.target.value)}
+                className="w-24 accent-emerald-600" />
+              <span className="tabular-nums">{(signSpeed/1000).toFixed(1)}ث</span>
+            </label>
           </div>
         </div>
       </div>
