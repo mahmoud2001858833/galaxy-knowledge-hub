@@ -19,6 +19,8 @@ const UniversalBrailleConverter: React.FC = () => {
   const [rawText, setRawText] = useState("");
   const [brailleInput, setBrailleInput] = useState("");
   const [decoded, setDecoded] = useState("");
+  const [decodedBraille, setDecodedBraille] = useState("");
+  const [reBusy, setReBusy] = useState(false);
   const [extracted, setExtracted] = useState("");
   const [braille, setBraille] = useState("");
   const [grade, setGrade] = useState<1 | 2>(1);
@@ -31,7 +33,7 @@ const UniversalBrailleConverter: React.FC = () => {
   const lang = SPOKEN_LANGUAGES.find((l) => l.code === langCode) || SPOKEN_LANGUAGES[0];
 
   const reset = () => {
-    setExtracted(""); setBraille(""); setDecoded(""); setError(null);
+    setExtracted(""); setBraille(""); setDecoded(""); setDecodedBraille(""); setError(null);
   };
 
   const handleFile = (f: File | null) => {
@@ -39,7 +41,7 @@ const UniversalBrailleConverter: React.FC = () => {
   };
 
   const run = async () => {
-    setError(null); setBusy(true); setBraille(""); setExtracted(""); setDecoded("");
+    setError(null); setBusy(true); setBraille(""); setExtracted(""); setDecoded(""); setDecodedBraille("");
     try {
       // Reverse: Braille → text
       if (source === "braille") {
@@ -106,6 +108,22 @@ const UniversalBrailleConverter: React.FC = () => {
       u.lang = langCode;
       window.speechSynthesis.speak(u);
     } catch {}
+  };
+
+  const reConvertToBraille = async () => {
+    if (!decoded.trim()) return;
+    setReBusy(true); setDecodedBraille("");
+    try {
+      const { data, error } = await supabase.functions.invoke("braille-convert", {
+        body: { mode: "convert", text: decoded, grade, langCode: langCode.split("-")[0], langName: lang.name },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setDecodedBraille((data as any).braille || "");
+      toast.success("تم إعادة التحويل إلى بريل");
+    } catch (e: any) {
+      toast.error(e?.message || "فشل إعادة التحويل");
+    } finally { setReBusy(false); }
   };
 
   const fmt = (l: typeof lang) => `${l.flag} ${l.nativeName} — ${l.name}`;
@@ -281,6 +299,10 @@ const UniversalBrailleConverter: React.FC = () => {
               <FileText className="w-4 h-4" /> النص بعد فك ترميز بريل ({lang.nativeName})
             </h3>
             <div className="flex gap-1 flex-wrap">
+              <button onClick={reConvertToBraille} disabled={reBusy} className="px-3 py-2 rounded-lg bg-[hsl(var(--damij-primary))] text-white text-xs font-bold flex items-center gap-1 disabled:opacity-60" title="إعادة التحويل إلى بريل">
+                {reBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                {reBusy ? "جارٍ…" : "إعادة إلى بريل"}
+              </button>
               <button onClick={() => speak(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نطق"><Volume2 className="w-4 h-4" /></button>
               <button onClick={() => copy(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نسخ"><Copy className="w-4 h-4" /></button>
               <button onClick={() => downloadText(decoded, `braille-decoded-${Date.now()}.txt`)} className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1" title="تنزيل">
@@ -292,6 +314,34 @@ const UniversalBrailleConverter: React.FC = () => {
             {decoded}
           </div>
           <p className="text-xs text-slate-500 mt-2">عدد المحارف: {decoded.length.toLocaleString()}</p>
+
+          {decodedBraille && (
+            <div className="mt-4 pt-4 border-t border-[hsl(var(--damij-primary))]/15">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h4 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Eye className="w-4 h-4" /> ناتج بريل بعد إعادة التحويل (المستوى {grade === 2 ? "الثاني" : "الأول"})
+                </h4>
+                <div className="flex gap-1 flex-wrap">
+                  <button onClick={() => copy(decodedBraille)} className="p-2 rounded-lg hover:bg-slate-100" title="نسخ"><Copy className="w-4 h-4" /></button>
+                  <button onClick={() => downloadText(brailleToBrf(decodedBraille), `braille-${Date.now()}.brf`)}
+                    className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1" title="تنزيل BRF">
+                    <Download className="w-3 h-3" /> BRF
+                  </button>
+                  <button onClick={() => brailleToPdf(decodedBraille, `braille-${lang.name}`)}
+                    className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1" title="تنزيل PDF">
+                    <Download className="w-3 h-3" /> PDF
+                  </button>
+                </div>
+              </div>
+              <div
+                className="max-h-[360px] overflow-auto p-4 rounded-xl bg-white border text-3xl leading-loose whitespace-pre-wrap font-mono"
+                dir="ltr"
+                style={{ fontFamily: '"Apple Braille", "Segoe UI Symbol", "Noto Sans Symbols 2", monospace' }}
+              >
+                {decodedBraille}
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 
