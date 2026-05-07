@@ -100,8 +100,26 @@ const describeSchema = {
         },
       },
       narration: { type: "string" },
+      sign_keywords: {
+        type: "array",
+        items: { type: "string" },
+        description: "5-10 short Arabic keywords summarizing the figure for sign-language rendering",
+      },
     },
     required: ["figure_type", "description", "decoded_labels", "narration"],
+  },
+};
+
+const translateSchema = {
+  name: "emit_translation",
+  description: "Translate text fields to a target language",
+  parameters: {
+    type: "object",
+    properties: {
+      description: { type: "string" },
+      narration: { type: "string" },
+    },
+    required: ["description", "narration"],
   },
 };
 
