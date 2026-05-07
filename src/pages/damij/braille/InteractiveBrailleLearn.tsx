@@ -199,6 +199,7 @@ const InteractiveBrailleLearn: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-12 max-w-6xl mx-auto" dir="rtl">
+      <BackToBrailleButton />
       <div className="flex items-center gap-3 mb-6">
         <Link to="/damij/braille" className="p-2 rounded-lg hover:bg-[hsl(var(--damij-primary))]/10">
           <ArrowLeft className="w-5 h-5" />
