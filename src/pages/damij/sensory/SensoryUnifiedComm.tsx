@@ -1,136 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Type, Mic, Hand, Volume2, Square, Play, Copy, RefreshCw,
-  Languages, Eye, Ear, Accessibility,
+  Languages, Eye, Ear, Accessibility, Search, BookOpen, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { textToBraille, brailleToText } from './braille';
 import { logToolUse } from './interactionLog';
+import {
+  SIGN_DICT, SIGN_CATEGORIES, tokenizeSigns, lookupSign,
+  type SignToken,
+} from './signDictionary';
 
 type Modality = 'text' | 'voice' | 'braille' | 'sign';
 
-// ===== Sign-language dictionary: WORDS & GESTURES (not letters) =====
-// Each entry maps an Arabic word/phrase to a visual gesture description with
-// an emoji/icon, motion hint, and a short Arabic explanation of the hand sign.
-type SignGesture = {
-  emoji: string;        // pictographic representation of the gesture
-  motion: string;       // animation class: wave, tap, point, circle, none
-  desc: string;         // short Arabic description of the hand movement
-};
-
-const SIGN_DICT: Record<string, SignGesture> = {
-  // التحيات
-  'مرحبا':   { emoji: '👋', motion: 'wave',   desc: 'لوّح بيدك المفتوحة قرب الرأس' },
-  'أهلا':    { emoji: '👋', motion: 'wave',   desc: 'لوّح بيدك ترحيبًا' },
-  'السلام':  { emoji: '🤲', motion: 'rise',   desc: 'يدان مفتوحتان للأعلى' },
-  'سلام':    { emoji: '✌️', motion: 'rise',   desc: 'إصبعان للأعلى ثم تحية' },
-  'وداعا':   { emoji: '👋', motion: 'wave',   desc: 'لوّح بيدك للوداع' },
-  'شكرا':    { emoji: '🙏', motion: 'bow',    desc: 'يد على الذقن ثم للأمام' },
-  'عفوا':    { emoji: '🤝', motion: 'tap',    desc: 'يد على الصدر ثم انفتاح' },
-  'آسف':     { emoji: '😔', motion: 'circle', desc: 'قبضة تدور على الصدر' },
-  'نعم':     { emoji: '👍', motion: 'nod',    desc: 'قبضة تومئ للأعلى والأسفل' },
-  'لا':      { emoji: '👎', motion: 'shake',  desc: 'إصبعان يتحركان جانبيًا' },
-  'من فضلك': { emoji: '🙏', motion: 'circle', desc: 'كف مفتوح يدور على الصدر' },
-
-  // الأشخاص والأسرة
-  'أنا':     { emoji: '👤', motion: 'point',  desc: 'الإشارة بالإصبع نحو الصدر' },
-  'أنت':     { emoji: '👉', motion: 'point',  desc: 'الإشارة بالإصبع نحو المخاطب' },
-  'نحن':     { emoji: '👥', motion: 'circle', desc: 'دائرة تشمل الجميع' },
-  'هو':      { emoji: '🧑', motion: 'point',  desc: 'إشارة جانبية' },
-  'هي':      { emoji: '🧑‍🦰', motion: 'point', desc: 'إشارة جانبية' },
-  'أم':      { emoji: '👩', motion: 'tap',    desc: 'الإبهام يلمس الذقن' },
-  'أب':      { emoji: '👨', motion: 'tap',    desc: 'الإبهام يلمس الجبهة' },
-  'أخ':      { emoji: '🧑', motion: 'tap',    desc: 'قبضتان تتلامسان' },
-  'أخت':     { emoji: '👧', motion: 'tap',    desc: 'إبهام يلمس الخد' },
-  'صديق':    { emoji: '🤝', motion: 'tap',    desc: 'يدان متشابكتان' },
-  'معلم':    { emoji: '👨‍🏫', motion: 'rise',  desc: 'يدان من الرأس للأمام' },
-  'طالب':    { emoji: '🧑‍🎓', motion: 'tap',  desc: 'يد على الرأس ثم للأمام' },
-
-  // الأماكن والأشياء
-  'مدرسة':   { emoji: '🏫', motion: 'tap',    desc: 'كفّان يصفّقان مرتين' },
-  'بيت':     { emoji: '🏠', motion: 'rise',   desc: 'يدان تكوّنان سقف منزل' },
-  'كتاب':    { emoji: '📖', motion: 'open',   desc: 'يدان تنفتحان كصفحتين' },
-  'قلم':     { emoji: '✏️', motion: 'circle', desc: 'حركة كتابة في الهواء' },
-  'ماء':     { emoji: '💧', motion: 'tap',    desc: 'ثلاث أصابع على الفم' },
-  'طعام':    { emoji: '🍽️', motion: 'tap',    desc: 'يد تتحرك نحو الفم' },
-  'سيارة':   { emoji: '🚗', motion: 'circle', desc: 'يدان كأنّها تمسكان مقودًا' },
-
-  // الأفعال
-  'أحب':     { emoji: '❤️', motion: 'tap',    desc: 'يدان متقاطعتان على الصدر' },
-  'أريد':    { emoji: '🤲', motion: 'rise',   desc: 'يدان للأمام تجذبان' },
-  'أفهم':    { emoji: '💡', motion: 'tap',    desc: 'إصبع يلمس الجبهة' },
-  'أعرف':    { emoji: '🧠', motion: 'tap',    desc: 'أصابع تلمس الجبين' },
-  'أتعلم':   { emoji: '📚', motion: 'rise',   desc: 'يد تجمع من الراحة للجبهة' },
-  'ادرس':    { emoji: '🎓', motion: 'rise',   desc: 'أصابع متجهة للعينين' },
-  'أكتب':    { emoji: '✍️', motion: 'circle', desc: 'حركة كتابة على الكف' },
-  'أقرأ':    { emoji: '👀', motion: 'tap',    desc: 'إصبعان يتحركان فوق الكف' },
-  'انظر':    { emoji: '👁️', motion: 'point',  desc: 'إصبعان من العين للأمام' },
-  'استمع':   { emoji: '👂', motion: 'tap',    desc: 'يد قرب الأذن' },
-  'تكلم':    { emoji: '🗣️', motion: 'wave',   desc: 'أصابع تنفتح أمام الفم' },
-  'ساعد':    { emoji: '🤝', motion: 'rise',   desc: 'يد ترفع الأخرى للأعلى' },
-  'العب':    { emoji: '🎮', motion: 'shake',  desc: 'يدان مفتوحتان تهتزان' },
-  'اجلس':    { emoji: '🪑', motion: 'tap',    desc: 'إصبعان يستقران على الآخرين' },
-  'قم':      { emoji: '🧍', motion: 'rise',   desc: 'إصبعان يقفان على الكف' },
-
-  // الزمن والمشاعر
-  'اليوم':   { emoji: '📅', motion: 'tap',    desc: 'إبهامان للأسفل مرتين' },
-  'غدا':     { emoji: '➡️', motion: 'point',  desc: 'إبهام يتحرك للأمام' },
-  'أمس':     { emoji: '⬅️', motion: 'point',  desc: 'إبهام يتحرك للخلف' },
-  'الآن':    { emoji: '⏱️', motion: 'tap',    desc: 'يدان تنزلان معًا' },
-  'سعيد':    { emoji: '😊', motion: 'rise',   desc: 'يدان ترتفعان من الصدر' },
-  'حزين':    { emoji: '😢', motion: 'wave',   desc: 'أصابع تنزل من العينين' },
-  'تعبان':   { emoji: '😴', motion: 'tap',    desc: 'يدان على الصدر تنزلان' },
-  'جيد':     { emoji: '👌', motion: 'tap',    desc: 'إبهام للأعلى' },
-  'سيء':     { emoji: '👎', motion: 'tap',    desc: 'إبهام للأسفل' },
-
-  // أسئلة
-  'ما':      { emoji: '❓', motion: 'shake',  desc: 'كفّان مفتوحان يهتزّان' },
-  'ماذا':    { emoji: '❓', motion: 'shake',  desc: 'كفّان مفتوحان يهتزّان' },
-  'من':      { emoji: '🤔', motion: 'circle', desc: 'إصبع يدور أمام الفم' },
-  'متى':     { emoji: '⏰', motion: 'circle', desc: 'إصبع يدور حول الآخر' },
-  'أين':     { emoji: '📍', motion: 'shake',  desc: 'سبابة تهتز يمينًا وشمالًا' },
-  'كيف':     { emoji: '🤷', motion: 'rise',   desc: 'كفّان يدوران للأعلى' },
-  'لماذا':   { emoji: '💭', motion: 'tap',    desc: 'سبابة تنقر الجبهة' },
-};
-
-// Synonym normalization (handle hamza variants & common alternatives)
-const SIGN_SYNONYMS: Record<string, string> = {
-  'إنا': 'أنا', 'انا': 'أنا', 'انت': 'أنت', 'إنت': 'أنت',
-  'احب': 'أحب', 'اريد': 'أريد', 'افهم': 'أفهم', 'اعرف': 'أعرف',
-  'اخت': 'أخت', 'اخ': 'أخ', 'ام': 'أم', 'اب': 'أب', 'ابي': 'أب', 'امي': 'أم',
-  'مدرسه': 'مدرسة', 'سياره': 'سيارة', 'اليم': 'اليوم', 'الان': 'الآن',
-  'اسف': 'آسف', 'اهلا': 'أهلا', 'وداعاً': 'وداعا', 'شكراً': 'شكرا',
-  'مرحباً': 'مرحبا', 'هلا': 'مرحبا',
-};
-
-const stripDiacritics = (s: string) => s.replace(/[\u064B-\u0652\u0670]/g, '');
-const normalizeWord = (w: string) => {
-  const cleaned = stripDiacritics(w).replace(/[^\u0600-\u06FF]/g, '');
-  return SIGN_SYNONYMS[cleaned] || cleaned;
-};
-
-// Tokenize text into sign tokens; check 2-word phrases first (e.g. "من فضلك")
-type SignToken = { word: string; gesture: SignGesture | null };
-const tokenizeSigns = (text: string): SignToken[] => {
-  const raw = text.split(/\s+/).filter(Boolean);
-  const out: SignToken[] = [];
-  let i = 0;
-  while (i < raw.length) {
-    if (i + 1 < raw.length) {
-      const pair = `${normalizeWord(raw[i])} ${normalizeWord(raw[i + 1])}`;
-      if (SIGN_DICT[pair]) {
-        out.push({ word: `${raw[i]} ${raw[i + 1]}`, gesture: SIGN_DICT[pair] });
-        i += 2;
-        continue;
-      }
-    }
-    const w = normalizeWord(raw[i]);
-    out.push({ word: raw[i], gesture: SIGN_DICT[w] || null });
-    i++;
-  }
-  return out;
-};
+// Sign-language dictionary lives in ./signDictionary (hundreds of entries +
+// fingerspelling fallback). All gesture tokens come from there.
 
 const SensoryUnifiedComm: React.FC = () => {
   const [text, setText] = useState('');
@@ -204,9 +89,12 @@ const SensoryUnifiedComm: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, autoTTS]);
 
-  // Sign-language playback: step through WORDS/GESTURES (not letters)
-  const signTokens = tokenizeSigns(text);
-  const recognizedCount = signTokens.filter(t => t.gesture).length;
+  // Sign-language playback: step through WORDS/GESTURES (with spelling fallback)
+  const signTokens = useMemo(() => tokenizeSigns(text), [text]);
+  const recognizedCount = signTokens.filter(t => t.kind !== 'unknown').length;
+  const [signSpeed, setSignSpeed] = useState(1300);
+  const [showLib, setShowLib] = useState(false);
+  const [libQuery, setLibQuery] = useState('');
 
   const playSign = () => {
     stopSign();
@@ -217,7 +105,7 @@ const SensoryUnifiedComm: React.FC = () => {
       i++;
       if (i >= signTokens.length) { stopSign(); return; }
       setSignIdx(i);
-    }, 1100);
+    }, signSpeed);
     logToolUse('sign');
   };
   const stopSign = () => {
@@ -365,39 +253,67 @@ const SensoryUnifiedComm: React.FC = () => {
               <div className="flex flex-wrap gap-2">
                 {signTokens.map((t, i) => {
                   const active = i === signIdx;
-                  const g = t.gesture;
-                  const motionClass = active && g
-                    ? (g.motion === 'wave'   ? 'animate-[wiggle_0.6s_ease-in-out_infinite]' :
-                       g.motion === 'shake'  ? 'animate-pulse' :
-                       g.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]' :
-                       g.motion === 'rise'   ? 'animate-bounce' :
-                       g.motion === 'tap'    ? 'animate-pulse' :
-                       g.motion === 'nod'    ? 'animate-bounce' :
-                       g.motion === 'point'  ? 'animate-pulse' :
-                       g.motion === 'open'   ? 'animate-pulse' :
-                       g.motion === 'bow'    ? 'animate-bounce' : '')
-                    : '';
+                  if (t.kind === 'word') {
+                    const g = t.gesture;
+                    const motionClass = active
+                      ? (g.motion === 'wave'   ? 'animate-[wiggle_0.6s_ease-in-out_infinite]' :
+                         g.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]' :
+                         g.motion === 'rise' || g.motion === 'nod' || g.motion === 'bow' ? 'animate-bounce' :
+                         'animate-pulse')
+                      : '';
+                    return (
+                      <div key={i} title={g.desc}
+                        className={`min-w-[92px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-emerald-600 text-white border-emerald-700 scale-110 shadow-lg' : 'bg-white border-emerald-200 text-emerald-800'}`}>
+                        <span className={`text-3xl ${motionClass}`}>{g.emoji}</span>
+                        <span className="text-xs font-bold">{t.word}</span>
+                        <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-emerald-600/80'}`}>{g.desc}</span>
+                      </div>
+                    );
+                  }
+                  if (t.kind === 'spell') {
+                    return (
+                      <div key={i} title={`تهجئة: ${t.word}`}
+                        className={`min-w-[120px] px-2 py-2 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${active ? 'bg-amber-500 text-white border-amber-600 scale-110 shadow-lg' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+                        <div className="flex flex-wrap gap-0.5 justify-center">
+                          {t.letters.map((l, li) => (
+                            <span key={li} className="text-xl" title={`${l.letter}: ${l.sign.desc}`}>{l.sign.emoji}</span>
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold">{t.word}</span>
+                        <span className={`text-[9px] ${active ? 'text-white/90' : 'text-amber-700'}`}>تهجئة بالحروف</span>
+                      </div>
+                    );
+                  }
                   return (
-                    <div key={i}
-                      title={g?.desc || 'لا توجد إشارة معروفة لهذه الكلمة'}
-                      className={`min-w-[88px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-emerald-600 text-white border-emerald-700 scale-110 shadow-lg' : g ? 'bg-white border-emerald-200 text-emerald-800' : 'bg-gray-50 border-dashed border-gray-300 text-gray-400'}`}>
-                      <span className={`text-3xl ${motionClass}`}>{g ? g.emoji : '✋'}</span>
+                    <div key={i} className="min-w-[88px] px-2 py-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 flex flex-col items-center gap-1">
+                      <span className="text-3xl">✋</span>
                       <span className="text-xs font-bold">{t.word}</span>
-                      {g && <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-emerald-600/80'}`}>{g.desc}</span>}
+                      <span className="text-[9px]">غير معروفة</span>
                     </div>
                   );
                 })}
               </div>
             ) : <span className="text-emerald-300 text-sm">ستظهر الحركات والإشارات هنا...</span>}
           </div>
-          <div className="mt-2 flex gap-2 flex-wrap">
+          <div className="mt-2 flex gap-2 flex-wrap items-center">
             <button onClick={playSign} disabled={!text}
               className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50 inline-flex items-center gap-1">
-              <Play className="w-3 h-3" /> تشغيل الإشارات
+              <Play className="w-3 h-3" /> تشغيل
             </button>
             <button onClick={stopSign} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 inline-flex items-center gap-1">
               <Square className="w-3 h-3" /> إيقاف
             </button>
+            <button onClick={() => setShowLib(true)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
+              <BookOpen className="w-3 h-3" /> قاموس الإشارات
+            </button>
+            <label className="text-[11px] inline-flex items-center gap-1 ms-auto">
+              السرعة
+              <input type="range" min={700} max={2200} step={100}
+                value={signSpeed} onChange={e => setSignSpeed(+e.target.value)}
+                className="w-24 accent-emerald-600" />
+              <span className="tabular-nums">{(signSpeed/1000).toFixed(1)}ث</span>
+            </label>
           </div>
         </div>
       </div>
@@ -409,6 +325,73 @@ const SensoryUnifiedComm: React.FC = () => {
         className="w-full mt-6 px-4 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-emerald-600 to-blue-600 text-white font-bold shadow-lg disabled:opacity-50">
         ✨ بثّ الجلسة بالصيغ الأربع معاً
       </button>
+
+      {/* ===== Sign dictionary library modal ===== */}
+      {showLib && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowLib(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold inline-flex items-center gap-2 text-emerald-700">
+                <BookOpen className="w-5 h-5" /> قاموس لغة الإشارة ({Object.keys(SIGN_DICT).length}+ كلمة)
+              </h3>
+              <button onClick={() => setShowLib(false)} className="p-1 rounded hover:bg-gray-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 border-b">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute top-2.5 right-3 text-gray-400" />
+                <input value={libQuery} onChange={e => setLibQuery(e.target.value)}
+                  placeholder="ابحث عن كلمة..."
+                  className="w-full pe-9 ps-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
+              </div>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-5">
+              {libQuery.trim() ? (() => {
+                const q = libQuery.trim();
+                const hits = Object.keys(SIGN_DICT).filter(k => k.includes(q)).slice(0, 80);
+                return hits.length ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {hits.map(k => {
+                      const lk = lookupSign(k);
+                      const gs = lk.kind === 'word' ? lk.gesture : null;
+                      return (
+                        <button key={k} onClick={() => { setText(t => (t ? t + ' ' : '') + k); }}
+                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-center">
+                          <div className="text-2xl">{gs?.emoji || '✋'}</div>
+                          <div className="text-xs font-bold text-emerald-800">{k}</div>
+                          {gs && <div className="text-[9px] text-emerald-600/80 leading-tight">{gs.desc}</div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : <p className="text-sm text-gray-500 text-center py-6">لا نتائج. جرّب كلمة أخرى.</p>;
+              })() : SIGN_CATEGORIES.map(cat => (
+                <div key={cat.name}>
+                  <h4 className="font-bold text-sm text-emerald-700 mb-2">{cat.name}</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {cat.words.map(w => {
+                      const lk = lookupSign(w);
+                      const gs = lk.kind === 'word' ? lk.gesture : null;
+                      return (
+                        <button key={w} onClick={() => { setText(t => (t ? t + ' ' : '') + w); }}
+                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-center">
+                          <div className="text-2xl">{gs?.emoji || '✋'}</div>
+                          <div className="text-xs font-bold text-emerald-800">{w}</div>
+                          {gs && <div className="text-[9px] text-emerald-600/80 leading-tight line-clamp-2">{gs.desc}</div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="p-3 border-t text-[11px] text-gray-500 text-center">
+              اضغط على أي كلمة لإضافتها للنص. الكلمات غير الموجودة تُعرض بالتهجئة الحرفية تلقائيًا.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
