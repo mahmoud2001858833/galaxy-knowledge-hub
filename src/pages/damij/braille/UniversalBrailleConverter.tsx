@@ -198,7 +198,7 @@ const UniversalBrailleConverter: React.FC = () => {
             className="flex-1 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-            {busy ? step || "جارٍ المعالجة…" : "تحويل إلى بريل"}
+            {busy ? step || "جارٍ المعالجة…" : source === "braille" ? "فك ترميز إلى نص" : "تحويل إلى بريل"}
           </button>
         </div>
       </div>
