@@ -251,7 +251,17 @@ const UniversalBrailleConverter: React.FC = () => {
             dir="auto"
           />
         )}
-      </div>
+        {source === "braille" && (
+          <textarea
+            value={brailleInput}
+            onChange={(e) => setBrailleInput(e.target.value)}
+            rows={6}
+            placeholder="ألصق نص بريل (⠁⠃⠉ ...) — يدعم المستوى الأول والثاني"
+            className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-2xl leading-loose font-mono"
+            dir="ltr"
+            style={{ fontFamily: '"Apple Braille", "Segoe UI Symbol", "Noto Sans Symbols 2", monospace' }}
+          />
+        )}
 
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-2">
