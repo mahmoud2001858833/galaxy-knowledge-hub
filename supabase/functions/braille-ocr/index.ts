@@ -15,29 +15,46 @@ interface Body {
 
 const buildPrompt = (b: Body) => {
   const lang = b.languageName ?? b.language ?? "Arabic";
+  const langCode = b.language ?? "ar";
   const grade = b.grade ?? 1;
-  return `You are a world-class Braille OCR engine. The attached image is a photograph or scan of a printed/embossed Braille page.
+  return `You are a world-class Braille OCR + linguistics engine. The attached image is a photograph or scan of a printed/embossed Braille page.
 
-TASK:
-1. Detect every Braille cell (6-dot, possibly 8-dot) on the page in correct reading order (left-to-right, top-to-bottom).
-2. Decode the cells using ${lang} Braille (BCP-47: ${b.language ?? "ar"}) at Grade ${grade} ${grade === 2 ? "(contracted/literary)" : "(uncontracted)"}.
-3. Reconstruct the text faithfully, preserving line breaks, spaces and punctuation.
-4. If the photo is skewed, blurry, partially cut, or low contrast, do your best and report a confidence score.
-5. If the page is NOT Braille, set "is_braille": false and explain briefly.
+CONTEXT — Braille standards to apply:
+- For Arabic: use the official Arabic Braille (LBU/UNESCO 2013) — 28 letters + Tashkeel + Hamza variants + Arabic-Indic digits with the number sign ⠼.
+- For English/French/Spanish/German: apply UEB (English) or the relevant national contracted code at Grade ${grade}.
+- For Russian/Greek/Cyrillic/CJK: use the standard national Braille code for ${lang}.
+- Recognize the number indicator (⠼), capital indicator (⠠), italic/letter signs, and Grade-2 contractions (whole-word, group-sign, short-form).
+
+PIPELINE (perform internally, do NOT output the steps):
+1. Auto-rotate / deskew the page mentally; identify rows and Braille cells with consistent dot spacing.
+2. Detect every cell (6-dot, possibly 8-dot) in correct reading order (left-to-right, top-to-bottom; right-to-left output is still encoded LTR in Braille — decode as LTR cells then reconstruct ${lang} text in its natural script direction).
+3. Decode each cell using ${lang} Braille (BCP-47: ${langCode}) at Grade ${grade} ${grade === 2 ? "(contracted/literary — fully expand contractions)" : "(uncontracted/literal)"}.
+4. POST-PROCESS the decoded text using your knowledge of ${lang}:
+   - Fix obvious cell-misreads using vocabulary, morphology, spelling, and surrounding context.
+   - Restore correct word boundaries and punctuation.
+   - Reattach diacritics/Tashkeel where unambiguous (Arabic).
+   - Preserve original line breaks unless they break a single word across two lines (then merge).
+5. If multiple readings are possible, pick the one that yields a grammatical, well-spelled ${lang} sentence.
+6. If the page is NOT Braille, set "is_braille": false and explain briefly in Arabic.
+
+QUALITY RULES:
+- The "text" field MUST be clean, natural, well-punctuated ${lang} — NOT a transliteration and NOT raw cell glyphs.
+- Do not invent content not implied by the dots; when truly illegible, write [غير واضح] in Arabic context (or [unclear] otherwise).
+- Confidence reflects YOUR estimate of the text accuracy after post-processing (0–100).
 
 OUTPUT — return ONLY minified JSON (no markdown fences):
 {
   "is_braille": true,
-  "language": "${b.language ?? "ar"}",
+  "language": "${langCode}",
   "grade": ${grade},
   "confidence": 0-100,
   "lines": ["line 1", "line 2"],
-  "text": "<full reconstructed text in ${lang} with newlines>",
+  "text": "<full reconstructed ${lang} text with newlines>",
   "cells": [ { "line": 1, "index": 1, "dots": "1,3,5", "char": "ل" } ],
-  "notes": "<brief Arabic quality notes>"
+  "notes": "<brief Arabic notes about image quality / corrections applied>"
 }
 
-Cap "cells" to the first 200 entries. "text" and "lines" must be complete.`;
+Cap "cells" to the first 200 entries. "text" and "lines" must be complete and human-readable.`;
 };
 
 Deno.serve(async (req) => {
