@@ -161,7 +161,6 @@ const BrailleLearn: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-10 pb-16 max-w-7xl mx-auto">
-      <BackToBrailleButton />
       <header className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[hsl(var(--damij-primary))]/10 mb-4">
           <BookOpen className="w-8 h-8 text-[hsl(var(--damij-primary))]" />
