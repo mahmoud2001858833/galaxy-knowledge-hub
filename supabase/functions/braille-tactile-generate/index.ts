@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
 
     if (mode === "describe") {
       if (!image_data_url) throw new Error("image_data_url required");
-      const userText = `Describe this tactile/braille figure for a sighted teacher (Arabic). Identify figure type, decode any visible braille labels into text, and provide a short narration suitable for read-aloud.`;
+      const userText = `Describe this tactile/braille figure for a sighted teacher (Arabic). Identify figure type, decode any visible braille labels into text, and provide a short narration suitable for read-aloud. Also include a "sign_keywords" array of 5–10 short Arabic keywords that summarize the figure for sign-language rendering.`;
       const b64 = image_data_url.split(",")[1];
       const mime = image_data_url.match(/^data:([^;]+);/)?.[1] || "image/png";
       const parts = [{ text: userText }, { inlineData: { mimeType: mime, data: b64 } }];
