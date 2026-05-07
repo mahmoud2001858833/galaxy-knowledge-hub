@@ -10,16 +10,126 @@ import { logToolUse } from './interactionLog';
 
 type Modality = 'text' | 'voice' | 'braille' | 'sign';
 
-// Lightweight Arabic sign-language renderer:
-// Shows letter-by-letter glyph cards (ASL/ArSL "fingerspelling" approximation),
-// good enough as a synchronized visual translation. For a richer avatar, the
-// existing Sign Language System page should be used.
-const SIGN_LABELS: Record<string, string> = {
-  'ا': 'Alif', 'ب': 'Ba', 'ت': 'Ta', 'ث': 'Tha', 'ج': 'Jeem', 'ح': 'Hha',
-  'خ': 'Kha', 'د': 'Dal', 'ذ': 'Dhal', 'ر': 'Ra', 'ز': 'Zay', 'س': 'Seen',
-  'ش': 'Sheen', 'ص': 'Sad', 'ض': 'Dad', 'ط': 'Ta2', 'ظ': 'Za2', 'ع': 'Ain',
-  'غ': 'Ghain', 'ف': 'Fa', 'ق': 'Qaf', 'ك': 'Kaf', 'ل': 'Lam', 'م': 'Meem',
-  'ن': 'Noon', 'ه': 'Ha', 'و': 'Waw', 'ي': 'Ya',
+// ===== Sign-language dictionary: WORDS & GESTURES (not letters) =====
+// Each entry maps an Arabic word/phrase to a visual gesture description with
+// an emoji/icon, motion hint, and a short Arabic explanation of the hand sign.
+type SignGesture = {
+  emoji: string;        // pictographic representation of the gesture
+  motion: string;       // animation class: wave, tap, point, circle, none
+  desc: string;         // short Arabic description of the hand movement
+};
+
+const SIGN_DICT: Record<string, SignGesture> = {
+  // التحيات
+  'مرحبا':   { emoji: '👋', motion: 'wave',   desc: 'لوّح بيدك المفتوحة قرب الرأس' },
+  'أهلا':    { emoji: '👋', motion: 'wave',   desc: 'لوّح بيدك ترحيبًا' },
+  'السلام':  { emoji: '🤲', motion: 'rise',   desc: 'يدان مفتوحتان للأعلى' },
+  'سلام':    { emoji: '✌️', motion: 'rise',   desc: 'إصبعان للأعلى ثم تحية' },
+  'وداعا':   { emoji: '👋', motion: 'wave',   desc: 'لوّح بيدك للوداع' },
+  'شكرا':    { emoji: '🙏', motion: 'bow',    desc: 'يد على الذقن ثم للأمام' },
+  'عفوا':    { emoji: '🤝', motion: 'tap',    desc: 'يد على الصدر ثم انفتاح' },
+  'آسف':     { emoji: '😔', motion: 'circle', desc: 'قبضة تدور على الصدر' },
+  'نعم':     { emoji: '👍', motion: 'nod',    desc: 'قبضة تومئ للأعلى والأسفل' },
+  'لا':      { emoji: '👎', motion: 'shake',  desc: 'إصبعان يتحركان جانبيًا' },
+  'من فضلك': { emoji: '🙏', motion: 'circle', desc: 'كف مفتوح يدور على الصدر' },
+
+  // الأشخاص والأسرة
+  'أنا':     { emoji: '👤', motion: 'point',  desc: 'الإشارة بالإصبع نحو الصدر' },
+  'أنت':     { emoji: '👉', motion: 'point',  desc: 'الإشارة بالإصبع نحو المخاطب' },
+  'نحن':     { emoji: '👥', motion: 'circle', desc: 'دائرة تشمل الجميع' },
+  'هو':      { emoji: '🧑', motion: 'point',  desc: 'إشارة جانبية' },
+  'هي':      { emoji: '🧑‍🦰', motion: 'point', desc: 'إشارة جانبية' },
+  'أم':      { emoji: '👩', motion: 'tap',    desc: 'الإبهام يلمس الذقن' },
+  'أب':      { emoji: '👨', motion: 'tap',    desc: 'الإبهام يلمس الجبهة' },
+  'أخ':      { emoji: '🧑', motion: 'tap',    desc: 'قبضتان تتلامسان' },
+  'أخت':     { emoji: '👧', motion: 'tap',    desc: 'إبهام يلمس الخد' },
+  'صديق':    { emoji: '🤝', motion: 'tap',    desc: 'يدان متشابكتان' },
+  'معلم':    { emoji: '👨‍🏫', motion: 'rise',  desc: 'يدان من الرأس للأمام' },
+  'طالب':    { emoji: '🧑‍🎓', motion: 'tap',  desc: 'يد على الرأس ثم للأمام' },
+
+  // الأماكن والأشياء
+  'مدرسة':   { emoji: '🏫', motion: 'tap',    desc: 'كفّان يصفّقان مرتين' },
+  'بيت':     { emoji: '🏠', motion: 'rise',   desc: 'يدان تكوّنان سقف منزل' },
+  'كتاب':    { emoji: '📖', motion: 'open',   desc: 'يدان تنفتحان كصفحتين' },
+  'قلم':     { emoji: '✏️', motion: 'circle', desc: 'حركة كتابة في الهواء' },
+  'ماء':     { emoji: '💧', motion: 'tap',    desc: 'ثلاث أصابع على الفم' },
+  'طعام':    { emoji: '🍽️', motion: 'tap',    desc: 'يد تتحرك نحو الفم' },
+  'سيارة':   { emoji: '🚗', motion: 'circle', desc: 'يدان كأنّها تمسكان مقودًا' },
+
+  // الأفعال
+  'أحب':     { emoji: '❤️', motion: 'tap',    desc: 'يدان متقاطعتان على الصدر' },
+  'أريد':    { emoji: '🤲', motion: 'rise',   desc: 'يدان للأمام تجذبان' },
+  'أفهم':    { emoji: '💡', motion: 'tap',    desc: 'إصبع يلمس الجبهة' },
+  'أعرف':    { emoji: '🧠', motion: 'tap',    desc: 'أصابع تلمس الجبين' },
+  'أتعلم':   { emoji: '📚', motion: 'rise',   desc: 'يد تجمع من الراحة للجبهة' },
+  'ادرس':    { emoji: '🎓', motion: 'rise',   desc: 'أصابع متجهة للعينين' },
+  'أكتب':    { emoji: '✍️', motion: 'circle', desc: 'حركة كتابة على الكف' },
+  'أقرأ':    { emoji: '👀', motion: 'tap',    desc: 'إصبعان يتحركان فوق الكف' },
+  'انظر':    { emoji: '👁️', motion: 'point',  desc: 'إصبعان من العين للأمام' },
+  'استمع':   { emoji: '👂', motion: 'tap',    desc: 'يد قرب الأذن' },
+  'تكلم':    { emoji: '🗣️', motion: 'wave',   desc: 'أصابع تنفتح أمام الفم' },
+  'ساعد':    { emoji: '🤝', motion: 'rise',   desc: 'يد ترفع الأخرى للأعلى' },
+  'العب':    { emoji: '🎮', motion: 'shake',  desc: 'يدان مفتوحتان تهتزان' },
+  'اجلس':    { emoji: '🪑', motion: 'tap',    desc: 'إصبعان يستقران على الآخرين' },
+  'قم':      { emoji: '🧍', motion: 'rise',   desc: 'إصبعان يقفان على الكف' },
+
+  // الزمن والمشاعر
+  'اليوم':   { emoji: '📅', motion: 'tap',    desc: 'إبهامان للأسفل مرتين' },
+  'غدا':     { emoji: '➡️', motion: 'point',  desc: 'إبهام يتحرك للأمام' },
+  'أمس':     { emoji: '⬅️', motion: 'point',  desc: 'إبهام يتحرك للخلف' },
+  'الآن':    { emoji: '⏱️', motion: 'tap',    desc: 'يدان تنزلان معًا' },
+  'سعيد':    { emoji: '😊', motion: 'rise',   desc: 'يدان ترتفعان من الصدر' },
+  'حزين':    { emoji: '😢', motion: 'wave',   desc: 'أصابع تنزل من العينين' },
+  'تعبان':   { emoji: '😴', motion: 'tap',    desc: 'يدان على الصدر تنزلان' },
+  'جيد':     { emoji: '👌', motion: 'tap',    desc: 'إبهام للأعلى' },
+  'سيء':     { emoji: '👎', motion: 'tap',    desc: 'إبهام للأسفل' },
+
+  // أسئلة
+  'ما':      { emoji: '❓', motion: 'shake',  desc: 'كفّان مفتوحان يهتزّان' },
+  'ماذا':    { emoji: '❓', motion: 'shake',  desc: 'كفّان مفتوحان يهتزّان' },
+  'من':      { emoji: '🤔', motion: 'circle', desc: 'إصبع يدور أمام الفم' },
+  'متى':     { emoji: '⏰', motion: 'circle', desc: 'إصبع يدور حول الآخر' },
+  'أين':     { emoji: '📍', motion: 'shake',  desc: 'سبابة تهتز يمينًا وشمالًا' },
+  'كيف':     { emoji: '🤷', motion: 'rise',   desc: 'كفّان يدوران للأعلى' },
+  'لماذا':   { emoji: '💭', motion: 'tap',    desc: 'سبابة تنقر الجبهة' },
+};
+
+// Synonym normalization (handle hamza variants & common alternatives)
+const SIGN_SYNONYMS: Record<string, string> = {
+  'إنا': 'أنا', 'انا': 'أنا', 'انت': 'أنت', 'إنت': 'أنت',
+  'احب': 'أحب', 'اريد': 'أريد', 'افهم': 'أفهم', 'اعرف': 'أعرف',
+  'اخت': 'أخت', 'اخ': 'أخ', 'ام': 'أم', 'اب': 'أب', 'ابي': 'أب', 'امي': 'أم',
+  'مدرسه': 'مدرسة', 'سياره': 'سيارة', 'اليم': 'اليوم', 'الان': 'الآن',
+  'اسف': 'آسف', 'اهلا': 'أهلا', 'وداعاً': 'وداعا', 'شكراً': 'شكرا',
+  'مرحباً': 'مرحبا', 'هلا': 'مرحبا',
+};
+
+const stripDiacritics = (s: string) => s.replace(/[\u064B-\u0652\u0670]/g, '');
+const normalizeWord = (w: string) => {
+  const cleaned = stripDiacritics(w).replace(/[^\u0600-\u06FF]/g, '');
+  return SIGN_SYNONYMS[cleaned] || cleaned;
+};
+
+// Tokenize text into sign tokens; check 2-word phrases first (e.g. "من فضلك")
+type SignToken = { word: string; gesture: SignGesture | null };
+const tokenizeSigns = (text: string): SignToken[] => {
+  const raw = text.split(/\s+/).filter(Boolean);
+  const out: SignToken[] = [];
+  let i = 0;
+  while (i < raw.length) {
+    if (i + 1 < raw.length) {
+      const pair = `${normalizeWord(raw[i])} ${normalizeWord(raw[i + 1])}`;
+      if (SIGN_DICT[pair]) {
+        out.push({ word: `${raw[i]} ${raw[i + 1]}`, gesture: SIGN_DICT[pair] });
+        i += 2;
+        continue;
+      }
+    }
+    const w = normalizeWord(raw[i]);
+    out.push({ word: raw[i], gesture: SIGN_DICT[w] || null });
+    i++;
+  }
+  return out;
 };
 
 const SensoryUnifiedComm: React.FC = () => {
@@ -94,18 +204,20 @@ const SensoryUnifiedComm: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, autoTTS]);
 
-  // Sign-language playback: step through letters
+  // Sign-language playback: step through WORDS/GESTURES (not letters)
+  const signTokens = tokenizeSigns(text);
+  const recognizedCount = signTokens.filter(t => t.gesture).length;
+
   const playSign = () => {
     stopSign();
-    const letters = Array.from(text).filter(c => SIGN_LABELS[c] || c === ' ');
-    if (!letters.length) return;
+    if (!signTokens.length) return;
     let i = 0;
     setSignIdx(0);
     signTimerRef.current = window.setInterval(() => {
       i++;
-      if (i >= letters.length) { stopSign(); return; }
+      if (i >= signTokens.length) { stopSign(); return; }
       setSignIdx(i);
-    }, 700);
+    }, 1100);
     logToolUse('sign');
   };
   const stopSign = () => {
@@ -113,8 +225,6 @@ const SensoryUnifiedComm: React.FC = () => {
     setSignIdx(-1);
   };
   useEffect(() => () => { stopSign(); window.speechSynthesis?.cancel(); }, []);
-
-  const signLetters = Array.from(text);
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-16 max-w-6xl mx-auto" dir="rtl">
@@ -187,10 +297,10 @@ const SensoryUnifiedComm: React.FC = () => {
         )}
         {activeInput === 'sign' && (
           <div>
-            <p className="text-xs text-gray-500 mb-1">اكتب الجملة بصياغة لغة الإشارة (Gloss) — حروف عربية تُمثَّل بالتهجئة الإصبعية للمتعلم.</p>
+            <p className="text-xs text-gray-500 mb-1">اكتب جملة بكلمات كاملة (مثلاً: «مرحبا أنا أحب المدرسة») وستظهر كل كلمة كحركة/إشارة بصرية مع شرح للحركة.</p>
             <textarea value={text} onChange={(e) => onSignGloss(e.target.value)} rows={3}
-              className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا الصف"/>
-            <p className="text-[11px] text-gray-400 mt-1">للترجمة الإشارية بكاميرا، استخدم صفحة نظام لغة الإشارة المخصّص.</p>
+              className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا أنا أحب المدرسة"/>
+            <p className="text-[11px] text-gray-400 mt-1">القاموس يدعم: التحيات، الأسرة، الأفعال، المشاعر، الأسئلة، الزمن. للترجمة بالكاميرا استخدم صفحة نظام لغة الإشارة.</p>
           </div>
         )}
       </div>
@@ -240,31 +350,50 @@ const SensoryUnifiedComm: React.FC = () => {
           </button>
         </div>
 
-        {/* Sign Language */}
+        {/* Sign Language - WORDS & GESTURES */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-bold mb-2 inline-flex items-center gap-2"><Hand className="w-5 h-5 text-emerald-600"/> لغة الإشارة</h3>
-          <div className="min-h-[80px] p-3 rounded-xl bg-emerald-50">
-            {text ? (
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold inline-flex items-center gap-2"><Hand className="w-5 h-5 text-emerald-600"/> لغة الإشارة <span className="text-[10px] font-normal text-emerald-600">(حركات وإشارات)</span></h3>
+            {signTokens.length > 0 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                {recognizedCount}/{signTokens.length} إشارة
+              </span>
+            )}
+          </div>
+          <div className="min-h-[110px] p-3 rounded-xl bg-emerald-50">
+            {signTokens.length ? (
               <div className="flex flex-wrap gap-2">
-                {signLetters.map((c, i) => {
-                  const label = SIGN_LABELS[c];
+                {signTokens.map((t, i) => {
                   const active = i === signIdx;
-                  if (c === ' ') return <div key={i} className="w-3" />;
+                  const g = t.gesture;
+                  const motionClass = active && g
+                    ? (g.motion === 'wave'   ? 'animate-[wiggle_0.6s_ease-in-out_infinite]' :
+                       g.motion === 'shake'  ? 'animate-pulse' :
+                       g.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]' :
+                       g.motion === 'rise'   ? 'animate-bounce' :
+                       g.motion === 'tap'    ? 'animate-pulse' :
+                       g.motion === 'nod'    ? 'animate-bounce' :
+                       g.motion === 'point'  ? 'animate-pulse' :
+                       g.motion === 'open'   ? 'animate-pulse' :
+                       g.motion === 'bow'    ? 'animate-bounce' : '')
+                    : '';
                   return (
                     <div key={i}
-                      className={`w-12 h-12 rounded-lg border flex flex-col items-center justify-center transition ${active ? 'bg-emerald-600 text-white scale-110 shadow-lg' : 'bg-white border-emerald-200 text-emerald-800'}`}>
-                      <span className="text-lg font-bold">{c}</span>
-                      {label && <span className="text-[8px] opacity-70">{label}</span>}
+                      title={g?.desc || 'لا توجد إشارة معروفة لهذه الكلمة'}
+                      className={`min-w-[88px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-emerald-600 text-white border-emerald-700 scale-110 shadow-lg' : g ? 'bg-white border-emerald-200 text-emerald-800' : 'bg-gray-50 border-dashed border-gray-300 text-gray-400'}`}>
+                      <span className={`text-3xl ${motionClass}`}>{g ? g.emoji : '✋'}</span>
+                      <span className="text-xs font-bold">{t.word}</span>
+                      {g && <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-emerald-600/80'}`}>{g.desc}</span>}
                     </div>
                   );
                 })}
               </div>
-            ) : <span className="text-emerald-300 text-sm">ستظهر بطاقات الإشارة هنا...</span>}
+            ) : <span className="text-emerald-300 text-sm">ستظهر الحركات والإشارات هنا...</span>}
           </div>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex gap-2 flex-wrap">
             <button onClick={playSign} disabled={!text}
               className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50 inline-flex items-center gap-1">
-              <Play className="w-3 h-3" /> تشغيل تتابعي
+              <Play className="w-3 h-3" /> تشغيل الإشارات
             </button>
             <button onClick={stopSign} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 inline-flex items-center gap-1">
               <Square className="w-3 h-3" /> إيقاف
