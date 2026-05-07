@@ -165,6 +165,56 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ── 3) Refinement pass: polish the decoded text using linguistic context ──
+    if (parsed?.is_braille !== false && typeof parsed?.text === "string" && parsed.text.trim()) {
+      try {
+        const langName = body.languageName ?? body.language ?? "Arabic";
+        const refinePrompt = `أنت مدقّق لغوي خبير في ${langName}. النص التالي ناتج عن OCR لصفحة بريل وقد يحتوي أخطاء طفيفة في الإملاء، التشكيل، الفواصل، أو حدود الكلمات.
+أعد كتابته كنص ${langName} طبيعي وصحيح لغوياً، مع:
+- الحفاظ التام على المعنى وعدم الإضافة أو الحذف.
+- الحفاظ على فواصل الأسطر الأصلية ما لم تكسر كلمة واحدة.
+- تصحيح الإملاء وإصلاح الفواصل وعلامات الترقيم.
+- إعادة وصل الكلمات المكسورة وفك الكلمات الملتصقة.
+- إعادة التشكيل (في العربية) فقط حين يكون واضحاً من السياق.
+
+أعد النص النظيف فقط، بدون أي شرح أو علامات اقتباس أو سور تعليمات.
+
+النص:
+${parsed.text}
+
+النص المنقّح:`;
+
+        if (lovableKey) {
+          const rr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: `Output only the polished ${langName} text. No prefixes, no quotes, no explanations.` },
+                { role: "user", content: refinePrompt },
+              ],
+            }),
+          });
+          if (rr.ok) {
+            const jj = await rr.json();
+            const refined = (jj?.choices?.[0]?.message?.content ?? "").trim()
+              .replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
+            if (refined && refined.length > 0) {
+              parsed.refined_text = refined;
+              parsed.original_text = parsed.text;
+              parsed.text = refined;
+              parsed.lines = refined.split(/\r?\n/);
+            }
+          } else {
+            console.warn("refine pass failed", rr.status);
+          }
+        }
+      } catch (e) {
+        console.warn("refine pass exception", e);
+      }
+    }
+
     return new Response(JSON.stringify({ result: parsed }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
