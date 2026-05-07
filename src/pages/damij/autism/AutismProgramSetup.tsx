@@ -1,48 +1,60 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, Calendar, CheckCircle2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-const DURATIONS = [
-  { days: 14, label: 'أسبوعان' },
-  { days: 30, label: 'شهر' },
-  { days: 60, label: 'شهران' },
-  { days: 90, label: '3 أشهر' },
-];
-
 const STEPS_BASE = [
   'تحضير الملف التشخيصي للطفل',
-  'صياغة بنية الأسابيع والمسارات',
-  'توليد ألعاب الأيام عبر الذكاء الاصطناعي',
-  'حفظ الجدول الكامل في قاعدة البيانات',
-  'تجهيز رابط المتابعة العامة',
+  'بناء جدول 3 أشهر (90 يوماً)',
+  'توزيع 10 ألعاب متنوّعة لكل يوم',
+  'حفظ البرنامج بشكل دائم في قاعدة البيانات',
+  'تجهيز رابط المتابعة',
 ];
 
 const AutismProgramSetup: React.FC = () => {
   const navigate = useNavigate();
-  const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [stepIdx, setStepIdx] = useState(0);
-  const [progress, setProgress] = useState(0); // 0..100
+  const [progress, setProgress] = useState(0);
   const tickRef = useRef<number | null>(null);
 
-  // Estimated total time: ~30s per chunk of 14 days
-  const estimateMs = Math.max(20000, Math.ceil(days / 14) * 30000);
+  // Auto-redirect if program already exists
+  useEffect(() => { (async () => {
+    const raw = localStorage.getItem('autism_active_profile');
+    if (!raw) { setChecking(false); return; }
+    const prof = JSON.parse(raw);
+    if (!prof?.profile_id) { setChecking(false); return; }
+    const cached = localStorage.getItem(`autism_active_program_${prof.profile_id}`);
+    if (cached) { navigate(`/damij/autism/program/${cached}`, { replace: true }); return; }
+    const { data } = await supabase
+      .from('autism_programs')
+      .select('id')
+      .eq('child_profile_id', prof.profile_id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (data?.id) {
+      localStorage.setItem(`autism_active_program_${prof.profile_id}`, data.id);
+      navigate(`/damij/autism/program/${data.id}`, { replace: true });
+      return;
+    }
+    setChecking(false);
+  })(); }, [navigate]);
 
   useEffect(() => () => { if (tickRef.current) window.clearInterval(tickRef.current); }, []);
 
   const startProgress = () => {
     const start = Date.now();
+    const estimateMs = 25000; // local generation ~10-20s
     setProgress(0); setStepIdx(0);
     tickRef.current = window.setInterval(() => {
       const elapsed = Date.now() - start;
-      // asymptotic: never quite reaches 95% until done
       const pct = Math.min(95, Math.round((elapsed / estimateMs) * 95));
       setProgress(pct);
       const sIdx = Math.min(STEPS_BASE.length - 1, Math.floor((pct / 95) * STEPS_BASE.length));
       setStepIdx(sIdx);
-    }, 400);
+    }, 300);
   };
   const stopProgress = (success: boolean) => {
     if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
@@ -58,25 +70,14 @@ const AutismProgramSetup: React.FC = () => {
     setLoading(true);
     startProgress();
     try {
-      const { data: existing } = await supabase
-        .from('autism_programs')
-        .select('id, share_token')
-        .eq('child_profile_id', profile.profile_id)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (existing) {
-        stopProgress(true);
-        toast.success('برنامج هذا الطفل موجود مسبقاً');
-        navigate(`/damij/autism/program/${existing.id}`);
-        return;
-      }
       const { data, error } = await supabase.functions.invoke('autism-generate-program', {
-        body: { profile, totalDays: days, childProfileId: profile.profile_id },
+        body: { profile, totalDays: 90, childProfileId: profile.profile_id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       stopProgress(true);
-      toast.success('تم إنشاء البرنامج بنجاح');
+      localStorage.setItem(`autism_active_program_${profile.profile_id}`, data.programId);
+      toast.success(data.existing ? 'تم فتح برنامج الطفل المحفوظ' : 'تم إنشاء البرنامج بنجاح (90 يوماً × 10 ألعاب)');
       navigate(`/damij/autism/program/${data.programId}`);
     } catch (e: any) {
       console.error(e);
@@ -85,29 +86,37 @@ const AutismProgramSetup: React.FC = () => {
     } finally { setLoading(false); }
   };
 
+  if (checking) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center" dir="rtl">
+        <Loader2 className="w-10 h-10 animate-spin text-[hsl(var(--damij-accent-2))]" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-6 pt-12 pb-20" dir="rtl">
       <header className="text-center mb-10">
         <div className="w-16 h-16 mx-auto rounded-2xl bg-[hsl(var(--damij-accent-2))]/15 text-[hsl(var(--damij-accent-2))] flex items-center justify-center mb-4">
           <Calendar className="w-8 h-8" />
         </div>
-        <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-2">إنشاء برنامج علاجي يومي</h1>
-        <p className="text-slate-600">يولّد الذكاء الاصطناعي جدولاً يومياً كاملاً لمدة محددة، ويُحفظ بشكل دائم بدون إعادة توليد.</p>
+        <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-2">برنامجك العلاجي لـ 3 أشهر</h1>
+        <p className="text-slate-600">جدول يومي مكوّن من <strong>90 يوماً × 10 ألعاب</strong> مختلفة لكل يوم. يُحفظ مرّة واحدة وتعود إليه بسرعة دون إعادة توليد.</p>
       </header>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        {DURATIONS.map(d => (
-          <button key={d.days} onClick={() => setDays(d.days)} disabled={loading}
-            className={`p-4 rounded-2xl border-2 transition font-bold ${days === d.days ? 'border-[hsl(var(--damij-accent-2))] bg-[hsl(var(--damij-accent-2))]/10 text-[hsl(var(--damij-primary))]' : 'border-slate-200 bg-white text-slate-700'}`}>
-            <div className="text-2xl">{d.days}</div>
-            <div className="text-xs">{d.label}</div>
-          </button>
-        ))}
+      <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/10 mb-6">
+        <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5" /> ما الذي ستحصل عليه؟</h3>
+        <ul className="space-y-2 text-sm text-slate-700 list-disc pr-5">
+          <li>900 لعبة موزّعة على 90 يوماً، متنوّعة (لأن التوحد طيف).</li>
+          <li>6 مراحل تدرّجية: انتباه ⇐ تواصل ⇐ مشاعر ⇐ مرونة ⇐ اجتماعي ⇐ دمج.</li>
+          <li>كل لعبة لُعبت تظهر عليها علامة ✓ ولا تتكرّر إلا عند الحاجة.</li>
+          <li>تقارير يومية تلقائية بعد إكمال جميع ألعاب اليوم.</li>
+        </ul>
       </div>
 
       <button onClick={start} disabled={loading}
         className="w-full py-4 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60">
-        {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> يولّد البرنامج…</> : <><Sparkles className="w-5 h-5" /> ابدأ التوليد</>}
+        {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> يولّد البرنامج…</> : <><Sparkles className="w-5 h-5" /> إنشاء البرنامج الآن</>}
       </button>
 
       {loading && (
@@ -131,7 +140,7 @@ const AutismProgramSetup: React.FC = () => {
               );
             })}
           </ol>
-          <p className="text-xs text-slate-500 mt-3">قد يستغرق التوليد دقيقة لكل أسبوعين تقريباً، الرجاء الانتظار.</p>
+          <p className="text-xs text-slate-500 mt-3">التوليد يحدث مرّة واحدة فقط، ثم يُحفظ بشكل دائم.</p>
         </div>
       )}
     </div>
