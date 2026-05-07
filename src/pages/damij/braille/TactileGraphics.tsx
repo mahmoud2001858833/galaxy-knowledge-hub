@@ -214,7 +214,6 @@ const TactileGraphics: React.FC = () => {
 
   return (
     <div className="px-6 pt-10 pb-16 max-w-6xl mx-auto" dir="rtl">
-      <BackToBrailleButton />
       <header className="text-center mb-8">
         <div className="w-16 h-16 rounded-2xl bg-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-primary))] flex items-center justify-center mx-auto mb-4">
           <Shapes className="w-8 h-8" />
