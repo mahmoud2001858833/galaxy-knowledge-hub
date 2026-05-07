@@ -20,7 +20,7 @@ const BrailleHome: React.FC = () => (
       
       <SystemCard to="/damij/braille/braille-to-text" icon={FileText} title="من بريل إلى نص + قراءة صوتية" description="صوّر صفحة بريل ورقية بالكاميرا أو ارفع صورة، وحوّلها إلى نص رقمي قابل للقراءة الصوتية بأكثر من لغة." />
       <SystemCard to="/damij/braille/tactile" icon={Shapes} title="رسومات تكتيلية للطباعة 🖨️" description="ولّد أو حوّل أشكالاً هندسية وخرائط جغرافية وجزيئات كيميائية ورسوماً بيانية إلى رسوم تكتيلية جاهزة للطباعة على ورق منتفخ أو طابعة بريل، أو افهم رسماً تكتيلياً موجوداً." />
-      <SystemCard to="/damij/braille/learn" icon={BookOpen} title="تعلّم بريل" description="جدول الحروف والأرقام بطريقة بريل مع نطق صوتي." />
+      <SystemCard to="/damij/braille/learn" icon={BookOpen} title="📖 قاموس بريل العالمي" description="ترجم كلمة أو جملة بين أكثر من 100 لغة وبريل (نص → بريل / بريل → نص)، مع نطق صوتي، إدخال بالميكروفون، تمثيل بصري بالنقاط، وحفظ المفضلة." />
       <SystemCard to="/damij/braille/interactive-learn" icon={GraduationCap} title="تعلّم بريل التفاعلي 🎓" description="دروس متدرّجة (مبتدئ/متوسط/متقدم)، لوحة مفاتيح بريل افتراضية (F D S / J K L)، ومحاكاة شاشة قراءة، مع قياس مستمر للسرعة والدقة واختبار 30 ثانية." />
     </div>
   </div>
