@@ -70,7 +70,13 @@ const MODULES = [
   },
 ];
 
-const ADHDHome: React.FC = () => (
+const ADHDHome: React.FC = () => {
+  const [activeProgramId, setActiveProgramId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const cached = localStorage.getItem('adhd_active_program');
+    if (cached) setActiveProgramId(cached);
+  }, []);
+  return (
   <div className="min-h-screen px-4 sm:px-6 pt-12 pb-16 max-w-6xl mx-auto" dir="rtl">
     <motion.header
       initial={{ opacity: 0, y: 12 }}
