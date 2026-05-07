@@ -1,12 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Type, Mic, Hand, Volume2, Square, Play, Copy, RefreshCw,
-  Languages, Eye, Ear, Accessibility,
+  Languages, Eye, Ear, Accessibility, Search, BookOpen, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { textToBraille, brailleToText } from './braille';
 import { logToolUse } from './interactionLog';
+import {
+  SIGN_DICT, SIGN_CATEGORIES, tokenizeSigns, lookupSign,
+  type SignToken,
+} from './signDictionary';
 
 type Modality = 'text' | 'voice' | 'braille' | 'sign';
 
