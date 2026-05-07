@@ -72,6 +72,9 @@ const DamijFloatingNav: React.FC = () => {
       )}
     </nav>
   );
+
+  if (typeof document === 'undefined') return navContent;
+  return createPortal(navContent, document.body);
 };
 
 export default DamijFloatingNav;
