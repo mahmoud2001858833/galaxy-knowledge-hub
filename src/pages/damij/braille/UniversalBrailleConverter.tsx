@@ -262,6 +262,7 @@ const UniversalBrailleConverter: React.FC = () => {
             style={{ fontFamily: '"Apple Braille", "Segoe UI Symbol", "Noto Sans Symbols 2", monospace' }}
           />
         )}
+      </div>
 
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-2">
