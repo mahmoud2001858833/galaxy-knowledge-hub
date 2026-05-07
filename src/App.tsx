@@ -176,7 +176,7 @@ import CancerDetection from './pages/CancerDetection';
 import DamijLayout from './pages/damij/DamijLayout';
 import DamijLanding from './pages/damij/DamijLanding';
 import BrailleHome from './pages/damij/braille/BrailleHome';
-import TextToBraille from './pages/damij/braille/TextToBraille';
+
 import BrailleToText from './pages/damij/braille/BrailleToText';
 import BrailleLearn from './pages/damij/braille/BrailleLearn';
 import UniversalBrailleConverter from './pages/damij/braille/UniversalBrailleConverter';
@@ -964,7 +964,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <DamijLanding /> },
           { path: 'braille', element: <BrailleHome /> },
-          { path: 'braille/text-to-braille', element: <TextToBraille /> },
+          
           { path: 'braille/braille-to-text', element: <BrailleToText /> },
           { path: 'braille/learn', element: <BrailleLearn /> },
           { path: 'braille/universal', element: <UniversalBrailleConverter /> },
