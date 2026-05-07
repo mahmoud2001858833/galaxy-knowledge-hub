@@ -17,14 +17,37 @@ const ADHDProgramSetup: React.FC = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [age, setAge] = useState<number | ''>('');
-  const [weeks, setWeeks] = useState(4);
-  const [dailyMinutes, setDailyMinutes] = useState(20);
+  const [weeks, setWeeks] = useState(12);
+  const [dailyMinutes, setDailyMinutes] = useState(30);
   const [focus, setFocus] = useState<string[]>([]);
   const [severity, setSeverity] = useState('moderate');
   const [goals, setGoals] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   const toggle = (k: string) => setFocus(f => f.includes(k) ? f.filter(x=>x!==k) : [...f, k]);
+
+  // Auto-redirect to existing active program
+  React.useEffect(() => { (async () => {
+    const cached = localStorage.getItem('adhd_active_program');
+    if (cached) { navigate(`/damij/adhd/program/${cached}`, { replace: true }); return; }
+    const { data: userRes } = await supabase.auth.getUser();
+    if (!userRes.user) { setChecking(false); return; }
+    const { data } = await supabase
+      .from('adhd_programs')
+      .select('id')
+      .eq('user_id', userRes.user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) {
+      localStorage.setItem('adhd_active_program', data.id);
+      navigate(`/damij/adhd/program/${data.id}`, { replace: true });
+    } else {
+      setChecking(false);
+    }
+  })(); }, [navigate]);
 
   const submit = async () => {
     if (!name || age === '') { toast.error('أكمل البيانات الأساسية'); return; }
@@ -34,12 +57,18 @@ const ADHDProgramSetup: React.FC = () => {
         body: { childName: name, childAge: age, weeks, focusAreas: focus, dailyMinutes, severity, goals },
       });
       if (error) throw error;
-      toast.success('تم إنشاء البرنامج');
+      if (data?.error) throw new Error(data.error);
+      localStorage.setItem('adhd_active_program', data.program.id);
+      toast.success(data.existing ? 'تم فتح برنامجك المحفوظ' : 'تم إنشاء البرنامج (12 أسبوعاً × 10 ألعاب يومياً)');
       navigate(`/damij/adhd/program/${data.program.id}`);
     } catch (e: any) {
       toast.error(e.message || 'تعذّر الإنشاء');
     } finally { setSubmitting(false); }
   };
+
+  if (checking) {
+    return <div className="min-h-[60vh] flex items-center justify-center" dir="rtl"><Loader2 className="w-10 h-10 animate-spin text-[hsl(var(--damij-warm))]" /></div>;
+  }
 
   return (
     <div className="px-4 sm:px-6 pt-10 pb-32 max-w-2xl mx-auto" dir="rtl">
