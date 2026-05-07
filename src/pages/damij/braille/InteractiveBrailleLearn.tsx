@@ -12,6 +12,7 @@ import { BrailleKeyboardPad } from '@/features/braille/learn/BrailleKeyboardPad'
 import { ReadingPanel } from '@/features/braille/learn/ReadingPanel';
 import { SpeedAccuracyMeter } from '@/features/braille/learn/SpeedAccuracyMeter';
 import { pickRandomWords } from '@/features/braille/learn/testWords';
+import BackToBrailleButton from '@/components/damij/BackToBrailleButton';
 
 type Tab = 'lessons' | 'write' | 'read' | 'test';
 
