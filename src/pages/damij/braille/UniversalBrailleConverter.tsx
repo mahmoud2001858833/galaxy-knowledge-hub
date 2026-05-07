@@ -270,6 +270,31 @@ const UniversalBrailleConverter: React.FC = () => {
         </div>
       )}
 
+      {/* Reverse result */}
+      {decoded && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/20"
+        >
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+              <FileText className="w-4 h-4" /> النص بعد فك ترميز بريل ({lang.nativeName})
+            </h3>
+            <div className="flex gap-1 flex-wrap">
+              <button onClick={() => speak(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نطق"><Volume2 className="w-4 h-4" /></button>
+              <button onClick={() => copy(decoded)} className="p-2 rounded-lg hover:bg-slate-100" title="نسخ"><Copy className="w-4 h-4" /></button>
+              <button onClick={() => downloadText(decoded, `braille-decoded-${Date.now()}.txt`)} className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1" title="تنزيل">
+                <Download className="w-3 h-3" /> TXT
+              </button>
+            </div>
+          </div>
+          <div className="max-h-[420px] overflow-auto p-3 rounded-xl bg-slate-50 text-base leading-relaxed whitespace-pre-wrap" dir="auto">
+            {decoded}
+          </div>
+          <p className="text-xs text-slate-500 mt-2">عدد المحارف: {decoded.length.toLocaleString()}</p>
+        </motion.div>
+      )}
+
       {/* Results */}
       {(extracted || braille) && (
         <div className="grid lg:grid-cols-2 gap-6">
