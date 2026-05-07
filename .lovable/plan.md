@@ -1,39 +1,41 @@
 ## المشكلة
-دالة `fetchUrlText` في `supabase/functions/braille-convert/index.ts` تعتمد على `fetch` مباشر بـ User-Agent مخصص "DamijBrailleBot"، وكثير من المواقع:
-- ترفض الطلب (403/406/429) لأن الـ User-Agent غير متصفح حقيقي.
-- ترجع صفحة JS فارغة (SPA) فلا يوجد نص قابل للاستخراج.
-- تستخدم `<body>` بدون `<article>/<main>` فالاستخراج يلتقط قوائم/أزرار بلا محتوى.
-- روابط بـ HTTPS تطلب headers إضافية (Accept-Language, sec-fetch).
+
+من سجلات Edge Function لوظيفة `sensory-image-tactile` السبب واضح: المفتاح الوحيد `SENSORY_TACTILE_GEMINI_KEY` يرجع باستمرار خطأ **429 (Quota exceeded)** على نموذج `gemini-2.0-flash` (الحصة المجانية = 0)، فيفشل تحليل الصورة دائماً.
+
+الوظيفة الحالية لا تملك أي fallback (لا مفاتيح بديلة ولا نموذج بديل ولا Lovable Gateway)، عكس باقي وظائف المشروع.
 
 ## الحل
 
-### 1) تحسين `fetchUrlText` في `supabase/functions/braille-convert/index.ts`
-- استخدام User-Agent متصفح حقيقي (Chrome على ماك) + `Accept-Language`, `Accept-Encoding: identity`, `Cache-Control`.
-- إعطاء مهلة (AbortController, 15s).
-- التعامل مع `Content-Type` غير HTML: إذا كان `text/plain` أرجعه كما هو، وإذا كان `application/pdf` أو غير نصي ارفض برسالة واضحة.
-- تحسين الاستخراج (Readability خفيف):
-  - إزالة `<header>`, `<footer>`, `<nav>`, `<aside>`, `<form>`, `<svg>`, `<iframe>`, التعليقات.
-  - تفضيل `<article>` ثم `<main>` ثم أكبر `<div>` يحتوي أكبر تجميع نصوص (>500 حرف) ثم `<body>`.
-  - فك المزيد من HTML entities (`&#x...;`, `&apos;`, `&copy;` ...).
-  - الحفاظ على فواصل الأسطر بين `<p>`, `<br>`, `<li>`, `<h1-6>`.
+تعديل `supabase/functions/sensory-image-tactile/index.ts` فقط، بدون أي تغيير في الواجهة:
 
-### 2) Fallback إلى خدمة Readable Proxy عند الفشل/قلة النص
-- إذا فشل الجلب المباشر (status != 2xx) أو كان النص الناتج < 200 حرف:
-  - جرّب `https://r.jina.ai/https://...` (خدمة عامة تُرجع نص نظيف للصفحة بأي لغة).
-  - مع نفس الـ headers ومهلة 20s.
-- إذا فشل الاثنان: ارجع برسالة عربية واضحة: "تعذّر جلب صفحة الويب. قد يكون الموقع يحجب الجلب التلقائي أو يعتمد على JavaScript".
+### 1) Fallback متعدد المفاتيح + متعدد النماذج لـ Gemini مباشرة
+المرور بكل تركيبة (نموذج × مفتاح) وعند 429/5xx ينتقل للتالي:
 
-### 3) إرجاع رسائل خطأ واضحة للواجهة
-- عند 403/401: "الموقع يرفض الجلب التلقائي".
-- عند 404: "الصفحة غير موجودة".
-- عند timeout: "انتهت مهلة الجلب".
-- الواجهة (`UniversalBrailleConverter.tsx`) تعرضها كما هي عبر `toast.error` (تعمل أصلاً).
+- النماذج بالترتيب: `gemini-2.5-flash` → `gemini-2.5-flash-lite` → `gemini-2.0-flash` → `gemini-1.5-flash`
+- المفاتيح بالترتيب (كلها موجودة فعلياً في الأسرار):
+  `SENSORY_TACTILE_GEMINI_KEY` → `GEMINI_API_KEY` → `GEMINI_API_KEY_NEW` → `GOOGLE_AI_API_KEY` → `BRAILLE_GEMINI_API_KEY` → `MEDICAL_AI_KEY` → `ROBOTICS_AI_KEY`
 
-### 4) تحسين بسيط في الواجهة (اختياري بسيط)
-- في `UniversalBrailleConverter.tsx` قَبول الروابط بدون `http(s)://` بإضافتها تلقائياً (`https://`) بدل رمي خطأ مباشر.
+### 2) Fallback نهائي إلى Lovable AI Gateway (multimodal)
+إن فشلت كل تركيبات Gemini، استخدم `LOVABLE_API_KEY` عبر:
+`https://ai.gateway.lovable.dev/v1/chat/completions`
+بنموذج `google/gemini-2.5-flash` مع رسالة multimodal (text + image_url يحمل `data:<mime>;base64,...`) و `response_format: { type: 'json_object' }`.
+
+### 3) تحسين متانة الاستجابة
+- استخراج JSON حتى لو غُلِّف بـ ```json fences``` (regex لاستخراج أول كتلة `{...}`).
+- فحص أن الحجم القاعدي للصورة معقول (< ~6MB base64 ≈ 4.5MB ملف) وإلا إرجاع رسالة عربية واضحة.
+- لوغ مختصر لكل محاولة فاشلة لتسهيل التشخيص لاحقاً.
+- رسائل خطأ عربية أوضح للواجهة (انتهت الحصة، الصورة كبيرة، الصورة غير صالحة).
+
+### 4) Timeout لكل طلب
+`AbortController` مع 45 ثانية لكل محاولة، حتى لا تعلق الواجهة.
 
 ## الملفات المتأثرة
-- `supabase/functions/braille-convert/index.ts` — استبدال `fetchUrlText` كاملةً + توسيع رسائل خطأ `fetch_url`.
-- `src/pages/damij/braille/UniversalBrailleConverter.tsx` — تطبيع الـ URL قبل الإرسال.
 
-لا تغييرات على قواعد البيانات أو أي ملفات أخرى.
+- **معدّل**: `supabase/functions/sensory-image-tactile/index.ts` (إعادة كتابة منطق الاستدعاء فقط، نفس شكل الـ JSON المُعاد للواجهة)
+- **بدون تعديل**: `src/pages/damij/sensory/SensoryImageTactile.tsx` (لا حاجة)
+- **بدون تعديل**: قاعدة البيانات أو الأسرار (المفاتيح المستخدمة موجودة بالفعل)
+
+## التحقق بعد التنفيذ
+1. نشر `sensory-image-tactile`.
+2. استدعاء عبر `curl_edge_functions` بصورة تجريبية صغيرة base64.
+3. مراجعة `edge_function_logs` للتأكد من نجاح أحد المحاولات أو الانتقال السلس إلى Gateway عند 429.
