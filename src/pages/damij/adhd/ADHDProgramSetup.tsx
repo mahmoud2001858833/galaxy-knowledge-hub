@@ -89,7 +89,7 @@ const ADHDProgramSetup: React.FC = () => {
           <div>
             <label className="block text-sm font-semibold mb-1">عدد الأسابيع</label>
             <select value={weeks} onChange={e=>setWeeks(Number(e.target.value))} className="w-full px-4 py-2 rounded-xl border-2 border-[hsl(var(--damij-primary))]/15">
-              {[2,4,8,12].map(w=><option key={w} value={w}>{w} أسابيع</option>)}
+              {[4,8,12].map(w=><option key={w} value={w}>{w} أسابيع ({w*7} يوم)</option>)}
             </select>
           </div>
         </div>
