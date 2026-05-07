@@ -41,7 +41,7 @@ const UniversalBrailleConverter: React.FC = () => {
   };
 
   const run = async () => {
-    setError(null); setBusy(true); setBraille(""); setExtracted(""); setDecoded("");
+    setError(null); setBusy(true); setBraille(""); setExtracted(""); setDecoded(""); setDecodedBraille("");
     try {
       // Reverse: Braille → text
       if (source === "braille") {
