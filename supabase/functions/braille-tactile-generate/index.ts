@@ -176,7 +176,8 @@ async function callLovable(userText: string, imageDataUrl: string | null, schema
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { mode, prompt, category, language, grade, paper, image_data_url } = await req.json();
+    const reqBody = await req.json();
+    const { mode, prompt, category, language, grade, paper, image_data_url } = reqBody;
 
     const paperLine = `Paper: ${paper || "A4"}. Use sensible width_mm/height_mm fitting that paper minus 15mm margins.`;
     const langLine = `Language for labels: ${language || "ar"}. Grade: ${grade || 1}.`;
@@ -222,18 +223,18 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "translate") {
-      const { text, narration, target_lang } = await Promise.resolve({
-        text: (await Promise.resolve(undefined), undefined),
-        narration: undefined,
-        target_lang: undefined,
-      });
-      // values were already destructured above; re-read from request body via re-parse fallback
-      // (simpler: use the destructured vars below)
-      const body = { text: undefined, narration: undefined, target_lang: undefined } as any;
-      // already parsed; use the originally destructured ones
-      // (handled below via reusing variables already in scope)
-      return new Response(JSON.stringify({ error: "translate_unreachable" }), {
-        status: 500,
+      const text: string = reqBody.text || "";
+      const narrationIn: string = reqBody.narration || "";
+      const target_lang: string = reqBody.target_lang || "en";
+      if (!text && !narrationIn) {
+        return new Response(JSON.stringify({ error: "no text" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userText = `Translate the following two fields to language code "${target_lang}". Preserve meaning, keep it natural and professional.\n\nDESCRIPTION:\n${text}\n\nNARRATION:\n${narrationIn}`;
+      let args = await callGemini([{ text: userText }], translateSchema);
+      if (!args) args = await callLovable(userText, null, translateSchema);
+      return new Response(JSON.stringify({ translation: args }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
