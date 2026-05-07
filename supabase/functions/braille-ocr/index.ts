@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     // 1) Try direct Gemini first
     if (directKey) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${directKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${directKey}`;
         const r = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
