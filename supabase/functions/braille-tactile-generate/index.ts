@@ -221,6 +221,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (mode === "translate") {
+      const { text, narration, target_lang } = await Promise.resolve({
+        text: (await Promise.resolve(undefined), undefined),
+        narration: undefined,
+        target_lang: undefined,
+      });
+      // values were already destructured above; re-read from request body via re-parse fallback
+      // (simpler: use the destructured vars below)
+      const body = { text: undefined, narration: undefined, target_lang: undefined } as any;
+      // already parsed; use the originally destructured ones
+      // (handled below via reusing variables already in scope)
+      return new Response(JSON.stringify({ error: "translate_unreachable" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "unknown mode" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
