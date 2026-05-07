@@ -10,7 +10,7 @@ import { SPOKEN_LANGUAGES } from "@/features/sign-language/languages";
 import { extractFromFile } from "@/features/braille/extractText";
 import { brailleToBrf, brailleToPdf, downloadText } from "@/features/braille/brailleExport";
 
-type Source = "file" | "url" | "text";
+type Source = "file" | "url" | "text" | "braille";
 
 const UniversalBrailleConverter: React.FC = () => {
   const [source, setSource] = useState<Source>("file");
