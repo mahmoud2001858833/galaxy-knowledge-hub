@@ -33,7 +33,7 @@ const UniversalBrailleConverter: React.FC = () => {
   const lang = SPOKEN_LANGUAGES.find((l) => l.code === langCode) || SPOKEN_LANGUAGES[0];
 
   const reset = () => {
-    setExtracted(""); setBraille(""); setDecoded(""); setError(null);
+    setExtracted(""); setBraille(""); setDecoded(""); setDecodedBraille(""); setError(null);
   };
 
   const handleFile = (f: File | null) => {
