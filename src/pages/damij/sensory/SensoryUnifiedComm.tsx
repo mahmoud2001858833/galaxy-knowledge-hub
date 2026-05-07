@@ -325,6 +325,73 @@ const SensoryUnifiedComm: React.FC = () => {
         className="w-full mt-6 px-4 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-emerald-600 to-blue-600 text-white font-bold shadow-lg disabled:opacity-50">
         ✨ بثّ الجلسة بالصيغ الأربع معاً
       </button>
+
+      {/* ===== Sign dictionary library modal ===== */}
+      {showLib && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowLib(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold inline-flex items-center gap-2 text-emerald-700">
+                <BookOpen className="w-5 h-5" /> قاموس لغة الإشارة ({Object.keys(SIGN_DICT).length}+ كلمة)
+              </h3>
+              <button onClick={() => setShowLib(false)} className="p-1 rounded hover:bg-gray-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 border-b">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute top-2.5 right-3 text-gray-400" />
+                <input value={libQuery} onChange={e => setLibQuery(e.target.value)}
+                  placeholder="ابحث عن كلمة..."
+                  className="w-full pe-9 ps-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
+              </div>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-5">
+              {libQuery.trim() ? (() => {
+                const q = libQuery.trim();
+                const hits = Object.keys(SIGN_DICT).filter(k => k.includes(q)).slice(0, 80);
+                return hits.length ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {hits.map(k => {
+                      const lk = lookupSign(k);
+                      const gs = lk.kind === 'word' ? lk.gesture : null;
+                      return (
+                        <button key={k} onClick={() => { setText(t => (t ? t + ' ' : '') + k); }}
+                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-center">
+                          <div className="text-2xl">{gs?.emoji || '✋'}</div>
+                          <div className="text-xs font-bold text-emerald-800">{k}</div>
+                          {gs && <div className="text-[9px] text-emerald-600/80 leading-tight">{gs.desc}</div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : <p className="text-sm text-gray-500 text-center py-6">لا نتائج. جرّب كلمة أخرى.</p>;
+              })() : SIGN_CATEGORIES.map(cat => (
+                <div key={cat.name}>
+                  <h4 className="font-bold text-sm text-emerald-700 mb-2">{cat.name}</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {cat.words.map(w => {
+                      const lk = lookupSign(w);
+                      const gs = lk.kind === 'word' ? lk.gesture : null;
+                      return (
+                        <button key={w} onClick={() => { setText(t => (t ? t + ' ' : '') + w); }}
+                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-center">
+                          <div className="text-2xl">{gs?.emoji || '✋'}</div>
+                          <div className="text-xs font-bold text-emerald-800">{w}</div>
+                          {gs && <div className="text-[9px] text-emerald-600/80 leading-tight line-clamp-2">{gs.desc}</div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="p-3 border-t text-[11px] text-gray-500 text-center">
+              اضغط على أي كلمة لإضافتها للنص. الكلمات غير الموجودة تُعرض بالتهجئة الحرفية تلقائيًا.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
