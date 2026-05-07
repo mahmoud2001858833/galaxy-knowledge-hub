@@ -357,8 +357,9 @@ Deno.serve(async (req) => {
         });
       }
       try {
-        const text = await reverseBraille(braille, langName, langCode);
-        return new Response(JSON.stringify({ text, langCode }), {
+        const decoded = await reverseBraille(braille, langName, langCode);
+        const refined = await refineDecodedText(decoded, langName);
+        return new Response(JSON.stringify({ text: refined, original_text: decoded, refined_text: refined, langCode }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {
