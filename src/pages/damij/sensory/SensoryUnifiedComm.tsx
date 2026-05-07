@@ -297,10 +297,10 @@ const SensoryUnifiedComm: React.FC = () => {
         )}
         {activeInput === 'sign' && (
           <div>
-            <p className="text-xs text-gray-500 mb-1">اكتب الجملة بصياغة لغة الإشارة (Gloss) — حروف عربية تُمثَّل بالتهجئة الإصبعية للمتعلم.</p>
+            <p className="text-xs text-gray-500 mb-1">اكتب جملة بكلمات كاملة (مثلاً: «مرحبا أنا أحب المدرسة») وستظهر كل كلمة كحركة/إشارة بصرية مع شرح للحركة.</p>
             <textarea value={text} onChange={(e) => onSignGloss(e.target.value)} rows={3}
-              className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا الصف"/>
-            <p className="text-[11px] text-gray-400 mt-1">للترجمة الإشارية بكاميرا، استخدم صفحة نظام لغة الإشارة المخصّص.</p>
+              className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا أنا أحب المدرسة"/>
+            <p className="text-[11px] text-gray-400 mt-1">القاموس يدعم: التحيات، الأسرة، الأفعال، المشاعر، الأسئلة، الزمن. للترجمة بالكاميرا استخدم صفحة نظام لغة الإشارة.</p>
           </div>
         )}
       </div>
