@@ -204,18 +204,20 @@ const SensoryUnifiedComm: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, autoTTS]);
 
-  // Sign-language playback: step through letters
+  // Sign-language playback: step through WORDS/GESTURES (not letters)
+  const signTokens = tokenizeSigns(text);
+  const recognizedCount = signTokens.filter(t => t.gesture).length;
+
   const playSign = () => {
     stopSign();
-    const letters = Array.from(text).filter(c => SIGN_LABELS[c] || c === ' ');
-    if (!letters.length) return;
+    if (!signTokens.length) return;
     let i = 0;
     setSignIdx(0);
     signTimerRef.current = window.setInterval(() => {
       i++;
-      if (i >= letters.length) { stopSign(); return; }
+      if (i >= signTokens.length) { stopSign(); return; }
       setSignIdx(i);
-    }, 700);
+    }, 1100);
     logToolUse('sign');
   };
   const stopSign = () => {
@@ -223,8 +225,6 @@ const SensoryUnifiedComm: React.FC = () => {
     setSignIdx(-1);
   };
   useEffect(() => () => { stopSign(); window.speechSynthesis?.cancel(); }, []);
-
-  const signLetters = Array.from(text);
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-16 max-w-6xl mx-auto" dir="rtl">
