@@ -9,6 +9,7 @@ import { downloadText } from "@/features/braille/brailleExport";
 import type { TactileFigure, DescribeResult, PaperSize } from "@/features/braille/tactile/tactileTypes";
 import { PAPER_DIMS } from "@/features/braille/tactile/tactileTypes";
 import { HandSignCard } from "@/features/sign-language/HandSignCard";
+import BackToBrailleButton from "@/components/damij/BackToBrailleButton";
 
 type Tab = "generate" | "convert" | "describe";
 
