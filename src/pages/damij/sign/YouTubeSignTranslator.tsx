@@ -33,8 +33,9 @@ const fmt = (s: number) => {
 
 const YouTubeSignTranslator: React.FC = () => {
   const [url, setUrl] = useState('');
-  const [targetLang, setTargetLang] = useState('ar-SA');
   const [signSystem, setSignSystem] = useState('ArSL');
+  // Spoken language is locked to the chosen sign system (ArSL→ar, ASL→en, …).
+  const targetLang = SIGN_SYSTEM_PRIMARY_LANG[signSystem]?.code || 'ar-SA';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
