@@ -6,15 +6,16 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { SPOKEN_LANGUAGES } from '@/features/sign-language/languages';
-import { SIGN_SYSTEMS } from '@/features/sign-language/signSystems';
+import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language/signSystems';
+import HandSignCard from '@/features/sign-language/HandSignCard';
+import type { Movement } from '@/features/sign-language/handshapes';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
 }
 
 interface Segment { start: number; dur: number; text: string }
-interface SignWord { word: string; emoji?: string; desc?: string }
+interface SignWord { word: string; handshape_id?: string; movement?: string; two_handed?: boolean; desc?: string; known?: boolean }
 interface SignsPayload { lines: { i: number; signs: SignWord[] }[] }
 
 const loadYTApi = () => new Promise<void>((resolve) => {
