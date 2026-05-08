@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { getCameraStream, getCameraSupport, mapCameraError, type CameraSupport } from './camera';
 import { filterGesture, buildSentence, type DetectedToken } from './gestureFilter';
 import { SPOKEN_LANGUAGES, type SpokenLang } from './languages';
-import { SIGN_SYSTEMS } from './signSystems';
+import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
