@@ -721,16 +721,19 @@ const SignTranslatorPro: React.FC = () => {
           <Hand className="w-4 h-4" /> {SIGN_SYSTEMS.find(s => s.code === signSystem)?.nativeName || signSystem}
         </span>
         <span className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center gap-1">
-          <Languages className="w-4 h-4" /> إشارة ← {targetLang.flag} {targetLang.nativeName}
+          <Languages className="w-4 h-4" /> {targetLang.flag} {targetLang.nativeName} فقط
         </span>
-        <span className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 font-bold text-sm flex items-center gap-1">
-          <Type className="w-4 h-4" /> نص ← {t2sLang.flag} {t2sLang.nativeName}
+        <span
+          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-primary))] font-bold text-xs cursor-help"
+          title="النظام يتعرف على إشارات هذه اللغة فقط، ويعرض المخرجات بلغتها الأم فقط، بدون خلط مع لغات أخرى."
+        >
+          ?
         </span>
         <button
           onClick={() => { setLangConfirmed(false); }}
           className="ms-auto px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold flex items-center gap-1"
         >
-          <Settings2 className="w-4 h-4" /> تغيير اللغات
+          <Settings2 className="w-4 h-4" /> تغيير اللغة
         </button>
       </div>
 
