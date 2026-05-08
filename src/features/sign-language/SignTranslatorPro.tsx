@@ -79,19 +79,29 @@ const SignTranslatorPro: React.FC = () => {
   const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
 
   // ─ language picks (persisted)
-  const LS_KEY = 'damij.sign.langPrefs.v1';
+  const LS_KEY = 'damij.sign.langPrefs.v2';
   const loadPrefs = () => {
     try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch { return null; }
   };
   const initial = loadPrefs();
   const [signSystem, setSignSystem] = useState<string>(initial?.signSystem || 'ArSL');
-  const [targetLang, setTargetLang] = useState<SpokenLang>(
-    SPOKEN_LANGUAGES.find(l => l.code === (initial?.targetLang || 'en-US')) || SPOKEN_LANGUAGES[1],
-  );
-  const [t2sLang, setT2sLang] = useState<SpokenLang>(
-    SPOKEN_LANGUAGES.find(l => l.code === (initial?.t2sLang || 'ar-SA')) || SPOKEN_LANGUAGES[0],
-  );
+  // Both target/source spoken languages are derived from the chosen sign system —
+  // there is exactly ONE language per sign system in the unified UI.
+  const langForSystem = (sys: string): SpokenLang => {
+    const m = SIGN_SYSTEM_PRIMARY_LANG[sys];
+    if (m) return m as SpokenLang;
+    return SPOKEN_LANGUAGES[0];
+  };
+  const [targetLang, setTargetLang] = useState<SpokenLang>(langForSystem(initial?.signSystem || 'ArSL'));
+  const [t2sLang, setT2sLang] = useState<SpokenLang>(langForSystem(initial?.signSystem || 'ArSL'));
   const [langConfirmed, setLangConfirmed] = useState<boolean>(!!initial?.confirmed);
+
+  // Keep the spoken language locked to the chosen sign system.
+  useEffect(() => {
+    const next = langForSystem(signSystem);
+    setTargetLang(next);
+    setT2sLang(next);
+  }, [signSystem]);
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
