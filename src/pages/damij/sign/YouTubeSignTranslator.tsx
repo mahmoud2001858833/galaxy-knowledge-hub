@@ -173,22 +173,20 @@ const YouTubeSignTranslator: React.FC = () => {
               className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:border-[hsl(var(--damij-primary))]"
             />
           </div>
-          <div className="md:col-span-3">
-            <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1"><Languages className="w-3.5 h-3.5" /> لغة الترجمة</label>
-            <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}
-              className="w-full h-11 rounded-xl border border-gray-200 px-2 text-sm bg-white">
-              {SPOKEN_LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>{l.flag} {l.nativeName}</option>
-              ))}
-            </select>
-          </div>
-          <div className="md:col-span-3">
-            <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1"><Hand className="w-3.5 h-3.5" /> نظام الإشارة</label>
+          <div className="md:col-span-6">
+            <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1">
+              <Hand className="w-3.5 h-3.5" /> نظام الإشارة (يُحدد لغة الترجمة تلقائياً)
+            </label>
             <select value={signSystem} onChange={(e) => setSignSystem(e.target.value)}
               className="w-full h-11 rounded-xl border border-gray-200 px-2 text-sm bg-white">
-              {SIGN_SYSTEMS.map((s) => (
-                <option key={s.code} value={s.code}>{s.nativeName} ({s.code})</option>
-              ))}
+              {SIGN_SYSTEMS.map((s) => {
+                const lang = SIGN_SYSTEM_PRIMARY_LANG[s.code];
+                return (
+                  <option key={s.code} value={s.code}>
+                    {s.nativeName} ({s.code}){lang ? ` · ${lang.flag} ${lang.nativeName}` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
