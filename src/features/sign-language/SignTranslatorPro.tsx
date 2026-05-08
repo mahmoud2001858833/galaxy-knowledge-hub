@@ -1093,41 +1093,12 @@ const SignTranslatorPro: React.FC = () => {
                     </div>
                     <div className="font-bold text-lg text-[hsl(var(--damij-primary))] mb-1">{w.word}</div>
                     <div className="text-xs text-slate-600 leading-snug">{w.description}</div>
-                    {w.fingerspelling?.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200">
-                        <div className="text-[10px] text-slate-500 mb-1">تهجئة بالأحرف:</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {w.fingerspelling.map((f, j) => (
-                            <HandSignCard key={j} word={f.letter} letter={f.letter} size={48} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </motion.button>
                 ))}
               </div>
             </div>
           )}
 
-          {t2sResult && t2sResult.alphabet_chart?.length > 0 && (
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200">
-              <h3 className="font-bold text-amber-800 flex items-center gap-2 mb-4">
-                <Type className="w-4 h-4" /> أبجدية إشارات الحروف ({t2sResult.alphabet_chart.length})
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {t2sResult.alphabet_chart.map((a, i) => (
-                  <HandSignCard
-                    key={i}
-                    word={a.letter}
-                    letter={a.letter}
-                    handshapeId={a.handshape_id}
-                    size={64}
-                    caption={a.sign}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
