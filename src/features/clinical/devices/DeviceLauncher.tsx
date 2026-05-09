@@ -22,7 +22,7 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
   const [params, setParams] = useState<Record<string, string>>({});
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
 
   useEffect(() => {
     (async () => {
