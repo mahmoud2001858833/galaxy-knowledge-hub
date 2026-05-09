@@ -119,7 +119,7 @@ const DamijHoverSpeak: React.FC = () => {
       data-damij-no-speak
       data-damij-no-translate
       className="fixed z-[60] end-4"
-      style={{ bottom: '10.5rem' }}
+      style={{ bottom: '11rem' }}
     >
       <AnimatePresence>
         {showHint && (
@@ -143,21 +143,23 @@ const DamijHoverSpeak: React.FC = () => {
         onMouseLeave={() => setShowHint(false)}
         aria-label={enabled ? labels.off : labels.on}
         title={labels.label}
-        className="group relative flex items-center justify-center w-14 h-14 rounded-full text-white shadow-2xl ring-4 ring-white/40 transition-transform hover:scale-110"
+        className="group relative flex items-center justify-center w-16 h-16 rounded-full text-white shadow-2xl ring-4 ring-white/60 transition-transform hover:scale-110"
         style={{
           background: enabled
-            ? 'linear-gradient(135deg, hsl(var(--damij-accent-2, 160 70% 45%)), hsl(var(--damij-primary, 200 80% 50%)))'
-            : 'linear-gradient(135deg, #64748b, #334155)',
+            ? 'linear-gradient(135deg, #14b8a6, #0ea5e9)'
+            : 'linear-gradient(135deg, #475569, #1e293b)',
           boxShadow: enabled
-            ? '0 18px 40px -10px hsl(var(--damij-primary, 200 80% 50%) / 0.6)'
-            : '0 12px 30px -10px rgba(0,0,0,0.4)',
+            ? '0 18px 44px -10px rgba(14,165,233,0.55)'
+            : '0 14px 34px -10px rgba(15,23,42,0.55)',
         }}
       >
-        {enabled ? <Volume2 className="w-6 h-6 drop-shadow" /> : <VolumeX className="w-6 h-6" />}
+        {enabled
+          ? <Volume2 className="w-7 h-7 drop-shadow-lg" strokeWidth={2.4} />
+          : <VolumeX className="w-7 h-7 drop-shadow-lg" strokeWidth={2.4} />}
         {enabled && (
           <motion.span
-            className="absolute inset-0 rounded-full ring-2 ring-emerald-300"
-            animate={{ scale: [1, 1.25, 1], opacity: [0.7, 0, 0.7] }}
+            className="absolute inset-0 rounded-full ring-2 ring-cyan-300"
+            animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }}
             transition={{ duration: 1.6, repeat: Infinity }}
           />
         )}
