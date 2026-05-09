@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Hand, ArrowLeft, Globe, Sparkles, Youtube, Volume2 } from 'lucide-react';
+import { Hand, ArrowLeft, Globe, Sparkles, Youtube, Volume2, BookPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const SignHome: React.FC = () => (
+const SignHome: React.FC = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('admin_teacher_access').select('access_level').eq('user_id', user.id).maybeSingle();
+      if (data) setIsAdmin(true);
+    })();
+  }, []);
+  return (
   <div className="px-6 pt-12 pb-16 max-w-5xl mx-auto">
     <h1 className="text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-3">مترجم لغة الإشارة الذكي</h1>
     <p className="text-lg text-[hsl(var(--damij-text))]/75 mb-10 max-w-3xl">
