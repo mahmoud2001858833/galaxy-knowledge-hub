@@ -34,6 +34,7 @@ const DamijLayoutInner: React.FC = () => {
         <Outlet />
       </main>
       <DamijSmartGuide />
+      <DamijHoverSpeak />
       <DamijAutoTranslator />
       <DamijSpeechAutowire />
     </div>
