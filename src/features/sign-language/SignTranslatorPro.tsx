@@ -14,6 +14,8 @@ import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
+import { getGestureWord, getSystemVocab } from './gestureVocab';
+import SignSequencePlayer from './SignSequencePlayer';
 
 
 // ── Gesture vocabulary (Arabic) ──
