@@ -479,11 +479,27 @@ html.damij-eco .damij-root *::before,
 html.damij-eco .damij-root *::after {
   animation: none !important;
   transition: none !important;
+  transform: none !important;
+}
+/* Hide decorative orbs / blurs / 3D cards in eco mode */
+html.damij-eco .damij-root [class*="blur-3xl"],
+html.damij-eco .damij-root [class*="blur-2xl"],
+html.damij-eco .damij-root [class*="blur-xl"],
+html.damij-eco .damij-root [aria-hidden="true"][class*="absolute"][class*="rounded-full"] {
+  display: none !important;
+}
+/* Force opaque surfaces — no translucency cost */
+html.damij-eco .damij-root .bg-white\/90,
+html.damij-eco .damij-root .bg-white\/80,
+html.damij-eco .damij-root .bg-white\/70,
+html.damij-eco .damij-root .bg-white\/60 {
+  background-color: #ffffff !important;
 }
 html.damij-eco .damij-root img,
 html.damij-eco .damij-root video {
-  filter: grayscale(0.15) contrast(0.95) !important;
+  filter: grayscale(0.2) contrast(0.95) !important;
 }
+html.damij-eco .damij-root video { display: none !important; }
 
 /* === Adaptive UI (Damij Sensory Bridge) === */
 :root {
