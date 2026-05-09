@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
         { role: "user", content: buildPrompt(body) },
       ],
     };
-    if (isJson) payload.response_format = { type: "json_object" };
+    if (isJson) { payload.response_format = { type: "json_object" }; payload.temperature = 0.1; }
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
