@@ -404,7 +404,7 @@ const AutismDiagnosis: React.FC = () => {
             </button>
             <button onClick={onQuestionnaireDone}
               className="px-4 py-2 rounded-lg bg-[hsl(var(--damij-primary))] text-white font-semibold">
-              {path === 'questionnaire' ? 'إنهاء وتحليل' : 'الانتقال للألعاب'}
+              {path === 'questionnaire' ? 'إنهاء وتحليل' : path === 'ai_games' ? 'توليد ألعاب AI' : 'الانتقال للألعاب'}
             </button>
           </div>
         </div>
