@@ -237,6 +237,7 @@ const AutismDiagnosis: React.FC = () => {
 
   const onQuestionnaireDone = () => {
     if (path === 'questionnaire') startAnalysis([]);
+    else if (path === 'ai_games') startAiGames([]);
     else { setStep('games'); setGameIndex(0); }
   };
 
@@ -245,8 +246,10 @@ const AutismDiagnosis: React.FC = () => {
     const next: GameResult = { gameId: game.id, metrics, durationMs, skipped };
     const all = [...gameResults, next];
     setGameResults(all);
-    if (gameIndex + 1 >= GAMES.length) startAnalysis(all);
-    else setGameIndex((i) => i + 1);
+    if (gameIndex + 1 >= GAMES.length) {
+      // After classic battery: if `both` we still go straight to analysis (ai_games is its own path)
+      startAnalysis(all);
+    } else setGameIndex((i) => i + 1);
   };
 
   return (
