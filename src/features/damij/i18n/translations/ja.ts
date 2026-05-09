@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const ja: DamijDict = {
-  nav: { home: 'ホーム', sign: '手話', sensory: '感覚', autism: '自閉症', adhd: 'ADHD', braille: '点字', clinical: 'ラボ', show: '表示', hide: '非表示' },
+  nav: { home: 'ホーム', sign: '手話', sensory: '感覚', autism: '自閉症', adhd: 'ADHD', braille: '点字', clinical: 'ラボ', carbon: 'Carbon', show: '表示', hide: '非表示' },
   hero: { badge: 'Damij — インクルーシブ教育とスマート診断', title: 'Damij', tagline: '代替の感覚、平等な機会、障壁のない科学',
     desc: 'すべての子どものための6つの統合柱：ユニバーサル手話翻訳、逆感覚ブリッジ、ゲーム化された自閉症・ADHD 診断、グローバル点字翻訳、臨床シミュレーションラボ。',
     cta: '開始', chips: ['包括的', 'スマート', 'エビデンス', '15言語'] },

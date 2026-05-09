@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Hand, Layers, Brain, Activity, Eye, FlaskConical, ChevronDown, ChevronUp } from 'lucide-react';
+import { Home, Hand, Layers, Brain, Activity, Eye, FlaskConical, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 const HIDDEN_PATTERNS = [
@@ -22,16 +22,17 @@ const DamijFloatingNav: React.FC = () => {
 
   const items = [
     { to: '/damij',          icon: Home,         label: t.nav.home,     glow: 'hsl(var(--damij-primary))' },
-    { to: '/damij/sign',     icon: Hand,         label: t.nav.sign,     glow: '#7c3aed' },
-    { to: '/damij/sensory',  icon: Layers,       label: t.nav.sensory,  glow: '#06b6d4' },
-    { to: '/damij/autism',   icon: Brain,        label: t.nav.autism,   glow: '#f59e0b' },
-    { to: '/damij/adhd',     icon: Activity,     label: t.nav.adhd,     glow: '#ef4444' },
-    { to: '/damij/braille',  icon: Eye,          label: t.nav.braille,  glow: '#10b981' },
-    { to: '/damij/clinical', icon: FlaskConical, label: t.nav.clinical, glow: '#ec4899' },
+    { to: '/damij/sign',     icon: Hand,         label: t.nav.sign,     glow: 'hsl(var(--damij-primary-2))' },
+    { to: '/damij/sensory',  icon: Layers,       label: t.nav.sensory,  glow: 'hsl(var(--damij-accent-2))' },
+    { to: '/damij/autism',   icon: Brain,        label: t.nav.autism,   glow: 'hsl(var(--damij-accent))' },
+    { to: '/damij/adhd',     icon: Activity,     label: t.nav.adhd,     glow: 'hsl(var(--damij-warm))' },
+    { to: '/damij/braille',  icon: Eye,          label: t.nav.braille,  glow: 'hsl(var(--damij-success))' },
+    { to: '/damij/clinical', icon: FlaskConical, label: t.nav.clinical, glow: 'hsl(var(--damij-primary))' },
+    { to: '/damij/carbon',   icon: Leaf,         label: t.nav.carbon,   glow: 'hsl(var(--damij-success))' },
   ];
 
   return (
-    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-end gap-1.5">
+    <nav data-damij-no-translate className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-end gap-1.5">
       <button
         onClick={() => setCollapsed((c) => !c)}
         className="bg-gradient-to-br from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-accent-2))] text-white rounded-full w-9 h-9 flex items-center justify-center shadow-xl ring-2 ring-white/40"

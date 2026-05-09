@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import DamijFloatingNav from '@/components/damij/DamijFloatingNav';
 import DamijSmartGuide from '@/components/damij/DamijSmartGuide';
 import DamijLanguageSwitcher from '@/components/damij/DamijLanguageSwitcher';
+import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
+import DamijSpeechAutowire from '@/components/damij/DamijSpeechAutowire';
 import { DamijLanguageProvider, useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 const DamijLayoutInner: React.FC = () => {
@@ -24,7 +26,7 @@ const DamijLayoutInner: React.FC = () => {
         fontFamily: '"Tajawal","Cairo","Inter","Segoe UI",sans-serif',
       }}
     >
-      <div className="absolute top-3 end-3 z-40">
+      <div data-damij-no-translate className="absolute top-3 end-3 z-40">
         <DamijLanguageSwitcher />
       </div>
       <main className="pb-32">
@@ -32,7 +34,9 @@ const DamijLayoutInner: React.FC = () => {
       </main>
       <DamijFloatingNav />
       <DamijSmartGuide />
-      <footer className="text-center py-6 text-sm text-[hsl(var(--damij-text))]/60">
+      <DamijAutoTranslator />
+      <DamijSpeechAutowire />
+      <footer data-damij-no-translate className="text-center py-6 text-sm text-[hsl(var(--damij-text))]/60 border-t border-[hsl(var(--damij-border))] bg-white/60">
         {t.footer}
       </footer>
     </div>

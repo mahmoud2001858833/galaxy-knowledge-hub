@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const de: DamijDict = {
-  nav: { home: 'Start', sign: 'Gebärden', sensory: 'Sensorik', autism: 'Autismus', adhd: 'ADHS', braille: 'Braille', clinical: 'Labor', show: 'Einblenden', hide: 'Ausblenden' },
+  nav: { home: 'Start', sign: 'Gebärden', sensory: 'Sensorik', autism: 'Autismus', adhd: 'ADHS', braille: 'Braille', clinical: 'Labor', carbon: 'Carbon', show: 'Einblenden', hide: 'Ausblenden' },
   hero: { badge: 'Damij — Inklusive Bildung & smarte Diagnostik', title: 'Damij', tagline: 'Ein anderer Sinn, eine gleiche Chance, Wissenschaft ohne Barrieren',
     desc: 'Sechs integrierte Säulen für jedes Kind: universeller Gebärdensprache-Übersetzer, Reverse Sensory Bridge, spielerische Diagnose von Autismus und ADHS, globaler Braille-Übersetzer und klinisches Simulationslabor.',
     cta: 'Starten', chips: ['Inklusiv', 'Smart', 'Evidenzbasiert', '15 Sprachen'] },

@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const tr: DamijDict = {
-  nav: { home: 'Ana Sayfa', sign: 'İşaret', sensory: 'Duyusal', autism: 'Otizm', adhd: 'DEHB', braille: 'Braille', clinical: 'Lab', show: 'Göster', hide: 'Gizle' },
+  nav: { home: 'Ana Sayfa', sign: 'İşaret', sensory: 'Duyusal', autism: 'Otizm', adhd: 'DEHB', braille: 'Braille', clinical: 'Lab', carbon: 'Carbon', show: 'Göster', hide: 'Gizle' },
   hero: { badge: 'Damij — Kapsayıcı Eğitim ve Akıllı Teşhis', title: 'Damij', tagline: 'Alternatif bir duyu, eşit bir fırsat, engelsiz bilim',
     desc: 'Her çocuk için altı entegre sütun: evrensel işaret dili çevirmeni, Ters Duyusal Köprü, oyunlu otizm ve DEHB teşhisi, küresel Braille çevirmeni ve klinik simülasyon laboratuvarı.',
     cta: 'Başla', chips: ['Kapsayıcı', 'Akıllı', 'Kanıta dayalı', '15 dil'] },
