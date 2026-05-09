@@ -69,8 +69,25 @@ const SignHome: React.FC = () => {
         </div>
       </Link>
     </div>
+
+    {isAdmin && (
+      <Link
+        to="/damij/sign/dictionary"
+        className="mt-6 group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300/60 hover:border-amber-500/70 shadow hover:shadow-lg transition-all"
+      >
+        <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+          <BookPlus className="w-6 h-6" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-amber-800">قاموس الإشارات (للمشرفين)</h3>
+          <p className="text-sm text-amber-700/80">رفع وإدارة فيديوهات وصور الإشارات الحقيقية المستخدمة في الترجمة.</p>
+        </div>
+        <ArrowLeft className="w-5 h-5 text-amber-700 group-hover:-translate-x-1 transition-transform" />
+      </Link>
+    )}
   </div>
-);
+  );
+};
 
 export default SignHome;
 
