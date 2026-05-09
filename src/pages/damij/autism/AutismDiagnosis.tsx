@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, ClipboardList, Gamepad2, Sparkles, Loader2, ShieldAlert } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ClipboardList, Gamepad2, Sparkles, Loader2, ShieldAlert, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
