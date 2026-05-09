@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
 import { getGestureWord, getSystemVocab } from './gestureVocab';
+import { useGestureVocab, gestureFromVocab } from './useGestureVocab';
 import SignSequencePlayer from './SignSequencePlayer';
 
 
@@ -104,6 +105,9 @@ const SignTranslatorPro: React.FC = () => {
     setTargetLang(next);
     setT2sLang(next);
   }, [signSystem]);
+
+  // Dynamic per-language vocabulary (covers all 100+ platform languages).
+  const { vocab: liveVocab, isLoading: vocabLoading } = useGestureVocab(signSystem);
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
@@ -298,7 +302,7 @@ const SignTranslatorPro: React.FC = () => {
   }, [targetLang.code]);
 
   const handleGestureDetected = useCallback((gesture: string, gc: number) => {
-    const info = getGestureWord(signSystem, gesture);
+    const info = gestureFromVocab(liveVocab, gesture) || getGestureWord(signSystem, gesture);
     if (!info) return;
     const incoming: DetectedToken = { gesture, text: info.text, confidence: gc, timestamp: Date.now() };
     const decision = filterGesture(incoming, acceptedTokensRef.current);
@@ -314,7 +318,7 @@ const SignTranslatorPro: React.FC = () => {
     setDetectedText(sentence);
     refreshAI(sentence);
     setTimeout(() => setCurrentGesture(null), 1000);
-  }, [refreshAI, signSystem]);
+  }, [refreshAI, signSystem, liveVocab]);
 
   // ─── MediaPipe init + detection loop (compact) ───
   const initHand = useCallback(async () => {
@@ -814,13 +818,13 @@ const SignTranslatorPro: React.FC = () => {
               )}
 
               <AnimatePresence>
-                {currentGesture && getGestureWord(signSystem, currentGesture) && (
+                {currentGesture && gestureFromVocab(liveVocab, currentGesture) && (
                   <motion.div
                     initial={{ scale: 0, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0, opacity: 0 }}
                     className="absolute top-3 left-3 bg-[hsl(var(--damij-primary))] text-white px-4 py-2 rounded-2xl shadow-2xl"
                   >
-                    <span className="text-xl ml-2">{getGestureWord(signSystem, currentGesture)!.emoji}</span>
-                    <span className="font-bold">{getGestureWord(signSystem, currentGesture)!.text}</span>
+                    <span className="text-xl ml-2">{gestureFromVocab(liveVocab, currentGesture)!.emoji}</span>
+                    <span className="font-bold">{gestureFromVocab(liveVocab, currentGesture)!.text}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -844,9 +848,12 @@ const SignTranslatorPro: React.FC = () => {
 
             {demoMode && !cameraActive && (
               <div className="bg-white p-4 rounded-2xl border border-[hsl(var(--damij-primary))]/15">
-                <p className="font-bold text-[hsl(var(--damij-primary))] mb-3">جرّب الإشارات بدون كاميرا</p>
+                <p className="font-bold text-[hsl(var(--damij-primary))] mb-3 flex items-center gap-2">
+                  جرّب الإشارات بدون كاميرا
+                  {vocabLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.entries(getSystemVocab(signSystem)).map(([k, v]) => (
+                  {Object.entries(liveVocab).map(([k, v]) => (
                     <button key={k} onClick={() => handleGestureDetected(k, 0.99)}
                       className="p-2 rounded-lg bg-[hsl(var(--damij-surface))] hover:bg-[hsl(var(--damij-primary))]/10 text-sm flex items-center gap-2">
                       <span className="text-lg">{v.emoji}</span><span>{v.text}</span>

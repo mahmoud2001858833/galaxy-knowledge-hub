@@ -45,14 +45,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { texts, target } = await req.json();
+    const { texts, target, source } = await req.json();
     if (!Array.isArray(texts) || !target) {
       return new Response(JSON.stringify({ error: "Bad request" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (target === "ar") {
+    const sourceLang: string = (source || "ar").toString();
+    if (target === sourceLang) {
       const out: Record<string, string> = {};
       for (const t of texts) out[t] = t;
       return new Response(JSON.stringify({ translations: out }), {
@@ -61,6 +62,7 @@ serve(async (req) => {
     }
 
     const langName = LANG_NAMES[target] || target;
+    const sourceName = LANG_NAMES[sourceLang] || sourceLang;
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -68,9 +70,10 @@ serve(async (req) => {
     const numbered = texts.map((s: string, i: number) => `${i + 1}. ${s.replace(/\\n/g, " ")}`).join("\n");
 
     const sys =
-      `You are a professional UI translator. Translate each numbered line from Arabic to ${langName}. ` +
+      `You are a professional UI translator. Translate each numbered line from ${sourceName} to ${langName}. ` +
       `Keep the same numbering. Preserve placeholders, numbers, emojis, brand names. Do NOT add commentary. ` +
       `Output ONLY the numbered translations, one per line.`;
+
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
