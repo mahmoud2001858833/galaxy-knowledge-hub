@@ -181,10 +181,8 @@ async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey:
   return out;
 }
 
-async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
-  // Cap to avoid edge-function timeout on long videos
-  const capped = segments.slice(0, 35);
-  const text = capped.map((s, i) => `[${i}] ${s.text}`).join("\n");
+async function aiBuildSignsChunk(slice: { i: number; text: string }[], signSystem: string, lang: string, apiKey: string) {
+  const text = slice.map(s => `[${s.i}] ${s.text}`).join("\n");
   const HANDSHAPES = "open_palm, flat_hand, flat_hand_down, fist, thumbs_up, thumbs_down, point, point_up, point_down, point_right, point_left, victory, three, four, five, one, two, ok, love, call_me, rock, pinch, claw, bent_hand, spread_hand, prayer, wave, finger_gun, crossed_fingers";
   const MOVEMENTS = "none, tap, wave_h, wave_v, circle, push, pull, up, down";
   const prompt = `You are a professional ${signSystem} sign-language interpreter. For each numbered subtitle line, decompose into an ordered list of REAL signs in ${signSystem} grammar (drop articles/fillers when natural).
