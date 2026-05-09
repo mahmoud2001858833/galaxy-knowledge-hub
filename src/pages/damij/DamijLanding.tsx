@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye } from 'lucide-react';
+import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Leaf } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
@@ -19,6 +19,7 @@ const DamijLanding: React.FC = () => {
           <SystemCard to="/damij/adhd"     icon={Activity}     title={t.sections.adhd.title}     description={t.sections.adhd.desc}     accent="hsl(var(--damij-accent-2))" delay={0.20} />
           <SystemCard to="/damij/braille"  icon={Eye}          title={t.sections.braille.title}  description={t.sections.braille.desc}  accent="hsl(var(--damij-primary))"  delay={0.25} />
           <SystemCard to="/damij/clinical" icon={FlaskConical} title={t.sections.clinical.title} description={t.sections.clinical.desc} accent="hsl(var(--damij-warm))"     delay={0.30} />
+          <SystemCard to="/damij/carbon"   icon={Leaf}         title="حافظ الكربون"               description="احسب بصمتك الكربونية واحصل على نصائح ذكية للاستدامة على نهج جائزة زايد." accent="hsl(var(--damij-success))" delay={0.35} />
         </div>
       </section>
 
