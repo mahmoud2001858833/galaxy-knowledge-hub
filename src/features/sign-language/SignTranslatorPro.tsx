@@ -1123,8 +1123,6 @@ const SignTranslatorPro: React.FC = () => {
 
         </div>
       )}
-        </div>
-      )}
 
       {t2sResult && (
         <SignSequencePlayer
