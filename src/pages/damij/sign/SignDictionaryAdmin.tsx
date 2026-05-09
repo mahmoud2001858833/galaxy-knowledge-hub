@@ -71,7 +71,7 @@ const SignDictionaryAdmin: React.FC = () => {
         handshape: handshape.trim() || null,
         movement: movement.trim() || null,
         hands_count: handsCount,
-        created_by: user?.id || null,
+        created_by: (await supabase.auth.getUser()).data.user?.id || null,
       }, { onConflict: 'language,word_normalized' });
 
       if (error) throw error;
