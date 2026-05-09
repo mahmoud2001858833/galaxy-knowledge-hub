@@ -150,6 +150,16 @@ const YouTubeSignTranslator: React.FC = () => {
     return signs.lines.find(l => l.i === activeIdx)?.signs || [];
   }, [signs, activeIdx]);
 
+  // Sequential sign cursor: advance through active line's signs based on elapsed time within segment.
+  useEffect(() => {
+    if (activeIdx < 0 || !segments[activeIdx] || !activeSigns.length) { setSignCursor(0); return; }
+    const seg = segments[activeIdx];
+    const within = Math.max(0, Math.min(seg.dur, now - seg.start));
+    const per = seg.dur / activeSigns.length;
+    const idx = Math.min(activeSigns.length - 1, Math.floor(within / Math.max(0.25, per)));
+    setSignCursor(idx);
+  }, [now, activeIdx, segments, activeSigns]);
+
   const seek = (t: number) => { try { playerRef.current?.seekTo?.(t, true); playerRef.current?.playVideo?.(); } catch {} };
 
   return (
