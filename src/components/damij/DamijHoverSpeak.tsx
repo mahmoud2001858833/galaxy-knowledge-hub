@@ -118,7 +118,7 @@ const DamijHoverSpeak: React.FC = () => {
     <div
       data-damij-no-speak
       data-damij-no-translate
-      className={`fixed z-[60] ${dir === 'rtl' ? 'right-4' : 'left-4'}`}
+      className="fixed z-[60] end-4"
       style={{ bottom: '10.5rem' }}
     >
       <AnimatePresence>
