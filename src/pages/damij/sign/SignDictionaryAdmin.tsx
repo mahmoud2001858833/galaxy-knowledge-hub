@@ -9,10 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSignDictionary, normalizeWord, type SignDictionaryEntry } from '@/features/sign-language/useSignDictionary';
-import { useAuth } from '@/contexts/AuthContext';
 
 const SignDictionaryAdmin: React.FC = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const { entries, refetch, loading } = useSignDictionary();
   const [filter, setFilter] = useState('');
