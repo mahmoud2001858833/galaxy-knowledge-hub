@@ -12,22 +12,30 @@ const corsHeaders = {
 interface Body {
   text: string;
   mode: "translate" | "correct" | "text2sign";
+  // translate
+  sourceLang?: string;
+  sourceLangName?: string;
   targetLang?: string;
   targetLangName?: string;
+  // correct
+  lang?: string;
+  langName?: string;
+  // text2sign
   signSystem?: string;
-  // text2sign extras
-  outputLang?: string;       // BCP-47 of the language to render the sign translation in
-  outputLangName?: string;   // human readable name
+  outputLang?: string;
+  outputLangName?: string;
 }
 
 const buildPrompt = (b: Body) => {
   if (b.mode === "translate") {
-    const lang = b.targetLangName ?? b.targetLang ?? "English";
-    const code = b.targetLang ?? "en";
-    return `You are a professional translator. Translate the Arabic text below into ${lang} (BCP-47: ${code}).\n\nSTRICT RULES:\n- Output ONLY in ${lang}. Do NOT reply in Arabic unless ${lang} is Arabic.\n- Use the native script of ${lang}.\n- Keep it natural, faithful, concise. No quotes, no commentary, no labels.\n\nArabic text: ${b.text}\n\n${lang} translation:`;
+    const tgt = b.targetLangName ?? b.targetLang ?? "English";
+    const tgtCode = b.targetLang ?? "en";
+    const src = b.sourceLangName ?? b.sourceLang ?? "Arabic";
+    return `You are a professional translator. Translate the text from ${src} into ${tgt} (BCP-47: ${tgtCode}).\n\nSTRICT RULES:\n- Output ONLY in ${tgt}. Use the native script of ${tgt}.\n- Keep it natural, faithful, concise. No quotes, no commentary, no labels.\n- If the source text is already in ${tgt}, return it as-is, lightly cleaned.\n\nSource (${src}): ${b.text}\n\n${tgt} translation:`;
   }
   if (b.mode === "correct") {
-    return `أنت مدقّق لغوي عربي. لديك تتابع كلمات نُتجت من ترجمة لغة الإشارة وقد تكون مفككة. أعد صياغتها كجملة عربية فصيحة قصيرة وواضحة، دون إضافة معلومات جديدة. أعد فقط النص المصحَّح بدون أي شرح.\n\nالنص: ${b.text}`;
+    const lang = b.langName ?? b.lang ?? "Arabic";
+    return `You are a professional proofreader for ${lang}. The text below is a stream of words produced by a sign-language gesture recognizer and may be fragmented. Rewrite it as ONE short, natural, fluent sentence in ${lang} ONLY, without adding new information. Output ONLY the corrected sentence — no explanation, no quotes, no language labels.\n\nText: ${b.text}`;
   }
   // text2sign: structured JSON — REAL signs only, no emoji/letter fallbacks.
   const lang = b.outputLangName ?? b.outputLang ?? "Arabic";
@@ -45,25 +53,25 @@ const buildPrompt = (b: Body) => {
 
 ABSOLUTE RULES (must obey, no exceptions):
 1. Use ONLY the authentic native signs of "${sys}". Do NOT mix with other sign systems.
-2. Render all textual fields strictly in ${lang} (BCP-47: ${langCode}). NEVER include any other language.
-3. NEVER fall back to fingerspelling individual letters of any word. NEVER produce a per-letter alphabet.
-4. NEVER use emojis as a stand-in for a sign. Do NOT include cute or decorative emojis.
-5. If you do not know a real, attested sign for a token in "${sys}", set "known": false and write a clear note in "description" — do NOT invent a sign and do NOT spell the word out.
+2. "translated_text" and every "word" / "description" MUST be in ${lang} (BCP-47: ${langCode}) ONLY. If the input is in another language, FIRST translate it accurately to ${lang}, then build the gloss sequence from the ${lang} translation.
+3. Verify every gloss preserves the meaning of the original input. If unsure of an authentic sign for a token in "${sys}", set "known": false and explain in "description" — do NOT invent or fingerspell.
+4. NEVER fall back to fingerspelling individual letters. NEVER produce a per-letter alphabet.
+5. NEVER use emojis as a stand-in for a sign.
 6. Re-order tokens to follow the natural grammar of "${sys}" (Topic-Comment, time first, etc.) and drop articles/fillers when "${sys}" normally omits them.
 
 For EACH sign, return:
 - "word": the gloss in ${lang} script.
-- "handshape_id": EXACTLY ONE of: ${HANDSHAPES}. Pick the closest visual primitive to the real handshape used in "${sys}".
-- "movement": EXACTLY ONE of: ${MOVEMENTS}. The principal motion of the real sign.
-- "two_handed": boolean — true if the real sign uses both hands in "${sys}".
-- "description": ONE concise sentence in ${lang}: handshape + location on body + movement + (optional) facial expression, exactly as performed in "${sys}".
-- "known": boolean — true if you are confident this is the authentic sign in "${sys}", false otherwise.
-- "fingerspelling": ALWAYS return an empty array []. (Do not spell.)
-- "sign_emoji": ALWAYS return an empty string "". (No emoji.)
+- "handshape_id": EXACTLY ONE of: ${HANDSHAPES}.
+- "movement": EXACTLY ONE of: ${MOVEMENTS}.
+- "two_handed": boolean.
+- "description": ONE concise sentence in ${lang}: handshape + location + movement.
+- "known": boolean.
+- "fingerspelling": ALWAYS [].
+- "sign_emoji": ALWAYS "".
 
 Also return:
-- "translated_text": the full sentence translated into ${lang} (or kept as-is if already ${lang}).
-- "alphabet_chart": ALWAYS an empty array []. (No alphabet output.)
+- "translated_text": the full sentence in ${lang}.
+- "alphabet_chart": ALWAYS [].
 
 OUTPUT FORMAT — return ONLY valid minified JSON, no markdown, no commentary:
 {
