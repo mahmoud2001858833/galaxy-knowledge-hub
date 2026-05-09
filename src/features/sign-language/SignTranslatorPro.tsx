@@ -131,6 +131,7 @@ const SignTranslatorPro: React.FC = () => {
   const playAbortRef = useRef<{ stop: boolean }>({ stop: false });
   const stripRef = React.useRef<HTMLDivElement>(null);
   const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
+  const [playerOpen, setPlayerOpen] = useState(false);
   const [mirrorHand, setMirrorHand] = useState(false);
   const [signSize, setSignSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [favorites, setFavorites] = useState<string[]>(() => {
