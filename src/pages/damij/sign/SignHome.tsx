@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Hand, ArrowLeft, Globe, Sparkles, Youtube, Volume2 } from 'lucide-react';
+import { Hand, ArrowLeft, Globe, Sparkles, Youtube, Volume2, BookPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const SignHome: React.FC = () => (
+const SignHome: React.FC = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('admin_teacher_access').select('access_level').eq('user_id', user.id).maybeSingle();
+      if (data) setIsAdmin(true);
+    })();
+  }, []);
+  return (
   <div className="px-6 pt-12 pb-16 max-w-5xl mx-auto">
     <h1 className="text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-3">مترجم لغة الإشارة الذكي</h1>
     <p className="text-lg text-[hsl(var(--damij-text))]/75 mb-10 max-w-3xl">
@@ -58,8 +69,25 @@ const SignHome: React.FC = () => (
         </div>
       </Link>
     </div>
+
+    {isAdmin && (
+      <Link
+        to="/damij/sign/dictionary"
+        className="mt-6 group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300/60 hover:border-amber-500/70 shadow hover:shadow-lg transition-all"
+      >
+        <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+          <BookPlus className="w-6 h-6" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-amber-800">قاموس الإشارات (للمشرفين)</h3>
+          <p className="text-sm text-amber-700/80">رفع وإدارة فيديوهات وصور الإشارات الحقيقية المستخدمة في الترجمة.</p>
+        </div>
+        <ArrowLeft className="w-5 h-5 text-amber-700 group-hover:-translate-x-1 transition-transform" />
+      </Link>
+    )}
   </div>
-);
+  );
+};
 
 export default SignHome;
 

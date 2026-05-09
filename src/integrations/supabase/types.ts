@@ -3506,6 +3506,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sign_dictionary: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          hands_count: number | null
+          handshape: string | null
+          id: string
+          image_url: string | null
+          language: string
+          movement: string | null
+          updated_at: string
+          video_url: string | null
+          word: string
+          word_normalized: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          hands_count?: number | null
+          handshape?: string | null
+          id?: string
+          image_url?: string | null
+          language: string
+          movement?: string | null
+          updated_at?: string
+          video_url?: string | null
+          word: string
+          word_normalized: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          hands_count?: number | null
+          handshape?: string | null
+          id?: string
+          image_url?: string | null
+          language?: string
+          movement?: string | null
+          updated_at?: string
+          video_url?: string | null
+          word?: string
+          word_normalized?: string
+        }
+        Relationships: []
+      }
       sign_language_dictionary: {
         Row: {
           category: string | null
