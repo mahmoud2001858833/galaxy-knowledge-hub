@@ -45,6 +45,8 @@ const YouTubeSignTranslator: React.FC = () => {
   const [muteVideo, setMuteVideo] = useState(true);
   const [speakSigns, setSpeakSigns] = useState(true);
   const [now, setNow] = useState(0);
+  const [signCursor, setSignCursor] = useState(0); // index of current sign within active line
+  const [progress, setProgress] = useState(0); // 0..1 sign-build progress estimate
 
   const playerRef = useRef<any>(null);
   const tickRef = useRef<number | null>(null);
