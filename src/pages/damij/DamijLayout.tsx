@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import DamijFloatingNav from '@/components/damij/DamijFloatingNav';
 import DamijSmartGuide from '@/components/damij/DamijSmartGuide';
 import DamijLanguageSwitcher from '@/components/damij/DamijLanguageSwitcher';
+import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
+import DamijSpeechAutowire from '@/components/damij/DamijSpeechAutowire';
 import { DamijLanguageProvider, useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 const DamijLayoutInner: React.FC = () => {
