@@ -247,8 +247,9 @@ const AutismDiagnosis: React.FC = () => {
     const all = [...gameResults, next];
     setGameResults(all);
     if (gameIndex + 1 >= GAMES.length) {
-      // After classic battery: if `both` we still go straight to analysis (ai_games is its own path)
-      startAnalysis(all);
+      // Chain into AI-personalized games when path is `both`
+      if (path === 'both') startAiGames(all);
+      else startAnalysis(all);
     } else setGameIndex((i) => i + 1);
   };
 
