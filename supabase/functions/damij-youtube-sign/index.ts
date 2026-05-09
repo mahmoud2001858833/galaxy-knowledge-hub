@@ -185,7 +185,28 @@ async function aiBuildSigns(segments: Segment[], signSystem: string, lang: strin
   // Cap to avoid edge-function timeout on long videos
   const capped = segments.slice(0, 35);
   const text = capped.map((s, i) => `[${i}] ${s.text}`).join("\n");
-  const prompt = `You are a professional ${signSystem} sign-language interpreter. For each numbered subtitle line, decompose into an ordered list of signs following ${signSystem} grammar (drop articles/fillers when natural). Return ONLY minified JSON of shape: {"lines":[{"i":0,"signs":[{"word":"...","emoji":"✋","desc":"short ${lang} description"}]}]}.\n\nLines:\n${text}`;
+  const HANDSHAPES = "open_palm, flat_hand, flat_hand_down, fist, thumbs_up, thumbs_down, point, point_up, point_down, point_right, point_left, victory, three, four, five, one, two, ok, love, call_me, rock, pinch, claw, bent_hand, spread_hand, prayer, wave, finger_gun, crossed_fingers";
+  const MOVEMENTS = "none, tap, wave_h, wave_v, circle, push, pull, up, down";
+  const prompt = `You are a professional ${signSystem} sign-language interpreter. For each numbered subtitle line, decompose into an ordered list of REAL signs in ${signSystem} grammar (drop articles/fillers when natural).
+
+ABSOLUTE RULES:
+- Use ONLY authentic native signs of "${signSystem}". Never mix systems.
+- All textual fields must be in ${lang} ONLY.
+- NEVER use emojis as a stand-in for a sign. NEVER spell words letter by letter.
+- If you don't know a real attested sign for a token, set "known": false and write a short note in "desc" — do NOT invent.
+
+For each sign output:
+- "word": gloss in ${lang}.
+- "handshape_id": EXACTLY ONE of: ${HANDSHAPES}.
+- "movement": EXACTLY ONE of: ${MOVEMENTS}.
+- "two_handed": boolean.
+- "desc": one short ${lang} sentence: handshape + location + movement.
+- "known": boolean.
+
+Return ONLY minified JSON of shape: {"lines":[{"i":0,"signs":[{"word":"...","handshape_id":"...","movement":"...","two_handed":false,"desc":"...","known":true}]}]}.
+
+Lines:
+${text}`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 45000);
   let r: Response;

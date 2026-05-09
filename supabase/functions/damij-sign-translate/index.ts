@@ -29,16 +29,11 @@ const buildPrompt = (b: Body) => {
   if (b.mode === "correct") {
     return `أنت مدقّق لغوي عربي. لديك تتابع كلمات نُتجت من ترجمة لغة الإشارة وقد تكون مفككة. أعد صياغتها كجملة عربية فصيحة قصيرة وواضحة، دون إضافة معلومات جديدة. أعد فقط النص المصحَّح بدون أي شرح.\n\nالنص: ${b.text}`;
   }
-  // text2sign: structured JSON
+  // text2sign: structured JSON — REAL signs only, no emoji/letter fallbacks.
   const lang = b.outputLangName ?? b.outputLang ?? "Arabic";
   const langCode = b.outputLang ?? "ar";
   const sys = b.signSystem ?? "ArSL";
   const HANDSHAPES = [
-    // ASL fingerspelling
-    "asl_a","asl_b","asl_c","asl_d","asl_e","asl_f","asl_g","asl_h","asl_i","asl_j",
-    "asl_k","asl_l","asl_m","asl_n","asl_o","asl_p","asl_q","asl_r","asl_s","asl_t",
-    "asl_u","asl_v","asl_w","asl_x","asl_y","asl_z",
-    // primitives
     "open_palm","flat_hand","flat_hand_down","fist","thumbs_up","thumbs_down",
     "point","point_up","point_down","point_right","point_left",
     "victory","three","four","five","one","two",
@@ -46,35 +41,37 @@ const buildPrompt = (b: Body) => {
     "prayer","wave","finger_gun","crossed_fingers",
   ].join(", ");
   const MOVEMENTS = "none, tap, wave_h, wave_v, circle, push, pull, up, down";
-  return `You are an elite professional sign language interpreter and lexicographer with deep, authoritative knowledge of every major sign language system in the world, including but not limited to: ASL (American), BSL (British), ArSL (Arabic Unified), LSF (French), DGS (German), LSE (Spanish), LIS (Italian), JSL (Japanese), KSL (Korean), CSL (Chinese), Auslan (Australian), NZSL, Libras (Brazilian), LSM (Mexican), ISL (Indian), PSL (Pakistani), TSL (Turkish), RSL (Russian), and International Sign (IS).
+  return `You are an elite professional sign-language interpreter for "${sys}". Convert the user's text into a step-by-step REAL sign-language performance guide in "${sys}".
 
-ABSOLUTE PRIORITY: Use the AUTHENTIC, NATIVE sign(s) of the "${sys}" system for EVERY word. Do NOT confuse systems — ASL ≠ BSL ≠ ArSL. Each system has its own grammar, handshapes, locations, movements, and non-manual markers; honor them faithfully.
+ABSOLUTE RULES (must obey, no exceptions):
+1. Use ONLY the authentic native signs of "${sys}". Do NOT mix with other sign systems.
+2. Render all textual fields strictly in ${lang} (BCP-47: ${langCode}). NEVER include any other language.
+3. NEVER fall back to fingerspelling individual letters of any word. NEVER produce a per-letter alphabet.
+4. NEVER use emojis as a stand-in for a sign. Do NOT include cute or decorative emojis.
+5. If you do not know a real, attested sign for a token in "${sys}", set "known": false and write a clear note in "description" — do NOT invent a sign and do NOT spell the word out.
+6. Re-order tokens to follow the natural grammar of "${sys}" (Topic-Comment, time first, etc.) and drop articles/fillers when "${sys}" normally omits them.
 
-TASK: Convert the user's text into a professional step-by-step sign language guide using the "${sys}" sign system. Render ALL textual fields in ${lang} (BCP-47: ${langCode}).
+For EACH sign, return:
+- "word": the gloss in ${lang} script.
+- "handshape_id": EXACTLY ONE of: ${HANDSHAPES}. Pick the closest visual primitive to the real handshape used in "${sys}".
+- "movement": EXACTLY ONE of: ${MOVEMENTS}. The principal motion of the real sign.
+- "two_handed": boolean — true if the real sign uses both hands in "${sys}".
+- "description": ONE concise sentence in ${lang}: handshape + location on body + movement + (optional) facial expression, exactly as performed in "${sys}".
+- "known": boolean — true if you are confident this is the authentic sign in "${sys}", false otherwise.
+- "fingerspelling": ALWAYS return an empty array []. (Do not spell.)
+- "sign_emoji": ALWAYS return an empty string "". (No emoji.)
 
-PROCEDURE:
-1. If the input is not in ${lang}, FIRST translate it accurately to ${lang} preserving meaning, register and tone. Strip filler particles when sign-language grammar of ${sys} normally omits them (e.g., articles in ASL).
-2. Re-order the sequence following ${sys} sign grammar (Topic-Comment, time markers first, etc.) when it differs significantly from spoken ${lang}.
-3. Split the resulting sequence into individual SIGNS (each entry below = one sign, in performance order).
-4. For EACH sign, produce:
-   - "word": the gloss in ${lang} script (UPPER CASE convention is fine for English-style glosses).
-   - "handshape_id": MUST be exactly ONE of: ${HANDSHAPES}. Pick the closest visual primitive to the actual handshape used in ${sys}.
-   - "movement": MUST be exactly ONE of: ${MOVEMENTS}. The principal motion of the sign in ${sys}.
-   - "two_handed": boolean — true if the sign uses both hands in ${sys}.
-   - "sign_emoji": single best-matching emoji (✋ 👆 👍 🤟 🙏 👋 🤲 🫳 🫶 🤝 ✊ 👌 ✌️ 👏 🤜 🤛 etc.).
-   - "description": ONE concise line in ${lang} describing handshape + location + movement + (optional) facial expression, exactly as performed in ${sys}.
-   - "fingerspelling": include ONLY if the word is a proper noun, number, brand, or has no standard sign in ${sys}. Provide the manual alphabet of ${sys} (or its closest equivalent) as an array of {"letter": <single grapheme in ${lang} script>, "handshape_id": one of the asl_* ids that visually matches, "sign": short tag/emoji}. If a standard sign exists, return [].
-5. Also return "alphabet_chart": one entry per UNIQUE letter that appears in the translated sentence (in ${lang} script), using the manual alphabet of ${sys}: {"letter", "handshape_id" (closest asl_* primitive), "sign" (short ${lang} description of the handshape in ${sys}), "emoji"}.
-6. Coverage guarantee: NEVER skip a token. If you genuinely don't know the sign, fall back to fingerspelling for that token.
-7. Cultural fidelity: respect the regional dialect (e.g., for ArSL prefer the Unified Arab Sign Dictionary; for BSL use two-handed manual alphabet; for ASL use one-handed; for JSL respect kanji-based signs; for CSL use Chinese conventions, etc.).
+Also return:
+- "translated_text": the full sentence translated into ${lang} (or kept as-is if already ${lang}).
+- "alphabet_chart": ALWAYS an empty array []. (No alphabet output.)
 
 OUTPUT FORMAT — return ONLY valid minified JSON, no markdown, no commentary:
 {
-  "translated_text": "<full translated sentence in ${lang}>",
+  "translated_text": "...",
   "language": "${langCode}",
   "sign_system": "${sys}",
-  "words": [ { "word": "...", "handshape_id": "...", "movement": "...", "two_handed": false, "sign_emoji": "...", "description": "...", "fingerspelling": [] } ],
-  "alphabet_chart": [ { "letter": "...", "handshape_id": "...", "sign": "...", "emoji": "..." } ]
+  "words": [ { "word": "...", "handshape_id": "...", "movement": "...", "two_handed": false, "sign_emoji": "", "description": "...", "known": true, "fingerspelling": [] } ],
+  "alphabet_chart": []
 }
 
 Input text: ${b.text}`;

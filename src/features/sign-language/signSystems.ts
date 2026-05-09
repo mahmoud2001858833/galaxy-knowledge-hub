@@ -6,6 +6,31 @@ export interface SignSystem {
   region: string;
 }
 
+// Maps each sign system to its single primary spoken language.
+// In the unified UI, when the user picks a sign system we lock the spoken
+// language to this value — no mixing of other languages.
+export const SIGN_SYSTEM_PRIMARY_LANG: Record<string, { code: string; name: string; nativeName: string; flag: string }> = {
+  ArSL:   { code: 'ar-SA', name: 'Arabic',              nativeName: 'العربية',     flag: '🇸🇦' },
+  ASL:    { code: 'en-US', name: 'English (US)',        nativeName: 'English',     flag: '🇺🇸' },
+  BSL:    { code: 'en-GB', name: 'English (UK)',        nativeName: 'English (UK)', flag: '🇬🇧' },
+  LSF:    { code: 'fr-FR', name: 'French',              nativeName: 'Français',    flag: '🇫🇷' },
+  DGS:    { code: 'de-DE', name: 'German',              nativeName: 'Deutsch',     flag: '🇩🇪' },
+  LSE:    { code: 'es-ES', name: 'Spanish',             nativeName: 'Español',     flag: '🇪🇸' },
+  LIS:    { code: 'it-IT', name: 'Italian',             nativeName: 'Italiano',    flag: '🇮🇹' },
+  JSL:    { code: 'ja-JP', name: 'Japanese',            nativeName: '日本語',       flag: '🇯🇵' },
+  KSL:    { code: 'ko-KR', name: 'Korean',              nativeName: '한국어',       flag: '🇰🇷' },
+  CSL:    { code: 'zh-CN', name: 'Chinese',             nativeName: '中文',        flag: '🇨🇳' },
+  ISL:    { code: 'hi-IN', name: 'Hindi',               nativeName: 'हिन्दी',       flag: '🇮🇳' },
+  PSL:    { code: 'ur-PK', name: 'Urdu',                nativeName: 'اردو',        flag: '🇵🇰' },
+  TSL:    { code: 'tr-TR', name: 'Turkish',             nativeName: 'Türkçe',      flag: '🇹🇷' },
+  RSL:    { code: 'ru-RU', name: 'Russian',             nativeName: 'Русский',     flag: '🇷🇺' },
+  Auslan: { code: 'en-AU', name: 'English (AU)',        nativeName: 'English (AU)', flag: '🇦🇺' },
+  NZSL:   { code: 'en-NZ', name: 'English (NZ)',        nativeName: 'English (NZ)', flag: '🇳🇿' },
+  Libras: { code: 'pt-BR', name: 'Portuguese (BR)',     nativeName: 'Português',   flag: '🇧🇷' },
+  LSM:    { code: 'es-MX', name: 'Spanish (MX)',        nativeName: 'Español (MX)', flag: '🇲🇽' },
+  IS:     { code: 'en-US', name: 'English (Intl.)',     nativeName: 'English',     flag: '🌐' },
+};
+
 export const SIGN_SYSTEMS: SignSystem[] = [
   { code: 'ArSL',  name: 'Arabic Sign Language (Unified)',  nativeName: 'لغة الإشارة العربية الموحّدة', region: 'الوطن العربي' },
   { code: 'ASL',   name: 'American Sign Language',          nativeName: 'الإشارة الأمريكية',          region: 'أمريكا/كندا' },

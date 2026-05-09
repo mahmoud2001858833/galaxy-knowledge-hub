@@ -6,15 +6,16 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { SPOKEN_LANGUAGES } from '@/features/sign-language/languages';
-import { SIGN_SYSTEMS } from '@/features/sign-language/signSystems';
+import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language/signSystems';
+import HandSignCard from '@/features/sign-language/HandSignCard';
+import type { Movement } from '@/features/sign-language/handshapes';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
 }
 
 interface Segment { start: number; dur: number; text: string }
-interface SignWord { word: string; emoji?: string; desc?: string }
+interface SignWord { word: string; handshape_id?: string; movement?: string; two_handed?: boolean; desc?: string; known?: boolean }
 interface SignsPayload { lines: { i: number; signs: SignWord[] }[] }
 
 const loadYTApi = () => new Promise<void>((resolve) => {
@@ -32,8 +33,9 @@ const fmt = (s: number) => {
 
 const YouTubeSignTranslator: React.FC = () => {
   const [url, setUrl] = useState('');
-  const [targetLang, setTargetLang] = useState('ar-SA');
   const [signSystem, setSignSystem] = useState('ArSL');
+  // Spoken language is locked to the chosen sign system (ArSL→ar, ASL→en, …).
+  const targetLang = SIGN_SYSTEM_PRIMARY_LANG[signSystem]?.code || 'ar-SA';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -171,22 +173,20 @@ const YouTubeSignTranslator: React.FC = () => {
               className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:border-[hsl(var(--damij-primary))]"
             />
           </div>
-          <div className="md:col-span-3">
-            <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1"><Languages className="w-3.5 h-3.5" /> لغة الترجمة</label>
-            <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}
-              className="w-full h-11 rounded-xl border border-gray-200 px-2 text-sm bg-white">
-              {SPOKEN_LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>{l.flag} {l.nativeName}</option>
-              ))}
-            </select>
-          </div>
-          <div className="md:col-span-3">
-            <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1"><Hand className="w-3.5 h-3.5" /> نظام الإشارة</label>
+          <div className="md:col-span-6">
+            <label className="text-xs font-bold text-[hsl(var(--damij-text))]/70 mb-1 block flex items-center gap-1">
+              <Hand className="w-3.5 h-3.5" /> نظام الإشارة (يُحدد لغة الترجمة تلقائياً)
+            </label>
             <select value={signSystem} onChange={(e) => setSignSystem(e.target.value)}
               className="w-full h-11 rounded-xl border border-gray-200 px-2 text-sm bg-white">
-              {SIGN_SYSTEMS.map((s) => (
-                <option key={s.code} value={s.code}>{s.nativeName} ({s.code})</option>
-              ))}
+              {SIGN_SYSTEMS.map((s) => {
+                const lang = SIGN_SYSTEM_PRIMARY_LANG[s.code];
+                return (
+                  <option key={s.code} value={s.code}>
+                    {s.nativeName} ({s.code}){lang ? ` · ${lang.flag} ${lang.nativeName}` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -258,10 +258,23 @@ const YouTubeSignTranslator: React.FC = () => {
                         initial={{ scale: 0.6, opacity: 0, y: 12 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08, type: 'spring', stiffness: 220, damping: 18 }}
-                        className="flex flex-col items-center bg-white rounded-2xl shadow-md border border-emerald-100 px-3 py-3 min-w-[96px]"
+                        className="flex flex-col items-center bg-white rounded-2xl shadow-md border border-emerald-100 px-3 py-3 min-w-[110px]"
                       >
-                        <div className="text-5xl mb-1 leading-none">{s.emoji || '🤟'}</div>
-                        <div className="text-sm font-bold text-[hsl(var(--damij-text))] text-center">{s.word}</div>
+                        {s.known === false ? (
+                          <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mb-1 text-center">
+                            إشارة موثوقة غير متاحة
+                          </div>
+                        ) : (
+                          <HandSignCard
+                            word={s.word}
+                            handshapeId={s.handshape_id}
+                            movement={(s.movement as Movement) || 'none'}
+                            twoHanded={s.two_handed}
+                            active
+                            size={70}
+                          />
+                        )}
+                        <div className="text-sm font-bold text-[hsl(var(--damij-text))] text-center mt-1">{s.word}</div>
                         {s.desc && <div className="text-[10px] text-[hsl(var(--damij-text))]/60 text-center mt-1 leading-tight">{s.desc}</div>}
                       </motion.div>
                     ))}
