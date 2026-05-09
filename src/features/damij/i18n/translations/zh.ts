@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const zh: DamijDict = {
-  nav: { home: '首页', sign: '手语', sensory: '感官', autism: '自闭症', adhd: 'ADHD', braille: '盲文', clinical: '实验室', show: '显示', hide: '隐藏' },
+  nav: { home: '首页', sign: '手语', sensory: '感官', autism: '自闭症', adhd: 'ADHD', braille: '盲文', clinical: '实验室', carbon: 'Carbon', show: '显示', hide: '隐藏' },
   hero: { badge: 'Damij — 包容教育与智能诊断', title: 'Damij', tagline: '替代感官，平等机会，无障碍科学',
     desc: '面向每个孩子的六大综合支柱：通用手语翻译器、反向感官桥、游戏化自闭症与 ADHD 诊断、全球盲文翻译器和临床模拟实验室。',
     cta: '开始', chips: ['包容', '智能', '循证', '15 种语言'] },

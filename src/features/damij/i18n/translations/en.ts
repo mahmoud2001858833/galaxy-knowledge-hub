@@ -3,7 +3,7 @@ import { DamijDict } from '../types';
 export const en: DamijDict = {
   nav: {
     home: 'Home', sign: 'Sign', sensory: 'Sensory', autism: 'Autism',
-    adhd: 'ADHD', braille: 'Braille', clinical: 'Lab',
+    adhd: 'ADHD', braille: 'Braille', clinical: 'Lab', carbon: 'Carbon',
     show: 'Show navigation', hide: 'Hide navigation',
   },
   hero: {

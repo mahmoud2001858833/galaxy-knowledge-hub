@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const fa: DamijDict = {
-  nav: { home: 'خانه', sign: 'اشاره', sensory: 'حسی', autism: 'اوتیسم', adhd: 'ADHD', braille: 'بریل', clinical: 'آزمایشگاه', show: 'نمایش', hide: 'پنهان' },
+  nav: { home: 'خانه', sign: 'اشاره', sensory: 'حسی', autism: 'اوتیسم', adhd: 'ADHD', braille: 'بریل', clinical: 'آزمایشگاه', carbon: 'Carbon', show: 'نمایش', hide: 'پنهان' },
   hero: { badge: 'دامج — آموزش فراگیر و تشخیص هوشمند', title: 'دامج', tagline: 'حسی جایگزین، فرصتی برابر، علم بدون مانع',
     desc: 'شش ستون یکپارچه برای هر کودک: مترجم جهانی زبان اشاره، پل حسی معکوس، تشخیص بازی‌محور اوتیسم و ADHD، مترجم بریل جهانی و آزمایشگاه شبیه‌سازی بالینی.',
     cta: 'شروع', chips: ['فراگیر', 'هوشمند', 'علمی', '۱۵ زبان'] },

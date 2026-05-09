@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const ko: DamijDict = {
-  nav: { home: '홈', sign: '수어', sensory: '감각', autism: '자폐', adhd: 'ADHD', braille: '점자', clinical: '랩', show: '표시', hide: '숨김' },
+  nav: { home: '홈', sign: '수어', sensory: '감각', autism: '자폐', adhd: 'ADHD', braille: '점자', clinical: '랩', carbon: 'Carbon', show: '표시', hide: '숨김' },
   hero: { badge: 'Damij — 포용 교육 및 스마트 진단', title: 'Damij', tagline: '대체 감각, 동등한 기회, 장벽 없는 과학',
     desc: '모든 아이를 위한 6대 통합 기둥: 보편 수어 번역기, 역감각 다리, 게임화된 자폐 및 ADHD 진단, 글로벌 점자 번역기, 임상 시뮬레이션 랩.',
     cta: '시작', chips: ['포용적', '스마트', '근거 기반', '15개 언어'] },

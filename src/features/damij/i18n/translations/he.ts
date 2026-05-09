@@ -1,6 +1,6 @@
 import { DamijDict } from '../types';
 export const he: DamijDict = {
-  nav: { home: 'בית', sign: 'סימנים', sensory: 'חושי', autism: 'אוטיזם', adhd: 'ADHD', braille: 'ברייל', clinical: 'מעבדה', show: 'הצג', hide: 'הסתר' },
+  nav: { home: 'בית', sign: 'סימנים', sensory: 'חושי', autism: 'אוטיזם', adhd: 'ADHD', braille: 'ברייל', clinical: 'מעבדה', carbon: 'Carbon', show: 'הצג', hide: 'הסתר' },
   hero: { badge: 'דאמיג\' — חינוך מכיל ואבחון חכם', title: 'דאמיג\'', tagline: 'חוש חלופי, הזדמנות שווה, מדע ללא מחסומים',
     desc: 'שישה עמודי תמך לכל ילד: מתורגמן שפת סימנים אוניברסלי, גשר חושי הפוך, אבחון משחקי לאוטיזם ול-ADHD, מתורגמן ברייל גלובלי ומעבדת סימולציה קלינית.',
     cta: 'התחלה', chips: ['מכיל', 'חכם', 'מבוסס מחקר', '15 שפות'] },
