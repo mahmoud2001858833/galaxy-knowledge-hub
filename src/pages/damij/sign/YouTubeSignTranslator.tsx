@@ -258,10 +258,23 @@ const YouTubeSignTranslator: React.FC = () => {
                         initial={{ scale: 0.6, opacity: 0, y: 12 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08, type: 'spring', stiffness: 220, damping: 18 }}
-                        className="flex flex-col items-center bg-white rounded-2xl shadow-md border border-emerald-100 px-3 py-3 min-w-[96px]"
+                        className="flex flex-col items-center bg-white rounded-2xl shadow-md border border-emerald-100 px-3 py-3 min-w-[110px]"
                       >
-                        <div className="text-5xl mb-1 leading-none">{s.emoji || '🤟'}</div>
-                        <div className="text-sm font-bold text-[hsl(var(--damij-text))] text-center">{s.word}</div>
+                        {s.known === false ? (
+                          <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mb-1 text-center">
+                            إشارة موثوقة غير متاحة
+                          </div>
+                        ) : (
+                          <HandSignCard
+                            word={s.word}
+                            handshapeId={s.handshape_id}
+                            movement={(s.movement as Movement) || 'none'}
+                            twoHanded={s.two_handed}
+                            active
+                            size={70}
+                          />
+                        )}
+                        <div className="text-sm font-bold text-[hsl(var(--damij-text))] text-center mt-1">{s.word}</div>
                         {s.desc && <div className="text-[10px] text-[hsl(var(--damij-text))]/60 text-center mt-1 leading-tight">{s.desc}</div>}
                       </motion.div>
                     ))}
