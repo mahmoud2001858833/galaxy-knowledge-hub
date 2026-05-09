@@ -127,7 +127,7 @@ const DamijHoverSpeak: React.FC = () => {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
-            className={`absolute bottom-full mb-2 ${dir === 'rtl' ? 'right-0' : 'left-0'} px-3 py-2 rounded-xl bg-slate-900/90 text-white text-[11px] leading-snug shadow-2xl max-w-[220px]`}
+            className={`absolute bottom-full mb-2 end-0 px-3 py-2 rounded-xl bg-slate-900/90 text-white text-[11px] leading-snug shadow-2xl max-w-[220px]`}
           >
             {labels.hint}
           </motion.div>
