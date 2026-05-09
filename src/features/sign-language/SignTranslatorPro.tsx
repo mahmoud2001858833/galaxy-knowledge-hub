@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
 import { getGestureWord, getSystemVocab } from './gestureVocab';
+import { useGestureVocab, gestureFromVocab } from './useGestureVocab';
 import SignSequencePlayer from './SignSequencePlayer';
 
 
