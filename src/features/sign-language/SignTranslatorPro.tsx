@@ -845,7 +845,7 @@ const SignTranslatorPro: React.FC = () => {
               <div className="bg-white p-4 rounded-2xl border border-[hsl(var(--damij-primary))]/15">
                 <p className="font-bold text-[hsl(var(--damij-primary))] mb-3">جرّب الإشارات بدون كاميرا</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.entries(gestureToArabic).map(([k, v]) => (
+                  {Object.entries(getSystemVocab(signSystem)).map(([k, v]) => (
                     <button key={k} onClick={() => handleGestureDetected(k, 0.99)}
                       className="p-2 rounded-lg bg-[hsl(var(--damij-surface))] hover:bg-[hsl(var(--damij-primary))]/10 text-sm flex items-center gap-2">
                       <span className="text-lg">{v.emoji}</span><span>{v.text}</span>
