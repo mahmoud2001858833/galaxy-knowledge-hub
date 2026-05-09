@@ -67,6 +67,10 @@ const AutismDiagnosis: React.FC = () => {
   const [qIndex, setQIndex] = useState(0);
   const [gameIndex, setGameIndex] = useState(0);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
+  const [aiGames, setAiGames] = useState<AIGame[]>([]);
+  const [aiGameIndex, setAiGameIndex] = useState(0);
+  const [aiGamesLoading, setAiGamesLoading] = useState(false);
+  const [aiStrategy, setAiStrategy] = useState<string>('');
   const [report, setReport] = useState<AIReport | null>(null);
 
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
