@@ -136,6 +136,7 @@ const tokenize = (text: string, dict: SignItem[]): { word: string; match: SignIt
 };
 
 export const TextToSignTab: React.FC<Props> = ({ dictionary, speak }) => {
+  const { find: findRealSign } = useSignDictionary('ArSL');
   const [text, setText] = useState<string>('مرحبا كيف حالك');
   const [playing, setPlaying] = useState(false);
   const [paused, setPaused] = useState(false);
