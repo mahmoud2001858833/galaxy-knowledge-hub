@@ -22,7 +22,7 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
   const [params, setParams] = useState<Record<string, string>>({});
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -96,16 +96,19 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
         </label>
       </div>
 
+      {/* Always-on simulators (auto-selected by case category) */}
+      <AlwaysOnSimulators category={caseCategory} />
+
       {/* Device list */}
-      <div className="rounded-xl border bg-white max-h-56 overflow-y-auto">
+      <div className="rounded-xl border bg-white">
         {loading && <div className="p-4 text-center text-xs"><Loader2 className="inline w-4 h-4 animate-spin" /></div>}
         {!loading && filtered.length === 0 && <div className="p-4 text-center text-xs text-slate-500">لا أجهزة مطابقة. فعّل "عرض الكل".</div>}
-        <div className="grid grid-cols-2 gap-1 p-1">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-1 p-1">
           {filtered.map(d => (
             <button key={d.id} onClick={() => setSelected(d)}
               className={`text-right p-2 rounded-lg border hover:bg-sky-50 ${selected?.id === d.id ? 'bg-sky-100 border-sky-300' : 'bg-white'}`}>
               <div className="text-xs font-bold flex items-center gap-1"><Stethoscope className="w-3 h-3" />{d.name_ar}</div>
-              <div className="text-[10px] text-slate-500 line-clamp-1">{d.description_ar}</div>
+              <div className="text-[10px] text-slate-500 line-clamp-2">{d.description_ar}</div>
             </button>
           ))}
         </div>
@@ -198,6 +201,85 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
         </div>
       )}
       <div className="text-[10px] text-center text-slate-400">محاكاة تعليمية — ليست بديلاً عن الفحص أو الجهاز الحقيقي</div>
+    </div>
+  );
+};
+
+// =============================================================
+// Always-on simulators: visible by default per case category.
+// Cardiac → live ECG + stetho. Autism/ADHD → biofeedback (HR/SpO2/breath).
+// Respiratory → stetho. Default → stetho.
+// =============================================================
+const AlwaysOnSimulators: React.FC<{ category: string }> = ({ category }) => {
+  const isCardiac = /cardio|heart|قلب/i.test(category);
+  const isNeuro = /autism|adhd|توحد|فرط/i.test(category);
+  const isResp = /resp|lung|تنفس|رئة/i.test(category);
+
+  return (
+    <div className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white p-3 space-y-3">
+      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))] flex items-center justify-between">
+        <span>📡 محاكاة الأجهزة المباشرة (تعمل دائماً)</span>
+        <span className="text-[10px] font-normal text-slate-500">حسب نوع الحالة</span>
+      </div>
+
+      {(isCardiac || (!isNeuro && !isResp)) && (
+        <div className="space-y-1">
+          <div className="text-[11px] font-bold text-slate-600">📈 مخطط القلب الكهربائي (ECG)</div>
+          <InteractiveECG hr={isCardiac ? 88 : 75} rhythm={isCardiac ? 'sinus_tachy' : 'sinus'} />
+          <BiofeedbackVitals hr={isCardiac ? 88 : 75} spo2={isCardiac ? 95 : 98} rr={isCardiac ? 22 : 16} />
+        </div>
+      )}
+
+      {isNeuro && (
+        <div className="space-y-2">
+          <BiofeedbackVitals hr={92} spo2={99} rr={20} stress label="مؤشرات حيّة (تنظيم ذاتي)" />
+          <div className="text-[10px] text-slate-500">يمكن مراقبة الإثارة الفسيولوجية أثناء جلسات التوحد/فرط الحركة.</div>
+        </div>
+      )}
+
+      {(isResp || isCardiac) && (
+        <div>
+          <div className="text-[11px] font-bold text-slate-600 mb-1">🩺 السمّاعة الإلكترونية</div>
+          <InteractiveStethoscope defaultSound={isResp ? 'wheeze' : 'normal_heart'} />
+        </div>
+      )}
+
+      {!isCardiac && !isNeuro && !isResp && (
+        <InteractiveStethoscope />
+      )}
+    </div>
+  );
+};
+
+const BiofeedbackVitals: React.FC<{ hr: number; spo2: number; rr: number; stress?: boolean; label?: string }> = ({ hr, spo2, rr, stress, label }) => {
+  const [pulse, setPulse] = useState(hr);
+  useEffect(() => {
+    const id = setInterval(() => setPulse(hr + Math.round((Math.random() - 0.5) * 6)), 900);
+    return () => clearInterval(id);
+  }, [hr]);
+  return (
+    <div className="rounded-xl border bg-white p-2">
+      {label && <div className="text-[11px] font-bold text-slate-600 mb-1">{label}</div>}
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <Vital label="HR" value={`${pulse}`} unit="bpm" color="rose" pulse />
+        <Vital label="SpO₂" value={`${spo2}`} unit="%" color="sky" />
+        <Vital label="RR" value={`${rr}`} unit="/min" color="emerald" />
+      </div>
+      {stress && (
+        <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500" style={{ width: `${Math.min(100, (pulse - 60) * 2)}%` }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Vital: React.FC<{ label: string; value: string; unit: string; color: string; pulse?: boolean }> = ({ label, value, unit, color, pulse }) => {
+  const colorMap: Record<string, string> = { rose: 'text-rose-600', sky: 'text-sky-600', emerald: 'text-emerald-600' };
+  return (
+    <div className="p-1.5 rounded-lg bg-slate-50 border">
+      <div className="text-[9px] text-slate-500">{label}</div>
+      <div className={`text-lg font-extrabold ${colorMap[color]} ${pulse ? 'animate-pulse' : ''}`}>{value}<span className="text-[9px] mr-0.5 text-slate-500">{unit}</span></div>
     </div>
   );
 };
