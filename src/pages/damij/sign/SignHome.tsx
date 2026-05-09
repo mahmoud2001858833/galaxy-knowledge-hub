@@ -85,6 +85,22 @@ const SignHome: React.FC = () => {
         <ArrowLeft className="w-5 h-5 text-amber-700 group-hover:-translate-x-1 transition-transform" />
       </Link>
     )}
+
+    {isAdmin && (
+      <Link
+        to="/damij/sign/vocab-overrides"
+        className="mt-3 group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-300/60 hover:border-indigo-500/70 shadow hover:shadow-lg transition-all"
+      >
+        <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+          <BookPlus className="w-6 h-6" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-indigo-800">مراجعة قواميس الإشارات لكل لغة (للمشرفين)</h3>
+          <p className="text-sm text-indigo-700/80">عدّل ترجمة المفردات يدويًا — تتغلب على الترجمة الذكية وتُحدَّث على الأجهزة فورًا.</p>
+        </div>
+        <ArrowLeft className="w-5 h-5 text-indigo-700 group-hover:-translate-x-1 transition-transform" />
+      </Link>
+    )}
   </div>
   );
 };

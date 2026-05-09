@@ -220,6 +220,7 @@ import SignHome from './pages/damij/sign/SignHome';
 import SignTranslator from './pages/damij/sign/SignTranslator';
 import YouTubeSignTranslator from './pages/damij/sign/YouTubeSignTranslator';
 import SignDictionaryAdmin from './pages/damij/sign/SignDictionaryAdmin';
+import SignVocabOverridesAdmin from './pages/damij/sign/SignVocabOverridesAdmin';
 import SensoryHome from './pages/damij/sensory/SensoryHome';
 import SensoryUpload from './pages/damij/sensory/SensoryUpload';
 import SensoryOutput from './pages/damij/sensory/SensoryOutput';
@@ -1008,6 +1009,7 @@ const router = createBrowserRouter([
           { path: 'sign/translator', element: <SignTranslator /> },
           { path: 'sign/youtube', element: <YouTubeSignTranslator /> },
           { path: 'sign/dictionary', element: <SignDictionaryAdmin /> },
+          { path: 'sign/vocab-overrides', element: <SignVocabOverridesAdmin /> },
           { path: 'sensory', element: <SensoryHome /> },
           { path: 'sensory/profile', element: <SensoryProfileSetup /> },
           { path: 'sensory/upload', element: <SensoryUpload /> },
