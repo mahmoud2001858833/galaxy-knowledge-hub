@@ -107,7 +107,7 @@ const SignTranslatorPro: React.FC = () => {
   }, [signSystem]);
 
   // Dynamic per-language vocabulary (covers all 100+ platform languages).
-  const { vocab: liveVocab, isLoading: vocabLoading } = useGestureVocab(signSystem);
+  const { vocab: liveVocab, isLoading: vocabLoading, progress: vocabProgress, fromOverride: vocabFromOverride, langCode: vocabLangCode } = useGestureVocab(signSystem);
 
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
