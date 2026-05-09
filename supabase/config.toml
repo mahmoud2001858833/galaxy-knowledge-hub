@@ -248,3 +248,6 @@ verify_jwt = true
 [functions.adhd-day-analyze]
 verify_jwt = false
 
+
+[functions.damij-guide-chat]
+verify_jwt = false
