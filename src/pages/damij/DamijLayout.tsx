@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import DamijSmartGuide from '@/components/damij/DamijSmartGuide';
+import DamijHoverSpeak from '@/components/damij/DamijHoverSpeak';
 import DamijHeader from '@/components/damij/DamijHeader';
 import DamijEcoBanner from '@/components/damij/DamijEcoBanner';
 import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
