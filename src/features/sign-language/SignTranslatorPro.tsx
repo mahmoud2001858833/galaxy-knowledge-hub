@@ -243,28 +243,47 @@ const SignTranslatorPro: React.FC = () => {
     aiDebounceRef.current = window.setTimeout(async () => {
       setIsAILoading(true);
       try {
-        const corrected = await callAI('correct', sentence);
-        setCorrectedText(corrected);
-        const translated = await callAI('translate', corrected, {
-          targetLang: targetLang.code,
-          targetLangName: targetLang.name,
+        // Source language === sign-system primary language (raw signs are now in this language)
+        const sourceLang = langForSystem(signSystem);
+        const corrected = await callAI('correct', sentence, {
+          lang: sourceLang.code,
+          langName: sourceLang.name,
         });
-        setTranslatedText(translated);
+        setCorrectedText(corrected);
+        if (targetLang.code === sourceLang.code) {
+          // No need to translate — source already matches target.
+          setTranslatedText(corrected);
+        } else {
+          const translated = await callAI('translate', corrected, {
+            sourceLang: sourceLang.code,
+            sourceLangName: sourceLang.name,
+            targetLang: targetLang.code,
+            targetLangName: targetLang.name,
+          });
+          setTranslatedText(translated);
+        }
       } catch (e: any) {
         toast.error(e?.message || 'فشل الاتصال بالمساعد الذكي');
       } finally {
         setIsAILoading(false);
       }
     }, 900);
-  }, [callAI, targetLang]);
+  }, [callAI, targetLang, signSystem]);
 
   // re-translate when target language changes
   useEffect(() => {
     if (correctedText) {
       (async () => {
+        const sourceLang = langForSystem(signSystem);
+        if (targetLang.code === sourceLang.code) {
+          setTranslatedText(correctedText);
+          return;
+        }
         setIsAILoading(true);
         try {
           const translated = await callAI('translate', correctedText, {
+            sourceLang: sourceLang.code,
+            sourceLangName: sourceLang.name,
             targetLang: targetLang.code,
             targetLangName: targetLang.name,
           });
@@ -278,7 +297,7 @@ const SignTranslatorPro: React.FC = () => {
   }, [targetLang.code]);
 
   const handleGestureDetected = useCallback((gesture: string, gc: number) => {
-    const info = gestureToArabic[gesture];
+    const info = getGestureWord(signSystem, gesture);
     if (!info) return;
     const incoming: DetectedToken = { gesture, text: info.text, confidence: gc, timestamp: Date.now() };
     const decision = filterGesture(incoming, acceptedTokensRef.current);
@@ -294,7 +313,7 @@ const SignTranslatorPro: React.FC = () => {
     setDetectedText(sentence);
     refreshAI(sentence);
     setTimeout(() => setCurrentGesture(null), 1000);
-  }, [refreshAI]);
+  }, [refreshAI, signSystem]);
 
   // ─── MediaPipe init + detection loop (compact) ───
   const initHand = useCallback(async () => {
