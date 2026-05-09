@@ -441,6 +441,57 @@ const AutismDiagnosis: React.FC = () => {
         );
       })()}
 
+      {step === 'ai_games' && (() => {
+        if (aiGamesLoading || !aiGames.length) {
+          return (
+            <div className="text-center py-20 space-y-5">
+              <Wand2 className="w-14 h-14 mx-auto text-[hsl(var(--damij-accent-2))] animate-pulse" />
+              <h2 className="text-xl font-bold text-[hsl(var(--damij-primary))]">يولّد الذكاء الاصطناعي ألعاب تشخيص مخصّصة لهذا الطفل…</h2>
+              <p className="text-sm text-[hsl(var(--damij-text))]/70 max-w-md mx-auto">طيف التوحد يختلف من شخص لآخر، لذلك نُكيّف الألعاب حسب العمر والمؤشرات الأولية.</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[hsl(var(--damij-accent-2))]" />
+            </div>
+          );
+        }
+        const g = aiGames[aiGameIndex];
+        const Cmp = TEMPLATE_REGISTRY[g.template_id];
+        const meta = TEMPLATE_META[g.template_id];
+        if (!Cmp) {
+          setTimeout(() => handleAiGameComplete({ accuracy: 0 }, 0, true), 0);
+          return null;
+        }
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[hsl(var(--damij-text))]/60">
+                لعبة ذكية {aiGameIndex + 1} من {aiGames.length} — {meta?.emoji} {g.title_ar}
+              </span>
+              <div className="h-2 w-32 rounded-full bg-[hsl(var(--damij-primary))]/10 overflow-hidden">
+                <div className="h-full bg-[hsl(var(--damij-accent-2))]"
+                  style={{ width: `${((aiGameIndex + 1) / aiGames.length) * 100}%` }} />
+              </div>
+            </div>
+            {aiStrategy && aiGameIndex === 0 && (
+              <div className="text-xs p-3 rounded-xl bg-[hsl(var(--damij-accent-2))]/10 border border-[hsl(var(--damij-accent-2))]/30 text-[hsl(var(--damij-primary))]">
+                ✨ <b>استراتيجية AI:</b> {aiStrategy}
+              </div>
+            )}
+            <div className="text-xs p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
+              🎯 <b>الهدف:</b> {g.target_skill_ar} — {g.rationale_ar}
+            </div>
+            <div className="bg-[hsl(var(--damij-surface))] rounded-3xl p-4 border border-[hsl(var(--damij-primary))]/10">
+              <Cmp
+                key={`ai_${aiGameIndex}_${g.template_id}`}
+                difficulty={g.difficulty}
+                durationSec={g.duration_sec}
+                instructions={g.instructions_ar}
+                onComplete={(m, d) => handleAiGameComplete(m, d, false)}
+                onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       {step === 'analyzing' && (
         <div className="text-center py-20 space-y-5">
           <Loader2 className="w-16 h-16 animate-spin mx-auto text-[hsl(var(--damij-accent-2))]" />
