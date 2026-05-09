@@ -880,7 +880,7 @@ const SignTranslatorPro: React.FC = () => {
                   {isAILoading && <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--damij-primary))]" />}
                 </h3>
                 <div className="flex gap-1">
-                  <button onClick={() => speakText(correctedText, 'ar-SA')} className="p-2 rounded-lg hover:bg-white" title="نطق"><Volume2 className="w-4 h-4" /></button>
+                  <button onClick={() => speakText(correctedText, targetLang.code)} className="p-2 rounded-lg hover:bg-white" title="نطق"><Volume2 className="w-4 h-4" /></button>
                   <button onClick={() => copyText(correctedText)} className="p-2 rounded-lg hover:bg-white" title="نسخ"><Copy className="w-4 h-4" /></button>
                 </div>
               </div>
