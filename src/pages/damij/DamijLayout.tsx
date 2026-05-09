@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import DamijFloatingNav from '@/components/damij/DamijFloatingNav';
 import DamijSmartGuide from '@/components/damij/DamijSmartGuide';
-import DamijLanguageSwitcher from '@/components/damij/DamijLanguageSwitcher';
+import DamijHeader from '@/components/damij/DamijHeader';
 import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
 import DamijSpeechAutowire from '@/components/damij/DamijSpeechAutowire';
 import { DamijLanguageProvider, useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
+import { EcoModeProvider } from '@/features/damij/EcoModeContext';
 
 const DamijLayoutInner: React.FC = () => {
-  const { dir, t } = useDamijLang();
+  const { dir } = useDamijLang();
   useEffect(() => {
     sessionStorage.setItem('damij_mode', 'true');
     return () => { sessionStorage.removeItem('damij_mode'); };
@@ -26,26 +26,22 @@ const DamijLayoutInner: React.FC = () => {
         fontFamily: '"Tajawal","Cairo","Inter","Segoe UI",sans-serif',
       }}
     >
-      <div data-damij-no-translate className="absolute top-3 end-3 z-40">
-        <DamijLanguageSwitcher />
-      </div>
-      <main className="pb-32">
+      <DamijHeader />
+      <main>
         <Outlet />
       </main>
-      <DamijFloatingNav />
       <DamijSmartGuide />
       <DamijAutoTranslator />
       <DamijSpeechAutowire />
-      <footer data-damij-no-translate className="text-center py-6 text-sm text-[hsl(var(--damij-text))]/60 border-t border-[hsl(var(--damij-border))] bg-white/60">
-        {t.footer}
-      </footer>
     </div>
   );
 };
 
 const DamijLayout: React.FC = () => (
   <DamijLanguageProvider>
-    <DamijLayoutInner />
+    <EcoModeProvider>
+      <DamijLayoutInner />
+    </EcoModeProvider>
   </DamijLanguageProvider>
 );
 

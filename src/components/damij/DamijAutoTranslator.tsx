@@ -128,8 +128,8 @@ const DamijAutoTranslator: React.FC = () => {
 
       if (missing.length === 0) return;
 
-      // Batch up to 60 strings per request
-      const BATCH = 60;
+      // Larger batches and parallel execution for speed
+      const BATCH = 120;
       const batches: string[][] = [];
       for (let i = 0; i < missing.length; i += BATCH) {
         batches.push(missing.slice(i, i + BATCH));
@@ -137,35 +137,37 @@ const DamijAutoTranslator: React.FC = () => {
 
       inflightRef.current = true;
       try {
-        for (const batch of batches) {
-          const { data, error } = await supabase.functions.invoke('damij-translate', {
-            body: { texts: batch, target: lang },
-          });
-          if (error) {
-            console.warn('[damij-translate] error', error);
-            break;
-          }
-          const translations: Record<string, string> = data?.translations || {};
-          Object.assign(cache, translations);
-          saveCache(lang, cache);
-          // Re-collect because DOM may have changed
-          const fresh = collectTextNodes(root, lang, cache);
-          applyTranslations(fresh.nodes, lang, cache);
-        }
+        // Run all batches in parallel; apply each as it returns
+        await Promise.all(
+          batches.map(async (batch) => {
+            const { data, error } = await supabase.functions.invoke('damij-translate', {
+              body: { texts: batch, target: lang },
+            });
+            if (error) {
+              console.warn('[damij-translate] error', error);
+              return;
+            }
+            const translations: Record<string, string> = data?.translations || {};
+            Object.assign(cache, translations);
+            saveCache(lang, cache);
+            const fresh = collectTextNodes(root, lang, cache);
+            applyTranslations(fresh.nodes, lang, cache);
+          }),
+        );
       } finally {
         inflightRef.current = false;
       }
     };
 
-    const schedule = () => {
+    const schedule = (immediate = false) => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      debounceRef.current = window.setTimeout(run, 250);
+      debounceRef.current = window.setTimeout(run, immediate ? 0 : 120);
     };
 
-    // Initial pass
-    schedule();
+    // Initial pass — immediate on language change for instant feedback
+    schedule(true);
 
-    const observer = new MutationObserver(() => schedule());
+    const observer = new MutationObserver(() => schedule(false));
     observer.observe(root, { childList: true, subtree: true, characterData: true });
 
     return () => {
