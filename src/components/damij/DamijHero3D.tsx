@@ -1,55 +1,52 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowLeft } from 'lucide-react';
-import DamijLogo3D from './DamijLogo3D';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import DamijBrandLogo from './DamijBrandLogo';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 const DamijHero3D: React.FC = () => {
   const { t, dir } = useDamijLang();
 
   return (
-    <section className="relative overflow-hidden pt-16 pb-12 px-6">
-      <div className="absolute inset-0 -z-10 opacity-60 pointer-events-none">
-        <div className="absolute top-1/4 -start-20 w-96 h-96 rounded-full bg-[hsl(var(--damij-primary))]/15 blur-3xl" />
-        <div className="absolute bottom-0 -end-20 w-96 h-96 rounded-full bg-[hsl(var(--damij-accent-2))]/15 blur-3xl" />
+    <section className="relative overflow-hidden pt-20 pb-14 px-6 border-b border-[hsl(var(--damij-border))]">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--damij-bg))_0%,hsl(var(--damij-bg-2))_100%)]" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--damij-primary))]/20 to-transparent" />
       </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-12 items-center">
         <motion.div
-          initial={{ opacity: 0, x: dir === 'rtl' ? 30 : -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           className="text-center lg:text-start"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(var(--damij-accent))]/20 text-[hsl(var(--damij-primary))] mb-5">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-semibold">{t.hero.badge}</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[hsl(var(--damij-primary))]/8 text-[hsl(var(--damij-primary))] mb-6 border border-[hsl(var(--damij-primary))]/15">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold tracking-wide">{t.hero.badge}</span>
           </div>
-          <h1 className="text-6xl md:text-7xl font-extrabold bg-gradient-to-br from-[hsl(var(--damij-primary))] via-[hsl(var(--damij-accent-2))] to-[hsl(var(--damij-warm))] bg-clip-text text-transparent mb-3 leading-none">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-[hsl(var(--damij-primary))] mb-4 tracking-tight">
             {t.hero.title}
           </h1>
-          <p className="text-xl md:text-2xl text-[hsl(var(--damij-accent-2))] font-bold mb-4">
+          <p className="text-lg md:text-xl text-[hsl(var(--damij-primary-2))] font-semibold mb-5">
             {t.hero.tagline}
           </p>
-          <p className="text-base md:text-lg text-[hsl(var(--damij-text))]/75 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-6">
+          <p className="text-base text-[hsl(var(--damij-muted))] leading-relaxed max-w-xl mx-auto lg:mx-0 mb-7">
             {t.hero.desc}
           </p>
-          <div className="flex flex-wrap justify-center lg:justify-start gap-2 mb-6">
-            {t.hero.chips.map((c, i) => (
-              <motion.span
+          <div className="flex flex-wrap justify-center lg:justify-start gap-2 mb-7">
+            {t.hero.chips.map((c) => (
+              <span
                 key={c}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.07 }}
-                className="px-3 py-1.5 text-xs font-bold rounded-full bg-white border border-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-primary))] shadow-sm"
+                className="px-3 py-1 text-[11px] font-semibold rounded-md bg-white border border-[hsl(var(--damij-border))] text-[hsl(var(--damij-primary))]"
               >
                 {c}
-              </motion.span>
+              </span>
             ))}
           </div>
           <a
             href="#systems"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-accent-2))] text-white font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[hsl(var(--damij-primary))] text-white text-sm font-bold shadow-md hover:bg-[hsl(var(--damij-primary))]/92 transition-colors"
           >
             {t.hero.cta}
             <ArrowLeft className={`w-4 h-4 ${dir === 'ltr' ? 'rotate-180' : ''}`} />
@@ -57,12 +54,14 @@ const DamijHero3D: React.FC = () => {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.6 }}
           className="flex items-center justify-center"
         >
-          <DamijLogo3D size={360} />
+          <div className="p-8 rounded-2xl bg-white border border-[hsl(var(--damij-border))] shadow-sm">
+            <DamijBrandLogo size={260} showText={false} />
+          </div>
         </motion.div>
       </div>
     </section>
@@ -70,3 +69,4 @@ const DamijHero3D: React.FC = () => {
 };
 
 export default DamijHero3D;
+
