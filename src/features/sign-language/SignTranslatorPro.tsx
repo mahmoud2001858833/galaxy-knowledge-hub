@@ -1123,6 +1123,27 @@ const SignTranslatorPro: React.FC = () => {
 
         </div>
       )}
+        </div>
+      )}
+
+      {t2sResult && (
+        <SignSequencePlayer
+          open={playerOpen}
+          words={t2sResult.words.map(w => ({
+            word: w.word,
+            description: w.description,
+            handshape_id: w.handshape_id,
+            movement: w.movement,
+            two_handed: w.two_handed,
+          }))}
+          langCode={t2sLang.code}
+          langLabel={`${t2sLang.flag} ${t2sLang.nativeName}`}
+          signSystemLabel={signSystem}
+          mirror={mirrorHand}
+          onClose={() => setPlayerOpen(false)}
+          speak={(text, lang) => speakText(text, lang)}
+        />
+      )}
     </div>
   );
 };
