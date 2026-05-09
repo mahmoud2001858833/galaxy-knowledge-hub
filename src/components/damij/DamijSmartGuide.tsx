@@ -83,11 +83,11 @@ const DamijSmartGuide: React.FC = () => {
         className="fixed bottom-20 end-4 z-[60] group"
         aria-label={t.assistant.open}
       >
-        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-accent-2))] blur-xl opacity-60 group-hover:opacity-90 animate-pulse" />
-        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-accent-2))] animate-ping opacity-25" />
+        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 blur-xl opacity-70 group-hover:opacity-100 animate-pulse" />
+        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 animate-ping opacity-25" />
         <span
-          className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[hsl(var(--damij-primary))] via-[hsl(var(--damij-accent-2))] to-[hsl(var(--damij-warm))] text-white shadow-2xl ring-4 ring-white/40 transition-transform group-hover:scale-110"
-          style={{ boxShadow: '0 20px 50px -10px hsl(var(--damij-primary) / 0.6)' }}
+          className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 text-white shadow-2xl ring-4 ring-white/60 transition-transform group-hover:scale-110"
+          style={{ boxShadow: '0 20px 50px -10px rgba(234,179,8,0.65)' }}
         >
           <Sparkles className="w-7 h-7 drop-shadow-lg" />
           <motion.span
