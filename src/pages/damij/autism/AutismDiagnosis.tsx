@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, ClipboardList, Gamepad2, Sparkles, Loader2, ShieldAlert } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ClipboardList, Gamepad2, Sparkles, Loader2, ShieldAlert, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -25,9 +25,21 @@ import PatternVsSocial from '@/features/autism/games/PatternVsSocial';
 import RepetitiveMatch from '@/features/autism/games/RepetitiveMatch';
 import EmotionRecognition from '@/features/autism/games/EmotionRecognition';
 import SensoryTolerance from '@/features/autism/games/SensoryTolerance';
+import { TEMPLATE_REGISTRY, TEMPLATE_META } from '@/features/autism/games/templates/registry';
 
-type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'analyzing' | 'report';
-type Path = 'questionnaire' | 'games' | 'both';
+type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'ai_games' | 'analyzing' | 'report';
+type Path = 'questionnaire' | 'games' | 'ai_games' | 'both';
+
+interface AIGame {
+  template_id: string;
+  title_ar: string;
+  instructions_ar: string;
+  target_skill_ar: string;
+  rationale_ar: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  duration_sec: number;
+  adaptations_ar?: string[];
+}
 
 const GAME_COMPONENTS: Record<string, React.FC<any>> = {
   response_to_name: ResponseToName,
@@ -55,6 +67,10 @@ const AutismDiagnosis: React.FC = () => {
   const [qIndex, setQIndex] = useState(0);
   const [gameIndex, setGameIndex] = useState(0);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
+  const [aiGames, setAiGames] = useState<AIGame[]>([]);
+  const [aiGameIndex, setAiGameIndex] = useState(0);
+  const [aiGamesLoading, setAiGamesLoading] = useState(false);
+  const [aiStrategy, setAiStrategy] = useState<string>('');
   const [report, setReport] = useState<AIReport | null>(null);
 
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
@@ -62,8 +78,52 @@ const AutismDiagnosis: React.FC = () => {
   const currentItem = items[qIndex];
 
   const reset = () => {
-    setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]); setReport(null);
+    setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]);
+    setAiGames([]); setAiGameIndex(0); setAiStrategy(''); setReport(null);
   };
+
+  const startAiGames = async (afterClassicGames: GameResult[]) => {
+    setAiGamesLoading(true);
+    setStep('ai_games');
+    try {
+      const qr = path !== 'games' && path !== 'ai_games' ? scoreQuestionnaire(track, answers) : null;
+      const { data, error } = await supabase.functions.invoke('autism-generate-diagnostic-games', {
+        body: {
+          ageMonths, ageTrack: track, respondent, name: name || undefined,
+          questionnaireResult: qr,
+        },
+      });
+      if (error) throw error;
+      const games: AIGame[] = (data?.games || []).filter((g: any) => TEMPLATE_REGISTRY[g.template_id]);
+      if (!games.length) throw new Error('No personalized games returned');
+      setAiGames(games);
+      setAiStrategy(data?.overall_strategy_ar || '');
+      setAiGameIndex(0);
+      // Keep classic results for later analysis
+      setGameResults(afterClassicGames);
+    } catch (e: any) {
+      console.warn('AI diagnostic games failed, skipping:', e);
+      toast.warning('تعذّر توليد ألعاب التشخيص الذكية — سيتم الانتقال للتحليل.');
+      startAnalysis(afterClassicGames);
+    } finally {
+      setAiGamesLoading(false);
+    }
+  };
+
+  const handleAiGameComplete = (metrics: { accuracy: number; raw?: any }, durationMs: number, skipped = false) => {
+    const g = aiGames[aiGameIndex];
+    const next: GameResult = {
+      gameId: `ai_${g.template_id}`,
+      metrics: { accuracy: metrics.accuracy, ...(metrics.raw || {}) },
+      durationMs,
+      skipped,
+    };
+    const all = [...gameResults, next];
+    setGameResults(all);
+    if (aiGameIndex + 1 >= aiGames.length) startAnalysis(all);
+    else setAiGameIndex((i) => i + 1);
+  };
+
 
   const buildLocalReport = (
     qr: ReturnType<typeof scoreQuestionnaire> | null,
@@ -177,6 +237,7 @@ const AutismDiagnosis: React.FC = () => {
 
   const onQuestionnaireDone = () => {
     if (path === 'questionnaire') startAnalysis([]);
+    else if (path === 'ai_games') startAiGames([]);
     else { setStep('games'); setGameIndex(0); }
   };
 
@@ -185,8 +246,11 @@ const AutismDiagnosis: React.FC = () => {
     const next: GameResult = { gameId: game.id, metrics, durationMs, skipped };
     const all = [...gameResults, next];
     setGameResults(all);
-    if (gameIndex + 1 >= GAMES.length) startAnalysis(all);
-    else setGameIndex((i) => i + 1);
+    if (gameIndex + 1 >= GAMES.length) {
+      // Chain into AI-personalized games when path is `both`
+      if (path === 'both') startAiGames(all);
+      else startAnalysis(all);
+    } else setGameIndex((i) => i + 1);
   };
 
   return (
@@ -252,7 +316,8 @@ const AutismDiagnosis: React.FC = () => {
           {([
             { id: 'questionnaire', icon: ClipboardList, title: 'تقييم بالأسئلة', desc: `استبيان ${items.length} سؤال — حوالي 5 دقائق.` },
             { id: 'games', icon: Gamepad2, title: 'تقييم باللعب', desc: '6 ألعاب تفاعلية تقيس الانتباه والتواصل والحس.' },
-            { id: 'both', icon: Sparkles, title: 'تقييم شامل (موصى به)', desc: 'الأسئلة + الألعاب لأدق نتيجة.' },
+            { id: 'ai_games', icon: Wand2, title: 'ألعاب تشخيصية مخصّصة بالـ AI ✨', desc: 'يولّد الذكاء الاصطناعي بطارية ألعاب فريدة لكل طفل (الطيف يختلف من حالة لأخرى).' },
+            { id: 'both', icon: Sparkles, title: 'تقييم شامل (موصى به)', desc: 'الأسئلة + الألعاب الأساسية + الألعاب الذكية المخصّصة.' },
           ] as const).map((p) => (
             <button key={p.id} onClick={() => setPath(p.id)}
               className={`w-full p-5 rounded-2xl border-2 transition flex items-center gap-4 text-right ${
@@ -270,7 +335,11 @@ const AutismDiagnosis: React.FC = () => {
               className="px-5 py-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 font-semibold flex items-center gap-1">
               <ArrowRight className="w-4 h-4" /> رجوع
             </button>
-            <button onClick={() => setStep(path === 'games' ? 'games' : 'questionnaire')}
+            <button onClick={() => {
+              if (path === 'games') setStep('games');
+              else if (path === 'ai_games') startAiGames([]);
+              else setStep('questionnaire');
+            }}
               className="flex-1 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold">
               متابعة
             </button>
@@ -335,7 +404,7 @@ const AutismDiagnosis: React.FC = () => {
             </button>
             <button onClick={onQuestionnaireDone}
               className="px-4 py-2 rounded-lg bg-[hsl(var(--damij-primary))] text-white font-semibold">
-              {path === 'questionnaire' ? 'إنهاء وتحليل' : 'الانتقال للألعاب'}
+              {path === 'questionnaire' ? 'إنهاء وتحليل' : path === 'ai_games' ? 'توليد ألعاب AI' : 'الانتقال للألعاب'}
             </button>
           </div>
         </div>
@@ -366,6 +435,57 @@ const AutismDiagnosis: React.FC = () => {
                 key={game.id}
                 onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
                 onSkip={() => handleGameComplete({}, 0, true)}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
+      {step === 'ai_games' && (() => {
+        if (aiGamesLoading || !aiGames.length) {
+          return (
+            <div className="text-center py-20 space-y-5">
+              <Wand2 className="w-14 h-14 mx-auto text-[hsl(var(--damij-accent-2))] animate-pulse" />
+              <h2 className="text-xl font-bold text-[hsl(var(--damij-primary))]">يولّد الذكاء الاصطناعي ألعاب تشخيص مخصّصة لهذا الطفل…</h2>
+              <p className="text-sm text-[hsl(var(--damij-text))]/70 max-w-md mx-auto">طيف التوحد يختلف من شخص لآخر، لذلك نُكيّف الألعاب حسب العمر والمؤشرات الأولية.</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[hsl(var(--damij-accent-2))]" />
+            </div>
+          );
+        }
+        const g = aiGames[aiGameIndex];
+        const Cmp = TEMPLATE_REGISTRY[g.template_id];
+        const meta = TEMPLATE_META[g.template_id];
+        if (!Cmp) {
+          setTimeout(() => handleAiGameComplete({ accuracy: 0 }, 0, true), 0);
+          return null;
+        }
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[hsl(var(--damij-text))]/60">
+                لعبة ذكية {aiGameIndex + 1} من {aiGames.length} — {meta?.emoji} {g.title_ar}
+              </span>
+              <div className="h-2 w-32 rounded-full bg-[hsl(var(--damij-primary))]/10 overflow-hidden">
+                <div className="h-full bg-[hsl(var(--damij-accent-2))]"
+                  style={{ width: `${((aiGameIndex + 1) / aiGames.length) * 100}%` }} />
+              </div>
+            </div>
+            {aiStrategy && aiGameIndex === 0 && (
+              <div className="text-xs p-3 rounded-xl bg-[hsl(var(--damij-accent-2))]/10 border border-[hsl(var(--damij-accent-2))]/30 text-[hsl(var(--damij-primary))]">
+                ✨ <b>استراتيجية AI:</b> {aiStrategy}
+              </div>
+            )}
+            <div className="text-xs p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
+              🎯 <b>الهدف:</b> {g.target_skill_ar} — {g.rationale_ar}
+            </div>
+            <div className="bg-[hsl(var(--damij-surface))] rounded-3xl p-4 border border-[hsl(var(--damij-primary))]/10">
+              <Cmp
+                key={`ai_${aiGameIndex}_${g.template_id}`}
+                difficulty={g.difficulty}
+                durationSec={g.duration_sec}
+                instructions={g.instructions_ar}
+                onComplete={(m, d) => handleAiGameComplete(m, d, false)}
+                onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
               />
             </div>
           </div>
