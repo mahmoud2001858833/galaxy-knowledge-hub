@@ -1,73 +1,65 @@
-## تحسين شامل لمنصة دامج
+## خطة التحسين الشامل لمنصة دامج
 
-### تنبيه أمني مهم
-شاركت مفتاح Gemini API في الشات (`AIzaSy...QIQI`) — أصبح مكشوفاً وعليك **إلغاؤه فوراً** من Google AI Studio. لن أحفظه في الكود. عندنا بدائل آمنة جاهزة في Secrets:
-- `GEMINI_API_KEY` و `GEMINI_API_KEY_NEW` و `LOVABLE_API_KEY` (Lovable AI Gateway)
+### 1) شعار رسمي مرتبط بهوية المنصة
+- إنشاء `DamijBrandLogo.tsx` جديد: شعار SVG رسمي يجمع رمزَين دالّين على «الدمج»:
+  - دائرتان متشابكتان (تمثيل الدمج/التكامل) تحوي إحداهما يداً مبسّطة (لغة الإشارة) والأخرى ست نقاط بريل.
+  - حلقة خارجية رفيعة بلون رسمي (Navy + Teal) ترمز للشمولية.
+- استبدال `DamijLogo3D` التجريبي في الواجهة الرئيسية بهذا الشعار الرسمي + نسخة 3D مهذّبة (دوران بطيء، بدون أشكال غريبة).
+- توحيد استخدامه في: الـHero، شريط التنقل، الفوتر، favicon (`public/`).
 
-سأستخدم هذه فقط، عبر Edge Functions.
+### 2) لوحة ألوان رسمية ومحترفة
+تحديث `--damij-*` في `src/index.css`:
+```text
+--damij-primary:    220 60% 22%   (Deep Navy)
+--damij-primary-2:  186 70% 38%   (Teal)
+--damij-accent:     38  85% 55%   (Refined Gold)
+--damij-bg:         210 30% 98%
+--damij-bg-2:       210 25% 95%
+--damij-text:       220 30% 15%
+--damij-muted:      215 15% 45%
+```
+- إزالة التدرّجات الزائدة، اعتماد ظلال خفيفة، حدود hairline، خطوط Tajawal/Inter بأوزان أرسم.
+- إعادة تنسيق `SystemCard`، `DamijHero3D`، `DamijFloatingNav` بمظهر مؤسسي (زوايا 16px، borders، ظلال smooth).
 
----
+### 3) ترجمة فعلية لكل أجزاء المنصة (15 لغة)
+المشكلة الحالية: القاموس يغطي صفحة الهبوط فقط. الحل:
+- توسيع `DamijDict` في `i18n/types.ts` ليشمل مفاتيح لكل قسم: `sign.*`, `sensory.*`, `autism.*`, `adhd.*`, `braille.*`, `clinical.*`, `common.*` (أزرار، حالات، رسائل، tooltips، نماذج).
+- إنشاء قاموسَين كاملَين ar + en يدوياً لكل المفاتيح.
+- توليد القواميس الـ13 المتبقية مرة واحدة عبر Edge Function `damij-translate-bundle` (Lovable AI / Gemini) ثم حفظ النتائج كـ TS ثابتة (لا تكلفة وقت تشغيل).
+- استبدال السلاسل الثابتة (Hardcoded) في كل صفحات `/damij/*` (SignHome, SensoryHome, AutismHome, ADHDHome, BrailleHome, ClinicalHome, SignTranslator, Sources, …) باستدعاءات `t.*`.
+- إضافة `<html lang dir>` تلقائياً (موجود) + Hook `useDocumentTitle(t.x.title)` لكل صفحة لتغيير العنوان.
 
-### 1) شعار دامج 3D + شرح
-- إنشاء شعار 3D باستخدام `@react-three/fiber` + `@react-three/drei`: كرة/أيقونة دامج متعددة الطبقات بألوان `--damij-primary`/`--damij-accent` تدور ببطء، مع تأثير Glow وParallax عند تحريك الفأرة.
-- بجانب الشعار: عنوان "دامج" + شرح مختصر متحرك (Framer Motion typing effect) + 4 chips للقيم الأساسية.
-- مكوّن جديد: `src/components/damij/DamijHero3D.tsx` يحلّ محل القسم العلوي في `DamijLanding.tsx`.
+### 4) أصوات TTS متعدّدة اللغات
+- إنشاء Hook موحّد `useDamijSpeech.ts` يستخدم Web Speech API مع اختيار صوت يطابق `lang` الحالي من `DamijLanguageContext` (`speechSynthesis.getVoices().find(v => v.lang.startsWith(lang))`).
+- استبدال كل `new SpeechSynthesisUtterance(...)` و`useTextToSpeech` المستخدمة في:
+  - `SignTranslator.tsx` (نطق الترجمة)
+  - وحدات `clinical/devices/*` و`InterventionTryPanel`
+  - أي مكان آخر داخل `/damij/*`
+- خيار اختياري: تمرير `lang` إلى ElevenLabs عند توفّره، مع fallback Web Speech.
 
-### 2) قائمة التنقل السريعة المُحسَّنة
-- إعادة بناء `DamijFloatingNav.tsx`:
-  - Glassmorphism متقدم + حدود متدرّجة + Active indicator يتحرك بـ`layoutId` (Framer Motion).
-  - Tooltips بالعربي/الإنجليزي عند Hover، مؤشرات نشطة بـ Glow ملوّن لكل قسم.
-  - زر اختصارات (Cmd+K) لفتح Command Palette سريع للقفز بين الأقسام.
-  - تكيّف للموبايل بشكل أنظف (Bottom dock).
-
-### 3) نظام ترجمة 15 لغة (شامل المنصة بالكامل)
-- إنشاء سياق ترجمة جديد للدامج: `src/features/damij/i18n/`
-  - `DamijLanguageContext.tsx` — Provider مع localStorage و RTL/LTR auto.
-  - ملفات لكل لغة: `ar, en, fr, es, de, tr, ur, hi, fa, he, ru, zh, ja, ko, pt` (15 لغة).
-  - مفاتيح مُهيكلة: `nav.*`, `hero.*`, `sign.*`, `sensory.*`, `autism.*`, `adhd.*`, `braille.*`, `clinical.*`, `assistant.*`, `loader.*`.
-- مبدّل لغة في الـ Navbar مع علم + اسم اللغة + بحث.
-- اللغتان الأساسيتان (عربي/إنجليزي) مكتوبتان يدوياً بدقة. الـ13 الباقية تُولَّد عبر Edge Function `damij-translate-bundle` مرّة واحدة (يخزّنها في الكود)، فلا تكلفة تشغيل لاحقة.
-- ربط جميع صفحات `/damij/*` بالنصوص المترجمة (استبدال السلاسل العربية الثابتة بـ `t('key')`).
-
-### 4) المرشد الذكي العائم في الزاوية
-- مكوّن جديد: `src/components/damij/DamijSmartGuide.tsx`
-  - **الشكل البصري**: كرة طاقة 3D زجاجية متوهجة (Three.js)، تتنفّس بأنيميشن، تتوسّع وتُصدر موجات عند التحدّث، Particles محيطة بـ Framer Motion.
-  - **التفاعل**: نقرة → تفتح بطاقة شات أنيقة بنفس هوية دامج، إدخال نصي + ميكروفون (Web Speech API).
-  - **الذكاء**: Edge Function `damij-guide-chat` تستخدم `LOVABLE_API_KEY` مع Gemini، بـ System Prompt يحوي **خريطة كاملة** لجميع أقسام دامج (المسارات، الميزات، شروحاتها).
-  - **التنقّل التلقائي**: المرشد يردّ بـ JSON يحوي اقتراح وجهة (مثل `{ navigate: '/damij/sign' }`) فيتم التنقل تلقائياً عند موافقة المستخدم.
-  - يعرف اللغة الحالية ويردّ بها.
-
-### 5) أنيميشن تحميل محسّن
-- مكوّن `DamijLoader.tsx`: حلقة دامج تدور باستمرار + شعار صغير في المنتصف ينبض + جسيمات مدارية. CSS-only للسرعة.
-- استبدال جميع شاشات التحميل في `/damij/*` به.
+### 5) «حافظ الكربون» (Carbon Saver) – نسخة على غرار جائزة زايد للاستدامة
+صفحة جديدة `/damij/carbon` بتصميم مؤسسي (هيدر هادئ، إحصاءات Hero، ألوان أخضر/Navy):
+- حاسبة بصمة كربون تفاعلية (نقل، طاقة، استهلاك، نفايات، تعليم رقمي بدلاً من ورقي).
+- لوحة «أثرك التعليمي» مع KPIs ودوائر تقدم.
+- شارات إنجاز + مقارنة مع متوسط المدرسة.
+- اقتراحات ذكية لتقليل البصمة (Edge Function `damij-carbon-advisor`).
+- جداول وأرسوم Recharts (شريطية + خطية).
+- زر تنزيل PDF رسمي للتقرير.
+- مدخل من الواجهة الرئيسية (بطاقة سابعة) ومن شريط التنقل.
 
 ### 6) تحسينات تجربة عامة
-- خلفية `DamijLayout` مع تدرّجات Mesh متحركة خفيفة.
-- Page transitions بين أقسام دامج (Framer Motion AnimatePresence).
-- Skeleton loaders بدل الفراغ.
-- Focus states واضحة للوصولية + ARIA.
-- Footer دامج محدّث بالنص الرسمي للمدرسة (موجود).
+- ميكرو-انيميشن أهدأ (بدون أشكال 3D صاخبة).
+- Skeleton loaders لكل صفحة.
+- تحسين `DamijFloatingNav`: تسميات مترجمة، تباين أعلى، نسخة موبايل سفلية، اختصار `Cmd+K`.
+- ضبط `DamijSmartGuide` ليستخدم اللغة النشطة في الردود وفي التعرّف على الصوت.
+- فوتر رسمي متعدّد الأعمدة + سطر العزو الإلزامي.
 
-### الملفات الجديدة/المعدّلة الرئيسية
-```
-new   src/components/damij/DamijHero3D.tsx
-new   src/components/damij/DamijSmartGuide.tsx
-new   src/components/damij/DamijLoader.tsx
-new   src/components/damij/DamijLanguageSwitcher.tsx
-new   src/features/damij/i18n/DamijLanguageContext.tsx
-new   src/features/damij/i18n/translations/{ar,en,fr,es,de,tr,ur,hi,fa,he,ru,zh,ja,ko,pt}.ts
-new   supabase/functions/damij-guide-chat/index.ts
-new   supabase/functions/damij-translate-bundle/index.ts
-edit  src/components/damij/DamijFloatingNav.tsx
-edit  src/pages/damij/DamijLayout.tsx        (إضافة Provider + المرشد + Loader)
-edit  src/pages/damij/DamijLanding.tsx       (دمج Hero3D + استخدام t())
-edit  جميع صفحات /damij/*Home.tsx            (استخدام t() للنصوص الرئيسية)
-```
+### تفاصيل تقنية
+- ملفات جديدة: `DamijBrandLogo.tsx`, `useDamijSpeech.ts`, `pages/damij/carbon/CarbonSaverHome.tsx`, `pages/damij/carbon/CarbonReport.tsx`, Edge Functions `damij-translate-bundle`, `damij-carbon-advisor`.
+- ملفات معدّلة: `index.css` (tokens), كل صفحات `/damij/*` لاستخدام `t.*`, `DamijFloatingNav.tsx`, `DamijHero3D.tsx`, `DamijLanding.tsx`, `App.tsx` (route جديد).
+- لا تغييرات على schema قاعدة البيانات.
+- مفاتيح موجودة مسبقاً (LOVABLE_API_KEY, ELEVENLABS_API_KEY) — لا حاجة لمفاتيح جديدة.
 
-### الحزم المضافة
-- `@react-three/fiber@^8.18` و `three@^0.160` و `@react-three/drei@^9.122` (مع الالتزام بـ React 18).
-
-### ملاحظة على نطاق العمل
-هذا نطاق كبير. سأنفّذه على ضربتين متتاليتين دون توقّف:
-1. الشعار 3D + النافبار + الـ Loader + المرشد الذكي + بنية الترجمة (ar/en كاملاً، باقي اللغات تُولَّد).
-2. نشر دفعة الـ13 لغة المتبقية + ربط النصوص في كل صفحات `/damij/*`.
+### تنفيذ على مرحلتين
+- **المرحلة 1**: الشعار الرسمي + الألوان + توسيع القاموس ar/en + ربطه بكل الصفحات + Hook الصوت متعدّد اللغات.
+- **المرحلة 2**: توليد 13 لغة دفعة واحدة + بناء قسم «حافظ الكربون» الكامل + لمسات UX النهائية.
