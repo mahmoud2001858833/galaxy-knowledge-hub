@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import {
   Type, Play, Pause, Square, RotateCcw, ChevronLeft, ChevronRight,
-  Sparkles, AlertCircle, Volume2, Hand,
+  Sparkles, AlertCircle, Volume2, Hand, Video,
 } from 'lucide-react';
+import { useSignDictionary } from './useSignDictionary';
 
 export type SignItem = { word: string; gesture: string; category: string; description?: string };
 
