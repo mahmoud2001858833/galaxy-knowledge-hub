@@ -283,3 +283,5 @@ const Vital: React.FC<{ label: string; value: string; unit: string; color: strin
     </div>
   );
 };
+
+export default DeviceLauncher;
