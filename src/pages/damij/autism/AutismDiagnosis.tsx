@@ -78,8 +78,52 @@ const AutismDiagnosis: React.FC = () => {
   const currentItem = items[qIndex];
 
   const reset = () => {
-    setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]); setReport(null);
+    setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]);
+    setAiGames([]); setAiGameIndex(0); setAiStrategy(''); setReport(null);
   };
+
+  const startAiGames = async (afterClassicGames: GameResult[]) => {
+    setAiGamesLoading(true);
+    setStep('ai_games');
+    try {
+      const qr = path !== 'games' && path !== 'ai_games' ? scoreQuestionnaire(track, answers) : null;
+      const { data, error } = await supabase.functions.invoke('autism-generate-diagnostic-games', {
+        body: {
+          ageMonths, ageTrack: track, respondent, name: name || undefined,
+          questionnaireResult: qr,
+        },
+      });
+      if (error) throw error;
+      const games: AIGame[] = (data?.games || []).filter((g: any) => TEMPLATE_REGISTRY[g.template_id]);
+      if (!games.length) throw new Error('No personalized games returned');
+      setAiGames(games);
+      setAiStrategy(data?.overall_strategy_ar || '');
+      setAiGameIndex(0);
+      // Keep classic results for later analysis
+      setGameResults(afterClassicGames);
+    } catch (e: any) {
+      console.warn('AI diagnostic games failed, skipping:', e);
+      toast.warning('تعذّر توليد ألعاب التشخيص الذكية — سيتم الانتقال للتحليل.');
+      startAnalysis(afterClassicGames);
+    } finally {
+      setAiGamesLoading(false);
+    }
+  };
+
+  const handleAiGameComplete = (metrics: { accuracy: number; raw?: any }, durationMs: number, skipped = false) => {
+    const g = aiGames[aiGameIndex];
+    const next: GameResult = {
+      gameId: `ai_${g.template_id}`,
+      metrics: { accuracy: metrics.accuracy, ...(metrics.raw || {}) },
+      durationMs,
+      skipped,
+    };
+    const all = [...gameResults, next];
+    setGameResults(all);
+    if (aiGameIndex + 1 >= aiGames.length) startAnalysis(all);
+    else setAiGameIndex((i) => i + 1);
+  };
+
 
   const buildLocalReport = (
     qr: ReturnType<typeof scoreQuestionnaire> | null,
