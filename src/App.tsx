@@ -245,7 +245,6 @@ import ClinicalDashboard from './pages/damij/clinical/ClinicalDashboard';
 import ClinicalCompare from './pages/damij/clinical/ClinicalCompare';
 import ClinicalPublicReport from './pages/damij/clinical/ClinicalPublicReport';
 import SourcesLibrary from './pages/damij/sources/SourcesLibrary';
-import CarbonSaverHome from './pages/damij/carbon/CarbonSaverHome';
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
