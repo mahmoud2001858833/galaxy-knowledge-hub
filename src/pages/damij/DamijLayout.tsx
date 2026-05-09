@@ -34,7 +34,9 @@ const DamijLayoutInner: React.FC = () => {
       </main>
       <DamijFloatingNav />
       <DamijSmartGuide />
-      <footer className="text-center py-6 text-sm text-[hsl(var(--damij-text))]/60">
+      <DamijAutoTranslator />
+      <DamijSpeechAutowire />
+      <footer data-damij-no-translate className="text-center py-6 text-sm text-[hsl(var(--damij-text))]/60 border-t border-[hsl(var(--damij-border))] bg-white/60">
         {t.footer}
       </footer>
     </div>
