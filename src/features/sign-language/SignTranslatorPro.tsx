@@ -813,13 +813,13 @@ const SignTranslatorPro: React.FC = () => {
               )}
 
               <AnimatePresence>
-                {currentGesture && gestureToArabic[currentGesture] && (
+                {currentGesture && getGestureWord(signSystem, currentGesture) && (
                   <motion.div
                     initial={{ scale: 0, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0, opacity: 0 }}
                     className="absolute top-3 left-3 bg-[hsl(var(--damij-primary))] text-white px-4 py-2 rounded-2xl shadow-2xl"
                   >
-                    <span className="text-xl ml-2">{gestureToArabic[currentGesture].emoji}</span>
-                    <span className="font-bold">{gestureToArabic[currentGesture].text}</span>
+                    <span className="text-xl ml-2">{getGestureWord(signSystem, currentGesture)!.emoji}</span>
+                    <span className="font-bold">{getGestureWord(signSystem, currentGesture)!.text}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
