@@ -1030,7 +1030,6 @@ const router = createBrowserRouter([
           { path: 'clinical/compare', element: <ClinicalCompare /> },
           { path: 'clinical/public/:token', element: <ClinicalPublicReport /> },
           { path: 'sources', element: <SourcesLibrary /> },
-          { path: 'carbon', element: <CarbonSaverHome /> },
         ],
       },
       {
