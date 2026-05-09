@@ -185,6 +185,6 @@ export interface DamijDict {
     suggestions: string[];
   };
   langSwitch: { label: string; search: string };
-  hoverSpeak: { label: string; on: string; off: string; hint: string };
+  hoverSpeak?: { label: string; on: string; off: string; hint: string };
   footer: string;
 }
