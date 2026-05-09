@@ -229,6 +229,25 @@ ${text}`;
   }
 }
 
+async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
+  // Build signs for ALL segments via parallel chunks (no more 35-line cap).
+  const CHUNK = 25;
+  const chunks: { i: number; text: string }[][] = [];
+  for (let i = 0; i < segments.length; i += CHUNK) {
+    chunks.push(segments.slice(i, i + CHUNK).map((s, k) => ({ i: i + k, text: s.text })));
+  }
+  const PAR = 4;
+  const allLines: any[] = [];
+  for (let p = 0; p < chunks.length; p += PAR) {
+    const batch = chunks.slice(p, p + PAR);
+    const results = await Promise.all(
+      batch.map(c => aiBuildSignsChunk(c, signSystem, lang, apiKey).catch(() => null))
+    );
+    for (const r of results) if (r?.lines) allLines.push(...r.lines);
+  }
+  return { lines: allLines };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
