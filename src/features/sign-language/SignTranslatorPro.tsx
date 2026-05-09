@@ -14,6 +14,8 @@ import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from './signSystems';
 import { supabase } from '@/integrations/supabase/client';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
+import { getGestureWord, getSystemVocab } from './gestureVocab';
+import SignSequencePlayer from './SignSequencePlayer';
 
 
 // ── Gesture vocabulary (Arabic) ──
@@ -129,6 +131,7 @@ const SignTranslatorPro: React.FC = () => {
   const playAbortRef = useRef<{ stop: boolean }>({ stop: false });
   const stripRef = React.useRef<HTMLDivElement>(null);
   const [activeWordIdx, setActiveWordIdx] = useState<number | null>(null);
+  const [playerOpen, setPlayerOpen] = useState(false);
   const [mirrorHand, setMirrorHand] = useState(false);
   const [signSize, setSignSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -241,28 +244,47 @@ const SignTranslatorPro: React.FC = () => {
     aiDebounceRef.current = window.setTimeout(async () => {
       setIsAILoading(true);
       try {
-        const corrected = await callAI('correct', sentence);
-        setCorrectedText(corrected);
-        const translated = await callAI('translate', corrected, {
-          targetLang: targetLang.code,
-          targetLangName: targetLang.name,
+        // Source language === sign-system primary language (raw signs are now in this language)
+        const sourceLang = langForSystem(signSystem);
+        const corrected = await callAI('correct', sentence, {
+          lang: sourceLang.code,
+          langName: sourceLang.name,
         });
-        setTranslatedText(translated);
+        setCorrectedText(corrected);
+        if (targetLang.code === sourceLang.code) {
+          // No need to translate — source already matches target.
+          setTranslatedText(corrected);
+        } else {
+          const translated = await callAI('translate', corrected, {
+            sourceLang: sourceLang.code,
+            sourceLangName: sourceLang.name,
+            targetLang: targetLang.code,
+            targetLangName: targetLang.name,
+          });
+          setTranslatedText(translated);
+        }
       } catch (e: any) {
         toast.error(e?.message || 'فشل الاتصال بالمساعد الذكي');
       } finally {
         setIsAILoading(false);
       }
     }, 900);
-  }, [callAI, targetLang]);
+  }, [callAI, targetLang, signSystem]);
 
   // re-translate when target language changes
   useEffect(() => {
     if (correctedText) {
       (async () => {
+        const sourceLang = langForSystem(signSystem);
+        if (targetLang.code === sourceLang.code) {
+          setTranslatedText(correctedText);
+          return;
+        }
         setIsAILoading(true);
         try {
           const translated = await callAI('translate', correctedText, {
+            sourceLang: sourceLang.code,
+            sourceLangName: sourceLang.name,
             targetLang: targetLang.code,
             targetLangName: targetLang.name,
           });
@@ -276,7 +298,7 @@ const SignTranslatorPro: React.FC = () => {
   }, [targetLang.code]);
 
   const handleGestureDetected = useCallback((gesture: string, gc: number) => {
-    const info = gestureToArabic[gesture];
+    const info = getGestureWord(signSystem, gesture);
     if (!info) return;
     const incoming: DetectedToken = { gesture, text: info.text, confidence: gc, timestamp: Date.now() };
     const decision = filterGesture(incoming, acceptedTokensRef.current);
@@ -292,7 +314,7 @@ const SignTranslatorPro: React.FC = () => {
     setDetectedText(sentence);
     refreshAI(sentence);
     setTimeout(() => setCurrentGesture(null), 1000);
-  }, [refreshAI]);
+  }, [refreshAI, signSystem]);
 
   // ─── MediaPipe init + detection loop (compact) ───
   const initHand = useCallback(async () => {
@@ -792,13 +814,13 @@ const SignTranslatorPro: React.FC = () => {
               )}
 
               <AnimatePresence>
-                {currentGesture && gestureToArabic[currentGesture] && (
+                {currentGesture && getGestureWord(signSystem, currentGesture) && (
                   <motion.div
                     initial={{ scale: 0, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0, opacity: 0 }}
                     className="absolute top-3 left-3 bg-[hsl(var(--damij-primary))] text-white px-4 py-2 rounded-2xl shadow-2xl"
                   >
-                    <span className="text-xl ml-2">{gestureToArabic[currentGesture].emoji}</span>
-                    <span className="font-bold">{gestureToArabic[currentGesture].text}</span>
+                    <span className="text-xl ml-2">{getGestureWord(signSystem, currentGesture)!.emoji}</span>
+                    <span className="font-bold">{getGestureWord(signSystem, currentGesture)!.text}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -824,7 +846,7 @@ const SignTranslatorPro: React.FC = () => {
               <div className="bg-white p-4 rounded-2xl border border-[hsl(var(--damij-primary))]/15">
                 <p className="font-bold text-[hsl(var(--damij-primary))] mb-3">جرّب الإشارات بدون كاميرا</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.entries(gestureToArabic).map(([k, v]) => (
+                  {Object.entries(getSystemVocab(signSystem)).map(([k, v]) => (
                     <button key={k} onClick={() => handleGestureDetected(k, 0.99)}
                       className="p-2 rounded-lg bg-[hsl(var(--damij-surface))] hover:bg-[hsl(var(--damij-primary))]/10 text-sm flex items-center gap-2">
                       <span className="text-lg">{v.emoji}</span><span>{v.text}</span>
@@ -859,7 +881,7 @@ const SignTranslatorPro: React.FC = () => {
                   {isAILoading && <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--damij-primary))]" />}
                 </h3>
                 <div className="flex gap-1">
-                  <button onClick={() => speakText(correctedText, 'ar-SA')} className="p-2 rounded-lg hover:bg-white" title="نطق"><Volume2 className="w-4 h-4" /></button>
+                  <button onClick={() => speakText(correctedText, targetLang.code)} className="p-2 rounded-lg hover:bg-white" title="نطق"><Volume2 className="w-4 h-4" /></button>
                   <button onClick={() => copyText(correctedText)} className="p-2 rounded-lg hover:bg-white" title="نسخ"><Copy className="w-4 h-4" /></button>
                 </div>
               </div>
@@ -1027,7 +1049,7 @@ const SignTranslatorPro: React.FC = () => {
                     {isPlaying ? (
                       <button onClick={stopPlayback} className="px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold flex items-center gap-2"><Pause className="w-4 h-4" /> إيقاف</button>
                     ) : (
-                      <button onClick={playWordSequence} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2"><Play className="w-4 h-4" /> تشغيل التتابع</button>
+                      <button onClick={() => setPlayerOpen(true)} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2"><Play className="w-4 h-4" /> تشغيل سينمائي</button>
                     )}
                     <button onClick={() => { setActiveWordIdx(0); }} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="إعادة"><RotateCw className="w-4 h-4" /></button>
                     <button onClick={() => stepWord(1)} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="التالي"><SkipForward className="w-4 h-4" /></button>
@@ -1100,6 +1122,25 @@ const SignTranslatorPro: React.FC = () => {
           )}
 
         </div>
+      )}
+
+      {t2sResult && (
+        <SignSequencePlayer
+          open={playerOpen}
+          words={t2sResult.words.map(w => ({
+            word: w.word,
+            description: w.description,
+            handshape_id: w.handshape_id,
+            movement: w.movement,
+            two_handed: w.two_handed,
+          }))}
+          langCode={t2sLang.code}
+          langLabel={`${t2sLang.flag} ${t2sLang.nativeName}`}
+          signSystemLabel={signSystem}
+          mirror={mirrorHand}
+          onClose={() => setPlayerOpen(false)}
+          speak={(text, lang) => speakText(text, lang)}
+        />
       )}
     </div>
   );
