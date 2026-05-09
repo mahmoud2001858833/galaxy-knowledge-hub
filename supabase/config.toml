@@ -251,3 +251,9 @@ verify_jwt = false
 
 [functions.damij-guide-chat]
 verify_jwt = false
+
+[functions.damij-translate]
+verify_jwt = false
+
+[functions.damij-carbon-advisor]
+verify_jwt = false
