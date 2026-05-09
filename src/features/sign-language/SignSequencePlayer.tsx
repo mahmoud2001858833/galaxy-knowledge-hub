@@ -139,10 +139,9 @@ const SignSequencePlayer: React.FC<Props> = ({
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={idx}
-                custom={direction}
-                initial={(d: 1 | -1) => ({ x: d * 80, opacity: 0, scale: 0.9 })}
+                initial={{ x: direction * 80, opacity: 0, scale: 0.9 }}
                 animate={{ x: 0, opacity: 1, scale: 1 }}
-                exit={(d: 1 | -1) => ({ x: d * -80, opacity: 0, scale: 0.9 })}
+                exit={{ x: direction * -80, opacity: 0, scale: 0.9 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 26 }}
                 className="flex flex-col items-center gap-5 px-6 text-center"
               >
