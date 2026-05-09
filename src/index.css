@@ -447,6 +447,44 @@ body {
   --damij-muted: 215 15% 45%;
 }
 
+/* === Eco Mode (low-energy / low-carbon UI inspired by zayedsustainabilityprize.com) === */
+html.damij-eco .damij-root {
+  --damij-primary: 152 45% 28%;
+  --damij-primary-2: 152 35% 38%;
+  --damij-accent: 152 50% 40%;
+  --damij-accent-2: 150 25% 50%;
+  --damij-warm: 35 30% 45%;
+  --damij-success: 152 55% 36%;
+  --damij-bg: 60 12% 97%;
+  --damij-bg-2: 60 10% 94%;
+  --damij-surface: 0 0% 100%;
+  --damij-border: 60 10% 86%;
+  --damij-text: 150 20% 16%;
+  --damij-muted: 150 10% 40%;
+}
+html.damij-eco .damij-root,
+html.damij-eco .damij-root * {
+  background-image: none !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.damij-eco .damij-root {
+  background: hsl(var(--damij-bg)) !important;
+}
+html.damij-eco .damij-root *,
+html.damij-eco .damij-root *::before,
+html.damij-eco .damij-root *::after {
+  animation: none !important;
+  transition: none !important;
+}
+html.damij-eco .damij-root img,
+html.damij-eco .damij-root video {
+  filter: grayscale(0.15) contrast(0.95) !important;
+}
+
 /* === Adaptive UI (Damij Sensory Bridge) === */
 :root {
   --damij-adaptive-scale: 1;
