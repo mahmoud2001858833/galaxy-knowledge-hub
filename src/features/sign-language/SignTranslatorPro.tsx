@@ -1049,7 +1049,7 @@ const SignTranslatorPro: React.FC = () => {
                     {isPlaying ? (
                       <button onClick={stopPlayback} className="px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold flex items-center gap-2"><Pause className="w-4 h-4" /> إيقاف</button>
                     ) : (
-                      <button onClick={playWordSequence} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2"><Play className="w-4 h-4" /> تشغيل التتابع</button>
+                      <button onClick={() => setPlayerOpen(true)} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-2"><Play className="w-4 h-4" /> تشغيل سينمائي</button>
                     )}
                     <button onClick={() => { setActiveWordIdx(0); }} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="إعادة"><RotateCw className="w-4 h-4" /></button>
                     <button onClick={() => stepWord(1)} className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200" title="التالي"><SkipForward className="w-4 h-4" /></button>
