@@ -25,9 +25,21 @@ import PatternVsSocial from '@/features/autism/games/PatternVsSocial';
 import RepetitiveMatch from '@/features/autism/games/RepetitiveMatch';
 import EmotionRecognition from '@/features/autism/games/EmotionRecognition';
 import SensoryTolerance from '@/features/autism/games/SensoryTolerance';
+import { TEMPLATE_REGISTRY, TEMPLATE_META } from '@/features/autism/games/templates/registry';
 
-type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'analyzing' | 'report';
-type Path = 'questionnaire' | 'games' | 'both';
+type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'ai_games' | 'analyzing' | 'report';
+type Path = 'questionnaire' | 'games' | 'ai_games' | 'both';
+
+interface AIGame {
+  template_id: string;
+  title_ar: string;
+  instructions_ar: string;
+  target_skill_ar: string;
+  rationale_ar: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  duration_sec: number;
+  adaptations_ar?: string[];
+}
 
 const GAME_COMPONENTS: Record<string, React.FC<any>> = {
   response_to_name: ResponseToName,
