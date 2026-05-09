@@ -1007,6 +1007,7 @@ const router = createBrowserRouter([
           { path: 'sign', element: <SignHome /> },
           { path: 'sign/translator', element: <SignTranslator /> },
           { path: 'sign/youtube', element: <YouTubeSignTranslator /> },
+          { path: 'sign/dictionary', element: <SignDictionaryAdmin /> },
           { path: 'sensory', element: <SensoryHome /> },
           { path: 'sensory/profile', element: <SensoryProfileSetup /> },
           { path: 'sensory/upload', element: <SensoryUpload /> },
