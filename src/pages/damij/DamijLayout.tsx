@@ -26,7 +26,7 @@ const DamijLayoutInner: React.FC = () => {
         fontFamily: '"Tajawal","Cairo","Inter","Segoe UI",sans-serif',
       }}
     >
-      <div className="absolute top-3 end-3 z-40">
+      <div data-damij-no-translate className="absolute top-3 end-3 z-40">
         <DamijLanguageSwitcher />
       </div>
       <main className="pb-32">

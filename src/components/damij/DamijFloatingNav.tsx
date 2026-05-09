@@ -32,7 +32,7 @@ const DamijFloatingNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-end gap-1.5">
+    <nav data-damij-no-translate className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-end gap-1.5">
       <button
         onClick={() => setCollapsed((c) => !c)}
         className="bg-gradient-to-br from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-accent-2))] text-white rounded-full w-9 h-9 flex items-center justify-center shadow-xl ring-2 ring-white/40"
