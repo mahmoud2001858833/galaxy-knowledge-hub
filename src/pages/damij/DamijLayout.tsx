@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import DamijSmartGuide from '@/components/damij/DamijSmartGuide';
 import DamijHeader from '@/components/damij/DamijHeader';
+import DamijEcoBanner from '@/components/damij/DamijEcoBanner';
 import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
 import DamijSpeechAutowire from '@/components/damij/DamijSpeechAutowire';
 import { DamijLanguageProvider, useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
@@ -27,6 +28,7 @@ const DamijLayoutInner: React.FC = () => {
       }}
     >
       <DamijHeader />
+      <DamijEcoBanner />
       <main>
         <Outlet />
       </main>
