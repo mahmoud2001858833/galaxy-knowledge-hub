@@ -45,6 +45,8 @@ const YouTubeSignTranslator: React.FC = () => {
   const [muteVideo, setMuteVideo] = useState(true);
   const [speakSigns, setSpeakSigns] = useState(true);
   const [now, setNow] = useState(0);
+  const [signCursor, setSignCursor] = useState(0); // index of current sign within active line
+  const [progress, setProgress] = useState(0); // 0..1 sign-build progress estimate
 
   const playerRef = useRef<any>(null);
   const tickRef = useRef<number | null>(null);
@@ -148,6 +150,16 @@ const YouTubeSignTranslator: React.FC = () => {
     return signs.lines.find(l => l.i === activeIdx)?.signs || [];
   }, [signs, activeIdx]);
 
+  // Sequential sign cursor: advance through active line's signs based on elapsed time within segment.
+  useEffect(() => {
+    if (activeIdx < 0 || !segments[activeIdx] || !activeSigns.length) { setSignCursor(0); return; }
+    const seg = segments[activeIdx];
+    const within = Math.max(0, Math.min(seg.dur, now - seg.start));
+    const per = seg.dur / activeSigns.length;
+    const idx = Math.min(activeSigns.length - 1, Math.floor(within / Math.max(0.25, per)));
+    setSignCursor(idx);
+  }, [now, activeIdx, segments, activeSigns]);
+
   const seek = (t: number) => { try { playerRef.current?.seekTo?.(t, true); playerRef.current?.playVideo?.(); } catch {} };
 
   return (
@@ -249,40 +261,95 @@ const YouTubeSignTranslator: React.FC = () => {
                 </h3>
                 <span className="text-xs text-[hsl(var(--damij-text))]/60">{signSystem}</span>
               </div>
-              <div className="min-h-[280px] flex-1 rounded-2xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 p-4">
+              <div className="min-h-[300px] flex-1 rounded-2xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 p-4 flex flex-col">
                 {activeSigns.length ? (
-                  <motion.div className="flex flex-wrap gap-3 justify-center items-center" layout>
-                    {activeSigns.map((s, i) => (
+                  <>
+                    {/* Focused current sign */}
+                    <div className="flex-1 flex items-center justify-center">
+                      <AnimatePresence mode="wait">
+                        {(() => {
+                          const s = activeSigns[signCursor];
+                          if (!s) return null;
+                          return (
+                            <motion.div
+                              key={`${activeIdx}-${signCursor}`}
+                              initial={{ scale: 0.5, opacity: 0, rotateY: -30 }}
+                              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+                              exit={{ scale: 0.7, opacity: 0, rotateY: 30 }}
+                              transition={{ type: 'spring', stiffness: 240, damping: 20 }}
+                              className="flex flex-col items-center bg-white rounded-3xl shadow-xl border-2 border-[hsl(var(--damij-primary))]/30 px-6 py-5"
+                            >
+                              {s.known === false ? (
+                                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+                                  إشارة موثوقة غير متاحة
+                                </div>
+                              ) : (
+                                <HandSignCard
+                                  word={s.word}
+                                  handshapeId={s.handshape_id}
+                                  movement={(s.movement as Movement) || 'none'}
+                                  twoHanded={s.two_handed}
+                                  active
+                                  size={140}
+                                />
+                              )}
+                              <div className="text-xl font-extrabold text-[hsl(var(--damij-primary))] text-center mt-2">{s.word}</div>
+                              {s.desc && <div className="text-xs text-[hsl(var(--damij-text))]/65 text-center mt-1 leading-snug max-w-[220px]">{s.desc}</div>}
+                            </motion.div>
+                          );
+                        })()}
+                      </AnimatePresence>
+                    </div>
+                    {/* Strip: previous → current → upcoming */}
+                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1 justify-center">
+                      {activeSigns.map((s, i) => (
+                        <motion.button
+                          key={`thumb-${activeIdx}-${i}`}
+                          onClick={() => setSignCursor(i)}
+                          animate={{
+                            scale: i === signCursor ? 1.08 : 0.9,
+                            opacity: i === signCursor ? 1 : 0.55,
+                          }}
+                          transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                          className={`shrink-0 flex flex-col items-center rounded-xl px-2 py-1.5 border ${
+                            i === signCursor
+                              ? 'bg-white border-[hsl(var(--damij-primary))]/40 shadow'
+                              : 'bg-white/60 border-gray-200'
+                          }`}
+                        >
+                          {s.known !== false && (
+                            <HandSignCard
+                              word={s.word}
+                              handshapeId={s.handshape_id}
+                              movement={(s.movement as Movement) || 'none'}
+                              twoHanded={s.two_handed}
+                              active={i === signCursor}
+                              size={36}
+                            />
+                          )}
+                          <span className="text-[10px] font-bold text-[hsl(var(--damij-text))] mt-0.5 max-w-[60px] truncate">{s.word}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                    {/* Progress bar within line */}
+                    <div className="mt-2 h-1 w-full bg-emerald-100 rounded-full overflow-hidden">
                       <motion.div
-                        key={`${activeIdx}-${i}`}
-                        initial={{ scale: 0.6, opacity: 0, y: 12 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08, type: 'spring', stiffness: 220, damping: 18 }}
-                        className="flex flex-col items-center bg-white rounded-2xl shadow-md border border-emerald-100 px-3 py-3 min-w-[110px]"
-                      >
-                        {s.known === false ? (
-                          <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mb-1 text-center">
-                            إشارة موثوقة غير متاحة
-                          </div>
-                        ) : (
-                          <HandSignCard
-                            word={s.word}
-                            handshapeId={s.handshape_id}
-                            movement={(s.movement as Movement) || 'none'}
-                            twoHanded={s.two_handed}
-                            active
-                            size={70}
-                          />
-                        )}
-                        <div className="text-sm font-bold text-[hsl(var(--damij-text))] text-center mt-1">{s.word}</div>
-                        {s.desc && <div className="text-[10px] text-[hsl(var(--damij-text))]/60 text-center mt-1 leading-tight">{s.desc}</div>}
-                      </motion.div>
-                    ))}
-                  </motion.div>
+                        className="h-full bg-[hsl(var(--damij-primary))]"
+                        animate={{ width: `${((signCursor + 1) / activeSigns.length) * 100}%` }}
+                        transition={{ type: 'tween', duration: 0.3 }}
+                      />
+                    </div>
+                  </>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-center text-[hsl(var(--damij-text))]/55">
                     <Hand className="w-10 h-10 mb-2" />
-                    <p className="text-sm">{loading ? 'جاري إعداد الإشارات...' : 'سيتم عرض الإشارات هنا أثناء التشغيل'}</p>
+                    <p className="text-sm">
+                      {loading
+                        ? 'جاري إعداد الإشارات لكامل الفيديو...'
+                        : activeIdx >= 0
+                          ? 'لا توجد إشارات لهذا السطر بعد — يتم التحضير'
+                          : 'سيتم عرض الإشارات هنا أثناء التشغيل'}
+                    </p>
                   </div>
                 )}
               </div>

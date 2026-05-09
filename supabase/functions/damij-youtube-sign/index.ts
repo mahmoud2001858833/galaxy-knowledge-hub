@@ -181,10 +181,8 @@ async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey:
   return out;
 }
 
-async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
-  // Cap to avoid edge-function timeout on long videos
-  const capped = segments.slice(0, 35);
-  const text = capped.map((s, i) => `[${i}] ${s.text}`).join("\n");
+async function aiBuildSignsChunk(slice: { i: number; text: string }[], signSystem: string, lang: string, apiKey: string) {
+  const text = slice.map(s => `[${s.i}] ${s.text}`).join("\n");
   const HANDSHAPES = "open_palm, flat_hand, flat_hand_down, fist, thumbs_up, thumbs_down, point, point_up, point_down, point_right, point_left, victory, three, four, five, one, two, ok, love, call_me, rock, pinch, claw, bent_hand, spread_hand, prayer, wave, finger_gun, crossed_fingers";
   const MOVEMENTS = "none, tap, wave_h, wave_v, circle, push, pull, up, down";
   const prompt = `You are a professional ${signSystem} sign-language interpreter. For each numbered subtitle line, decompose into an ordered list of REAL signs in ${signSystem} grammar (drop articles/fillers when natural).
@@ -229,6 +227,25 @@ ${text}`;
     const m = raw.match(/\{[\s\S]*\}/); if (m) { try { return JSON.parse(m[0]); } catch {} }
     return null;
   }
+}
+
+async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
+  // Build signs for ALL segments via parallel chunks (no more 35-line cap).
+  const CHUNK = 25;
+  const chunks: { i: number; text: string }[][] = [];
+  for (let i = 0; i < segments.length; i += CHUNK) {
+    chunks.push(segments.slice(i, i + CHUNK).map((s, k) => ({ i: i + k, text: s.text })));
+  }
+  const PAR = 4;
+  const allLines: any[] = [];
+  for (let p = 0; p < chunks.length; p += PAR) {
+    const batch = chunks.slice(p, p + PAR);
+    const results = await Promise.all(
+      batch.map(c => aiBuildSignsChunk(c, signSystem, lang, apiKey).catch(() => null))
+    );
+    for (const r of results) if (r?.lines) allLines.push(...r.lines);
+  }
+  return { lines: allLines };
 }
 
 Deno.serve(async (req) => {
