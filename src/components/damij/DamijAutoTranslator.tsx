@@ -103,11 +103,32 @@ const restoreOriginals = (root: Element) => {
   });
 };
 
+const showLoader = (lang: string) => {
+  let el = document.getElementById('damij-tr-loader');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'damij-tr-loader';
+    el.style.cssText = 'position:fixed;top:80px;right:16px;z-index:9999;background:hsl(var(--primary));color:hsl(var(--primary-foreground));padding:8px 14px;border-radius:9999px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;align-items:center;gap:8px;transition:opacity .2s;';
+    el.innerHTML = '<span style="width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:damij-spin .7s linear infinite"></span><span class="damij-tr-text"></span>';
+    const style = document.createElement('style');
+    style.textContent = '@keyframes damij-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+    document.body.appendChild(el);
+  }
+  el.style.opacity = '1';
+  const t = el.querySelector('.damij-tr-text');
+  if (t) t.textContent = `… ${lang.toUpperCase()}`;
+};
+const hideLoader = () => {
+  const el = document.getElementById('damij-tr-loader');
+  if (el) el.style.opacity = '0';
+};
+
 const DamijAutoTranslator: React.FC = () => {
   const { lang } = useDamijLang();
   const { pathname } = useLocation();
   const debounceRef = useRef<number | null>(null);
-  const inflightRef = useRef<boolean>(false);
+  const runIdRef = useRef<number>(0);
 
   useEffect(() => {
     const root = document.querySelector('.damij-root');
@@ -115,34 +136,43 @@ const DamijAutoTranslator: React.FC = () => {
 
     if (lang === 'ar') {
       restoreOriginals(root);
+      hideLoader();
       return;
     }
 
     const cache = loadCache(lang);
+    const myRunId = ++runIdRef.current;
 
     const run = async () => {
-      if (inflightRef.current) return;
+      // Cancel if a newer language switch happened
+      if (myRunId !== runIdRef.current) return;
+
       const { nodes, missing } = collectTextNodes(root, lang, cache);
       // Apply whatever we already have first for instant feedback
       applyTranslations(nodes, lang, cache);
 
-      if (missing.length === 0) return;
+      if (missing.length === 0) {
+        hideLoader();
+        return;
+      }
 
-      // Larger batches and parallel execution for speed
-      const BATCH = 120;
+      showLoader(lang);
+
+      // Smaller batches → faster first paint, higher parallelism
+      const BATCH = 30;
       const batches: string[][] = [];
       for (let i = 0; i < missing.length; i += BATCH) {
         batches.push(missing.slice(i, i + BATCH));
       }
 
-      inflightRef.current = true;
       try {
-        // Run all batches in parallel; apply each as it returns
         await Promise.all(
           batches.map(async (batch) => {
+            if (myRunId !== runIdRef.current) return;
             const { data, error } = await supabase.functions.invoke('damij-translate', {
               body: { texts: batch, target: lang },
             });
+            if (myRunId !== runIdRef.current) return;
             if (error) {
               console.warn('[damij-translate] error', error);
               return;
@@ -155,16 +185,15 @@ const DamijAutoTranslator: React.FC = () => {
           }),
         );
       } finally {
-        inflightRef.current = false;
+        if (myRunId === runIdRef.current) hideLoader();
       }
     };
 
     const schedule = (immediate = false) => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      debounceRef.current = window.setTimeout(run, immediate ? 0 : 120);
+      debounceRef.current = window.setTimeout(run, immediate ? 0 : 150);
     };
 
-    // Initial pass — immediate on language change for instant feedback
     schedule(true);
 
     const observer = new MutationObserver(() => schedule(false));
