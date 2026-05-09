@@ -48,5 +48,6 @@ export const en: DamijDict = {
     ],
   },
   langSwitch: { label: 'Language', search: 'Search a language...' },
+  hoverSpeak: { label: 'Smart Pronunciation', on: 'Enable speech', off: 'Disable speech', hint: 'Hover any element to hear it spoken in the selected language' },
   footer: 'Platform built by Anaba Second Comprehensive Boys School',
 };

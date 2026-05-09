@@ -1,11 +1,6 @@
 import { useEffect } from 'react';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
-
-const BCP47: Record<string, string> = {
-  ar: 'ar-SA', en: 'en-US', fr: 'fr-FR', es: 'es-ES', de: 'de-DE',
-  tr: 'tr-TR', ur: 'ur-PK', hi: 'hi-IN', fa: 'fa-IR', he: 'he-IL',
-  ru: 'ru-RU', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', pt: 'pt-PT',
-};
+import { DAMIJ_BCP47 as BCP47 } from '@/features/damij/i18n/bcp47';
 
 /**
  * While mounted, intercepts `window.speechSynthesis.speak` calls and

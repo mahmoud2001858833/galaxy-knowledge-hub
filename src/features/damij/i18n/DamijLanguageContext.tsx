@@ -34,10 +34,13 @@ export const DamijLanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [lang, setLangState] = useState<DamijLangCode>(() => {
     if (typeof window === 'undefined') return 'ar';
     const saved = localStorage.getItem(STORAGE_KEY) as DamijLangCode | null;
-    return saved && DICTS[saved] ? saved : 'ar';
+    return saved && DAMIJ_LANGS.some((l) => l.code === saved) ? saved : 'ar';
   });
 
-  const meta = useMemo(() => DAMIJ_LANGS.find((l) => l.code === lang)!, [lang]);
+  const meta = useMemo(
+    () => DAMIJ_LANGS.find((l) => l.code === lang) ?? DAMIJ_LANGS[0],
+    [lang],
+  );
 
   useEffect(() => {
     document.documentElement.dir = meta.dir;
@@ -46,9 +49,12 @@ export const DamijLanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [lang, meta.dir]);
 
   const setLang = useCallback((l: DamijLangCode) => {
-    if (DICTS[l]) setLangState(l);
+    if (DAMIJ_LANGS.some((x) => x.code === l)) setLangState(l);
   }, []);
 
+  // Hand-written dicts give zero-latency UI. Other languages fall back to
+  // the English dict for static labels while DamijAutoTranslator translates
+  // the rest of the visible DOM on the fly.
   const value = useMemo<Ctx>(() => ({
     lang,
     setLang,
