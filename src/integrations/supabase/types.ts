@@ -3590,6 +3590,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sign_vocab_overrides: {
+        Row: {
+          created_at: string
+          lang_code: string
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+          vocab: Json
+        }
+        Insert: {
+          created_at?: string
+          lang_code: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vocab: Json
+        }
+        Update: {
+          created_at?: string
+          lang_code?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vocab?: Json
+        }
+        Relationships: []
+      }
+      sign_vocab_version: {
+        Row: {
+          id: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          id?: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          id?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       spaced_lessons: {
         Row: {
           created_at: string | null
