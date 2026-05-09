@@ -315,7 +315,8 @@ const AutismDiagnosis: React.FC = () => {
           {([
             { id: 'questionnaire', icon: ClipboardList, title: 'تقييم بالأسئلة', desc: `استبيان ${items.length} سؤال — حوالي 5 دقائق.` },
             { id: 'games', icon: Gamepad2, title: 'تقييم باللعب', desc: '6 ألعاب تفاعلية تقيس الانتباه والتواصل والحس.' },
-            { id: 'both', icon: Sparkles, title: 'تقييم شامل (موصى به)', desc: 'الأسئلة + الألعاب لأدق نتيجة.' },
+            { id: 'ai_games', icon: Wand2, title: 'ألعاب تشخيصية مخصّصة بالـ AI ✨', desc: 'يولّد الذكاء الاصطناعي بطارية ألعاب فريدة لكل طفل (الطيف يختلف من حالة لأخرى).' },
+            { id: 'both', icon: Sparkles, title: 'تقييم شامل (موصى به)', desc: 'الأسئلة + الألعاب الأساسية + الألعاب الذكية المخصّصة.' },
           ] as const).map((p) => (
             <button key={p.id} onClick={() => setPath(p.id)}
               className={`w-full p-5 rounded-2xl border-2 transition flex items-center gap-4 text-right ${
@@ -333,7 +334,11 @@ const AutismDiagnosis: React.FC = () => {
               className="px-5 py-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 font-semibold flex items-center gap-1">
               <ArrowRight className="w-4 h-4" /> رجوع
             </button>
-            <button onClick={() => setStep(path === 'games' ? 'games' : 'questionnaire')}
+            <button onClick={() => {
+              if (path === 'games') setStep('games');
+              else if (path === 'ai_games') startAiGames([]);
+              else setStep('questionnaire');
+            }}
               className="flex-1 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold">
               متابعة
             </button>
