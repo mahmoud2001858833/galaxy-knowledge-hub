@@ -31,7 +31,7 @@ export const DAMIJ_LANGS: DamijLangMeta[] = [
 export interface DamijDict {
   nav: {
     home: string; sign: string; sensory: string; autism: string;
-    adhd: string; braille: string; clinical: string;
+    adhd: string; braille: string; clinical: string; carbon: string;
     show: string; hide: string;
   };
   hero: {
