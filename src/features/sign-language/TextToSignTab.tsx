@@ -357,24 +357,55 @@ export const TextToSignTab: React.FC<Props> = ({ dictionary, speak }) => {
                   transition={{ duration: 0.35, ease: 'easeOut' }}
                   className="relative z-10 flex flex-col items-center text-center px-4"
                 >
-                  <div className="text-[12rem] md:text-[16rem] leading-none drop-shadow-[0_0_40px_rgba(99,102,241,0.5)]">
-                    {cur.kind === 'sign' ? cur.sign.gesture : cur.gesture}
-                  </div>
-                  <div className="mt-2">
-                    {cur.kind === 'sign' ? (
+                  {(() => {
+                    const realEntry = cur.kind === 'sign' ? findRealSign(cur.sign.word, 'ArSL') : null;
+                    if (realEntry && (realEntry.video_url || realEntry.image_url)) {
+                      return (
+                        <>
+                          <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-400/50 shadow-[0_0_60px_rgba(16,185,129,0.35)] bg-black">
+                            {realEntry.video_url ? (
+                              <video src={realEntry.video_url} autoPlay loop muted playsInline
+                                className="max-h-[55vh] w-auto object-contain" />
+                            ) : (
+                              <img src={realEntry.image_url!} alt={realEntry.word}
+                                className="max-h-[55vh] w-auto object-contain" />
+                            )}
+                            <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Video className="w-3 h-3" /> إشارة حقيقية
+                            </span>
+                          </div>
+                          <div className="mt-3">
+                            <h2 className="text-3xl md:text-4xl font-black text-white mb-1">{realEntry.word}</h2>
+                            {realEntry.description && (
+                              <p className="text-sm text-emerald-200 max-w-md">{realEntry.description}</p>
+                            )}
+                          </div>
+                        </>
+                      );
+                    }
+                    return (
                       <>
-                        <h2 className="text-4xl md:text-5xl font-black text-white mb-1">{cur.sign.word}</h2>
-                        {cur.sign.description && (
-                          <p className="text-sm text-indigo-200 max-w-md">{cur.sign.description}</p>
-                        )}
+                        <div className="text-[12rem] md:text-[16rem] leading-none drop-shadow-[0_0_40px_rgba(99,102,241,0.5)]">
+                          {cur.kind === 'sign' ? cur.sign.gesture : cur.gesture}
+                        </div>
+                        <div className="mt-2">
+                          {cur.kind === 'sign' ? (
+                            <>
+                              <h2 className="text-4xl md:text-5xl font-black text-white mb-1">{cur.sign.word}</h2>
+                              {cur.sign.description && (
+                                <p className="text-sm text-indigo-200 max-w-md">{cur.sign.description}</p>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <h2 className="text-4xl md:text-5xl font-black text-white mb-1">حرف «{cur.letter}»</h2>
+                              <p className="text-sm text-amber-200">جزء من كلمة: {cur.word}</p>
+                            </>
+                          )}
+                        </div>
                       </>
-                    ) : (
-                      <>
-                        <h2 className="text-4xl md:text-5xl font-black text-white mb-1">حرف «{cur.letter}»</h2>
-                        <p className="text-sm text-amber-200">جزء من كلمة: {cur.word}</p>
-                      </>
-                    )}
-                  </div>
+                    );
+                  })()}
                 </motion.div>
               ) : (
                 <motion.div
