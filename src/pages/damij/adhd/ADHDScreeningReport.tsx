@@ -19,6 +19,12 @@ const ADHDScreeningReport: React.FC = () => {
     const { data, error } = await supabase.from('adhd_assessments').select('*').eq('id', assessmentId).maybeSingle();
     if (error) toast.error(error.message);
     setAssessment(data);
+    if (data) {
+      try {
+        localStorage.setItem('adhd_diagnosis_done', '1');
+        localStorage.setItem('adhd_last_assessment_id', String(data.id));
+      } catch {}
+    }
     setLoading(false);
   })(); }, [assessmentId]);
 
