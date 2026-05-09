@@ -106,6 +106,9 @@ const SignTranslatorPro: React.FC = () => {
     setT2sLang(next);
   }, [signSystem]);
 
+  // Dynamic per-language vocabulary (covers all 100+ platform languages).
+  const { vocab: liveVocab, isLoading: vocabLoading } = useGestureVocab(signSystem);
+
   // ─ text-to-sign mode
   const [t2sInput, setT2sInput] = useState('');
   const [t2sLoading, setT2sLoading] = useState(false);
