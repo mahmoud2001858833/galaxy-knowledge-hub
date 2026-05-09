@@ -52,3 +52,33 @@ export const SIGN_SYSTEMS: SignSystem[] = [
   { code: 'LSM',   name: 'Mexican Sign Language',           nativeName: 'الإشارة المكسيكية',          region: 'المكسيك' },
   { code: 'IS',    name: 'International Sign',              nativeName: 'الإشارة الدولية',            region: 'عالمي' },
 ];
+
+// ── Auto-generated extra sign systems for every platform language ──
+// One pseudo "<LANG>SL" entry per DAMIJ language locked to that spoken language.
+// Vocabulary is provided by useGestureVocab() (cached AI translation).
+import { DAMIJ_LANGS } from '@/features/damij/i18n/types';
+
+const _covered = new Set(
+  Object.values(SIGN_SYSTEM_PRIMARY_LANG).map((m) => m.code.split('-')[0]),
+);
+
+DAMIJ_LANGS.forEach((l) => {
+  const base = l.code.split('-')[0];
+  if (_covered.has(base)) return;
+  const sysCode = `${base.toUpperCase()}SL`;
+  if (SIGN_SYSTEM_PRIMARY_LANG[sysCode]) return;
+  SIGN_SYSTEM_PRIMARY_LANG[sysCode] = {
+    code: l.code,
+    name: l.english,
+    nativeName: l.name,
+    flag: l.flag,
+  };
+  SIGN_SYSTEMS.push({
+    code: sysCode,
+    name: `${l.english} Sign Language`,
+    nativeName: `لغة إشارة ${l.name}`,
+    region: l.english,
+  });
+  _covered.add(base);
+});
+
