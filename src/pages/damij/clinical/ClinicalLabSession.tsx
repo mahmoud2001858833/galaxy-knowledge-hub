@@ -131,7 +131,7 @@ const ClinicalLabSession: React.FC = () => {
         <div className="text-xs text-slate-500">الخطوة {session.current_step + 1}/{steps}: {step.title_ar}</div>
       </header>
 
-      <Tabs c={c} p={p} session={session} events={events} step={step}
+      <UnifiedWorkspace c={c} p={p} session={session} events={events} step={step}
         msg={msg} setMsg={setMsg} sending={sending} sendTurn={sendTurn}
         listening={listening} toggleVoice={toggleVoice} speak={speak} logRef={logRef}
         sessionId={sessionId!} reload={load}
@@ -140,115 +140,110 @@ const ClinicalLabSession: React.FC = () => {
   );
 };
 
-const Tabs: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload, finalize, finalizing }) => {
-  const [tab, setTab] = useState<'chat' | 'try' | 'devices'>('chat');
-  return (
-    <>
-      <div className="mb-3 inline-flex p-1 rounded-xl bg-slate-100 border flex-wrap">
-        <button onClick={() => setTab('chat')}
-          className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'chat' ? 'bg-white shadow font-bold' : ''}`}>
-          <MessageSquare className="w-4 h-4" /> المحادثة
-        </button>
-        <button onClick={() => setTab('try')}
-          className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'try' ? 'bg-white shadow font-bold' : ''}`}>
-          <FlaskConical className="w-4 h-4" /> جرّب تدخّلاً 🧪
-        </button>
-        <button onClick={() => setTab('devices')}
-          className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${tab === 'devices' ? 'bg-white shadow font-bold' : ''}`}>
-          🩺 الأجهزة
-        </button>
-      </div>
+const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; hint?: string }> = ({ icon, title, hint }) => (
+  <div className="flex items-center justify-between mb-3">
+    <h2 className="text-sm font-extrabold text-[hsl(var(--damij-primary))] flex items-center gap-2">{icon} {title}</h2>
+    {hint && <span className="text-[10px] text-slate-500">{hint}</span>}
+  </div>
+);
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-        <section className="rounded-3xl bg-white border flex flex-col min-h-[60vh]">
-          {tab === 'chat' ? (
-            <>
-              <div className="p-3 border-b bg-slate-50 rounded-t-3xl">
-                <div className="text-sm font-bold text-[hsl(var(--damij-primary))]">📋 {step.instruction_ar}</div>
-                <div className="text-xs text-slate-500 mt-1">معيار النجاح: {step.success_ar}</div>
-              </div>
-              <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[55vh]">
-                {events.length === 0 && <div className="text-center text-slate-400 text-sm pt-10">ابدأ بإعطاء التعليمة للمريض الافتراضي…</div>}
-                {events.map((e: any) => (
-                  <div key={e.id} className={`flex ${e.actor === 'student' ? 'justify-start' : e.actor === 'patient' ? 'justify-end' : 'justify-center'}`}>
-                    <div className={`max-w-[85%] p-2 rounded-xl text-sm ${
-                      e.actor === 'student' ? 'bg-sky-50 border border-sky-200'
-                      : e.actor === 'patient' ? 'bg-emerald-50 border border-emerald-200'
-                      : 'bg-amber-50 border border-amber-200 text-xs italic'
-                    }`}>
-                      <div className="text-[10px] opacity-60 mb-0.5">
-                        {e.actor === 'student' ? '👨‍🎓 الطالب' : e.actor === 'patient' ? `🧒 ${c.name_ar}` : '🧠 ملاحظة سريرية'}
-                      </div>
-                      {e.event_type === 'clinical_note' ? e.payload?.note : (e.payload?.say || e.payload?.action)}
-                      {e.actor === 'patient' && e.payload?.say && (
-                        <button onClick={() => speak(e.payload.say)} className="mr-2 text-[10px] opacity-60 inline-flex items-center gap-0.5">
-                          <Volume2 className="w-3 h-3" /> استمع
-                        </button>
-                      )}
-                    </div>
+const UnifiedWorkspace: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload, finalize, finalizing }) => {
+  return (
+    <div className="grid lg:grid-cols-[1fr_320px] gap-4">
+      <div className="space-y-4 min-w-0">
+        {/* Conversation */}
+        <section className="rounded-3xl bg-white border flex flex-col">
+          <div className="p-3 border-b bg-slate-50 rounded-t-3xl flex items-start justify-between gap-3">
+            <div>
+              <SectionHeader icon={<MessageSquare className="w-4 h-4" />} title="المحادثة مع المريض" />
+              <div className="text-sm font-bold text-[hsl(var(--damij-primary))]">📋 {step.instruction_ar}</div>
+              <div className="text-xs text-slate-500 mt-1">معيار النجاح: {step.success_ar}</div>
+            </div>
+          </div>
+          <div ref={logRef} className="overflow-y-auto p-3 space-y-2 max-h-[50vh]">
+            {events.length === 0 && <div className="text-center text-slate-400 text-sm pt-8">ابدأ بإعطاء التعليمة للمريض الافتراضي…</div>}
+            {events.map((e: any) => (
+              <div key={e.id} className={`flex ${e.actor === 'student' ? 'justify-start' : e.actor === 'patient' ? 'justify-end' : 'justify-center'}`}>
+                <div className={`max-w-[85%] p-2 rounded-xl text-sm ${
+                  e.actor === 'student' ? 'bg-sky-50 border border-sky-200'
+                  : e.actor === 'patient' ? 'bg-emerald-50 border border-emerald-200'
+                  : 'bg-amber-50 border border-amber-200 text-xs italic'
+                }`}>
+                  <div className="text-[10px] opacity-60 mb-0.5">
+                    {e.actor === 'student' ? '👨‍🎓 الطالب' : e.actor === 'patient' ? `🧒 ${c.name_ar}` : '🧠 ملاحظة سريرية'}
                   </div>
-                ))}
-              </div>
-              <div className="p-3 border-t space-y-2">
-                <div className="flex flex-wrap gap-1">
-                  {QUICK_ACTIONS.map(a => (
-                    <button key={a.key} disabled={sending} onClick={() => sendTurn(a.ar)}
-                      className="text-xs px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50">{a.ar}</button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={toggleVoice} className={`p-2 rounded-lg border ${listening ? 'bg-rose-100 border-rose-300' : 'bg-white'}`}>
-                    {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </button>
-                  <input value={msg} onChange={e => setMsg(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && sendTurn()}
-                    placeholder="اكتب ما ستقوله للمريض…"
-                    className="flex-1 px-3 py-2 rounded-lg border bg-white text-sm" />
-                  <button onClick={() => sendTurn()} disabled={sending || (!msg)}
-                    className="px-3 py-2 rounded-lg bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center gap-1 disabled:opacity-50">
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} إرسال
-                  </button>
+                  {e.event_type === 'clinical_note' ? e.payload?.note : (e.payload?.say || e.payload?.action)}
+                  {e.actor === 'patient' && e.payload?.say && (
+                    <button onClick={() => speak(e.payload.say)} className="mr-2 text-[10px] opacity-60 inline-flex items-center gap-0.5">
+                      <Volume2 className="w-3 h-3" /> استمع
+                    </button>
+                  )}
                 </div>
               </div>
-            </>
-          ) : tab === 'try' ? (
-            <div className="p-3">
-              <InterventionTryPanel sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
+            ))}
+          </div>
+          <div className="p-3 border-t space-y-2">
+            <div className="flex flex-wrap gap-1">
+              {QUICK_ACTIONS.map(a => (
+                <button key={a.key} disabled={sending} onClick={() => sendTurn(a.ar)}
+                  className="text-xs px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50">{a.ar}</button>
+              ))}
             </div>
-          ) : (
-            <div className="p-3">
-              <DeviceLauncher sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
+            <div className="flex items-center gap-2">
+              <button onClick={toggleVoice} className={`p-2 rounded-lg border ${listening ? 'bg-rose-100 border-rose-300' : 'bg-white'}`}>
+                {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+              <input value={msg} onChange={e => setMsg(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && sendTurn()}
+                placeholder="اكتب ما ستقوله للمريض…"
+                className="flex-1 px-3 py-2 rounded-lg border bg-white text-sm" />
+              <button onClick={() => sendTurn()} disabled={sending || (!msg)}
+                className="px-3 py-2 rounded-lg bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center gap-1 disabled:opacity-50">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} إرسال
+              </button>
             </div>
-          )}
+          </div>
         </section>
 
-        {/* Sidebar metrics */}
-        <aside className="space-y-3">
-          <div className="p-4 rounded-2xl bg-white border">
-            <div className="text-xs text-slate-500 mb-2">المؤشرات الحيّة</div>
-            <Metric label="الانتباه" value={session.attention} color="emerald" />
-            <Metric label="القلق" value={session.anxiety} color="rose" invert />
-            <Metric label="التقدّم" value={session.progress} color="sky" />
-          </div>
-          <div className="p-4 rounded-2xl bg-white border text-xs">
-            <div className="font-bold text-[hsl(var(--damij-primary))] mb-1">خطوات البروتوكول</div>
-            <ol className="space-y-1">
-              {(p.steps || []).map((s: any, i: number) => (
-                <li key={i} className={`flex items-center gap-2 ${i === session.current_step ? 'font-bold text-[hsl(var(--damij-accent-2))]' : i < session.current_step ? 'text-emerald-600 line-through' : 'text-slate-500'}`}>
-                  <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">{i + 1}</span>
-                  <span className="line-clamp-1">{s.title_ar}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-          <button onClick={finalize} disabled={finalizing}
-            className="w-full py-3 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60">
-            {finalizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-            إنهاء وتوليد التقرير
-          </button>
-        </aside>
+        {/* Interventions */}
+        <section className="rounded-3xl bg-white border p-4">
+          <SectionHeader icon={<FlaskConical className="w-4 h-4" />} title="جرّب تدخّلاً سريرياً" hint="مفتوح دائماً" />
+          <InterventionTryPanel sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
+        </section>
+
+        {/* Devices */}
+        <section className="rounded-3xl bg-white border p-4">
+          <SectionHeader icon={<span>🩺</span>} title="الأجهزة الطبية والمحاكيات" hint="كل الأجهزة معروضة" />
+          <DeviceLauncher sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
+        </section>
       </div>
-    </>
+
+      {/* Sidebar metrics */}
+      <aside className="space-y-3 lg:sticky lg:top-4 self-start">
+        <div className="p-4 rounded-2xl bg-white border">
+          <div className="text-xs text-slate-500 mb-2">المؤشرات الحيّة</div>
+          <Metric label="الانتباه" value={session.attention} color="emerald" />
+          <Metric label="القلق" value={session.anxiety} color="rose" invert />
+          <Metric label="التقدّم" value={session.progress} color="sky" />
+        </div>
+        <div className="p-4 rounded-2xl bg-white border text-xs">
+          <div className="font-bold text-[hsl(var(--damij-primary))] mb-1">خطوات البروتوكول</div>
+          <ol className="space-y-1">
+            {(p.steps || []).map((s: any, i: number) => (
+              <li key={i} className={`flex items-center gap-2 ${i === session.current_step ? 'font-bold text-[hsl(var(--damij-accent-2))]' : i < session.current_step ? 'text-emerald-600 line-through' : 'text-slate-500'}`}>
+                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">{i + 1}</span>
+                <span className="line-clamp-1">{s.title_ar}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <button onClick={finalize} disabled={finalizing}
+          className="w-full py-3 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60">
+          {finalizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+          إنهاء وتوليد التقرير
+        </button>
+      </aside>
+    </div>
   );
 };
 
