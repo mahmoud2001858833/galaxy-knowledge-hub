@@ -1,4 +1,4 @@
-// AUTO-GENERATED ArSL dictionary (>2928 entries). Do not edit by hand.
+// AUTO-GENERATED ArSL dictionary (>3341 entries). Do not edit by hand.
 // Re-generate via /tmp/genArSLFull.mjs
 
 export interface ArSLEntry {
@@ -23434,6 +23434,3310 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "two_handed": false,
     "desc": "feelings",
     "category": "feelings"
+  },
+  {
+    "word": "أكل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "كل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "شرب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اشرب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "كتب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اكتب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قرأ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اقرأ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "سمع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اسمع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "رأى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "انظر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نظر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "لمس",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "المس",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "شم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "تكلم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "فهم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "افهم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "شرح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اشرح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عرف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اعرف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ادرس",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "احفظ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "كرر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يلعب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "لعب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "العب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قفز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اقفز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "امش",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يركض",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ركض",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اركض",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "سبح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اسبح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قاد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ركب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اركب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صعد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اصعد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نزل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "انزل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "دخل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ادخل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خرج",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اخرج",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "فتح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "افتح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أغلق",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يضع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "وضع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ضع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أخذ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خذ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أعطى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أعط",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "باع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "بع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اشترى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اشتر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ادفع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "حسب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "احسب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "فكر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "احلم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "تذكر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نسي",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "انس",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أحب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اكره",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "احترم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ساعد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خدم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اخدم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اعمل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صنع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اصنع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "هدم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اهدم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اكسر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أصلح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نظف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "غسل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اغسل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "طبخ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اطبخ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يخبز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اخبز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قطع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اقطع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خاط",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خط",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ارسم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يغني",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "غنى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "غن",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يعزف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عزف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اعزف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يرقص",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "رقص",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ارقص",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اضحك",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "بكى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ابك",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صرخ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اصرخ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ابتسم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نام",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "استيقظ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "جلس",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اجلس",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "وقف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صلى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صام",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يحج",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يعتمر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اعتمر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "دعا",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ادع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يستغفر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "استغفر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يتوب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "تاب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "تب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "سأل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اسأل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أجاب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أجب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اطلب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أمر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أنهى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أنه",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "بدأ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "انتظر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "وصل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "صل بمعنى صلْ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "غادر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عاد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عد بمعنى ارجع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أرسل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "استقبل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يكلم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "كلم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يتصل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اتصل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "حاول",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "نجح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "انجح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "فشل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "افشل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يفوز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "فاز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "فز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خسر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اخسر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ربح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اربح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يساعد بمعنى يدعم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "دعم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ادعم",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يشكر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اشكر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يعتذر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اعتذر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يسامح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "سامح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "وثق",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "ثق",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خاف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "خف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "افرح",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "احزن",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اغضب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "هدأ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "اهدأ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "يستمع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "استمع",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "قابل",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "زار",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "استضاف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "استضف",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "هنئ",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عزى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "عز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أهدى",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "أهد",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "verbs",
+    "category": "verbs"
+  },
+  {
+    "word": "واحد وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وعشرون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وثلاثون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وأربعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وخمسون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وستون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وسبعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وثمانون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "واحد وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "اثنان وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثة وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعة وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسة وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ستة وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "سبعة وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثمانية وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "تسعة وتسعون",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "0",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "1",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "2",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "3",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "4",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "5",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "6",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "7",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "8",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "9",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "10",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "11",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "12",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "13",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "14",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "15",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "16",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "17",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "18",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "19",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "20",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "21",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "22",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "23",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "24",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "25",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "26",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "27",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "28",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "29",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "30",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "31",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "32",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "33",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "34",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "35",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "36",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "37",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "38",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "39",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "40",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "41",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "42",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "43",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "44",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "45",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "46",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "47",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "48",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "49",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "50",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "51",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "52",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "53",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "54",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "55",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "56",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "57",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "58",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "59",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "60",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "61",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "62",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "63",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "64",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "65",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "66",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "67",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "68",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "69",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "70",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "71",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "72",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "73",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "74",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "75",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "76",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "77",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "78",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "79",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "80",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "81",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "82",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "83",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "84",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "85",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "86",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "87",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "88",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "89",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "90",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "91",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "92",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "93",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "94",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "95",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "96",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "97",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "98",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "99",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "100",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أحمر فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أحمر غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أحمر داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أحمر شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أحمر زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أخضر فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أخضر غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أخضر داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أخضر شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أخضر زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أزرق فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أزرق غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أزرق داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أزرق شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أزرق زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أصفر فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أصفر غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أصفر داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أصفر شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "أصفر زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بني فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بني غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بني داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بني شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بني زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "رمادي فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "رمادي غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "رمادي داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "رمادي شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "رمادي زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بنفسجي فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بنفسجي غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بنفسجي داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بنفسجي شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بنفسجي زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "وردي فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "وردي غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "وردي داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "وردي شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "وردي زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "برتقالي فاتح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "برتقالي غامق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "برتقالي داكن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "برتقالي شاحب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "برتقالي زاهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
   }
 ];
 
