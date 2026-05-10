@@ -516,6 +516,9 @@ const YouTubeSignTranslator: React.FC = () => {
                         />
                       )}
                       <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{g.sign.word}</span>
+                      {uiLang !== 'ar' && tReady && tSign(g.sign.word) !== g.sign.word && (
+                        <span className="text-[10px] font-medium text-emerald-700/75 text-center line-clamp-1 max-w-full" dir="auto">{tSign(g.sign.word)}</span>
+                      )}
                       <span className="text-[10px] text-[hsl(var(--damij-text))]/50 mt-0.5">{fmt(g.firstStart)} · ×{g.count}</span>
                     </button>
                   ))}
