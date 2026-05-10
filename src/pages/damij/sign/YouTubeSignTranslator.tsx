@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language/signSystems';
 import HandSignCard from '@/features/sign-language/HandSignCard';
 import type { Movement } from '@/features/sign-language/handshapes';
-import { lookupSign, getDictionarySize } from '@/features/sign-language/dictionary';
+import { lookupSign, getDictionarySize, searchSigns, getCategories, getSignsByCategory } from '@/features/sign-language/dictionary';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
