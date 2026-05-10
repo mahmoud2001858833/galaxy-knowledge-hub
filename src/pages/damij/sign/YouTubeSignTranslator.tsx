@@ -200,6 +200,8 @@ const YouTubeSignTranslator: React.FC = () => {
 
   // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
   const [gallerySearch, setGallerySearch] = useState('');
+  const { lang: uiLang } = useDamijLang();
+  const { translate: tSign, ready: tReady } = useSignTranslations(uiLang as SignLangCode);
   const gallery = useMemo(() => {
     if (!enrichedSigns) return [];
     const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
