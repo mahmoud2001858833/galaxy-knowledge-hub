@@ -1,86 +1,67 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Sparkles, CheckCircle2, Search, Stethoscope, AlertTriangle } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { DEVICE_REGISTRY, type CaseContext } from './registry';
 import InteractiveECG from './InteractiveECG';
-import InteractiveAED from './InteractiveAED';
 import InteractiveStethoscope from './InteractiveStethoscope';
+import { SimBP, SimPulseOx, SimThermo, SimGCS, WoundControlKit } from './simulators';
 
 interface Device {
   id: string; key: string; name_ar: string; name_en?: string; category: string;
   ui_kind: string; applicable_specialties: string[];
-  default_params: Record<string, any>; description_ar?: string; safety_ar: string[];
+  default_params: Record<string, any>; description_ar?: string; safety_ar: string[]; icon?: string;
 }
 
-interface Props { sessionId: string; caseCategory: string; onApplied?: () => void; }
+interface Props {
+  sessionId: string;
+  caseCategory: string;
+  caseContext?: CaseContext;
+  onApplied?: () => void;
+}
 
-const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied }) => {
+const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext, onApplied }) => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Device | null>(null);
-  const [params, setParams] = useState<Record<string, string>>({});
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<any>(null);
   const [showAll, setShowAll] = useState(true);
+
+  const ctx: CaseContext = caseContext || { category: caseCategory };
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
       const { data } = await supabase.from('clinical_devices').select('*').order('name_ar');
       setDevices((data as any) || []);
       setLoading(false);
     })();
   }, []);
 
-  useEffect(() => {
-    if (selected) {
-      const p: Record<string, string> = {};
-      Object.entries(selected.default_params || {}).forEach(([k, v]) => { p[k] = String(v); });
-      setParams(p);
-      setResult(null);
-    }
-  }, [selected]);
+  const filtered = useMemo(() => devices.filter(d => {
+    const matchSpec = showAll || !d.applicable_specialties?.length || d.applicable_specialties.includes(caseCategory);
+    const matchSearch = !search || d.name_ar.includes(search) || (d.name_en || '').toLowerCase().includes(search.toLowerCase());
+    return matchSpec && matchSearch;
+  }), [devices, search, caseCategory, showAll]);
 
-  const filtered = useMemo(() => {
-    return devices.filter(d => {
-      const matchSpec = showAll || d.applicable_specialties.length === 0 || d.applicable_specialties.includes(caseCategory);
-      const matchSearch = !search || d.name_ar.includes(search) || (d.name_en || '').toLowerCase().includes(search.toLowerCase());
-      return matchSpec && matchSearch;
-    });
-  }, [devices, search, caseCategory, showAll]);
-
-  const useDevice = async (apply = false) => {
-    if (!selected) return;
-    setRunning(true);
+  // Persist a device-use event locally (no AI required)
+  const recordUse = async (deviceKey: string, deviceName: string, reading: { reading_ar: string; vitals?: any; success_score?: number }) => {
     try {
-      const { data, error } = await supabase.functions.invoke('clinical-device-use', {
-        body: { sessionId, deviceKey: selected.key, params, apply },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setResult(data.result);
-      if (apply) { toast.success('تم اعتماد القراءة في الجلسة'); onApplied?.(); }
+      const { data: s } = await supabase.from('clinical_sessions').select('attention,anxiety,progress,started_at').eq('id', sessionId).maybeSingle();
+      const t_ms = s?.started_at ? Date.now() - new Date(s.started_at).getTime() : 0;
+      await supabase.from('clinical_session_events').insert([
+        { session_id: sessionId, t_ms, actor: 'student', event_type: 'device_use',
+          payload: { action: `استخدم جهاز: ${deviceName}` },
+          attention: s?.attention ?? 50, anxiety: s?.anxiety ?? 50, progress: s?.progress ?? 0 },
+        { session_id: sessionId, t_ms: t_ms + 1, actor: 'system', event_type: 'clinical_note',
+          payload: { note: reading.reading_ar, vitals: reading.vitals, score: reading.success_score ?? 80 },
+          attention: s?.attention ?? 50, anxiety: s?.anxiety ?? 50, progress: Math.min(100, (s?.progress ?? 0) + 3) },
+      ]);
+      toast.success('✓ تم تسجيل القراءة في الجلسة');
+      onApplied?.();
     } catch (e: any) {
-      const m = e?.message ?? 'خطأ';
-      if (m.includes('429')) toast.error('تم تجاوز الحد، حاول لاحقاً');
-      else if (m.includes('402')) toast.error('انتهى رصيد AI');
-      else toast.error(m);
-    } finally { setRunning(false); }
+      toast.error(e?.message || 'تعذّر تسجيل الحدث');
+    }
   };
-
-  // Determine ECG hints from AI result waveform_hint
-  const ecgRhythm = useMemo<any>(() => {
-    const h = (result?.waveform_hint || '').toLowerCase();
-    if (h.includes('asystole')) return 'asystole';
-    if (h.includes('vf') || h.includes('fibrillation') && h.includes('vent')) return 'vf';
-    if (h.includes('vt') || (h.includes('ventricular') && h.includes('tachy'))) return 'vt';
-    if (h.includes('afib') || h.includes('atrial fib')) return 'afib';
-    if (h.includes('tachy')) return 'sinus_tachy';
-    if (h.includes('brady')) return 'sinus_brady';
-    return 'sinus';
-  }, [result]);
-  const ecgHr = result?.vitals?.hr || 75;
 
   return (
     <div className="space-y-3" dir="rtl">
@@ -96,10 +77,10 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
         </label>
       </div>
 
-      {/* Always-on simulators (auto-selected by case category) */}
-      <AlwaysOnSimulators category={caseCategory} />
+      {/* Always-on simulators */}
+      <AlwaysOnSimulators ctx={ctx} onApply={(name, r) => recordUse(name, name, r)} />
 
-      {/* Device list */}
+      {/* Device grid */}
       <div className="rounded-xl border bg-white">
         {loading && <div className="p-4 text-center text-xs"><Loader2 className="inline w-4 h-4 animate-spin" /></div>}
         {!loading && filtered.length === 0 && <div className="p-4 text-center text-xs text-slate-500">لا أجهزة مطابقة. فعّل "عرض الكل".</div>}
@@ -108,7 +89,7 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
             <button key={d.id} onClick={() => setSelected(d)}
               className={`text-right p-2 rounded-lg border hover:bg-sky-50 hover:shadow transition ${selected?.id === d.id ? 'bg-sky-100 border-sky-300 ring-1 ring-sky-300' : 'bg-white'}`}>
               <div className="text-xs font-bold flex items-center gap-1.5">
-                <span className="text-base leading-none">{(d as any).icon || '🩺'}</span>
+                <span className="text-base leading-none">{d.icon || '🩺'}</span>
                 <span className="line-clamp-1">{d.name_ar}</span>
               </div>
               <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{d.description_ar}</div>
@@ -117,172 +98,77 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
         </div>
       </div>
 
-      {/* Selected device */}
+      {/* Selected device renders its own interactive simulator */}
       {selected && (
-        <div className="p-3 rounded-2xl border bg-white space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-bold">{selected.name_ar}</div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100">{selected.category}</span>
-          </div>
-          {selected.description_ar && <div className="text-xs text-slate-600">{selected.description_ar}</div>}
-
-          {/* Interactive widgets */}
-          {selected.ui_kind === 'interactive_ecg' && (
-            <div className="space-y-1">
-              <InteractiveECG hr={ecgHr} rhythm={ecgRhythm} />
-              <div className="text-[11px] text-center text-slate-600">{result?.waveform_hint || 'اضغط "استخدم الجهاز" لتوليد إيقاع المريض'}</div>
-            </div>
-          )}
-          {selected.ui_kind === 'interactive_aed' && (
-            <InteractiveAED rhythm="unknown" onShock={() => useDevice(true)} />
-          )}
-          {selected.ui_kind === 'interactive_stetho' && <InteractiveStethoscope />}
-
-          {/* Params */}
-          {Object.keys(selected.default_params || {}).length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
-              {Object.keys(selected.default_params || {}).map((k) => (
-                <label key={k} className="text-[11px]">
-                  <div className="text-slate-500 mb-0.5">{k}</div>
-                  <input value={params[k] || ''} onChange={(e) => setParams({ ...params, [k]: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-md border text-xs" />
-                </label>
-              ))}
-            </div>
-          )}
-
-          {selected.safety_ar?.length > 0 && (
-            <div className="text-[11px] p-1.5 rounded bg-amber-50 border border-amber-200 flex gap-1 text-amber-700">
-              <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-              <span>{selected.safety_ar.join('، ')}</span>
-            </div>
-          )}
-
-          <button onClick={() => useDevice(false)} disabled={running}
-            className="w-full py-2 rounded-xl bg-[hsl(var(--damij-accent-2))] text-white text-sm font-bold flex items-center justify-center gap-1 disabled:opacity-50">
-            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} استخدم الجهاز
-          </button>
-        </div>
-      )}
-
-      {/* Result */}
-      {result && (
-        <div className="p-3 rounded-2xl border bg-gradient-to-b from-sky-50/40 to-white space-y-2">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-xs text-slate-500">دقة الإجراء</div>
-              <div className="text-2xl font-extrabold text-[hsl(var(--damij-primary))]">{result.success_score ?? 0}%</div>
-            </div>
-            <div className="text-xs max-w-[60%] text-slate-700">
-              <div className="font-bold mb-0.5">📟 القراءة:</div>
-              <div>{result.reading_ar}</div>
-            </div>
-          </div>
-          {result.vitals && (
-            <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
-              {Object.entries(result.vitals).filter(([_, v]) => v != null).map(([k, v]) => (
-                <div key={k} className="p-1 rounded bg-white border">
-                  <div className="text-slate-500">{k}</div>
-                  <div className="font-bold">{String(v)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {result.interpretation_ar && (
-            <div className="text-xs p-2 rounded bg-slate-50 border"><b>تفسير: </b>{result.interpretation_ar}</div>
-          )}
-          {result.abnormal_findings_ar?.length > 0 && (
-            <div className="text-[11px] text-rose-700"><b>نتائج شاذة: </b>{result.abnormal_findings_ar.join('، ')}</div>
-          )}
-          {result.recommended_next_steps_ar?.length > 0 && (
-            <div className="text-[11px] text-emerald-700"><b>الخطوات التالية: </b>{result.recommended_next_steps_ar.join(' • ')}</div>
-          )}
-          <button onClick={() => useDevice(true)} disabled={running}
-            className="w-full py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-sm font-bold flex items-center justify-center gap-1 disabled:opacity-50">
-            <CheckCircle2 className="w-4 h-4" /> اعتمد كحدث في الجلسة
-          </button>
-        </div>
+        <DeviceRenderer device={selected} ctx={ctx} onApply={(r) => recordUse(selected.key, selected.name_ar, r)} />
       )}
       <div className="text-[10px] text-center text-slate-400">محاكاة تعليمية — ليست بديلاً عن الفحص أو الجهاز الحقيقي</div>
     </div>
   );
 };
 
-// =============================================================
-// Always-on simulators: visible by default per case category.
-// Cardiac → live ECG + stetho. Autism/ADHD → biofeedback (HR/SpO2/breath).
-// Respiratory → stetho. Default → stetho.
-// =============================================================
-const AlwaysOnSimulators: React.FC<{ category: string }> = ({ category }) => {
-  const isCardiac = /cardio|heart|قلب/i.test(category);
-  const isNeuro = /autism|adhd|توحد|فرط/i.test(category);
-  const isResp = /resp|lung|تنفس|رئة/i.test(category);
+// Renders the right component for the selected device, with safe fallback
+const DeviceRenderer: React.FC<{ device: any; ctx: CaseContext; onApply: (r: any) => void }> = ({ device, ctx, onApply }) => {
+  const Comp = DEVICE_REGISTRY[device.key];
+  if (Comp) {
+    // Built-in components (ECG/AED/Stetho) take their own props; sim components take ctx+onApply.
+    if (device.key === 'ecg_12lead') {
+      const rhythm = ctx.category==='cardiology' && (ctx.severity==='high'||ctx.severity==='critical') ? 'sinus_tachy' : 'sinus';
+      return <div className="p-3 rounded-2xl border bg-white space-y-2">
+        <Comp hr={ctx.vitals?.hr ?? 75} rhythm={rhythm as any} />
+        <button onClick={() => onApply({ reading_ar: `ECG: ${rhythm} عند ${ctx.vitals?.hr ?? 75} bpm`, vitals: { hr: ctx.vitals?.hr ?? 75 } })} className="w-full py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-xs font-bold">✓ اعتمد القراءة كحدث</button>
+      </div>;
+    }
+    if (device.key === 'aed') {
+      return <div className="p-3 rounded-2xl border bg-white"><Comp rhythm="unknown" onShock={() => onApply({ reading_ar: 'تم تطبيق صدمة AED', success_score: 90 })} /></div>;
+    }
+    if (device.key === 'stethoscope') {
+      const sound = ctx.category==='pulmonology' ? 'wheeze' : ctx.category==='cardiology' ? 'murmur' : 'normal_heart';
+      return <div className="p-3 rounded-2xl border bg-white space-y-2">
+        <Comp defaultSound={sound as any} />
+        <button onClick={() => onApply({ reading_ar: `سمعت: ${sound}` })} className="w-full py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-xs font-bold">✓ اعتمد القراءة كحدث</button>
+      </div>;
+    }
+    return <Comp ctx={ctx} onApply={onApply} />;
+  }
+  // Generic fallback
+  return (
+    <div className="p-3 rounded-2xl border bg-white space-y-2">
+      <div className="text-sm font-bold">{device.icon || '🩺'} {device.name_ar}</div>
+      <div className="text-xs text-slate-600">{device.description_ar}</div>
+      <div className="p-2 bg-slate-50 rounded text-[11px]">قراءة افتراضية: ضمن المعدل الطبيعي للمريض. اعتمدها كحدث في الجلسة.</div>
+      <button onClick={() => onApply({ reading_ar: `${device.name_ar}: قراءة طبيعية` })} className="w-full py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-xs font-bold">✓ اعتمد القراءة كحدث</button>
+    </div>
+  );
+};
+
+// Always-on simulators tailored to specialty
+const AlwaysOnSimulators: React.FC<{ ctx: CaseContext; onApply: (name: string, r: any) => void }> = ({ ctx, onApply }) => {
+  const cat = ctx.category;
+  const isCardiac = /cardio|heart|قلب/i.test(cat);
+  const isResp = /pulm|resp|lung|تنفس|رئة/i.test(cat);
+  const isTrauma = /emergency|trauma|ortho/i.test(cat);
+  const isNeuro = /neuro|psychiatry|autism|adhd/i.test(cat);
+  const isPeds = /pediatric|طفل/i.test(cat);
 
   return (
     <div className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white p-3 space-y-3">
-      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))] flex items-center justify-between">
-        <span>📡 محاكاة الأجهزة المباشرة (تعمل دائماً)</span>
-        <span className="text-[10px] font-normal text-slate-500">حسب نوع الحالة</span>
+      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات مباشرة (تعمل دائماً حسب الحالة)</div>
+      <div className="grid md:grid-cols-2 gap-2">
+        {isCardiac && (
+          <div className="space-y-1">
+            <div className="text-[11px] font-bold">📈 ECG</div>
+            <InteractiveECG hr={ctx.vitals?.hr ?? 88} rhythm={ctx.severity==='high'||ctx.severity==='critical' ? 'sinus_tachy' : 'sinus'} />
+          </div>
+        )}
+        {(isCardiac || isTrauma || isResp || isPeds) && <SimPulseOx ctx={ctx} onApply={(r) => onApply('Pulse Ox', r)} />}
+        {(isCardiac || isTrauma) && <SimBP ctx={ctx} onApply={(r) => onApply('BP', r)} />}
+        {isResp && <InteractiveStethoscope defaultSound="wheeze" />}
+        {isCardiac && <InteractiveStethoscope defaultSound="murmur" />}
+        {isTrauma && <WoundControlKit ctx={ctx} onApply={(r) => onApply('Wound Kit', r)} />}
+        {isNeuro && <SimGCS ctx={ctx} onApply={(r) => onApply('GCS', r)} />}
+        {isPeds && <SimThermo ctx={ctx} onApply={(r) => onApply('Thermo', r)} />}
       </div>
-
-      {(isCardiac || (!isNeuro && !isResp)) && (
-        <div className="space-y-1">
-          <div className="text-[11px] font-bold text-slate-600">📈 مخطط القلب الكهربائي (ECG)</div>
-          <InteractiveECG hr={isCardiac ? 88 : 75} rhythm={isCardiac ? 'sinus_tachy' : 'sinus'} />
-          <BiofeedbackVitals hr={isCardiac ? 88 : 75} spo2={isCardiac ? 95 : 98} rr={isCardiac ? 22 : 16} />
-        </div>
-      )}
-
-      {isNeuro && (
-        <div className="space-y-2">
-          <BiofeedbackVitals hr={92} spo2={99} rr={20} stress label="مؤشرات حيّة (تنظيم ذاتي)" />
-          <div className="text-[10px] text-slate-500">يمكن مراقبة الإثارة الفسيولوجية أثناء جلسات التوحد/فرط الحركة.</div>
-        </div>
-      )}
-
-      {(isResp || isCardiac) && (
-        <div>
-          <div className="text-[11px] font-bold text-slate-600 mb-1">🩺 السمّاعة الإلكترونية</div>
-          <InteractiveStethoscope defaultSound={isResp ? 'wheeze' : 'normal_heart'} />
-        </div>
-      )}
-
-      {!isCardiac && !isNeuro && !isResp && (
-        <InteractiveStethoscope />
-      )}
-    </div>
-  );
-};
-
-const BiofeedbackVitals: React.FC<{ hr: number; spo2: number; rr: number; stress?: boolean; label?: string }> = ({ hr, spo2, rr, stress, label }) => {
-  const [pulse, setPulse] = useState(hr);
-  useEffect(() => {
-    const id = setInterval(() => setPulse(hr + Math.round((Math.random() - 0.5) * 6)), 900);
-    return () => clearInterval(id);
-  }, [hr]);
-  return (
-    <div className="rounded-xl border bg-white p-2">
-      {label && <div className="text-[11px] font-bold text-slate-600 mb-1">{label}</div>}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <Vital label="HR" value={`${pulse}`} unit="bpm" color="rose" pulse />
-        <Vital label="SpO₂" value={`${spo2}`} unit="%" color="sky" />
-        <Vital label="RR" value={`${rr}`} unit="/min" color="emerald" />
-      </div>
-      {stress && (
-        <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500" style={{ width: `${Math.min(100, (pulse - 60) * 2)}%` }} />
-        </div>
-      )}
-    </div>
-  );
-};
-
-const Vital: React.FC<{ label: string; value: string; unit: string; color: string; pulse?: boolean }> = ({ label, value, unit, color, pulse }) => {
-  const colorMap: Record<string, string> = { rose: 'text-rose-600', sky: 'text-sky-600', emerald: 'text-emerald-600' };
-  return (
-    <div className="p-1.5 rounded-lg bg-slate-50 border">
-      <div className="text-[9px] text-slate-500">{label}</div>
-      <div className={`text-lg font-extrabold ${colorMap[color]} ${pulse ? 'animate-pulse' : ''}`}>{value}<span className="text-[9px] mr-0.5 text-slate-500">{unit}</span></div>
     </div>
   );
 };

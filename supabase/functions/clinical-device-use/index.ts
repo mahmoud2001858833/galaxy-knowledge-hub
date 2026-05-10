@@ -69,7 +69,23 @@ Deno.serve(async (req) => {
 ولّد قراءة واقعية لهذا الجهاز على هذا المريض. إن كان الجهاز ECG اذكر waveform_hint مثل: "Sinus tachycardia HR 130" أو "Atrial fibrillation, irregular irregular".
 متطلبات: vitals عند الانطباق فقط، success_score 0-100، metric_deltas بين -15 و +15.`;
 
-    const result = await callGemini(SYSTEM, prompt, SCHEMA);
+    let result: any;
+    try {
+      result = await callGemini(SYSTEM, prompt, SCHEMA);
+    } catch (e) {
+      // Fallback so the simulator never blocks the user (e.g. AI quota / 429 / 402)
+      console.warn('callGemini failed, using local fallback', e);
+      result = {
+        reading_ar: `قراءة محلّية افتراضية لجهاز ${device.name_ar} على ${c.name_ar}`,
+        vitals: c.vitals_initial || {},
+        waveform_hint: 'sinus',
+        interpretation_ar: 'محاكاة محلّية بدون AI — القراءة مأخوذة من الملف المبدئي للحالة.',
+        abnormal_findings_ar: [],
+        recommended_next_steps_ar: ['استكمل بقية الفحوصات', 'سجّل التغيّر في علامات المريض'],
+        success_score: 75,
+        metric_deltas: { progress: 3 },
+      };
+    }
 
     const insertRes = await fetch(rest('/clinical_device_uses'), {
       method: 'POST', headers: svcHeaders({ Prefer: 'return=representation' }),
