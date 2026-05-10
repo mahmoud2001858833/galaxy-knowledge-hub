@@ -577,6 +577,9 @@ const YouTubeSignTranslator: React.FC = () => {
                     size={58}
                   />
                   <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{e.word}</span>
+                  {uiLang !== 'ar' && tReady && tSign(e.word) !== e.word && (
+                    <span className="text-[10px] font-medium text-sky-700/80 text-center line-clamp-1 max-w-full" dir="auto">{tSign(e.word)}</span>
+                  )}
                   <span className="text-[10px] text-[hsl(var(--damij-text))]/50">{e.category}</span>
                 </div>
               ))}
