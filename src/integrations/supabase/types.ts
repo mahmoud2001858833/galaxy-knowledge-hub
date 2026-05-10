@@ -2023,6 +2023,7 @@ export type Database = {
           sensory_profile: Json | null
           severity: string
           summary_ar: string
+          vitals_initial: Json
         }
         Insert: {
           age_years: number
@@ -2040,6 +2041,7 @@ export type Database = {
           sensory_profile?: Json | null
           severity: string
           summary_ar: string
+          vitals_initial?: Json
         }
         Update: {
           age_years?: number
@@ -2057,6 +2059,7 @@ export type Database = {
           sensory_profile?: Json | null
           severity?: string
           summary_ar?: string
+          vitals_initial?: Json
         }
         Relationships: []
       }
