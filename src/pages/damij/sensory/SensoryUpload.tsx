@@ -48,6 +48,7 @@ const SensoryUpload: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [speaking, setSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -106,19 +107,63 @@ const SensoryUpload: React.FC = () => {
     }
   };
 
-  const speak = (txt: string) => {
+  const cleanForTTS = (txt: string) =>
+    txt
+      .replace(/[*_`#>~\[\]()]/g, ' ')
+      .replace(/[•●▪◆◉■□]/g, ' ')
+      .replace(/\s*\n+\s*/g, '. ')
+      .replace(/\.{2,}/g, '.')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const browserSpeak = (txt: string) => {
     if (!txt) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(txt);
     u.lang = 'ar-SA';
+    const voices = speechSynthesis.getVoices();
+    const arVoice = voices.find(v => v.lang?.toLowerCase().startsWith('ar'));
+    if (arVoice) u.voice = arVoice;
     const speedMap = { slow: 0.75, normal: 1, fast: 1.3 } as const;
-    u.rate = profile.speechRate ? speedMap[profile.speechRate] : (profile.cognitive === 'autism' ? 0.85 : 1);
+    u.rate = profile?.speechRate ? speedMap[profile.speechRate] : (profile?.cognitive === 'autism' ? 0.85 : 1);
+    u.pitch = 1;
     u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
     setSpeaking(true);
     speechSynthesis.speak(u);
   };
 
-  const stopSpeak = () => { speechSynthesis.cancel(); setSpeaking(false); };
+  const speak = (txt: string) => browserSpeak(txt);
+
+  const speakSimplified = async () => {
+    const raw = result?.simplifiedText;
+    if (!raw) return;
+    const txt = cleanForTTS(raw);
+    const speedMap = { slow: 0.85, normal: 1.0, fast: 1.15 } as const;
+    const speed = profile?.speechRate ? speedMap[profile.speechRate] : 1.0;
+    setSpeaking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('accessibility-text-to-speech', {
+        body: { text: txt, voice: 'Sarah', speed },
+      });
+      if (error || !data?.audioContent) throw error || new Error('no audio');
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+      audioRef.current = audio;
+      audio.onended = () => setSpeaking(false);
+      audio.onerror = () => { setSpeaking(false); browserSpeak(txt); };
+      await audio.play();
+    } catch (e) {
+      // Fallback to browser TTS with cleaned Arabic text
+      browserSpeak(txt);
+    }
+  };
+
+  const stopSpeak = () => {
+    speechSynthesis.cancel();
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; audioRef.current = null; }
+    setSpeaking(false);
+  };
 
   const vibrate = () => {
     if (!result?.vibration) return;
@@ -204,7 +249,7 @@ const SensoryUpload: React.FC = () => {
             <section className="bg-white rounded-2xl p-5 shadow border border-[hsl(var(--damij-primary))]/10">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2"><FileText className="w-5 h-5" /> النصّ المبسّط (للقراءة الصوتية)</h3>
-                <button onClick={() => speaking ? stopSpeak() : speak(result.narration || result.simplifiedText || '')}
+                <button onClick={() => speaking ? stopSpeak() : speakSimplified()}
                   className="px-4 py-2 rounded-xl bg-[hsl(var(--damij-accent-2))] text-white font-semibold flex items-center gap-2">
                   {speaking ? <><Pause className="w-4 h-4" /> إيقاف</> : <><Play className="w-4 h-4" /> استمع</>}
                 </button>
