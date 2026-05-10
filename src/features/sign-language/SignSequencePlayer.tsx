@@ -163,6 +163,11 @@ const SignSequencePlayer: React.FC<Props> = ({
                   <div className="text-4xl font-black text-[hsl(var(--damij-primary))] tracking-tight">
                     {current.word}
                   </div>
+                  {uiLang !== 'ar' && tReady && tSign(current.word) !== current.word && (
+                    <div className="mt-1 text-xl font-semibold text-emerald-700/80" dir="auto">
+                      {tSign(current.word)}
+                    </div>
+                  )}
                   {current.description && (
                     <div className="mt-2 text-sm text-slate-600 max-w-md mx-auto leading-snug">
                       {current.description}
