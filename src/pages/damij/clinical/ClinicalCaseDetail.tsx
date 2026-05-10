@@ -93,6 +93,47 @@ const ClinicalCaseDetail: React.FC = () => {
         </div>
       </section>
 
+      {/* Current medications */}
+      <section className="mb-6 p-5 rounded-2xl bg-gradient-to-br from-rose-50 to-white border">
+        <h3 className="font-bold flex items-center gap-2 mb-3 text-rose-700">
+          <Pill className="w-4 h-4" /> الأدوية الحالية للمريض
+        </h3>
+        {(c.current_medications && c.current_medications.length > 0) ? (
+          <div className="flex flex-wrap gap-2">
+            {c.current_medications.map((m, i) => (
+              <span key={i} className="px-3 py-1.5 rounded-full bg-white border border-rose-200 text-xs font-bold text-rose-700 flex items-center gap-1">
+                💊 {m}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">لا أدوية مسجلة لهذا المريض حالياً.</p>
+        )}
+      </section>
+
+      {/* Available devices for this case */}
+      <section className="mb-8 p-5 rounded-2xl bg-gradient-to-br from-sky-50 to-white border">
+        <h3 className="font-bold flex items-center gap-2 mb-3 text-sky-700">
+          <Stethoscope className="w-4 h-4" /> الأجهزة الطبية المتاحة لهذه الحالة ({devices.length})
+        </h3>
+        {devices.length === 0 ? (
+          <p className="text-sm text-slate-500">لا أجهزة مرتبطة بهذه الفئة بعد.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {devices.map(d => (
+              <div key={d.id} className="p-2.5 rounded-xl bg-white border hover:border-sky-300 hover:shadow-sm transition">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-base">{d.icon || '🩺'}</span>
+                  <span className="text-xs font-bold text-slate-800 line-clamp-1">{d.name_ar}</span>
+                </div>
+                <div className="text-[10px] text-slate-500 line-clamp-2">{d.description_ar}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="text-[11px] text-slate-500 mt-3">ستتمكن من تشغيل هذه الأجهزة وقراءاتها داخل الجلسة بعد بدء التجربة.</div>
+      </section>
+
       <h2 className="text-xl font-bold text-[hsl(var(--damij-primary))] mb-3">اختر بروتوكولاً لبدء الجلسة</h2>
       {protocols.length === 0 ? (
         <div className="text-center text-slate-500 py-10 border-2 border-dashed rounded-2xl">لا بروتوكولات لهذه الفئة بعد.</div>
