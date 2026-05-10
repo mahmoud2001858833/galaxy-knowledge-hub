@@ -2,20 +2,21 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Youtube, Loader2, Languages, Hand, Volume2, VolumeX, Play, AlertCircle,
-  Sparkles, ListVideo, Globe,
+  Sparkles, ListVideo, Globe, Search, Grid3x3, BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language/signSystems';
 import HandSignCard from '@/features/sign-language/HandSignCard';
 import type { Movement } from '@/features/sign-language/handshapes';
+import { lookupSign, getDictionarySize } from '@/features/sign-language/dictionary';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
 }
 
 interface Segment { start: number; dur: number; text: string }
-interface SignWord { word: string; handshape_id?: string; movement?: string; two_handed?: boolean; desc?: string; known?: boolean }
+interface SignWord { word: string; handshape_id?: string; movement?: string; two_handed?: boolean; desc?: string; known?: boolean; t?: number; d?: number }
 interface SignsPayload { lines: { i: number; signs: SignWord[] }[] }
 
 const loadYTApi = () => new Promise<void>((resolve) => {
