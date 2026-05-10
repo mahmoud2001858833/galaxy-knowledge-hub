@@ -2,20 +2,21 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Youtube, Loader2, Languages, Hand, Volume2, VolumeX, Play, AlertCircle,
-  Sparkles, ListVideo, Globe,
+  Sparkles, ListVideo, Globe, Search, Grid3x3, BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language/signSystems';
 import HandSignCard from '@/features/sign-language/HandSignCard';
 import type { Movement } from '@/features/sign-language/handshapes';
+import { lookupSign, getDictionarySize } from '@/features/sign-language/dictionary';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
 }
 
 interface Segment { start: number; dur: number; text: string }
-interface SignWord { word: string; handshape_id?: string; movement?: string; two_handed?: boolean; desc?: string; known?: boolean }
+interface SignWord { word: string; handshape_id?: string; movement?: string; two_handed?: boolean; desc?: string; known?: boolean; t?: number; d?: number }
 interface SignsPayload { lines: { i: number; signs: SignWord[] }[] }
 
 const loadYTApi = () => new Promise<void>((resolve) => {
@@ -145,22 +146,71 @@ const YouTubeSignTranslator: React.FC = () => {
     } finally { setLoading(false); }
   };
 
-  const activeSigns = useMemo(() => {
-    if (!signs || activeIdx < 0) return [];
-    return signs.lines.find(l => l.i === activeIdx)?.signs || [];
-  }, [signs, activeIdx]);
+  // Enrich AI signs with the local 1000+ dictionary (fills handshape/movement when AI says unknown).
+  const enrichedSigns: SignsPayload | null = useMemo(() => {
+    if (!signs) return null;
+    return {
+      lines: signs.lines.map(l => ({
+        ...l,
+        signs: l.signs.map(s => {
+          if (s.known === false || !s.handshape_id) {
+            const local = lookupSign(s.word, signSystem);
+            if (local) return { ...s, handshape_id: local.handshape_id, movement: local.movement, two_handed: local.two_handed, desc: s.desc || local.desc, known: true };
+          }
+          return s;
+        }),
+      })),
+    };
+  }, [signs, signSystem]);
 
-  // Sequential sign cursor: advance through active line's signs based on elapsed time within segment.
+  const activeSigns = useMemo(() => {
+    if (!enrichedSigns || activeIdx < 0) return [];
+    return enrichedSigns.lines.find(l => l.i === activeIdx)?.signs || [];
+  }, [enrichedSigns, activeIdx]);
+
+  // Sequential sign cursor with per-sign timing when available; fallback to even split.
   useEffect(() => {
     if (activeIdx < 0 || !segments[activeIdx] || !activeSigns.length) { setSignCursor(0); return; }
     const seg = segments[activeIdx];
     const within = Math.max(0, Math.min(seg.dur, now - seg.start));
-    const per = seg.dur / activeSigns.length;
-    const idx = Math.min(activeSigns.length - 1, Math.floor(within / Math.max(0.25, per)));
+    const frac = within / Math.max(0.25, seg.dur);
+    let idx = 0;
+    if (activeSigns.some(s => typeof s.t === 'number')) {
+      // Pick the last sign whose t <= frac
+      for (let i = 0; i < activeSigns.length; i++) {
+        const t = typeof activeSigns[i].t === 'number' ? Math.max(0, Math.min(1, activeSigns[i].t!)) : i / activeSigns.length;
+        if (t <= frac) idx = i; else break;
+      }
+    } else {
+      const per = 1 / activeSigns.length;
+      idx = Math.min(activeSigns.length - 1, Math.floor(frac / Math.max(0.001, per)));
+    }
     setSignCursor(idx);
   }, [now, activeIdx, segments, activeSigns]);
 
   const seek = (t: number) => { try { playerRef.current?.seekTo?.(t, true); playerRef.current?.playVideo?.(); } catch {} };
+
+  // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
+  const [gallerySearch, setGallerySearch] = useState('');
+  const gallery = useMemo(() => {
+    if (!enrichedSigns) return [];
+    const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
+    enrichedSigns.lines.forEach(line => {
+      const seg = segments[line.i];
+      line.signs.forEach((s, k) => {
+        const key = (s.word || '').trim();
+        if (!key) return;
+        const at = seg ? seg.start + (typeof s.t === 'number' ? s.t * seg.dur : (k / Math.max(1, line.signs.length)) * seg.dur) : 0;
+        const ex = map.get(key);
+        if (!ex) map.set(key, { sign: s, firstStart: at, count: 1 });
+        else { ex.count += 1; if (at < ex.firstStart) ex.firstStart = at; }
+      });
+    });
+    const arr = Array.from(map.values());
+    const q = gallerySearch.trim();
+    return q ? arr.filter(x => x.sign.word.includes(q)) : arr;
+  }, [enrichedSigns, segments, gallerySearch]);
+
 
   return (
     <div className="px-4 md:px-6 pt-8 pb-16 max-w-7xl mx-auto" dir="rtl">
@@ -388,6 +438,57 @@ const YouTubeSignTranslator: React.FC = () => {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* All translated signs gallery */}
+          <div className="lg:col-span-12">
+            <div className="rounded-3xl bg-white border border-[hsl(var(--damij-primary))]/15 shadow-sm p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <h3 className="font-extrabold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Grid3x3 className="w-5 h-5" /> معرض كل الإشارات المترجمة ({gallery.length})
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-[hsl(var(--damij-text))]/60 inline-flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5" /> القاموس المحلي: {getDictionarySize(signSystem)} إشارة
+                  </div>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={gallerySearch}
+                      onChange={(e) => setGallerySearch(e.target.value)}
+                      placeholder="ابحث عن إشارة..."
+                      className="h-9 pr-7 pl-2 rounded-lg border border-gray-200 text-xs w-44 focus:outline-none focus:border-[hsl(var(--damij-primary))]"
+                    />
+                  </div>
+                </div>
+              </div>
+              {gallery.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--damij-text))]/55 text-center py-8">لا توجد إشارات بعد</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 max-h-[480px] overflow-y-auto pr-1">
+                  {gallery.map((g, i) => (
+                    <button
+                      key={`${g.sign.word}-${i}`}
+                      onClick={() => seek(g.firstStart)}
+                      className="group flex flex-col items-center bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl p-2.5 hover:border-[hsl(var(--damij-primary))]/40 hover:shadow-md transition-all"
+                      title={`اضغط للذهاب إلى ${fmt(g.firstStart)}`}
+                    >
+                      {g.sign.known !== false && (
+                        <HandSignCard
+                          word={g.sign.word}
+                          handshapeId={g.sign.handshape_id}
+                          movement={(g.sign.movement as Movement) || 'none'}
+                          twoHanded={g.sign.two_handed}
+                          size={58}
+                        />
+                      )}
+                      <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{g.sign.word}</span>
+                      <span className="text-[10px] text-[hsl(var(--damij-text))]/50 mt-0.5">{fmt(g.firstStart)} · ×{g.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
