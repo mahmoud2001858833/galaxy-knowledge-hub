@@ -518,6 +518,75 @@ const YouTubeSignTranslator: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Full ArSL dictionary browser - always visible */}
+      <div className="mt-8 rounded-3xl bg-white border border-[hsl(var(--damij-primary))]/15 shadow-sm p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h3 className="font-extrabold text-[hsl(var(--damij-primary))] flex items-center gap-2 text-lg">
+            <BookOpen className="w-5 h-5" /> قاموس لغة الإشارة الكامل ({getDictionarySize(signSystem).toLocaleString('ar')} إشارة)
+          </h3>
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={dictSearch}
+              onChange={(e) => setDictSearch(e.target.value)}
+              placeholder="ابحث في كل القاموس..."
+              className="h-9 pr-7 pl-2 rounded-lg border border-gray-200 text-sm w-56 focus:outline-none focus:border-[hsl(var(--damij-primary))]"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mb-3 max-h-24 overflow-y-auto">
+          <button
+            onClick={() => setDictCategory('')}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition ${dictCategory === '' ? 'bg-[hsl(var(--damij-primary))] text-white border-[hsl(var(--damij-primary))]' : 'bg-gray-50 border-gray-200 hover:border-[hsl(var(--damij-primary))]/40'}`}
+          >الكل</button>
+          {allCategories.map(c => (
+            <button
+              key={c}
+              onClick={() => setDictCategory(c === dictCategory ? '' : c)}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition ${c === dictCategory ? 'bg-[hsl(var(--damij-primary))] text-white border-[hsl(var(--damij-primary))]' : 'bg-gray-50 border-gray-200 hover:border-[hsl(var(--damij-primary))]/40'}`}
+            >{c}</button>
+          ))}
+        </div>
+        {dictResults.length === 0 ? (
+          <p className="text-sm text-[hsl(var(--damij-text))]/55 text-center py-8">لا توجد نتائج</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              {dictPageItems.map((e, i) => (
+                <div
+                  key={`${e.word}-${i}`}
+                  className="flex flex-col items-center bg-gradient-to-br from-sky-50 to-white border border-sky-100 rounded-2xl p-2.5"
+                  title={e.desc}
+                >
+                  <HandSignCard
+                    word={e.word}
+                    handshapeId={e.handshape_id}
+                    movement={(e.movement as Movement) || 'none'}
+                    twoHanded={e.two_handed}
+                    size={58}
+                  />
+                  <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{e.word}</span>
+                  <span className="text-[10px] text-[hsl(var(--damij-text))]/50">{e.category}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-4 text-xs">
+              <button
+                onClick={() => setDictPage(p => Math.max(0, p - 1))}
+                disabled={dictPage === 0}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:border-[hsl(var(--damij-primary))]/40"
+              >السابق</button>
+              <span className="text-[hsl(var(--damij-text))]/60">صفحة {dictPage + 1} من {dictPages} · {dictResults.length.toLocaleString('ar')} نتيجة</span>
+              <button
+                onClick={() => setDictPage(p => Math.min(dictPages - 1, p + 1))}
+                disabled={dictPage >= dictPages - 1}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:border-[hsl(var(--damij-primary))]/40"
+              >التالي</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
