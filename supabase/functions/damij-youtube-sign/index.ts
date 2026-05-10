@@ -200,8 +200,10 @@ For each sign output:
 - "two_handed": boolean.
 - "desc": one short ${lang} sentence: handshape + location + movement.
 - "known": boolean.
+- "t": fractional time within the line where this sign STARTS (0.0–1.0). Distribute proportionally to the spoken word's position in the original text. Be MONOTONICALLY INCREASING.
+- "d": fractional duration of this sign within the line (0.0–1.0). Sum of d's per line should be ≤ 1.0.
 
-Return ONLY minified JSON of shape: {"lines":[{"i":0,"signs":[{"word":"...","handshape_id":"...","movement":"...","two_handed":false,"desc":"...","known":true}]}]}.
+Return ONLY minified JSON of shape: {"lines":[{"i":0,"signs":[{"word":"...","handshape_id":"...","movement":"...","two_handed":false,"desc":"...","known":true,"t":0.0,"d":0.2}]}]}.
 
 Lines:
 ${text}`;
