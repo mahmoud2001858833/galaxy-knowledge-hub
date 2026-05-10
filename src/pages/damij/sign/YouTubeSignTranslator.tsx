@@ -10,6 +10,8 @@ import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language
 import HandSignCard from '@/features/sign-language/HandSignCard';
 import type { Movement } from '@/features/sign-language/handshapes';
 import { lookupSign, getDictionarySize, searchSigns, getCategories, getSignsByCategory } from '@/features/sign-language/dictionary';
+import { useSignTranslations, type SignLangCode } from '@/features/sign-language/dictionary/translations';
+import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
@@ -198,6 +200,8 @@ const YouTubeSignTranslator: React.FC = () => {
 
   // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
   const [gallerySearch, setGallerySearch] = useState('');
+  const { lang: uiLang } = useDamijLang();
+  const { translate: tSign, ready: tReady } = useSignTranslations(uiLang as SignLangCode);
   const gallery = useMemo(() => {
     if (!enrichedSigns) return [];
     const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
@@ -369,6 +373,9 @@ const YouTubeSignTranslator: React.FC = () => {
                                 />
                               )}
                               <div className="text-xl font-extrabold text-[hsl(var(--damij-primary))] text-center mt-2">{s.word}</div>
+                              {uiLang !== 'ar' && tReady && tSign(s.word) !== s.word && (
+                                <div className="text-sm font-semibold text-emerald-700/80 text-center mt-0.5" dir="auto">{tSign(s.word)}</div>
+                              )}
                               {s.desc && <div className="text-xs text-[hsl(var(--damij-text))]/65 text-center mt-1 leading-snug max-w-[220px]">{s.desc}</div>}
                             </motion.div>
                           );
@@ -509,6 +516,9 @@ const YouTubeSignTranslator: React.FC = () => {
                         />
                       )}
                       <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{g.sign.word}</span>
+                      {uiLang !== 'ar' && tReady && tSign(g.sign.word) !== g.sign.word && (
+                        <span className="text-[10px] font-medium text-emerald-700/75 text-center line-clamp-1 max-w-full" dir="auto">{tSign(g.sign.word)}</span>
+                      )}
                       <span className="text-[10px] text-[hsl(var(--damij-text))]/50 mt-0.5">{fmt(g.firstStart)} · ×{g.count}</span>
                     </button>
                   ))}
@@ -567,6 +577,9 @@ const YouTubeSignTranslator: React.FC = () => {
                     size={58}
                   />
                   <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{e.word}</span>
+                  {uiLang !== 'ar' && tReady && tSign(e.word) !== e.word && (
+                    <span className="text-[10px] font-medium text-sky-700/80 text-center line-clamp-1 max-w-full" dir="auto">{tSign(e.word)}</span>
+                  )}
                   <span className="text-[10px] text-[hsl(var(--damij-text))]/50">{e.category}</span>
                 </div>
               ))}

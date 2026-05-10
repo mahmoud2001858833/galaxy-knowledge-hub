@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, SkipBack, SkipForward, RotateCw, X, Volume2, Repeat } from 'lucide-react';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
+import { useSignTranslations, type SignLangCode } from './dictionary/translations';
+import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 export interface SequenceWord {
   word: string;
@@ -35,6 +37,8 @@ const SignSequencePlayer: React.FC<Props> = ({
   const [loop, setLoop] = useState(false);
   const [direction, setDirection] = useState<1 | -1>(1);
   const timerRef = useRef<number | null>(null);
+  const { lang: uiLang } = useDamijLang();
+  const { translate: tSign, ready: tReady } = useSignTranslations(uiLang as SignLangCode);
 
   // Auto-start when opened
   useEffect(() => {
@@ -159,6 +163,11 @@ const SignSequencePlayer: React.FC<Props> = ({
                   <div className="text-4xl font-black text-[hsl(var(--damij-primary))] tracking-tight">
                     {current.word}
                   </div>
+                  {uiLang !== 'ar' && tReady && tSign(current.word) !== current.word && (
+                    <div className="mt-1 text-xl font-semibold text-emerald-700/80" dir="auto">
+                      {tSign(current.word)}
+                    </div>
+                  )}
                   {current.description && (
                     <div className="mt-2 text-sm text-slate-600 max-w-md mx-auto leading-snug">
                       {current.description}
