@@ -3,11 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { normalizeWord } from '../../useSignDictionary';
 
-export type SignLangCode =
-  | 'ar' | 'en' | 'fr' | 'es' | 'de' | 'tr' | 'ur' | 'hi'
-  | 'fa' | 'he' | 'ru' | 'zh' | 'ja' | 'ko' | 'pt';
+export type SignLangCode = string;
 
-const LOADERS: Record<Exclude<SignLangCode, 'ar'>, () => Promise<{ default: Record<string, string> }>> = {
+const LOADERS: Record<string, () => Promise<{ default: Record<string, string> }>> = {
   en: () => import('./en.json'),
   fr: () => import('./fr.json'),
   es: () => import('./es.json'),
@@ -22,6 +20,18 @@ const LOADERS: Record<Exclude<SignLangCode, 'ar'>, () => Promise<{ default: Reco
   ja: () => import('./ja.json'),
   ko: () => import('./ko.json'),
   pt: () => import('./pt.json'),
+  it: () => import('./it.json'),
+  nl: () => import('./nl.json'),
+  pl: () => import('./pl.json'),
+  sv: () => import('./sv.json'),
+  no: () => import('./no.json'),
+  da: () => import('./da.json'),
+  fi: () => import('./fi.json'),
+  is: () => import('./is.json'),
+  el: () => import('./el.json'),
+  cs: () => import('./cs.json'),
+  sk: () => import('./sk.json'),
+  hu: () => import('./hu.json'),
 };
 
 const cache = new Map<string, Record<string, string>>();
