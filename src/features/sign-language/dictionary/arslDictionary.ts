@@ -1,5 +1,5 @@
-// AUTO-GENERATED ArSL dictionary (>1378 entries). Do not edit by hand.
-// Re-generate via /tmp/genArSL.mjs
+// AUTO-GENERATED ArSL dictionary (>2928 entries). Do not edit by hand.
+// Re-generate via /tmp/genArSLFull.mjs
 
 export interface ArSLEntry {
   word: string;
@@ -15,14 +15,6 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "word": "مرحباً",
     "handshape_id": "open_palm",
     "movement": "wave_h",
-    "two_handed": false,
-    "desc": "greetings",
-    "category": "greetings"
-  },
-  {
-    "word": "مرحبا",
-    "handshape_id": "flat_hand",
-    "movement": "tap",
     "two_handed": false,
     "desc": "greetings",
     "category": "greetings"
@@ -270,14 +262,6 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
   {
     "word": "أنت",
     "handshape_id": "point",
-    "movement": "tap",
-    "two_handed": false,
-    "desc": "pronouns",
-    "category": "pronouns"
-  },
-  {
-    "word": "أنتِ",
-    "handshape_id": "five",
     "movement": "tap",
     "two_handed": false,
     "desc": "pronouns",
@@ -5468,14 +5452,6 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "category": "jobs"
   },
   {
-    "word": "موسيقي",
-    "handshape_id": "flat_hand",
-    "movement": "tap",
-    "two_handed": false,
-    "desc": "jobs",
-    "category": "jobs"
-  },
-  {
     "word": "مغني",
     "handshape_id": "fist",
     "movement": "tap",
@@ -7148,14 +7124,6 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "category": "verbs"
   },
   {
-    "word": "يقبّل",
-    "handshape_id": "point",
-    "movement": "push",
-    "two_handed": false,
-    "desc": "verbs",
-    "category": "verbs"
-  },
-  {
     "word": "يصدق",
     "handshape_id": "open_palm",
     "movement": "wave_v",
@@ -8607,14 +8575,6 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "word": "جنة",
     "handshape_id": "spread_hand",
     "movement": "up",
-    "two_handed": true,
-    "desc": "religion",
-    "category": "religion"
-  },
-  {
-    "word": "جنّة",
-    "handshape_id": "prayer",
-    "movement": "circle",
     "two_handed": true,
     "desc": "religion",
     "category": "religion"
@@ -10964,14 +10924,6 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "category": "conjunctions"
   },
   {
-    "word": "إذن",
-    "handshape_id": "point",
-    "movement": "tap",
-    "two_handed": false,
-    "desc": "conjunctions",
-    "category": "conjunctions"
-  },
-  {
     "word": "إذا",
     "handshape_id": "flat_hand",
     "movement": "wave_h",
@@ -11034,7 +10986,12457 @@ export const ARSL_DICTIONARY: ArSLEntry[] = [
     "two_handed": false,
     "desc": "conjunctions",
     "category": "conjunctions"
+  },
+  {
+    "word": "مساء النور",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "صباح النور",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "أهلاً وسهلاً بك",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "تشرفنا",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "شكراً جزيلاً",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "بكل سرور",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "أرجوك",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "اعذرني",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "معذرة",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "مبروك",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "تهانينا",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "بالتوفيق",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "حظاً سعيداً",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "بالشفاء",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "بخير والحمد لله",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "بارك الله فيك",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "جزاك الله خيراً",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "حياك الله",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "عيد سعيد",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "عيد مبارك",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "كل عام وأنت بخير",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "كل سنة وانت طيب",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "greetings",
+    "category": "greetings"
+  },
+  {
+    "word": "الجد",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الجدة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "جدتي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "العم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "العمة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الخال",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الخالة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "ابن العم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "بنت العم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "ابن الخال",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "بنت الخال",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "ابن العمة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "بنت العمة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "ابن الخالة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "بنت الخالة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الزوج",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الزوجة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "زوجتي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الحمو",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الحماة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الكنة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الصهر",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأخ الأكبر",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأخ الأصغر",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأخت الكبرى",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأخت الصغرى",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "التوأم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأقارب",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "العائلة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأسرة الكبيرة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الحفيد",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الحفيدة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "أحفاد",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الرضيع",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الرضيعة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المراهق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المراهقة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الشاب",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الشابة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الكهل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المسن",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المسنة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الخطيب",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الخطيبة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المخطوبة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المتزوج",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المطلق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "المطلقة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأرمل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأرملة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "اليتيم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "اليتيمة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "رب الأسرة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأبناء",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "البنات",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأولاد",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الإخوة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأخوات",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "الأهل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "إخوتي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "أخواتي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "family",
+    "category": "family"
+  },
+  {
+    "word": "طبيبة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "ممرضة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "صيدلانية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مهندسة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "محامي",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "محامية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "قاضية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "شرطية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "ضابط",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "سائقة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مضيف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مضيفة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "صياد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "خباز",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "جزار",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "حلاق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "بناء",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "عاملة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "فني",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مزارعة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "راعي",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "تاجرة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "بائعة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "محاسبة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مديرة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "موظفة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "سكرتيرة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مدربة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "رياضية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "فنان",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "فنانة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "رسامة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مصورة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "صحفية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "كاتب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "كاتبة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مؤلف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "شاعر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "شاعرة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مغنية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "ممثلة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مخرج",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مخرجة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "عازف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مذيعة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مترجمة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "باحثة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "عالمة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مخترع",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مكتشف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مستشار",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مؤذن",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "واعظ",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مبشر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "بواب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "ساعي بريد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "نادلة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "طاهي",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "طاهية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "عامل نظافة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "عاملة منزل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مربية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مرشدة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مدرس خصوصي",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "محقق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "محلل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مبرمج",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مبرمجة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مصمم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مصممة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مطور",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مطورة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مدير مشروع",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مهندس برمجيات",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "professions",
+    "category": "professions"
+  },
+  {
+    "word": "مكرونة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "برغل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "فريكة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "فاصولياء",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "بازلاء",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "ذرة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "شعير",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "قمح",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "دقيق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "بهارات",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "زعتر",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "سماق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كمون",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "قرفة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "هيل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "زنجبيل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كركم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "زيت زيتون",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "سمن",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "لبن",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "زبادي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "لحم بقري",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "لحم خروف",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "لحم دجاج",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "تونة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "منسف",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مجدرة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مقلوبة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كبسة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مندي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مسخن",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "ملوخية",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "تبولة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "فتوش",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "حمص بطحينة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "متبل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "شاورما",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "فلافل",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كباب",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كفتة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مسقعة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "محشي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "ورق عنب",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كنافة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "بقلاوة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "معمول",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "هريسة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مهلبية",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "أم علي",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "بسبوسة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "قطايف",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "فطور",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "مكسرات",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "بندق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "كاجو",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "صنوبر",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "food",
+    "category": "food"
+  },
+  {
+    "word": "عصير مانجو",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "قهوة عربية",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "قهوة سادة",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "كاكاو",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "بيبسي",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "كولا",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "مياه معدنية",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "شاي بالنعناع",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "يانسون",
+    "handshape_id": "point",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "بابونج",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "زنجبيل ساخن",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "سحلب",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "تمر هندي",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "عرق سوس",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "كركديه",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "قمر الدين",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "جلاب",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "عيران",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "لبن رائب",
+    "handshape_id": "ok",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "drink",
+    "category": "drink"
+  },
+  {
+    "word": "قطة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "نعجة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "عجل",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "ناقة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "بغل",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "خنزير",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "وحيد القرن",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "فرس النهر",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "أفعى",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "شمبانزي",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "كوالا",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "باندا",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "خفاش",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "نجم البحر",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "سرطان البحر",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "جراد البحر",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "محار",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "animals",
+    "category": "animals"
+  },
+  {
+    "word": "يمامة",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "كناري",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "بلبل",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "هدهد",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "بجعة",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "مالك الحزين",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "طائر طنان",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "طائر الفلامنغو",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "عقاب",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "birds",
+    "category": "birds"
+  },
+  {
+    "word": "ذبابة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "بعوضة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "يعسوب",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "جرادة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "صرصور",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "دودة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "خنفساء",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "جندب",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "يرقة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "insects",
+    "category": "insects"
+  },
+  {
+    "word": "وردة",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "ياسمين",
+    "handshape_id": "point",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "نرجس",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "زنبق",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "أقحوان",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "حشيش",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "أوراق",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "جذر",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "غصن",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "عشب طبي",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "صبار",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "نخلة",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "زيتونة",
+    "handshape_id": "spread_hand",
+    "movement": "up",
+    "two_handed": false,
+    "desc": "plants",
+    "category": "plants"
+  },
+  {
+    "word": "خوخ",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "مشمش",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "كرز",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "مشمش مجفف",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "كمثرى",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "أفوكادو",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "جوافة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "ليمون",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "يوسفي",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "ليمون أخضر",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "جريب فروت",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "نكتارين",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "توت",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "توت أزرق",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "توت أحمر",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "بلح",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "جوز هند",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "كستناء",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "fruits",
+    "category": "fruits"
+  },
+  {
+    "word": "بندورة",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "بطاطس",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "فجل",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "شمندر",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "ملفوف",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "قرنبيط",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "بروكلي",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "جرجير",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "بقدونس",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "كزبرة",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "نعناع",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "ريحان",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "شبت",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "سبانخ",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "باذنجان",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "فلفل حار",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "فلفل بارد",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "لفت",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "بامية",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "فاصولياء خضراء",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "بازلاء خضراء",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "ذرة حلوة",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "قرع",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "يقطين",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "مخلل",
+    "handshape_id": "claw",
+    "movement": "pull",
+    "two_handed": false,
+    "desc": "vegetables",
+    "category": "vegetables"
+  },
+  {
+    "word": "عينان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "شفاه",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "سن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "ضرس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "رقبة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "يدان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "كوع",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "معصم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "أصبع",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "سبابة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "كف",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "راحة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "كاحل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "قدمان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "أصابع القدم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "عقب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "عظام",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "عضلات",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "رئتان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "كلى",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "أمعاء",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "مرارة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "بنكرياس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "طحال",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "أعصاب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "عصب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "مفصل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "صدغ",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "عمود فقري",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "حنجرة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "بلعوم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "مريء",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "حجاب حاجز",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "صدر بشري",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "فكان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "body",
+    "category": "body"
+  },
+  {
+    "word": "وقاية",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "حبوب",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "مرهم",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "فحص",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "تشخيص",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "نظافة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "تمرين",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "نظام غذائي",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "حمية",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "نوم",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "طاقة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "مناعة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "فيتامين",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "بروتين",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "كالسيوم",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "health",
+    "category": "health"
+  },
+  {
+    "word": "كحة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "وجع",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "غثيان",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "قيء",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "دوخة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "إغماء",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "ربو",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "سكري",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "ضغط مرتفع",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "ضغط منخفض",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "أنيميا",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "فقر دم",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "جدري",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "حصبة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "نكاف",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "جدري ماء",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "كورونا",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "التهاب",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "جلطة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "نوبة قلبية",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "كسر",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "حرق",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "رضة",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "خلع",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "التواء",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "تقرح",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "تورم",
+    "handshape_id": "claw",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "diseases",
+    "category": "diseases"
+  },
+  {
+    "word": "قرص",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "تحميلة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "قطرة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "بخاخ",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "مضاد حيوي",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "مسكن",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "مهدئ",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "مكمل غذائي",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "أسبرين",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "باراسيتامول",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "أنسولين",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "منوم",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "مضاد التهاب",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": false,
+    "desc": "medicine",
+    "category": "medicine"
+  },
+  {
+    "word": "طوارئ",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "ممر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "استقبال",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "تصوير",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "بنج",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "تخدير",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "نقل دم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "عناية مركزة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "حضانة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "مولد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "قسم نسائية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "قسم أطفال",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "قسم باطنية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "قسم جراحة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "hospital",
+    "category": "hospital"
+  },
+  {
+    "word": "ثوب",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "جينز",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "سترة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "تيشيرت",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "حذاء رياضي",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "شبشب",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "طاقية",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "عمامة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "إيشارب",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "شال",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "نظارة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "نظارة شمسية",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "كرافات",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "منديل",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "حمالة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "جلباب",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "منامة",
+    "handshape_id": "pinch",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "clothes",
+    "category": "clothes"
+  },
+  {
+    "word": "فيلا",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "بيت بالأرض",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "بيت طيني",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "بلكونة",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "صالة",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "غرفة نوم",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "غرفة جلوس",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "غرفة طعام",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "غرفة استقبال",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "مدخل",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "درج",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "سلم",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "مفتاح",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "قفل",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "home",
+    "category": "home"
+  },
+  {
+    "word": "دولاب",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "كنبة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "منضدة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "مخدة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "شرشف",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "مرتبة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "نجفة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "إنارة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "furniture",
+    "category": "furniture"
+  },
+  {
+    "word": "مطرقة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "مفك",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "منشار",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "مفتاح ربط",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "مسمار",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "برغي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "ملقاط",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "مقص",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "إبرة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "خيط",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "كماشة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "كماشات",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "حبل",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "سلسلة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "شريط لاصق",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "غراء",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "صمغ",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "زجاج",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "زاوية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "بوصلة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "tools",
+    "category": "tools"
+  },
+  {
+    "word": "روضة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "مكتب المدير",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "ساحة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "نتيجة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "مقعد",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "طباشير",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "ماركر",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "حاسبة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "بطاقة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "إجازة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "رحلة مدرسية",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "اصطفاف",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "نشيد",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "school",
+    "category": "school"
+  },
+  {
+    "word": "جبر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "هندسة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تربية وطنية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تربية إسلامية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "لغة عربية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "لغة إنجليزية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "لغة فرنسية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تكنولوجيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تربية فنية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تربية بدنية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "اقتصاد",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "فلسفة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "منطق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "علم نفس",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "علم اجتماع",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "إحصاء",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "إدارة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تاريخ إسلامي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "فقه",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "تفسير",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "عقيدة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "سيرة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "subjects",
+    "category": "subjects"
+  },
+  {
+    "word": "إله",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "جامع",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "محراب",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "منبر",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "مئذنة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "مأموم",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "مصحف",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "سورة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "آية",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "جزء",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "توبة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "إخلاص",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "إحسان",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "يوم القيامة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "بعث",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "ميزان",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "صراط",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "ملائكة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "جبريل",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "ميكائيل",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "إسرافيل",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "عزرائيل",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "سجود",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "ركوع",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "قبلة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "كعبة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "مكة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "المدينة",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "الأقصى",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "عاشوراء",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "مسيحي",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "يهودي",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "بوذي",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "هندوسي",
+    "handshape_id": "prayer",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "religion",
+    "category": "religion"
+  },
+  {
+    "word": "صدق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "أمانة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "عدل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "وفاء",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "صبر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "شكر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "رحمة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "تواضع",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "شجاعة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "كرم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "جود",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "حياء",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "عفة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "حلم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "تقوى",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "محبة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "مودة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "بر الوالدين",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "صلة الرحم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "ترتيب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "احترام",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "تعاون",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "تسامح",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "عفو",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "مسامحة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "إيثار",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "تضحية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "جهاد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "عمل صالح",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "إيجابية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "أخلاق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "مبادئ",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "قيم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "حق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "morals",
+    "category": "morals"
+  },
+  {
+    "word": "حكومة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "ملك",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "وزير",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "وزارة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "برلمان",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "مجلس",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "محافظ",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "محافظة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "بلدية",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "مواطن",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "جنسية",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "هوية",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "جواز سفر",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "تأشيرة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "سفارة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "قنصلية",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "علم الدولة",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "نشيد وطني",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "استقلال",
+    "handshape_id": "fist",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "government",
+    "category": "government"
+  },
+  {
+    "word": "قانون",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "دستور",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "عقوبة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "سجن",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "حبس",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "غرامة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "نيابة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "جريمة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "سرقة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "اعتداء",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "احتيال",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "رشوة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "عدالة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "حقوق",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "واجبات",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "حرية",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "مساواة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "محاكمة",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "شاهد",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "استئناف",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "نقض",
+    "handshape_id": "flat_hand_down",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "law",
+    "category": "law"
+  },
+  {
+    "word": "سياسة",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "حزب",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "انتخابات",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "تصويت",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "صندوق اقتراع",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "مرشح",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "حملة انتخابية",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "مظاهرة",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "اعتصام",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "إضراب",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "مفاوضات",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "دبلوماسية",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "معاهدة",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "اتفاقية",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "أمم متحدة",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "جامعة الدول العربية",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "مجلس الأمن",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "حرب",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "سلام",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "هدنة",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "حياد",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "politics",
+    "category": "politics"
+  },
+  {
+    "word": "عمل",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "وظيفة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "مهنة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "شركة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "مؤسسة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "مصنع",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "ورشة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "متجر",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "عميل",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "اجتماع",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "مهمة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "تقرير",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "اجتماع عمل",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "ترقية",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "راتب",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "أجر",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "مكافأة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "حافز",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "تقاعد",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "استقالة",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "عقد عمل",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "رئيس قسم",
+    "handshape_id": "fist",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "work",
+    "category": "work"
+  },
+  {
+    "word": "ميزانية",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "استثمار",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "أرباح",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "خسائر",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "إنتاج",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "استهلاك",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "طلب",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "تكلفة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "جمارك",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "ضريبة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "تضخم",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "بطالة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "نمو",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "ركود",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "أزمة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "أسهم",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "بورصة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "شركة قابضة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "economy",
+    "category": "economy"
+  },
+  {
+    "word": "مال",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "نقود",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "عملة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "دينار",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "ريال",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "جنيه",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "دولار",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "يورو",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "ليرة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "درهم",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "فلس",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "هللة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "صرف",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "عملات أجنبية",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "صرف عملات",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "ادخار",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "قرض",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "دين",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "فائدة",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "رسوم",
+    "handshape_id": "pinch",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "money",
+    "category": "money"
+  },
+  {
+    "word": "حساب جاري",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "حساب توفير",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "بطاقة سحب",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "صراف آلي",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "إيداع",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "سحب",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "شيك",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "حوالة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "رقم سري",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "عمولة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "رهن",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "تمويل",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "banking",
+    "category": "banking"
+  },
+  {
+    "word": "باص",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "دراجة هوائية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "ترام",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "مروحية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "مركب",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "غواصة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "مكوك فضائي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "transport",
+    "category": "transport"
+  },
+  {
+    "word": "حقيبة سفر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "حقائب",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "بطاقة سفر",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "تذكرة",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "حجز",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "وصول",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "مغادرة",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "ترانزيت",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "عبور",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "أمتعة",
+    "handshape_id": "flat_hand",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "travel",
+    "category": "travel"
+  },
+  {
+    "word": "سياحة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "سائح",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "فندق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "شاليه",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "استراحة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "أثار",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "معلم سياحي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "جولة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "مرشد سياحي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "تذكار",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "سوق شعبي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "سوق سياحي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "tourism",
+    "category": "tourism"
+  },
+  {
+    "word": "تقنية",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "حاسوب محمول",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "لاب توب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "جهاز لوحي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "تابلت",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "ماسحة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "كاميرا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "ميكروفون",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "سماعة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "سماعات",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "شاحن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "بطارية",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "كابل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "شريحة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "معالج",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "ذاكرة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "قرص صلب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "بطاقة ذاكرة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "يو إس بي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "بلوتوث",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "خادم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "سحابة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "technology",
+    "category": "technology"
+  },
+  {
+    "word": "موقع",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "رابط",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "منصة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "إيميل",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "تحميل",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "قناة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "متابع",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "شبكة اجتماعية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "فيسبوك",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "يوتيوب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "تويتر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "إنستغرام",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "واتساب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "تيليجرام",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "تيك توك",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "جوجل",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "تصفح",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "متصفح",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "نطاق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "رابط ويب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "internet",
+    "category": "internet"
+  },
+  {
+    "word": "اتصال",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "مكالمة",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "محادثة",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "رسالة صوتية",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "رسالة نصية",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "محادثة فيديو",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "مؤتمر",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "مؤتمر مرئي",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "إذاعة",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "تلفزيون",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "إعلان",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "إعلام",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "صحافة",
+    "handshape_id": "call_me",
+    "movement": "wave_v",
+    "two_handed": false,
+    "desc": "communication",
+    "category": "communication"
+  },
+  {
+    "word": "بينج بونج",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "هرولة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "تايكواندو",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "سكواش",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "جولف",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "بلياردو",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "شطرنج",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "ركوب الخيل",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "ركوب الدراجة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "ركبي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "بيسبول",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "هوكي",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "كرة الريشة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "رياضة بدنية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "نادي رياضي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "مدرب رياضي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "هدف",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "مباراة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "كأس",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "ميدالية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "جائزة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "أولمبياد",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "منتخب",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "لاعبة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "ملعب رياضي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "sports",
+    "category": "sports"
+  },
+  {
+    "word": "لعبة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "ألعاب",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "بلايستيشن",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "إكس بوكس",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "نينتندو",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "كنترول",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "عصا تحكم",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "داما",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "أونو",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "ورق لعب",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "لعبة فيديو",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "لعبة لوحية",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "أحجية",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "بازل",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "مكعبات",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "عرائس",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "دمى",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "سيارة لعبة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "كرة لعب",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "فلابر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "زهر النرد",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "games",
+    "category": "games"
+  },
+  {
+    "word": "رسم",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "تلوين",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "نحت",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "تصميم",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "فنون جميلة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "لوحة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "رسمة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "بورتريه",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "منظر طبيعي",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "خط عربي",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "زخرفة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "نقش",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "حرف يدوية",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "خزف",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "فخار",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "نسيج",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "تطريز",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "حياكة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "arts",
+    "category": "arts"
+  },
+  {
+    "word": "أغنية",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "لحن",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "نغمة",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "نوتة",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "إيقاع",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "عود",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "ناي",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "كمان",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "تشيلو",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "بيانو",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "جيتار",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "طبل",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "دف",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "رق",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "بزق",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "بوزوكي",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "اوركسترا",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "موسيقى كلاسيكية",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "جاز",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "هيب هوب",
+    "handshape_id": "point",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "بوب",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "روك",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "شعبي",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "تراث",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "فلكلور",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "عازفة",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "ملحن",
+    "handshape_id": "pinch",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "music",
+    "category": "music"
+  },
+  {
+    "word": "ثقافة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "عادات",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "تقاليد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "أمثال",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "حكاية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "أسطورة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "مسرحية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "فلم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "مسلسل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "مهرجان",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "معرض كتاب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "ندوة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "محاضرة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "ملتقى",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "ورشة عمل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "culture",
+    "category": "culture"
+  },
+  {
+    "word": "طبيعة",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "نجوم",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "غيمة",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "ندى",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "بركان",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "تلة",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "هضبة",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "بركة",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "ينبوع",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "مرج",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "منحدر",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "أفق",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "شفق",
+    "handshape_id": "spread_hand",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "nature",
+    "category": "nature"
+  },
+  {
+    "word": "زقاق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "طريق سريع",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "حدود",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "كرة أرضية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "خط استواء",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "شمال شرق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "شمال غرب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "جنوب شرق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "جنوب غرب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "أفريقيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "آسيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "أوروبا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "أمريكا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "أستراليا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "geography",
+    "category": "geography"
+  },
+  {
+    "word": "طقس",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "صحو",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "مثلج",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "ضبابي",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "نسيم",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "درجة الحرارة",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "مئوية",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "ضغط جوي",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "هطول",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "تساقط",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "جفاف",
+    "handshape_id": "spread_hand",
+    "movement": "wave_v",
+    "two_handed": true,
+    "desc": "weather",
+    "category": "weather"
+  },
+  {
+    "word": "الأردن",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "فلسطين",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "سوريا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "لبنان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "العراق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "مصر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "السعودية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الإمارات",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "قطر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الكويت",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "البحرين",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "عمان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "اليمن",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "المغرب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الجزائر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "تونس",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "ليبيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "السودان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "جيبوتي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الصومال",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "موريتانيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "جزر القمر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "تركيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "إيران",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "باكستان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "أفغانستان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الهند",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الصين",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "اليابان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "كوريا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "إندونيسيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "ماليزيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "تايلاند",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الفلبين",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "روسيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "أوكرانيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "ألمانيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "فرنسا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "بريطانيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "إيطاليا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "إسبانيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "البرتغال",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "هولندا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "بلجيكا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "السويد",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "النرويج",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "فنلندا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الدنمارك",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "اليونان",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "بولندا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "كندا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "المكسيك",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "البرازيل",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "الأرجنتين",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "تشيلي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "نيوزيلندا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "جنوب أفريقيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "نيجيريا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "كينيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "إثيوبيا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "أوغندا",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "countries",
+    "category": "countries"
+  },
+  {
+    "word": "إربد",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الزرقاء",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "العقبة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "مادبا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "جرش",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "عجلون",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الكرك",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "معان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الطفيلة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "السلط",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الرمثا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "المفرق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "القدس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "نابلس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "رام الله",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بيت لحم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الخليل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "جنين",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "طولكرم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أريحا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "غزة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "رفح",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "خان يونس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بيروت",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "طرابلس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "صيدا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "صور",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "دمشق",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "حلب",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "حماة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "اللاذقية",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بغداد",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "البصرة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الموصل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أربيل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "القاهرة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الإسكندرية",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الجيزة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الأقصر",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أسوان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الرياض",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "المدينة المنورة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الدمام",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "تبوك",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أبها",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أبوظبي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "دبي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الشارقة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "عجمان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الدوحة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "المنامة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "مسقط",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "صنعاء",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "عدن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الرباط",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الدار البيضاء",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "مراكش",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "فاس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الجزائر العاصمة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "وهران",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "تونس العاصمة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "صفاقس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "طرابلس ليبيا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بنغازي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "الخرطوم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "نواكشوط",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "إسطنبول",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أنقرة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "طهران",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "إسلام آباد",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "نيودلهي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بكين",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "طوكيو",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "سيئول",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "جاكرتا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "كوالالمبور",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بانكوك",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "مانيلا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "موسكو",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "كييف",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "برلين",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "باريس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "لندن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "روما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "مدريد",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أمستردام",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "واشنطن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "نيويورك",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "لوس أنجلوس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أوتاوا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "مكسيكو سيتي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "برازيليا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "بوينس آيرس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "سيدني",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "كانبرا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "جوهانسبرغ",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "نيروبي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "أديس أبابا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "لاجوس",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "القاهرة الكبرى",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "cities",
+    "category": "cities"
+  },
+  {
+    "word": "ربع ساعة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "نصف ساعة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "عقد",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "قرن",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "ألفية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "بعد الظهر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "مغرب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الفجر",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الشروق",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الغروب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "أول أمس",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الأسبوع الماضي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الأسبوع القادم",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الشهر الماضي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "الشهر القادم",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "السنة الماضية",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "السنة القادمة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "نادراً",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "عادة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "غالباً",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "time",
+    "category": "time"
+  },
+  {
+    "word": "يوم الأحد",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "يوم الاثنين",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "يوم الثلاثاء",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "يوم الأربعاء",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "يوم الخميس",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "يوم الجمعة",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "يوم السبت",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "عطلة نهاية الأسبوع",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "days",
+    "category": "days"
+  },
+  {
+    "word": "كانون الثاني",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "شباط",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "آذار",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "نيسان",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "أيار",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "حزيران",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "تموز",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "أيلول",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "تشرين الأول",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "تشرين الثاني",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "كانون الأول",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "محرم",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "ربيع الأول",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "ربيع الثاني",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "جمادى الأولى",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "جمادى الآخرة",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "رجب",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "شعبان",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "رمضان شهر",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "شوال",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "ذو القعدة",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "ذو الحجة",
+    "handshape_id": "two",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "months",
+    "category": "months"
+  },
+  {
+    "word": "ربيع",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "صيف",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "خريف",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "شتاء",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "فصل الربيع",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "فصل الصيف",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "فصل الخريف",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "فصل الشتاء",
+    "handshape_id": "spread_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "seasons",
+    "category": "seasons"
+  },
+  {
+    "word": "مائة",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "مئتان",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاثمئة",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أربعمئة",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمسمئة",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "خمس",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "عشر",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ضعف",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "مرتين",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثلاث مرات",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "أولاً",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثانياً",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "ثالثاً",
+    "handshape_id": "one",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "numbers",
+    "category": "numbers"
+  },
+  {
+    "word": "متر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "سنتيمتر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "ميليمتر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "كيلومتر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "بوصة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "غرام",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "كيلوغرام",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "طن",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "ملليلتر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "لتر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "جالون",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "هكتار",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "دونم",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "متر مربع",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "متر مكعب",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "أمبير",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "فولت",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "واط",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "أوم",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "هرتز",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "درجة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "نصف قطر",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "مساحة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "حجم",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "وزن",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "كثافة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "سرعة",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "تسارع",
+    "handshape_id": "pinch",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "measures",
+    "category": "measures"
+  },
+  {
+    "word": "كريمي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "تركواز",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "نيلي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "ليموني",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "بحري",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "عنابي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "colors",
+    "category": "colors"
+  },
+  {
+    "word": "مربع",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "مستطيل",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "دائرة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "مثلث",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "شبه منحرف",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "معين",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "بيضاوي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "نصف دائرة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "خماسي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "سداسي",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "مكعب",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "اسطوانة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "مخروط",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "هرم",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": true,
+    "desc": "shapes",
+    "category": "shapes"
+  },
+  {
+    "word": "يغوص",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يتسلق",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يزحف",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يقود",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يركب",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يتقدم",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يتراجع",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يصعد",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "ينزل",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يذهب",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يأتي",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يرجع",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يعود",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يسافر",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يلاحق",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يلحق",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يقابل",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يستقبل",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يودع",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يستلقي",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يقترب",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يبتعد",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يتحرك",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يهز",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يدور",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يلف",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "movement_v",
+    "category": "movement_v"
+  },
+  {
+    "word": "يعرف",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يجهل",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يعيد",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يكرر",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يلاحظ",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يراقب",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يحكم",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يخطط",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يحلل",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يقدر",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يتوقع",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يتخيل",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يبدع",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يكتشف",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يخترع",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يبتكر",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يتأمل",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يتدبر",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يقارن",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يصنف",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "cognitive_v",
+    "category": "cognitive_v"
+  },
+  {
+    "word": "يقول",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يتحدث",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يحادث",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يرد",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يوضح",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يحكي",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يروي",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يقص",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "ينادي",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يصمت",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يصيح",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يثرثر",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يخطب",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يردد",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يتلو",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يقدم",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يبشر",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "ينذر",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يحذر",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يوصي",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يأمر",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يرجو",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يتوسل",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يحاور",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يناقش",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يجادل",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يتفق",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يختلف",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يعد بمعنى وعد",
+    "handshape_id": "point",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "speech_v",
+    "category": "speech_v"
+  },
+  {
+    "word": "يصادق",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يخاصم",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يعانق",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يتبسم",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يتعاون",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يخدم",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يحتقر",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يكرم",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يضيف",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يستضيف",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يزور",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يهنئ",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يعزي",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يهدي",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يتبادل",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يشارك",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يتطوع",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يتبرع",
+    "handshape_id": "open_palm",
+    "movement": "wave_h",
+    "two_handed": true,
+    "desc": "social_v",
+    "category": "social_v"
+  },
+  {
+    "word": "يفرح",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يحزن",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يغضب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يخاف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يقلق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يخجل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يستحي",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يتفاجأ",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يندم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يتأسف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يحسد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يغار",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يفتخر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يعجب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يدهش",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يستمتع",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يتألم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يتوتر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يهدأ",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يطمئن",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يأمل",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "ييأس",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يسعد",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "يتعب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotion_v",
+    "category": "emotion_v"
+  },
+  {
+    "word": "حزن",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "غضب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "خوف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "كراهية",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "سعادة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "كآبة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "حماس",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "إحباط",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "شوق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "وحدة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "اطمئنان",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "ضجر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "شعور",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "مشاعر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "دموع",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "ضحك",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "بكاء",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "ابتسامة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "عبوس",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "غم",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "شجن",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "ثقة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "شك",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "فخر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "اعتزاز",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "استحياء",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "خجل",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "تعجب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "دهشة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "تشوق",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "حنين للوطن",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "emotions",
+    "category": "emotions"
+  },
+  {
+    "word": "مجتهد",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "صادق",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "كاذب",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "عادل",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "ظالم",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "مرتفع",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "منخفض",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "عالي",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "واطئ",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "ضروري",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "اختياري",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "صحيح بمعنى دقيق",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "سيء",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "عادي",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adjectives",
+    "category": "adjectives"
+  },
+  {
+    "word": "أنتما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "هما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "نفسها",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "أنفسنا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "أنفسهم",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "هذان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "هاتان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "الذي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "التي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "اللذان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "اللتان",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "الذين",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "اللواتي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "ما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "أينما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "حيثما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "كيفما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "مهما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "pronouns",
+    "category": "pronouns"
+  },
+  {
+    "word": "عن",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "في",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "على",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "بعد",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "قبل",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "وراء",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "بين",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "دون",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "سوى",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "عند",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "لدى",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "منذ",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "إزاء",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "إلى جانب",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "prepositions",
+    "category": "prepositions"
+  },
+  {
+    "word": "بسرعة",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "ببطء",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "معاً",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "وحدي",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "تماماً",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "كثيراً",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "قليلاً",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "جداً",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "حقاً",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "ربما",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "بالتأكيد",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "للأسف",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "لحسن الحظ",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "منفردين",
+    "handshape_id": "flat_hand",
+    "movement": "wave_h",
+    "two_handed": false,
+    "desc": "adverbs",
+    "category": "adverbs"
+  },
+  {
+    "word": "بل",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "لو",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "إن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "لكي",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "حين",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "مع أن",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "مع ذلك",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "إضافة إلى",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "علاوة على",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "بالإضافة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "كذلك",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "أيضاً",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "أو ربما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "إما",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "لا",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "conjunctions",
+    "category": "conjunctions"
+  },
+  {
+    "word": "أ",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "أيهما",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "لمن",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "عمن",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "بمن",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "مع من",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "أي وقت",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "أي مكان",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "أي شيء",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "أي شخص",
+    "handshape_id": "point_up",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "questions",
+    "category": "questions"
+  },
+  {
+    "word": "مستقيم",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "directions",
+    "category": "directions"
+  },
+  {
+    "word": "منعطف",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "directions",
+    "category": "directions"
+  },
+  {
+    "word": "تقاطع",
+    "handshape_id": "point",
+    "movement": "push",
+    "two_handed": false,
+    "desc": "directions",
+    "category": "directions"
+  },
+  {
+    "word": "خشب",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "رخام",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "بلاستيك",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "مطاط",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "قماش",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "ورق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "كرتون",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "ألمنيوم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "فولاذ",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "إسمنت",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "رمل بناء",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "حديد بناء",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "بلاط",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "سيراميك",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "جبس",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "دهان",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "materials",
+    "category": "materials"
+  },
+  {
+    "word": "ميكروويف",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "غسالة صحون",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "موقد",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "قدر",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "مقلاة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "صينية",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "منشفة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "مفرش",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "منديل ورقي",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "عجانة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "خلاط",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "معصرة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "kitchen",
+    "category": "kitchen"
+  },
+  {
+    "word": "مرآة الحمام",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "صابون",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "شامبو",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "بلسم",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "معجون أسنان",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "فرشاة أسنان",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "بشكير",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "مشط",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "فرشاة",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "حلاقة",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "عطر",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "ديودرنت",
+    "handshape_id": "flat_hand",
+    "movement": "down",
+    "two_handed": true,
+    "desc": "bathroom",
+    "category": "bathroom"
+  },
+  {
+    "word": "لحاف",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "bedroom",
+    "category": "bedroom"
+  },
+  {
+    "word": "شراشف",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "bedroom",
+    "category": "bedroom"
+  },
+  {
+    "word": "منبه",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "bedroom",
+    "category": "bedroom"
+  },
+  {
+    "word": "مكتبة صغيرة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "bedroom",
+    "category": "bedroom"
+  },
+  {
+    "word": "مرآة كاملة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "bedroom",
+    "category": "bedroom"
+  },
+  {
+    "word": "ستائر غرفة",
+    "handshape_id": "flat_hand",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "bedroom",
+    "category": "bedroom"
+  },
+  {
+    "word": "سيارة سياحية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "تكسي",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "شاحنة كبيرة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "حافلة مدرسية",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "سيارة إسعاف",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "سيارة شرطة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "سيارة إطفاء",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "جرار",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "ساحبة",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "عربة يد",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "عربة طفل",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "عجلات",
+    "handshape_id": "fist",
+    "movement": "push",
+    "two_handed": true,
+    "desc": "vehicles",
+    "category": "vehicles"
+  },
+  {
+    "word": "نشافة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "مكنسة كهربائية",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "مكواة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "مجفف شعر",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "رسيفر",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "ساعة منبه",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "مدفأة",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "سخان مياه",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "تكييف",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "شاشة عرض",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "جهاز عرض",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "بروجكتر",
+    "handshape_id": "point",
+    "movement": "tap",
+    "two_handed": true,
+    "desc": "appliances",
+    "category": "appliances"
+  },
+  {
+    "word": "خاتم",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "حلق",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "أقراط",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "سوار",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "أسوارة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "دبلة",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "تاج",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "ساعة يد",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "حلية",
+    "handshape_id": "pinch",
+    "movement": "tap",
+    "two_handed": false,
+    "desc": "jewelry",
+    "category": "jewelry"
+  },
+  {
+    "word": "حنان",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "عطف",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "رحمة قلب",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "بهجة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "نشوة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "طمأنينة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "هدوء",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "سكينة",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "هيبة",
+    "handshape_id": "point",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "ذعر",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
+  },
+  {
+    "word": "هلع",
+    "handshape_id": "flat_hand",
+    "movement": "circle",
+    "two_handed": false,
+    "desc": "feelings",
+    "category": "feelings"
   }
 ];
 
 export const ARSL_DICTIONARY_SIZE = ARSL_DICTIONARY.length;
+
+export const ARSL_CATEGORIES: string[] = Array.from(new Set(ARSL_DICTIONARY.map(e => e.category))).sort();
