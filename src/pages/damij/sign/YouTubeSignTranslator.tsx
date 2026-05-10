@@ -146,22 +146,71 @@ const YouTubeSignTranslator: React.FC = () => {
     } finally { setLoading(false); }
   };
 
-  const activeSigns = useMemo(() => {
-    if (!signs || activeIdx < 0) return [];
-    return signs.lines.find(l => l.i === activeIdx)?.signs || [];
-  }, [signs, activeIdx]);
+  // Enrich AI signs with the local 1000+ dictionary (fills handshape/movement when AI says unknown).
+  const enrichedSigns: SignsPayload | null = useMemo(() => {
+    if (!signs) return null;
+    return {
+      lines: signs.lines.map(l => ({
+        ...l,
+        signs: l.signs.map(s => {
+          if (s.known === false || !s.handshape_id) {
+            const local = lookupSign(s.word, signSystem);
+            if (local) return { ...s, handshape_id: local.handshape_id, movement: local.movement, two_handed: local.two_handed, desc: s.desc || local.desc, known: true };
+          }
+          return s;
+        }),
+      })),
+    };
+  }, [signs, signSystem]);
 
-  // Sequential sign cursor: advance through active line's signs based on elapsed time within segment.
+  const activeSigns = useMemo(() => {
+    if (!enrichedSigns || activeIdx < 0) return [];
+    return enrichedSigns.lines.find(l => l.i === activeIdx)?.signs || [];
+  }, [enrichedSigns, activeIdx]);
+
+  // Sequential sign cursor with per-sign timing when available; fallback to even split.
   useEffect(() => {
     if (activeIdx < 0 || !segments[activeIdx] || !activeSigns.length) { setSignCursor(0); return; }
     const seg = segments[activeIdx];
     const within = Math.max(0, Math.min(seg.dur, now - seg.start));
-    const per = seg.dur / activeSigns.length;
-    const idx = Math.min(activeSigns.length - 1, Math.floor(within / Math.max(0.25, per)));
+    const frac = within / Math.max(0.25, seg.dur);
+    let idx = 0;
+    if (activeSigns.some(s => typeof s.t === 'number')) {
+      // Pick the last sign whose t <= frac
+      for (let i = 0; i < activeSigns.length; i++) {
+        const t = typeof activeSigns[i].t === 'number' ? Math.max(0, Math.min(1, activeSigns[i].t!)) : i / activeSigns.length;
+        if (t <= frac) idx = i; else break;
+      }
+    } else {
+      const per = 1 / activeSigns.length;
+      idx = Math.min(activeSigns.length - 1, Math.floor(frac / Math.max(0.001, per)));
+    }
     setSignCursor(idx);
   }, [now, activeIdx, segments, activeSigns]);
 
   const seek = (t: number) => { try { playerRef.current?.seekTo?.(t, true); playerRef.current?.playVideo?.(); } catch {} };
+
+  // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
+  const [gallerySearch, setGallerySearch] = useState('');
+  const gallery = useMemo(() => {
+    if (!enrichedSigns) return [];
+    const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
+    enrichedSigns.lines.forEach(line => {
+      const seg = segments[line.i];
+      line.signs.forEach((s, k) => {
+        const key = (s.word || '').trim();
+        if (!key) return;
+        const at = seg ? seg.start + (typeof s.t === 'number' ? s.t * seg.dur : (k / Math.max(1, line.signs.length)) * seg.dur) : 0;
+        const ex = map.get(key);
+        if (!ex) map.set(key, { sign: s, firstStart: at, count: 1 });
+        else { ex.count += 1; if (at < ex.firstStart) ex.firstStart = at; }
+      });
+    });
+    const arr = Array.from(map.values());
+    const q = gallerySearch.trim();
+    return q ? arr.filter(x => x.sign.word.includes(q)) : arr;
+  }, [enrichedSigns, segments, gallerySearch]);
+
 
   return (
     <div className="px-4 md:px-6 pt-8 pb-16 max-w-7xl mx-auto" dir="rtl">
