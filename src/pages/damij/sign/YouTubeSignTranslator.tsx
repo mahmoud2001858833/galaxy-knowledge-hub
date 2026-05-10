@@ -217,6 +217,25 @@ const YouTubeSignTranslator: React.FC = () => {
     return q ? arr.filter(x => x.sign.word.includes(q)) : arr;
   }, [enrichedSigns, segments, gallerySearch]);
 
+  // === Full ArSL dictionary browser ===
+  const [dictSearch, setDictSearch] = useState('');
+  const [dictCategory, setDictCategory] = useState<string>('');
+  const [dictPage, setDictPage] = useState(0);
+  const PAGE_SIZE = 60;
+  const allCategories = useMemo(() => getCategories(signSystem), [signSystem]);
+  const dictResults = useMemo(() => {
+    let base = dictCategory ? getSignsByCategory(dictCategory, signSystem) : null;
+    if (dictSearch.trim()) {
+      const fromSearch = new Set(searchSigns(dictSearch, signSystem, 5000));
+      base = base ? base.filter(e => fromSearch.has(e)) : Array.from(fromSearch);
+    }
+    if (!base) base = searchSigns('', signSystem, 5000);
+    return base;
+  }, [dictSearch, dictCategory, signSystem]);
+  useEffect(() => { setDictPage(0); }, [dictSearch, dictCategory, signSystem]);
+  const dictPageItems = dictResults.slice(dictPage * PAGE_SIZE, (dictPage + 1) * PAGE_SIZE);
+  const dictPages = Math.max(1, Math.ceil(dictResults.length / PAGE_SIZE));
+
 
   return (
     <div className="px-4 md:px-6 pt-8 pb-16 max-w-7xl mx-auto" dir="rtl">
