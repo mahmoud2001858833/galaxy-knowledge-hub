@@ -2012,6 +2012,7 @@ export type Database = {
           category: string
           code: string
           created_at: string
+          current_medications: string[]
           gender: string | null
           history_ar: string | null
           id: string
@@ -2028,6 +2029,7 @@ export type Database = {
           category: string
           code: string
           created_at?: string
+          current_medications?: string[]
           gender?: string | null
           history_ar?: string | null
           id?: string
@@ -2044,6 +2046,7 @@ export type Database = {
           category?: string
           code?: string
           created_at?: string
+          current_medications?: string[]
           gender?: string | null
           history_ar?: string | null
           id?: string
