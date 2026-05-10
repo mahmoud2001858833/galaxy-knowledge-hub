@@ -37,6 +37,8 @@ const SignSequencePlayer: React.FC<Props> = ({
   const [loop, setLoop] = useState(false);
   const [direction, setDirection] = useState<1 | -1>(1);
   const timerRef = useRef<number | null>(null);
+  const { lang: uiLang } = useDamijLang();
+  const { translate: tSign, ready: tReady } = useSignTranslations(uiLang as SignLangCode);
 
   // Auto-start when opened
   useEffect(() => {
