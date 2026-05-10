@@ -31,36 +31,27 @@ const SensoryHome: React.FC = () => (
     </div>
 
     <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mb-6">
-      <Link to="/damij/sensory/profile" className="p-6 rounded-2xl bg-[hsl(var(--damij-primary))] text-white shadow-xl hover:-translate-y-1 transition-all">
-        <Upload className="w-8 h-8 mb-2"/>
-        <h3 className="font-bold text-lg mb-1">المحوّل الحسّي العام</h3>
-        <p className="text-sm opacity-90">ارفع نص/صوت/فيديو/PDF وحوّله للحاسة المناسبة</p>
-      </Link>
-      <Link to="/damij/sensory/image-tactile" className="p-6 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-xl hover:-translate-y-1 transition-all">
-        <div className="flex items-center gap-2 mb-2"><ImageIcon className="w-7 h-7"/><Vibrate className="w-6 h-6"/></div>
-        <h3 className="font-bold text-lg mb-1">صورة → وصف صوتي + لمسي ✨ جديد</h3>
-        <p className="text-sm opacity-90">تحليل صورة + وصف صوتي + نموذج لمسي للطباعة + اهتزاز تفاعلي</p>
-      </Link>
-      <Link to="/damij/sensory/unified-comm" className="p-6 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-blue-600 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2">
-        <div className="flex items-center gap-2 mb-2"><Languages className="w-7 h-7"/><Hand className="w-6 h-6"/><Eye className="w-6 h-6"/><Ear className="w-6 h-6"/></div>
-        <h3 className="font-bold text-lg mb-1">التواصل والتكامل · 4 صيغ متزامنة ✨ جديد</h3>
-        <p className="text-sm opacity-90">إدخال موحّد لنفس المحتوى بأربع صيغ متزامنة (نص / صوت / بريل / لغة إشارة) — صفّ شامل بمعلّم واحد.</p>
-      </Link>
-      <Link to="/damij/sensory/tri-sense" className="p-6 rounded-2xl bg-gradient-to-br from-fuchsia-600 via-purple-600 to-blue-600 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2 ring-2 ring-fuchsia-400/40">
-        <div className="flex items-center gap-2 mb-2"><Mic className="w-7 h-7"/><Type className="w-6 h-6"/><Hand className="w-6 h-6"/></div>
-        <h3 className="font-bold text-lg mb-1">ثلاثي الحواس · صوت + نص + إشارة ✨ جديد</h3>
-        <p className="text-sm opacity-90">تفريغ المحاضرات تلقائياً مع علامات زمنية دقيقة، ومنطقة مخصّصة لعرض لغة الإشارة لطلاب الصمّ.</p>
-      </Link>
-      <Link to="/damij/sensory/adaptive-ui" className="p-6 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2 ring-2 ring-amber-300/40">
-        <div className="flex items-center gap-2 mb-2"><Wand2 className="w-7 h-7"/><Eye className="w-6 h-6"/><Type className="w-6 h-6"/></div>
-        <h3 className="font-bold text-lg mb-1">الواجهة التكيّفية الذكية ✨ جديد</h3>
-        <p className="text-sm opacity-90">تغيّر الألوان والأحجام وسرعة العرض وكثافة المحفّزات تلقائياً وفق ملفك الحسّي وحالتك اللحظية (وقت اليوم + الإضاءة المحيطة).</p>
-      </Link>
-      <Link to="/damij/sensory/log" className="p-6 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-xl hover:-translate-y-1 transition-all sm:col-span-2">
-        <Activity className="w-7 h-7 mb-2"/>
-        <h3 className="font-bold text-lg mb-1">سجل التفاعل والتعلّم المستمر</h3>
-        <p className="text-sm opacity-90">شاهد أدواتك المفضّلة، علامات الإجهاد، والاختصارات — يتعلّم النظام تلقائياً ليخصّص تجربتك</p>
-      </Link>
+      {[
+        { to: '/damij/sensory/profile', bg: 'bg-[hsl(var(--damij-primary))]', icons: [Upload], title: 'المحوّل الحسّي العام', desc: 'ارفع نص/صوت/فيديو/PDF وحوّله للحاسة المناسبة', wide: false },
+        { to: '/damij/sensory/image-tactile', bg: 'bg-gradient-to-br from-purple-700 to-blue-700', icons: [ImageIcon, Vibrate], title: 'صورة → وصف صوتي + لمسي ✨ جديد', desc: 'تحليل صورة + وصف صوتي + نموذج لمسي للطباعة + اهتزاز تفاعلي', wide: false },
+        { to: '/damij/sensory/unified-comm', bg: 'bg-gradient-to-br from-emerald-700 via-teal-700 to-blue-700', icons: [Languages, Hand, Eye, Ear], title: 'التواصل والتكامل · 4 صيغ متزامنة ✨ جديد', desc: 'إدخال موحّد لنفس المحتوى بأربع صيغ متزامنة (نص / صوت / بريل / لغة إشارة) — صفّ شامل بمعلّم واحد.', wide: true },
+        { to: '/damij/sensory/tri-sense', bg: 'bg-gradient-to-br from-fuchsia-700 via-purple-700 to-blue-700', icons: [Mic, Type, Hand], title: 'ثلاثي الحواس · صوت + نص + إشارة ✨ جديد', desc: 'تفريغ المحاضرات تلقائياً مع علامات زمنية دقيقة، ومنطقة مخصّصة لعرض لغة الإشارة لطلاب الصمّ.', wide: true },
+        { to: '/damij/sensory/adaptive-ui', bg: 'bg-gradient-to-br from-amber-600 via-orange-600 to-rose-600', icons: [Wand2, Eye, Type], title: 'الواجهة التكيّفية الذكية ✨ جديد', desc: 'تغيّر الألوان والأحجام وسرعة العرض وكثافة المحفّزات تلقائياً وفق ملفك الحسّي وحالتك اللحظية (وقت اليوم + الإضاءة المحيطة).', wide: true },
+        { to: '/damij/sensory/log', bg: 'bg-gradient-to-br from-emerald-700 to-teal-700', icons: [Activity], title: 'سجل التفاعل والتعلّم المستمر', desc: 'شاهد أدواتك المفضّلة، علامات الإجهاد، والاختصارات — يتعلّم النظام تلقائياً ليخصّص تجربتك', wide: true },
+      ].map(({ to, bg, icons, title, desc, wide }) => (
+        <Link
+          key={to}
+          to={to}
+          className={`relative p-6 rounded-2xl ${bg} !text-white shadow-xl border-2 border-white/20 hover:-translate-y-1 hover:shadow-2xl transition-all opacity-100 ${wide ? 'sm:col-span-2' : ''}`}
+          style={{ opacity: 1 }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            {icons.map((Icon, i) => <Icon key={i} className="w-7 h-7 text-white drop-shadow"/>)}
+          </div>
+          <h3 className="font-bold text-lg mb-1 text-white drop-shadow">{title}</h3>
+          <p className="text-sm text-white/95">{desc}</p>
+        </Link>
+      ))}
     </div>
   </div>
 );
