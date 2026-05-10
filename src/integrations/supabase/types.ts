@@ -4378,6 +4378,34 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
+      get_public_adhd_diagnostic_report: {
+        Args: { p_token: string }
+        Returns: {
+          ai_report: string
+          created_at: string
+          dsm_category: string
+          id: string
+          metrics: Json
+          recommendations: Json
+        }[]
+      }
+      get_public_adhd_program: { Args: { p_token: string }; Returns: Json }
+      get_public_autism_program: { Args: { p_token: string }; Returns: Json }
+      get_public_clinical_report: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          diagnosis_ar: string
+          id: string
+          recommendations_ar: string[]
+          references_ar: string[]
+          rubric: Json
+          score: number
+          strengths_ar: string[]
+          summary_ar: string
+          weaknesses_ar: string[]
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_admin_teacher_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
