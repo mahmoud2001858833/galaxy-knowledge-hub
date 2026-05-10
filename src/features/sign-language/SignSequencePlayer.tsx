@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, SkipBack, SkipForward, RotateCw, X, Volume2, Repeat } from 'lucide-react';
 import HandSignCard from './HandSignCard';
 import type { Movement } from './handshapes';
+import { useSignTranslations, type SignLangCode } from './dictionary/translations';
+import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 export interface SequenceWord {
   word: string;
