@@ -440,6 +440,57 @@ const YouTubeSignTranslator: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* All translated signs gallery */}
+          <div className="lg:col-span-12">
+            <div className="rounded-3xl bg-white border border-[hsl(var(--damij-primary))]/15 shadow-sm p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <h3 className="font-extrabold text-[hsl(var(--damij-primary))] flex items-center gap-2">
+                  <Grid3x3 className="w-5 h-5" /> معرض كل الإشارات المترجمة ({gallery.length})
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-[hsl(var(--damij-text))]/60 inline-flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5" /> القاموس المحلي: {getDictionarySize(signSystem)} إشارة
+                  </div>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={gallerySearch}
+                      onChange={(e) => setGallerySearch(e.target.value)}
+                      placeholder="ابحث عن إشارة..."
+                      className="h-9 pr-7 pl-2 rounded-lg border border-gray-200 text-xs w-44 focus:outline-none focus:border-[hsl(var(--damij-primary))]"
+                    />
+                  </div>
+                </div>
+              </div>
+              {gallery.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--damij-text))]/55 text-center py-8">لا توجد إشارات بعد</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 max-h-[480px] overflow-y-auto pr-1">
+                  {gallery.map((g, i) => (
+                    <button
+                      key={`${g.sign.word}-${i}`}
+                      onClick={() => seek(g.firstStart)}
+                      className="group flex flex-col items-center bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl p-2.5 hover:border-[hsl(var(--damij-primary))]/40 hover:shadow-md transition-all"
+                      title={`اضغط للذهاب إلى ${fmt(g.firstStart)}`}
+                    >
+                      {g.sign.known !== false && (
+                        <HandSignCard
+                          word={g.sign.word}
+                          handshapeId={g.sign.handshape_id}
+                          movement={(g.sign.movement as Movement) || 'none'}
+                          twoHanded={g.sign.two_handed}
+                          size={58}
+                        />
+                      )}
+                      <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{g.sign.word}</span>
+                      <span className="text-[10px] text-[hsl(var(--damij-text))]/50 mt-0.5">{fmt(g.firstStart)} · ×{g.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
