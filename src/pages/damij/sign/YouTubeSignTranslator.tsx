@@ -146,7 +146,7 @@ const YouTubeSignTranslator: React.FC = () => {
     } finally { setLoading(false); }
   };
 
-  // Enrich AI signs with the local 1000+ dictionary (fills handshape/movement when AI says unknown).
+  // Enrich AI signs with the local 3000+ dictionary (fills handshape/movement when AI says unknown).
   const enrichedSigns: SignsPayload | null = useMemo(() => {
     if (!signs) return null;
     return {
@@ -154,7 +154,13 @@ const YouTubeSignTranslator: React.FC = () => {
         ...l,
         signs: l.signs.map(s => {
           if (s.known === false || !s.handshape_id) {
-            const local = lookupSign(s.word, signSystem);
+            // Try exact lookup first (with prefix/suffix tolerance built-in).
+            let local = lookupSign(s.word, signSystem);
+            // Fallback: substring search (first hit).
+            if (!local) {
+              const hits = searchSigns(s.word, signSystem, 1);
+              if (hits.length) local = hits[0];
+            }
             if (local) return { ...s, handshape_id: local.handshape_id, movement: local.movement, two_handed: local.two_handed, desc: s.desc || local.desc, known: true };
           }
           return s;
