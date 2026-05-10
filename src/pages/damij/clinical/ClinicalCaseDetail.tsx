@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, ArrowRight, Play, BookOpen, ClipboardList } from 'lucide-react';
+import { Loader2, ArrowRight, Play, BookOpen, ClipboardList, Pill, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ClinicalCase, ClinicalProtocol, CATEGORY_LABEL, SEVERITY_LABEL } from '@/features/clinical/types';
 
+interface DeviceLite { id: string; key: string; name_ar: string; category: string; description_ar?: string; icon?: string; applicable_specialties: string[]; }
+
 const ClinicalCaseDetail: React.FC = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
-  const [c, setC] = useState<ClinicalCase | null>(null);
+  const [c, setC] = useState<(ClinicalCase & { current_medications?: string[] }) | null>(null);
   const [protocols, setProtocols] = useState<ClinicalProtocol[]>([]);
+  const [devices, setDevices] = useState<DeviceLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState<string | null>(null);
 
@@ -18,8 +21,16 @@ const ClinicalCaseDetail: React.FC = () => {
     const { data: cd } = await supabase.from('clinical_cases').select('*').eq('id', caseId).maybeSingle();
     setC(cd as any);
     if (cd) {
-      const { data: ps } = await supabase.from('clinical_protocols').select('*').eq('category', (cd as any).category).order('name_ar');
+      const cat = (cd as any).category;
+      const [{ data: ps }, { data: ds }] = await Promise.all([
+        supabase.from('clinical_protocols').select('*').eq('category', cat).order('name_ar'),
+        supabase.from('clinical_devices').select('id,key,name_ar,category,description_ar,icon,applicable_specialties').order('name_ar'),
+      ]);
       setProtocols((ps as any) || []);
+      const filtered = ((ds as any) || []).filter((d: DeviceLite) =>
+        !d.applicable_specialties?.length || d.applicable_specialties.includes(cat)
+      );
+      setDevices(filtered.length ? filtered : ((ds as any) || []));
     }
     setLoading(false);
   })(); }, [caseId]);
