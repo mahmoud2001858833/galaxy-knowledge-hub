@@ -106,9 +106,12 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, onApplied })
         <div className="grid grid-cols-2 md:grid-cols-3 gap-1 p-1">
           {filtered.map(d => (
             <button key={d.id} onClick={() => setSelected(d)}
-              className={`text-right p-2 rounded-lg border hover:bg-sky-50 ${selected?.id === d.id ? 'bg-sky-100 border-sky-300' : 'bg-white'}`}>
-              <div className="text-xs font-bold flex items-center gap-1"><Stethoscope className="w-3 h-3" />{d.name_ar}</div>
-              <div className="text-[10px] text-slate-500 line-clamp-2">{d.description_ar}</div>
+              className={`text-right p-2 rounded-lg border hover:bg-sky-50 hover:shadow transition ${selected?.id === d.id ? 'bg-sky-100 border-sky-300 ring-1 ring-sky-300' : 'bg-white'}`}>
+              <div className="text-xs font-bold flex items-center gap-1.5">
+                <span className="text-base leading-none">{(d as any).icon || '🩺'}</span>
+                <span className="line-clamp-1">{d.name_ar}</span>
+              </div>
+              <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{d.description_ar}</div>
             </button>
           ))}
         </div>
