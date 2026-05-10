@@ -32,6 +32,18 @@ const LOADERS: Record<string, () => Promise<{ default: Record<string, string> }>
   cs: () => import('./cs.json'),
   sk: () => import('./sk.json'),
   hu: () => import('./hu.json'),
+  ro: () => import('./ro.json'),
+  bg: () => import('./bg.json'),
+  sr: () => import('./sr.json'),
+  hr: () => import('./hr.json'),
+  bs: () => import('./bs.json'),
+  sl: () => import('./sl.json'),
+  mk: () => import('./mk.json'),
+  sq: () => import('./sq.json'),
+  uk: () => import('./uk.json'),
+  be: () => import('./be.json'),
+  lt: () => import('./lt.json'),
+  lv: () => import('./lv.json'),
 };
 
 const cache = new Map<string, Record<string, string>>();
