@@ -10,6 +10,8 @@ import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language
 import HandSignCard from '@/features/sign-language/HandSignCard';
 import type { Movement } from '@/features/sign-language/handshapes';
 import { lookupSign, getDictionarySize, searchSigns, getCategories, getSignsByCategory } from '@/features/sign-language/dictionary';
+import { useSignTranslations, type SignLangCode } from '@/features/sign-language/dictionary/translations';
+import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 declare global {
   interface Window { YT: any; onYouTubeIframeAPIReady: () => void; }
