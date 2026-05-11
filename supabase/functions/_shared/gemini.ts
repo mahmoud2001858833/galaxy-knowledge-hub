@@ -24,27 +24,7 @@ async function geminiOnce(apiKey: string, model: string, system: string, prompt:
   return schema ? JSON.parse(text) : text;
 }
 
-async function gatewayFallback(system: string, prompt: string, schema?: any): Promise<any> {
-  const key = Deno.env.get('LOVABLE_API_KEY');
-  if (!key) throw new Error('Lovable Gateway key missing');
-  const body: any = {
-    model: 'google/gemini-2.5-flash',
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: prompt + (schema ? `\n\nأعد JSON فقط وفق المخطط:\n${JSON.stringify(schema)}` : '') },
-    ],
-  };
-  if (schema) body.response_format = { type: 'json_object' };
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) throw new Error(`Gateway ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
-  const data = await resp.json();
-  const text = data?.choices?.[0]?.message?.content ?? '';
-  return schema ? JSON.parse(text) : text;
-}
+// Lovable AI fallback removed (forbidden). Gemini direct only.
 
 export async function callGemini(system: string, prompt: string, schema?: any): Promise<any> {
   const keys = [
@@ -52,6 +32,7 @@ export async function callGemini(system: string, prompt: string, schema?: any): 
     Deno.env.get('GEMINI_API_KEY_NEW'),
     Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
     Deno.env.get('AUTISM_GEMINI_API_KEY'),
+    Deno.env.get('GOOGLE_AI_API_KEY'),
   ].filter(Boolean) as string[];
   const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
   let lastErr: any = null;
@@ -61,8 +42,6 @@ export async function callGemini(system: string, prompt: string, schema?: any): 
       catch (e) { lastErr = e; console.warn(`Gemini ${model} failed:`, (e as Error).message); }
     }
   }
-  try { return await gatewayFallback(system, prompt, schema); }
-  catch (e) { lastErr = e; }
   throw lastErr ?? new Error('AI unavailable');
 }
 
