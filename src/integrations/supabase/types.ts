@@ -2617,6 +2617,7 @@ export type Database = {
           created_at: string
           documentation: string
           id: string
+          is_shared: boolean
           language: string
           prompt: string
           title: string
@@ -2627,6 +2628,7 @@ export type Database = {
           created_at?: string
           documentation: string
           id?: string
+          is_shared?: boolean
           language: string
           prompt: string
           title: string
@@ -2637,6 +2639,7 @@ export type Database = {
           created_at?: string
           documentation?: string
           id?: string
+          is_shared?: boolean
           language?: string
           prompt?: string
           title?: string
