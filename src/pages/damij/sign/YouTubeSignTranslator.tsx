@@ -10,7 +10,7 @@ import { SIGN_SYSTEMS, SIGN_SYSTEM_PRIMARY_LANG } from '@/features/sign-language
 import HandSignCard from '@/features/sign-language/HandSignCard';
 import type { Movement } from '@/features/sign-language/handshapes';
 import { lookupSign, getDictionarySize, searchSigns, getCategories, getSignsByCategory } from '@/features/sign-language/dictionary';
-import { useSignTranslations, type SignLangCode } from '@/features/sign-language/dictionary/translations';
+import { findArabicWordByTranslation, useSignTranslations, type SignLangCode } from '@/features/sign-language/dictionary/translations';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 declare global {
@@ -148,6 +148,10 @@ const YouTubeSignTranslator: React.FC = () => {
     } finally { setLoading(false); }
   };
 
+  const { lang: uiLang } = useDamijLang();
+  const dictionaryLang = SIGN_SYSTEM_PRIMARY_LANG[signSystem]?.code?.split('-')[0] || uiLang;
+  const { translate: tSign, ready: tReady } = useSignTranslations(dictionaryLang as SignLangCode);
+
   // Enrich AI signs with the local 3000+ dictionary (fills handshape/movement when AI says unknown).
   const enrichedSigns: SignsPayload | null = useMemo(() => {
     if (!signs) return null;
@@ -157,10 +161,11 @@ const YouTubeSignTranslator: React.FC = () => {
         signs: l.signs.map(s => {
           if (s.known === false || !s.handshape_id) {
             // Try exact lookup first (with prefix/suffix tolerance built-in).
-            let local = lookupSign(s.word, signSystem);
+            const sourceWord = findArabicWordByTranslation(s.word, dictionaryLang as SignLangCode) || s.word;
+            let local = lookupSign(sourceWord, signSystem);
             // Fallback: substring search (first hit).
             if (!local) {
-              const hits = searchSigns(s.word, signSystem, 1);
+              const hits = searchSigns(sourceWord, signSystem, 1);
               if (hits.length) local = hits[0];
             }
             if (local) return { ...s, handshape_id: local.handshape_id, movement: local.movement, two_handed: local.two_handed, desc: s.desc || local.desc, known: true };
@@ -169,7 +174,7 @@ const YouTubeSignTranslator: React.FC = () => {
         }),
       })),
     };
-  }, [signs, signSystem]);
+  }, [signs, signSystem, dictionaryLang, tReady]);
 
   const activeSigns = useMemo(() => {
     if (!enrichedSigns || activeIdx < 0) return [];
@@ -200,8 +205,6 @@ const YouTubeSignTranslator: React.FC = () => {
 
   // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
   const [gallerySearch, setGallerySearch] = useState('');
-  const { lang: uiLang } = useDamijLang();
-  const { translate: tSign, ready: tReady } = useSignTranslations(uiLang as SignLangCode);
   const gallery = useMemo(() => {
     if (!enrichedSigns) return [];
     const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
@@ -245,7 +248,7 @@ const YouTubeSignTranslator: React.FC = () => {
   // dictionary always shows its entries even before/while translations load.
   const dispWord = (w: string): string => {
     if (!w) return '';
-    if (uiLang === 'ar') return w;
+    if (dictionaryLang === 'ar') return w;
     if (!tReady) return w;
     const t = tSign(w);
     return t && t !== w ? t : w;
@@ -384,7 +387,7 @@ const YouTubeSignTranslator: React.FC = () => {
                                 />
                               )}
                               <div className="text-xl font-extrabold text-[hsl(var(--damij-primary))] text-center mt-2">{s.word}</div>
-                              {uiLang !== 'ar' && tReady && tSign(s.word) !== s.word && (
+                              {dictionaryLang !== 'ar' && tReady && tSign(s.word) !== s.word && (
                                 <div className="text-sm font-semibold text-emerald-700/80 text-center mt-0.5" dir="auto">{tSign(s.word)}</div>
                               )}
                               {s.desc && <div className="text-xs text-[hsl(var(--damij-text))]/65 text-center mt-1 leading-snug max-w-[220px]">{s.desc}</div>}

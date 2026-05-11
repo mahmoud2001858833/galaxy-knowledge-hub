@@ -1,13 +1,18 @@
 // Unified sign dictionary: lookup local ArSL entries fast, with normalization + fuzzy search.
 import { ARSL_DICTIONARY, ARSL_DICTIONARY_SIZE, ARSL_CATEGORIES, type ArSLEntry } from './arslDictionary';
 import { normalizeWord } from '../useSignDictionary';
+import { SIGN_SYSTEMS } from '../signSystems';
 
 export type { ArSLEntry } from './arslDictionary';
 export { ARSL_CATEGORIES };
 
-export const DICTIONARY_BY_SYSTEM: Record<string, ArSLEntry[]> = {
-  ArSL: ARSL_DICTIONARY,
-};
+export const DICTIONARY_BY_SYSTEM: Record<string, ArSLEntry[]> = SIGN_SYSTEMS.reduce(
+  (acc, system) => {
+    acc[system.code] = ARSL_DICTIONARY;
+    return acc;
+  },
+  { ArSL: ARSL_DICTIONARY } as Record<string, ArSLEntry[]>,
+);
 
 const buildIndex = (entries: ArSLEntry[]) => {
   const m = new Map<string, ArSLEntry>();
@@ -15,9 +20,15 @@ const buildIndex = (entries: ArSLEntry[]) => {
   return m;
 };
 
-const INDEXES: Record<string, Map<string, ArSLEntry>> = {
-  ArSL: buildIndex(ARSL_DICTIONARY),
-};
+const SHARED_ARSL_INDEX = buildIndex(ARSL_DICTIONARY);
+
+const INDEXES: Record<string, Map<string, ArSLEntry>> = SIGN_SYSTEMS.reduce(
+  (acc, system) => {
+    acc[system.code] = SHARED_ARSL_INDEX;
+    return acc;
+  },
+  { ArSL: SHARED_ARSL_INDEX } as Record<string, Map<string, ArSLEntry>>,
+);
 
 export function lookupSign(word: string, system: string = 'ArSL'): ArSLEntry | null {
   const idx = INDEXES[system];
@@ -55,8 +66,7 @@ export function searchSigns(query: string, system: string = 'ArSL', limit = 200)
 }
 
 export function getDictionarySize(system: string = 'ArSL'): number {
-  if (system === 'ArSL') return ARSL_DICTIONARY_SIZE;
-  return DICTIONARY_BY_SYSTEM[system]?.length || 0;
+  return DICTIONARY_BY_SYSTEM[system]?.length || ARSL_DICTIONARY_SIZE;
 }
 
 export function getCategories(system: string = 'ArSL'): string[] {
