@@ -236,14 +236,15 @@ window.Social = {
   },
   async loadComments(contentId, container) {
     const comments = await BuilderAPI.getComments(contentId);
+    const escapeHtml = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     if (container) {
       container.innerHTML = comments.map(c => \`
         <div class="comment" style="padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-            <strong>\${c.user_name}</strong>
-            <span style="opacity:0.6;font-size:12px;">\${this.timeAgo(c.created_at)}</span>
+            <strong>\${escapeHtml(c.user_name)}</strong>
+            <span style="opacity:0.6;font-size:12px;">\${escapeHtml(this.timeAgo(c.created_at))}</span>
           </div>
-          <p style="margin:0;">\${c.comment_text}</p>
+          <p style="margin:0;">\${escapeHtml(c.comment_text)}</p>
         </div>
       \`).join('');
     }
