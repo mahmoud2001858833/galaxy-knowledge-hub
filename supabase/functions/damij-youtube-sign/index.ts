@@ -199,9 +199,13 @@ async function fetchTranscriptViaPiped(videoId: string, preferredLang?: string):
 }
 
 async function fetchTranscript(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
-  // Primary: Piped API (works server-side reliably)
+  // Primary: Piped API (works server-side reliably when up)
   const piped = await fetchTranscriptViaPiped(videoId, preferredLang);
   if (piped) return piped;
+
+  // Secondary: Invidious instances
+  const inv = await fetchTranscriptViaInvidious(videoId, preferredLang);
+  if (inv) return inv;
 
   // Fallback: try YouTube watch page
   try {
