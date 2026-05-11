@@ -201,7 +201,8 @@ const YouTubeSignTranslator: React.FC = () => {
   // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
   const [gallerySearch, setGallerySearch] = useState('');
   const { lang: uiLang } = useDamijLang();
-  const { translate: tSign, ready: tReady } = useSignTranslations(uiLang as SignLangCode);
+  const dictionaryLang = SIGN_SYSTEM_PRIMARY_LANG[signSystem]?.code?.split('-')[0] || uiLang;
+  const { translate: tSign, ready: tReady } = useSignTranslations(dictionaryLang as SignLangCode);
   const gallery = useMemo(() => {
     if (!enrichedSigns) return [];
     const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
@@ -245,7 +246,7 @@ const YouTubeSignTranslator: React.FC = () => {
   // dictionary always shows its entries even before/while translations load.
   const dispWord = (w: string): string => {
     if (!w) return '';
-    if (uiLang === 'ar') return w;
+    if (dictionaryLang === 'ar') return w;
     if (!tReady) return w;
     const t = tSign(w);
     return t && t !== w ? t : w;
