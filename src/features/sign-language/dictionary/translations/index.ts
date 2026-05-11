@@ -50,6 +50,19 @@ export function translateSignSync(word: string, lang: SignLangCode): string | nu
   return map[word] || map[normalizeWord(word)] || null;
 }
 
+export function findArabicWordByTranslation(word: string, lang: SignLangCode): string | null {
+  if (!word) return null;
+  if (lang === 'ar') return word;
+  const map = cache.get(lang);
+  if (!map) return null;
+  const wanted = normalizeWord(word).toLowerCase();
+  if (!wanted) return null;
+  for (const [arabic, translated] of Object.entries(map)) {
+    if (normalizeWord(translated).toLowerCase() === wanted) return arabic;
+  }
+  return null;
+}
+
 export function useSignTranslations(lang: SignLangCode) {
   const [ready, setReady] = useState(lang === 'ar' || cache.has(lang));
   useEffect(() => {
