@@ -293,7 +293,8 @@ Deno.serve(async (req) => {
     let segments = transcript.segments;
     let translated = false;
 
-    if (body.targetLang && apiKey && body.targetLang !== transcript.lang) {
+    const baseLang = (s?: string) => (s || "").split("-")[0].toLowerCase();
+    if (body.targetLang && baseLang(body.targetLang) !== baseLang(transcript.lang)) {
       try {
         segments = await aiTranslateBatch(segments, body.targetLang, apiKey);
         translated = true;
