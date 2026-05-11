@@ -3,6 +3,7 @@
 // Returns structured JSON: probability, verdict, severity, matched/missing symptoms, red flags, recommendations, differential diagnosis
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -25,7 +26,7 @@ interface CheckRequest {
 }
 
 const callGateway = async (apiKey: string, body: object) => {
-  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  return await geminiFetch("ai-shim", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -86,7 +87,7 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = "shim-key";
     const FALLBACK_KEY = Deno.env.get("GEMINI_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY");
 
     if (!LOVABLE_API_KEY && !FALLBACK_KEY) throw new Error("لا يوجد مفتاح AI متاح");

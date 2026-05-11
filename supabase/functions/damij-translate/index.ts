@@ -2,6 +2,7 @@
 // Returns an object keyed by the original strings -> translations.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -63,7 +64,7 @@ serve(async (req) => {
 
     const langName = LANG_NAMES[target] || target;
     const sourceName = LANG_NAMES[sourceLang] || sourceLang;
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = "shim-key";
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     // Numbered list to preserve mapping
@@ -75,7 +76,7 @@ serve(async (req) => {
       `Output ONLY the numbered translations, one per line.`;
 
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await geminiFetch("ai-shim", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({

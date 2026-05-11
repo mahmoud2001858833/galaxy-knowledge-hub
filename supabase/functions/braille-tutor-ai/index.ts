@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -41,9 +42,9 @@ serve(async (req) => {
       const t = await response.text();
       console.error("gemini error", response.status, t);
       // fallback to Lovable AI Gateway
-      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+      const lovableKey = "shim-key";
       if (lovableKey) {
-        const fb = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const fb = await geminiFetch("ai-shim", {
           method: "POST",
           headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({

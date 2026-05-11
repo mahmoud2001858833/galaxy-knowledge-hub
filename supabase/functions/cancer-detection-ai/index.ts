@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Cancer Detection AI — analyzes a medical image (X-ray, photo) and/or symptoms
 // using Google Gemini (MEDICAL_AI_KEY) and returns a structured JSON report.
 //
@@ -122,7 +123,7 @@ Deno.serve(async (req) => {
     let lastStatus = 0;
 
     // 1) Lovable AI Gateway attempt (uses LOVABLE_API_KEY automatically if available)
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = "shim-key";
     if (LOVABLE_API_KEY) {
       const gatewayModels = ["google/gemini-2.5-flash", "google/gemini-2.5-pro", "google/gemini-2.5-flash-lite"];
       for (const gm of gatewayModels) {
@@ -135,7 +136,7 @@ Deno.serve(async (req) => {
               image_url: { url: `data:${imageMimeType || "image/jpeg"};base64,${imageBase64}` },
             });
           }
-          const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const resp = await geminiFetch("ai-shim", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${LOVABLE_API_KEY}`,

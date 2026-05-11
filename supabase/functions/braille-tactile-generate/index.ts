@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // supabase/functions/braille-tactile-generate/index.ts
 // Modes: generate (text→figure), convert_image (image→figure), describe (image→description)
 // Uses BRAILLE_TACTILE_GEMINI_API_KEY (Gemini direct), falls back to Lovable AI Gateway.
@@ -8,7 +9,7 @@ const corsHeaders = {
 };
 
 const GEMINI_KEY = Deno.env.get("BRAILLE_TACTILE_GEMINI_API_KEY");
-const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
+const LOVABLE_KEY = "shim-key";
 
 const SYSTEM = `You are a tactile graphics designer producing figures for blind students.
 Follow BANA tactile graphics guidelines:
@@ -159,7 +160,7 @@ async function callLovable(userText: string, imageDataUrl: string | null, schema
     tools: [{ type: "function", function: schema }],
     tool_choice: { type: "function", function: { name: schema.name } },
   };
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await geminiFetch("ai-shim", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),

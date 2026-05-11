@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -11,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { profile, lang } = await req.json();
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = "shim-key";
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const sys =
@@ -20,7 +21,7 @@ serve(async (req) => {
       `school-friendly recommendations. Reply ONLY in language code "${lang || "ar"}". ` +
       `Output JSON: { "summary": string, "score": number (0-100, higher = greener), "tips": [{"title": string, "impact": "low"|"medium"|"high", "detail": string}] }`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await geminiFetch("ai-shim", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({

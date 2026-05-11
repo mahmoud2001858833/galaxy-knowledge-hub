@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Autism screening AI analyzer (v2).
 // Returns risk_band + DSM-5 support level + functional/cognitive profile +
 // recommended game tracks for the AI therapy generator.
@@ -114,11 +115,11 @@ async function callGemini(apiKey: string, userPrompt: string, model = 'gemini-2.
 }
 
 async function callGateway(userPrompt: string, model = 'google/gemini-2.5-flash'): Promise<any> {
-  const key = Deno.env.get('LOVABLE_API_KEY');
+  const key = "shim-key";
   if (!key) throw new Error('LOVABLE_API_KEY missing');
   let lastErr: any = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const resp = await geminiFetch("ai-shim", {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

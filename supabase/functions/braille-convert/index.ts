@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Universal Braille Converter
 // Modes:
 //   - "convert" : convert text → Unicode Braille (Grade 1 deterministic, Grade 2 via AI)
@@ -114,7 +115,7 @@ function grade1Convert(text: string): string {
 // ── Grade 2 (contracted) — uses AI for accuracy ────────────────────────────
 async function grade2Convert(text: string, langName: string, langCode: string): Promise<string> {
   const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const lovableKey = "shim-key";
 
   const prompt = `You are an expert in worldwide Braille standards (UEB, Arabic Braille (LBU 2013), French Braille abrégé, Spanish, Russian, etc.).
 Convert the following ${langName} (${langCode}) text into CONTRACTED Grade-2 Braille.
@@ -155,7 +156,7 @@ Braille:`;
 
   // Fallback: Lovable AI Gateway
   if (!lovableKey) throw new Error("No AI key available");
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await geminiFetch("ai-shim", {
     method: "POST",
     headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -176,7 +177,7 @@ Braille:`;
 
 async function reverseBraille(braille: string, langName: string, langCode: string): Promise<string> {
   const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const lovableKey = "shim-key";
 
   const prompt = `You are a world-class Braille decoding + linguistics engine.
 
@@ -235,7 +236,7 @@ Decoded ${langName} text:`;
   }
 
   if (!lovableKey) throw new Error("No AI key available");
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await geminiFetch("ai-shim", {
     method: "POST",
     headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -254,7 +255,7 @@ Decoded ${langName} text:`;
 }
 
 async function refineDecodedText(text: string, langName: string): Promise<string> {
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const lovableKey = "shim-key";
   if (!lovableKey || !text.trim()) return text;
   const refinePrompt = `You are an expert ${langName} linguistic proofreader. The text below was produced by decoding a Braille document and may contain minor errors in spelling, punctuation, diacritics, or word boundaries.
 Rewrite it as natural, grammatically correct ${langName}, with:
@@ -269,7 +270,7 @@ ${text}
 
 Polished ${langName} text:`;
   try {
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await geminiFetch("ai-shim", {
       method: "POST",
       headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({

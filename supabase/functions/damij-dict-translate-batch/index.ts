@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Edge function: damij-dict-translate-batch
 // Translates a list of Arabic words to a target language in one AI call.
 // Returns: { translations: { [ar_word]: translated_word } }
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = "shim-key";
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
         status: 500,
@@ -62,7 +63,7 @@ RULES:
 Words:
 ${numbered}`;
 
-      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const r = await geminiFetch("ai-shim", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({

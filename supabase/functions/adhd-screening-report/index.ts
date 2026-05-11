@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // ADHD Screening AI report — Lovable Gateway (Gemini)
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +18,7 @@ Deno.serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = "shim-key";
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY missing' }), { status: 500, headers: corsHeaders });
     }
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
 
 استخدم لغة واضحة، تجنّب أي توصية بأدوية محدّدة، وأكّد على ضرورة الإحالة للطبيب.`;
 
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiRes = await geminiFetch("ai-shim", {
       method: 'POST',
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

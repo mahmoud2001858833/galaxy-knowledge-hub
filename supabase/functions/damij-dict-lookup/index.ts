@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Edge function: damij-dict-lookup
 // Returns rich detail for a single Arabic word in a chosen sign system + display language.
 const corsHeaders = {
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = "shim-key";
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -56,7 +57,7 @@ Return ONLY minified JSON in this exact shape (all text fields in ${lang} unless
 
 Keep fingerspelling array empty [] if the word has a standard whole-word sign and is not a proper noun/number.`;
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await geminiFetch("ai-shim", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({

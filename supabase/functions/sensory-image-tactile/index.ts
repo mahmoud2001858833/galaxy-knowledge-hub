@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Sensory Bridge: Image → audio description + tactile (printable) model
 // Robust multi-key + multi-model fallback with Lovable Gateway as last resort.
 const corsHeaders = {
@@ -94,7 +95,7 @@ async function callGeminiDirect(apiKey: string, model: string, imageBase64: stri
 }
 
 async function callLovableGateway(imageBase64: string, mimeType: string) {
-  const key = Deno.env.get('LOVABLE_API_KEY');
+  const key = "shim-key";
   if (!key) throw new Error('LOVABLE_API_KEY missing');
   const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
   const resp = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
