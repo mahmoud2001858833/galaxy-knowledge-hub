@@ -1,8 +1,7 @@
-import { geminiFetch } from "../_shared/gemini-shim.ts";
-// Damij Sign Translator AI helper.
+// Damij Sign Translator AI helper — DIRECT Gemini API (no Lovable Gateway).
 // Modes:
-//   - "translate": translate Arabic text to a target language.
-//   - "correct"  : grammatically correct + clean an Arabic gesture-stream sentence.
+//   - "translate": translate text from sourceLang to targetLang.
+//   - "correct"  : grammatically correct + clean a gesture-stream sentence.
 //   - "text2sign": professional structured text-to-sign translation in any language.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,15 +12,12 @@ const corsHeaders = {
 interface Body {
   text: string;
   mode: "translate" | "correct" | "text2sign";
-  // translate
   sourceLang?: string;
   sourceLangName?: string;
   targetLang?: string;
   targetLangName?: string;
-  // correct
   lang?: string;
   langName?: string;
-  // text2sign
   signSystem?: string;
   outputLang?: string;
   outputLangName?: string;
@@ -38,7 +34,6 @@ const buildPrompt = (b: Body) => {
     const lang = b.langName ?? b.lang ?? "Arabic";
     return `You are a professional proofreader for ${lang}. The text below is a stream of words produced by a sign-language gesture recognizer and may be fragmented. Rewrite it as ONE short, natural, fluent sentence in ${lang} ONLY, without adding new information. Output ONLY the corrected sentence — no explanation, no quotes, no language labels.\n\nText: ${b.text}`;
   }
-  // text2sign: structured JSON — REAL signs only, no emoji/letter fallbacks.
   const lang = b.outputLangName ?? b.outputLang ?? "Arabic";
   const langCode = b.outputLang ?? "ar";
   const sys = b.signSystem ?? "ArSL";
@@ -52,39 +47,42 @@ const buildPrompt = (b: Body) => {
   const MOVEMENTS = "none, tap, wave_h, wave_v, circle, push, pull, up, down";
   return `You are an elite professional sign-language interpreter for "${sys}". Convert the user's text into a step-by-step REAL sign-language performance guide in "${sys}".
 
-ABSOLUTE RULES (must obey, no exceptions):
-1. Use ONLY the authentic native signs of "${sys}". Do NOT mix with other sign systems.
-2. "translated_text" and every "word" / "description" MUST be in ${lang} (BCP-47: ${langCode}) ONLY. If the input is in another language, FIRST translate it accurately to ${lang}, then build the gloss sequence from the ${lang} translation.
-3. Verify every gloss preserves the meaning of the original input. If unsure of an authentic sign for a token in "${sys}", set "known": false and explain in "description" — do NOT invent or fingerspell.
-4. NEVER fall back to fingerspelling individual letters. NEVER produce a per-letter alphabet.
+ABSOLUTE RULES:
+1. Use ONLY authentic native signs of "${sys}". Do NOT mix systems.
+2. "translated_text" and every "word" / "description" MUST be in ${lang} (BCP-47: ${langCode}) ONLY.
+3. If unsure of an authentic sign for a token, set "known": false and explain in "description". Do NOT invent.
+4. NEVER fall back to fingerspelling letters. NEVER produce a per-letter alphabet.
 5. NEVER use emojis as a stand-in for a sign.
-6. Re-order tokens to follow the natural grammar of "${sys}" (Topic-Comment, time first, etc.) and drop articles/fillers when "${sys}" normally omits them.
+6. Re-order tokens to follow the natural grammar of "${sys}".
 
-For EACH sign, return:
-- "word": the gloss in ${lang} script.
-- "handshape_id": EXACTLY ONE of: ${HANDSHAPES}.
-- "movement": EXACTLY ONE of: ${MOVEMENTS}.
-- "two_handed": boolean.
-- "description": ONE concise sentence in ${lang}: handshape + location + movement.
-- "known": boolean.
-- "fingerspelling": ALWAYS [].
-- "sign_emoji": ALWAYS "".
+Each sign MUST include: word, handshape_id (one of: ${HANDSHAPES}), movement (one of: ${MOVEMENTS}), two_handed (bool), description, known (bool), fingerspelling: [], sign_emoji: "".
 
-Also return:
-- "translated_text": the full sentence in ${lang}.
-- "alphabet_chart": ALWAYS [].
+Also return: translated_text, language: "${langCode}", sign_system: "${sys}", alphabet_chart: [].
 
-OUTPUT FORMAT — return ONLY valid minified JSON, no markdown, no commentary:
-{
-  "translated_text": "...",
-  "language": "${langCode}",
-  "sign_system": "${sys}",
-  "words": [ { "word": "...", "handshape_id": "...", "movement": "...", "two_handed": false, "sign_emoji": "", "description": "...", "known": true, "fingerspelling": [] } ],
-  "alphabet_chart": []
-}
+Return ONLY minified JSON:
+{"translated_text":"...","language":"${langCode}","sign_system":"${sys}","words":[{"word":"...","handshape_id":"...","movement":"...","two_handed":false,"sign_emoji":"","description":"...","known":true,"fingerspelling":[]}],"alphabet_chart":[]}
 
 Input text: ${b.text}`;
 };
+
+async function callGemini(prompt: string, apiKey: string, json: boolean) {
+  const model = json ? "gemini-2.5-pro" : "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const body: any = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: json ? 0.1 : 0.4,
+    },
+  };
+  if (json) body.generationConfig.responseMimeType = "application/json";
+
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return r;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -98,50 +96,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = "shim-key";
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const isJson = body.mode === "text2sign";
-    const payload: any = {
-      model: isJson ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: "You are a precise multilingual linguistic and sign-language expert assistant for the Damij inclusive education platform." },
-        { role: "user", content: buildPrompt(body) },
-      ],
-    };
-    if (isJson) { payload.response_format = { type: "json_object" }; payload.temperature = 0.1; }
-
-    const r = await geminiFetch("ai-shim", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const r = await callGemini(buildPrompt(body), apiKey, isJson);
 
     if (r.status === 429) {
       return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول بعد دقيقة." }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (r.status === 402) {
-      return new Response(JSON.stringify({ error: "نفذت رصيد Lovable AI. أضف رصيداً من الإعدادات." }), {
-        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     if (!r.ok) {
       const t = await r.text();
-      console.error("AI error", r.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      console.error("Gemini error", r.status, t);
+      return new Response(JSON.stringify({ error: `Gemini error ${r.status}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await r.json();
-    const raw = data?.choices?.[0]?.message?.content?.trim() ?? "";
+    const raw: string =
+      data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim() ?? "";
 
     if (isJson) {
       let parsed: any = null;
