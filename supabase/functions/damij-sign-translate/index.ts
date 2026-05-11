@@ -11,7 +11,7 @@ const corsHeaders = {
 
 interface Body {
   text: string;
-  mode: "translate" | "correct" | "text2sign";
+  mode: "translate" | "correct" | "text2sign" | "correct_translate";
   sourceLang?: string;
   sourceLangName?: string;
   targetLang?: string;
@@ -28,11 +28,25 @@ const buildPrompt = (b: Body) => {
     const tgt = b.targetLangName ?? b.targetLang ?? "English";
     const tgtCode = b.targetLang ?? "en";
     const src = b.sourceLangName ?? b.sourceLang ?? "Arabic";
-    return `You are a professional translator. Translate the text from ${src} into ${tgt} (BCP-47: ${tgtCode}).\n\nSTRICT RULES:\n- Output ONLY in ${tgt}. Use the native script of ${tgt}.\n- Keep it natural, faithful, concise. No quotes, no commentary, no labels.\n- If the source text is already in ${tgt}, return it as-is, lightly cleaned.\n\nSource (${src}): ${b.text}\n\n${tgt} translation:`;
+    return `Translate from ${src} to ${tgt} (${tgtCode}). Output ONLY the ${tgt} translation, native script, no quotes/labels. If already in ${tgt}, return it cleaned.\n\nSource: ${b.text}`;
   }
   if (b.mode === "correct") {
     const lang = b.langName ?? b.lang ?? "Arabic";
-    return `You are a professional proofreader for ${lang}. The text below is a stream of words produced by a sign-language gesture recognizer and may be fragmented. Rewrite it as ONE short, natural, fluent sentence in ${lang} ONLY, without adding new information. Output ONLY the corrected sentence — no explanation, no quotes, no language labels.\n\nText: ${b.text}`;
+    return `Rewrite this fragmented sign-recognizer output as ONE short fluent sentence in ${lang} only. No commentary. No quotes.\n\nText: ${b.text}`;
+  }
+  if (b.mode === "correct_translate") {
+    const src = b.sourceLangName ?? b.sourceLang ?? "Arabic";
+    const srcCode = b.sourceLang ?? "ar";
+    const tgt = b.targetLangName ?? b.targetLang ?? "English";
+    const tgtCode = b.targetLang ?? "en";
+    return `You receive fragmented words from a sign-language recognizer in ${src}.
+1) Rewrite as ONE short fluent sentence in ${src}.
+2) Translate that sentence into ${tgt}.
+Return ONLY minified JSON: {"corrected":"...","translated":"..."}
+- "corrected" in ${src} (${srcCode}), "translated" in ${tgt} (${tgtCode}), native scripts only.
+- If ${src}==${tgt}, set translated = corrected.
+
+Text: ${b.text}`;
   }
   const lang = b.outputLangName ?? b.outputLang ?? "Arabic";
   const langCode = b.outputLang ?? "ar";
@@ -65,13 +79,16 @@ Return ONLY minified JSON:
 Input text: ${b.text}`;
 };
 
-async function callGemini(prompt: string, apiKey: string, json: boolean) {
-  const model = json ? "gemini-2.5-pro" : "gemini-2.5-flash";
+async function callGemini(prompt: string, apiKey: string, json: boolean, heavy: boolean) {
+  // Use the fastest model for short text rewrites/translations.
+  // Heavy structured tasks (text2sign) keep the higher-quality model.
+  const model = heavy ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body: any = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: json ? 0.1 : 0.4,
+      temperature: json ? 0.1 : 0.3,
+      maxOutputTokens: heavy ? 2048 : 256,
     },
   };
   if (json) body.generationConfig.responseMimeType = "application/json";
@@ -104,8 +121,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const isJson = body.mode === "text2sign";
-    const r = await callGemini(buildPrompt(body), apiKey, isJson);
+    const isJson = body.mode === "text2sign" || body.mode === "correct_translate";
+    const heavy = body.mode === "text2sign";
+    const r = await callGemini(buildPrompt(body), apiKey, isJson, heavy);
 
     if (r.status === 429) {
       return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول بعد دقيقة." }), {
