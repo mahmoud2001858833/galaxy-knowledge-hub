@@ -340,16 +340,16 @@ Deno.serve(async (req) => {
     const videoId = extractVideoId(body.url || "");
     if (!videoId) {
       return new Response(JSON.stringify({ error: "رابط يوتيوب غير صالح" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const transcript = await fetchTranscript(videoId, body.preferredLang);
     if (!transcript || !transcript.segments.length) {
       return new Response(JSON.stringify({
-        error: "لا توجد ترجمة نصية متاحة لهذا الفيديو. جرّب فيديو يحتوي على CC.",
+        error: "تعذّر جلب الترجمة النصية لهذا الفيديو. الأسباب الشائعة: الفيديو يحتوي فقط على ترجمة تلقائية يحجبها يوتيوب عن الخوادم، أو لا يحتوي على ترجمات (CC). جرّب فيديو يحتوي على ترجمة يدوية مرفوعة من المنشئ.",
         videoId,
-      }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
