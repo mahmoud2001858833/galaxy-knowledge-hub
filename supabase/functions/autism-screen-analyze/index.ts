@@ -22,26 +22,33 @@ const SOURCES = `
 - DSM-5 ASD Severity Levels (APA, 2013)
 `;
 
-const SYSTEM_PROMPT = `أنت مساعد متخصص في تحليل نتائج فحص أولي لطيف التوحد.
+const SYSTEM_PROMPT = `أنت مساعد متخصص في تحليل نتائج فحص أولي لطيف التوحد وفق DSM-5 (ASD).
 يجب أن يكون تحليلك مستنداً حصراً للمصادر الرسمية:
 ${SOURCES}
 
 قواعد صارمة:
 1. لا تُصدر تشخيصاً نهائياً. استخدم لغة "مؤشرات" و"مستوى دعم تقديري" و"يُنصح بتقييم متخصص".
-2. التشخيص النهائي وفق DSM-5 يتطلب فريقاً سريرياً متعدد التخصصات.
-3. حدّد مستوى الدعم التقديري (1/2/3) وفق DSM-5 بناءً على شدة المؤشرات.
+2. التشخيص النهائي وفق DSM-5 يتطلب فريقاً سريرياً متعدد التخصصات (طبيب أطفال نمائي، أخصائي نفسي، أخصائي نطق، علاج وظيفي).
+3. حدّد مستوى الدعم التقديري (1/2/3) وفق DSM-5 بناءً على شدة المؤشرات في كل بُعد، ووضّح الأدلة الرقمية التي استندت إليها (من الاستبيان والألعاب).
 4. حدّد الملف الوظيفي السائد: social_communication | sensory | restricted_repetitive | language | mixed
 5. حدّد الملف المعرفي التقديري: high_functioning | moderate | needs_substantial_support
-6. أعطِ confidence_score (0-100) يعكس وضوح المؤشرات.
-7. اقترح recommended_game_tracks (3-5) من: attention, joint_attention, emotion, sensory_regulation, imitation, sequencing, flexibility, requesting, social_scenarios, turn_taking
-8. اكتب بالعربية الفصحى الواضحة، أرقام عربية غربية (1, 2, 3).
-9. أعد JSON صرف فقط وفق schema، دون نص خارجي.`;
+6. أعطِ confidence_score (0-100) يعكس وضوح المؤشرات وقوة الأدلة.
+7. لكل بُعد من أبعاد DSM-5 الثلاثة (التواصل الاجتماعي A، السلوك المقيّد/المتكرر B، الحساسية الحسية) اذكر:
+   - score (0-100)
+   - confidence (0-100)
+   - evidence: قائمة بالأدلة الرقمية ("الاستبيان أظهر X%"، "لعبة Y أظهرت Z").
+   - clinical_note: ملاحظة سريرية موجزة لما يعنيه هذا للأهل.
+8. اقترح recommended_game_tracks (3-5) من: attention, joint_attention, emotion, sensory_regulation, imitation, sequencing, flexibility, requesting, social_scenarios, turn_taking
+9. اقترح parent_actions (4-6) أفعال محددة لولي الأمر يمكن البدء بها هذا الأسبوع.
+10. اقترح referral_priority: 'immediate' | 'within_month' | 'monitor'.
+11. اكتب بالعربية الفصحى الواضحة، أرقام عربية غربية (1, 2, 3).
+12. أعد JSON صرف فقط وفق schema، دون نص خارجي.`;
 
 const TOOL_SCHEMA = {
   type: 'function',
   function: {
     name: 'autism_report',
-    description: 'تقرير فحص أولي موسّع لطيف التوحد',
+    description: 'تقرير فحص أولي موسّع لطيف التوحد وفق DSM-5',
     parameters: {
       type: 'object',
       properties: {
@@ -51,6 +58,7 @@ const TOOL_SCHEMA = {
         cognitive_profile: { type: 'string', enum: ['high_functioning', 'moderate', 'needs_substantial_support'] },
         confidence_score: { type: 'number' },
         recommended_game_tracks: { type: 'array', items: { type: 'string' } },
+        referral_priority: { type: 'string', enum: ['immediate', 'within_month', 'monitor'] },
         summary_ar: { type: 'string' },
         domain_scores: {
           type: 'object',
@@ -63,10 +71,47 @@ const TOOL_SCHEMA = {
           },
           required: ['social_communication', 'restricted_repetitive', 'sensory', 'language', 'play'],
         },
+        dsm_dimensions: {
+          type: 'object',
+          properties: {
+            social_communication: {
+              type: 'object',
+              properties: {
+                score: { type: 'number' },
+                confidence: { type: 'number' },
+                evidence: { type: 'array', items: { type: 'string' } },
+                clinical_note: { type: 'string' },
+              },
+              required: ['score', 'confidence', 'evidence', 'clinical_note'],
+            },
+            restricted_repetitive: {
+              type: 'object',
+              properties: {
+                score: { type: 'number' },
+                confidence: { type: 'number' },
+                evidence: { type: 'array', items: { type: 'string' } },
+                clinical_note: { type: 'string' },
+              },
+              required: ['score', 'confidence', 'evidence', 'clinical_note'],
+            },
+            sensory: {
+              type: 'object',
+              properties: {
+                score: { type: 'number' },
+                confidence: { type: 'number' },
+                evidence: { type: 'array', items: { type: 'string' } },
+                clinical_note: { type: 'string' },
+              },
+              required: ['score', 'confidence', 'evidence', 'clinical_note'],
+            },
+          },
+          required: ['social_communication', 'restricted_repetitive', 'sensory'],
+        },
         observations: { type: 'array', items: { type: 'string' } },
         red_flags: { type: 'array', items: { type: 'string' } },
         strengths: { type: 'array', items: { type: 'string' } },
         recommendations: { type: 'array', items: { type: 'string' } },
+        parent_actions: { type: 'array', items: { type: 'string' } },
         next_steps: { type: 'array', items: { type: 'string' } },
         citations: {
           type: 'array',
@@ -77,7 +122,7 @@ const TOOL_SCHEMA = {
           },
         },
       },
-      required: ['risk_band', 'support_level', 'functional_profile', 'cognitive_profile', 'confidence_score', 'recommended_game_tracks', 'summary_ar', 'domain_scores', 'observations', 'red_flags', 'strengths', 'recommendations', 'next_steps', 'citations'],
+      required: ['risk_band', 'support_level', 'functional_profile', 'cognitive_profile', 'confidence_score', 'recommended_game_tracks', 'referral_priority', 'summary_ar', 'domain_scores', 'dsm_dimensions', 'observations', 'red_flags', 'strengths', 'recommendations', 'parent_actions', 'next_steps', 'citations'],
     },
   },
 };
@@ -153,7 +198,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const body = await req.json();
-    const { ageTrack, demographics, questionnaireResult, gameInsights } = body ?? {};
+    const { ageTrack, demographics, questionnaireResult, gameInsights, dsmRollup } = body ?? {};
     if (!ageTrack) {
       return new Response(JSON.stringify({ error: 'ageTrack مطلوب' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -164,9 +209,10 @@ Deno.serve(async (req) => {
 - المسار العمري: ${ageTrack}
 - البيانات الديموغرافية: ${JSON.stringify(demographics ?? {})}
 - نتيجة الاستبيان: ${JSON.stringify(questionnaireResult ?? null, null, 2)}
-- ملاحظات الألعاب: ${JSON.stringify(gameInsights ?? [], null, 2)}
+- ملاحظات الألعاب (مع features رقمية و dsm_contributions): ${JSON.stringify(gameInsights ?? [], null, 2)}
+- تجميع DSM-5 المحلي (Pre-computed rollup للمساعدة): ${JSON.stringify(dsmRollup ?? null, null, 2)}
 
-حلّل هذه البيانات وأعطِ تقريراً عربياً متكاملاً يشمل: المستوى التقديري للدعم وفق DSM-5، الملف الوظيفي والمعرفي، ومسارات الألعاب الموصى بها لخطة العلاج التفاعلية.`;
+استخدم البيانات الرقمية أعلاه كأدلة في حقل evidence لكل بُعد، وحلّل نقاط القوة والضعف. أعطِ تقريراً عربياً متكاملاً يشمل: المستوى التقديري للدعم وفق DSM-5، dsm_dimensions مع evidence وclinical_note لكل بُعد، الملف الوظيفي والمعرفي، parent_actions ملموسة، referral_priority، ومسارات الألعاب الموصى بها.`;
 
     const keys = [
       Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),

@@ -1,0 +1,60 @@
+/* Autism-specific design tokens — sensory-friendly palette layered on top of damij tokens.
+   Activated by adding `data-autism-mode="default|calm"` to the <body> or a wrapper. */
+
+[data-autism-mode] {
+  --autism-bg: 200 50% 98%;
+  --autism-surface: 0 0% 100%;
+  --autism-primary: 200 65% 38%;       /* sky blue */
+  --autism-primary-soft: 200 65% 92%;
+  --autism-accent: 160 45% 48%;        /* mint */
+  --autism-accent-soft: 160 45% 94%;
+  --autism-warm: 18 75% 70%;           /* peach */
+  --autism-warm-soft: 18 75% 95%;
+  --autism-success: 152 55% 42%;
+  --autism-text: 215 35% 18%;
+  --autism-muted: 215 15% 45%;
+  --autism-radius: 1.25rem;
+  --autism-shadow-soft: 0 8px 24px -12px hsl(200 50% 30% / 0.18);
+  --autism-anim-speed: 1;
+}
+
+/* Sensory-calm mode: lower contrast, muted colours, reduced motion */
+[data-autism-mode="calm"] {
+  --autism-primary: 200 25% 45%;
+  --autism-primary-soft: 200 20% 95%;
+  --autism-accent: 160 20% 55%;
+  --autism-accent-soft: 160 15% 95%;
+  --autism-warm: 18 35% 75%;
+  --autism-warm-soft: 18 25% 96%;
+  --autism-text: 215 15% 25%;
+  --autism-anim-speed: 0;
+}
+
+[data-autism-mode="calm"] *,
+[data-autism-mode="calm"] *::before,
+[data-autism-mode="calm"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.05s !important;
+  scroll-behavior: auto !important;
+}
+
+/* Age-adaptive sizing: data-autism-age="young" 2-5, "kid" 6-9, "teen" 10+ */
+[data-autism-age="young"] { --autism-base-size: 1.125rem; --autism-icon-size: 3rem; }
+[data-autism-age="kid"]   { --autism-base-size: 1rem;     --autism-icon-size: 2.25rem; }
+[data-autism-age="teen"]  { --autism-base-size: 0.95rem;  --autism-icon-size: 1.75rem; }
+
+@keyframes autism-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes autism-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.autism-pop  { animation: autism-pop 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+.autism-float{ animation: autism-float 3s ease-in-out infinite; }
+
+[data-autism-mode="calm"] .autism-pop,
+[data-autism-mode="calm"] .autism-float { animation: none !important; }

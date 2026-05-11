@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { AUTISM_SOURCES, SCREENING_DISCLAIMER_AR } from './sources';
 
+export interface DsmDimension { score: number; confidence: number; evidence: string[]; clinical_note: string; }
 export interface AIReport {
   risk_band: 'low' | 'monitor' | 'refer';
   support_level?: 1 | 2 | 3;
@@ -10,6 +11,7 @@ export interface AIReport {
   cognitive_profile?: string;
   confidence_score?: number;
   recommended_game_tracks?: string[];
+  referral_priority?: 'immediate' | 'within_month' | 'monitor';
   summary_ar: string;
   domain_scores: {
     social_communication: number;
@@ -18,10 +20,16 @@ export interface AIReport {
     language: number;
     play: number;
   };
+  dsm_dimensions?: {
+    social_communication: DsmDimension;
+    restricted_repetitive: DsmDimension;
+    sensory: DsmDimension;
+  };
   observations: string[];
   red_flags: string[];
   strengths: string[];
   recommendations: string[];
+  parent_actions?: string[];
   next_steps: string[];
   citations: { title: string; url: string }[];
 }
@@ -134,11 +142,43 @@ const ReportView: React.FC<{ report: AIReport; onReset: () => void }> = ({ repor
         </div>
       </div>
 
+      {report.dsm_dimensions && (
+        <div className="bg-white rounded-2xl p-6 border border-[hsl(var(--damij-primary))]/10">
+          <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-4">أبعاد DSM-5 مع الأدلة</h3>
+          <div className="space-y-4">
+            {([
+              ['social_communication', 'التواصل الاجتماعي (A)'],
+              ['restricted_repetitive', 'السلوك المقيّد والمتكرر (B)'],
+              ['sensory', 'الحساسية الحسية'],
+            ] as const).map(([k, label]) => {
+              const d = report.dsm_dimensions![k];
+              if (!d) return null;
+              return (
+                <div key={k} className="rounded-xl border border-slate-100 p-4 bg-slate-50/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-bold text-[hsl(var(--damij-primary))]">{label}</div>
+                    <div className="text-xs text-slate-500">ثقة {d.confidence}%</div>
+                  </div>
+                  <DomainBar label="الدرجة" score={d.score} />
+                  {d.clinical_note && <p className="text-sm text-slate-700 mt-2">{d.clinical_note}</p>}
+                  {d.evidence?.length > 0 && (
+                    <ul className="list-disc pr-5 mt-2 text-xs text-slate-600 space-y-1">
+                      {d.evidence.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-4">
         <Section title="ملاحظات سلوكية" items={report.observations} emoji="🔍" />
         <Section title="مؤشرات تستحق المتابعة" items={report.red_flags} emoji="🚩" />
         <Section title="نقاط القوة" items={report.strengths} emoji="⭐" />
         <Section title="توصيات عملية" items={report.recommendations} emoji="🧩" />
+        {report.parent_actions && <Section title="ابدأ هذا الأسبوع (لولي الأمر)" items={report.parent_actions} emoji="👨‍👩‍👧" />}
       </div>
 
       <Section title="الخطوات التالية المقترحة" items={report.next_steps} emoji="➡️" />

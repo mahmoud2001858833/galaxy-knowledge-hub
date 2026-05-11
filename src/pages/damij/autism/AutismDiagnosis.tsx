@@ -14,6 +14,7 @@ import {
   GameResult,
   scoreQuestionnaire,
   summarizeGames,
+  rollupDsm,
 } from '@/features/autism/scoringEngine';
 import { GAMES } from '@/features/autism/playGames';
 import { AUTISM_SOURCES, SCREENING_DISCLAIMER_AR } from '@/features/autism/sources';
@@ -206,6 +207,7 @@ const AutismDiagnosis: React.FC = () => {
     const questionnaireResult =
       path !== 'games' ? scoreQuestionnaire(track, answers) : null;
     const gameInsights = path !== 'questionnaire' ? summarizeGames(finalGames) : [];
+    const dsmRollup = rollupDsm(questionnaireResult, gameInsights);
 
     try {
       const { data, error } = await supabase.functions.invoke('autism-screen-analyze', {
@@ -214,6 +216,7 @@ const AutismDiagnosis: React.FC = () => {
           demographics: { ageMonths, respondent, name: name || undefined },
           questionnaireResult,
           gameInsights,
+          dsmRollup,
         },
       });
       if (error) throw error;

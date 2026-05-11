@@ -105,6 +105,10 @@ export interface GameInsight {
   metricSummary: string;
   concernLevel: 'low' | 'medium' | 'high' | 'na';
   notes: string;
+  // Behavioural feature breakdown surfaced to the AI for finer DSM-5 alignment.
+  features?: Record<string, number>;
+  // Mapping into DSM-5 sub-dimensions: A.social_communication, B.restricted_repetitive, sensory.
+  dsm_contributions?: { social: number; rrb: number; sensory: number };
 }
 
 const GAME_LABELS: Record<string, string> = {
@@ -116,78 +120,92 @@ const GAME_LABELS: Record<string, string> = {
   sensory_tolerance: 'الاحتمال الحسي',
 };
 
+function level(x: number, mid: number, high: number): 'low' | 'medium' | 'high' {
+  if (x >= high) return 'high';
+  if (x >= mid) return 'medium';
+  return 'low';
+}
+
 export function summarizeGames(results: GameResult[]): GameInsight[] {
   return results.map((r) => {
     const label = GAME_LABELS[r.gameId] ?? r.gameId;
     if (r.skipped) {
       return { gameId: r.gameId, label, metricSummary: 'تم تخطيها', concernLevel: 'na', notes: '' };
     }
+    const m = r.metrics || {};
     switch (r.gameId) {
       case 'response_to_name': {
-        const missRate = r.metrics.missRate ?? 0;
-        const avgRt = r.metrics.avgResponseMs ?? 0;
-        const concern = missRate > 0.5 ? 'high' : missRate > 0.25 ? 'medium' : 'low';
+        const missRate = m.missRate ?? 0;
+        const avgRt = m.avgResponseMs ?? 0;
+        const concern = level(missRate, 0.25, 0.5);
         return {
-          gameId: r.gameId,
-          label,
-          metricSummary: `نسبة عدم الاستجابة: ${Math.round(missRate * 100)}% — متوسط زمن الرد: ${Math.round(avgRt)} مللي ثانية`,
+          gameId: r.gameId, label,
+          metricSummary: `نسبة عدم الاستجابة: ${Math.round(missRate * 100)}% — متوسط زمن الرد: ${Math.round(avgRt)}ms`,
           concernLevel: concern,
           notes: 'انخفاض الاستجابة للاسم من العلامات المبكرة المعروفة وفق CDC.',
+          features: { missRate, avgResponseMs: avgRt, rtVariance: m.rtVariance ?? 0 },
+          dsm_contributions: { social: missRate * 0.9, rrb: 0, sensory: 0 },
         };
       }
       case 'joint_attention': {
-        const acc = r.metrics.accuracy ?? 0;
-        const concern = acc < 0.5 ? 'high' : acc < 0.75 ? 'medium' : 'low';
+        const acc = m.accuracy ?? 0;
+        const concern = level(1 - acc, 0.25, 0.5);
         return {
-          gameId: r.gameId,
-          label,
+          gameId: r.gameId, label,
           metricSummary: `دقة متابعة النظر: ${Math.round(acc * 100)}%`,
           concernLevel: concern,
           notes: 'متابعة نظر الآخرين علامة جوهرية للتواصل الاجتماعي.',
+          features: { accuracy: acc, latencyMs: m.avgLatencyMs ?? 0 },
+          dsm_contributions: { social: (1 - acc) * 0.9, rrb: 0, sensory: 0 },
         };
       }
       case 'pattern_vs_social': {
-        const ratio = r.metrics.patternDwellRatio ?? 0.5;
-        const concern = ratio > 0.7 ? 'high' : ratio > 0.55 ? 'medium' : 'low';
+        const ratio = m.patternDwellRatio ?? 0.5;
+        const concern = level(ratio - 0.5, 0.05, 0.2);
         return {
-          gameId: r.gameId,
-          label,
-          metricSummary: `نسبة تفضيل الأنماط: ${Math.round(ratio * 100)}%`,
+          gameId: r.gameId, label,
+          metricSummary: `تفضيل الأنماط على الوجوه: ${Math.round(ratio * 100)}%`,
           concernLevel: concern,
           notes: 'التفضيل الواضح للأنماط الهندسية على الوجوه يستحق المتابعة.',
+          features: { patternDwellRatio: ratio },
+          dsm_contributions: { social: Math.max(0, ratio - 0.5), rrb: Math.max(0, ratio - 0.6) * 0.5, sensory: 0 },
         };
       }
       case 'repetitive_match': {
-        const persistence = r.metrics.repetitionPersistence ?? 0;
-        const concern = persistence > 0.6 ? 'high' : persistence > 0.35 ? 'medium' : 'low';
+        const persistence = m.repetitionPersistence ?? 0;
+        const switches = m.ruleSwitchAccuracy ?? 1;
+        const concern = level(persistence, 0.35, 0.6);
         return {
-          gameId: r.gameId,
-          label,
-          metricSummary: `الإصرار على التكرار بعد تغيير القاعدة: ${Math.round(persistence * 100)}%`,
+          gameId: r.gameId, label,
+          metricSummary: `الإصرار على القاعدة القديمة: ${Math.round(persistence * 100)}% — دقة التبديل: ${Math.round(switches * 100)}%`,
           concernLevel: concern,
-          notes: 'قد يعكس صعوبة في المرونة المعرفية والروتين.',
+          notes: 'قد يعكس صعوبة في المرونة المعرفية والروتين (السلوك المتكرر).',
+          features: { repetitionPersistence: persistence, ruleSwitchAccuracy: switches },
+          dsm_contributions: { social: 0, rrb: persistence, sensory: 0 },
         };
       }
       case 'emotion_recognition': {
-        const acc = r.metrics.accuracy ?? 0;
-        const concern = acc < 0.4 ? 'high' : acc < 0.65 ? 'medium' : 'low';
+        const acc = m.accuracy ?? 0;
+        const concern = level(1 - acc, 0.35, 0.6);
         return {
-          gameId: r.gameId,
-          label,
+          gameId: r.gameId, label,
           metricSummary: `دقة تمييز المشاعر: ${Math.round(acc * 100)}%`,
           concernLevel: concern,
           notes: 'صعوبة قراءة الانفعالات شائعة في طيف التوحد.',
+          features: { accuracy: acc },
+          dsm_contributions: { social: (1 - acc) * 0.85, rrb: 0, sensory: 0 },
         };
       }
       case 'sensory_tolerance': {
-        const threshold = r.metrics.thresholdLevel ?? 5;
-        const concern = threshold <= 2 ? 'high' : threshold <= 4 ? 'medium' : 'low';
+        const threshold = m.thresholdLevel ?? 5;
+        const concern = level(10 - threshold, 6, 8);
         return {
-          gameId: r.gameId,
-          label,
+          gameId: r.gameId, label,
           metricSummary: `مستوى الاحتمال الحسي: ${threshold}/10`,
           concernLevel: concern,
           notes: 'حساسية حسية مرتفعة قد تستدعي تقييماً متخصصاً.',
+          features: { thresholdLevel: threshold },
+          dsm_contributions: { social: 0, rrb: 0, sensory: (10 - threshold) / 10 },
         };
       }
       default:
@@ -195,3 +213,79 @@ export function summarizeGames(results: GameResult[]): GameInsight[] {
     }
   });
 }
+
+// Aggregates DSM-5 dimension scores from questionnaire + games into one struct.
+export interface DsmRollup {
+  social_communication: { score: number; confidence: number; evidence: string[] };
+  restricted_repetitive: { score: number; confidence: number; evidence: string[] };
+  sensory: { score: number; confidence: number; evidence: string[] };
+  overall_severity: 'minimal' | 'mild' | 'moderate' | 'severe';
+  estimated_support_level: 1 | 2 | 3;
+}
+
+export function rollupDsm(qr: QuestionnaireResult | null, insights: GameInsight[]): DsmRollup {
+  const ds = qr?.domainScores;
+  // Questionnaire contributions (0-1 scale)
+  const qSocial = (ds?.social_communication?.pct ?? 0) / 100;
+  const qLang = (ds?.language?.pct ?? 0) / 100;
+  const qPlay = (ds?.play?.pct ?? 0) / 100;
+  const qRrb = (ds?.restricted_repetitive?.pct ?? 0) / 100;
+  const qSensory = (ds?.sensory?.pct ?? 0) / 100;
+
+  // Game contributions
+  const gSocial = avg(insights.map(i => i.dsm_contributions?.social).filter(isFinite) as number[]);
+  const gRrb = avg(insights.map(i => i.dsm_contributions?.rrb).filter(isFinite) as number[]);
+  const gSensory = avg(insights.map(i => i.dsm_contributions?.sensory).filter(isFinite) as number[]);
+
+  const social = clamp01((qSocial * 0.5 + qLang * 0.2 + qPlay * 0.1 + gSocial * 0.2));
+  const rrb = clamp01((qRrb * 0.65 + gRrb * 0.35));
+  const sensory = clamp01((qSensory * 0.7 + gSensory * 0.3));
+
+  const evSocial: string[] = [];
+  if (qSocial > 0.4) evSocial.push(`الاستبيان يُظهر ${Math.round(qSocial * 100)}% مؤشرات في التواصل الاجتماعي.`);
+  if (gSocial > 0.3) evSocial.push('الألعاب الاجتماعية أظهرت ضعفاً في الاستجابة/الانتباه المشترك/تمييز المشاعر.');
+
+  const evRrb: string[] = [];
+  if (qRrb > 0.4) evRrb.push(`الاستبيان يُظهر ${Math.round(qRrb * 100)}% مؤشرات للسلوك المقيّد والمتكرر.`);
+  if (gRrb > 0.3) evRrb.push('لعبة المرونة كشفت إصراراً على القاعدة القديمة بعد التغيير.');
+
+  const evSensory: string[] = [];
+  if (qSensory > 0.4) evSensory.push(`الاستبيان يُظهر ${Math.round(qSensory * 100)}% مؤشرات حسية.`);
+  if (gSensory > 0.3) evSensory.push('لعبة التحمّل الحسي أظهرت عتبة تحمّل منخفضة.');
+
+  const max = Math.max(social, rrb, sensory);
+  const overall_severity: DsmRollup['overall_severity'] =
+    max >= 0.7 ? 'severe' : max >= 0.5 ? 'moderate' : max >= 0.3 ? 'mild' : 'minimal';
+  const estimated_support_level: 1 | 2 | 3 = max >= 0.7 ? 3 : max >= 0.45 ? 2 : 1;
+
+  // Confidence: more evidence (questionnaire + games) → higher confidence.
+  const conf = (q: number, g: number) => clamp01(0.4 + (q > 0 ? 0.3 : 0) + (g > 0 ? 0.3 : 0));
+
+  return {
+    social_communication: {
+      score: Math.round(social * 100),
+      confidence: Math.round(conf(qSocial, gSocial) * 100),
+      evidence: evSocial,
+    },
+    restricted_repetitive: {
+      score: Math.round(rrb * 100),
+      confidence: Math.round(conf(qRrb, gRrb) * 100),
+      evidence: evRrb,
+    },
+    sensory: {
+      score: Math.round(sensory * 100),
+      confidence: Math.round(conf(qSensory, gSensory) * 100),
+      evidence: evSensory,
+    },
+    overall_severity,
+    estimated_support_level,
+  };
+}
+
+function avg(arr: number[]): number {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+function clamp01(x: number) { return Math.max(0, Math.min(1, x)); }
+function isFinite(x: any): x is number { return typeof x === 'number' && Number.isFinite(x); }
+
