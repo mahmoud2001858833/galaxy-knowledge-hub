@@ -17,6 +17,7 @@ import type { Movement } from './handshapes';
 import { getGestureWord, getSystemVocab } from './gestureVocab';
 import { useGestureVocab, gestureFromVocab } from './useGestureVocab';
 import SignSequencePlayer from './SignSequencePlayer';
+import { searchSigns } from './dictionary';
 
 
 // ── Gesture vocabulary (Arabic) ──
