@@ -61,6 +61,7 @@ const inferTrack = (ageMonths: number): AgeTrack => {
 
 const AutismDiagnosis: React.FC = () => {
   const navigate = useNavigate();
+  const { isYoung, baseTextClass, reduceMotion } = useAutismAdaptive();
   const [step, setStep] = useState<Step>('intro');
   const [name, setName] = useState('');
   const [ageMonths, setAgeMonths] = useState(36);
@@ -258,15 +259,67 @@ const AutismDiagnosis: React.FC = () => {
     } else setGameIndex((i) => i + 1);
   };
 
+  // Stepper definition
+  const STEP_LABELS: { id: Step; label: string }[] = [
+    { id: 'intro', label: 'البيانات' },
+    { id: 'path', label: 'الطريقة' },
+    { id: 'questionnaire', label: 'الأسئلة' },
+    { id: 'games', label: 'الألعاب' },
+    { id: 'ai_games', label: 'AI' },
+    { id: 'report', label: 'التقرير' },
+  ];
+  const stepIndex = STEP_LABELS.findIndex(s => s.id === step);
+
   return (
-    <div className="px-4 sm:px-6 pt-10 pb-16 max-w-4xl mx-auto" dir="rtl">
-      <header className="mb-8 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold text-[hsl(var(--autism-primary))] mb-2">
-          تشخيص نوع التوحد
+    <div className="px-4 sm:px-6 pt-8 pb-16 max-w-4xl mx-auto" dir="rtl">
+      <header className={`mb-6 text-center ${reduceMotion ? '' : 'animate-fade-in'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate('/damij/autism')}
+            className="text-xs text-[hsl(var(--autism-muted))] hover:text-[hsl(var(--autism-primary))] flex items-center gap-1">
+            <ArrowRight className="w-4 h-4" /> رجوع
+          </button>
+          <SensoryModeToggle />
+        </div>
+        <div
+          className={`mx-auto mb-4 w-16 h-16 rounded-3xl flex items-center justify-center ${reduceMotion ? '' : 'autism-float'}`}
+          style={{
+            background: 'linear-gradient(135deg, hsl(var(--autism-primary)) 0%, hsl(var(--autism-accent)) 100%)',
+            boxShadow: 'var(--autism-shadow-soft)',
+          }}>
+          <Brain className="w-8 h-8 text-white" />
+        </div>
+        <h1 className={`${isYoung ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'} font-bold text-[hsl(var(--autism-text))] mb-2`}>
+          التشخيص الذكي
         </h1>
-        <p className="text-sm text-[hsl(var(--autism-text))]/70 max-w-2xl mx-auto">
-          أداة فحص أولي مبنية على إرشادات CDC و AAP و NICE و WHO، مع تقييم باللعب وتقرير ذكي.
+        <p className={`${baseTextClass} text-[hsl(var(--autism-muted))] max-w-2xl mx-auto`}>
+          منهجية DSM-5 + M-CHAT-R/F + تحليل سلوكي بالذكاء الاصطناعي.
         </p>
+
+        {/* Stepper */}
+        <div className="mt-5 flex items-center justify-center gap-1 overflow-x-auto pb-1">
+          {STEP_LABELS.map((s, i) => {
+            const done = stepIndex > i;
+            const active = stepIndex === i;
+            return (
+              <React.Fragment key={s.id}>
+                <div className="flex flex-col items-center gap-1 min-w-[3rem]">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition ${
+                    done ? 'bg-[hsl(var(--autism-success))] text-white'
+                    : active ? 'bg-[hsl(var(--autism-primary))] text-white ring-4 ring-[hsl(var(--autism-primary)/0.2)]'
+                    : 'bg-white border border-[hsl(var(--autism-primary)/0.2)] text-[hsl(var(--autism-muted))]'
+                  }`}>
+                    {done ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                  </div>
+                  <span className={`text-[10px] ${active ? 'text-[hsl(var(--autism-primary))] font-bold' : 'text-[hsl(var(--autism-muted))]'}`}>{s.label}</span>
+                </div>
+                {i < STEP_LABELS.length - 1 && (
+                  <div className={`h-0.5 w-4 sm:w-8 rounded-full ${stepIndex > i ? 'bg-[hsl(var(--autism-success))]' : 'bg-[hsl(var(--autism-primary)/0.15)]'}`} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </header>
 
       {step === 'intro' && (
