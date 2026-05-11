@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const body = await req.json();
-    const { ageTrack, demographics, questionnaireResult, gameInsights } = body ?? {};
+    const { ageTrack, demographics, questionnaireResult, gameInsights, dsmRollup } = body ?? {};
     if (!ageTrack) {
       return new Response(JSON.stringify({ error: 'ageTrack مطلوب' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -209,9 +209,10 @@ Deno.serve(async (req) => {
 - المسار العمري: ${ageTrack}
 - البيانات الديموغرافية: ${JSON.stringify(demographics ?? {})}
 - نتيجة الاستبيان: ${JSON.stringify(questionnaireResult ?? null, null, 2)}
-- ملاحظات الألعاب: ${JSON.stringify(gameInsights ?? [], null, 2)}
+- ملاحظات الألعاب (مع features رقمية و dsm_contributions): ${JSON.stringify(gameInsights ?? [], null, 2)}
+- تجميع DSM-5 المحلي (Pre-computed rollup للمساعدة): ${JSON.stringify(dsmRollup ?? null, null, 2)}
 
-حلّل هذه البيانات وأعطِ تقريراً عربياً متكاملاً يشمل: المستوى التقديري للدعم وفق DSM-5، الملف الوظيفي والمعرفي، ومسارات الألعاب الموصى بها لخطة العلاج التفاعلية.`;
+استخدم البيانات الرقمية أعلاه كأدلة في حقل evidence لكل بُعد، وحلّل نقاط القوة والضعف. أعطِ تقريراً عربياً متكاملاً يشمل: المستوى التقديري للدعم وفق DSM-5، dsm_dimensions مع evidence وclinical_note لكل بُعد، الملف الوظيفي والمعرفي، parent_actions ملموسة، referral_priority، ومسارات الألعاب الموصى بها.`;
 
     const keys = [
       Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
