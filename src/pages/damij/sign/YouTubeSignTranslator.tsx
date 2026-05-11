@@ -240,6 +240,16 @@ const YouTubeSignTranslator: React.FC = () => {
   const dictPageItems = dictResults.slice(dictPage * PAGE_SIZE, (dictPage + 1) * PAGE_SIZE);
   const dictPages = Math.max(1, Math.ceil(dictResults.length / PAGE_SIZE));
 
+  // Display word in the active UI language. When non-Arabic and no translation
+  // exists, return '' so the slot stays empty instead of falling back to Arabic.
+  const dispWord = (w: string): string => {
+    if (!w) return '';
+    if (uiLang === 'ar') return w;
+    if (!tReady) return '';
+    const t = tSign(w);
+    return t && t !== w ? t : '';
+  };
+
 
   return (
     <div className="px-4 md:px-6 pt-8 pb-16 max-w-7xl mx-auto" dir="rtl">
@@ -508,17 +518,14 @@ const YouTubeSignTranslator: React.FC = () => {
                     >
                       {g.sign.known !== false && (
                         <HandSignCard
-                          word={g.sign.word}
+                          word={dispWord(g.sign.word)}
                           handshapeId={g.sign.handshape_id}
                           movement={(g.sign.movement as Movement) || 'none'}
                           twoHanded={g.sign.two_handed}
                           size={58}
                         />
                       )}
-                      <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{g.sign.word}</span>
-                      {uiLang !== 'ar' && tReady && tSign(g.sign.word) !== g.sign.word && (
-                        <span className="text-[10px] font-medium text-emerald-700/75 text-center line-clamp-1 max-w-full" dir="auto">{tSign(g.sign.word)}</span>
-                      )}
+                      <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full min-h-[1em]" dir="auto">{dispWord(g.sign.word)}</span>
                       <span className="text-[10px] text-[hsl(var(--damij-text))]/50 mt-0.5">{fmt(g.firstStart)} · ×{g.count}</span>
                     </button>
                   ))}
@@ -570,16 +577,13 @@ const YouTubeSignTranslator: React.FC = () => {
                   title={e.desc}
                 >
                   <HandSignCard
-                    word={e.word}
+                    word={dispWord(e.word)}
                     handshapeId={e.handshape_id}
                     movement={(e.movement as Movement) || 'none'}
                     twoHanded={e.two_handed}
                     size={58}
                   />
-                  <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{e.word}</span>
-                  {uiLang !== 'ar' && tReady && tSign(e.word) !== e.word && (
-                    <span className="text-[10px] font-medium text-sky-700/80 text-center line-clamp-1 max-w-full" dir="auto">{tSign(e.word)}</span>
-                  )}
+                  <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full min-h-[1em]" dir="auto">{dispWord(e.word)}</span>
                   <span className="text-[10px] text-[hsl(var(--damij-text))]/50">{e.category}</span>
                 </div>
               ))}
