@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import DOMPurify from 'dompurify';
 
 interface Message {
   id: string;
@@ -146,7 +147,7 @@ const PlatformGuideAssistant = () => {
   ];
 
   const renderMessageText = (text: string) => {
-    return text
+    const html = text
       .replace(/\n/g, '<br>')
       .replace(/### (.*?)(?=<br>|$)/g, '<h3 style="font-size:0.9em;font-weight:bold;color:#20d7d7;margin:4px 0 2px;">$1</h3>')
       .replace(/## (.*?)(?=<br>|$)/g, '<h2 style="font-size:1em;font-weight:bold;color:#14b8a6;margin:6px 0 3px;">$1</h2>')
@@ -154,6 +155,7 @@ const PlatformGuideAssistant = () => {
       .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#5eead4;">$1</strong>')
       .replace(/• (.*?)(?=<br>|$)/g, '<div style="margin:2px 0;padding-right:10px;">• $1</div>')
       .replace(/---/g, '<hr style="border:none;border-top:1px solid #374151;margin:8px 0;">');
+    return DOMPurify.sanitize(html, { ALLOWED_TAGS: ['br','h1','h2','h3','strong','div','hr','span','b','i','em','p'], ALLOWED_ATTR: ['style'] });
   };
 
   return (

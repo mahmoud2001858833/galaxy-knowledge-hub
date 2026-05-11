@@ -1,4 +1,5 @@
 
+import DOMPurify from 'dompurify';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -197,7 +198,7 @@ const BiologyAIAssistant = () => {
                   <div 
                     id="biology-ai-response"
                     className="prose prose-invert max-w-none overflow-y-auto h-full pr-2 pb-8"
-                    dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(response.replace(/\n/g, '<br>')) }}
                   />
                   
                   {showScrollIndicator && (

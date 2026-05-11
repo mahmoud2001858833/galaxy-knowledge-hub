@@ -243,13 +243,19 @@ const BuildPlatformTab = () => {
               const originalLog = console.log;
               console.log = function(...args) {
                 originalLog.apply(console, args);
-                output.innerHTML += args.join(' ') + '<br>';
+                const line = document.createElement('div');
+                line.textContent = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+                output.appendChild(line);
               };
               
               try {
                 ${platform.custom_code}
               } catch (error) {
-                output.innerHTML = '<span style="color: #ff6b6b;">خطأ: ' + error.message + '</span>';
+                const errEl = document.createElement('span');
+                errEl.style.color = '#ff6b6b';
+                errEl.textContent = 'خطأ: ' + (error && error.message ? error.message : String(error));
+                output.innerHTML = '';
+                output.appendChild(errEl);
               }
             </script>
           </body>

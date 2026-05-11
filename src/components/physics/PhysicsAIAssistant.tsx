@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DOMPurify from 'dompurify';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -182,7 +183,7 @@ const PhysicsAIAssistant = () => {
           ) : (
             <div 
               className="prose prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: response.replace(/\n/g, '<br>') }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(response.replace(/\n/g, '<br>')) }}
             />
           )}
         </Card>
