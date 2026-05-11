@@ -20,7 +20,7 @@ const INDEXES: Record<string, Map<string, ArSLEntry>> = {
 };
 
 export function lookupSign(word: string, system: string = 'ArSL'): ArSLEntry | null {
-  const idx = INDEXES[system] || INDEXES.ArSL;
+  const idx = INDEXES[system];
   if (!idx) return null;
   const n = normalizeWord(word);
   if (!n) return null;
