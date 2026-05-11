@@ -182,6 +182,7 @@ import BrailleLearn from './pages/damij/braille/BrailleLearn';
 import UniversalBrailleConverter from './pages/damij/braille/UniversalBrailleConverter';
 import TactileGraphics from './pages/damij/braille/TactileGraphics';
 import InteractiveBrailleLearn from './pages/damij/braille/InteractiveBrailleLearn';
+import AutismLayout from './pages/damij/autism/AutismLayout';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
 import AutismTherapy from './pages/damij/autism/AutismTherapy';
@@ -972,16 +973,22 @@ const router = createBrowserRouter([
           { path: 'braille/universal', element: <UniversalBrailleConverter /> },
           { path: 'braille/tactile', element: <TactileGraphics /> },
           { path: 'braille/interactive-learn', element: <InteractiveBrailleLearn /> },
-          { path: 'autism', element: <AutismHome /> },
-          { path: 'autism/diagnosis', element: <AutismDiagnosis /> },
-          { path: 'autism/therapy', element: <AutismTherapy /> },
-          { path: 'autism/plan', element: <AutismTherapyPlan /> },
-          { path: 'autism/play', element: <AutismGamePlayer /> },
-          { path: 'autism/profile', element: <AutismProfile /> },
-          { path: 'autism/program/setup', element: <AutismProgramSetup /> },
-          { path: 'autism/program/:programId', element: <AutismProgramCalendar /> },
-          { path: 'autism/program/:programId/dashboard', element: <AutismProgressDashboard /> },
-          { path: 'autism/program/:programId/day/:dayId', element: <AutismDayView /> },
+          {
+            path: 'autism',
+            element: <AutismLayout />,
+            children: [
+              { index: true, element: <AutismHome /> },
+              { path: 'diagnosis', element: <AutismDiagnosis /> },
+              { path: 'therapy', element: <AutismTherapy /> },
+              { path: 'plan', element: <AutismTherapyPlan /> },
+              { path: 'play', element: <AutismGamePlayer /> },
+              { path: 'profile', element: <AutismProfile /> },
+              { path: 'program/setup', element: <AutismProgramSetup /> },
+              { path: 'program/:programId', element: <AutismProgramCalendar /> },
+              { path: 'program/:programId/dashboard', element: <AutismProgressDashboard /> },
+              { path: 'program/:programId/day/:dayId', element: <AutismDayView /> },
+            ],
+          },
           { path: 'adhd', element: <ADHDHome /> },
           { path: 'adhd/screening', element: <ADHDScreening /> },
           { path: 'adhd/screening/report/:assessmentId', element: <ADHDScreeningReport /> },
