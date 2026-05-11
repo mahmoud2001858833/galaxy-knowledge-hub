@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Brain, ClipboardList, Calendar, UserCircle, Baby, Sparkles, Heart, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutismAdaptive } from '@/features/autism/ui/AutismAgeAdaptive';
-import StreakBadge from '@/features/autism/ui/StreakBadge';
+
 
 interface CardDef {
   to: string;
@@ -84,7 +84,6 @@ const AutismHome: React.FC = () => {
                 {profile.support_level ? ` • مستوى دعم ${profile.support_level}` : ''}
               </div>
             </div>
-            <StreakBadge />
           </div>
         )}
 
