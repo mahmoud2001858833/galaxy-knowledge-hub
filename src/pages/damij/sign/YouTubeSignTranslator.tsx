@@ -148,6 +148,10 @@ const YouTubeSignTranslator: React.FC = () => {
     } finally { setLoading(false); }
   };
 
+  const { lang: uiLang } = useDamijLang();
+  const dictionaryLang = SIGN_SYSTEM_PRIMARY_LANG[signSystem]?.code?.split('-')[0] || uiLang;
+  const { translate: tSign, ready: tReady } = useSignTranslations(dictionaryLang as SignLangCode);
+
   // Enrich AI signs with the local 3000+ dictionary (fills handshape/movement when AI says unknown).
   const enrichedSigns: SignsPayload | null = useMemo(() => {
     if (!signs) return null;
@@ -201,9 +205,6 @@ const YouTubeSignTranslator: React.FC = () => {
 
   // Build the full unique-signs gallery (deduped by word) with first-occurrence timing & count.
   const [gallerySearch, setGallerySearch] = useState('');
-  const { lang: uiLang } = useDamijLang();
-  const dictionaryLang = SIGN_SYSTEM_PRIMARY_LANG[signSystem]?.code?.split('-')[0] || uiLang;
-  const { translate: tSign, ready: tReady } = useSignTranslations(dictionaryLang as SignLangCode);
   const gallery = useMemo(() => {
     if (!enrichedSigns) return [];
     const map = new Map<string, { sign: SignWord; firstStart: number; count: number }>();
