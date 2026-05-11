@@ -233,14 +233,17 @@ const SignTranslatorPro: React.FC = () => {
   }, []);
 
   // ─── AI calls (debounced) ───
-  const callAI = useCallback(async (mode: 'translate' | 'correct' | 'text2sign', text: string, extra?: any) => {
+  const callAI = useCallback(async (mode: 'translate' | 'correct' | 'text2sign' | 'correct_translate', text: string, extra?: any) => {
     const { data, error } = await supabase.functions.invoke('damij-sign-translate', {
       body: { text, mode, ...extra },
     });
     if (error) throw error;
     if ((data as any)?.error) throw new Error((data as any).error);
-    return (data as any).result as string;
+    return (data as any).result;
   }, []);
+
+  // Cache to avoid re-calling the API for the same sentence/target
+  const aiCacheRef = useRef<Map<string, { corrected: string; translated: string }>>(new Map());
 
   const refreshAI = useCallback((sentence: string) => {
     if (aiDebounceRef.current) window.clearTimeout(aiDebounceRef.current);
@@ -248,33 +251,46 @@ const SignTranslatorPro: React.FC = () => {
       setCorrectedText(''); setTranslatedText(''); return;
     }
     aiDebounceRef.current = window.setTimeout(async () => {
+      const sourceLang = langForSystem(signSystem);
+      const cacheKey = `${sourceLang.code}|${targetLang.code}|${sentence.trim()}`;
+      const cached = aiCacheRef.current.get(cacheKey);
+      if (cached) {
+        setCorrectedText(cached.corrected);
+        setTranslatedText(cached.translated);
+        return;
+      }
       setIsAILoading(true);
       try {
-        // Source language === sign-system primary language (raw signs are now in this language)
-        const sourceLang = langForSystem(signSystem);
-        const corrected = await callAI('correct', sentence, {
-          lang: sourceLang.code,
-          langName: sourceLang.name,
-        });
-        setCorrectedText(corrected);
         if (targetLang.code === sourceLang.code) {
-          // No need to translate — source already matches target.
-          setTranslatedText(corrected);
+          // Single fast call: just correct.
+          const corrected = await callAI('correct', sentence, {
+            lang: sourceLang.code,
+            langName: sourceLang.name,
+          });
+          const c = String(corrected || '').trim();
+          setCorrectedText(c);
+          setTranslatedText(c);
+          aiCacheRef.current.set(cacheKey, { corrected: c, translated: c });
         } else {
-          const translated = await callAI('translate', corrected, {
+          // ONE combined call instead of two sequential round-trips.
+          const result = await callAI('correct_translate', sentence, {
             sourceLang: sourceLang.code,
             sourceLangName: sourceLang.name,
             targetLang: targetLang.code,
             targetLangName: targetLang.name,
           });
+          const corrected = String((result as any)?.corrected || '').trim();
+          const translated = String((result as any)?.translated || '').trim();
+          setCorrectedText(corrected);
           setTranslatedText(translated);
+          aiCacheRef.current.set(cacheKey, { corrected, translated });
         }
       } catch (e: any) {
         toast.error(e?.message || 'فشل الاتصال بالمساعد الذكي');
       } finally {
         setIsAILoading(false);
       }
-    }, 900);
+    }, 350);
   }, [callAI, targetLang, signSystem]);
 
   // re-translate when target language changes
