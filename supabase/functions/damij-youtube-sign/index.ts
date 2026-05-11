@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
       }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = "shim-key";
+    const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
     let segments = transcript.segments;
     let translated = false;
 
