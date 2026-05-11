@@ -113,31 +113,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey =
-      Deno.env.get("SIGN_TRANSLATE_GEMINI_KEY") ||
-      Deno.env.get("GEMINI_API_KEY") ||
-      Deno.env.get("GOOGLE_AI_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "SIGN_TRANSLATE_GEMINI_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Try keys in order; fall back if a key is invalid / rate-limited / quota exhausted.
+    const keys = [
+      Deno.env.get("SIGN_TRANSLATE_GEMINI_KEY"),
+      Deno.env.get("GEMINI_API_KEY"),
+      Deno.env.get("GOOGLE_AI_API_KEY"),
+      Deno.env.get("GEMINI_API_KEY_NEW"),
+    ].filter((k): k is string => !!k && k.length > 10);
+
+    if (keys.length === 0) {
+      return new Response(JSON.stringify({ error: "No Gemini API key configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const isJson = body.mode === "text2sign" || body.mode === "correct_translate";
     const heavy = body.mode === "text2sign";
-    const r = await callGemini(buildPrompt(body), apiKey, isJson, heavy);
+    const prompt = buildPrompt(body);
 
-    if (r.status === 429) {
-      return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول بعد دقيقة." }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let r: Response | null = null;
+    let lastErrText = "";
+    for (let i = 0; i < keys.length; i++) {
+      r = await callGemini(prompt, keys[i], isJson, heavy);
+      if (r.ok) break;
+      lastErrText = await r.text().catch(() => "");
+      console.error(`Gemini key #${i} failed`, r.status, lastErrText.slice(0, 300));
+      // Only fall through to next key on auth/quota/rate errors
+      if (![400, 401, 403, 429, 500, 503].includes(r.status)) break;
+      r = null;
     }
-    if (!r.ok) {
-      const t = await r.text();
-      console.error("Gemini error", r.status, t);
-      return new Response(JSON.stringify({ error: `Gemini error ${r.status}` }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+    if (!r || !r.ok) {
+      const status = r?.status ?? 500;
+      const msg = status === 429
+        ? "تم تجاوز حد الطلبات لجميع المفاتيح. حاول بعد دقيقة."
+        : `Gemini error ${status}: ${lastErrText.slice(0, 200)}`;
+      return new Response(JSON.stringify({ error: msg }), {
+        status: status === 429 ? 429 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
