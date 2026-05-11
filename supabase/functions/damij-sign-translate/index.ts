@@ -79,13 +79,16 @@ Return ONLY minified JSON:
 Input text: ${b.text}`;
 };
 
-async function callGemini(prompt: string, apiKey: string, json: boolean) {
-  const model = json ? "gemini-2.5-pro" : "gemini-2.5-flash";
+async function callGemini(prompt: string, apiKey: string, json: boolean, heavy: boolean) {
+  // Use the fastest model for short text rewrites/translations.
+  // Heavy structured tasks (text2sign) keep the higher-quality model.
+  const model = heavy ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body: any = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: json ? 0.1 : 0.4,
+      temperature: json ? 0.1 : 0.3,
+      maxOutputTokens: heavy ? 2048 : 256,
     },
   };
   if (json) body.generationConfig.responseMimeType = "application/json";
@@ -118,8 +121,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const isJson = body.mode === "text2sign";
-    const r = await callGemini(buildPrompt(body), apiKey, isJson);
+    const isJson = body.mode === "text2sign" || body.mode === "correct_translate";
+    const heavy = body.mode === "text2sign";
+    const r = await callGemini(buildPrompt(body), apiKey, isJson, heavy);
 
     if (r.status === 429) {
       return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول بعد دقيقة." }), {
