@@ -420,8 +420,8 @@ const AutismDiagnosis: React.FC = () => {
             <div className="h-full bg-[hsl(var(--autism-accent))] transition-all"
               style={{ width: `${((qIndex + 1) / items.length) * 100}%` }} />
           </div>
-          <div className="bg-[hsl(var(--autism-surface))] rounded-2xl p-6 border border-[hsl(var(--autism-primary))]/10">
-            <p className="text-lg font-semibold text-[hsl(var(--autism-primary))] mb-5 leading-relaxed">
+          <div key={currentItem.id} className={`bg-white rounded-3xl p-6 border-2 border-[hsl(var(--autism-primary)/0.15)] shadow-sm ${reduceMotion ? '' : 'animate-fade-in'}`} style={{ boxShadow: 'var(--autism-shadow-soft)' }}>
+            <p className={`${isYoung ? 'text-2xl' : 'text-lg'} font-semibold text-[hsl(var(--autism-text))] mb-5 leading-relaxed`}>
               {currentItem.text}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
