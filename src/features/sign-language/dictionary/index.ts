@@ -66,6 +66,7 @@ export function getCategories(system: string = 'ArSL'): string[] {
 }
 
 export function getSignsByCategory(category: string, system: string = 'ArSL'): ArSLEntry[] {
-  const list = DICTIONARY_BY_SYSTEM[system] || ARSL_DICTIONARY;
+  const list = DICTIONARY_BY_SYSTEM[system];
+  if (!list) return [];
   return list.filter(e => e.category === category);
 }
