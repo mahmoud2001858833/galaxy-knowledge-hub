@@ -18,6 +18,7 @@ import { getGestureWord, getSystemVocab } from './gestureVocab';
 import { useGestureVocab, gestureFromVocab } from './useGestureVocab';
 import SignSequencePlayer from './SignSequencePlayer';
 import { searchSigns } from './dictionary';
+import SignGlyph from './SignGlyph';
 
 
 // ── Gesture vocabulary (Arabic) ──
@@ -948,16 +949,21 @@ const SignTranslatorPro: React.FC = () => {
                       لا توجد إشارات في قاموس "{signSystem}" لهذه اللغة.
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[420px] overflow-y-auto pr-1">
                       {demoDictWords.map((e) => (
                         <button
                           key={e.word}
                           onClick={() => handleDictionaryWord(e.word)}
-                          className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-sm flex items-center gap-2 border border-emerald-100"
-                          title={e.category}
+                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-sm flex flex-col items-center gap-1 border border-emerald-100 transition-all hover:scale-[1.03] hover:shadow-md"
+                          title={`${e.word} — ${e.category}`}
                         >
-                          <span className="text-base">🤲</span>
-                          <span className="truncate">{e.word}</span>
+                          <SignGlyph
+                            word={{ ar: e.word, category: e.category }}
+                            signSystem={signSystem}
+                            size={56}
+                          />
+                          <span className="truncate font-semibold text-emerald-900 max-w-full">{e.word}</span>
+                          <span className="text-[10px] text-emerald-600/70 truncate max-w-full">{e.category}</span>
                         </button>
                       ))}
                     </div>
