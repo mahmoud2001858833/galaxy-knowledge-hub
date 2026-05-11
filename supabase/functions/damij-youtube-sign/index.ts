@@ -301,9 +301,9 @@ Deno.serve(async (req) => {
     }
 
     let signs: any = null;
-    if (body.buildSigns && apiKey) {
+    if (body.buildSigns) {
       try {
-        signs = await aiBuildSigns(segments, body.signSystem || "ArSL", body.targetLang || transcript.lang, apiKey);
+        signs = tokenizeSigns(segments);
       } catch (e) { console.error("signs failed", e); }
     }
 
