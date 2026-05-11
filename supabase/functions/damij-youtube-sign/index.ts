@@ -232,23 +232,41 @@ ${text}`;
   }
 }
 
-async function aiBuildSigns(segments: Segment[], signSystem: string, lang: string, apiKey: string) {
-  // Build signs for ALL segments via parallel chunks (no more 35-line cap).
-  const CHUNK = 25;
-  const chunks: { i: number; text: string }[][] = [];
-  for (let i = 0; i < segments.length; i += CHUNK) {
-    chunks.push(segments.slice(i, i + CHUNK).map((s, k) => ({ i: i + k, text: s.text })));
-  }
-  const PAR = 4;
-  const allLines: any[] = [];
-  for (let p = 0; p < chunks.length; p += PAR) {
-    const batch = chunks.slice(p, p + PAR);
-    const results = await Promise.all(
-      batch.map(c => aiBuildSignsChunk(c, signSystem, lang, apiKey).catch(() => null))
-    );
-    for (const r of results) if (r?.lines) allLines.push(...r.lines);
-  }
-  return { lines: allLines };
+// Fast, deterministic sign tokenization (no AI) — the frontend dictionary
+// (3000+ entries) fills in handshape/movement per word. This avoids edge-function
+// timeouts on long videos and produces results instantly.
+function tokenizeSigns(segments: Segment[]) {
+  const STOP = new Set([
+    // Arabic fillers / particles
+    "في","من","الى","إلى","على","عن","يا","ما","لا","و","أو","او","ثم","قد","هل","كان","كانت",
+    "هذا","هذه","ذلك","تلك","هنا","هناك","انا","أنا","انت","أنت","هو","هي","نحن","هم",
+    // English fillers
+    "the","a","an","of","to","in","on","at","is","are","was","were","be","and","or","so","if","it","this","that","these","those","i","you","he","she","we","they","me","my","your",
+    // Music / brackets noise
+    "موسيقى","صراخ","تصفيق",
+  ]);
+  const lines = segments.map((seg, i) => {
+    // strip bracketed sound cues and the YouTube ">>" speaker markers
+    const cleaned = seg.text
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/[>]{2,}/g, " ")
+      .replace(/[«»“”"'`،,.;:!?()]/g, " ")
+      .trim();
+    const words = cleaned.split(/\s+/).filter(w => w && !STOP.has(w.toLowerCase()));
+    const n = words.length;
+    const signs = words.map((w, k) => ({
+      word: w,
+      handshape_id: undefined as string | undefined,
+      movement: undefined as string | undefined,
+      two_handed: false,
+      desc: "",
+      known: false,
+      t: n ? k / n : 0,
+      d: n ? 1 / n : 1,
+    }));
+    return { i, signs };
+  });
+  return { lines };
 }
 
 Deno.serve(async (req) => {
@@ -275,7 +293,8 @@ Deno.serve(async (req) => {
     let segments = transcript.segments;
     let translated = false;
 
-    if (body.targetLang && apiKey && body.targetLang !== transcript.lang) {
+    const baseLang = (s?: string) => (s || "").split("-")[0].toLowerCase();
+    if (body.targetLang && baseLang(body.targetLang) !== baseLang(transcript.lang)) {
       try {
         segments = await aiTranslateBatch(segments, body.targetLang, apiKey);
         translated = true;
@@ -283,9 +302,9 @@ Deno.serve(async (req) => {
     }
 
     let signs: any = null;
-    if (body.buildSigns && apiKey) {
+    if (body.buildSigns) {
       try {
-        signs = await aiBuildSigns(segments, body.signSystem || "ArSL", body.targetLang || transcript.lang, apiKey);
+        signs = tokenizeSigns(segments);
       } catch (e) { console.error("signs failed", e); }
     }
 
