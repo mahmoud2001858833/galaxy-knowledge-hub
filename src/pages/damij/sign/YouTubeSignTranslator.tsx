@@ -385,7 +385,7 @@ const YouTubeSignTranslator: React.FC = () => {
                                 />
                               )}
                               <div className="text-xl font-extrabold text-[hsl(var(--damij-primary))] text-center mt-2">{s.word}</div>
-                              {uiLang !== 'ar' && tReady && tSign(s.word) !== s.word && (
+                              {dictionaryLang !== 'ar' && tReady && tSign(s.word) !== s.word && (
                                 <div className="text-sm font-semibold text-emerald-700/80 text-center mt-0.5" dir="auto">{tSign(s.word)}</div>
                               )}
                               {s.desc && <div className="text-xs text-[hsl(var(--damij-text))]/65 text-center mt-1 leading-snug max-w-[220px]">{s.desc}</div>}
