@@ -1018,7 +1018,7 @@ const SignTranslatorPro: React.FC = () => {
             </div>
 
             <div className="text-xs text-[hsl(var(--damij-text))]/60 text-center flex items-center justify-center gap-2">
-              <Sparkles className="w-3 h-3" /> مدعوم بـ Lovable AI Gateway · Gemini
+              <Sparkles className="w-3 h-3" /> مدعوم بـ Gemini AI
             </div>
           </div>
         </div>
