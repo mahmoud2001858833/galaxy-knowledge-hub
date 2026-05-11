@@ -28,11 +28,8 @@ export async function loadSignTranslations(lang: SignLangCode): Promise<Record<s
   if (lang === 'ar') return {};
   if (cache.has(lang)) return cache.get(lang)!;
   if (inflight.has(lang)) return inflight.get(lang)!;
-  const loader = LOADERS[lang];
-  if (!loader) return {};
-  const p = loader().then((m) => {
-    const data = (m as any).default || (m as any);
-    // Build a normalized lookup so we tolerate diacritics / ا variants.
+  if (!SUPPORTED_LANGS.has(lang)) return {};
+  const p = loadJson(lang).then((data) => {
     const enriched: Record<string, string> = { ...data };
     for (const k of Object.keys(data)) {
       const n = normalizeWord(k);
