@@ -98,7 +98,7 @@ async function callLovableGateway(imageBase64: string, mimeType: string) {
   const key = "shim-key";
   if (!key) throw new Error('LOVABLE_API_KEY missing');
   const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
-  const resp = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const resp = await geminiFetch('ai-shim', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
