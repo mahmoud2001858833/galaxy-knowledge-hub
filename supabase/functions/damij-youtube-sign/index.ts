@@ -1,4 +1,22 @@
-import { geminiFetch } from "../_shared/gemini-shim.ts";
+// Direct Gemini API helper (Lovable AI Gateway is forbidden in this project).
+async function geminiGenerate(prompt: string, apiKey: string, json: boolean, signal?: AbortSignal): Promise<Response> {
+  const model = "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const body: any = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { temperature: json ? 0.1 : 0.4 },
+  };
+  if (json) body.generationConfig.responseMimeType = "application/json";
+  return await fetch(url, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+function geminiText(d: any): string {
+  return d?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") ?? "";
+}
 // Damij YouTube → Sign Language pipeline.
 // 1) Extract video ID from URL
 // 2) Fetch caption tracks list from the YouTube watch page
@@ -163,15 +181,10 @@ async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey:
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 30000);
     try {
-      const r = await geminiFetch("ai-shim", {
-        method: "POST",
-        signal: ctrl.signal,
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: [{ role: "user", content: prompt }] }),
-      });
+      const r = await geminiGenerate(prompt, apiKey, false, ctrl.signal);
       if (!r.ok) { out.push(...slice); continue; }
       const d = await r.json();
-      const raw: string = d?.choices?.[0]?.message?.content ?? "";
+      const raw: string = geminiText(d);
       const lines = raw.split(/\r?\n/).map(l => l.replace(/^\s*\d+[.)\-]\s*/, "").trim()).filter(Boolean);
       out.push(...slice.map((s, j) => ({ ...s, text: lines[j] || s.text })));
     } catch (e) {
@@ -212,20 +225,11 @@ ${text}`;
   const t = setTimeout(() => ctrl.abort(), 45000);
   let r: Response;
   try {
-    r = await geminiFetch("ai-shim", {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    r = await geminiGenerate(prompt, apiKey, true, ctrl.signal);
   } finally { clearTimeout(t); }
   if (!r.ok) { console.error("signs ai non-ok", r.status, await r.text().catch(()=>"")); return null; }
   const d = await r.json();
-  const raw = d?.choices?.[0]?.message?.content ?? "";
+  const raw = geminiText(d);
   try { return JSON.parse(raw); } catch {
     const m = raw.match(/\{[\s\S]*\}/); if (m) { try { return JSON.parse(m[0]); } catch {} }
     return null;
@@ -289,7 +293,7 @@ Deno.serve(async (req) => {
       }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = "shim-key";
+    const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
     let segments = transcript.segments;
     let translated = false;
 
