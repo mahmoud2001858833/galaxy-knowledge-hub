@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Damij Sign Translator AI helper.
 // Modes:
 //   - "translate": translate Arabic text to a target language.
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = "shim-key";
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
         status: 500,
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
     };
     if (isJson) { payload.response_format = { type: "json_object" }; payload.temperature = 0.1; }
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await geminiFetch("ai-shim", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload),

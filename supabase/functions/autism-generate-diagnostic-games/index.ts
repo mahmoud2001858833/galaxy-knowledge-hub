@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Generates a personalized battery of diagnostic mini-games for autism screening.
 // Spectrum varies per child, so the AI chooses 4-6 templates from the registry,
 // adapts difficulty/duration, and writes Arabic instructions tailored to the child.
@@ -102,14 +103,14 @@ ${TEMPLATES.map((t) => `- ${t.id} : ${t.skill}`).join('\n')}
 اختر بطارية ألعاب تشخيصية مخصّصة لهذا الطفل وفق الـ schema:
 ${JSON.stringify(SCHEMA)}`;
 
-    const key = Deno.env.get('LOVABLE_API_KEY');
+    const key = "shim-key";
     if (!key) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY missing', ...fallbackBattery(ageMonths) }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const resp = await geminiFetch("ai-shim", {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

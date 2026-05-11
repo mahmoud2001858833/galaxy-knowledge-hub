@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Damij Smart Guide chat — uses Lovable AI Gateway (Gemini) with multi-fallback.
 // Returns { reply: string, navigate?: string } so the client can offer one-click navigation.
 
@@ -28,7 +29,7 @@ const SECTION_MAP = `
 interface Msg { role: 'user' | 'assistant' | 'system'; content: string; }
 
 async function callGateway(messages: Msg[], lang: string) {
-  const key = Deno.env.get('LOVABLE_API_KEY');
+  const key = "shim-key";
   if (!key) throw new Error('LOVABLE_API_KEY missing');
 
   const system = `أنت "مرشد دامج الذكي" — مساعد ذكاء اصطناعي ودود، احترافي، ومتخصص في منصة دامج للتعليم الدامج والتشخيص الذكي.
@@ -49,7 +50,7 @@ ${SECTION_MAP}
     response_format: { type: 'json_object' },
   };
 
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const resp = await geminiFetch("ai-shim", {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

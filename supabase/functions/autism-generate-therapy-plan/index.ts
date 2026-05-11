@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Generates a personalized therapy plan with interactive games for an autistic
 // child based on their diagnostic profile. Returns 4 stages with 3-4 games each,
 // drawn from a fixed catalog of game templates.
@@ -105,9 +106,9 @@ async function callGemini(apiKey: string, userPrompt: string): Promise<any> {
 }
 
 async function callGateway(userPrompt: string): Promise<any> {
-  const key = Deno.env.get('LOVABLE_API_KEY');
+  const key = "shim-key";
   if (!key) throw new Error('LOVABLE_API_KEY missing');
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const resp = await geminiFetch("ai-shim", {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({

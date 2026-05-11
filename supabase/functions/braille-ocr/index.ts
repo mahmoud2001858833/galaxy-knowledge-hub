@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Braille OCR — converts a photo of a Braille page into text using
 // Gemini vision, with Lovable AI Gateway fallback on quota errors.
 const corsHeaders = {
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
     if (m) { mime = m[1]; b64 = m[2]; }
 
     const directKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const lovableKey = "shim-key";
     if (!directKey && !lovableKey) {
       return new Response(JSON.stringify({ error: "no API key configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
 
     // 2) Fallback to Lovable Gateway
     if (!raw && lovableKey) {
-      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const r = await geminiFetch("ai-shim", {
         method: "POST",
         headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -185,7 +186,7 @@ ${parsed.text}
 النص المنقّح:`;
 
         if (lovableKey) {
-          const rr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const rr = await geminiFetch("ai-shim", {
             method: "POST",
             headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
             body: JSON.stringify({

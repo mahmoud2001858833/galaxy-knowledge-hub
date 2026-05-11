@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Reverse Sensory Bridge — accepts any educational content (text/image/audio/video)
 // and returns a multi-sensory representation tailored to the user's sensory profile.
 const corsHeaders = {
@@ -56,9 +57,9 @@ const PROFILE_INSTRUCTIONS = (p: Profile) => {
 };
 
 async function callGemini(parts: any[], systemPrompt: string): Promise<string> {
-  const key = Deno.env.get("LOVABLE_API_KEY");
+  const key = "shim-key";
   if (!key) throw new Error("LOVABLE_API_KEY missing");
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await geminiFetch("ai-shim", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({

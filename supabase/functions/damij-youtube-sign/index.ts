@@ -1,3 +1,4 @@
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Damij YouTube → Sign Language pipeline.
 // 1) Extract video ID from URL
 // 2) Fetch caption tracks list from the YouTube watch page
@@ -162,7 +163,7 @@ async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey:
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 30000);
     try {
-      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const r = await geminiFetch("ai-shim", {
         method: "POST",
         signal: ctrl.signal,
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -211,7 +212,7 @@ ${text}`;
   const t = setTimeout(() => ctrl.abort(), 45000);
   let r: Response;
   try {
-    r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    r = await geminiFetch("ai-shim", {
       method: "POST",
       signal: ctrl.signal,
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -270,7 +271,7 @@ Deno.serve(async (req) => {
       }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = "shim-key";
     let segments = transcript.segments;
     let translated = false;
 

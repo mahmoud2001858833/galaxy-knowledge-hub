@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,7 +18,7 @@ serve(async (req) => {
       throw new Error('Audio data is required');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = "shim-key";
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
@@ -28,7 +29,7 @@ serve(async (req) => {
     if (LOVABLE_API_KEY) {
       try {
         console.log('Trying Lovable AI Gateway (gemini-2.5-flash) for STT…');
-        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const response = await geminiFetch("ai-shim", {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
