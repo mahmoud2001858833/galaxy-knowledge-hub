@@ -79,10 +79,7 @@ Return ONLY minified JSON:
 Input text: ${b.text}`;
 };
 
-async function callGemini(prompt: string, apiKey: string, json: boolean, heavy: boolean) {
-  // Use the fastest model for short text rewrites/translations.
-  // Heavy structured tasks (text2sign) keep the higher-quality model.
-  const model = heavy ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
+async function callGemini(prompt: string, apiKey: string, json: boolean, heavy: boolean, model: string) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body: any = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -131,16 +128,24 @@ Deno.serve(async (req) => {
     const heavy = body.mode === "text2sign";
     const prompt = buildPrompt(body);
 
+    // Model fallback chain: try faster/cheaper models first to avoid pro-tier quota limits.
+    // gemini-2.5-flash has ~10x the free quota of gemini-2.5-pro and handles structured JSON well.
+    const models = heavy
+      ? ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
+      : ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+
     let r: Response | null = null;
     let lastErrText = "";
-    for (let i = 0; i < keys.length; i++) {
-      r = await callGemini(prompt, keys[i], isJson, heavy);
-      if (r.ok) break;
-      lastErrText = await r.text().catch(() => "");
-      console.error(`Gemini key #${i} failed`, r.status, lastErrText.slice(0, 300));
-      // Only fall through to next key on auth/quota/rate errors
-      if (![400, 401, 403, 429, 500, 503].includes(r.status)) break;
-      r = null;
+    outer: for (const model of models) {
+      for (let i = 0; i < keys.length; i++) {
+        r = await callGemini(prompt, keys[i], isJson, heavy, model);
+        if (r.ok) break outer;
+        lastErrText = await r.text().catch(() => "");
+        console.error(`Gemini model=${model} key #${i} failed`, r.status, lastErrText.slice(0, 200));
+        // Only fall through on auth/quota/rate errors
+        if (![400, 401, 403, 429, 500, 503].includes(r.status)) break outer;
+        r = null;
+      }
     }
 
     if (!r || !r.ok) {
