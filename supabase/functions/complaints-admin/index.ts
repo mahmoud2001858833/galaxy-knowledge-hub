@@ -6,14 +6,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-password",
 };
 
-const ADMIN_PASSWORD = "12345678";
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const ADMIN_PASSWORD = Deno.env.get("COMPLAINTS_ADMIN_PASSWORD");
+    if (!ADMIN_PASSWORD) {
+      console.error("COMPLAINTS_ADMIN_PASSWORD not configured");
+      return new Response(JSON.stringify({ error: "Server misconfiguration" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const password = req.headers.get("x-admin-password");
-    if (password !== ADMIN_PASSWORD) {
+    if (!password || password !== ADMIN_PASSWORD) {
       return new Response(JSON.stringify({ error: "كلمة سر غير صحيحة" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
