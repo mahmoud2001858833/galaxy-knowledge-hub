@@ -321,6 +321,36 @@ const SignTranslatorPro: React.FC = () => {
     setTimeout(() => setCurrentGesture(null), 1000);
   }, [refreshAI, signSystem, liveVocab]);
 
+  // Inject a raw dictionary word as a "detected" token (used by the expanded demo mode).
+  const handleDictionaryWord = useCallback((word: string, emoji = '🤲') => {
+    const incoming: DetectedToken = {
+      gesture: `dict:${word}`,
+      text: word,
+      confidence: 0.99,
+      timestamp: Date.now(),
+    };
+    const decision = filterGesture(incoming, acceptedTokensRef.current);
+    if (decision.action === 'ignore') return;
+    if (decision.action === 'replace') {
+      acceptedTokensRef.current = [...acceptedTokensRef.current.slice(0, -1), incoming];
+    } else {
+      acceptedTokensRef.current = [...acceptedTokensRef.current, incoming].slice(-200);
+    }
+    setCurrentGesture(`dict:${word}`);
+    setConfidence(99);
+    const sentence = buildSentence(acceptedTokensRef.current);
+    setDetectedText(sentence);
+    refreshAI(sentence);
+    setTimeout(() => setCurrentGesture(null), 800);
+  }, [refreshAI]);
+
+  // Demo dictionary search (signSystem-aware; empty for systems without a dictionary)
+  const [demoQuery, setDemoQuery] = useState('');
+  const demoDictWords = React.useMemo(() => {
+    return searchSigns(demoQuery, signSystem, 60);
+  }, [demoQuery, signSystem]);
+
+
   // ─── MediaPipe init + detection loop (compact) ───
   const initHand = useCallback(async () => {
     setLoadingStep('تحميل نموذج الذكاء الاصطناعي…');
