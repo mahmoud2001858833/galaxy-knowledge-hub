@@ -40,7 +40,8 @@ export function lookupSign(word: string, system: string = 'ArSL'): ArSLEntry | n
 }
 
 export function searchSigns(query: string, system: string = 'ArSL', limit = 200): ArSLEntry[] {
-  const list = DICTIONARY_BY_SYSTEM[system] || ARSL_DICTIONARY;
+  const list = DICTIONARY_BY_SYSTEM[system];
+  if (!list) return [];
   const q = normalizeWord(query);
   if (!q) return list.slice(0, limit);
   const out: ArSLEntry[] = [];
