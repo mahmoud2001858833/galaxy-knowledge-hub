@@ -518,17 +518,14 @@ const YouTubeSignTranslator: React.FC = () => {
                     >
                       {g.sign.known !== false && (
                         <HandSignCard
-                          word={g.sign.word}
+                          word={dispWord(g.sign.word)}
                           handshapeId={g.sign.handshape_id}
                           movement={(g.sign.movement as Movement) || 'none'}
                           twoHanded={g.sign.two_handed}
                           size={58}
                         />
                       )}
-                      <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full">{g.sign.word}</span>
-                      {uiLang !== 'ar' && tReady && tSign(g.sign.word) !== g.sign.word && (
-                        <span className="text-[10px] font-medium text-emerald-700/75 text-center line-clamp-1 max-w-full" dir="auto">{tSign(g.sign.word)}</span>
-                      )}
+                      <span className="text-xs font-bold text-[hsl(var(--damij-text))] mt-1 text-center line-clamp-1 max-w-full min-h-[1em]" dir="auto">{dispWord(g.sign.word)}</span>
                       <span className="text-[10px] text-[hsl(var(--damij-text))]/50 mt-0.5">{fmt(g.firstStart)} · ×{g.count}</span>
                     </button>
                   ))}
