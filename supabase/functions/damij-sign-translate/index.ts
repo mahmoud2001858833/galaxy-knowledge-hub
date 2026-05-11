@@ -79,10 +79,7 @@ Return ONLY minified JSON:
 Input text: ${b.text}`;
 };
 
-async function callGemini(prompt: string, apiKey: string, json: boolean, heavy: boolean) {
-  // Use the fastest model for short text rewrites/translations.
-  // Heavy structured tasks (text2sign) keep the higher-quality model.
-  const model = heavy ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
+async function callGemini(prompt: string, apiKey: string, json: boolean, heavy: boolean, model: string) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body: any = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
