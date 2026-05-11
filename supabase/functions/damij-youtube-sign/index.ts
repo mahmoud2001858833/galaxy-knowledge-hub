@@ -181,15 +181,10 @@ async function aiTranslateBatch(segments: Segment[], targetLang: string, apiKey:
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 30000);
     try {
-      const r = await geminiFetch("ai-shim", {
-        method: "POST",
-        signal: ctrl.signal,
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: [{ role: "user", content: prompt }] }),
-      });
+      const r = await geminiGenerate(prompt, apiKey, false, ctrl.signal);
       if (!r.ok) { out.push(...slice); continue; }
       const d = await r.json();
-      const raw: string = d?.choices?.[0]?.message?.content ?? "";
+      const raw: string = geminiText(d);
       const lines = raw.split(/\r?\n/).map(l => l.replace(/^\s*\d+[.)\-]\s*/, "").trim()).filter(Boolean);
       out.push(...slice.map((s, j) => ({ ...s, text: lines[j] || s.text })));
     } catch (e) {
