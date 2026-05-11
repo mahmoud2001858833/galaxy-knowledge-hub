@@ -913,18 +913,55 @@ const SignTranslatorPro: React.FC = () => {
             )}
 
             {demoMode && !cameraActive && (
-              <div className="bg-white p-4 rounded-2xl border border-[hsl(var(--damij-primary))]/15">
-                <p className="font-bold text-[hsl(var(--damij-primary))] mb-3 flex items-center gap-2">
-                  جرّب الإشارات بدون كاميرا
-                  {vocabLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.entries(liveVocab).map(([k, v]) => (
-                    <button key={k} onClick={() => handleGestureDetected(k, 0.99)}
-                      className="p-2 rounded-lg bg-[hsl(var(--damij-surface))] hover:bg-[hsl(var(--damij-primary))]/10 text-sm flex items-center gap-2">
-                      <span className="text-lg">{v.emoji}</span><span>{v.text}</span>
-                    </button>
-                  ))}
+              <div className="bg-white p-4 rounded-2xl border border-[hsl(var(--damij-primary))]/15 space-y-4 max-h-[520px] overflow-y-auto">
+                {/* Camera-detectable gestures */}
+                <div>
+                  <p className="font-bold text-[hsl(var(--damij-primary))] mb-2 flex items-center gap-2 text-sm">
+                    <Hand className="w-4 h-4" /> إشارات الكاميرا
+                    <span className="text-xs font-normal text-slate-500">({Object.keys(liveVocab).length})</span>
+                    {vocabLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {Object.entries(liveVocab).map(([k, v]) => (
+                      <button key={k} onClick={() => handleGestureDetected(k, 0.99)}
+                        className="p-2 rounded-lg bg-[hsl(var(--damij-surface))] hover:bg-[hsl(var(--damij-primary))]/10 text-sm flex items-center gap-2">
+                        <span className="text-lg">{v.emoji}</span><span className="truncate">{v.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dictionary words from the active sign system */}
+                <div>
+                  <p className="font-bold text-emerald-700 mb-2 flex items-center gap-2 text-sm">
+                    <Sparkles className="w-4 h-4" /> كلمات من قاموس {signSystem}
+                    <span className="text-xs font-normal text-slate-500">({demoDictWords.length})</span>
+                  </p>
+                  <input
+                    value={demoQuery}
+                    onChange={(e) => setDemoQuery(e.target.value)}
+                    placeholder="ابحث عن كلمة (مثال: ماء، طعام، شكراً)"
+                    className="w-full mb-2 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                  {demoDictWords.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-3">
+                      لا توجد إشارات في قاموس "{signSystem}" لهذه اللغة.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {demoDictWords.map((e) => (
+                        <button
+                          key={e.word}
+                          onClick={() => handleDictionaryWord(e.word)}
+                          className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-sm flex items-center gap-2 border border-emerald-100"
+                          title={e.category}
+                        >
+                          <span className="text-base">🤲</span>
+                          <span className="truncate">{e.word}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
