@@ -20,7 +20,7 @@ const INDEXES: Record<string, Map<string, ArSLEntry>> = {
 };
 
 export function lookupSign(word: string, system: string = 'ArSL'): ArSLEntry | null {
-  const idx = INDEXES[system] || INDEXES.ArSL;
+  const idx = INDEXES[system];
   if (!idx) return null;
   const n = normalizeWord(word);
   if (!n) return null;
@@ -40,7 +40,8 @@ export function lookupSign(word: string, system: string = 'ArSL'): ArSLEntry | n
 }
 
 export function searchSigns(query: string, system: string = 'ArSL', limit = 200): ArSLEntry[] {
-  const list = DICTIONARY_BY_SYSTEM[system] || ARSL_DICTIONARY;
+  const list = DICTIONARY_BY_SYSTEM[system];
+  if (!list) return [];
   const q = normalizeWord(query);
   if (!q) return list.slice(0, limit);
   const out: ArSLEntry[] = [];
@@ -65,6 +66,7 @@ export function getCategories(system: string = 'ArSL'): string[] {
 }
 
 export function getSignsByCategory(category: string, system: string = 'ArSL'): ArSLEntry[] {
-  const list = DICTIONARY_BY_SYSTEM[system] || ARSL_DICTIONARY;
+  const list = DICTIONARY_BY_SYSTEM[system];
+  if (!list) return [];
   return list.filter(e => e.category === category);
 }
