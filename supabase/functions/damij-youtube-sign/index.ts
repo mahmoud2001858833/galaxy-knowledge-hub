@@ -120,6 +120,61 @@ const PIPED_INSTANCES = [
   "https://pipedapi.r4fo.com",
 ];
 
+const INVIDIOUS_INSTANCES = [
+  "https://inv.nadeko.net",
+  "https://invidious.nerdvpn.de",
+  "https://invidious.privacyredirect.com",
+  "https://yewtu.be",
+];
+
+function parseVtt(txt: string): Segment[] {
+  const segs: Segment[] = [];
+  const lines = txt.split(/\r?\n/);
+  const t2s = (t: string) => {
+    const m = t.trim().match(/(\d+):(\d+):(\d+)[.,](\d+)/) || t.trim().match(/(\d+):(\d+)[.,](\d+)/);
+    if (!m) return 0;
+    if (m.length === 5) return +m[1]*3600 + +m[2]*60 + +m[3] + (+m[4])/1000;
+    return +m[1]*60 + +m[2] + (+m[3])/1000;
+  };
+  let i = 0;
+  while (i < lines.length) {
+    const m = lines[i].match(/(\d{1,2}:\d{2}(:\d{2})?[.,]\d{3})\s+-->\s+(\d{1,2}:\d{2}(:\d{2})?[.,]\d{3})/);
+    if (m) {
+      const start = t2s(m[1]); const end = t2s(m[3]);
+      i++;
+      const buf: string[] = [];
+      while (i < lines.length && lines[i].trim() !== "") { buf.push(lines[i]); i++; }
+      const text = decodeEntities(buf.join(" ")).trim();
+      if (text) segs.push({ start, dur: Math.max(0.1, end - start), text });
+    }
+    i++;
+  }
+  return segs;
+}
+
+async function fetchTranscriptViaInvidious(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
+  const pref = preferredLang?.split("-")[0];
+  for (const base of INVIDIOUS_INSTANCES) {
+    try {
+      const r = await fetch(`${base}/api/v1/captions/${videoId}`, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const caps: any[] = d?.captions ?? [];
+      if (!caps.length) continue;
+      const pick = (pref && caps.find(c => (c.languageCode || "").startsWith(pref))) || caps[0];
+      if (!pick?.url) continue;
+      const capUrl = pick.url.startsWith("http") ? pick.url : `${base}${pick.url}`;
+      const cr = await fetch(capUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (!cr.ok) continue;
+      const txt = await cr.text();
+      if (!txt.trim()) continue;
+      const segs = txt.includes("-->") ? parseVtt(txt) : parseTimedTextXml(txt);
+      if (segs.length) return { lang: pick.languageCode || "und", segments: segs };
+    } catch { /* next */ }
+  }
+  return null;
+}
+
 async function fetchTranscriptViaPiped(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
   for (const base of PIPED_INSTANCES) {
     try {
