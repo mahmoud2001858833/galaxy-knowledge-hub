@@ -261,10 +261,10 @@ const AutismDiagnosis: React.FC = () => {
   return (
     <div className="px-4 sm:px-6 pt-10 pb-16 max-w-4xl mx-auto" dir="rtl">
       <header className="mb-8 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold text-[hsl(var(--damij-primary))] mb-2">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[hsl(var(--autism-primary))] mb-2">
           تشخيص نوع التوحد
         </h1>
-        <p className="text-sm text-[hsl(var(--damij-text))]/70 max-w-2xl mx-auto">
+        <p className="text-sm text-[hsl(var(--autism-text))]/70 max-w-2xl mx-auto">
           أداة فحص أولي مبنية على إرشادات CDC و AAP و NICE و WHO، مع تقييم باللعب وتقرير ذكي.
         </p>
       </header>
@@ -276,14 +276,14 @@ const AutismDiagnosis: React.FC = () => {
             <p className="text-sm text-amber-900 leading-relaxed">{SCREENING_DISCLAIMER_AR}</p>
           </div>
 
-          <div className="bg-[hsl(var(--damij-surface))] rounded-2xl p-6 border border-[hsl(var(--damij-primary))]/10 space-y-5">
+          <div className="bg-[hsl(var(--autism-surface))] rounded-2xl p-6 border border-[hsl(var(--autism-primary))]/10 space-y-5">
             <div>
               <label className="block text-sm font-semibold mb-2">من يجيب على الأسئلة؟</label>
               <div className="flex gap-3">
                 {(['caregiver', 'self'] as const).map((r) => (
                   <button key={r} onClick={() => setRespondent(r)}
                     className={`px-5 py-2 rounded-xl border-2 font-semibold transition ${
-                      respondent === r ? 'bg-[hsl(var(--damij-accent-2))] text-white border-[hsl(var(--damij-accent-2))]' : 'bg-white border-[hsl(var(--damij-primary))]/20'
+                      respondent === r ? 'bg-[hsl(var(--autism-accent))] text-white border-[hsl(var(--autism-accent))]' : 'bg-white border-[hsl(var(--autism-primary))]/20'
                     }`}>
                     {r === 'caregiver' ? 'ولي أمر / مقدم رعاية' : 'تقييم ذاتي'}
                   </button>
@@ -293,14 +293,14 @@ const AutismDiagnosis: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold mb-2">الاسم (اختياري)</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white" />
+                className="w-full px-4 py-2 rounded-xl border border-[hsl(var(--autism-primary))]/20 bg-white" />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">العمر (بالأشهر)</label>
               <input type="number" min={12} max={600} value={ageMonths}
                 onChange={(e) => setAgeMonths(parseInt(e.target.value || '0', 10))}
-                className="w-32 px-4 py-2 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white" />
-              <p className="text-xs text-[hsl(var(--damij-text))]/60 mt-2">
+                className="w-32 px-4 py-2 rounded-xl border border-[hsl(var(--autism-primary))]/20 bg-white" />
+              <p className="text-xs text-[hsl(var(--autism-text))]/60 mt-2">
                 المسار المختار: <strong>
                   {track === 'toddler' ? 'صغار (16–36 شهر)' : track === 'child' ? 'أطفال (3–11 سنة)' : 'مراهقون / بالغون'}
                 </strong>
@@ -309,7 +309,7 @@ const AutismDiagnosis: React.FC = () => {
           </div>
 
           <button onClick={() => setStep('path')}
-            className="w-full py-4 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg">
+            className="w-full py-4 rounded-2xl bg-[hsl(var(--autism-primary))] text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg">
             البدء بالتقييم <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
@@ -317,7 +317,7 @@ const AutismDiagnosis: React.FC = () => {
 
       {step === 'path' && (
         <div className="space-y-4">
-          <p className="text-center text-[hsl(var(--damij-text))]/70 mb-4">اختر طريقة التقييم:</p>
+          <p className="text-center text-[hsl(var(--autism-text))]/70 mb-4">اختر طريقة التقييم:</p>
           {([
             { id: 'questionnaire', icon: ClipboardList, title: 'تقييم بالأسئلة', desc: `استبيان ${items.length} سؤال — حوالي 5 دقائق.` },
             { id: 'games', icon: Gamepad2, title: 'تقييم باللعب', desc: '6 ألعاب تفاعلية تقيس الانتباه والتواصل والحس.' },
@@ -326,18 +326,18 @@ const AutismDiagnosis: React.FC = () => {
           ] as const).map((p) => (
             <button key={p.id} onClick={() => setPath(p.id)}
               className={`w-full p-5 rounded-2xl border-2 transition flex items-center gap-4 text-right ${
-                path === p.id ? 'border-[hsl(var(--damij-accent-2))] bg-[hsl(var(--damij-accent-2))]/5' : 'border-[hsl(var(--damij-primary))]/15 bg-white'
+                path === p.id ? 'border-[hsl(var(--autism-accent))] bg-[hsl(var(--autism-accent))]/5' : 'border-[hsl(var(--autism-primary))]/15 bg-white'
               }`}>
-              <p.icon className="w-8 h-8 text-[hsl(var(--damij-accent-2))]" />
+              <p.icon className="w-8 h-8 text-[hsl(var(--autism-accent))]" />
               <div className="flex-1">
-                <div className="font-bold text-[hsl(var(--damij-primary))]">{p.title}</div>
-                <div className="text-sm text-[hsl(var(--damij-text))]/70">{p.desc}</div>
+                <div className="font-bold text-[hsl(var(--autism-primary))]">{p.title}</div>
+                <div className="text-sm text-[hsl(var(--autism-text))]/70">{p.desc}</div>
               </div>
             </button>
           ))}
           <div className="flex gap-3 pt-2">
             <button onClick={() => setStep('intro')}
-              className="px-5 py-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 font-semibold flex items-center gap-1">
+              className="px-5 py-3 rounded-xl border border-[hsl(var(--autism-primary))]/20 font-semibold flex items-center gap-1">
               <ArrowRight className="w-4 h-4" /> رجوع
             </button>
             <button onClick={() => {
@@ -345,7 +345,7 @@ const AutismDiagnosis: React.FC = () => {
               else if (path === 'ai_games') startAiGames([]);
               else setStep('questionnaire');
             }}
-              className="flex-1 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold">
+              className="flex-1 py-3 rounded-xl bg-[hsl(var(--autism-primary))] text-white font-bold">
               متابعة
             </button>
           </div>
@@ -354,21 +354,21 @@ const AutismDiagnosis: React.FC = () => {
 
       {step === 'questionnaire' && currentItem && (
         <div className="space-y-5">
-          <div className="flex justify-between text-sm text-[hsl(var(--damij-text))]/60">
+          <div className="flex justify-between text-sm text-[hsl(var(--autism-text))]/60">
             <span>السؤال {qIndex + 1} من {items.length}</span>
-            <span className="px-2 py-0.5 rounded-full bg-[hsl(var(--damij-primary))]/10">
+            <span className="px-2 py-0.5 rounded-full bg-[hsl(var(--autism-primary))]/10">
               {currentItem.domain === 'social_communication' ? 'تواصل اجتماعي'
                 : currentItem.domain === 'restricted_repetitive' ? 'سلوك مقيّد'
                 : currentItem.domain === 'sensory' ? 'حسي'
                 : currentItem.domain === 'language' ? 'لغة' : 'لعب'}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-[hsl(var(--damij-primary))]/10 overflow-hidden">
-            <div className="h-full bg-[hsl(var(--damij-accent-2))] transition-all"
+          <div className="h-2 rounded-full bg-[hsl(var(--autism-primary))]/10 overflow-hidden">
+            <div className="h-full bg-[hsl(var(--autism-accent))] transition-all"
               style={{ width: `${((qIndex + 1) / items.length) * 100}%` }} />
           </div>
-          <div className="bg-[hsl(var(--damij-surface))] rounded-2xl p-6 border border-[hsl(var(--damij-primary))]/10">
-            <p className="text-lg font-semibold text-[hsl(var(--damij-primary))] mb-5 leading-relaxed">
+          <div className="bg-[hsl(var(--autism-surface))] rounded-2xl p-6 border border-[hsl(var(--autism-primary))]/10">
+            <p className="text-lg font-semibold text-[hsl(var(--autism-primary))] mb-5 leading-relaxed">
               {currentItem.text}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -382,8 +382,8 @@ const AutismDiagnosis: React.FC = () => {
                   }}
                     className={`px-4 py-3 rounded-xl font-semibold border-2 transition ${
                       answers[currentItem.id] === v
-                        ? 'bg-[hsl(var(--damij-accent-2))] text-white border-[hsl(var(--damij-accent-2))]'
-                        : 'bg-white border-[hsl(var(--damij-primary))]/20 hover:bg-[hsl(var(--damij-primary))]/5'
+                        ? 'bg-[hsl(var(--autism-accent))] text-white border-[hsl(var(--autism-accent))]'
+                        : 'bg-white border-[hsl(var(--autism-primary))]/20 hover:bg-[hsl(var(--autism-primary))]/5'
                     }`}>{l}</button>
                 ))
                 : (Object.entries(ANSWER_LABELS_4PT) as [AnswerValue, string][]).map(([v, l]) => (
@@ -395,8 +395,8 @@ const AutismDiagnosis: React.FC = () => {
                   }}
                     className={`px-4 py-3 rounded-xl font-semibold border-2 transition ${
                       answers[currentItem.id] === v
-                        ? 'bg-[hsl(var(--damij-accent-2))] text-white border-[hsl(var(--damij-accent-2))]'
-                        : 'bg-white border-[hsl(var(--damij-primary))]/20 hover:bg-[hsl(var(--damij-primary))]/5'
+                        ? 'bg-[hsl(var(--autism-accent))] text-white border-[hsl(var(--autism-accent))]'
+                        : 'bg-white border-[hsl(var(--autism-primary))]/20 hover:bg-[hsl(var(--autism-primary))]/5'
                     }`}>{l}</button>
                 ))
               }
@@ -404,11 +404,11 @@ const AutismDiagnosis: React.FC = () => {
           </div>
           <div className="flex justify-between">
             <button disabled={qIndex === 0} onClick={() => setQIndex((i) => Math.max(0, i - 1))}
-              className="px-4 py-2 rounded-lg border border-[hsl(var(--damij-primary))]/20 disabled:opacity-30">
+              className="px-4 py-2 rounded-lg border border-[hsl(var(--autism-primary))]/20 disabled:opacity-30">
               السؤال السابق
             </button>
             <button onClick={onQuestionnaireDone}
-              className="px-4 py-2 rounded-lg bg-[hsl(var(--damij-primary))] text-white font-semibold">
+              className="px-4 py-2 rounded-lg bg-[hsl(var(--autism-primary))] text-white font-semibold">
               {path === 'questionnaire' ? 'إنهاء وتحليل' : path === 'ai_games' ? 'توليد ألعاب AI' : 'الانتقال للألعاب'}
             </button>
           </div>
@@ -427,15 +427,15 @@ const AutismDiagnosis: React.FC = () => {
         return (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-sm text-[hsl(var(--damij-text))]/60">
+              <span className="text-sm text-[hsl(var(--autism-text))]/60">
                 لعبة {gameIndex + 1} من {GAMES.length} — {game.title}
               </span>
-              <div className="h-2 w-32 rounded-full bg-[hsl(var(--damij-primary))]/10 overflow-hidden">
-                <div className="h-full bg-[hsl(var(--damij-accent-2))]"
+              <div className="h-2 w-32 rounded-full bg-[hsl(var(--autism-primary))]/10 overflow-hidden">
+                <div className="h-full bg-[hsl(var(--autism-accent))]"
                   style={{ width: `${((gameIndex + 1) / GAMES.length) * 100}%` }} />
               </div>
             </div>
-            <div className="bg-[hsl(var(--damij-surface))] rounded-3xl p-4 border border-[hsl(var(--damij-primary))]/10">
+            <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
               <Cmp
                 key={game.id}
                 onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
@@ -450,10 +450,10 @@ const AutismDiagnosis: React.FC = () => {
         if (aiGamesLoading || !aiGames.length) {
           return (
             <div className="text-center py-20 space-y-5">
-              <Wand2 className="w-14 h-14 mx-auto text-[hsl(var(--damij-accent-2))] animate-pulse" />
-              <h2 className="text-xl font-bold text-[hsl(var(--damij-primary))]">يولّد الذكاء الاصطناعي ألعاب تشخيص مخصّصة لهذا الطفل…</h2>
-              <p className="text-sm text-[hsl(var(--damij-text))]/70 max-w-md mx-auto">طيف التوحد يختلف من شخص لآخر، لذلك نُكيّف الألعاب حسب العمر والمؤشرات الأولية.</p>
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[hsl(var(--damij-accent-2))]" />
+              <Wand2 className="w-14 h-14 mx-auto text-[hsl(var(--autism-accent))] animate-pulse" />
+              <h2 className="text-xl font-bold text-[hsl(var(--autism-primary))]">يولّد الذكاء الاصطناعي ألعاب تشخيص مخصّصة لهذا الطفل…</h2>
+              <p className="text-sm text-[hsl(var(--autism-text))]/70 max-w-md mx-auto">طيف التوحد يختلف من شخص لآخر، لذلك نُكيّف الألعاب حسب العمر والمؤشرات الأولية.</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[hsl(var(--autism-accent))]" />
             </div>
           );
         }
@@ -467,23 +467,23 @@ const AutismDiagnosis: React.FC = () => {
         return (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[hsl(var(--damij-text))]/60">
+              <span className="text-[hsl(var(--autism-text))]/60">
                 لعبة ذكية {aiGameIndex + 1} من {aiGames.length} — {meta?.emoji} {g.title_ar}
               </span>
-              <div className="h-2 w-32 rounded-full bg-[hsl(var(--damij-primary))]/10 overflow-hidden">
-                <div className="h-full bg-[hsl(var(--damij-accent-2))]"
+              <div className="h-2 w-32 rounded-full bg-[hsl(var(--autism-primary))]/10 overflow-hidden">
+                <div className="h-full bg-[hsl(var(--autism-accent))]"
                   style={{ width: `${((aiGameIndex + 1) / aiGames.length) * 100}%` }} />
               </div>
             </div>
             {aiStrategy && aiGameIndex === 0 && (
-              <div className="text-xs p-3 rounded-xl bg-[hsl(var(--damij-accent-2))]/10 border border-[hsl(var(--damij-accent-2))]/30 text-[hsl(var(--damij-primary))]">
+              <div className="text-xs p-3 rounded-xl bg-[hsl(var(--autism-accent))]/10 border border-[hsl(var(--autism-accent))]/30 text-[hsl(var(--autism-primary))]">
                 ✨ <b>استراتيجية AI:</b> {aiStrategy}
               </div>
             )}
             <div className="text-xs p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
               🎯 <b>الهدف:</b> {g.target_skill_ar} — {g.rationale_ar}
             </div>
-            <div className="bg-[hsl(var(--damij-surface))] rounded-3xl p-4 border border-[hsl(var(--damij-primary))]/10">
+            <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
               <Cmp
                 key={`ai_${aiGameIndex}_${g.template_id}`}
                 difficulty={g.difficulty}
@@ -499,12 +499,12 @@ const AutismDiagnosis: React.FC = () => {
 
       {step === 'analyzing' && (
         <div className="text-center py-20 space-y-5">
-          <Loader2 className="w-16 h-16 animate-spin mx-auto text-[hsl(var(--damij-accent-2))]" />
-          <h2 className="text-2xl font-bold text-[hsl(var(--damij-primary))]">جاري تحليل النتائج...</h2>
-          <p className="text-[hsl(var(--damij-text))]/70 max-w-md mx-auto">
+          <Loader2 className="w-16 h-16 animate-spin mx-auto text-[hsl(var(--autism-accent))]" />
+          <h2 className="text-2xl font-bold text-[hsl(var(--autism-primary))]">جاري تحليل النتائج...</h2>
+          <p className="text-[hsl(var(--autism-text))]/70 max-w-md mx-auto">
             يقوم الذكاء الاصطناعي بمراجعة الإجابات والملاحظات السلوكية وفق إرشادات CDC و AAP و NICE و WHO.
           </p>
-          <ul className="text-xs text-[hsl(var(--damij-text))]/60 space-y-1 max-w-md mx-auto">
+          <ul className="text-xs text-[hsl(var(--autism-text))]/60 space-y-1 max-w-md mx-auto">
             {AUTISM_SOURCES.slice(0, 4).map((s) => (
               <li key={s.url}>• [{s.org}] {s.title}</li>
             ))}
