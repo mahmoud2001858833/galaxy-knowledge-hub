@@ -225,20 +225,11 @@ ${text}`;
   const t = setTimeout(() => ctrl.abort(), 45000);
   let r: Response;
   try {
-    r = await geminiFetch("ai-shim", {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    r = await geminiGenerate(prompt, apiKey, true, ctrl.signal);
   } finally { clearTimeout(t); }
   if (!r.ok) { console.error("signs ai non-ok", r.status, await r.text().catch(()=>"")); return null; }
   const d = await r.json();
-  const raw = d?.choices?.[0]?.message?.content ?? "";
+  const raw = geminiText(d);
   try { return JSON.parse(raw); } catch {
     const m = raw.match(/\{[\s\S]*\}/); if (m) { try { return JSON.parse(m[0]); } catch {} }
     return null;
