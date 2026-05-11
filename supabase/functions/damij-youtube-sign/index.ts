@@ -1,4 +1,22 @@
-import { geminiFetch } from "../_shared/gemini-shim.ts";
+// Direct Gemini API helper (Lovable AI Gateway is forbidden in this project).
+async function geminiGenerate(prompt: string, apiKey: string, json: boolean, signal?: AbortSignal): Promise<Response> {
+  const model = "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const body: any = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { temperature: json ? 0.1 : 0.4 },
+  };
+  if (json) body.generationConfig.responseMimeType = "application/json";
+  return await fetch(url, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+function geminiText(d: any): string {
+  return d?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") ?? "";
+}
 // Damij YouTube → Sign Language pipeline.
 // 1) Extract video ID from URL
 // 2) Fetch caption tracks list from the YouTube watch page
