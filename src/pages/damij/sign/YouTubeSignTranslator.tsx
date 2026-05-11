@@ -240,14 +240,15 @@ const YouTubeSignTranslator: React.FC = () => {
   const dictPageItems = dictResults.slice(dictPage * PAGE_SIZE, (dictPage + 1) * PAGE_SIZE);
   const dictPages = Math.max(1, Math.ceil(dictResults.length / PAGE_SIZE));
 
-  // Display word in the active UI language. When non-Arabic and no translation
-  // exists, return '' so the slot stays empty instead of falling back to Arabic.
+  // Display word in the active UI language. Fallback chain:
+  // 1) translated word, 2) original Arabic word — never empty so the
+  // dictionary always shows its entries even before/while translations load.
   const dispWord = (w: string): string => {
     if (!w) return '';
     if (uiLang === 'ar') return w;
-    if (!tReady) return '';
+    if (!tReady) return w;
     const t = tSign(w);
-    return t && t !== w ? t : '';
+    return t && t !== w ? t : w;
   };
 
 
