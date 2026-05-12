@@ -44,6 +44,47 @@ OUTPUT — return ONLY minified JSON (no markdown):
 Cap "cells" to first 200.`;
 };
 
+async function lovableVision(model: string, lovableKey: string, prompt: string, mime: string, b64: string, json = true): Promise<string> {
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "user", content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
+        ] },
+      ],
+      ...(json ? { response_format: { type: "json_object" } } : {}),
+      temperature: 0.1,
+      max_tokens: 8192,
+    }),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`lovable ${model} ${r.status}: ${t.slice(0, 200)}`);
+  }
+  const data = await r.json();
+  return data?.choices?.[0]?.message?.content ?? "";
+}
+
+async function lovableText(model: string, lovableKey: string, prompt: string): Promise<string> {
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      max_tokens: 4096,
+    }),
+  });
+  if (!r.ok) throw new Error(`lovable refine ${model} ${r.status}`);
+  const data = await r.json();
+  return data?.choices?.[0]?.message?.content ?? "";
+}
+
 async function geminiVision(model: string, key: string, prompt: string, mime: string, b64: string, json = true) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const r = await fetch(url, {
@@ -95,34 +136,53 @@ Deno.serve(async (req) => {
     const m = b64.match(/^data:(.+?);base64,(.*)$/);
     if (m) { mime = m[1]; b64 = m[2]; }
 
-    const key =
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiKey =
       Deno.env.get("BRAILLE_GEMINI_API_KEY") ||
       Deno.env.get("GEMINI_API_KEY") ||
       Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!key) {
-      return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ" }), {
+    if (!lovableKey && !geminiKey) {
+      return new Response(JSON.stringify({ error: "لا يوجد مفتاح ذكاء اصطناعي مهيأ" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const prompt = buildPrompt(body);
-    const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
 
     let raw = "";
     let lastError = "";
-    for (const mdl of models) {
-      try {
-        raw = await geminiVision(mdl, key, prompt, mime, b64, true);
-        if (raw && raw.trim()) break;
-      } catch (e) {
-        lastError = e instanceof Error ? e.message : String(e);
-        console.warn("model failed", mdl, lastError);
+
+    // Primary: Lovable AI Gateway (per user request, this is the only function allowed to use it)
+    if (lovableKey) {
+      const lovModels = ["google/gemini-2.5-pro", "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
+      for (const mdl of lovModels) {
+        try {
+          raw = await lovableVision(mdl, lovableKey, prompt, mime, b64, true);
+          if (raw && raw.trim()) break;
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : String(e);
+          console.warn("lovable model failed", mdl, lastError);
+        }
+      }
+    }
+
+    // Fallback: direct Gemini
+    if (!raw && geminiKey) {
+      const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+      for (const mdl of models) {
+        try {
+          raw = await geminiVision(mdl, geminiKey, prompt, mime, b64, true);
+          if (raw && raw.trim()) break;
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : String(e);
+          console.warn("gemini model failed", mdl, lastError);
+        }
       }
     }
 
     if (!raw) {
-      return new Response(JSON.stringify({ error: "تعذّر الاتصال بـ Gemini", detail: lastError }),
+      return new Response(JSON.stringify({ error: "تعذّر الاتصال بالذكاء الاصطناعي", detail: lastError }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -147,7 +207,15 @@ Deno.serve(async (req) => {
 
 النص:
 ${parsed.text}`;
-        const refined = (await geminiText("gemini-2.5-flash", key, refinePrompt))
+        const refineFn = async () => {
+          if (lovableKey) {
+            try { return await lovableText("google/gemini-2.5-flash", lovableKey, refinePrompt); }
+            catch (e) { console.warn("lovable refine failed:", e); }
+          }
+          if (geminiKey) return await geminiText("gemini-2.5-flash", geminiKey, refinePrompt);
+          return "";
+        };
+        const refined = (await refineFn())
           .trim().replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
         if (refined) {
           parsed.original_text = parsed.text;
