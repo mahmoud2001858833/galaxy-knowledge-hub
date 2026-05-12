@@ -372,10 +372,8 @@ const AutismDiagnosis: React.FC = () => {
         <div className="space-y-4">
           <p className="text-center text-[hsl(var(--autism-text))]/70 mb-4">اختر طريقة التقييم:</p>
           {([
-            { id: 'questionnaire', icon: ClipboardList, title: 'تقييم بالأسئلة', desc: `استبيان ${items.length} سؤال — حوالي 5 دقائق.` },
-            { id: 'games', icon: Gamepad2, title: 'تقييم باللعب', desc: '6 ألعاب تفاعلية تقيس الانتباه والتواصل والحس.' },
-            { id: 'ai_games', icon: Wand2, title: 'ألعاب تشخيصية مخصّصة بالـ AI ✨', desc: 'يولّد الذكاء الاصطناعي بطارية ألعاب فريدة لكل طفل (الطيف يختلف من حالة لأخرى).' },
-            { id: 'both', icon: Sparkles, title: 'تقييم شامل (موصى به)', desc: 'الأسئلة + الألعاب الأساسية + الألعاب الذكية المخصّصة.' },
+            { id: 'ai_games', icon: Wand2, title: 'ألعاب تشخيصية ذكية مخصّصة بالـ AI ✨ (موصى به)', desc: 'يولّد الذكاء الاصطناعي بطارية ألعاب فريدة لكل طفل بناءً على عمره — لا توجد أسئلة مكتوبة، كله ألعاب تفاعلية.' },
+            { id: 'games', icon: Gamepad2, title: 'الألعاب الأساسية الجاهزة', desc: '6 ألعاب تفاعلية ثابتة تقيس الانتباه والتواصل والحس.' },
           ] as const).map((p) => (
             <button key={p.id} onClick={() => setPath(p.id)}
               className={`w-full p-5 rounded-2xl border-2 transition flex items-center gap-4 text-right ${
