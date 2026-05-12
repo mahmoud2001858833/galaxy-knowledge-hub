@@ -442,8 +442,8 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         const msg = String(e?.message);
         if (msg === "rate_limited") return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (msg === "payment_required") return new Response(JSON.stringify({ error: "نفذ الرصيد. أضف رصيداً من الإعدادات." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw e;
+        if (msg === "missing_key") return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ. يرجى إضافة BRAILLE_GEMINI_API_KEY." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "فشل فك ترميز بريل. حاول مرة أخرى." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
