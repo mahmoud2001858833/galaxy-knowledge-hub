@@ -205,10 +205,11 @@ const SensoryTriSense: React.FC = () => {
   const clearAll = () => { setSegments([]); setActiveId(null); setSignWordIdx(-1); };
 
   const activeSeg = segments.find(s => s.id === activeId) ?? null;
-  const activeSign = useMemo(
-    () => activeSeg ? textToSignSequence(activeSeg.text) : [],
+  const activeSign: SignToken[] = useMemo(
+    () => activeSeg ? tokenizeSigns(activeSeg.text) : [],
     [activeSeg]
   );
+  const recognizedCount = activeSign.filter(t => t.kind !== 'unknown').length;
 
   return (
     <div dir="rtl" className="px-6 pt-10 pb-16 max-w-6xl mx-auto">
