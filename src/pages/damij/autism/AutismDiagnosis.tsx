@@ -66,7 +66,7 @@ const AutismDiagnosis: React.FC = () => {
   const [name, setName] = useState('');
   const [ageMonths, setAgeMonths] = useState(36);
   const [respondent, setRespondent] = useState<'caregiver' | 'self'>('caregiver');
-  const [path, setPath] = useState<Path>('both');
+  const [path, setPath] = useState<Path>('ai_games');
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [qIndex, setQIndex] = useState(0);
   const [gameIndex, setGameIndex] = useState(0);
