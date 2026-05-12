@@ -136,34 +136,53 @@ Deno.serve(async (req) => {
     const m = b64.match(/^data:(.+?);base64,(.*)$/);
     if (m) { mime = m[1]; b64 = m[2]; }
 
-    const key =
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiKey =
       Deno.env.get("BRAILLE_GEMINI_API_KEY") ||
       Deno.env.get("GEMINI_API_KEY") ||
       Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!key) {
-      return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ" }), {
+    if (!lovableKey && !geminiKey) {
+      return new Response(JSON.stringify({ error: "لا يوجد مفتاح ذكاء اصطناعي مهيأ" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const prompt = buildPrompt(body);
-    const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
 
     let raw = "";
     let lastError = "";
-    for (const mdl of models) {
-      try {
-        raw = await geminiVision(mdl, key, prompt, mime, b64, true);
-        if (raw && raw.trim()) break;
-      } catch (e) {
-        lastError = e instanceof Error ? e.message : String(e);
-        console.warn("model failed", mdl, lastError);
+
+    // Primary: Lovable AI Gateway (per user request, this is the only function allowed to use it)
+    if (lovableKey) {
+      const lovModels = ["google/gemini-2.5-pro", "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
+      for (const mdl of lovModels) {
+        try {
+          raw = await lovableVision(mdl, lovableKey, prompt, mime, b64, true);
+          if (raw && raw.trim()) break;
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : String(e);
+          console.warn("lovable model failed", mdl, lastError);
+        }
+      }
+    }
+
+    // Fallback: direct Gemini
+    if (!raw && geminiKey) {
+      const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+      for (const mdl of models) {
+        try {
+          raw = await geminiVision(mdl, geminiKey, prompt, mime, b64, true);
+          if (raw && raw.trim()) break;
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : String(e);
+          console.warn("gemini model failed", mdl, lastError);
+        }
       }
     }
 
     if (!raw) {
-      return new Response(JSON.stringify({ error: "تعذّر الاتصال بـ Gemini", detail: lastError }),
+      return new Response(JSON.stringify({ error: "تعذّر الاتصال بالذكاء الاصطناعي", detail: lastError }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
