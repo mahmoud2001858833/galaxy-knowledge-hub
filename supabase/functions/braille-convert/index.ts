@@ -489,9 +489,16 @@ Deno.serve(async (req) => {
       const braille: string = String(body?.braille ?? "");
       const langCode: string = body?.langCode ?? "ar";
       const langName: string = body?.langName ?? "Arabic";
+      const grade: 1 | 2 = body?.grade === 2 ? 2 : 1;
       if (!braille.trim()) {
         return new Response(JSON.stringify({ error: "missing braille" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const fallbackText = deterministicReverseBraille(braille, langCode);
+      if (grade === 1) {
+        return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       try {
@@ -504,6 +511,9 @@ Deno.serve(async (req) => {
         const msg = String(e?.message);
         if (msg === "rate_limited") return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (msg === "missing_key") return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ. يرجى إضافة BRAILLE_GEMINI_API_KEY." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (fallbackText) return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode, fallback: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
         return new Response(JSON.stringify({ error: "فشل فك ترميز بريل. حاول مرة أخرى." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
