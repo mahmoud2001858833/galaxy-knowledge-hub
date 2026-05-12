@@ -158,31 +158,39 @@ const SensoryTriSense: React.FC = () => {
     setRecording(false); setPaused(false); setInterim('');
   };
 
+  // ===== Auto-select most recent segment so sign panel always shows latest =====
+  useEffect(() => {
+    if (segments.length && !activeId) {
+      setActiveId(segments[segments.length - 1].id);
+    }
+  }, [segments, activeId]);
+
   // ===== Playback (TTS) of a segment + sign animation =====
   const speakSegment = (seg: Segment) => {
     setActiveId(seg.id);
-    if (signTimerRef.current) clearInterval(signTimerRef.current);
-    const sig = textToSignSequence(seg.text);
+    if (signTimerRef.current) { clearInterval(signTimerRef.current); signTimerRef.current = null; }
+    const sig = tokenizeSigns(seg.text);
     setSignWordIdx(sig.length ? 0 : -1);
 
-    // Sign timing: walk one word every 600ms to mirror lecture pace
+    // Sign timing: walk one word ~ every 800ms
     if (sig.length > 1) {
       let i = 0;
       signTimerRef.current = window.setInterval(() => {
         i++;
         if (i >= sig.length) { clearInterval(signTimerRef.current!); signTimerRef.current = null; return; }
         setSignWordIdx(i);
-      }, 600);
+      }, 800);
     }
 
-    // TTS
-    const u = new SpeechSynthesisUtterance(seg.text);
-    u.lang = 'ar-SA';
-    u.rate = 0.95;
-    u.onend = () => { setActiveId(null); };
-    speechSynthesis.cancel();
-    speechSynthesis.speak(u);
-    logToolUse('tts');
+    // TTS — DO NOT clear activeId on end (keep showing the sign translation)
+    try {
+      const u = new SpeechSynthesisUtterance(seg.text);
+      u.lang = 'ar-SA';
+      u.rate = 0.95;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      logToolUse('tts');
+    } catch { /* ignore */ }
   };
 
   const exportTranscript = () => {
