@@ -49,7 +49,7 @@ const UniversalBrailleConverter: React.FC = () => {
         if (!b) throw new Error("الرجاء إدخال نص بريل");
         setStep("فك ترميز بريل…");
         const { data, error } = await supabase.functions.invoke("braille-convert", {
-          body: { mode: "reverse", braille: b, langCode: langCode.split("-")[0], langName: lang.name },
+          body: { mode: "reverse", braille: b, grade, langCode: langCode.split("-")[0], langName: lang.name },
         });
         if (error) throw error;
         if ((data as any)?.error) throw new Error((data as any).error);
