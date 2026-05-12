@@ -101,16 +101,17 @@ const AutismProgramSetup: React.FC = () => {
           <Calendar className="w-8 h-8" />
         </div>
         <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))] mb-2">برنامجك العلاجي لـ 3 أشهر</h1>
-        <p className="text-slate-600">جدول يومي مكوّن من <strong>90 يوماً × 10 ألعاب</strong> مختلفة لكل يوم. يُحفظ مرّة واحدة وتعود إليه بسرعة دون إعادة توليد.</p>
+        <p className="text-slate-600">جدول يومي مكوّن من <strong>90 يوماً × 5 ألعاب جذابة</strong> مخصّصة لعمر طفلك. يُحفظ مرّة واحدة وتعود إليه بسرعة.</p>
       </header>
 
       <div className="bg-white rounded-2xl p-5 border border-[hsl(var(--damij-primary))]/10 mb-6">
         <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5" /> ما الذي ستحصل عليه؟</h3>
         <ul className="space-y-2 text-sm text-slate-700 list-disc pr-5">
-          <li>900 لعبة موزّعة على 90 يوماً، متنوّعة (لأن التوحد طيف).</li>
+          <li>450 لعبة تفاعلية موزّعة على 90 يوماً (5 ألعاب يومياً، لا أسئلة مكتوبة).</li>
           <li>6 مراحل تدرّجية: انتباه ⇐ تواصل ⇐ مشاعر ⇐ مرونة ⇐ اجتماعي ⇐ دمج.</li>
           <li>كل لعبة لُعبت تظهر عليها علامة ✓ ولا تتكرّر إلا عند الحاجة.</li>
-          <li>تقارير يومية تلقائية بعد إكمال جميع ألعاب اليوم.</li>
+          <li>مدد الجلسات تُكيَّف تلقائياً مع عمر طفلك.</li>
+          <li>تقارير يومية تلقائية بعد إكمال جميع ألعاب اليوم + تنزيل PDF.</li>
         </ul>
       </div>
 
