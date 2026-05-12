@@ -469,18 +469,20 @@ Deno.serve(async (req) => {
       try {
         braille = await grade2Convert(text, langName, langCode);
       } catch (e: any) {
-        if (String(e?.message) === "rate_limited") {
+        const msg = String(e?.message);
+        if (msg === "rate_limited") {
           return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), {
             status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        if (String(e?.message) === "payment_required") {
-          return new Response(JSON.stringify({ error: "نفذ الرصيد. أضف رصيداً من الإعدادات." }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        if (msg === "missing_key") {
+          return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ. يرجى إضافة BRAILLE_GEMINI_API_KEY." }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        // Fall back to Grade 1 if AI fails entirely
-        braille = grade1Convert(text);
+        return new Response(JSON.stringify({ error: "فشل تحويل المستوى الثاني (الاختزالي). حاول مرة أخرى." }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     } else {
       braille = grade1Convert(text);
