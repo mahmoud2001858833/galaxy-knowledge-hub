@@ -283,6 +283,62 @@ const SensoryUnifiedComm: React.FC = () => {
             <p className="text-[11px] text-gray-400 mt-1">القاموس يدعم: التحيات، الأسرة، الأفعال، المشاعر، الأسئلة، الزمن. للترجمة بالكاميرا استخدم صفحة نظام لغة الإشارة.</p>
           </div>
         )}
+        {activeInput === 'camera' && (
+          <div>
+            <p className="text-xs text-gray-500 mb-2">
+              شغّل الكاميرا وأدِّ الإشارة أمام العدسة، سيتعرّف الذكاء الاصطناعي على الكلمة العربية ويُترجمها فورًا للصيغ الأربع.
+            </p>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+                <video ref={videoRef} playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+                <canvas ref={canvasRef} className="hidden" />
+                {!camOn && !camLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white/80 text-sm gap-2">
+                    <Camera className="w-10 h-10 opacity-70" />
+                    <span>الكاميرا متوقفة</span>
+                  </div>
+                )}
+                {camLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  </div>
+                )}
+                {camBusy && camOn && (
+                  <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-2 py-1 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin" /> يحلّل الإشارة...
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                {!camOn ? (
+                  <button onClick={startCamera} disabled={camLoading}
+                    className="px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                    <Camera className="w-4 h-4" /> فتح الكاميرا
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={recognizeOnce} disabled={camBusy}
+                      className="px-4 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                      {camBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Hand className="w-4 h-4" />}
+                      التقط إشارة
+                    </button>
+                    <label className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 cursor-pointer">
+                      <input type="checkbox" checked={camAuto} onChange={e => setCamAuto(e.target.checked)} />
+                      التقاط تلقائي كل 3 ثواني
+                    </label>
+                    <button onClick={stopCamera}
+                      className="px-4 py-2 rounded-xl bg-red-50 text-red-700 font-bold inline-flex items-center justify-center gap-2 border border-red-200">
+                      <CameraOff className="w-4 h-4" /> إيقاف الكاميرا
+                    </button>
+                  </>
+                )}
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  نصيحة: قف على خلفية واضحة وأظهر يدك بالكامل في الإطار. تُدعم لغة الإشارة العربية والتهجئة بالحروف.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ===== Synchronized outputs ===== */}
