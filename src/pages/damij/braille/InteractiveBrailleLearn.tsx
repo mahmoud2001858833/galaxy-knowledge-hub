@@ -358,6 +358,56 @@ const InteractiveBrailleLearn: React.FC = () => {
           >
             <RotateCcw className="w-3 h-3" /> إعادة تعيين الإحصائيات
           </button>
+
+          {/* === Arabic Alphabet → Braille Reference Dictionary === */}
+          <div className="rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/20 overflow-hidden">
+            <button
+              onClick={() => setShowDict((s) => !s)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[hsl(var(--damij-primary))]/5 hover:bg-[hsl(var(--damij-primary))]/10 transition"
+            >
+              <div className="flex items-center gap-2">
+                <Library className="w-5 h-5 text-[hsl(var(--damij-primary))]" />
+                <span className="font-bold text-[hsl(var(--damij-primary))]">قاموس الحروف العربية بلغة بريل</span>
+                <span className="text-xs text-[hsl(var(--damij-text))]/60">({ARABIC_BRAILLE.length} حرفاً)</span>
+              </div>
+              {showDict ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            {showDict && (
+              <div className="p-4">
+                <p className="text-xs text-[hsl(var(--damij-text))]/70 mb-3 leading-relaxed">
+                  مرجع كامل لكل حرف عربي ومقابله بنقاط بريل. اضغط على أي حرف لتدريب يدك عليه مباشرة، أو استمع إلى نطقه ووصف نقاطه.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" dir="ltr">
+                  {ARABIC_BRAILLE.map((l) => {
+                    const isActive = practiceLetter.char === l.char;
+                    return (
+                      <div
+                        key={l.char}
+                        className={`group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition cursor-pointer ${
+                          isActive
+                            ? 'border-[hsl(var(--damij-primary))] bg-[hsl(var(--damij-primary))]/10 shadow-md'
+                            : 'border-[hsl(var(--damij-primary))]/15 hover:border-[hsl(var(--damij-primary))]/40 bg-[hsl(var(--damij-bg))]'
+                        }`}
+                        onClick={() => { setPracticeLetter(l); speak(`حرف ${l.name}`); }}
+                        title={`${l.name} — ${describeDots(l.dots)}`}
+                      >
+                        <BrailleCellDisplay dots={l.dots} size="sm" highlighted={isActive} label={l.name} />
+                        <div className="text-2xl font-bold text-[hsl(var(--damij-primary))] leading-none mt-1" dir="rtl">{l.char}</div>
+                        <div className="text-[10px] text-[hsl(var(--damij-text))]/60" dir="rtl">{l.name}</div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); speak(`حرف ${l.name}: ${describeDots(l.dots)}`); }}
+                          className="absolute top-1 right-1 p-1 rounded-md bg-[hsl(var(--damij-surface))]/80 border border-[hsl(var(--damij-primary))]/15 opacity-0 group-hover:opacity-100 transition"
+                          aria-label={`نطق ${l.name}`}
+                        >
+                          <Volume2 className="w-3 h-3 text-[hsl(var(--damij-primary))]" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
