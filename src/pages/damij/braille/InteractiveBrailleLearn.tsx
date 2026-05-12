@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Keyboard, Eye, Trophy, Sparkles, Loader2, RotateCcw, Play } from 'lucide-react';
+import { ArrowLeft, BookOpen, Keyboard, Eye, Trophy, Sparkles, Loader2, RotateCcw, Play, ChevronDown, ChevronUp, Volume2, Library } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
