@@ -51,47 +51,6 @@ OUTPUT — return ONLY minified JSON (no markdown):
 Cap "cells" to first 200. Notes must be Arabic unless ${langCode} is explicitly a non-Arabic UI language.`;
 };
 
-async function lovableVision(model: string, lovableKey: string, prompt: string, mime: string, b64: string, json = true): Promise<string> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "user", content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
-        ] },
-      ],
-      ...(json ? { response_format: { type: "json_object" } } : {}),
-      temperature: 0.1,
-      max_tokens: 8192,
-    }),
-  });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`lovable ${model} ${r.status}: ${t.slice(0, 200)}`);
-  }
-  const data = await r.json();
-  return data?.choices?.[0]?.message?.content ?? "";
-}
-
-async function lovableText(model: string, lovableKey: string, prompt: string): Promise<string> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2,
-      max_tokens: 4096,
-    }),
-  });
-  if (!r.ok) throw new Error(`lovable refine ${model} ${r.status}`);
-  const data = await r.json();
-  return data?.choices?.[0]?.message?.content ?? "";
-}
-
 async function geminiVision(model: string, key: string, prompt: string, mime: string, b64: string, json = true) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const r = await fetch(url, {
