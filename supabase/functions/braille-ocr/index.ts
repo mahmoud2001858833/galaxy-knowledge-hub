@@ -127,6 +127,33 @@ async function geminiText(model: string, key: string, prompt: string) {
   return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
+const makeEmptyResult = (body: Body, notes: string) => ({
+  is_braille: false,
+  language: body.language ?? "ar",
+  grade: body.grade ?? 1,
+  confidence: 0,
+  lines: [],
+  text: "",
+  cells: [],
+  notes,
+});
+
+const normalizeResult = (parsed: any, body: Body) => {
+  const out = parsed && typeof parsed === "object" ? parsed : {};
+  out.is_braille = out.is_braille !== false;
+  out.language = typeof out.language === "string" ? out.language : (body.language ?? "ar");
+  out.grade = out.grade === 2 ? 2 : 1;
+  out.confidence = Number.isFinite(Number(out.confidence))
+    ? Math.max(0, Math.min(100, Math.round(Number(out.confidence))))
+    : 0;
+  out.text = typeof out.text === "string" ? out.text : "";
+  out.lines = Array.isArray(out.lines) ? out.lines.map(String) : (out.text ? out.text.split(/\r?\n/) : []);
+  out.cells = Array.isArray(out.cells) ? out.cells.slice(0, 200) : [];
+  out.notes = typeof out.notes === "string" ? out.notes : "";
+  if (out.is_braille === false && !out.notes) out.notes = "لم تظهر خلايا بريل واضحة داخل الصورة.";
+  return out;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
