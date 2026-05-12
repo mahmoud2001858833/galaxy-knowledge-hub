@@ -66,6 +66,67 @@ const PUNCT: Record<string, string> = {
 };
 const CAPSIGN = "⠠";
 
+const DIGITS_REVERSE: Record<string, string> = Object.fromEntries(
+  Object.entries(DIGITS)
+    .filter(([digit]) => /[0-9]/.test(digit))
+    .map(([digit, cell]) => [cell, digit]),
+);
+
+function reverseMap(table: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [char, cell] of Object.entries(table)) {
+    if (cell && !out[cell]) out[cell] = char;
+  }
+  return out;
+}
+
+const ARABIC_REVERSE = reverseMap(ARABIC);
+const LATIN_REVERSE = reverseMap({ ...LATIN, ...LATIN_ACCENT });
+const RUSSIAN_REVERSE = reverseMap(RUSSIAN);
+const GREEK_REVERSE = reverseMap(GREEK);
+const PUNCT_REVERSE = reverseMap(PUNCT);
+
+function deterministicReverseBraille(braille: string, langCode = "ar"): string {
+  const lc = langCode.toLowerCase();
+  const primary = lc.startsWith("ar") || lc.startsWith("fa") || lc.startsWith("ur")
+    ? ARABIC_REVERSE
+    : lc.startsWith("ru") || lc.startsWith("uk") || lc.startsWith("be")
+      ? RUSSIAN_REVERSE
+      : lc.startsWith("el")
+        ? GREEK_REVERSE
+        : LATIN_REVERSE;
+
+  let out = "";
+  let inNumber = false;
+  let capitalizeNext = false;
+
+  for (const cell of braille) {
+    if (cell === NUMSIGN) { inNumber = true; continue; }
+    if (cell === CAPSIGN) { capitalizeNext = true; continue; }
+    if (cell === "⠀") { out += " "; inNumber = false; capitalizeNext = false; continue; }
+    if (cell === " " || cell === "\n" || cell === "\t") { out += cell; inNumber = false; capitalizeNext = false; continue; }
+
+    if (inNumber && DIGITS_REVERSE[cell]) {
+      out += DIGITS_REVERSE[cell];
+      continue;
+    }
+    inNumber = false;
+
+    let decoded = primary[cell]
+      ?? PUNCT_REVERSE[cell]
+      ?? ARABIC_REVERSE[cell]
+      ?? LATIN_REVERSE[cell]
+      ?? RUSSIAN_REVERSE[cell]
+      ?? GREEK_REVERSE[cell]
+      ?? cell;
+
+    if (capitalizeNext && decoded.length === 1) decoded = decoded.toUpperCase();
+    capitalizeNext = false;
+    out += decoded;
+  }
+  return out.trim();
+}
+
 function isLatinLike(ch: string) { return /[a-zA-ZÀ-ÿœŒßẞ]/.test(ch); }
 function isArabic(ch: string) { return /[\u0600-\u06FF]/.test(ch); }
 function isCyrillic(ch: string) { return /[\u0400-\u04FF]/.test(ch); }
