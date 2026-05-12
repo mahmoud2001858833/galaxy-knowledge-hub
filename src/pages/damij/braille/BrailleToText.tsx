@@ -15,6 +15,14 @@ interface OCRResult {
   notes?: string;
 }
 
+const extractErrorMessage = (data: any, error: any) => {
+  const raw = data?.error || error?.message || 'فشل التحويل';
+  if (raw === 'ai_unavailable') return 'تعذّر تحليل الصورة حالياً. أعد المحاولة أو استخدم صورة أوضح لصفحة بريل.';
+  if (raw === 'missing_gemini_key') return 'خدمة تحويل صور بريل غير مهيأة حالياً.';
+  if (raw === 'invalid_ai_json') return 'لم يتمكن الذكاء الاصطناعي من قراءة الصورة بشكل صحيح. جرّب صورة أوضح.';
+  return raw;
+};
+
 const compressImage = (file: Blob, maxEdge = 1600, quality = 0.85): Promise<string> =>
   new Promise((resolve, reject) => {
     const img = new Image();
@@ -129,12 +137,13 @@ const BrailleToText: React.FC = () => {
           grade,
         },
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const r: OCRResult = (data as any).result;
+      if (error && !(data as any)?.result) throw new Error(extractErrorMessage(data, error));
+      const r: OCRResult | null = (data as any)?.result ?? null;
+      if (!r) throw new Error(extractErrorMessage(data, error));
       setResult(r);
       setEditText(r?.text ?? '');
-      if (r?.is_braille === false) toast.warning('الصورة لا تحتوي على نص بريل واضح');
+      if ((data as any)?.fallback) toast.warning(r.notes || extractErrorMessage(data, error));
+      else if (r?.is_braille === false) toast.warning(r.notes || 'الصورة لا تحتوي على نص بريل واضح');
       else toast.success(`تم التحويل بثقة ${r?.confidence ?? '—'}%`);
     } catch (e: any) {
       toast.error(e?.message || 'فشل التحويل');
