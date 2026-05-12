@@ -61,10 +61,10 @@ function templatesForDay(dayIdx: number): string[] {
   // Rotate templates so each day starts at a different offset
   const offset = (dayIdx - 1) % TEMPLATES.length;
   const rotated = [...TEMPLATES.slice(offset), ...TEMPLATES.slice(0, offset)];
-  // Build 10 games with no template repeated more than twice
+  // Build 5 games per day with no template repeated
   const out: string[] = [];
   let i = 0;
-  while (out.length < 10) {
+  while (out.length < 5) {
     const t = rotated[i % rotated.length];
     const count = out.filter(x => x === t).length;
     if (count < 2) out.push(t);
