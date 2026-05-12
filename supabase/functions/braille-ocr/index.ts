@@ -207,7 +207,15 @@ Deno.serve(async (req) => {
 
 النص:
 ${parsed.text}`;
-        const refined = (await geminiText("gemini-2.5-flash", key, refinePrompt))
+        const refineFn = async () => {
+          if (lovableKey) {
+            try { return await lovableText("google/gemini-2.5-flash", lovableKey, refinePrompt); }
+            catch (e) { console.warn("lovable refine failed:", e); }
+          }
+          if (geminiKey) return await geminiText("gemini-2.5-flash", geminiKey, refinePrompt);
+          return "";
+        };
+        const refined = (await refineFn())
           .trim().replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
         if (refined) {
           parsed.original_text = parsed.text;
