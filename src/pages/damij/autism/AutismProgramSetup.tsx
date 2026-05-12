@@ -77,7 +77,7 @@ const AutismProgramSetup: React.FC = () => {
       if (data?.error) throw new Error(data.error);
       stopProgress(true);
       localStorage.setItem(`autism_active_program_${profile.profile_id}`, data.programId);
-      toast.success(data.existing ? 'تم فتح برنامج الطفل المحفوظ' : 'تم إنشاء البرنامج بنجاح (90 يوماً × 10 ألعاب)');
+      toast.success(data.existing ? 'تم فتح برنامج الطفل المحفوظ' : 'تم إنشاء البرنامج بنجاح (90 يوماً × 5 ألعاب)');
       navigate(`/damij/autism/program/${data.programId}`);
     } catch (e: any) {
       console.error(e);
