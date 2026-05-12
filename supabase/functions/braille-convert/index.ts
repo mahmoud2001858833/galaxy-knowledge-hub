@@ -111,10 +111,10 @@ function grade1Convert(text: string): string {
   return out;
 }
 
-// ── Grade 2 (contracted) — uses AI for accuracy ────────────────────────────
+// ── Grade 2 (contracted) — uses Gemini direct API ─────────────────────────
 async function grade2Convert(text: string, langName: string, langCode: string): Promise<string> {
   const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-  const lovableKey = "shim-key";
+  if (!userKey) throw new Error("missing_key");
 
   const prompt = `You are an expert in worldwide Braille standards (UEB, Arabic Braille (LBU 2013), French Braille abrégé, Spanish, Russian, etc.).
 Convert the following ${langName} (${langCode}) text into CONTRACTED Grade-2 Braille.
@@ -129,54 +129,32 @@ ${text}
 
 Braille:`;
 
-  // Try user-provided Gemini key first (Google AI Studio API)
-  if (userKey) {
-    try {
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
-          }),
-        },
-      );
-      if (r.ok) {
-        const j = await r.json();
-        const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (out) return cleanBraille(out);
-      } else if (r.status !== 429) {
-        console.warn("Gemini direct error", r.status, await r.text());
-      }
-    } catch (e) { console.warn("Gemini direct failed", e); }
-  }
-
-  // Fallback: Lovable AI Gateway
-  if (!lovableKey) throw new Error("No AI key available");
-  const r = await geminiFetch("ai-shim", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: "Output only Unicode Braille characters." },
-        { role: "user", content: prompt },
-      ],
-    }),
-  });
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+      }),
+    },
+  );
   if (r.status === 429) throw new Error("rate_limited");
-  if (r.status === 402) throw new Error("payment_required");
-  if (!r.ok) throw new Error("ai_error");
+  if (!r.ok) {
+    const t = await r.text();
+    console.error("Gemini grade2 error", r.status, t);
+    throw new Error("ai_error");
+  }
   const j = await r.json();
-  const out = j?.choices?.[0]?.message?.content?.trim() ?? "";
+  const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!out) throw new Error("empty_response");
   return cleanBraille(out);
 }
 
 async function reverseBraille(braille: string, langName: string, langCode: string): Promise<string> {
   const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-  const lovableKey = "shim-key";
+  if (!userKey) throw new Error("missing_key");
 
   const prompt = `You are a world-class Braille decoding + linguistics engine.
 
@@ -211,51 +189,32 @@ ${braille}
 
 Decoded ${langName} text:`;
 
-  if (userKey) {
-    try {
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${userKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.05, maxOutputTokens: 8192, responseMimeType: "text/plain" },
-          }),
-        },
-      );
-      if (r.ok) {
-        const j = await r.json();
-        const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (out) return out.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
-      } else if (r.status !== 429) {
-        console.warn("Gemini reverse error", r.status, await r.text());
-      }
-    } catch (e) { console.warn("Gemini reverse failed", e); }
-  }
-
-  if (!lovableKey) throw new Error("No AI key available");
-  const r = await geminiFetch("ai-shim", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-pro",
-      messages: [
-        { role: "system", content: `You are an expert Braille decoder and ${langName} linguist. Output only the polished decoded ${langName} text.` },
-        { role: "user", content: prompt },
-      ],
-    }),
-  });
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${userKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.05, maxOutputTokens: 8192, responseMimeType: "text/plain" },
+      }),
+    },
+  );
   if (r.status === 429) throw new Error("rate_limited");
-  if (r.status === 402) throw new Error("payment_required");
-  if (!r.ok) throw new Error("ai_error");
+  if (!r.ok) {
+    const t = await r.text();
+    console.error("Gemini reverse error", r.status, t);
+    throw new Error("ai_error");
+  }
   const j = await r.json();
-  return (j?.choices?.[0]?.message?.content?.trim() ?? "").replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
+  const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!out) throw new Error("empty_response");
+  return out.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
 }
 
 async function refineDecodedText(text: string, langName: string): Promise<string> {
-  const lovableKey = "shim-key";
-  if (!lovableKey || !text.trim()) return text;
+  const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
+  if (!userKey || !text.trim()) return text;
   const refinePrompt = `You are an expert ${langName} linguistic proofreader. The text below was produced by decoding a Braille document and may contain minor errors in spelling, punctuation, diacritics, or word boundaries.
 Rewrite it as natural, grammatically correct ${langName}, with:
 - FULL preservation of meaning — no additions, no deletions, no paraphrasing.
@@ -269,20 +228,20 @@ ${text}
 
 Polished ${langName} text:`;
   try {
-    const r = await geminiFetch("ai-shim", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: `Output only the polished ${langName} text. No prefixes, no quotes, no explanations.` },
-          { role: "user", content: refinePrompt },
-        ],
-      }),
-    });
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: refinePrompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+        }),
+      },
+    );
     if (!r.ok) { console.warn("refine failed", r.status); return text; }
     const j = await r.json();
-    const refined = (j?.choices?.[0]?.message?.content ?? "").trim()
+    const refined = (j?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim()
       .replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
     return refined || text;
   } catch (e) {
