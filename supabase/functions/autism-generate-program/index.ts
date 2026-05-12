@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
     const allGames: any[] = [];
     for (let d = 1; d <= totalDays; d++) {
       const phase = getPhase(d);
-      const games = buildGamesForDay(d, phase, occurrenceMap);
+      const games = buildGamesForDay(d, phase, occurrenceMap, Number(profile.age_years ?? 6));
       const dayId = dayIdByIndex.get(d);
       games.forEach(g => allGames.push({
         day_id: dayId,
