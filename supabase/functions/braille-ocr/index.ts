@@ -1,5 +1,5 @@
-// Braille OCR — converts a photo of a Braille page into text using
-// direct Google Gemini API only (Lovable AI is forbidden).
+// Braille OCR — converts a photo/screenshot of Braille into text using
+// direct Google Gemini API only.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -17,7 +17,14 @@ const buildPrompt = (b: Body) => {
   const lang = b.languageName ?? b.language ?? "Arabic";
   const langCode = b.language ?? "ar";
   const grade = b.grade ?? 1;
-  return `You are a world-class Braille OCR + linguistics engine. The attached image is a photograph or scan of a printed/embossed Braille page.
+  return `You are a world-class Braille OCR + linguistics engine. The attached image may be a close photo, a scan, or a screenshot that contains a Braille page/panel somewhere inside it.
+
+IMPORTANT VISUAL TASK:
+- Search the ENTIRE image for Braille dot cells, including cropped pages, embedded previews inside an app screenshot, rotated/tilted photos, low-contrast embossed dots, or Unicode Braille characters.
+- Ignore browser chrome, chat UI, buttons, captions, and normal printed/digital text unless they help infer language.
+- If ANY Braille cells are visible, decode the visible Braille region and set "is_braille": true, even if the image also contains non-Braille UI.
+- Set "is_braille": false ONLY when there are no visible Braille cells/dot patterns anywhere in the image.
+- If the image is not Braille, write the "notes" field in Arabic and leave "text" empty.
 
 CONTEXT — Braille standards to apply:
 - For Arabic: official Arabic Braille (LBU/UNESCO 2013) — 28 letters + Tashkeel + Hamza variants + Arabic-Indic digits with the number sign ⠼.
@@ -41,49 +48,8 @@ QUALITY RULES:
 OUTPUT — return ONLY minified JSON (no markdown):
 {"is_braille":true,"language":"${langCode}","grade":${grade},"confidence":0,"lines":["line"],"text":"...","cells":[{"line":1,"index":1,"dots":"1,3,5","char":"ل"}],"notes":""}
 
-Cap "cells" to first 200.`;
+Cap "cells" to first 200. Notes must be Arabic unless ${langCode} is explicitly a non-Arabic UI language.`;
 };
-
-async function lovableVision(model: string, lovableKey: string, prompt: string, mime: string, b64: string, json = true): Promise<string> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "user", content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
-        ] },
-      ],
-      ...(json ? { response_format: { type: "json_object" } } : {}),
-      temperature: 0.1,
-      max_tokens: 8192,
-    }),
-  });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`lovable ${model} ${r.status}: ${t.slice(0, 200)}`);
-  }
-  const data = await r.json();
-  return data?.choices?.[0]?.message?.content ?? "";
-}
-
-async function lovableText(model: string, lovableKey: string, prompt: string): Promise<string> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2,
-      max_tokens: 4096,
-    }),
-  });
-  if (!r.ok) throw new Error(`lovable refine ${model} ${r.status}`);
-  const data = await r.json();
-  return data?.choices?.[0]?.message?.content ?? "";
-}
 
 async function geminiVision(model: string, key: string, prompt: string, mime: string, b64: string, json = true) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
@@ -120,6 +86,33 @@ async function geminiText(model: string, key: string, prompt: string) {
   return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
+const makeEmptyResult = (body: Body, notes: string) => ({
+  is_braille: false,
+  language: body.language ?? "ar",
+  grade: body.grade ?? 1,
+  confidence: 0,
+  lines: [],
+  text: "",
+  cells: [],
+  notes,
+});
+
+const normalizeResult = (parsed: any, body: Body) => {
+  const out = parsed && typeof parsed === "object" ? parsed : {};
+  out.is_braille = out.is_braille !== false;
+  out.language = typeof out.language === "string" ? out.language : (body.language ?? "ar");
+  out.grade = out.grade === 2 ? 2 : 1;
+  out.confidence = Number.isFinite(Number(out.confidence))
+    ? Math.max(0, Math.min(100, Math.round(Number(out.confidence))))
+    : 0;
+  out.text = typeof out.text === "string" ? out.text : "";
+  out.lines = Array.isArray(out.lines) ? out.lines.map(String) : (out.text ? out.text.split(/\r?\n/) : []);
+  out.cells = Array.isArray(out.cells) ? out.cells.slice(0, 200) : [];
+  out.notes = typeof out.notes === "string" ? out.notes : "";
+  if (out.is_braille === false && !out.notes) out.notes = "لم تظهر خلايا بريل واضحة داخل الصورة.";
+  return out;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -136,16 +129,17 @@ Deno.serve(async (req) => {
     const m = b64.match(/^data:(.+?);base64,(.*)$/);
     if (m) { mime = m[1]; b64 = m[2]; }
 
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     const geminiKey =
       Deno.env.get("BRAILLE_GEMINI_API_KEY") ||
       Deno.env.get("GEMINI_API_KEY") ||
       Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!lovableKey && !geminiKey) {
-      return new Response(JSON.stringify({ error: "لا يوجد مفتاح ذكاء اصطناعي مهيأ" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!geminiKey) {
+      return new Response(JSON.stringify({
+        result: makeEmptyResult(body, "مفتاح Gemini الخاص بتحويل صور بريل غير مهيأ."),
+        error: "missing_gemini_key",
+        fallback: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const prompt = buildPrompt(body);
@@ -153,37 +147,25 @@ Deno.serve(async (req) => {
     let raw = "";
     let lastError = "";
 
-    // Primary: Lovable AI Gateway (per user request, this is the only function allowed to use it)
-    if (lovableKey) {
-      const lovModels = ["google/gemini-2.5-pro", "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
-      for (const mdl of lovModels) {
-        try {
-          raw = await lovableVision(mdl, lovableKey, prompt, mime, b64, true);
-          if (raw && raw.trim()) break;
-        } catch (e) {
-          lastError = e instanceof Error ? e.message : String(e);
-          console.warn("lovable model failed", mdl, lastError);
-        }
-      }
-    }
-
-    // Fallback: direct Gemini
-    if (!raw && geminiKey) {
-      const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
-      for (const mdl of models) {
-        try {
-          raw = await geminiVision(mdl, geminiKey, prompt, mime, b64, true);
-          if (raw && raw.trim()) break;
-        } catch (e) {
-          lastError = e instanceof Error ? e.message : String(e);
-          console.warn("gemini model failed", mdl, lastError);
-        }
+    // Primary: direct Gemini (project rule: do not use Lovable AI Gateway)
+    const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+    for (const mdl of models) {
+      try {
+        raw = await geminiVision(mdl, geminiKey, prompt, mime, b64, true);
+        if (raw && raw.trim()) break;
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e);
+        console.warn("gemini model failed", mdl, lastError);
       }
     }
 
     if (!raw) {
-      return new Response(JSON.stringify({ error: "تعذّر الاتصال بالذكاء الاصطناعي", detail: lastError }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({
+        result: makeEmptyResult(body, "تعذّر تحليل الصورة حالياً. جرّب صورة أوضح أو أعد المحاولة."),
+        error: "ai_unavailable",
+        detail: lastError,
+        fallback: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     let parsed: any = null;
@@ -193,9 +175,15 @@ Deno.serve(async (req) => {
       if (m2) { try { parsed = JSON.parse(m2[0]); } catch {} }
     }
     if (!parsed) {
-      return new Response(JSON.stringify({ error: "AI returned invalid JSON", raw: raw.slice(0, 500) }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({
+        result: makeEmptyResult(body, "عاد التحليل بصيغة غير مفهومة. أعد المحاولة بصورة أوضح."),
+        error: "invalid_ai_json",
+        raw: raw.slice(0, 500),
+        fallback: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    parsed = normalizeResult(parsed, body);
 
     // Refinement pass (optional, best-effort)
     if (parsed?.is_braille !== false && typeof parsed?.text === "string" && parsed.text.trim()) {
@@ -208,10 +196,6 @@ Deno.serve(async (req) => {
 النص:
 ${parsed.text}`;
         const refineFn = async () => {
-          if (lovableKey) {
-            try { return await lovableText("google/gemini-2.5-flash", lovableKey, refinePrompt); }
-            catch (e) { console.warn("lovable refine failed:", e); }
-          }
           if (geminiKey) return await geminiText("gemini-2.5-flash", geminiKey, refinePrompt);
           return "";
         };
@@ -232,7 +216,10 @@ ${parsed.text}`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({
+      result: makeEmptyResult({ imageBase64: "" }, "حدث خطأ أثناء تحليل الصورة. أعد المحاولة بصورة أوضح."),
+      error: e instanceof Error ? e.message : "unknown",
+      fallback: true,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
