@@ -129,7 +129,6 @@ Deno.serve(async (req) => {
     const m = b64.match(/^data:(.+?);base64,(.*)$/);
     if (m) { mime = m[1]; b64 = m[2]; }
 
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     const geminiKey =
       Deno.env.get("BRAILLE_GEMINI_API_KEY") ||
       Deno.env.get("GEMINI_API_KEY") ||
@@ -159,21 +158,6 @@ Deno.serve(async (req) => {
         console.warn("gemini model failed", mdl, lastError);
       }
     }
-
-    /* Lovable AI Gateway kept disabled intentionally for this project.
-    if (lovableKey) {
-      const lovModels = ["google/gemini-2.5-pro", "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
-      for (const mdl of lovModels) {
-        try {
-          raw = await lovableVision(mdl, lovableKey, prompt, mime, b64, true);
-          if (raw && raw.trim()) break;
-        } catch (e) {
-          lastError = e instanceof Error ? e.message : String(e);
-          console.warn("lovable model failed", mdl, lastError);
-        }
-      }
-    }
-    */
 
     if (!raw) {
       return new Response(JSON.stringify({
