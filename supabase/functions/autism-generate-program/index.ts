@@ -61,10 +61,10 @@ function templatesForDay(dayIdx: number): string[] {
   // Rotate templates so each day starts at a different offset
   const offset = (dayIdx - 1) % TEMPLATES.length;
   const rotated = [...TEMPLATES.slice(offset), ...TEMPLATES.slice(0, offset)];
-  // Build 10 games with no template repeated more than twice
+  // Build 5 games per day with no template repeated
   const out: string[] = [];
   let i = 0;
-  while (out.length < 10) {
+  while (out.length < 5) {
     const t = rotated[i % rotated.length];
     const count = out.filter(x => x === t).length;
     if (count < 2) out.push(t);
@@ -101,8 +101,10 @@ function pickFromBank<T>(bank: T[], dayIdx: number, slot: number): T {
   return bank[i];
 }
 
-function buildGamesForDay(dayIdx: number, phase: typeof PHASES[number], occurrenceMap: Map<string, number>) {
+function buildGamesForDay(dayIdx: number, phase: typeof PHASES[number], occurrenceMap: Map<string, number>, ageYears: number) {
   const templates = templatesForDay(dayIdx);
+  // Age-adaptive duration: younger = shorter sessions
+  const ageFactor = ageYears <= 4 ? 0.7 : ageYears <= 7 ? 0.9 : ageYears <= 11 ? 1.0 : 1.2;
   return templates.map((tid, idx) => {
     const occ = (occurrenceMap.get(tid) ?? 0) + 1;
     occurrenceMap.set(tid, occ);
@@ -111,13 +113,14 @@ function buildGamesForDay(dayIdx: number, phase: typeof PHASES[number], occurren
     const subTheme = pickFromBank(TEMPLATE_THEMES[tid] ?? [TEMPLATE_TITLES[tid]], dayIdx, idx);
     const reinforcer = pickFromBank(REINFORCERS, dayIdx, idx);
     const setting = pickFromBank(SETTINGS, dayIdx, idx);
+    const ageBand = ageYears <= 4 ? 'صغار' : ageYears <= 7 ? 'تمهيدي' : ageYears <= 11 ? 'أطفال' : 'مراهقون';
     return {
       template_id: tid,
-      title_ar: `${TEMPLATE_TITLES[tid]} — ${subTheme} (يوم ${dayIdx})`,
-      instructions_ar: `نشاط "${subTheme}" ${setting}. ضمن مرحلة "${phase.theme}". نمّ ${TEMPLATE_SKILLS[tid]} واستخدم ${reinforcer} عند كل استجابة صحيحة.`,
+      title_ar: `${TEMPLATE_TITLES[tid]} — ${subTheme}`,
+      instructions_ar: `نشاط "${subTheme}" ${setting} (${ageBand}). ضمن مرحلة "${phase.theme}". نمّ ${TEMPLATE_SKILLS[tid]} واستخدم ${reinforcer} عند كل استجابة صحيحة.`,
       target_skill_ar: TEMPLATE_SKILLS[tid],
       difficulty: phase.diff,
-      duration_sec: baseDuration + variant * 10,
+      duration_sec: Math.round((baseDuration + variant * 10) * ageFactor),
       success_criteria_ar: `أداء صحيح في ${phase.diff === 'easy' ? 50 : phase.diff === 'medium' ? 65 : 75}% من المحاولات مع تفاعل مرئي.`,
       adaptations_ar: [
         `استخدم ${reinforcer} كحافز رئيسي.`,
@@ -170,7 +173,7 @@ Deno.serve(async (req) => {
 
     // Compose program locally — fast and reliable
     const programTitle = `برنامج علاجي تفاعلي لـ ${profile.child_name ?? 'الطفل'} (3 أشهر)`;
-    const programSummary = `جدول يومي لمدة 90 يوماً، 10 ألعاب يومياً متنوّعة عبر 6 مراحل تدرّجية تغطّي الانتباه والتواصل والمشاعر والمرونة والمهارات الاجتماعية. مخصّص لمستوى الدعم ${profile.support_level ?? 1}.`;
+    const programSummary = `جدول يومي لمدة 90 يوماً، 5 ألعاب يومياً متنوّعة عبر 6 مراحل تدرّجية تغطّي الانتباه والتواصل والمشاعر والمرونة والمهارات الاجتماعية. مخصّص لمستوى الدعم ${profile.support_level ?? 1} وللعمر ${profile.age_years ?? '—'} سنوات.`;
 
     const insProgramResp = await fetch(`${supabaseUrl}/rest/v1/autism_programs`, {
       method: 'POST',
@@ -216,7 +219,7 @@ Deno.serve(async (req) => {
     const allGames: any[] = [];
     for (let d = 1; d <= totalDays; d++) {
       const phase = getPhase(d);
-      const games = buildGamesForDay(d, phase, occurrenceMap);
+      const games = buildGamesForDay(d, phase, occurrenceMap, Number(profile.age_years ?? 6));
       const dayId = dayIdByIndex.get(d);
       games.forEach(g => allGames.push({
         day_id: dayId,
