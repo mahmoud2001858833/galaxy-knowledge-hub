@@ -232,9 +232,15 @@ Deno.serve(async (req) => {
       if (m2) { try { parsed = JSON.parse(m2[0]); } catch {} }
     }
     if (!parsed) {
-      return new Response(JSON.stringify({ error: "AI returned invalid JSON", raw: raw.slice(0, 500) }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({
+        result: makeEmptyResult(body, "عاد التحليل بصيغة غير مفهومة. أعد المحاولة بصورة أوضح."),
+        error: "invalid_ai_json",
+        raw: raw.slice(0, 500),
+        fallback: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    parsed = normalizeResult(parsed, body);
 
     // Refinement pass (optional, best-effort)
     if (parsed?.is_braille !== false && typeof parsed?.text === "string" && parsed.text.trim()) {
@@ -247,10 +253,6 @@ Deno.serve(async (req) => {
 النص:
 ${parsed.text}`;
         const refineFn = async () => {
-          if (lovableKey) {
-            try { return await lovableText("google/gemini-2.5-flash", lovableKey, refinePrompt); }
-            catch (e) { console.warn("lovable refine failed:", e); }
-          }
           if (geminiKey) return await geminiText("gemini-2.5-flash", geminiKey, refinePrompt);
           return "";
         };
@@ -271,7 +273,10 @@ ${parsed.text}`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({
+      result: makeEmptyResult({ imageBase64: "" }, "حدث خطأ أثناء تحليل الصورة. أعد المحاولة بصورة أوضح."),
+      error: e instanceof Error ? e.message : "unknown",
+      fallback: true,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
