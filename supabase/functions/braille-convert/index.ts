@@ -172,11 +172,61 @@ function grade1Convert(text: string): string {
   return out;
 }
 
-// ── Grade 2 (contracted) — uses Gemini direct API ─────────────────────────
-async function grade2Convert(text: string, langName: string, langCode: string): Promise<string> {
+// ── Gemini multi-model helper with automatic fallback ────────────────────
+// Tries each model in order. On 429/5xx/quota → next model. Throws only when
+// every model fails (so callers can decide whether to use a deterministic fallback).
+async function callGemini(
+  models: string[],
+  prompt: string,
+  opts: { temperature?: number; maxOutputTokens?: number; mimeType?: string } = {},
+): Promise<string> {
   const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
   if (!userKey) throw new Error("missing_key");
 
+  let lastErr = "ai_error";
+  for (const model of models) {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: opts.temperature ?? 0.1,
+              maxOutputTokens: opts.maxOutputTokens ?? 8192,
+              ...(opts.mimeType ? { responseMimeType: opts.mimeType } : {}),
+            },
+          }),
+        },
+      );
+      if (r.status === 429 || r.status === 503) {
+        lastErr = "rate_limited";
+        const t = await r.text().catch(() => "");
+        console.warn(`Gemini ${model} ${r.status} → fallback`, t.slice(0, 200));
+        continue;
+      }
+      if (!r.ok) {
+        const t = await r.text().catch(() => "");
+        console.error(`Gemini ${model} ${r.status}`, t.slice(0, 300));
+        lastErr = "ai_error";
+        continue;
+      }
+      const j = await r.json();
+      const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (out) return out;
+      lastErr = "empty_response";
+    } catch (e: any) {
+      console.error(`Gemini ${model} exception`, e?.message);
+      lastErr = "ai_error";
+    }
+  }
+  throw new Error(lastErr);
+}
+
+// ── Grade 2 (contracted) — uses Gemini with multi-model fallback ─────────
+async function grade2Convert(text: string, langName: string, langCode: string): Promise<string> {
   const prompt = `You are an expert in worldwide Braille standards (UEB, Arabic Braille (LBU 2013), French Braille abrégé, Spanish, Russian, etc.).
 Convert the following ${langName} (${langCode}) text into CONTRACTED Grade-2 Braille.
 Output STRICT RULES:
@@ -189,124 +239,95 @@ Text:
 ${text}
 
 Braille:`;
-
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
-      }),
-    },
+  const out = await callGemini(
+    ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    prompt,
+    { temperature: 0.1, maxOutputTokens: 8192 },
   );
-  if (r.status === 429) throw new Error("rate_limited");
-  if (!r.ok) {
-    const t = await r.text();
-    console.error("Gemini grade2 error", r.status, t);
-    throw new Error("ai_error");
-  }
-  const j = await r.json();
-  const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!out) throw new Error("empty_response");
   return cleanBraille(out);
 }
 
 async function reverseBraille(braille: string, langName: string, langCode: string): Promise<string> {
-  const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-  if (!userKey) throw new Error("missing_key");
+  const prompt = `You are a world-class Braille decoding + linguistics engine, specialized in ${langName} (BCP-47: ${langCode}).
 
-  const prompt = `You are a world-class Braille decoding + linguistics engine.
+═══ BRAILLE STANDARDS YOU MUST APPLY ═══
+- ARABIC: official Arabic Braille (LBU/UNESCO 2013) — 28 letters + Tashkeel + Hamza variants (ء أ إ آ ؤ ئ) + Arabic-Indic digits with number sign ⠼. Note: ع=⠷, ح=⠱, ظ=⠰, خ=⠭, ث=⠹, ذ=⠮, ش=⠩, ص=⠯, ض=⠫, ط=⠾, غ=⠣.
+- ENGLISH: Unified English Braille (UEB) 2013 — fully expand Grade-2 contractions:
+  · Alphabetic wordsigns: but(b), can(c), do(d), every(e), from(f), go(g), have(h), just(j), knowledge(k), like(l), more(m), not(n), people(p), quite(q), rather(r), so(s), that(t), us(u), very(v), will(w), it(x), you(y), as(z).
+  · Strong wordsigns: child(ch=⠡), shall(sh=⠩), this(th=⠹), which(wh=⠱), out(ou=⠳), still(st=⠌).
+  · Strong groupsigns: and(⠯), for(⠿), of(⠷), the(⠮), with(⠾).
+  · Lower wordsigns: be, enough, were, his, in, was. Lower groupsigns: ea, bb, cc, dd, ff, gg, be, con, dis, en, in.
+  · Final-letter groupsigns: -ound, -ance, -sion, -less, -ount, -ence, -ong, -ful, -tion, -ness, -ment, -ity.
+  · Initial-letter contractions: day, ever, father, here, know, lord, mother, name, one, part, question, right, some, time, under, work, young, there, character, through, where, ought, work.
+  · Short-form words: about(ab), above(abv), according(ac), across(acr), after(af), afternoon(afn), afterward(afw), again(ag), against(agst), almost(alm), already(alr), also(al), although(alth), altogether(alt), always(alw), because(bec), before(bef), behind(beh), below(bel), beneath(ben), beside(bes), between(bet), beyond(bey), blind(bl), braille(brl), children(chn), conceive(concv), could(cd), deceive(dcv), declare(dcl), either(ei), friend(fr), first(fst), good(gd), great(grt), him(hm), himself(hmf), herself(hrf), immediate(imm), itself(xf), its(xs), letter(lr), little(ll), much(mch), must(mst), myself(myf), necessary(nec), neither(nei), oneself(onef), ourselves(ourvs), paid(pd), perceive(percv), perhaps(perh), quick(qk), receive(rcv), rejoice(rjc), said(sd), should(shd), such(sch), themselves(themvs), thyself(thyf), today(td), together(tgr), tomorrow(tm), tonight(tn), would(wd), your(yr), yourself(yrf), yourselves(yrvs).
+- FRENCH: Braille français abrégé (when contractions are present).
+- SPANISH / GERMAN / ITALIAN / PORTUGUESE / RUSSIAN / GREEK: official national Braille code.
+- CJK / KOREAN: Japanese Tenji, Korean Hangul Braille, Mainland Chinese Braille.
+- INDICATORS: number sign ⠼, capital sign ⠠ (single letter) / ⠠⠠ (whole word), letter sign ⠰, italic/emphasis indicators.
 
-CONTEXT — Braille standards to apply for ${langName} (BCP-47: ${langCode}):
-- Arabic: official Arabic Braille (LBU/UNESCO 2013) — 28 letters + Tashkeel + Hamza variants (ء أ إ آ ؤ ئ) + Arabic-Indic digits with the number sign ⠼.
-- English: UEB (Unified English Braille). Handle Grade-2 contractions: whole-word signs (the, and, of, for, with, ch, sh, th, wh, ou, st, ar, ed, er, gh, ing…), group-signs, short-form words.
-- French: Braille français abrégé (contracted) when applicable.
-- Spanish / German / Italian / Portuguese / Russian / Greek / other: use the official national Braille code.
-- CJK / Korean: standard national Braille (e.g. Japanese Tenji, Korean Hangul Braille, Mainland Chinese Braille).
-- Recognize: number indicator (⠼), capital indicator (⠠), letter sign (⠰), italic/emphasis, and Grade-2 contractions.
+═══ DECODING PIPELINE (perform internally, output NOTHING about it) ═══
+1. Tokenize Braille left-to-right into cells, words separated by space (⠀ or normal space).
+2. For each word: try Grade-2 contraction expansion FIRST (longest match), then literal Grade-1 if no contraction matches.
+3. Apply indicators in order: number ⠼ activates digits until next space; capital ⠠ capitalizes next letter (⠠⠠ next word).
+4. Fully expand EVERY Grade-2 contraction into the spelled-out word.
+5. LINGUISTIC POST-PROCESSING in ${langName}:
+   · Restore correct word boundaries, capitalization, and punctuation.
+   · For Arabic: reattach Tashkeel ONLY when 100% unambiguous from morphology; fix Hamza forms (ء أ إ آ ؤ ئ); never add diacritics by guess.
+   · Merge words hyphenated across line breaks.
+   · For ambiguous cells: pick the reading that yields a real, grammatically correct ${langName} word.
+   · Fix obvious OCR-style misreads using ${langName} spelling.
+6. RTL languages (Arabic/Hebrew/Persian) — Braille is written LTR but the natural text is RTL; output in natural script direction.
+7. Ensure final text is FLUENT, NATURAL, and PUBLISHABLE ${langName}.
 
-PIPELINE (perform internally, do NOT output the steps):
-1. Read every Braille cell left-to-right, top-to-bottom.
-2. Decode each cell using ${langName} Braille at BOTH Grade-1 (literal) and Grade-2 (contracted); pick the reading that yields a grammatical, well-spelled ${langName} word.
-3. Fully expand all Grade-2 contractions into normal words.
-4. POST-PROCESS using your knowledge of ${langName}:
-   - Restore correct word boundaries and punctuation.
-   - Reattach diacritics/Tashkeel (Arabic) where unambiguous.
-   - Merge words split across two lines (hyphen at line-end).
-   - Use spelling, morphology, and surrounding context to fix ambiguous cells.
-5. If multiple readings are possible, pick the one that yields a grammatical, well-spelled ${langName} sentence.
-6. For RTL languages (Arabic/Hebrew/Persian) the Braille is encoded LTR — reconstruct the text in its natural script direction.
+═══ OUTPUT — STRICT ═══
+- Return ONLY the final clean ${langName} text.
+- NO romanization, NO Braille glyphs, NO explanation, NO prefix/suffix, NO code fences, NO quotes, NO labels.
+- Preserve line breaks (except merged hyphenated words).
+- For truly illegible passages: [غير واضح] in Arabic, [unclear] otherwise.
 
-OUTPUT — STRICT RULES:
-- Output ONLY the final clean ${langName} text. NO romanization, NO Braille glyphs, NO explanation, NO prefix/suffix, NO code fences, NO quotes.
-- Preserve original line breaks (except merged hyphenated words).
-- The text MUST be natural, well-punctuated ${langName} ready for a human reader.
-- When truly illegible, write [غير واضح] in Arabic or [unclear] otherwise.
-
-Braille:
+Braille input:
 ${braille}
 
-Decoded ${langName} text:`;
+Final decoded ${langName} text:`;
 
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${userKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.05, maxOutputTokens: 8192, responseMimeType: "text/plain" },
-      }),
-    },
+  const out = await callGemini(
+    ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    prompt,
+    { temperature: 0.05, maxOutputTokens: 8192, mimeType: "text/plain" },
   );
-  if (r.status === 429) throw new Error("rate_limited");
-  if (!r.ok) {
-    const t = await r.text();
-    console.error("Gemini reverse error", r.status, t);
-    throw new Error("ai_error");
-  }
-  const j = await r.json();
-  const out = j?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!out) throw new Error("empty_response");
   return out.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
 }
 
-async function refineDecodedText(text: string, langName: string): Promise<string> {
-  const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
-  if (!userKey || !text.trim()) return text;
-  const refinePrompt = `You are an expert ${langName} linguistic proofreader. The text below was produced by decoding a Braille document and may contain minor errors in spelling, punctuation, diacritics, or word boundaries.
-Rewrite it as natural, grammatically correct ${langName}, with:
-- FULL preservation of meaning — no additions, no deletions, no paraphrasing.
-- Preserve original line breaks unless they break a single word.
-- Fix spelling, punctuation, and word boundaries.
-- For Arabic: re-add Tashkeel only when unambiguous from context; fix Hamza forms.
-- Output the polished text ONLY — no explanation, no quotes, no code fences, no prefix.
+async function refineDecodedText(text: string, langName: string, langCode: string): Promise<string> {
+  if (!text.trim()) return text;
+  const isArabic = langCode.toLowerCase().startsWith("ar");
+  const refinePrompt = `You are an expert ${langName} linguistic proofreader and editor.
+The text below was produced by decoding a Braille document and may contain residual errors in spelling, punctuation, word boundaries, capitalization, or ${isArabic ? "Tashkeel/Hamza forms" : "diacritics"}.
 
-Text:
+Rewrite it as PUBLISHABLE-quality ${langName} prose, applying:
+- FULL preservation of meaning — no additions, no deletions, no paraphrasing of ideas.
+- Fix spelling, punctuation, capitalization, and word boundaries.
+- Restore natural sentence flow and correct grammar.
+${isArabic
+  ? "- Fix Hamza forms (ء أ إ آ ؤ ئ ة) using surrounding context.\n- Add Tashkeel ONLY where it is unambiguous and naturally written; never guess.\n- Use correct Arabic punctuation (، ؛ ؟ «»)."
+  : "- Use standard punctuation and capitalization for the language.\n- Restore diacritics only when unambiguous."}
+- Preserve original line breaks unless they split a single word.
+- Output the polished text ONLY — no explanation, no quotes, no code fences, no labels.
+
+Text to polish:
 ${text}
 
 Polished ${langName} text:`;
+
   try {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: refinePrompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
-        }),
-      },
+    const refined = await callGemini(
+      ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+      refinePrompt,
+      { temperature: 0.15, maxOutputTokens: 8192 },
     );
-    if (!r.ok) { console.warn("refine failed", r.status); return text; }
-    const j = await r.json();
-    const refined = (j?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim()
-      .replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
-    return refined || text;
+    return refined.replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim() || text;
   } catch (e) {
-    console.warn("refine exception", e);
+    console.warn("refine failed, returning original", (e as any)?.message);
     return text;
   }
 }
