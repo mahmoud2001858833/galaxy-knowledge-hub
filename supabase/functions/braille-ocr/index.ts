@@ -1,5 +1,5 @@
-// Braille OCR — converts a photo of a Braille page into text using
-// direct Google Gemini API only (Lovable AI is forbidden).
+// Braille OCR — converts a photo/screenshot of Braille into text using
+// direct Google Gemini API only.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -17,7 +17,14 @@ const buildPrompt = (b: Body) => {
   const lang = b.languageName ?? b.language ?? "Arabic";
   const langCode = b.language ?? "ar";
   const grade = b.grade ?? 1;
-  return `You are a world-class Braille OCR + linguistics engine. The attached image is a photograph or scan of a printed/embossed Braille page.
+  return `You are a world-class Braille OCR + linguistics engine. The attached image may be a close photo, a scan, or a screenshot that contains a Braille page/panel somewhere inside it.
+
+IMPORTANT VISUAL TASK:
+- Search the ENTIRE image for Braille dot cells, including cropped pages, embedded previews inside an app screenshot, rotated/tilted photos, low-contrast embossed dots, or Unicode Braille characters.
+- Ignore browser chrome, chat UI, buttons, captions, and normal printed/digital text unless they help infer language.
+- If ANY Braille cells are visible, decode the visible Braille region and set "is_braille": true, even if the image also contains non-Braille UI.
+- Set "is_braille": false ONLY when there are no visible Braille cells/dot patterns anywhere in the image.
+- If the image is not Braille, write the "notes" field in Arabic and leave "text" empty.
 
 CONTEXT — Braille standards to apply:
 - For Arabic: official Arabic Braille (LBU/UNESCO 2013) — 28 letters + Tashkeel + Hamza variants + Arabic-Indic digits with the number sign ⠼.
@@ -41,7 +48,7 @@ QUALITY RULES:
 OUTPUT — return ONLY minified JSON (no markdown):
 {"is_braille":true,"language":"${langCode}","grade":${grade},"confidence":0,"lines":["line"],"text":"...","cells":[{"line":1,"index":1,"dots":"1,3,5","char":"ل"}],"notes":""}
 
-Cap "cells" to first 200.`;
+Cap "cells" to first 200. Notes must be Arabic unless ${langCode} is explicitly a non-Arabic UI language.`;
 };
 
 async function lovableVision(model: string, lovableKey: string, prompt: string, mime: string, b64: string, json = true): Promise<string> {
