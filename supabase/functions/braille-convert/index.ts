@@ -524,13 +524,13 @@ Deno.serve(async (req) => {
       }
       try {
         const decoded = await reverseBraille(braille, langName, langCode);
-        const refined = await refineDecodedText(decoded, langName);
+        const refined = await refineDecodedText(decoded, langName, langCode);
         return new Response(JSON.stringify({ text: refined, original_text: decoded, refined_text: refined, langCode }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {
         const msg = String(e?.message);
-        if (fallbackText) return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode, fallback: true }), {
+        if (fallbackText) return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode, fallback: true, fallback_reason: msg }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
         if (msg === "rate_limited") return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
