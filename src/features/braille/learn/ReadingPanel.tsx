@@ -13,22 +13,53 @@ export const ReadingPanel: React.FC<Props> = ({ text, speakDescription }) => {
   const [playing, setPlaying] = useState(false);
   const chars = [...text];
 
+  // Auto-play: speak current letter + dots, then advance after speech ends
   useEffect(() => {
     if (!playing) return;
-    const t = setInterval(() => {
-      setActive((i) => {
-        if (i >= chars.length - 1) {
-          setPlaying(false);
-          return i;
-        }
-        return i + 1;
-      });
-    }, 1500);
-    return () => clearInterval(t);
-  }, [playing, chars.length]);
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const ch = chars[active];
+    const letter = ch ? findLetterByChar(ch) : null;
+
+    let cancelled = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const advance = () => {
+      if (cancelled) return;
+      if (active >= chars.length - 1) {
+        setPlaying(false);
+        return;
+      }
+      setActive((i) => i + 1);
+    };
+
+    if (!letter) {
+      // Skip non-braille chars quickly
+      fallbackTimer = setTimeout(advance, 400);
+    } else {
+      const phrase = `حرف ${letter.name}: ${describeDots(letter.dots)}`;
+      const u = new SpeechSynthesisUtterance(phrase);
+      u.lang = 'ar-SA';
+      u.rate = 0.95;
+      u.onend = () => { if (!cancelled) setTimeout(advance, 350); };
+      u.onerror = () => { if (!cancelled) setTimeout(advance, 350); };
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+      // Safety fallback in case onend never fires
+      fallbackTimer = setTimeout(() => { if (!cancelled) advance(); }, 8000);
+    }
+
+    return () => {
+      cancelled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      try { window.speechSynthesis.cancel(); } catch {}
+    };
+  }, [playing, active, chars]);
 
   useEffect(() => {
     setActive(0);
+    setPlaying(false);
+    try { window.speechSynthesis?.cancel(); } catch {}
   }, [text]);
 
   const current = chars[active];
