@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
+import { tokenizeSigns, type SignToken } from './signDictionary';
 
 // ===== Types =====
 type Segment = {
@@ -157,31 +158,39 @@ const SensoryTriSense: React.FC = () => {
     setRecording(false); setPaused(false); setInterim('');
   };
 
+  // ===== Auto-select most recent segment so sign panel always shows latest =====
+  useEffect(() => {
+    if (segments.length && !activeId) {
+      setActiveId(segments[segments.length - 1].id);
+    }
+  }, [segments, activeId]);
+
   // ===== Playback (TTS) of a segment + sign animation =====
   const speakSegment = (seg: Segment) => {
     setActiveId(seg.id);
-    if (signTimerRef.current) clearInterval(signTimerRef.current);
-    const sig = textToSignSequence(seg.text);
+    if (signTimerRef.current) { clearInterval(signTimerRef.current); signTimerRef.current = null; }
+    const sig = tokenizeSigns(seg.text);
     setSignWordIdx(sig.length ? 0 : -1);
 
-    // Sign timing: walk one word every 600ms to mirror lecture pace
+    // Sign timing: walk one word ~ every 800ms
     if (sig.length > 1) {
       let i = 0;
       signTimerRef.current = window.setInterval(() => {
         i++;
         if (i >= sig.length) { clearInterval(signTimerRef.current!); signTimerRef.current = null; return; }
         setSignWordIdx(i);
-      }, 600);
+      }, 800);
     }
 
-    // TTS
-    const u = new SpeechSynthesisUtterance(seg.text);
-    u.lang = 'ar-SA';
-    u.rate = 0.95;
-    u.onend = () => { setActiveId(null); };
-    speechSynthesis.cancel();
-    speechSynthesis.speak(u);
-    logToolUse('tts');
+    // TTS — DO NOT clear activeId on end (keep showing the sign translation)
+    try {
+      const u = new SpeechSynthesisUtterance(seg.text);
+      u.lang = 'ar-SA';
+      u.rate = 0.95;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      logToolUse('tts');
+    } catch { /* ignore */ }
   };
 
   const exportTranscript = () => {
@@ -196,10 +205,11 @@ const SensoryTriSense: React.FC = () => {
   const clearAll = () => { setSegments([]); setActiveId(null); setSignWordIdx(-1); };
 
   const activeSeg = segments.find(s => s.id === activeId) ?? null;
-  const activeSign = useMemo(
-    () => activeSeg ? textToSignSequence(activeSeg.text) : [],
+  const activeSign: SignToken[] = useMemo(
+    () => activeSeg ? tokenizeSigns(activeSeg.text) : [],
     [activeSeg]
   );
+  const recognizedCount = activeSign.filter(t => t.kind !== 'unknown').length;
 
   return (
     <div dir="rtl" className="px-6 pt-10 pb-16 max-w-6xl mx-auto">
@@ -330,42 +340,63 @@ const SensoryTriSense: React.FC = () => {
 
           {!activeSeg && (
             <p className="text-[hsl(var(--damij-text))]/55 text-sm py-10 text-center">
-              اختر مقطعاً من النص لعرض ترجمته الإشارية المتزامنة هنا.
+              ابدأ التسجيل وستظهر ترجمة كل عبارة بلغة الإشارة هنا تلقائيًا — أو اضغط أي مقطع من النص لإعادة عرض ترجمته.
             </p>
           )}
 
           {activeSeg && (
             <>
-              <div className="text-xs font-mono text-purple-600/80 mb-2 tabular-nums">
-                {fmtTime(activeSeg.startMs)}
-              </div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {activeSign.map((w, i) => (
-                  <span key={i}
-                    className={`px-2 py-1 rounded-md text-sm font-bold transition ${
-                      i === signWordIdx
-                        ? 'bg-purple-600 text-white scale-110 shadow-lg'
-                        : 'bg-white/70 dark:bg-slate-800/60 text-[hsl(var(--damij-text))]'
-                    }`}>
-                    {w.word}
-                  </span>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-mono text-purple-600/80 tabular-nums">
+                  {fmtTime(activeSeg.startMs)}
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                  {recognizedCount}/{activeSign.length} إشارة
+                </span>
               </div>
 
-              {signWordIdx >= 0 && activeSign[signWordIdx] && (
-                <div className="rounded-xl bg-white/80 dark:bg-slate-900/40 p-4 border border-purple-500/30">
-                  <p className="text-xs text-purple-600/70 mb-2">تهجئة الكلمة بالإشارة:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {activeSign[signWordIdx].letters.map((l, idx) => (
-                      <div key={idx}
-                        className="w-14 h-14 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 text-white flex flex-col items-center justify-center shadow">
-                        <span className="text-2xl font-bold">{l.ch}</span>
-                        <span className="text-[10px] opacity-80">{l.label}</span>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {activeSign.map((t, i) => {
+                  const active = i === signWordIdx;
+                  if (t.kind === 'word') {
+                    const motionClass = active
+                      ? (t.gesture.motion === 'wave' ? 'animate-[wiggle_0.6s_ease-in-out_infinite]'
+                        : t.gesture.motion === 'circle' ? 'animate-spin [animation-duration:1.5s]'
+                        : t.gesture.motion === 'rise' || t.gesture.motion === 'nod' || t.gesture.motion === 'bow' ? 'animate-bounce'
+                        : 'animate-pulse')
+                      : '';
+                    return (
+                      <div key={i} title={t.gesture.desc}
+                        className={`min-w-[92px] px-2 py-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${active ? 'bg-purple-600 text-white border-purple-700 scale-110 shadow-lg' : 'bg-white/80 dark:bg-slate-800/60 border-purple-200 text-purple-900 dark:text-purple-100'}`}>
+                        <span className={`text-3xl ${motionClass}`}>{t.gesture.emoji}</span>
+                        <span className="text-xs font-bold">{t.word}</span>
+                        <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/90' : 'text-purple-700/80 dark:text-purple-200/80'}`}>{t.gesture.desc}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    );
+                  }
+                  if (t.kind === 'spell') {
+                    return (
+                      <div key={i} title={`تهجئة: ${t.word}`}
+                        className={`min-w-[120px] px-2 py-2 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${active ? 'bg-amber-500 text-white border-amber-600 scale-110 shadow-lg' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+                        <div className="flex flex-wrap gap-0.5 justify-center">
+                          {t.letters.map((l, li) => (
+                            <span key={li} className="text-xl" title={`${l.letter}: ${l.sign.desc}`}>{l.sign.emoji}</span>
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold">{t.word}</span>
+                        <span className={`text-[9px] ${active ? 'text-white/90' : 'text-amber-700'}`}>تهجئة بالحروف</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} className={`min-w-[88px] px-2 py-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 flex flex-col items-center gap-1 ${active ? 'scale-110' : ''}`}>
+                      <span className="text-3xl">✋</span>
+                      <span className="text-xs font-bold">{t.word}</span>
+                      <span className="text-[9px]">غير معروفة</span>
+                    </div>
+                  );
+                })}
+              </div>
             </>
           )}
         </section>
