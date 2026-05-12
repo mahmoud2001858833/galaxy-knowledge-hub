@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Type, Mic, Hand, Volume2, Square, Play, Copy, RefreshCw,
-  Languages, Eye, Ear, Accessibility, Search, BookOpen, X,
+  Languages, Eye, Ear, Accessibility, Search, BookOpen, X, Camera, Loader2, CameraOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { textToBraille, brailleToText } from './braille';
 import { logToolUse } from './interactionLog';
 import {
@@ -12,7 +13,7 @@ import {
   type SignToken,
 } from './signDictionary';
 
-type Modality = 'text' | 'voice' | 'braille' | 'sign';
+type Modality = 'text' | 'voice' | 'braille' | 'sign' | 'camera';
 
 // Sign-language dictionary lives in ./signDictionary (hundreds of entries +
 // fingerspelling fallback). All gesture tokens come from there.
@@ -25,6 +26,96 @@ const SensoryUnifiedComm: React.FC = () => {
   const [autoTTS, setAutoTTS] = useState(false);
   const recRef = useRef<any>(null);
   const signTimerRef = useRef<number | null>(null);
+
+  // ===== Camera (sign recognition) state =====
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [camOn, setCamOn] = useState(false);
+  const [camLoading, setCamLoading] = useState(false);
+  const [camBusy, setCamBusy] = useState(false);
+  const [camAuto, setCamAuto] = useState(false);
+  const camAutoTimerRef = useRef<number | null>(null);
+  const lastWordRef = useRef<string>('');
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    if (camAutoTimerRef.current) { clearInterval(camAutoTimerRef.current); camAutoTimerRef.current = null; }
+    setCamOn(false); setCamAuto(false);
+  };
+
+  const startCamera = async () => {
+    try {
+      setCamLoading(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCamOn(true);
+      logToolUse('sign');
+    } catch (e: any) {
+      toast.error(e?.name === 'NotAllowedError' ? 'تم رفض إذن الكاميرا.' : 'تعذّر تشغيل الكاميرا.');
+    } finally { setCamLoading(false); }
+  };
+
+  const captureFrame = (): { dataUrl: string; mime: string } | null => {
+    const v = videoRef.current; const c = canvasRef.current;
+    if (!v || !c || v.readyState < 2) return null;
+    const w = v.videoWidth || 640, h = v.videoHeight || 480;
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); if (!ctx) return null;
+    ctx.drawImage(v, 0, 0, w, h);
+    return { dataUrl: c.toDataURL('image/jpeg', 0.85), mime: 'image/jpeg' };
+  };
+
+  const recognizeOnce = async () => {
+    if (camBusy) return;
+    const frame = captureFrame();
+    if (!frame) { toast.error('الكاميرا غير جاهزة بعد'); return; }
+    setCamBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('damij-sign-camera', {
+        body: { image: frame.dataUrl, mime: frame.mime },
+      });
+      if (error) throw error;
+      const word: string = (data?.word || '').toString().trim();
+      const conf: number = Number(data?.confidence || 0);
+      if (!word || conf < 0.35) {
+        if (!camAuto) toast.warning(data?.notes || 'لم يتم التعرّف على إشارة واضحة.');
+        return;
+      }
+      // avoid duplicating the same word back-to-back in auto mode
+      if (camAuto && word === lastWordRef.current) return;
+      lastWordRef.current = word;
+      setText(prev => (prev ? prev + ' ' : '') + word);
+      setActiveInput('camera');
+      if (!camAuto) toast.success(`تم التعرّف: ${word}`);
+    } catch (e) {
+      if (!camAuto) toast.error('تعذّر تحليل الإشارة.');
+    } finally { setCamBusy(false); }
+  };
+
+  // Auto-capture loop every 3s when enabled
+  useEffect(() => {
+    if (!camOn || !camAuto) {
+      if (camAutoTimerRef.current) { clearInterval(camAutoTimerRef.current); camAutoTimerRef.current = null; }
+      return;
+    }
+    camAutoTimerRef.current = window.setInterval(() => { recognizeOnce(); }, 3000);
+    return () => { if (camAutoTimerRef.current) { clearInterval(camAutoTimerRef.current); camAutoTimerRef.current = null; } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camOn, camAuto]);
+
+  useEffect(() => () => { stopCamera(); }, []);
 
   // ===== Voice input (Web Speech API) =====
   useEffect(() => {
@@ -143,8 +234,9 @@ const SensoryUnifiedComm: React.FC = () => {
             { k: 'voice',   label: 'صوت',        icon: Mic },
             { k: 'braille', label: 'بريل',       icon: Eye },
             { k: 'sign',    label: 'لغة إشارة',  icon: Hand },
+            { k: 'camera',  label: 'فتح الكاميرا', icon: Camera },
           ] as { k: Modality; label: string; icon: any }[]).map(({ k, label, icon: I }) => (
-            <button key={k} onClick={() => setActiveInput(k)}
+            <button key={k} onClick={() => { setActiveInput(k); if (k !== 'camera') stopCamera(); }}
               className={`px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-1.5 transition ${activeInput === k ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-gray-100 text-gray-700'}`}>
               <I className="w-4 h-4" /> {label}
             </button>
@@ -189,6 +281,62 @@ const SensoryUnifiedComm: React.FC = () => {
             <textarea value={text} onChange={(e) => onSignGloss(e.target.value)} rows={3}
               className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا أنا أحب المدرسة"/>
             <p className="text-[11px] text-gray-400 mt-1">القاموس يدعم: التحيات، الأسرة، الأفعال، المشاعر، الأسئلة، الزمن. للترجمة بالكاميرا استخدم صفحة نظام لغة الإشارة.</p>
+          </div>
+        )}
+        {activeInput === 'camera' && (
+          <div>
+            <p className="text-xs text-gray-500 mb-2">
+              شغّل الكاميرا وأدِّ الإشارة أمام العدسة، سيتعرّف الذكاء الاصطناعي على الكلمة العربية ويُترجمها فورًا للصيغ الأربع.
+            </p>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+                <video ref={videoRef} playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+                <canvas ref={canvasRef} className="hidden" />
+                {!camOn && !camLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white/80 text-sm gap-2">
+                    <Camera className="w-10 h-10 opacity-70" />
+                    <span>الكاميرا متوقفة</span>
+                  </div>
+                )}
+                {camLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  </div>
+                )}
+                {camBusy && camOn && (
+                  <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-2 py-1 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin" /> يحلّل الإشارة...
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                {!camOn ? (
+                  <button onClick={startCamera} disabled={camLoading}
+                    className="px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                    <Camera className="w-4 h-4" /> فتح الكاميرا
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={recognizeOnce} disabled={camBusy}
+                      className="px-4 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                      {camBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Hand className="w-4 h-4" />}
+                      التقط إشارة
+                    </button>
+                    <label className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 cursor-pointer">
+                      <input type="checkbox" checked={camAuto} onChange={e => setCamAuto(e.target.checked)} />
+                      التقاط تلقائي كل 3 ثواني
+                    </label>
+                    <button onClick={stopCamera}
+                      className="px-4 py-2 rounded-xl bg-red-50 text-red-700 font-bold inline-flex items-center justify-center gap-2 border border-red-200">
+                      <CameraOff className="w-4 h-4" /> إيقاف الكاميرا
+                    </button>
+                  </>
+                )}
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  نصيحة: قف على خلفية واضحة وأظهر يدك بالكامل في الإطار. تُدعم لغة الإشارة العربية والتهجئة بالحروف.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>
