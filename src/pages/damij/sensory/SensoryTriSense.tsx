@@ -340,7 +340,7 @@ const SensoryTriSense: React.FC = () => {
 
           {!activeSeg && (
             <p className="text-[hsl(var(--damij-text))]/55 text-sm py-10 text-center">
-              اختر مقطعاً من النص لعرض ترجمته الإشارية المتزامنة هنا.
+              ابدأ التسجيل وستظهر ترجمة كل عبارة بلغة الإشارة هنا تلقائيًا — أو اضغط أي مقطع من النص لإعادة عرض ترجمته.
             </p>
           )}
 
