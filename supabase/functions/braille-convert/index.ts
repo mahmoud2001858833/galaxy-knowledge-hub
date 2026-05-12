@@ -557,30 +557,29 @@ Deno.serve(async (req) => {
     }
 
     let braille = "";
+    let usedFallback = false;
+    let fallbackReason: string | undefined;
     if (grade === 2) {
       try {
         braille = await grade2Convert(text, langName, langCode);
       } catch (e: any) {
         const msg = String(e?.message);
-        if (msg === "rate_limited") {
-          return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        if (msg === "missing_key") {
-          return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ. يرجى إضافة BRAILLE_GEMINI_API_KEY." }), {
-            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ error: "فشل تحويل المستوى الثاني (الاختزالي). حاول مرة أخرى." }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        console.warn("grade2Convert failed, falling back to grade-1 deterministic:", msg);
+        // ALWAYS produce output — fall back to deterministic Grade-1 so the user
+        // still gets valid Braille across file / url / text inputs even when
+        // Gemini is rate-limited or misconfigured.
+        braille = grade1Convert(text);
+        usedFallback = true;
+        fallbackReason = msg;
       }
     } else {
       braille = grade1Convert(text);
     }
 
-    return new Response(JSON.stringify({ braille, grade, langCode }), {
+    return new Response(JSON.stringify({
+      braille, grade, langCode,
+      ...(usedFallback ? { fallback: true, fallback_reason: fallbackReason } : {}),
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
