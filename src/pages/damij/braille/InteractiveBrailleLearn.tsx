@@ -46,6 +46,7 @@ const InteractiveBrailleLearn: React.FC = () => {
   // ===== Write practice =====
   const [practiceLetter, setPracticeLetter] = useState(ARABIC_BRAILLE[0]);
   const [writeStats, setWriteStats] = useState({ attempts: 0, correct: 0 });
+  const [showDict, setShowDict] = useState(true);
   const startTimeRef = useRef<number>(Date.now());
 
   // ===== Test mode =====
