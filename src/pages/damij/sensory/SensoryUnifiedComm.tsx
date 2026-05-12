@@ -234,8 +234,9 @@ const SensoryUnifiedComm: React.FC = () => {
             { k: 'voice',   label: 'صوت',        icon: Mic },
             { k: 'braille', label: 'بريل',       icon: Eye },
             { k: 'sign',    label: 'لغة إشارة',  icon: Hand },
+            { k: 'camera',  label: 'فتح الكاميرا', icon: Camera },
           ] as { k: Modality; label: string; icon: any }[]).map(({ k, label, icon: I }) => (
-            <button key={k} onClick={() => setActiveInput(k)}
+            <button key={k} onClick={() => { setActiveInput(k); if (k !== 'camera') stopCamera(); }}
               className={`px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-1.5 transition ${activeInput === k ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-gray-100 text-gray-700'}`}>
               <I className="w-4 h-4" /> {label}
             </button>
