@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
 
     // Compose program locally — fast and reliable
     const programTitle = `برنامج علاجي تفاعلي لـ ${profile.child_name ?? 'الطفل'} (3 أشهر)`;
-    const programSummary = `جدول يومي لمدة 90 يوماً، 10 ألعاب يومياً متنوّعة عبر 6 مراحل تدرّجية تغطّي الانتباه والتواصل والمشاعر والمرونة والمهارات الاجتماعية. مخصّص لمستوى الدعم ${profile.support_level ?? 1}.`;
+    const programSummary = `جدول يومي لمدة 90 يوماً، 5 ألعاب يومياً متنوّعة عبر 6 مراحل تدرّجية تغطّي الانتباه والتواصل والمشاعر والمرونة والمهارات الاجتماعية. مخصّص لمستوى الدعم ${profile.support_level ?? 1} وللعمر ${profile.age_years ?? '—'} سنوات.`;
 
     const insProgramResp = await fetch(`${supabaseUrl}/rest/v1/autism_programs`, {
       method: 'POST',
