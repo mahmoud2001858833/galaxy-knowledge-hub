@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
+import { tokenizeSigns, type SignToken } from './signDictionary';
 
 // ===== Types =====
 type Segment = {
