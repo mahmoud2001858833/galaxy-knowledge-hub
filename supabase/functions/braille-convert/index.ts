@@ -1,4 +1,3 @@
-import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Universal Braille Converter
 // Modes:
 //   - "convert" : convert text → Unicode Braille (Grade 1 deterministic, Grade 2 via AI)
