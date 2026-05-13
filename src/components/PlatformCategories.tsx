@@ -182,8 +182,7 @@ const PlatformCategories = () => {
         </h2>
         <motion.div 
           initial={{ width: 0 }}
-          whileInView={{ width: "10rem" }}
-          viewport={{ once: true }}
+          animate={{ width: "10rem" }}
           transition={{ duration: 1, delay: 0.3 }}
           className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 mx-auto rounded-full shadow-lg shadow-blue-500/50"
         />
