@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes, GraduationCap } from 'lucide-react';
+import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes, GraduationCap, Camera } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 
 const BrailleHome: React.FC = () => (
