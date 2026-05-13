@@ -197,12 +197,11 @@ const PlatformCategories = () => {
           return (
             <motion.div
               key={category.id}
-              initial={{ opacity: 0, y: 100 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ 
                 duration: 0.6,
-                delay: index * 0.2,
+                delay: index * 0.1,
                 ease: "easeOut"
               }}
               onClick={() => {
