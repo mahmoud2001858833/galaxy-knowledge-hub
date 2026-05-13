@@ -1,5 +1,5 @@
 // Blind Eye - Always-on chat with the visual assistant
-// Uses Gemini direct API (NEVER Lovable AI)
+// Uses Lovable AI Gateway (exception granted only for Blind Eye feature)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,74 +8,71 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const KEYS = ["GEMINI_API_KEY", "GOOGLE_AI_API_KEY", "GEMINI_API_KEY_NEW"];
+const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODELS = ["google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
-function getKey(): string {
-  for (const k of KEYS) {
-    const v = Deno.env.get(k);
-    if (v) return v;
-  }
-  throw new Error("No Gemini API key configured");
-}
-
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"];
-
-const SYSTEM = `أنت "عين الأعمى"، مساعد صوتي ودود للمكفوفين. تتحدث معهم في أي وقت أثناء المشي.
+const SYSTEM = `أنت "عين الأعمى"، مساعد صوتي ودود للمكفوفين تتحدث معهم أثناء المشي.
 
 قواعد صارمة:
-- ردود قصيرة جداً (جملة واحدة، ٥-٢٥ كلمة) لأنها ستُنطق صوتياً.
+- ردود قصيرة جداً (٥-٢٥ كلمة) لأنها تُنطق صوتياً.
 - عربية فصحى بسيطة وواضحة.
 - إن أُرفقت صورة، استخدمها لوصف ما يراه الكفيف بدقة.
-- إن طلب وصف ما أمامه: صف الأشخاص، العقبات، الطريق، اللافتات، باختصار.
-- إن طلب قراءة نص: اقرأ ما تراه فقط بدون تعليق.
+- إن طلب وصف ما أمامه: صف الأشخاص والعقبات والطريق باختصار.
+- إن طلب قراءة نص: اقرأ ما تراه فقط.
 - لا تذكر "كصورة" أو "في الصورة"، تحدث وكأنك ترى مباشرة.
-- لا ترفض أو تعتذر إلا لضرورة قصوى.
+- لا ترفض إلا لضرورة.
 
-أعد JSON فقط: { "spoken": "ردك القصير" }`;
+استخدم أداة speak لإرجاع الجملة المنطوقة.`;
 
-async function callGemini(model: string, userText: string, imageB64?: string) {
-  const key = getKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+const speakTool = {
+  type: "function",
+  function: {
+    name: "speak",
+    description: "Return short Arabic sentence to be spoken to the blind user",
+    parameters: {
+      type: "object",
+      properties: { spoken: { type: "string" } },
+      required: ["spoken"],
+      additionalProperties: false,
+    },
+  },
+};
 
-  const parts: any[] = [{ text: `${SYSTEM}\n\nسؤال المستخدم: ${userText}` }];
-  if (imageB64) {
-    const data = imageB64.replace(/^data:[^;]+;base64,/, "");
-    parts.push({ inlineData: { mimeType: "image/jpeg", data } });
-  }
+async function callGateway(model: string, userText: string, imageDataUrl?: string) {
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) throw new Error("LOVABLE_API_KEY not configured");
+
+  const userContent: any[] = [{ type: "text", text: userText }];
+  if (imageDataUrl) userContent.push({ type: "image_url", image_url: { url: imageDataUrl } });
 
   const body = {
-    contents: [{ role: "user", parts }],
-    generationConfig: {
-      temperature: 0.5,
-      maxOutputTokens: 200,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "object",
-        properties: { spoken: { type: "string" } },
-        required: ["spoken"],
-      },
-    },
+    model,
+    messages: [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: userContent },
+    ],
+    tools: [speakTool],
+    tool_choice: { type: "function", function: { name: "speak" } },
   };
 
-  const r = await fetch(url, {
+  const r = await fetch(GATEWAY, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
+  if (r.status === 429) throw new Error("RATE_LIMIT");
+  if (r.status === 402) throw new Error("PAYMENT_REQUIRED");
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(`Gemini ${model} ${r.status}: ${t.slice(0, 200)}`);
+    throw new Error(`Gateway ${model} ${r.status}: ${t.slice(0, 200)}`);
   }
+
   const j = await r.json();
-  const txt = j?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  try {
-    return JSON.parse(txt);
-  } catch {
-    const m = txt.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    return { spoken: txt.slice(0, 200) };
-  }
+  const args = j?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (args) return JSON.parse(args);
+  const txt = j?.choices?.[0]?.message?.content ?? "";
+  return { spoken: typeof txt === "string" ? txt.slice(0, 200) : "حسناً" };
 }
 
 Deno.serve(async (req) => {
@@ -85,34 +82,41 @@ Deno.serve(async (req) => {
     const { text, image } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "text required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGemini(model, text, image);
-        return new Response(JSON.stringify({ ok: true, ...result, model }), {
+        const result = await callGateway(model, text, image);
+        return new Response(JSON.stringify({ ok: true, model, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
-        lastErr = e instanceof Error ? e.message : String(e);
-        console.warn(`Model ${model} failed:`, lastErr);
-        continue;
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg === "RATE_LIMIT") {
+          return new Response(JSON.stringify({ error: "rate_limit", message: "النظام مزدحم" }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (msg === "PAYMENT_REQUIRED") {
+          return new Response(JSON.stringify({ error: "payment_required", message: "نفذت الأرصدة" }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        lastErr = msg;
+        console.warn(`Chat model ${model} failed:`, msg);
       }
     }
 
     return new Response(JSON.stringify({ error: "All models failed", details: lastErr }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("blind-eye-chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

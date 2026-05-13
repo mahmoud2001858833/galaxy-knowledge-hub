@@ -1,101 +1,65 @@
-# خطة تحسين شاملة لمختبر المحاكاة السريرية
+## الهدف
+تحويل ميزة "عين الأعمى" بالكامل إلى **Lovable AI Gateway** (استثناء خاص لهذه الميزة فقط)، مع تحسين الكشف ليغطّي **كامل المنطقة أمام الكفيف عبر شبكة مكانية 9 خانات (3×3)** تحدّد العقبات في كل نقطة من مجال الكاميرا، وإصلاح المشاكل التشغيلية الحالية.
 
-## ١. الصفحة الرئيسية (`ClinicalHome.tsx`)
-- حذف كل أزرار التوسيع: "توليد الحالات والبروتوكولات"، "توسيع المحتوى الطبي"، "ابدأ تجربة جديدة"، وكل ما يستدعي `clinical-seed-*`.
-- حذف بانر "المختبر فارغ".
-- شريط واحد أنيق بإحصائيات + 5 بطاقات (الحالات، تجربة حرّة، لوحة جلساتي، مقارنة، تقاريري) بتصميم أنعم وأيقونات أكبر.
+## الخطوات
 
-## ٢. مكتبة الحالات (`ClinicalCases.tsx`)
-- حذف كل الفلاتر (المجموعة، الفئة، الشدّة، العمر) — حقل بحث واحد فقط بسيط.
-- كل حالة تظهر **كبطاقة معروفة جاهزة** بتصميم أنيق:
-  - أفاتار/أيقونة فريدة مولّدة من اسم الحالة + لون مميّز للفئة (gradient ring).
-  - اسم المريض كبير + سطر العمر/الجنس + شريط الفئة الملوّن + شدّة.
-  - hover effect أنيق مع الانتقال بسرعة للحالة.
-- شبكة 3 أعمدة على الديسكتوب مع padding أوسع وظلال ناعمة.
+### 1) تحديث الذاكرة
+- تعديل `mem://constraints/no-lovable-ai-usage` و `mem://index.md` لإضافة استثناء صريح:
+  > يُسمح باستخدام Lovable AI **حصراً** في ميزة "عين الأعمى" (`blind-eye-vision`, `blind-eye-chat`). يبقى ممنوعاً في باقي المنصة.
 
-## ٣. صفحة تفاصيل الحالة (`ClinicalCaseDetail.tsx`)
-هوية بصرية خاصة لكل حالة + **كل الموارد جاهزة ومعروضة قبل بدء الجلسة**:
-- Header مع gradient حسب الفئة + أيقونة كبيرة فريدة + اسم/عمر/شدة/تشخيص.
-- 8 صناديق أنيقة بأيقونات مرتّبة (تُسحب من `clinical_interventions_catalog` بتصفية `condition_keys` + الفئة):
-  1. 💊 الأدوية (الحالية + الموصى بها)
-  2. 🧠 العلاج السلوكي
-  3. 🎧 التدخّلات الحسّية
-  4. 💬 التواصل البديل (AAC)
-  5. 👁 الوسائل البصرية
-  6. 👂 الوسائل السمعية
-  7. 📋 الإجراءات التربوية
-  8. 🩺 الأجهزة المتاحة (icons grid)
-- زر بدء الجلسة كبير في الأعلى + قائمة بروتوكولات أنيقة في الأسفل.
+### 2) إعادة كتابة edge function: `blind-eye-vision`
+- التحويل من Gemini المباشر إلى **Lovable AI Gateway** (`https://ai.gateway.lovable.dev/v1/chat/completions`) باستخدام `LOVABLE_API_KEY`.
+- النموذج الافتراضي: `google/gemini-2.5-flash` (رؤية + سرعة)، مع fallback إلى `google/gemini-3-flash-preview`.
+- استخراج المخرج المُهيكل عبر **tool calling** (لا اعتماد على `responseMimeType`).
+- معالجة 429 / 402 وإرجاع رسائل واضحة للعميل.
+- **مخطط جديد للكشف الشبكي (Spatial Grid 3×3)**:
+  ```
+  cells: [
+    { id:"TL"|"TC"|"TR"|"ML"|"MC"|"MR"|"BL"|"BC"|"BR",
+      label: "وصف قصير لما في هذه الخانة",
+      object: "person|wall|pole|step|door|car|table|hole|chair|sign|open|unknown",
+      proximity: 0-100,        // قرب التهديد
+      hazard: "low|medium|high"
+    } × 9
+  ]
+  best_path: "left|center|right"          // أفضل مسار للمشي
+  global_proximity: 0-100                  // أعلى قرب من بين الخانات
+  spoken: "جملة عربية قصيرة (٣-١٠ كلمات) للنطق الفوري"
+  obstacles_summary: "وصف موجز جداً لأهم 1-2 عقبة"
+  ```
+- الـ prompt يطلب من النموذج تقسيم الإطار ذهنياً إلى 3 صفوف × 3 أعمدة وملء كل خانة.
 
-## ٤. تحسين الواقعية والترابط (الحلقة الأهم)
+### 3) إعادة كتابة edge function: `blind-eye-chat`
+- نفس التحويل إلى Lovable AI Gateway مع نفس النماذج والـ fallback.
+- إبقاء واجهة الإدخال/الإخراج كما هي (`{ text, image } → { spoken }`).
 
-### أ. حالة حيوية مشتركة (`vitals_state` في `clinical_sessions`)
-حقل JSONB جديد يحتوي قراءات حيّة دائمة: `{ hr, bp_sys, bp_dia, spo2, rr, temp, glucose, pain, mood }`.
-- تُهيَّأ من `vitals_initial` للحالة عند البدء.
-- كل **محادثة، تدخّل، إعطاء دواء، استخدام جهاز** قد يحدّثها.
-- كل قراءات الأجهزة تُسحب من `vitals_state` بدل قيم ثابتة.
+### 4) تحديث `BlindEyeNavigator.tsx` (الواجهة + التجربة)
+- **Overlay شبكي شفاف** فوق الفيديو يرسم خطوط 3×3 ويلوّن كل خانة حسب `hazard` (أخضر/أصفر/أحمر) مع أيقونة العقبة وكلمة وصفية مختصرة.
+- مؤشّر "أفضل مسار" (سهم كبير: يسار/أمام/يمين) مبني على `best_path`.
+- استخدام `global_proximity` بدلاً من `proximity_score` لمنطق العاجلية والاهتزاز.
+- **تحسين الموثوقية**:
+  - إصلاح حلقة التشغيل: التأكد من تشغيل الكاميرا قبل بدء الـ tick، ومنع الـ ticks المتراكبة عبر `busy` ref حقيقي (ليس state).
+  - معالجة أخطاء 429/402 بإطفاء التحليل مؤقتاً (5 ثوانٍ) ونطق "النظام مشغول، سأحاول بعد قليل".
+  - تحسين dedupe عبر مقارنة `obstacles_summary + best_path` بدل النص فقط.
+  - زيادة جودة الإطار إلى 720px وjpeg quality 0.78 لتحسين الكشف.
+  - إعادة بدء `SpeechRecognition` عند `no-speech` أو `aborted` فوراً.
+- **TTS**: محاولة استخدام صوت عربي (`ar-*`) موجود في `getVoices()`، fallback افتراضي.
 
-### ب. تحديث `clinical-patient-turn`
-- قراءة `vitals_state` + آخر القراءات + آخر التدخّلات وتمريرها لـ Gemini.
-- إضافة `vitals_delta` للـ schema: تغييرات واقعية على HR/BP/SpO2/RR/temp/pain/mood حسب طبيعة الكلام:
-  - كلام مخيف/عدائي → ↑ HR، ↑ BP، ↑ anxiety، ↓ mood.
-  - كلام مطمئن/تعزيز → ↓ HR، ↓ anxiety، ↑ mood.
-  - تجاهل ألم → ↑ pain.
-- تطبيق `vitals_delta` على `vitals_state` وحفظه.
-- إدراج حدث `vitals_change` يظهر في السجل ("ارتفع نبض المريض إلى 112 بسبب ...").
+### 5) `supabase/config.toml`
+- التأكد من تسجيل `blind-eye-vision` و `blind-eye-chat` مع `verify_jwt = false` (ميزة عامة قيد المشي، لا تتطلب جلسة مفعّلة لتجنّب الانقطاع).
 
-### ج. تحديث `clinical-intervention-trial`
-- يقرأ `vitals_state` الحالي ويرجع `vitals_delta` متماسك (مثلاً: Salbutamol ↓ wheeze، ↑ HR قليلاً، ↑ SpO2).
-- عند الاعتماد، يُحدّث `vitals_state`.
-- موانع متبادلة: إن أعطى الطالب دواءين متضاربين، النتيجة سلبية ومسجّلة في الأمان.
+### 6) التحقق
+- نشر الـ functions ثم استدعاؤها بـ `supabase--curl_edge_functions` بصورة اختبارية لقياس الاستجابة.
+- مراجعة `supabase--edge_function_logs` للتأكد من عدم وجود أخطاء.
+- اختبار يدوي في المعاينة (تشغيل/إيقاف/تكلّم).
 
-### د. تحديث `DeviceLauncher` + simulators
-- كل القراءات (ECG/BP/SpO2/Thermo/GCS/Stetho…) تستخدم `vitals_state` الحالي بدل المعاملات الثابتة.
-- بعد كل turn/intervention، الأجهزة تتحدّث تلقائياً بدون refresh.
+## الملفات المتأثرة
+- `supabase/functions/blind-eye-vision/index.ts` (إعادة كتابة كاملة + شبكة 3×3)
+- `supabase/functions/blind-eye-chat/index.ts` (إعادة كتابة كاملة)
+- `src/pages/damij/blind-eye/BlindEyeNavigator.tsx` (Overlay شبكي + إصلاحات)
+- `supabase/config.toml` (تأكيد التسجيل)
+- `mem://constraints/no-lovable-ai-usage`, `mem://index.md` (استثناء عين الأعمى)
 
-## ٥. لوحة الأجهزة (داخل الجلسة)
-- حذف خانة "عرض الكل" — الأجهزة المعروضة هي فقط المتاحة للحالة (مرتبطة بـ `applicable_specialties`).
-- شبكة أنيقة 3 أعمدة، كل جهاز ببطاقة:
-  - أيقونة كبيرة دائرية ملوّنة حسب الفئة (vital signs أزرق، cardiac أحمر، respiratory سماوي، neuro بنفسجي…).
-  - اسم الجهاز + سطر وصف.
-  - شارة مفعّل/متاح.
-- المحاكيات المباشرة (Always-On) في صف علوي مميّز فوق الشبكة.
-- الجهاز المختار يفتح في panel أنيق جانبي بدل أن يدفع المحتوى للأسفل.
-
-## ٦. التجربة الحرّة (`ClinicalFreeExperiment.tsx`)
-- إضافة **مكتبة أمثلة جاهزة لكل نوع** (4-6 لكل نوع):
-  - دواء: Salbutamol للربو، Methylphenidate لـ ADHD، Insulin، Paracetamol…
-  - علاج سلوكي: تعزيز إيجابي مجدول، نمذجة، تشكيل، إطفاء سلوك…
-  - تدخّل حسّي: سماعات عازلة، كرة ضغط، استراحة حسّية…
-  - تواصل بديل: PECS، تطبيق Proloquo2Go، لوحة رموز…
-  - وسيلة بصرية: جدول مرئي يومي، قصة اجتماعية، مؤقّت بصري…
-  - وسيلة سمعية: Hearing aid، FM system…
-  - إجراء تربوي: تكييف منهج، مهام مجزّأة، تعليمات مرئية…
-- في الخطوة 2: يظهر صف "أمثلة جاهزة" قابل للنقر يملأ الحقول، **وقابل للتعديل بحرية بعدها**.
-- تحسين تصميم الـ stepper بأيقونات وأسماء واضحة.
-- زر "ابدأ من الصفر" بجانب الأمثلة.
-
-## ٧. الملفات
-
-### تعديلات
-- `src/pages/damij/clinical/ClinicalHome.tsx` — حذف أزرار التوسيع، تصميم أنعم.
-- `src/pages/damij/clinical/ClinicalCases.tsx` — حذف الفلاتر، بطاقات حالة أنيقة.
-- `src/pages/damij/clinical/ClinicalCaseDetail.tsx` — هوية بصرية، 8 موارد جاهزة، عرض الأدوية والأجهزة.
-- `src/pages/damij/clinical/ClinicalLabSession.tsx` — تنسيق أنيق، loop تحديث القراءات الحيّة.
-- `src/pages/damij/clinical/ClinicalFreeExperiment.tsx` — أمثلة جاهزة قابلة للتعديل.
-- `src/features/clinical/devices/DeviceLauncher.tsx` — حذف "عرض الكل"، شبكة أنيقة بأيقونات ملوّنة.
-- `src/features/clinical/devices/simulators.tsx` — قراءة `vitals_state` بدل props ثابتة.
-- `src/features/clinical/InterventionTryPanel.tsx` — تطبيق التدخّل يحدّث vitals_state.
-- `src/features/clinical/types.ts` — إضافة `vitals_state` و`VitalsState`.
-- `supabase/functions/clinical-patient-turn/index.ts` — إضافة vitals_state + vitals_delta + سياق التدخّلات الأخيرة.
-- `supabase/functions/clinical-intervention-trial/index.ts` — إرجاع vitals_delta واقعي وتحديث الحالة.
-
-### Migration واحدة
-- إضافة عمود `vitals_state JSONB` على `clinical_sessions`.
-- backfill بسيط من `clinical_cases.vitals_initial` للجلسات النشطة.
-
-## ٨. ملاحظات تقنية
-- لا تغيير على الـ schema للأدوات والـ catalog؛ فقط استخدام `condition_keys` لتصفية موارد كل حالة.
-- استخدام مفاتيح Gemini المباشرة الموجودة (ممنوع Lovable AI).
-- تحديث القراءات في الجلسة عبر invalidation/reload فورية بعد كل turn/trial/device.
-- الحفاظ على HSL tokens من `index.css` (لا ألوان مباشرة).
+## ملاحظات تقنية
+- `LOVABLE_API_KEY` مُهيّأ تلقائياً في Supabase secrets — لا حاجة لإضافة شيء.
+- استخدام `tool_choice` لإجبار النموذج على إرجاع JSON مهيكل دقيق (أفضل من responseMimeType مع OpenAI-compatible gateway).
