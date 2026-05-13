@@ -8,11 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const KEYS = [
-  "GEMINI_API_KEY",
-  "GOOGLE_AI_API_KEY",
-  "GEMINI_API_KEY_NEW",
-];
+const KEYS = ["GEMINI_API_KEY", "GOOGLE_AI_API_KEY", "GEMINI_API_KEY_NEW"];
 
 function getKey(): string {
   for (const k of KEYS) {
@@ -24,39 +20,93 @@ function getKey(): string {
 
 const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"];
 
-const SYSTEM_PROMPT = `أنت مرشد بصري للمكفوفين باسم "عين الأعمى". تحلّل الصورة من كاميرا الهاتف الخلفية الموجّهة للأمام، وتعطي تعليمات ملاحة فورية بالعربية الفصحى البسيطة.
+const GUIDANCE_PROMPT = `أنت "عين الأعمى"، مرشد بصري للمكفوفين. حلّل صورة الكاميرا الخلفية الموجّهة للأمام، وأعطِ تعليمة ملاحة فورية بالعربية الفصحى البسيطة.
 
-قواعد صارمة:
-- نص "spoken" قصير جداً (٣-١٢ كلمة فقط)، يُنطق فوراً.
-- ركّز على: العقبات (أشخاص، سيارات، أعمدة، حُفر، درج، أبواب، جدران، طاولات)، اتجاه الطريق المفتوح، المسافة التقريبية.
-- إذا كانت هناك عقبة قريبة جداً أو خطر → urgency: "high".
-- استعمل عبارات مثل: "امشِ للأمام بأمان"، "توقف، شخص أمامك"، "التف يميناً قليلاً"، "حذار، درج نازل"، "الطريق مفتوح".
-- لا تذكر ألوان أو تفاصيل ديكور لا تفيد الكفيف.
+قواعد:
+- "spoken" قصير جداً (٣-١٠ كلمات)، يُنطق فوراً.
+- ركّز على: عقبات (شخص، عمود، حفرة، درج، باب، جدار، طاولة، سيارة)، الطريق المفتوح، تقدير المسافة.
+- proximity_score: 0=بعيد جداً وآمن، 100=ملاصق وخطر.
+- urgency يُحدَّد من proximity_score: ≥75 → high، 40-74 → medium، <40 → low.
+- نبرة عاجلة قصيرة جداً عند high (مثل "قف! شخص أمامك").
+- نبرة هادئة عند low (مثل "الطريق مفتوح، تابع").
+- لا ألوان ولا تفاصيل ديكور.
 
-أعد JSON فقط بهذا الشكل:
+أعد JSON فقط:
 {
-  "direction": "forward" | "left" | "right" | "stop" | "back",
+  "direction": "forward"|"left"|"right"|"stop"|"back",
   "obstacle": "وصف العقبة أو null",
-  "distance": "near" | "mid" | "far" | null,
-  "urgency": "low" | "medium" | "high",
-  "spoken": "الجملة العربية القصيرة التي ستُنطق"
+  "distance": "near"|"mid"|"far"|null,
+  "proximity_score": 0-100,
+  "urgency": "low"|"medium"|"high",
+  "spoken": "الجملة العربية القصيرة"
 }`;
 
-async function callGemini(model: string, imageB64: string, extraContext?: string) {
+const CALIBRATION_PROMPT = `أنت "عين الأعمى" في وضع المعايرة. الهدف: مساعدة الكفيف على وضع الهاتف بأفضل وضعية للمشي.
+
+الوضعية المثالية:
+- الكاميرا الخلفية موجّهة للأمام أفقياً.
+- مائلة قليلاً للأسفل بحيث تظهر الأرض على بُعد متر إلى ثلاثة أمتار.
+- ليست مائلة جداً للسماء أو للأرض.
+- الصورة واضحة وغير مغطاة.
+
+افحص الصورة:
+- إن كانت الكاميرا للسماء → اطلب إمالة الهاتف للأسفل.
+- إن كانت ملاصقة للأرض → اطلب رفع الهاتف قليلاً.
+- إن كانت مغطاة/مظلمة → اطلب كشفها.
+- إن كانت مائلة جانبياً → اطلب تعديلها.
+- إن كانت ممتازة → position_ok = true.
+
+"spoken" قصيرة وودودة (٤-١٢ كلمة). عند النجاح: "ممتاز! الوضعية مثالية، سأبدأ بمساعدتك الآن."
+
+أعد JSON فقط:
+{
+  "position_ok": true|false,
+  "issue": "وصف المشكلة أو null",
+  "adjustment": "ما يجب فعله أو null",
+  "spoken": "الجملة العربية"
+}`;
+
+async function callGemini(model: string, imageB64: string, mode: string, extraContext?: string) {
   const key = getKey();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const data = imageB64.replace(/^data:[^;]+;base64,/, "");
 
+  const isCalibration = mode === "calibration";
+  const systemPrompt = isCalibration ? CALIBRATION_PROMPT : GUIDANCE_PROMPT;
   const userText = extraContext
-    ? `سياق إضافي: ${extraContext}\n\nحلّل الصورة وأعطِ تعليمة الملاحة.`
-    : "حلّل الصورة وأعطِ تعليمة الملاحة الفورية.";
+    ? `سياق: ${extraContext}\n\nحلّل الصورة.`
+    : "حلّل الصورة وأعطِ التعليمة.";
+
+  const schema = isCalibration
+    ? {
+        type: "object",
+        properties: {
+          position_ok: { type: "boolean" },
+          issue: { type: "string", nullable: true },
+          adjustment: { type: "string", nullable: true },
+          spoken: { type: "string" },
+        },
+        required: ["position_ok", "spoken"],
+      }
+    : {
+        type: "object",
+        properties: {
+          direction: { type: "string", enum: ["forward", "left", "right", "stop", "back"] },
+          obstacle: { type: "string", nullable: true },
+          distance: { type: "string", enum: ["near", "mid", "far"], nullable: true },
+          proximity_score: { type: "number" },
+          urgency: { type: "string", enum: ["low", "medium", "high"] },
+          spoken: { type: "string" },
+        },
+        required: ["direction", "urgency", "spoken", "proximity_score"],
+      };
 
   const body = {
     contents: [
       {
         role: "user",
         parts: [
-          { text: `${SYSTEM_PROMPT}\n\n${userText}` },
+          { text: `${systemPrompt}\n\n${userText}` },
           { inlineData: { mimeType: "image/jpeg", data } },
         ],
       },
@@ -65,17 +115,7 @@ async function callGemini(model: string, imageB64: string, extraContext?: string
       temperature: 0.3,
       maxOutputTokens: 256,
       responseMimeType: "application/json",
-      responseSchema: {
-        type: "object",
-        properties: {
-          direction: { type: "string", enum: ["forward", "left", "right", "stop", "back"] },
-          obstacle: { type: "string", nullable: true },
-          distance: { type: "string", enum: ["near", "mid", "far"], nullable: true },
-          urgency: { type: "string", enum: ["low", "medium", "high"] },
-          spoken: { type: "string" },
-        },
-        required: ["direction", "urgency", "spoken"],
-      },
+      responseSchema: schema,
     },
   };
 
@@ -104,7 +144,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { image, context } = await req.json();
+    const { image, context, mode } = await req.json();
     if (!image || typeof image !== "string") {
       return new Response(JSON.stringify({ error: "image (base64) required" }), {
         status: 400,
@@ -112,11 +152,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    const useMode = mode === "calibration" ? "calibration" : "guidance";
+
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGemini(model, image, context);
-        return new Response(JSON.stringify({ ok: true, ...result, model }), {
+        const result = await callGemini(model, image, useMode, context);
+        return new Response(JSON.stringify({ ok: true, mode: useMode, ...result, model }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
