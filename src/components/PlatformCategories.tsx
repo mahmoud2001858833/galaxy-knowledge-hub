@@ -165,8 +165,7 @@ const PlatformCategories = () => {
     <motion.section
       id="platform-sections"
       initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, amount: 0.2 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
       className="py-20 w-full max-w-7xl mx-auto px-4"
       dir={dir}
@@ -174,8 +173,7 @@ const PlatformCategories = () => {
       <audio ref={audioRef} src={clickSound} preload="auto" />
       <motion.div 
         initial={{ opacity: 0, y: -30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="mb-16 text-center"
       >
@@ -184,8 +182,7 @@ const PlatformCategories = () => {
         </h2>
         <motion.div 
           initial={{ width: 0 }}
-          whileInView={{ width: "10rem" }}
-          viewport={{ once: true }}
+          animate={{ width: "10rem" }}
           transition={{ duration: 1, delay: 0.3 }}
           className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 mx-auto rounded-full shadow-lg shadow-blue-500/50"
         />
@@ -200,12 +197,11 @@ const PlatformCategories = () => {
           return (
             <motion.div
               key={category.id}
-              initial={{ opacity: 0, y: 100 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ 
                 duration: 0.6,
-                delay: index * 0.2,
+                delay: index * 0.1,
                 ease: "easeOut"
               }}
               onClick={() => {
