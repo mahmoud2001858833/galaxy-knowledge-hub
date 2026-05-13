@@ -1,18 +1,25 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Power, Volume2, Mic, Activity } from 'lucide-react';
+import { ArrowLeft, Power, Volume2, Mic, Activity, ArrowUp, ArrowLeft as ArrowL, ArrowRight as ArrowR } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
+type Cell = {
+  id: 'TL'|'TC'|'TR'|'ML'|'MC'|'MR'|'BL'|'BC'|'BR';
+  label: string;
+  object: string;
+  proximity: number;
+  hazard: 'low'|'medium'|'high';
+};
+
 type Guide = {
-  direction: 'forward' | 'left' | 'right' | 'stop' | 'back';
-  obstacle?: string | null;
-  distance?: 'near' | 'mid' | 'far' | null;
-  proximity_score?: number;
-  urgency: 'low' | 'medium' | 'high';
+  cells: Cell[];
+  best_path: 'left'|'center'|'right';
+  global_proximity: number;
   spoken: string;
+  obstacles_summary: string;
 };
 
 type Calib = {
@@ -23,6 +30,13 @@ type Calib = {
 };
 
 const isSpeakingRef = { current: false };
+let arabicVoice: SpeechSynthesisVoice | null = null;
+
+function pickArabicVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  arabicVoice = voices.find(v => /^ar/i.test(v.lang)) || null;
+}
 
 function speak(text: string, opts: { urgent?: boolean; pitch?: number; rate?: number; onEnd?: () => void } = {}) {
   if (!('speechSynthesis' in window)) return;
@@ -31,6 +45,7 @@ function speak(text: string, opts: { urgent?: boolean; pitch?: number; rate?: nu
   else if (window.speechSynthesis.speaking) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ar-SA';
+  if (arabicVoice) u.voice = arabicVoice;
   u.rate = rate;
   u.pitch = pitch;
   u.volume = 1;
@@ -40,20 +55,22 @@ function speak(text: string, opts: { urgent?: boolean; pitch?: number; rate?: nu
   window.speechSynthesis.speak(u);
 }
 
-function shortBeep() {
+function shortBeep(freq = 880) {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
-    o.frequency.value = 880;
+    o.frequency.value = freq;
     o.connect(g); g.connect(ctx.destination);
     g.gain.setValueAtTime(0.001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
     o.start(); o.stop(ctx.currentTime + 0.2);
     setTimeout(() => ctx.close(), 300);
   } catch {}
 }
+
+const CELL_ORDER: Cell['id'][] = ['TL','TC','TR','ML','MC','MR','BL','BC','BR'];
 
 const BlindEyeNavigator: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -61,17 +78,19 @@ const BlindEyeNavigator: React.FC = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<any>(null);
   const intervalRef = useRef<number | null>(null);
-  const lastSpokenHashRef = useRef<{ text: string; t: number }>({ text: '', t: 0 });
+  const busyRef = useRef(false);
+  const cooldownUntilRef = useRef(0);
+  const lastSpokenHashRef = useRef<{ key: string; t: number }>({ key: '', t: 0 });
   const phaseRef = useRef<Phase>('starting');
   const calibSuccessRef = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
+  const lastGuideRef = useRef<Guide | null>(null);
 
   const [phase, setPhase] = useState<Phase>('starting');
-  const [busy, setBusy] = useState(false);
   const [lastGuide, setLastGuide] = useState<Guide | null>(null);
   const [lastCalib, setLastCalib] = useState<Calib | null>(null);
   const [listening, setListening] = useState(false);
-  const [chatBusy, setChatBusy] = useState(false);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
   const setPhaseBoth = (p: Phase) => { phaseRef.current = p; setPhase(p); };
 
@@ -87,8 +106,9 @@ const BlindEyeNavigator: React.FC = () => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
+      calibSuccessRef.current = 0;
       setPhaseBoth('calibrating');
-      speak('مرحباً، سأساعدك أولاً على وضع الهاتف في أفضل وضعية. أمسك الهاتف والكاميرا الخلفية للأمام.', { urgent: true });
+      speak('مرحباً، سأساعدك أولاً على وضع الهاتف بأفضل وضعية. أمسك الهاتف والكاميرا الخلفية للأمام.', { urgent: true });
     } catch (e) {
       console.error(e);
       toast.error('تعذّر فتح الكاميرا');
@@ -115,26 +135,26 @@ const BlindEyeNavigator: React.FC = () => {
     const v = videoRef.current;
     const c = canvasRef.current;
     if (!v || !c || v.readyState < 2) return null;
-    const w = 640;
-    const h = Math.round((v.videoHeight / v.videoWidth) * w) || 480;
+    const w = 720;
+    const h = Math.round((v.videoHeight / v.videoWidth) * w) || 540;
     c.width = w;
     c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(v, 0, 0, w, h);
-    return c.toDataURL('image/jpeg', 0.7);
+    return c.toDataURL('image/jpeg', 0.78);
   }, []);
 
   const speakGuide = useCallback((g: Guide) => {
     const now = Date.now();
-    // dedupe identical text within 4s
-    if (g.spoken === lastSpokenHashRef.current.text && now - lastSpokenHashRef.current.t < 4000) return;
-    lastSpokenHashRef.current = { text: g.spoken, t: now };
+    const key = `${g.best_path}|${g.obstacles_summary}`;
+    if (key === lastSpokenHashRef.current.key && now - lastSpokenHashRef.current.t < 3500) return;
+    lastSpokenHashRef.current = { key, t: now };
 
-    const score = g.proximity_score ?? (g.distance === 'near' ? 80 : g.distance === 'mid' ? 50 : 20);
+    const score = g.global_proximity ?? 0;
     let urgent = false, rate = 1, pitch = 1;
-    if (score >= 75) { urgent = true; rate = 1.2; pitch = 1.25; shortBeep(); }
-    else if (score >= 40) { urgent = false; rate = 1.05; pitch = 1.1; }
+    if (score >= 75) { urgent = true; rate = 1.2; pitch = 1.25; shortBeep(990); }
+    else if (score >= 40) { urgent = false; rate = 1.05; pitch = 1.1; shortBeep(660); }
     else { urgent = false; rate = 0.95; pitch = 1; }
 
     speak(g.spoken, { urgent, rate, pitch });
@@ -142,18 +162,28 @@ const BlindEyeNavigator: React.FC = () => {
     else if (score >= 40 && 'vibrate' in navigator) navigator.vibrate(80);
   }, []);
 
-  // Single analysis tick (calibration or guidance)
   const tick = useCallback(async () => {
-    if (busy || isSpeakingRef.current) return;
+    if (busyRef.current || isSpeakingRef.current) return;
+    if (Date.now() < cooldownUntilRef.current) return;
     const img = captureFrame();
     if (!img) return;
-    setBusy(true);
+    busyRef.current = true;
     try {
       const mode = phaseRef.current === 'calibrating' ? 'calibration' : 'guidance';
       const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
         body: { image: img, mode },
       });
-      if (error) throw error;
+      if (error) {
+        const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
+        if (status === 429 || status === 402) {
+          cooldownUntilRef.current = Date.now() + 6000;
+          setErrMsg(status === 402 ? 'نفذت الأرصدة' : 'النظام مزدحم، سأحاول بعد قليل');
+          speak('النظام مشغول، سأحاول بعد قليل', { urgent: false });
+          return;
+        }
+        throw error;
+      }
+      setErrMsg(null);
       if (!data?.spoken) return;
 
       if (mode === 'calibration') {
@@ -163,23 +193,23 @@ const BlindEyeNavigator: React.FC = () => {
         if (c.position_ok) {
           calibSuccessRef.current += 1;
           if (calibSuccessRef.current >= 1) {
-            // success — switch to guidance after the spoken finishes
-            setTimeout(() => setPhaseBoth('guiding'), 1800);
+            setTimeout(() => setPhaseBoth('guiding'), 1500);
           }
         } else {
           calibSuccessRef.current = 0;
         }
       } else {
         const g = data as Guide;
+        lastGuideRef.current = g;
         setLastGuide(g);
         speakGuide(g);
       }
     } catch (e) {
       console.warn('tick error', e);
     } finally {
-      setBusy(false);
+      busyRef.current = false;
     }
-  }, [busy, captureFrame, speakGuide]);
+  }, [captureFrame, speakGuide]);
 
   // Adaptive loop
   useEffect(() => {
@@ -187,10 +217,9 @@ const BlindEyeNavigator: React.FC = () => {
     if (intervalRef.current) window.clearInterval(intervalRef.current);
 
     const loop = () => {
-      // dynamic interval: faster when last guide was urgent
       const now = Date.now();
-      const score = lastGuide?.proximity_score ?? 0;
-      const minGap = phase === 'calibrating' ? 2200 : score >= 75 ? 700 : score >= 40 ? 1500 : 2800;
+      const score = lastGuideRef.current?.global_proximity ?? 0;
+      const minGap = phase === 'calibrating' ? 2200 : score >= 75 ? 800 : score >= 40 ? 1500 : 2600;
       if (now - lastTickRef.current >= minGap) {
         lastTickRef.current = now;
         tick();
@@ -203,12 +232,10 @@ const BlindEyeNavigator: React.FC = () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       window.clearTimeout(t);
     };
-  }, [phase, tick, lastGuide]);
+  }, [phase, tick]);
 
-  // Phase transition: calibrating -> guiding
   useEffect(() => {
     if (phase === 'guiding') {
-      // give a clear audible "ممتاز" once
       const t = setTimeout(() => {
         speak('ممتاز! الوضعية مثالية. سأبدأ الآن بمسح ما حولك ومساعدتك على المشي. تستطيع التحدث معي في أي وقت.', { urgent: true });
       }, 100);
@@ -216,26 +243,21 @@ const BlindEyeNavigator: React.FC = () => {
     }
   }, [phase]);
 
-  // Always-on speech recognition
+  // Voice chat
   const handleVoiceInput = useCallback(async (txt: string) => {
     const t = txt.trim();
     if (!t) return;
-    console.log('voice:', t);
-
-    // Local quick commands
     if (/^(توقف|أوقف|اوقف|قف الآن)$/.test(t)) { stopAll(); return; }
     if (/(أكمل|اكمل|تابع|كمل|ابدأ|ابدا)/.test(t)) {
       if (phaseRef.current === 'stopped') startCamera();
       return;
     }
-    if (/(أعد|اعد|كرر)/.test(t) && lastGuide?.spoken) {
-      speak(lastGuide.spoken, { urgent: true });
+    if (/(أعد|اعد|كرر)/.test(t) && lastGuideRef.current?.spoken) {
+      speak(lastGuideRef.current.spoken, { urgent: true });
       return;
     }
 
-    // Otherwise, send to chat with current frame
-    if (chatBusy || isSpeakingRef.current) return;
-    setChatBusy(true);
+    if (isSpeakingRef.current) return;
     const img = captureFrame() ?? undefined;
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
@@ -245,12 +267,14 @@ const BlindEyeNavigator: React.FC = () => {
       if (data?.spoken) speak(data.spoken, { urgent: true });
     } catch (e) {
       console.warn('chat err', e);
-    } finally {
-      setChatBusy(false);
     }
-  }, [captureFrame, lastGuide, startCamera, stopAll, chatBusy]);
+  }, [captureFrame, startCamera, stopAll]);
 
   useEffect(() => {
+    pickArabicVoice();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = pickArabicVoice;
+    }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
       toast.warning('متصفحك لا يدعم الأوامر الصوتية الدائمة');
@@ -261,16 +285,12 @@ const BlindEyeNavigator: React.FC = () => {
     rec.continuous = true;
     rec.interimResults = false;
     rec.onresult = (e: any) => {
-      // Ignore while we are speaking (avoid feedback)
       if (isSpeakingRef.current) return;
       const txt = e.results[e.results.length - 1][0].transcript;
       handleVoiceInput(txt);
     };
-    rec.onerror = (e: any) => {
-      console.warn('rec err', e?.error);
-    };
+    rec.onerror = (e: any) => { console.warn('rec err', e?.error); };
     rec.onend = () => {
-      // auto-restart while not stopped
       if (phaseRef.current !== 'stopped') {
         try { rec.start(); } catch {}
       } else {
@@ -282,26 +302,58 @@ const BlindEyeNavigator: React.FC = () => {
     return () => { try { rec.stop(); } catch {} };
   }, [handleVoiceInput]);
 
-  // Auto-start camera on mount
   useEffect(() => {
     startCamera();
     return () => { stopAll(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const score = lastGuide?.proximity_score ?? 0;
+  const score = lastGuide?.global_proximity ?? 0;
   const urgencyColor =
     phase === 'calibrating' ? 'bg-indigo-600' :
     score >= 75 ? 'bg-red-600' :
     score >= 40 ? 'bg-amber-500' : 'bg-emerald-600';
+
+  const cellsById: Record<string, Cell | undefined> = {};
+  lastGuide?.cells?.forEach(c => { cellsById[c.id] = c; });
+
+  const hazardBg = (h?: string) =>
+    h === 'high' ? 'bg-red-500/30 border-red-400' :
+    h === 'medium' ? 'bg-amber-400/25 border-amber-300' :
+    h === 'low' ? 'bg-emerald-500/15 border-emerald-300/70' :
+    'bg-white/5 border-white/20';
+
+  const PathArrow = lastGuide?.best_path === 'left' ? ArrowL : lastGuide?.best_path === 'right' ? ArrowR : ArrowUp;
 
   return (
     <div className="fixed inset-0 bg-black text-white" dir="rtl">
       <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* 3x3 spatial grid overlay (guidance only) */}
+      {phase === 'guiding' && (
+        <div className="absolute inset-0 pointer-events-none p-2 grid grid-cols-3 grid-rows-3 gap-1">
+          {CELL_ORDER.map((id) => {
+            const c = cellsById[id];
+            return (
+              <div
+                key={id}
+                className={`relative rounded-lg border-2 ${hazardBg(c?.hazard)} backdrop-blur-[1px] flex items-end justify-start p-2 transition-colors`}
+              >
+                <span className="text-[10px] absolute top-1 right-1 opacity-70 font-mono">{id}</span>
+                {c && c.object !== 'open' && c.object !== 'unknown' && (
+                  <div className="text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                    {c.label}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Top bar */}
-      <div className="absolute top-0 inset-x-0 p-4 flex items-center justify-between bg-gradient-to-b from-black/85 to-transparent">
+      <div className="absolute top-0 inset-x-0 p-4 flex items-center justify-between bg-gradient-to-b from-black/85 to-transparent z-10">
         <Link
           to="/damij/blind-eye"
           onClick={stopAll}
@@ -318,14 +370,22 @@ const BlindEyeNavigator: React.FC = () => {
           <div className="text-sm bg-white/15 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2">
             <Activity className="w-4 h-4" />
             {phase === 'calibrating' ? 'معايرة' : phase === 'guiding' ? 'إرشاد' : phase === 'stopped' ? 'متوقف' : 'يبدأ'}
-            {busy && '…'}
           </div>
         </div>
       </div>
 
+      {/* Best path arrow (guidance) */}
+      {phase === 'guiding' && lastGuide && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-black/60 backdrop-blur rounded-full p-3 border-2 border-white/40 shadow-2xl">
+            <PathArrow className="w-10 h-10" />
+          </div>
+        </div>
+      )}
+
       {/* Calibration overlay */}
       {phase === 'calibrating' && lastCalib && (
-        <div className="absolute top-24 inset-x-4 p-5 rounded-2xl bg-indigo-700/90 backdrop-blur shadow-2xl">
+        <div className="absolute top-24 inset-x-4 p-5 rounded-2xl bg-indigo-700/90 backdrop-blur shadow-2xl z-10">
           <div className="text-2xl font-extrabold leading-tight">{lastCalib.spoken}</div>
           {lastCalib.adjustment && (
             <div className="mt-2 text-white/90 text-sm">{lastCalib.adjustment}</div>
@@ -333,26 +393,31 @@ const BlindEyeNavigator: React.FC = () => {
         </div>
       )}
 
-      {/* Guidance overlay */}
+      {/* Error banner */}
+      {errMsg && (
+        <div className="absolute top-24 inset-x-4 p-3 rounded-xl bg-red-600/90 backdrop-blur z-10 text-center font-bold">
+          {errMsg}
+        </div>
+      )}
+
+      {/* Guidance speech overlay */}
       {phase === 'guiding' && lastGuide && (
-        <div className={`absolute bottom-32 inset-x-4 p-5 rounded-2xl ${urgencyColor} shadow-2xl`}>
+        <div className={`absolute bottom-32 inset-x-4 p-5 rounded-2xl ${urgencyColor} shadow-2xl z-10`}>
           <div className="flex items-center gap-3">
             <Volume2 className="w-7 h-7 shrink-0" />
             <div className="text-2xl font-extrabold leading-tight">{lastGuide.spoken}</div>
           </div>
-          {lastGuide.obstacle && (
-            <div className="mt-2 text-white/90 text-sm">عقبة: {lastGuide.obstacle}</div>
+          {lastGuide.obstacles_summary && (
+            <div className="mt-2 text-white/90 text-sm">{lastGuide.obstacles_summary}</div>
           )}
-          {typeof lastGuide.proximity_score === 'number' && (
-            <div className="mt-2 h-2 rounded-full bg-white/20 overflow-hidden">
-              <div className="h-full bg-white" style={{ width: `${Math.min(100, lastGuide.proximity_score)}%` }} />
-            </div>
-          )}
+          <div className="mt-2 h-2 rounded-full bg-white/20 overflow-hidden">
+            <div className="h-full bg-white" style={{ width: `${Math.min(100, score)}%` }} />
+          </div>
         </div>
       )}
 
-      {/* Big emergency stop / start */}
-      <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center bg-gradient-to-t from-black/85 to-transparent">
+      {/* Stop / start */}
+      <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center bg-gradient-to-t from-black/85 to-transparent z-10">
         <button
           onClick={phase === 'stopped' ? startCamera : stopAll}
           aria-label={phase === 'stopped' ? 'تشغيل الإرشاد' : 'إيقاف الإرشاد'}
