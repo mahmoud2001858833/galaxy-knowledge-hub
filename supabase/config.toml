@@ -209,6 +209,9 @@ verify_jwt = false
 [functions.blind-eye-vision]
 verify_jwt = false
 
+[functions.blind-eye-chat]
+verify_jwt = false
+
 [functions.damij-youtube-sign]
 verify_jwt = false
 
