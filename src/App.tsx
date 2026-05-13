@@ -182,6 +182,8 @@ import BrailleLearn from './pages/damij/braille/BrailleLearn';
 import UniversalBrailleConverter from './pages/damij/braille/UniversalBrailleConverter';
 import TactileGraphics from './pages/damij/braille/TactileGraphics';
 import InteractiveBrailleLearn from './pages/damij/braille/InteractiveBrailleLearn';
+import BlindEyeHome from './pages/damij/blind-eye/BlindEyeHome';
+import BlindEyeNavigator from './pages/damij/blind-eye/BlindEyeNavigator';
 import AutismLayout from './pages/damij/autism/AutismLayout';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
