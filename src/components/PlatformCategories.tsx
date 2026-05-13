@@ -165,8 +165,7 @@ const PlatformCategories = () => {
     <motion.section
       id="platform-sections"
       initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, amount: 0.2 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
       className="py-20 w-full max-w-7xl mx-auto px-4"
       dir={dir}
@@ -174,8 +173,7 @@ const PlatformCategories = () => {
       <audio ref={audioRef} src={clickSound} preload="auto" />
       <motion.div 
         initial={{ opacity: 0, y: -30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="mb-16 text-center"
       >
