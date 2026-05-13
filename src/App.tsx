@@ -182,6 +182,8 @@ import BrailleLearn from './pages/damij/braille/BrailleLearn';
 import UniversalBrailleConverter from './pages/damij/braille/UniversalBrailleConverter';
 import TactileGraphics from './pages/damij/braille/TactileGraphics';
 import InteractiveBrailleLearn from './pages/damij/braille/InteractiveBrailleLearn';
+import BlindEyeHome from './pages/damij/blind-eye/BlindEyeHome';
+import BlindEyeNavigator from './pages/damij/blind-eye/BlindEyeNavigator';
 import AutismLayout from './pages/damij/autism/AutismLayout';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
@@ -973,6 +975,8 @@ const router = createBrowserRouter([
           { path: 'braille/universal', element: <UniversalBrailleConverter /> },
           { path: 'braille/tactile', element: <TactileGraphics /> },
           { path: 'braille/interactive-learn', element: <InteractiveBrailleLearn /> },
+          { path: 'blind-eye', element: <BlindEyeHome /> },
+          { path: 'blind-eye/navigate', element: <BlindEyeNavigator /> },
           {
             path: 'autism',
             element: <AutismLayout />,

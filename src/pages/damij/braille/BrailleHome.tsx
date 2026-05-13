@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes, GraduationCap } from 'lucide-react';
+import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes, GraduationCap, Camera } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 
 const BrailleHome: React.FC = () => (
@@ -16,6 +16,7 @@ const BrailleHome: React.FC = () => (
     </header>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <SystemCard to="/damij/blind-eye" icon={Camera} title="👁️ عين الأعمى — مرشد بصري صوتي ✨ جديد" description="افتح كاميرا الهاتف وسأصف لك ما حولك وأرشدك صوتياً بالعربية: امشِ للأمام، انتبه عقبة، التف يميناً... مع وضع اختياري للملاحة إلى وجهة بالـGPS." />
       <SystemCard to="/damij/braille/universal" icon={Globe} title="محوّل بريل العالمي ✨" description="حوّل أي ملف (PDF, Word, PPT, Excel, صور) أو صفحة ويب أو نص إلى بريل بأكثر من 100 لغة، مع دعم المستوى الأول والثاني (الاختزالي)." />
       
       <SystemCard to="/damij/braille/braille-to-text" icon={FileText} title="من بريل إلى نص + قراءة صوتية" description="صوّر صفحة بريل ورقية بالكاميرا أو ارفع صورة، وحوّلها إلى نص رقمي قابل للقراءة الصوتية بأكثر من لغة." />
