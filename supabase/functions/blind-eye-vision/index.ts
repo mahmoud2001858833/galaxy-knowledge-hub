@@ -1,5 +1,5 @@
 // Blind Eye - Vision navigation assistant for blind users
-// Uses Gemini Vision direct API (NEVER Lovable AI)
+// Uses Lovable AI Gateway (exception granted only for Blind Eye feature)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,136 +8,141 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const KEYS = ["GEMINI_API_KEY", "GOOGLE_AI_API_KEY", "GEMINI_API_KEY_NEW"];
+const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODELS = ["google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
-function getKey(): string {
-  for (const k of KEYS) {
-    const v = Deno.env.get(k);
-    if (v) return v;
-  }
-  throw new Error("No Gemini API key configured");
-}
+const GUIDANCE_PROMPT = `أنت "عين الأعمى"، مرشد بصري للمكفوفين. سأعطيك صورة من كاميرا الهاتف الموجّهة للأمام.
 
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"];
+قسّم الصورة ذهنياً إلى شبكة 3×3 (٣ صفوف × ٣ أعمدة):
+- الصف العلوي: TL (يسار), TC (وسط), TR (يمين)
+- الصف الأوسط: ML, MC, MR
+- الصف السفلي: BL, BC, BR (الأقرب للقدمين)
 
-const GUIDANCE_PROMPT = `أنت "عين الأعمى"، مرشد بصري للمكفوفين. حلّل صورة الكاميرا الخلفية الموجّهة للأمام، وأعطِ تعليمة ملاحة فورية بالعربية الفصحى البسيطة.
+لكل خانة من الـ 9: حدّد ما يوجد فيها، نوع الجسم، ومدى قربه/خطره.
 
-قواعد:
-- "spoken" قصير جداً (٣-١٠ كلمات)، يُنطق فوراً.
-- ركّز على: عقبات (شخص، عمود، حفرة، درج، باب، جدار، طاولة، سيارة)، الطريق المفتوح، تقدير المسافة.
-- proximity_score: 0=بعيد جداً وآمن، 100=ملاصق وخطر.
-- urgency يُحدَّد من proximity_score: ≥75 → high، 40-74 → medium، <40 → low.
-- نبرة عاجلة قصيرة جداً عند high (مثل "قف! شخص أمامك").
-- نبرة هادئة عند low (مثل "الطريق مفتوح، تابع").
-- لا ألوان ولا تفاصيل ديكور.
+ثم حدّد:
+- best_path: أفضل اتجاه للمشي (يسار/أمام/يمين) بناءً على الخانات الأقل خطراً.
+- global_proximity: أعلى قرب من بين كل الخانات (0=بعيد آمن، 100=ملاصق خطر).
+- spoken: جملة عربية فصحى قصيرة جداً (٣-١٠ كلمات) للنطق الفوري. عند الخطر العالي ابدأ بـ "قف!".
+- obstacles_summary: وصف مختصر جداً (5-15 كلمة) لأهم 1-2 عقبة.
 
-أعد JSON فقط:
-{
-  "direction": "forward"|"left"|"right"|"stop"|"back",
-  "obstacle": "وصف العقبة أو null",
-  "distance": "near"|"mid"|"far"|null,
-  "proximity_score": 0-100,
-  "urgency": "low"|"medium"|"high",
-  "spoken": "الجملة العربية القصيرة"
-}`;
+استخدم استدعاء الأداة describe_scene لإرجاع النتيجة.`;
 
-const CALIBRATION_PROMPT = `أنت "عين الأعمى" في وضع المعايرة. الهدف: مساعدة الكفيف على وضع الهاتف بأفضل وضعية للمشي.
+const CALIBRATION_PROMPT = `أنت "عين الأعمى" في وضع المعايرة. هدفك مساعدة كفيف على وضع الهاتف بأفضل وضعية للمشي.
 
 الوضعية المثالية:
-- الكاميرا الخلفية موجّهة للأمام أفقياً.
-- مائلة قليلاً للأسفل بحيث تظهر الأرض على بُعد متر إلى ثلاثة أمتار.
-- ليست مائلة جداً للسماء أو للأرض.
-- الصورة واضحة وغير مغطاة.
+- الكاميرا الخلفية للأمام أفقياً.
+- مائلة قليلاً للأسفل بحيث تظهر الأرض على بُعد متر إلى ثلاثة.
+- ليست للسماء أو ملاصقة للأرض.
+- غير مغطاة، الصورة واضحة.
 
 افحص الصورة:
-- إن كانت الكاميرا للسماء → اطلب إمالة الهاتف للأسفل.
-- إن كانت ملاصقة للأرض → اطلب رفع الهاتف قليلاً.
-- إن كانت مغطاة/مظلمة → اطلب كشفها.
-- إن كانت مائلة جانبياً → اطلب تعديلها.
+- إن كانت للسماء → اطلب الإمالة للأسفل.
+- إن كانت ملاصقة للأرض → ارفع الهاتف.
+- إن كانت مغطاة/مظلمة → اكشفها.
 - إن كانت ممتازة → position_ok = true.
 
-"spoken" قصيرة وودودة (٤-١٢ كلمة). عند النجاح: "ممتاز! الوضعية مثالية، سأبدأ بمساعدتك الآن."
+spoken قصيرة وودودة (٤-١٢ كلمة). عند النجاح: "ممتاز! الوضعية مثالية، سأبدأ بمساعدتك الآن."
 
-أعد JSON فقط:
-{
-  "position_ok": true|false,
-  "issue": "وصف المشكلة أو null",
-  "adjustment": "ما يجب فعله أو null",
-  "spoken": "الجملة العربية"
-}`;
+استخدم استدعاء الأداة calibrate لإرجاع النتيجة.`;
 
-async function callGemini(model: string, imageB64: string, mode: string, extraContext?: string) {
-  const key = getKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-  const data = imageB64.replace(/^data:[^;]+;base64,/, "");
-
-  const isCalibration = mode === "calibration";
-  const systemPrompt = isCalibration ? CALIBRATION_PROMPT : GUIDANCE_PROMPT;
-  const userText = extraContext
-    ? `سياق: ${extraContext}\n\nحلّل الصورة.`
-    : "حلّل الصورة وأعطِ التعليمة.";
-
-  const schema = isCalibration
-    ? {
-        type: "object",
-        properties: {
-          position_ok: { type: "boolean" },
-          issue: { type: "string", nullable: true },
-          adjustment: { type: "string", nullable: true },
-          spoken: { type: "string" },
+const guidanceTool = {
+  type: "function",
+  function: {
+    name: "describe_scene",
+    description: "Return spatial 3x3 grid analysis of the camera view",
+    parameters: {
+      type: "object",
+      properties: {
+        cells: {
+          type: "array",
+          minItems: 9,
+          maxItems: 9,
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", enum: ["TL","TC","TR","ML","MC","MR","BL","BC","BR"] },
+              label: { type: "string" },
+              object: { type: "string" },
+              proximity: { type: "number" },
+              hazard: { type: "string", enum: ["low","medium","high"] },
+            },
+            required: ["id","label","object","proximity","hazard"],
+            additionalProperties: false,
+          },
         },
-        required: ["position_ok", "spoken"],
-      }
-    : {
-        type: "object",
-        properties: {
-          direction: { type: "string", enum: ["forward", "left", "right", "stop", "back"] },
-          obstacle: { type: "string", nullable: true },
-          distance: { type: "string", enum: ["near", "mid", "far"], nullable: true },
-          proximity_score: { type: "number" },
-          urgency: { type: "string", enum: ["low", "medium", "high"] },
-          spoken: { type: "string" },
-        },
-        required: ["direction", "urgency", "spoken", "proximity_score"],
-      };
+        best_path: { type: "string", enum: ["left","center","right"] },
+        global_proximity: { type: "number" },
+        spoken: { type: "string" },
+        obstacles_summary: { type: "string" },
+      },
+      required: ["cells","best_path","global_proximity","spoken","obstacles_summary"],
+      additionalProperties: false,
+    },
+  },
+};
+
+const calibTool = {
+  type: "function",
+  function: {
+    name: "calibrate",
+    description: "Phone position calibration result",
+    parameters: {
+      type: "object",
+      properties: {
+        position_ok: { type: "boolean" },
+        issue: { type: "string" },
+        adjustment: { type: "string" },
+        spoken: { type: "string" },
+      },
+      required: ["position_ok","spoken"],
+      additionalProperties: false,
+    },
+  },
+};
+
+async function callGateway(model: string, imageDataUrl: string, mode: "calibration"|"guidance", extraContext?: string) {
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) throw new Error("LOVABLE_API_KEY not configured");
+
+  const isCalib = mode === "calibration";
+  const sys = isCalib ? CALIBRATION_PROMPT : GUIDANCE_PROMPT;
+  const tool = isCalib ? calibTool : guidanceTool;
+  const userText = extraContext ? `سياق: ${extraContext}\n\nحلّل الصورة.` : "حلّل الصورة الآن.";
 
   const body = {
-    contents: [
+    model,
+    messages: [
+      { role: "system", content: sys },
       {
         role: "user",
-        parts: [
-          { text: `${systemPrompt}\n\n${userText}` },
-          { inlineData: { mimeType: "image/jpeg", data } },
+        content: [
+          { type: "text", text: userText },
+          { type: "image_url", image_url: { url: imageDataUrl } },
         ],
       },
     ],
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 256,
-      responseMimeType: "application/json",
-      responseSchema: schema,
-    },
+    tools: [tool],
+    tool_choice: { type: "function", function: { name: tool.function.name } },
   };
 
-  const r = await fetch(url, {
+  const r = await fetch(GATEWAY, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
+  if (r.status === 429) throw new Error("RATE_LIMIT");
+  if (r.status === 402) throw new Error("PAYMENT_REQUIRED");
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(`Gemini ${model} ${r.status}: ${t.slice(0, 200)}`);
+    throw new Error(`Gateway ${model} ${r.status}: ${t.slice(0, 200)}`);
   }
+
   const j = await r.json();
-  const txt = j?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  try {
-    return JSON.parse(txt);
-  } catch {
-    const m = txt.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error("Gemini returned non-JSON: " + txt.slice(0, 200));
-  }
+  const args = j?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!args) throw new Error("No tool call in response");
+  return JSON.parse(args);
 }
 
 Deno.serve(async (req) => {
@@ -146,37 +151,43 @@ Deno.serve(async (req) => {
   try {
     const { image, context, mode } = await req.json();
     if (!image || typeof image !== "string") {
-      return new Response(JSON.stringify({ error: "image (base64) required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "image required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     const useMode = mode === "calibration" ? "calibration" : "guidance";
 
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGemini(model, image, useMode, context);
-        return new Response(JSON.stringify({ ok: true, mode: useMode, ...result, model }), {
+        const result = await callGateway(model, image, useMode, context);
+        return new Response(JSON.stringify({ ok: true, mode: useMode, model, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
-        lastErr = e instanceof Error ? e.message : String(e);
-        console.warn(`Model ${model} failed:`, lastErr);
-        continue;
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg === "RATE_LIMIT") {
+          return new Response(JSON.stringify({ error: "rate_limit", message: "النظام مزدحم، حاول بعد قليل" }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (msg === "PAYMENT_REQUIRED") {
+          return new Response(JSON.stringify({ error: "payment_required", message: "نفذت الأرصدة، يرجى الشحن" }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        lastErr = msg;
+        console.warn(`Model ${model} failed:`, msg);
       }
     }
 
     return new Response(JSON.stringify({ error: "All models failed", details: lastErr }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("blind-eye-vision error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
