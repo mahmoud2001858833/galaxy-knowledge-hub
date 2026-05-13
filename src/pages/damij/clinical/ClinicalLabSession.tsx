@@ -216,8 +216,10 @@ const UnifiedWorkspace: React.FC<any> = ({ c, p, session, events, step, msg, set
           <SectionHeader icon={<span>🩺</span>} title="الأجهزة الطبية والمحاكيات" hint="كل الأجهزة معروضة" />
           <DeviceLauncher sessionId={sessionId} caseCategory={c.category} caseContext={{
             category: c.category, severity: (c as any).severity, age_years: (c as any).age_years,
-            vitals: (c as any).vitals_initial || {}, presenting_signs_ar: (c as any).presenting_signs_ar, name_ar: c.name_ar,
-          }} onApplied={reload} />
+            vitals: { ...((c as any).vitals_initial || {}), ...((session as any).vitals_state || {}) },
+            presenting_signs_ar: (c as any).presenting_signs_ar, name_ar: c.name_ar,
+            vitals_state: (session as any).vitals_state || {},
+          } as any} onApplied={reload} />
         </section>
       </div>
 
