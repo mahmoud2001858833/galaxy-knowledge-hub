@@ -975,6 +975,8 @@ const router = createBrowserRouter([
           { path: 'braille/universal', element: <UniversalBrailleConverter /> },
           { path: 'braille/tactile', element: <TactileGraphics /> },
           { path: 'braille/interactive-learn', element: <InteractiveBrailleLearn /> },
+          { path: 'blind-eye', element: <BlindEyeHome /> },
+          { path: 'blind-eye/navigate', element: <BlindEyeNavigator /> },
           {
             path: 'autism',
             element: <AutismLayout />,
