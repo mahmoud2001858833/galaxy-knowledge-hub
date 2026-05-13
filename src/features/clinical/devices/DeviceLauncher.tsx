@@ -20,34 +20,64 @@ interface Props {
   onApplied?: () => void;
 }
 
+// تصنيف بصري للأجهزة (لون + تسمية)
+const CATEGORY_TONE: Record<string, { from: string; ring: string; text: string; ar: string }> = {
+  vitals:      { from: 'from-blue-500/15',    ring: 'ring-blue-200',    text: 'text-blue-700',    ar: 'علامات حيوية' },
+  cardiac:     { from: 'from-rose-500/15',    ring: 'ring-rose-200',    text: 'text-rose-700',    ar: 'قلب' },
+  respiratory: { from: 'from-cyan-500/15',    ring: 'ring-cyan-200',    text: 'text-cyan-700',    ar: 'تنفّس' },
+  neuro:       { from: 'from-purple-500/15',  ring: 'ring-purple-200',  text: 'text-purple-700',  ar: 'أعصاب' },
+  imaging:     { from: 'from-slate-500/15',   ring: 'ring-slate-200',   text: 'text-slate-700',   ar: 'تصوير' },
+  lab:         { from: 'from-amber-500/15',   ring: 'ring-amber-200',   text: 'text-amber-700',   ar: 'مختبر' },
+  ortho:       { from: 'from-stone-500/15',   ring: 'ring-stone-200',   text: 'text-stone-700',   ar: 'عظام' },
+  ent:         { from: 'from-teal-500/15',    ring: 'ring-teal-200',    text: 'text-teal-700',    ar: 'أنف وأذن' },
+  ophthalmo:   { from: 'from-indigo-500/15',  ring: 'ring-indigo-200',  text: 'text-indigo-700',  ar: 'عيون' },
+  emergency:   { from: 'from-red-500/15',     ring: 'ring-red-200',     text: 'text-red-700',     ar: 'طوارئ' },
+  other:       { from: 'from-slate-400/15',   ring: 'ring-slate-200',   text: 'text-slate-600',   ar: 'أجهزة' },
+};
+const toneOf = (cat: string) => CATEGORY_TONE[cat] || CATEGORY_TONE.other;
+
 const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext, onApplied }) => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Device | null>(null);
-  const [showAll, setShowAll] = useState(true);
 
-  const ctx: CaseContext = caseContext || { category: caseCategory };
+  // دمج vitals_state الحيّ مع caseContext لتعكس الأجهزة آخر القراءات
+  const ctx: CaseContext = useMemo(() => ({
+    ...(caseContext || { category: caseCategory }),
+    vitals: { ...(caseContext?.vitals || {}), ...((caseContext as any)?.vitals_state || {}) },
+  }), [caseContext, caseCategory]);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('clinical_devices').select('*').order('name_ar');
-      setDevices((data as any) || []);
+      const all = (data as any) || [];
+      // اعرض فقط الأجهزة المتاحة لهذه الحالة
+      const filtered = all.filter((d: Device) =>
+        !d.applicable_specialties?.length || d.applicable_specialties.includes(caseCategory)
+      );
+      setDevices(filtered.length ? filtered : all);
       setLoading(false);
     })();
-  }, []);
+  }, [caseCategory]);
 
-  const filtered = useMemo(() => devices.filter(d => {
-    const matchSpec = showAll || !d.applicable_specialties?.length || d.applicable_specialties.includes(caseCategory);
-    const matchSearch = !search || d.name_ar.includes(search) || (d.name_en || '').toLowerCase().includes(search.toLowerCase());
-    return matchSpec && matchSearch;
-  }), [devices, search, caseCategory, showAll]);
+  const filtered = useMemo(() => devices.filter(d =>
+    !search || d.name_ar.includes(search) || (d.name_en || '').toLowerCase().includes(search.toLowerCase())
+  ), [devices, search]);
 
-  // Persist a device-use event locally (no AI required)
+  // مجموعة حسب category
+  const grouped = useMemo(() => {
+    const g: Record<string, Device[]> = {};
+    filtered.forEach(d => { const k = d.category || 'other'; (g[k] ||= []).push(d); });
+    return g;
+  }, [filtered]);
+
   const recordUse = async (deviceKey: string, deviceName: string, reading: { reading_ar: string; vitals?: any; success_score?: number }) => {
     try {
-      const { data: s } = await supabase.from('clinical_sessions').select('attention,anxiety,progress,started_at').eq('id', sessionId).maybeSingle();
+      const { data: s } = await supabase.from('clinical_sessions')
+        .select('attention,anxiety,progress,started_at,vitals_state').eq('id', sessionId).maybeSingle();
       const t_ms = s?.started_at ? Date.now() - new Date(s.started_at).getTime() : 0;
+      const newVitals = { ...((s as any)?.vitals_state || {}), ...(reading.vitals || {}) };
       await supabase.from('clinical_session_events').insert([
         { session_id: sessionId, t_ms, actor: 'student', event_type: 'device_use',
           payload: { action: `استخدم جهاز: ${deviceName}` },
@@ -56,6 +86,10 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext,
           payload: { note: reading.reading_ar, vitals: reading.vitals, score: reading.success_score ?? 80 },
           attention: s?.attention ?? 50, anxiety: s?.anxiety ?? 50, progress: Math.min(100, (s?.progress ?? 0) + 3) },
       ]);
+      // حدّث vitals_state إن أعطى الجهاز قراءة جديدة
+      if (reading.vitals && Object.keys(reading.vitals).length) {
+        await supabase.from('clinical_sessions').update({ vitals_state: newVitals } as any).eq('id', sessionId);
+      }
       toast.success('✓ تم تسجيل القراءة في الجلسة');
       onApplied?.();
     } catch (e: any) {
@@ -64,41 +98,50 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext,
   };
 
   return (
-    <div className="space-y-3" dir="rtl">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث عن جهاز…"
-            className="w-full pr-7 pl-3 py-1.5 rounded-lg border bg-white text-xs" />
-        </div>
-        <label className="text-[11px] flex items-center gap-1">
-          <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> عرض الكل
-        </label>
+    <div className="space-y-4" dir="rtl">
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)}
+          placeholder="ابحث عن جهاز…"
+          className="w-full pr-10 pl-3 py-2 rounded-xl border bg-white text-sm focus:ring-2 focus:ring-sky-200" />
       </div>
 
       {/* Always-on simulators */}
       <AlwaysOnSimulators ctx={ctx} onApply={(name, r) => recordUse(name, name, r)} />
 
-      {/* Device grid */}
-      <div className="rounded-xl border bg-white">
-        {loading && <div className="p-4 text-center text-xs"><Loader2 className="inline w-4 h-4 animate-spin" /></div>}
-        {!loading && filtered.length === 0 && <div className="p-4 text-center text-xs text-slate-500">لا أجهزة مطابقة. فعّل "عرض الكل".</div>}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-1 p-1">
-          {filtered.map(d => (
-            <button key={d.id} onClick={() => setSelected(d)}
-              className={`text-right p-2 rounded-lg border hover:bg-sky-50 hover:shadow transition ${selected?.id === d.id ? 'bg-sky-100 border-sky-300 ring-1 ring-sky-300' : 'bg-white'}`}>
-              <div className="text-xs font-bold flex items-center gap-1.5">
-                <span className="text-base leading-none">{d.icon || '🩺'}</span>
-                <span className="line-clamp-1">{d.name_ar}</span>
+      {loading ? (
+        <div className="p-6 text-center text-xs"><Loader2 className="inline w-4 h-4 animate-spin" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="p-6 text-center text-xs text-slate-500 border rounded-2xl bg-white">لا أجهزة مطابقة.</div>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(grouped).map(([catKey, items]) => {
+            const tone = toneOf(catKey);
+            return (
+              <div key={catKey}>
+                <div className={`flex items-center gap-2 mb-2`}>
+                  <span className={`text-xs px-2.5 py-1 rounded-full bg-white border ${tone.text} font-bold`}>{tone.ar}</span>
+                  <span className="text-[10px] text-slate-400">{items.length} جهاز</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {items.map(d => (
+                    <button key={d.id} onClick={() => setSelected(d)}
+                      className={`relative text-right p-3 rounded-2xl bg-white border hover:shadow-md transition group ${selected?.id === d.id ? `ring-2 ${tone.ring} border-transparent` : 'border-slate-200'}`}>
+                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${tone.from} to-white border flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition`}>
+                        {d.icon || '🩺'}
+                      </div>
+                      <div className="text-xs font-bold text-slate-800 line-clamp-1">{d.name_ar}</div>
+                      <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{d.description_ar}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{d.description_ar}</div>
-            </button>
-          ))}
+            );
+          })}
         </div>
-      </div>
+      )}
 
-      {/* Selected device renders its own interactive simulator */}
+      {/* Selected device */}
       {selected && (
         <DeviceRenderer device={selected} ctx={ctx} onApply={(r) => recordUse(selected.key, selected.name_ar, r)} />
       )}
@@ -107,11 +150,9 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext,
   );
 };
 
-// Renders the right component for the selected device, with safe fallback
 const DeviceRenderer: React.FC<{ device: any; ctx: CaseContext; onApply: (r: any) => void }> = ({ device, ctx, onApply }) => {
   const Comp = DEVICE_REGISTRY[device.key];
   if (Comp) {
-    // Built-in components (ECG/AED/Stetho) take their own props; sim components take ctx+onApply.
     if (device.key === 'ecg_12lead') {
       const rhythm = ctx.category==='cardiology' && (ctx.severity==='high'||ctx.severity==='critical') ? 'sinus_tachy' : 'sinus';
       return <div className="p-3 rounded-2xl border bg-white space-y-2">
@@ -131,7 +172,6 @@ const DeviceRenderer: React.FC<{ device: any; ctx: CaseContext; onApply: (r: any
     }
     return <Comp ctx={ctx} onApply={onApply} />;
   }
-  // Generic fallback
   return (
     <div className="p-3 rounded-2xl border bg-white space-y-2">
       <div className="text-sm font-bold">{device.icon || '🩺'} {device.name_ar}</div>
@@ -142,7 +182,6 @@ const DeviceRenderer: React.FC<{ device: any; ctx: CaseContext; onApply: (r: any
   );
 };
 
-// Always-on simulators tailored to specialty
 const AlwaysOnSimulators: React.FC<{ ctx: CaseContext; onApply: (name: string, r: any) => void }> = ({ ctx, onApply }) => {
   const cat = ctx.category;
   const isCardiac = /cardio|heart|قلب/i.test(cat);
@@ -153,7 +192,7 @@ const AlwaysOnSimulators: React.FC<{ ctx: CaseContext; onApply: (name: string, r
 
   return (
     <div className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white p-3 space-y-3">
-      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات مباشرة (تعمل دائماً حسب الحالة)</div>
+      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات حيّة (تعكس آخر قراءات المريض لحظياً)</div>
       <div className="grid md:grid-cols-2 gap-2">
         {isCardiac && (
           <div className="space-y-1">

@@ -2393,6 +2393,7 @@ export type Database = {
           started_at: string
           status: string
           user_id: string
+          vitals_state: Json
         }
         Insert: {
           anxiety?: number
@@ -2408,6 +2409,7 @@ export type Database = {
           started_at?: string
           status?: string
           user_id: string
+          vitals_state?: Json
         }
         Update: {
           anxiety?: number
@@ -2423,6 +2425,7 @@ export type Database = {
           started_at?: string
           status?: string
           user_id?: string
+          vitals_state?: Json
         }
         Relationships: [
           {
