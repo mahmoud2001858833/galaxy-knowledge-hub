@@ -26,6 +26,20 @@ const SCHEMA = {
       },
       required: ['attention','anxiety','progress'],
     },
+    vitals_after: {
+      type: 'object',
+      description: 'القراءات الحيوية المتوقعة فوراً بعد التدخّل (HR, BP, SpO2, RR, Temp, Glucose, Pain). كن دقيقاً وواقعياً؛ مثلاً Epinephrine ↑HR↑BP، Beta-blocker ↓HR، O2 ↑SpO2، Salbutamol ↑HR قليلاً ↑PEF، Insulin ↓Glucose، Antipyretic ↓Temp، Sedative ↓RR↓HR قليلاً، تدخّل سلوكي مهدّئ ↓HR قليلاً.',
+      properties: {
+        hr: { type: 'integer' },
+        bp_sys: { type: 'integer' },
+        bp_dia: { type: 'integer' },
+        spo2: { type: 'integer' },
+        rr: { type: 'integer' },
+        temp: { type: 'number' },
+        glucose: { type: 'integer' },
+        pain: { type: 'integer' },
+      },
+    },
     timeline: {
       type: 'array',
       items: {
