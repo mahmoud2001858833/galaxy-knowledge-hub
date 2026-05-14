@@ -224,7 +224,7 @@ const BlindEyeNavigator: React.FC = () => {
     const loop = () => {
       const now = Date.now();
       const score = lastGuideRef.current?.global_proximity ?? 0;
-      const minGap = phase === 'calibrating' ? 2200 : score >= 75 ? 800 : score >= 40 ? 1500 : 2600;
+      const minGap = phase === 'calibrating' ? 3000 : score >= 75 ? 800 : score >= 40 ? 1500 : 2600;
       if (now - lastTickRef.current >= minGap) {
         lastTickRef.current = now;
         tick();
