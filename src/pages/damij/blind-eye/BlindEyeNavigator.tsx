@@ -265,16 +265,33 @@ const BlindEyeNavigator: React.FC = () => {
       return;
     }
 
-    if (isSpeakingRef.current) return;
+    userSpeakingRef.current = true;
     const img = captureFrame() ?? undefined;
+    const g = lastGuideRef.current;
+    const visualContext = g
+      ? `أهم ما حول المستخدم: ${g.obstacles_summary}. أفضل اتجاه للمشي: ${g.best_path}. مستوى القرب: ${g.global_proximity}/100.`
+      : undefined;
+    // Append user turn
+    chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user', text: t }].slice(-6);
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
-        body: { text: t, image: img },
+        body: {
+          text: t,
+          image: img,
+          history: chatHistoryRef.current.slice(0, -1),
+          visualContext,
+        },
       });
       if (error) throw error;
-      if (data?.spoken) speak(data.spoken, { urgent: true });
+      if (data?.spoken) {
+        chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant', text: data.spoken }].slice(-6);
+        speak(data.spoken, { urgent: true, onEnd: () => { userSpeakingRef.current = false; } });
+      } else {
+        userSpeakingRef.current = false;
+      }
     } catch (e) {
       console.warn('chat err', e);
+      userSpeakingRef.current = false;
     }
   }, [captureFrame, startCamera, stopAll]);
 
