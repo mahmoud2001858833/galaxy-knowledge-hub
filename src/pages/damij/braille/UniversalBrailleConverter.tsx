@@ -352,7 +352,7 @@ const UniversalBrailleConverter: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                <Eye className="w-4 h-4" /> ناتج بريل (المستوى {grade === 2 ? "الثاني" : "الأول"})
+                <Eye className="w-4 h-4" /> ناتج بريل (المستوى الأول)
               </h3>
               <div className="flex gap-1 flex-wrap">
                 <button onClick={() => copy(braille)} disabled={!braille} className="p-2 rounded-lg hover:bg-white disabled:opacity-50" title="نسخ"><Copy className="w-4 h-4" /></button>
