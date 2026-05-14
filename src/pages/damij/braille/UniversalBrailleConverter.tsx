@@ -23,7 +23,7 @@ const UniversalBrailleConverter: React.FC = () => {
   const [reBusy, setReBusy] = useState(false);
   const [extracted, setExtracted] = useState("");
   const [braille, setBraille] = useState("");
-  const [grade, setGrade] = useState<1 | 2>(1);
+  const grade: 1 = 1;
   const [langCode, setLangCode] = useState("ar-SA");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
@@ -86,16 +86,14 @@ const UniversalBrailleConverter: React.FC = () => {
       setExtracted(text);
 
       // 2) Convert to Braille
-      setStep(grade === 2 ? "تحويل إلى بريل المستوى الثاني (الاختزالي)…" : "تحويل إلى بريل المستوى الأول…");
+      setStep("تحويل إلى بريل المستوى الأول…");
       const { data, error } = await supabase.functions.invoke("braille-convert", {
         body: { mode: "convert", text, grade, langCode: langCode.split("-")[0], langName: lang.name },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setBraille((data as any).braille || "");
-      if ((data as any)?.fallback) {
-        toast.warning("تم استخدام المستوى الأول (الحرفي) مؤقتاً بسبب ضغط على خدمة الذكاء الاصطناعي. أعد المحاولة لاحقاً للحصول على المستوى الثاني الاختزالي.");
-      } else {
+      if (!(data as any)?.fallback) {
         toast.success("تم التحويل بنجاح");
       }
     } catch (e: any) {
@@ -146,8 +144,7 @@ const UniversalBrailleConverter: React.FC = () => {
           محوّل بريل العالمي
         </h1>
         <p className="text-[hsl(var(--damij-text))]/70 max-w-2xl mx-auto">
-          حوّل أي ملف أو صفحة ويب أو نص إلى بريل بأكثر من <b>{SPOKEN_LANGUAGES.length}</b> لغة،
-          مع دعم <b>المستوى الأول والثاني</b> (الاختزالي).
+          حوّل أي ملف أو صفحة ويب أو نص إلى بريل بأكثر من <b>{SPOKEN_LANGUAGES.length}</b> لغة.
         </p>
         <div className="inline-flex items-center gap-1 mt-3 text-xs text-[hsl(var(--damij-primary))] bg-[hsl(var(--damij-primary))]/10 px-3 py-1 rounded-full">
           <Sparkles className="w-3 h-3" /> مدعوم بالذكاء الاصطناعي
@@ -177,7 +174,7 @@ const UniversalBrailleConverter: React.FC = () => {
       </div>
 
       {/* Options */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
           <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
             <Globe className="w-4 h-4" /> اللغة
@@ -191,30 +188,6 @@ const UniversalBrailleConverter: React.FC = () => {
               <option key={l.code} value={l.code}>{fmt(l)}</option>
             ))}
           </select>
-        </div>
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
-          <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
-            <Languages className="w-4 h-4" /> المستوى
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { v: 1, label: "المستوى الأول", desc: "حرفي" },
-              { v: 2, label: "المستوى الثاني", desc: "اختزالي" },
-            ].map((g) => (
-              <button
-                key={g.v}
-                onClick={() => setGrade(g.v as 1 | 2)}
-                className={`p-3 rounded-xl border text-sm font-bold flex flex-col ${
-                  grade === g.v
-                    ? "bg-[hsl(var(--damij-primary))] text-white border-transparent"
-                    : "bg-white text-[hsl(var(--damij-primary))] border-[hsl(var(--damij-primary))]/20"
-                }`}
-              >
-                <span>{g.label}</span>
-                <span className="text-[11px] opacity-80 font-normal">{g.desc}</span>
-              </button>
-            ))}
-          </div>
         </div>
         <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4 flex flex-col">
           <label className="text-sm font-bold text-[hsl(var(--damij-primary))] mb-2">إجراء</label>
@@ -327,7 +300,7 @@ const UniversalBrailleConverter: React.FC = () => {
             <div className="mt-4 pt-4 border-t border-[hsl(var(--damij-primary))]/15">
               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h4 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                  <Eye className="w-4 h-4" /> ناتج بريل بعد إعادة التحويل (المستوى {grade === 2 ? "الثاني" : "الأول"})
+                  <Eye className="w-4 h-4" /> ناتج بريل بعد إعادة التحويل (المستوى الأول)
                 </h4>
                 <div className="flex gap-1 flex-wrap">
                   <button onClick={() => copy(decodedBraille)} className="p-2 rounded-lg hover:bg-slate-100" title="نسخ"><Copy className="w-4 h-4" /></button>
@@ -379,7 +352,7 @@ const UniversalBrailleConverter: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2">
-                <Eye className="w-4 h-4" /> ناتج بريل (المستوى {grade === 2 ? "الثاني" : "الأول"})
+                <Eye className="w-4 h-4" /> ناتج بريل (المستوى الأول)
               </h3>
               <div className="flex gap-1 flex-wrap">
                 <button onClick={() => copy(braille)} disabled={!braille} className="p-2 rounded-lg hover:bg-white disabled:opacity-50" title="نسخ"><Copy className="w-4 h-4" /></button>
