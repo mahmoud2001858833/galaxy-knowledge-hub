@@ -77,6 +77,8 @@ Deno.serve(async (req) => {
     const step = (p.steps || [])[session.current_step] || (p.steps || [])[0] || {};
     const history = events.map((e: any) => `[${e.actor}] ${e.event_type}: ${JSON.stringify(e.payload).slice(0, 200)}`).join('\n');
 
+    const currentVitals = { ...((c.vitals_initial) || {}), ...((session.vitals_state) || {}) };
+
     const prompt = `المريض: ${c.name_ar} (${c.age_years} سنة، ${c.gender}، شدة ${c.severity})
 شخصية المريض: ${c.patient_persona_ar}
 الملف الحسّي: ${JSON.stringify(c.sensory_profile)}
@@ -86,6 +88,7 @@ Deno.serve(async (req) => {
 معيار النجاح: ${step.success_ar}
 
 المؤشرات الحالية: انتباه ${session.attention} • قلق ${session.anxiety} • تقدّم ${session.progress}
+الحيويات الحالية: ${JSON.stringify(currentVitals)}
 
 سجل آخر التفاعلات:
 ${history || '— (بداية الجلسة)'}
@@ -94,7 +97,9 @@ ${history || '— (بداية الجلسة)'}
 - يقول: ${studentMessage || '—'}
 - يقوم بإجراء: ${studentAction || '—'}
 
-ردّ كمريض. حدّد delta واقعية بين -20 و +20. advance_step = true فقط إذا تحقق معيار النجاح.`;
+ردّ كمريض. حدّد delta واقعية بين -20 و +20.
+- vitals_delta: تغيّرات صغيرة فسيولوجية في الحيويات بناءً على الحالة العاطفية (تخويف/طمأنة/ألم/ضيق نفس). أرجِع فقط الحقول المتأثرة.
+- advance_step = true فقط إذا تحقق معيار النجاح.`;
 
     const result = await callGemini(SYSTEM, prompt, SCHEMA);
 
@@ -103,6 +108,20 @@ ${history || '— (بداية الجلسة)'}
     const newAnxiety   = Math.max(0, Math.min(100, Number(session.anxiety)   + (result.delta?.anxiety   || 0)));
     const newProgress  = Math.max(0, Math.min(100, Number(session.progress)  + (result.delta?.progress  || 0)));
     const newStep = result.advance_step ? Math.min((p.steps?.length || 1) - 1, session.current_step + 1) : session.current_step;
+
+    // Apply vitals_delta to current vitals_state
+    const vd = result.vitals_delta || {};
+    const allowed = ['hr','bp_sys','bp_dia','spo2','rr','pain'] as const;
+    const limits: Record<string,[number,number]> = { hr:[30,220], bp_sys:[50,260], bp_dia:[30,160], spo2:[50,100], rr:[5,60], pain:[0,10] };
+    const cleanVitalsAfter: Record<string, number> = {};
+    for (const k of allowed) {
+      const d = (vd as any)[k];
+      if (typeof d !== 'number' || !isFinite(d)) continue;
+      const base = Number(currentVitals[k] ?? 0);
+      const [lo, hi] = limits[k];
+      cleanVitalsAfter[k] = Math.max(lo, Math.min(hi, base + d));
+    }
+    const newVitalsState = { ...((session.vitals_state) || {}), ...cleanVitalsAfter };
 
     // Insert events: student + patient + clinical_note
     const eventsToInsert: any[] = [];
@@ -120,7 +139,7 @@ ${history || '— (بداية الجلسة)'}
     });
     eventsToInsert.push({
       session_id: sessionId, t_ms: t_ms + 2, actor: 'system', event_type: 'clinical_note',
-      payload: { note: result.clinical_note_ar, delta: result.delta, advance_step: result.advance_step },
+      payload: { note: result.clinical_note_ar, delta: result.delta, vitals_after: cleanVitalsAfter, advance_step: result.advance_step },
       attention: newAttention, anxiety: newAnxiety, progress: newProgress,
     });
 
@@ -128,7 +147,7 @@ ${history || '— (بداية الجلسة)'}
 
     await fetch(rest(`/clinical_sessions?id=eq.${sessionId}`), {
       method: 'PATCH', headers: svcHeaders(),
-      body: JSON.stringify({ attention: newAttention, anxiety: newAnxiety, progress: newProgress, current_step: newStep }),
+      body: JSON.stringify({ attention: newAttention, anxiety: newAnxiety, progress: newProgress, current_step: newStep, vitals_state: newVitalsState }),
     });
 
     return new Response(JSON.stringify({
