@@ -23,6 +23,18 @@ const SCHEMA = {
       },
       required: ['attention','anxiety','progress'],
     },
+    vitals_delta: {
+      type: 'object',
+      description: 'تغيّرات صغيرة وواقعية في الحيويات بناءً على الحالة العاطفية للمريض من ردّ الطالب. مثلاً: تخويف المريض ↑HR ↑BP ↑RR. تهدئته ↓HR ↓BP. ألم جديد ↑Pain ↑HR. ضيق نفس ↓SpO2 ↑RR. القيم بين -15 و +15.',
+      properties: {
+        hr: { type: 'integer' },
+        bp_sys: { type: 'integer' },
+        bp_dia: { type: 'integer' },
+        spo2: { type: 'integer' },
+        rr: { type: 'integer' },
+        pain: { type: 'integer' },
+      },
+    },
     clinical_note_ar: { type: 'string' },
     advance_step: { type: 'boolean' },
   },
