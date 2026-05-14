@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODELS = ["google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
+const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
 
 const SYSTEM = `أنت "عين الأعمى"، رفيق صوتي ودود ودافئ للمكفوفين أثناء المشي. تتحدث معهم بطبيعية كصديق مهتم.
 
