@@ -110,10 +110,13 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
           const Icon = c.icon;
           const active = cat === c.key;
           return (
-            <button key={c.key} onClick={() => setCat(c.key)}
-              className={`px-2.5 py-1.5 rounded-full text-xs flex items-center gap-1 border ${active ? 'bg-[hsl(var(--damij-primary))] text-white border-transparent' : 'bg-white hover:bg-slate-50'}`}>
-              <Icon className="w-3.5 h-3.5" /> {c.ar}
-            </button>
+            <div key={c.key} className="inline-flex items-center gap-0.5">
+              <button onClick={() => setCat(c.key)}
+                className={`px-2.5 py-1.5 rounded-full text-xs flex items-center gap-1 border ${active ? 'bg-[hsl(var(--damij-primary))] text-white border-transparent' : 'bg-white hover:bg-slate-50'}`}>
+                <Icon className="w-3.5 h-3.5" /> {c.ar}
+              </button>
+              <HelpTooltip title={c.ar} content={c.help} />
+            </div>
           );
         })}
       </div>
