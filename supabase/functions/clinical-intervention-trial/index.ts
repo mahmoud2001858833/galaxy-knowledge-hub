@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
     const interventionLabel = interv?.name_ar || customLabel || 'تدخّل غير محدّد';
     const cat = interv?.category || category || 'custom';
 
+    const currentVitals = { ...((c.vitals_initial) || {}), ...((session.vitals_state) || {}) };
+
     const prompt = `المريض: ${c.name_ar} (${c.age_years} سنة، ${c.gender}، شدة ${c.severity}، فئة ${c.category}).
 شخصية المريض: ${c.patient_persona_ar}
 الملف الحسّي: ${JSON.stringify(c.sensory_profile)}
@@ -104,6 +106,7 @@ Deno.serve(async (req) => {
 
 البروتوكول الجاري: ${p.name_ar}
 المؤشرات الحالية: انتباه ${session.attention} • قلق ${session.anxiety} • تقدّم ${session.progress}
+العلامات الحيوية الحالية: ${JSON.stringify(currentVitals)}
 
 التدخّل المُطبَّق الآن:
 - النوع: ${cat}
@@ -113,6 +116,7 @@ ${interv ? `- آلية معروفة: ${interv.mechanism_ar}\n- موانع: ${JSO
 
 المطلوب: محاكاة استجابة المريض الفعلية الآن، ثم خط زمني للتأثير عند: "15 دقيقة"، "1 ساعة"، "1 يوم"، "1 أسبوع".
 - immediate_metrics: قيم مطلقة 0-100 بعد التدخّل مباشرة.
+- vitals_after: القيم المتوقعة فوراً للحيويات (HR/BP/SpO2/RR/Temp/Glucose/Pain). تأكّد أنها تتغيّر منطقياً وفسيولوجياً عن العلامات الحالية بحسب آلية التدخّل، حتى لو كان تغيّراً صغيراً (±3 بالحد الأدنى عند وجود أي تأثير). أرجِع فقط الحقول المتأثّرة.
 - success_score: 0-100 لمدى مناسبة هذا التدخّل لهذه الحالة بهذه المعاملات.
 - safety_warnings_ar: حذّر صراحة من أي جرعة زائدة، تفاعل، خطر حسّي/سلوكي.`;
 
@@ -143,6 +147,16 @@ ${interv ? `- آلية معروفة: ${interv.mechanism_ar}\n- موانع: ${JSO
       const newProgress  = Math.max(0, Math.min(100, Number(m.progress  ?? session.progress)));
       const t_ms = Date.now() - new Date(session.started_at).getTime();
 
+      // Merge AI vitals_after into vitals_state (only valid numeric updates)
+      const va = result.vitals_after || {};
+      const allowed = ['hr','bp_sys','bp_dia','spo2','rr','temp','glucose','pain'];
+      const cleanVitals: Record<string, number> = {};
+      for (const k of allowed) {
+        const v = (va as any)[k];
+        if (typeof v === 'number' && isFinite(v)) cleanVitals[k] = v;
+      }
+      const newVitalsState = { ...((session.vitals_state) || {}), ...cleanVitals };
+
       await fetch(rest('/clinical_session_events'), {
         method: 'POST', headers: svcHeaders(),
         body: JSON.stringify([
@@ -158,14 +172,14 @@ ${interv ? `- آلية معروفة: ${interv.mechanism_ar}\n- موانع: ${JSO
           },
           {
             session_id: sessionId, t_ms: t_ms + 2, actor: 'system', event_type: 'clinical_note',
-            payload: { note: result.clinical_explanation_ar, warnings: result.safety_warnings_ar, score: result.success_score },
+            payload: { note: result.clinical_explanation_ar, warnings: result.safety_warnings_ar, score: result.success_score, vitals_after: cleanVitals },
             attention: newAttention, anxiety: newAnxiety, progress: newProgress,
           },
         ]),
       });
       await fetch(rest(`/clinical_sessions?id=eq.${sessionId}`), {
         method: 'PATCH', headers: svcHeaders(),
-        body: JSON.stringify({ attention: newAttention, anxiety: newAnxiety, progress: newProgress }),
+        body: JSON.stringify({ attention: newAttention, anxiety: newAnxiety, progress: newProgress, vitals_state: newVitalsState }),
       });
     }
 
