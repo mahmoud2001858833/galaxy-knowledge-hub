@@ -109,9 +109,9 @@ const BlindEyeNavigator: React.FC = () => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      calibSuccessRef.current = 0;
+      calibAttemptsRef.current = 0;
       setPhaseBoth('calibrating');
-      speak('مرحباً، سأساعدك أولاً على وضع الهاتف بأفضل وضعية. أمسك الهاتف والكاميرا الخلفية للأمام.', { urgent: true });
+      speak('مرحباً، سأساعدك على وضع الهاتف بأفضل وضعية. لديك ٣ محاولات قبل أن أبدأ المساعدة تلقائياً.', { urgent: true });
     } catch (e) {
       console.error(e);
       toast.error('تعذّر فتح الكاميرا');
