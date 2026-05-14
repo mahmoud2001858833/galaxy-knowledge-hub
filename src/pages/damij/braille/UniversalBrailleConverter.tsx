@@ -86,7 +86,7 @@ const UniversalBrailleConverter: React.FC = () => {
       setExtracted(text);
 
       // 2) Convert to Braille
-      setStep(grade === 2 ? "تحويل إلى بريل المستوى الثاني (الاختزالي)…" : "تحويل إلى بريل المستوى الأول…");
+      setStep("تحويل إلى بريل المستوى الأول…");
       const { data, error } = await supabase.functions.invoke("braille-convert", {
         body: { mode: "convert", text, grade, langCode: langCode.split("-")[0], langName: lang.name },
       });
