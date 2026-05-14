@@ -192,14 +192,16 @@ const BlindEyeNavigator: React.FC = () => {
       if (mode === 'calibration') {
         const c = data as Calib;
         setLastCalib(c);
+        calibAttemptsRef.current += 1;
         speak(c.spoken, { urgent: false, rate: 1 });
         if (c.position_ok) {
-          calibSuccessRef.current += 1;
-          if (calibSuccessRef.current >= 1) {
-            setTimeout(() => setPhaseBoth('guiding'), 1500);
-          }
-        } else {
-          calibSuccessRef.current = 0;
+          setTimeout(() => setPhaseBoth('guiding'), 1200);
+        } else if (calibAttemptsRef.current >= MAX_CALIB_ATTEMPTS) {
+          // Max attempts reached - move on anyway
+          setTimeout(() => {
+            speak('سأبدأ المساعدة الآن. حاول إمالة الهاتف قليلاً للأسفل أثناء المشي.', { urgent: true });
+            setPhaseBoth('guiding');
+          }, 1400);
         }
       } else {
         const g = data as Guide;
