@@ -118,11 +118,19 @@ const ClinicalFreeExperiment: React.FC = () => {
   const startBlank = () => { setTitle(''); setDetails(''); setDose(''); setDuration(''); };
 
   const launch = async () => {
-    if (!picked || !type) return;
+    if (!picked || !type) {
+      toast.error('اختر نوع التدخّل والمريض أولاً');
+      return;
+    }
     setLaunching(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error('سجّل دخولك أولاً'); return; }
+      const { data: { user }, error: authErr } = await supabase.auth.getUser();
+      if (authErr) console.error('auth error', authErr);
+      if (!user) {
+        toast.error('سجّل دخولك أولاً للمتابعة');
+        navigate('/auth?redirect=/damij/clinical/free');
+        return;
+      }
 
       const intent = {
         type, title: title || TYPES.find(t => t.key === type)?.ar,
@@ -136,7 +144,10 @@ const ClinicalFreeExperiment: React.FC = () => {
         mode: 'free', free_intent: intent,
         vitals_state: (picked as any).vitals_initial || {},
       } as any).select('*').single();
-      if (error) throw error;
+      if (error) {
+        console.error('insert clinical_sessions error', error);
+        throw error;
+      }
 
       await supabase.from('clinical_session_events').insert({
         session_id: (s as any).id, t_ms: 0, actor: 'system', event_type: 'clinical_note',
@@ -146,6 +157,7 @@ const ClinicalFreeExperiment: React.FC = () => {
       toast.success('بدأت التجربة');
       navigate(`/damij/clinical/lab/${(s as any).id}`);
     } catch (e: any) {
+      console.error('launch failed', e);
       toast.error(e?.message ?? 'تعذّر بدء التجربة');
     } finally { setLaunching(false); }
   };
