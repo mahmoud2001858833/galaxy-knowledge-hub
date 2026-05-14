@@ -284,7 +284,7 @@ const BlindEyeNavigator: React.FC = () => {
       });
       if (error) throw error;
       if (data?.spoken) {
-        chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant', text: data.spoken }].slice(-6);
+        chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant' as const, text: data.spoken }].slice(-6);
         speak(data.spoken, { urgent: true, onEnd: () => { userSpeakingRef.current = false; } });
       } else {
         userSpeakingRef.current = false;
