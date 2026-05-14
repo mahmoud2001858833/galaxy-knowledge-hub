@@ -82,9 +82,12 @@ const BlindEyeNavigator: React.FC = () => {
   const cooldownUntilRef = useRef(0);
   const lastSpokenHashRef = useRef<{ key: string; t: number }>({ key: '', t: 0 });
   const phaseRef = useRef<Phase>('starting');
-  const calibSuccessRef = useRef<number>(0);
+  const calibAttemptsRef = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
   const lastGuideRef = useRef<Guide | null>(null);
+  const chatHistoryRef = useRef<Array<{ role: 'user'|'assistant'; text: string }>>([]);
+  const userSpeakingRef = useRef<boolean>(false);
+  const MAX_CALIB_ATTEMPTS = 3;
 
   const [phase, setPhase] = useState<Phase>('starting');
   const [lastGuide, setLastGuide] = useState<Guide | null>(null);
@@ -106,9 +109,9 @@ const BlindEyeNavigator: React.FC = () => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      calibSuccessRef.current = 0;
+      calibAttemptsRef.current = 0;
       setPhaseBoth('calibrating');
-      speak('مرحباً، سأساعدك أولاً على وضع الهاتف بأفضل وضعية. أمسك الهاتف والكاميرا الخلفية للأمام.', { urgent: true });
+      speak('مرحباً، سأساعدك على وضع الهاتف بأفضل وضعية. لديك ٣ محاولات قبل أن أبدأ المساعدة تلقائياً.', { urgent: true });
     } catch (e) {
       console.error(e);
       toast.error('تعذّر فتح الكاميرا');
@@ -149,9 +152,12 @@ const BlindEyeNavigator: React.FC = () => {
     const now = Date.now();
     const key = `${g.best_path}|${g.obstacles_summary}`;
     if (key === lastSpokenHashRef.current.key && now - lastSpokenHashRef.current.t < 3500) return;
-    lastSpokenHashRef.current = { key, t: now };
 
     const score = g.global_proximity ?? 0;
+    // Don't interrupt the user's conversation unless danger is high
+    if (userSpeakingRef.current && score < 75) return;
+
+    lastSpokenHashRef.current = { key, t: now };
     let urgent = false, rate = 1, pitch = 1;
     if (score >= 75) { urgent = true; rate = 1.2; pitch = 1.25; shortBeep(990); }
     else if (score >= 40) { urgent = false; rate = 1.05; pitch = 1.1; shortBeep(660); }
@@ -189,14 +195,16 @@ const BlindEyeNavigator: React.FC = () => {
       if (mode === 'calibration') {
         const c = data as Calib;
         setLastCalib(c);
+        calibAttemptsRef.current += 1;
         speak(c.spoken, { urgent: false, rate: 1 });
         if (c.position_ok) {
-          calibSuccessRef.current += 1;
-          if (calibSuccessRef.current >= 1) {
-            setTimeout(() => setPhaseBoth('guiding'), 1500);
-          }
-        } else {
-          calibSuccessRef.current = 0;
+          setTimeout(() => setPhaseBoth('guiding'), 1200);
+        } else if (calibAttemptsRef.current >= MAX_CALIB_ATTEMPTS) {
+          // Max attempts reached - move on anyway
+          setTimeout(() => {
+            speak('سأبدأ المساعدة الآن. حاول إمالة الهاتف قليلاً للأسفل أثناء المشي.', { urgent: true });
+            setPhaseBoth('guiding');
+          }, 1400);
         }
       } else {
         const g = data as Guide;
@@ -219,7 +227,7 @@ const BlindEyeNavigator: React.FC = () => {
     const loop = () => {
       const now = Date.now();
       const score = lastGuideRef.current?.global_proximity ?? 0;
-      const minGap = phase === 'calibrating' ? 2200 : score >= 75 ? 800 : score >= 40 ? 1500 : 2600;
+      const minGap = phase === 'calibrating' ? 3000 : score >= 75 ? 800 : score >= 40 ? 1500 : 2600;
       if (now - lastTickRef.current >= minGap) {
         lastTickRef.current = now;
         tick();
@@ -257,16 +265,33 @@ const BlindEyeNavigator: React.FC = () => {
       return;
     }
 
-    if (isSpeakingRef.current) return;
+    userSpeakingRef.current = true;
     const img = captureFrame() ?? undefined;
+    const g = lastGuideRef.current;
+    const visualContext = g
+      ? `أهم ما حول المستخدم: ${g.obstacles_summary}. أفضل اتجاه للمشي: ${g.best_path}. مستوى القرب: ${g.global_proximity}/100.`
+      : undefined;
+    // Append user turn
+    chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user' as const, text: t }].slice(-6);
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
-        body: { text: t, image: img },
+        body: {
+          text: t,
+          image: img,
+          history: chatHistoryRef.current.slice(0, -1),
+          visualContext,
+        },
       });
       if (error) throw error;
-      if (data?.spoken) speak(data.spoken, { urgent: true });
+      if (data?.spoken) {
+        chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant' as const, text: data.spoken }].slice(-6);
+        speak(data.spoken, { urgent: true, onEnd: () => { userSpeakingRef.current = false; } });
+      } else {
+        userSpeakingRef.current = false;
+      }
     } catch (e) {
       console.warn('chat err', e);
+      userSpeakingRef.current = false;
     }
   }, [captureFrame, startCamera, stopAll]);
 
@@ -386,6 +411,11 @@ const BlindEyeNavigator: React.FC = () => {
       {/* Calibration overlay */}
       {phase === 'calibrating' && lastCalib && (
         <div className="absolute top-24 inset-x-4 p-5 rounded-2xl bg-indigo-700/90 backdrop-blur shadow-2xl z-10">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full">
+              محاولة {Math.min(calibAttemptsRef.current, MAX_CALIB_ATTEMPTS)} / {MAX_CALIB_ATTEMPTS}
+            </div>
+          </div>
           <div className="text-2xl font-extrabold leading-tight">{lastCalib.spoken}</div>
           {lastCalib.adjustment && (
             <div className="mt-2 text-white/90 text-sm">{lastCalib.adjustment}</div>
