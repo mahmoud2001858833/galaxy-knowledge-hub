@@ -151,11 +151,18 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
               </div>
             )}
             {items.filter(it => !search || it.name_ar.includes(search) || (it.short_ar || '').includes(search) || (it.name_en || '').toLowerCase().includes(search.toLowerCase())).map((it) => (
-              <button key={it.id} onClick={() => setSelected(it)}
-                className={`w-full text-right p-2.5 border-b last:border-0 hover:bg-slate-50 ${selected?.id === it.id ? 'bg-sky-50' : ''}`}>
-                <div className="text-sm font-bold">{it.name_ar} {it.evidence_level && <span className="text-[10px] text-emerald-600 mr-1">[{it.evidence_level}]</span>}</div>
-                {it.short_ar && <div className="text-xs text-slate-500 line-clamp-2">{it.short_ar}</div>}
-              </button>
+              <div key={it.id} className={`flex items-start gap-1 border-b last:border-0 ${selected?.id === it.id ? 'bg-sky-50' : 'hover:bg-slate-50'}`}>
+                <button onClick={() => setSelected(it)} className="flex-1 text-right p-2.5">
+                  <div className="text-sm font-bold">{it.name_ar} {it.evidence_level && <span className="text-[10px] text-emerald-600 mr-1">[{it.evidence_level}]</span>}</div>
+                  {it.short_ar && <div className="text-xs text-slate-500 line-clamp-2">{it.short_ar}</div>}
+                </button>
+                <div className="pt-3 pl-2">
+                  <HelpTooltip
+                    title={it.name_ar}
+                    content={`${it.short_ar || ''}${it.mechanism_ar ? `\n\nالآلية: ${it.mechanism_ar}` : ''}${it.contraindications_ar?.length ? `\n\nموانع: ${it.contraindications_ar.join('، ')}` : ''}${it.evidence_level ? `\n\nمستوى الأدلة: ${it.evidence_level}` : ''}`}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>
