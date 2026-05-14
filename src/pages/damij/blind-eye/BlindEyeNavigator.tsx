@@ -272,7 +272,7 @@ const BlindEyeNavigator: React.FC = () => {
       ? `أهم ما حول المستخدم: ${g.obstacles_summary}. أفضل اتجاه للمشي: ${g.best_path}. مستوى القرب: ${g.global_proximity}/100.`
       : undefined;
     // Append user turn
-    chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user', text: t }].slice(-6);
+    chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user' as const, text: t }].slice(-6);
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
         body: {
