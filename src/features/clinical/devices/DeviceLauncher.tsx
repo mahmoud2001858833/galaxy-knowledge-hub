@@ -6,6 +6,7 @@ import { DEVICE_REGISTRY, type CaseContext } from './registry';
 import InteractiveECG from './InteractiveECG';
 import InteractiveStethoscope from './InteractiveStethoscope';
 import { SimBP, SimPulseOx, SimThermo, SimGCS, WoundControlKit } from './simulators';
+import HelpTooltip from '../HelpTooltip';
 
 interface Device {
   id: string; key: string; name_ar: string; name_en?: string; category: string;
@@ -125,14 +126,22 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext,
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {items.map(d => (
-                    <button key={d.id} onClick={() => setSelected(d)}
-                      className={`relative text-right p-3 rounded-2xl bg-white border hover:shadow-md transition group ${selected?.id === d.id ? `ring-2 ${tone.ring} border-transparent` : 'border-slate-200'}`}>
-                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${tone.from} to-white border flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition`}>
-                        {d.icon || '🩺'}
+                    <div key={d.id} className="relative">
+                      <button onClick={() => setSelected(d)}
+                        className={`w-full text-right p-3 rounded-2xl bg-white border hover:shadow-md transition group ${selected?.id === d.id ? `ring-2 ${tone.ring} border-transparent` : 'border-slate-200'}`}>
+                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${tone.from} to-white border flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition`}>
+                          {d.icon || '🩺'}
+                        </div>
+                        <div className="text-xs font-bold text-slate-800 line-clamp-1">{d.name_ar}</div>
+                        <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{d.description_ar}</div>
+                      </button>
+                      <div className="absolute top-2 left-2">
+                        <HelpTooltip
+                          title={d.name_ar}
+                          content={`${d.description_ar || ''}${d.safety_ar?.length ? `\n\nتنبيهات السلامة: ${d.safety_ar.join('، ')}` : ''}\n\nالفئة: ${tone.ar}\n\nاضغط على الجهاز لفتحه ثم اعتمد القراءة لتُسجَّل في الجلسة وتُحدّث حيويات المريض.`}
+                        />
                       </div>
-                      <div className="text-xs font-bold text-slate-800 line-clamp-1">{d.name_ar}</div>
-                      <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{d.description_ar}</div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>

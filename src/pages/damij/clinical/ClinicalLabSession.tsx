@@ -8,11 +8,11 @@ import InterventionTryPanel from '@/features/clinical/InterventionTryPanel';
 import DeviceLauncher from '@/features/clinical/devices/DeviceLauncher';
 
 const QUICK_ACTIONS = [
-  { key: 'reinforce', ar: 'تعزيز إيجابي 👍' },
-  { key: 'prompt', ar: 'تلميح/Prompt' },
-  { key: 'reduce', ar: 'تخفيف الصعوبة' },
-  { key: 'sensory_break', ar: 'استراحة حسّية' },
-  { key: 'model', ar: 'نمذجة سلوك' },
+  { key: 'reinforce', ar: 'تعزيز إيجابي 👍', help: 'مدح أو مكافأة فورية بعد سلوك مرغوب لزيادة احتماليّة تكراره (Positive Reinforcement). يرفع الانتباه ويخفّض القلق.' },
+  { key: 'prompt', ar: 'تلميح/Prompt', help: 'إعطاء تلميح لفظي/بصري/جسدي لمساعدة المريض على إنجاز المهمة. يُلاشى تدريجياً (Prompt Fading).' },
+  { key: 'reduce', ar: 'تخفيف الصعوبة', help: 'تجزئة المهمة أو تقليل متطلباتها لتفادي الإحباط (Task Analysis / Errorless Learning).' },
+  { key: 'sensory_break', ar: 'استراحة حسّية', help: 'وقفة قصيرة لتنظيم الحالة الحسّية (تنفس، حركة، عزل صوتي). يخفّض القلق ويُعيد ضبط الانتباه.' },
+  { key: 'model', ar: 'نمذجة سلوك', help: 'أداء السلوك المطلوب أمام المريض ليُقلّده (Modeling). فعّال خاصةً مع التوحّد.' },
 ];
 
 const ClinicalLabSession: React.FC = () => {
