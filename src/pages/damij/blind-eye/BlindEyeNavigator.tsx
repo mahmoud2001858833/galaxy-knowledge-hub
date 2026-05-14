@@ -167,7 +167,7 @@ const BlindEyeNavigator: React.FC = () => {
     if (!mc) return false;
     const W = 64, H = 48;
     mc.width = W; mc.height = H;
-    const ctx = mc.getContext('2d', { willReadFrequently: true } as any);
+    const ctx = mc.getContext('2d', { willReadFrequently: true } as any) as CanvasRenderingContext2D | null;
     if (!ctx) return false;
     ctx.drawImage(v, 0, 0, W, H);
     const data = ctx.getImageData(0, 0, W, H).data;
