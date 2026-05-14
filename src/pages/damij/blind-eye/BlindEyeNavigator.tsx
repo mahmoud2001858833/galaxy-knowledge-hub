@@ -152,9 +152,12 @@ const BlindEyeNavigator: React.FC = () => {
     const now = Date.now();
     const key = `${g.best_path}|${g.obstacles_summary}`;
     if (key === lastSpokenHashRef.current.key && now - lastSpokenHashRef.current.t < 3500) return;
-    lastSpokenHashRef.current = { key, t: now };
 
     const score = g.global_proximity ?? 0;
+    // Don't interrupt the user's conversation unless danger is high
+    if (userSpeakingRef.current && score < 75) return;
+
+    lastSpokenHashRef.current = { key, t: now };
     let urgent = false, rate = 1, pitch = 1;
     if (score >= 75) { urgent = true; rate = 1.2; pitch = 1.25; shortBeep(990); }
     else if (score >= 40) { urgent = false; rate = 1.05; pitch = 1.1; shortBeep(660); }
