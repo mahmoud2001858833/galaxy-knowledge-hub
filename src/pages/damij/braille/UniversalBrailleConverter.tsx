@@ -23,7 +23,7 @@ const UniversalBrailleConverter: React.FC = () => {
   const [reBusy, setReBusy] = useState(false);
   const [extracted, setExtracted] = useState("");
   const [braille, setBraille] = useState("");
-  const [grade, setGrade] = useState<1 | 2>(1);
+  const grade: 1 = 1;
   const [langCode, setLangCode] = useState("ar-SA");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
