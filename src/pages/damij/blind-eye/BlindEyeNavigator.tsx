@@ -82,9 +82,12 @@ const BlindEyeNavigator: React.FC = () => {
   const cooldownUntilRef = useRef(0);
   const lastSpokenHashRef = useRef<{ key: string; t: number }>({ key: '', t: 0 });
   const phaseRef = useRef<Phase>('starting');
-  const calibSuccessRef = useRef<number>(0);
+  const calibAttemptsRef = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
   const lastGuideRef = useRef<Guide | null>(null);
+  const chatHistoryRef = useRef<Array<{ role: 'user'|'assistant'; text: string }>>([]);
+  const userSpeakingRef = useRef<boolean>(false);
+  const MAX_CALIB_ATTEMPTS = 3;
 
   const [phase, setPhase] = useState<Phase>('starting');
   const [lastGuide, setLastGuide] = useState<Guide | null>(null);
