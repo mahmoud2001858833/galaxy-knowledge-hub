@@ -93,9 +93,7 @@ const UniversalBrailleConverter: React.FC = () => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setBraille((data as any).braille || "");
-      if ((data as any)?.fallback) {
-        toast.warning("تم استخدام المستوى الأول (الحرفي) مؤقتاً بسبب ضغط على خدمة الذكاء الاصطناعي. أعد المحاولة لاحقاً للحصول على المستوى الثاني الاختزالي.");
-      } else {
+      if (!(data as any)?.fallback) {
         toast.success("تم التحويل بنجاح");
       }
     } catch (e: any) {
