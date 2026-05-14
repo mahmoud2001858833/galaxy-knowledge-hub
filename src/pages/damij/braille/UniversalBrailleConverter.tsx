@@ -174,7 +174,7 @@ const UniversalBrailleConverter: React.FC = () => {
       </div>
 
       {/* Options */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
           <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
             <Globe className="w-4 h-4" /> اللغة
@@ -188,30 +188,6 @@ const UniversalBrailleConverter: React.FC = () => {
               <option key={l.code} value={l.code}>{fmt(l)}</option>
             ))}
           </select>
-        </div>
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4">
-          <label className="text-sm font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-2">
-            <Languages className="w-4 h-4" /> المستوى
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { v: 1, label: "المستوى الأول", desc: "حرفي" },
-              { v: 2, label: "المستوى الثاني", desc: "اختزالي" },
-            ].map((g) => (
-              <button
-                key={g.v}
-                onClick={() => setGrade(g.v as 1 | 2)}
-                className={`p-3 rounded-xl border text-sm font-bold flex flex-col ${
-                  grade === g.v
-                    ? "bg-[hsl(var(--damij-primary))] text-white border-transparent"
-                    : "bg-white text-[hsl(var(--damij-primary))] border-[hsl(var(--damij-primary))]/20"
-                }`}
-              >
-                <span>{g.label}</span>
-                <span className="text-[11px] opacity-80 font-normal">{g.desc}</span>
-              </button>
-            ))}
-          </div>
         </div>
         <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4 flex flex-col">
           <label className="text-sm font-bold text-[hsl(var(--damij-primary))] mb-2">إجراء</label>
