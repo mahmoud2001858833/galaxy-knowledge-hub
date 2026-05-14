@@ -11,16 +11,20 @@ const corsHeaders = {
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODELS = ["google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
-const SYSTEM = `أنت "عين الأعمى"، مساعد صوتي ودود للمكفوفين تتحدث معهم أثناء المشي.
+const SYSTEM = `أنت "عين الأعمى"، رفيق صوتي ودود ودافئ للمكفوفين أثناء المشي. تتحدث معهم بطبيعية كصديق مهتم.
 
 قواعد صارمة:
-- ردود قصيرة جداً (٥-٢٥ كلمة) لأنها تُنطق صوتياً.
-- عربية فصحى بسيطة وواضحة.
-- إن أُرفقت صورة، استخدمها لوصف ما يراه الكفيف بدقة.
-- إن طلب وصف ما أمامه: صف الأشخاص والعقبات والطريق باختصار.
-- إن طلب قراءة نص: اقرأ ما تراه فقط.
-- لا تذكر "كصورة" أو "في الصورة"، تحدث وكأنك ترى مباشرة.
-- لا ترفض إلا لضرورة.
+- ردود قصيرة جداً (٥-٣٠ كلمة) لأنها تُنطق صوتياً.
+- عربية فصحى بسيطة وودودة، دافئة وليست رسمية.
+- تذكّر السياق السابق من المحادثة (سيُمرَّر إليك).
+- إن وُجد سياق بصري (visualContext)، استخدمه بثقة كأنك ترى المشهد فعلاً.
+- إن أُرفقت صورة، اعتمد عليها للوصف.
+- لا تقل "في الصورة" أو "كصورة"، تحدث وكأنك ترى مباشرة.
+- إن سأل "ماذا حولي؟" / "صف ما أمامي" → استخدم visualContext + الصورة لوصف موجز.
+- إن سأل "هل الطريق آمن؟" → استند إلى مستوى القرب والاتجاه الأفضل في visualContext.
+- إن سأل سؤالاً عاماً (طقس، وقت، شعور) → جاوب بدفء وباختصار.
+- اطرح سؤال متابعة قصير أحياناً ليبقى الحوار حياً.
+- لا ترفض إلا لضرورة قصوى.
 
 استخدم أداة speak لإرجاع الجملة المنطوقة.`;
 
@@ -38,19 +42,37 @@ const speakTool = {
   },
 };
 
-async function callGateway(model: string, userText: string, imageDataUrl?: string) {
+type HistoryMsg = { role: "user" | "assistant"; text: string };
+
+async function callGateway(
+  model: string,
+  userText: string,
+  imageDataUrl?: string,
+  history: HistoryMsg[] = [],
+  visualContext?: string,
+) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
-  const userContent: any[] = [{ type: "text", text: userText }];
+  const messages: any[] = [{ role: "system", content: SYSTEM }];
+
+  // Append prior conversation (text only, last 6)
+  for (const m of history.slice(-6)) {
+    if (!m?.text) continue;
+    messages.push({ role: m.role, content: m.text });
+  }
+
+  const userContent: any[] = [];
+  const prefixText = visualContext
+    ? `[سياق بصري حالي من الكاميرا]: ${visualContext}\n\n[سؤال المستخدم]: ${userText}`
+    : userText;
+  userContent.push({ type: "text", text: prefixText });
   if (imageDataUrl) userContent.push({ type: "image_url", image_url: { url: imageDataUrl } });
+  messages.push({ role: "user", content: userContent });
 
   const body = {
     model,
-    messages: [
-      { role: "system", content: SYSTEM },
-      { role: "user", content: userContent },
-    ],
+    messages,
     tools: [speakTool],
     tool_choice: { type: "function", function: { name: "speak" } },
   };
@@ -79,17 +101,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { text, image } = await req.json();
+    const { text, image, history, visualContext } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "text required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const safeHistory: HistoryMsg[] = Array.isArray(history)
+      ? history.filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
+      : [];
+
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, text, image);
+        const result = await callGateway(model, text, image, safeHistory, typeof visualContext === "string" ? visualContext : undefined);
         return new Response(JSON.stringify({ ok: true, model, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
