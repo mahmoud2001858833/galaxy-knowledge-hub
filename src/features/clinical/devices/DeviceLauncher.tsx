@@ -6,6 +6,7 @@ import { DEVICE_REGISTRY, type CaseContext } from './registry';
 import InteractiveECG from './InteractiveECG';
 import InteractiveStethoscope from './InteractiveStethoscope';
 import { SimBP, SimPulseOx, SimThermo, SimGCS, WoundControlKit } from './simulators';
+import HelpTooltip from '../HelpTooltip';
 
 interface Device {
   id: string; key: string; name_ar: string; name_en?: string; category: string;
