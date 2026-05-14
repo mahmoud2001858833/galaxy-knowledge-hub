@@ -411,6 +411,11 @@ const BlindEyeNavigator: React.FC = () => {
       {/* Calibration overlay */}
       {phase === 'calibrating' && lastCalib && (
         <div className="absolute top-24 inset-x-4 p-5 rounded-2xl bg-indigo-700/90 backdrop-blur shadow-2xl z-10">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full">
+              محاولة {Math.min(calibAttemptsRef.current, MAX_CALIB_ATTEMPTS)} / {MAX_CALIB_ATTEMPTS}
+            </div>
+          </div>
           <div className="text-2xl font-extrabold leading-tight">{lastCalib.spoken}</div>
           {lastCalib.adjustment && (
             <div className="mt-2 text-white/90 text-sm">{lastCalib.adjustment}</div>
