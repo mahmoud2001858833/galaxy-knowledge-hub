@@ -22,6 +22,7 @@ root.render(
           <NotificationProvider>
             <App />
             <Toaster />
+            <SonnerToaster richColors closeButton position="top-center" />
           </NotificationProvider>
         </LanguageProvider>
       </QueryClientProvider>
