@@ -144,8 +144,7 @@ const UniversalBrailleConverter: React.FC = () => {
           محوّل بريل العالمي
         </h1>
         <p className="text-[hsl(var(--damij-text))]/70 max-w-2xl mx-auto">
-          حوّل أي ملف أو صفحة ويب أو نص إلى بريل بأكثر من <b>{SPOKEN_LANGUAGES.length}</b> لغة،
-          مع دعم <b>المستوى الأول والثاني</b> (الاختزالي).
+          حوّل أي ملف أو صفحة ويب أو نص إلى بريل بأكثر من <b>{SPOKEN_LANGUAGES.length}</b> لغة.
         </p>
         <div className="inline-flex items-center gap-1 mt-3 text-xs text-[hsl(var(--damij-primary))] bg-[hsl(var(--damij-primary))]/10 px-3 py-1 rounded-full">
           <Sparkles className="w-3 h-3" /> مدعوم بالذكاء الاصطناعي
