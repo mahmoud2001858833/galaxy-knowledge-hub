@@ -27,7 +27,7 @@ export class LocalVision {
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.W;
     this.canvas.height = this.H;
-    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true } as any);
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true } as any) as CanvasRenderingContext2D | null;
   }
 
   analyze(video: HTMLVideoElement): LocalFrameStats | null {
