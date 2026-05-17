@@ -4,6 +4,12 @@ import { Upload, Sparkles, Eye, Ear, Hand, Brain, Image as ImageIcon, Vibrate, A
 
 const SensoryHome: React.FC = () => (
   <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto">
+    <DamijSEO
+      title="الجسر الحسّي العكسي — منصة دامج"
+      description="الجسر الحسّي العكسي من منصة دامج: تحويل تلقائي لأي محتوى تعليمي إلى الحاسة المتاحة لكل طالب — نص مبسّط، صوت، إشارة، بريل، أو اهتزاز."
+      path="/damij/sensory"
+      keywords="الجسر الحسي, تكيف المحتوى التعليمي, منصة دامج الجسر الحسي"
+    />
     <div className="text-center mb-12">
       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(var(--damij-accent))]/20 text-[hsl(var(--damij-primary))] mb-4">
         <Sparkles className="w-4 h-4" /><span className="text-sm font-bold">الجوهر المبتكر — حلٌّ واحد لجميع الإعاقات</span>
