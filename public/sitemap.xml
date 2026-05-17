@@ -206,4 +206,76 @@
     <priority>0.5</priority>
   </url>
 
+  <!-- منصة دامج - الصفحة الرئيسية -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- منصة دامج - مترجم لغة الإشارة -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/sign</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - نظام بريل -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/braille</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - عين الأعمى -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/blind-eye</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - دعم التوحد -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/autism</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - دعم ADHD -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/adhd</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - الجسر الحسي -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/sensory</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - المختبر السريري -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/clinical</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- منصة دامج - لوحة التحكم -->
+  <url>
+    <loc>https://yoursite.lovable.app/damij/dashboard</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
 </urlset>
