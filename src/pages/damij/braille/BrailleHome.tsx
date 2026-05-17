@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes, GraduationCap, Camera } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const BrailleHome: React.FC = () => (
   <div className="px-6 pt-16 pb-12 max-w-6xl mx-auto">

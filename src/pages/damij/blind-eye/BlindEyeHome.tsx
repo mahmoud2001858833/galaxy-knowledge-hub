@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Camera, ArrowLeft, Mic, Radio, AlertTriangle } from 'lucide-react';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const speak = (text: string) => {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
