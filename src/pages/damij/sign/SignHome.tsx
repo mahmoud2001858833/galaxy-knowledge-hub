@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Hand, ArrowLeft, Globe, Sparkles, Youtube, Volume2, BookPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const SignHome: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -15,6 +16,12 @@ const SignHome: React.FC = () => {
   }, []);
   return (
   <div className="px-6 pt-12 pb-16 max-w-5xl mx-auto">
+    <DamijSEO
+      title="مترجم لغة الإشارة الذكي — منصة دامج"
+      description="مترجم لغة الإشارة الذكي من منصة دامج: ترجمة فورية ثنائية الاتجاه بين الإشارة والنص والصوت بأكثر من 100 لغة و19 نظام إشارة عالمي."
+      path="/damij/sign"
+      keywords="مترجم لغة الإشارة, لغة الإشارة العربية, ASL, ترجمة الإشارة, منصة دامج لغة الإشارة"
+    />
     <h1 className="text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-3">مترجم لغة الإشارة الذكي</h1>
     <p className="text-lg text-[hsl(var(--damij-text))]/75 mb-10 max-w-3xl">
       جسر تواصل ثنائي الاتجاه بين الصمّ والمجتمع: ترجمة فورية من الكاميرا إلى نص/صوت، ومن نص/صوت إلى تتابع إشارات احترافي. يدعم أكثر من 100 لغة منطوقة و19 نظام إشارة عالمي.

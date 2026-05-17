@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Camera, ArrowLeft, Mic, Radio, AlertTriangle } from 'lucide-react';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const speak = (text: string) => {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -26,6 +27,12 @@ const BlindEyeHome: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-black text-white px-6 py-8 flex flex-col" dir="rtl">
+      <DamijSEO
+        title="عين الأعمى — مرشد بصري صوتي | منصة دامج"
+        description="عين الأعمى من منصة دامج: مرشد بصري صوتي بالذكاء الاصطناعي للمكفوفين، يصف ما حولك ويرشدك أثناء المشي بأمان عبر كاميرا الهاتف."
+        path="/damij/blind-eye"
+        keywords="عين الأعمى, مساعد المكفوفين, ملاحة المكفوفين, AI للمكفوفين, منصة دامج عين الأعمى"
+      />
       <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col">
         <Link to="/damij/braille" className="inline-flex items-center gap-2 text-white/70 hover:text-white mb-4 text-lg">
           <ArrowLeft className="w-6 h-6" /> رجوع

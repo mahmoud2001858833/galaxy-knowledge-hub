@@ -2,9 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, ArrowLeftRight, BookOpen, FileText, Globe, Shapes, GraduationCap, Camera } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const BrailleHome: React.FC = () => (
   <div className="px-6 pt-16 pb-12 max-w-6xl mx-auto">
+    <DamijSEO
+      title="نظام بريل الدامج — منصة دامج"
+      description="نظام بريل الدامج من منصة دامج: محوّل بريل عالمي، من بريل إلى نص، رسومات تكتيلية، قاموس بريل، وتعلّم تفاعلي للمكفوفين بأكثر من 100 لغة."
+      path="/damij/braille"
+      keywords="بريل, نظام بريل, محول بريل, تعلم بريل, بريل عربي, منصة دامج بريل"
+    />
     <header className="text-center mb-12">
       <div className="w-20 h-20 rounded-3xl bg-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-primary))] flex items-center justify-center mx-auto mb-5">
         <Eye className="w-10 h-10" />

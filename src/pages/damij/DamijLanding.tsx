@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2 } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
+import DamijSEO from '@/components/damij/DamijSEO';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 const STATS = [
@@ -34,6 +35,25 @@ const DamijLanding: React.FC = () => {
   const { t } = useDamijLang();
   return (
     <div>
+      <DamijSEO
+        title="منصة دامج — للدمج التعليمي الشامل لذوي الإعاقة"
+        description="منصة دامج هي المنصة العربية الأولى للدمج التعليمي لذوي الإعاقة: لغة الإشارة، بريل، عين الأعمى، دعم التوحد و ADHD، الجسر الحسّي العكسي، وتجارب سريرية افتراضية ضمن منظومة واحدة."
+        path="/damij"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'منصة دامج',
+          alternateName: ['Damij', 'دامج'],
+          url: 'https://yoursite.lovable.app/damij',
+          inLanguage: 'ar',
+          publisher: { '@type': 'EducationalOrganization', name: 'ذروة العلم' },
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: 'https://yoursite.lovable.app/damij?q={search_term_string}',
+            'query-input': 'required name=search_term_string',
+          },
+        }}
+      />
       <DamijHero3D />
 
       {/* Stats strip */}

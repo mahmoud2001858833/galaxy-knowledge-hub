@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileBarChart, ClipboardList, ArrowLeft, GitCompare, LayoutDashboard, Beaker } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const cards = [
   { to: '/damij/clinical/cases',     icon: ClipboardList,   title: 'مكتبة الحالات الافتراضية', desc: 'حالات جاهزة بهوية بصرية مميّزة لكل مريض، مع كل الأدوية والأجهزة والتدخّلات.' },
@@ -24,6 +25,12 @@ const ClinicalHome: React.FC = () => {
 
   return (
     <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto" dir="rtl">
+      <DamijSEO
+        title="مختبر المحاكاة السريرية — منصة دامج"
+        description="مختبر المحاكاة السريرية من منصة دامج: مرضى افتراضيون، أجهزة طبية تفاعلية، وتدخّلات دوائية وسلوكية وحسّية لتدريب طلاب التربية الخاصة والطب."
+        path="/damij/clinical"
+        keywords="محاكاة سريرية, تدريب طبي, تربية خاصة, منصة دامج السريرية"
+      />
       <h1 className="text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-3">مختبر المحاكاة السريرية</h1>
       <p className="text-lg text-[hsl(var(--damij-text))]/75 mb-6 max-w-3xl">
         بيئة احترافية لتدريب طلاب التربية الخاصة والطب: مرضى افتراضيون أذكياء، أجهزة طبية تفاعلية، تدخّلات دوائية وسلوكية وحسّية، وتقارير قابلة للمشاركة.

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Brain, ClipboardList, Calendar, UserCircle, Baby, Sparkles, Heart, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutismAdaptive } from '@/features/autism/ui/AutismAgeAdaptive';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 
 interface CardDef {
@@ -51,6 +52,12 @@ const AutismHome: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 pt-12 pb-16 max-w-6xl mx-auto" dir="rtl">
+      <DamijSEO
+        title="دعم التوحّد — منصة دامج"
+        description="نظام دعم التوحّد من منصة دامج: تشخيص ذكي وفق DSM-5 و M-CHAT-R/F، برنامج علاجي 90 يوماً، مكتبة ألعاب تفاعلية، وملف تقدّم الطفل."
+        path="/damij/autism"
+        keywords="التوحد, تشخيص التوحد, علاج التوحد, DSM-5, M-CHAT, منصة دامج التوحد"
+      />
       {/* Hero */}
       <header className="text-center mb-10 sm:mb-12">
         <div

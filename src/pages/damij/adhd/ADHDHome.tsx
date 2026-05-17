@@ -5,6 +5,7 @@ import {
   Activity, ListChecks, Brain, Calendar, BarChart3, BookMarked, ShieldCheck,
   ArrowLeft, CheckCircle2, Lock, PlayCircle, Sparkles,
 } from 'lucide-react';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 type StageId = 'diagnosis' | 'program' | 'monthly' | 'longitudinal';
 
@@ -99,6 +100,12 @@ const ADHDHome: React.FC = () => {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 pt-10 pb-16 max-w-5xl mx-auto" dir="rtl">
+      <DamijSEO
+        title="دعم ADHD وفرط الحركة — منصة دامج"
+        description="نظام دعم ADHD من منصة دامج: تشخيص، تدريب، ألعاب تركيز، تدخلات سلوكية، ومتابعة شهرية لطلاب فرط الحركة وتشتت الانتباه."
+        path="/damij/adhd"
+        keywords="ADHD, فرط الحركة, تشتت الانتباه, تدريب التركيز, منصة دامج ADHD"
+      />
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: 12 }}
