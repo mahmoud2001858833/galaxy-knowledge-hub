@@ -35,6 +35,25 @@ const DamijLanding: React.FC = () => {
   const { t } = useDamijLang();
   return (
     <div>
+      <DamijSEO
+        title="منصة دامج — للدمج التعليمي الشامل لذوي الإعاقة"
+        description="منصة دامج هي المنصة العربية الأولى للدمج التعليمي لذوي الإعاقة: لغة الإشارة، بريل، عين الأعمى، دعم التوحد و ADHD، الجسر الحسّي العكسي، وتجارب سريرية افتراضية ضمن منظومة واحدة."
+        path="/damij"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'منصة دامج',
+          alternateName: ['Damij', 'دامج'],
+          url: 'https://yoursite.lovable.app/damij',
+          inLanguage: 'ar',
+          publisher: { '@type': 'EducationalOrganization', name: 'ذروة العلم' },
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: 'https://yoursite.lovable.app/damij?q={search_term_string}',
+            'query-input': 'required name=search_term_string',
+          },
+        }}
+      />
       <DamijHero3D />
 
       {/* Stats strip */}
