@@ -5,6 +5,7 @@ import {
   Activity, ListChecks, Brain, Calendar, BarChart3, BookMarked, ShieldCheck,
   ArrowLeft, CheckCircle2, Lock, PlayCircle, Sparkles,
 } from 'lucide-react';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 type StageId = 'diagnosis' | 'program' | 'monthly' | 'longitudinal';
 

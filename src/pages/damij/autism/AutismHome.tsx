@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Brain, ClipboardList, Calendar, UserCircle, Baby, Sparkles, Heart, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutismAdaptive } from '@/features/autism/ui/AutismAgeAdaptive';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 
 interface CardDef {

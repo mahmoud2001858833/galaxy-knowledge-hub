@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileBarChart, ClipboardList, ArrowLeft, GitCompare, LayoutDashboard, Beaker } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const cards = [
   { to: '/damij/clinical/cases',     icon: ClipboardList,   title: 'مكتبة الحالات الافتراضية', desc: 'حالات جاهزة بهوية بصرية مميّزة لكل مريض، مع كل الأدوية والأجهزة والتدخّلات.' },
