@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2 } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
+import DamijSEO from '@/components/damij/DamijSEO';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 
 const STATS = [
