@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Hand, ArrowLeft, Globe, Sparkles, Youtube, Volume2, BookPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DamijSEO from '@/components/damij/DamijSEO';
 
 const SignHome: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
