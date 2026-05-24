@@ -163,11 +163,30 @@ const SensoryUnifiedComm: React.FC = () => {
   const braille = textToBraille(text);
   const speak = () => {
     if (!('speechSynthesis' in window)) return toast.error('النطق غير مدعوم');
-    window.speechSynthesis.cancel();
-    if (!text.trim()) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ar-SA'; u.rate = 0.95;
-    window.speechSynthesis.speak(u);
+    const clean = text
+      .replace(/[*_`#>~\[\]()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!clean) return toast.error('لا يوجد نص للقراءة');
+    try { window.speechSynthesis.cancel(); } catch {}
+    const start = () => {
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = 'ar-SA';
+      u.rate = 0.95;
+      u.pitch = 1;
+      u.volume = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const arVoice = voices.find(v => v.lang?.toLowerCase().startsWith('ar'));
+      if (arVoice) u.voice = arVoice;
+      window.speechSynthesis.speak(u);
+    };
+    if (window.speechSynthesis.getVoices().length === 0) {
+      const onVoices = () => { window.speechSynthesis.removeEventListener('voiceschanged', onVoices); start(); };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoices);
+      setTimeout(start, 200);
+    } else {
+      start();
+    }
     logToolUse('tts');
   };
   const stopSpeak = () => window.speechSynthesis?.cancel();
