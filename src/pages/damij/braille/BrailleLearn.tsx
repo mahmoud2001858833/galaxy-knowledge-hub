@@ -223,31 +223,8 @@ const BrailleLearn: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-3">
-          <label className="text-xs font-bold text-[hsl(var(--damij-primary))] mb-1 block">
-            مستوى بريل
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { v: 1, label: "المستوى الأول", desc: "حرفي" },
-              { v: 2, label: "المستوى الثاني", desc: "اختزالي" },
-            ].map((g) => (
-              <button
-                key={g.v}
-                onClick={() => setGrade(g.v as 1 | 2)}
-                disabled={direction === "from-braille"}
-                className={`p-2 rounded-lg border text-xs font-bold flex flex-col disabled:opacity-50 ${
-                  grade === g.v
-                    ? "bg-[hsl(var(--damij-primary))] text-white border-transparent"
-                    : "bg-white text-[hsl(var(--damij-primary))] border-[hsl(var(--damij-primary))]/20"
-                }`}
-              >
-                <span>{g.label}</span>
-                <span className="text-[10px] opacity-80 font-normal">{g.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      </div>
+
       </div>
 
       {/* Input */}
