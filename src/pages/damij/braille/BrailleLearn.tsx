@@ -225,7 +225,6 @@ const BrailleLearn: React.FC = () => {
         </div>
       </div>
 
-      </div>
 
       {/* Input */}
       <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-4 mb-4">
