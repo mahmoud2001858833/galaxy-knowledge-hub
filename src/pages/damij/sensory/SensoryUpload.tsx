@@ -117,45 +117,63 @@ const SensoryUpload: React.FC = () => {
       .trim();
 
   const browserSpeak = (txt: string) => {
-    if (!txt) return;
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(txt);
-    u.lang = 'ar-SA';
-    const voices = speechSynthesis.getVoices();
-    const arVoice = voices.find(v => v.lang?.toLowerCase().startsWith('ar'));
-    if (arVoice) u.voice = arVoice;
-    const speedMap = { slow: 0.75, normal: 1, fast: 1.3 } as const;
-    u.rate = profile?.speechRate ? speedMap[profile.speechRate] : (profile?.cognitive === 'autism' ? 0.85 : 1);
-    u.pitch = 1;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
-    setSpeaking(true);
-    speechSynthesis.speak(u);
+    if (!txt || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try { speechSynthesis.cancel(); } catch {}
+    const startWithVoice = () => {
+      const u = new SpeechSynthesisUtterance(txt);
+      u.lang = 'ar-SA';
+      const voices = speechSynthesis.getVoices();
+      const arVoice = voices.find(v => v.lang?.toLowerCase().startsWith('ar'));
+      if (arVoice) u.voice = arVoice;
+      const speedMap = { slow: 0.75, normal: 1, fast: 1.3 } as const;
+      u.rate = profile?.speechRate ? speedMap[profile.speechRate] : (profile?.cognitive === 'autism' ? 0.85 : 1);
+      u.pitch = 1;
+      u.onstart = () => setSpeaking(true);
+      u.onend = () => setSpeaking(false);
+      u.onerror = () => setSpeaking(false);
+      setSpeaking(true);
+      speechSynthesis.speak(u);
+    };
+    if (speechSynthesis.getVoices().length === 0) {
+      const onVoices = () => { speechSynthesis.removeEventListener('voiceschanged', onVoices); startWithVoice(); };
+      speechSynthesis.addEventListener('voiceschanged', onVoices);
+      // also kick off after a short delay in case the event never fires
+      setTimeout(startWithVoice, 200);
+    } else {
+      startWithVoice();
+    }
   };
 
-  const speak = (txt: string) => browserSpeak(txt);
+  const speak = (txt: string) => browserSpeak(cleanForTTS(txt));
 
   const speakSimplified = async () => {
     const raw = result?.simplifiedText;
-    if (!raw) return;
+    if (!raw) { toast.error('لا يوجد نص للقراءة'); return; }
     const txt = cleanForTTS(raw);
+    if (!txt) { toast.error('النص فارغ'); return; }
     const speedMap = { slow: 0.85, normal: 1.0, fast: 1.15 } as const;
     const speed = profile?.speechRate ? speedMap[profile.speechRate] : 1.0;
-    setSpeaking(true);
+
+    // Start browser TTS IMMEDIATELY inside the user gesture to guarantee playback.
+    browserSpeak(txt);
+
+    // Try to upgrade to a higher-quality ElevenLabs voice in the background.
     try {
       const { data, error } = await supabase.functions.invoke('accessibility-text-to-speech', {
         body: { text: txt, voice: 'Sarah', speed },
       });
-      if (error || !data?.audioContent) throw error || new Error('no audio');
+      if (error || !data?.audioContent) return; // keep browser TTS
+      // Stop browser TTS and play the upgraded audio
+      try { speechSynthesis.cancel(); } catch {}
       if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
       const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
       audioRef.current = audio;
+      setSpeaking(true);
       audio.onended = () => setSpeaking(false);
       audio.onerror = () => { setSpeaking(false); browserSpeak(txt); };
-      await audio.play();
-    } catch (e) {
-      // Fallback to browser TTS with cleaned Arabic text
-      browserSpeak(txt);
+      await audio.play().catch(() => browserSpeak(txt));
+    } catch {
+      // browser TTS already running — nothing to do
     }
   };
 
