@@ -7,6 +7,7 @@ import {
 import { toast } from 'sonner';
 import { logToolUse } from './interactionLog';
 import { tokenizeSigns, type SignToken } from './signDictionary';
+import { supabase } from '@/integrations/supabase/client';
 
 // ===== Types =====
 type Segment = {
