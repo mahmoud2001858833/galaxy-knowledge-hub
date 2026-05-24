@@ -1,116 +1,73 @@
-# خطة الترقية الكبرى لـ"عين الأعمى" — كشف فوري + نقاط مرئية + استجابة مستمرة
+# Blind Eye — Major upgrade plan
 
-## المشاكل الحالية
-1. الاعتماد الكامل على الـAI في كل إطار → بطء وفجوات.
-2. لا توجد نقاط مرئية على العناصر؛ فقط نص.
-3. عند تغيّر المشهد المفاجئ يتأخر التحديث.
-4. النطق متقطّع، يقاطع نفسه أو يتكرر.
-5. لا يوجد مسح مستمر للمنطقة (sweep)، فقط لقطات.
-
-## الفلسفة الجديدة
-**طبقتان تعملان بالتوازي:**
-- **طبقة محلية فورية (in-browser)** تعمل 10–15 مرة/ثانية بدون انتظار AI → كشف الحركة، الحواف، الكتل، اللمعان، الحركة المفاجئة.
-- **طبقة AI (cloud)** تعمل 2–3 مرات/ثانية لإعطاء أسماء/سياق غني للعناصر.
-
-النتيجة: المستخدم يحصل على إشارة فورية (<100ms) دائماً، والـAI يضيف الذكاء.
+Goal: make Blind Eye feel professional and bilingual — English by default with Arabic toggle, sub-3-second initial and on-motion scene analysis with grid points on everything, cleaner voice commands without repetition, and a smarter chat that suggests next actions and switches language on demand with high-quality pronunciation.
 
 ---
 
-## 1) كشف بصري محلي فوري (Local Vision Layer)
+## 1. Bilingual language system (English default + Arabic)
 
-ملف جديد: `src/pages/damij/blind-eye/localVision.ts`
+- Add a `BlindEyeLangContext` (`'en' | 'ar'`) stored in `localStorage`, default `'en'`.
+- Build a single strings table `src/pages/damij/blind-eye/i18n.ts` covering: UI labels (Back, Stop, Eyes off, Companion, Listening…), system messages ("Camera ready", "Aligning…", "Stopped"…), spoken phrases (`scanning area now`, `stop!`, `clear path`), and chat suggestions.
+- Header gets a clean `EN | AR` toggle (large, single tap). Toggling:
+  - Updates UI text instantly.
+  - Switches the SpeechRecognition lang (`en-US` ↔ `ar-SA`).
+  - Switches TTS voice (best `en-US`/`en-GB` voice with `Google`/`Microsoft Natural` preference for English, best `ar-SA`/`ar-EG` voice for Arabic — see §4).
+  - Sends `lang` in every edge-function call so AI replies in that language.
+- Voice command "switch to Arabic" / "حوّل للعربية" toggles the language in one step and the next sentence is spoken in the new language.
 
-- **Motion + Edge map** على canvas مصغّر 160×120 كل 70ms (~14 FPS):
-  - فرق الإطارات → خريطة حركة.
-  - Sobel مبسّط → خريطة حواف/كثافة.
-  - تقسيم لـ9 خانات (3×3) → لكل خانة: motion%, edge%, mean brightness.
-- **Blob detection محلية**: تجميع البكسلات النشطة إلى "نقاط اهتمام" (interest points) — إحداثيات + حجم + مستوى نشاط.
-- **Hazard score محلي**: الخانات السفلية مع حركة/حواف عالية + اقتراب (حجم blob كبير ومتزايد) = خطر فوري → beep + اهتزاز قبل أي رد AI.
-- **تتبع بصري بسيط (KLT-lite)**: إعادة استخدام مواقع نقاط الـAI بين تحديثاته بدلاً من اختفائها.
+## 2. Sub-3s initial scan + grid points on everything
 
-## 2) نقاط مرئية فوق الفيديو (HUD)
+- Calibration is now optional and capped at 1 quick attempt (was 3). The phase becomes `guiding` within ~700 ms if usable.
+- On `guiding` start, immediately fire one `points` AI call AND show a 3×3 + 4×4 hybrid HUD grid driven by the local-vision motion/edge cells so the user sees feedback before AI replies.
+- Reduce first AI tick latency:
+  - Smaller first frame (256 px wide, JPEG 0.45) to shave network time.
+  - Run local vision and AI request in parallel, render local points immediately, replace with AI labels when they land.
+- HUD: every active cell gets a labeled dot; when AI returns objects, dots upgrade to bounding boxes with name + hazard color. Dots fade after 1.2 s of inactivity so the overlay stays "alive".
 
-طبقة `<canvas>` شفافة فوق الفيديو ترسم:
-- **نقاط ملونة** على كل عنصر يكتشفه الـAI أو blob محلي:
-  - أحمر نابض = خطر عالٍ
-  - أصفر = متوسط
-  - أخضر = آمن
-  - حجم النقطة = القرب (proximity)
-- **تسمية مختصرة** بجانب كل نقطة (للمبصر/المرافق).
-- **سهم اتجاه المسار الأفضل** (يسار/وسط/يمين) كبير في الأسفل.
-- **شبكة 3×3 خفيفة** تظهر فقط في وضع "المرافق".
-- النقاط تُحدَّث محلياً (motion tracking) بين ردود الـAI لتبدو مستمرة لا متقطعة.
+## 3. Fast re-detection on camera movement (<3s)
 
-## 3) بث متواصل (Streaming Pipeline) بدل التتابع
+- Lower the scene-change threshold from `0.45` → `0.28` and add a second trigger from gyroscope/`devicemotion` (camera rotation > ~15°/s) so we react to panning, not just pixel motion.
+- When a scene change fires:
+  - Cancel in-flight `descriptive` AI calls.
+  - Force a `points` tick with `minGap` 250 ms.
+  - Re-render HUD points from local cells instantly while AI catches up.
+- AI tick gap during motion: 350 ms (was 700 ms for medium proximity).
+- Add a small "scanning…" earcon + a short spoken cue ("scanning"/"أمسح") only once per scene change, not per tick.
 
-في `BlindEyeNavigator.tsx`:
-- **Worker مخصّص** (`localVision.worker.ts`) للكشف المحلي حتى لا يخنق الواجهة.
-- **حلقة الـAI تعمل بشكل منفصل** كـ"خادم خلفي":
-  - 3 طلبات بالتوازي كحد أقصى (queue).
-  - الإطار يُلتقط دائماً بأحدث نسخة (drop-old policy) — لا نضيع وقت في إطار قديم.
-  - عند كشف **تغيّر مشهد كبير محلياً** (>30% motion delta) → إلغاء الطلبات القديمة وإرسال إطار جديد فوراً بأولوية عالية.
-- إزالة كل شروط `isSpeakingRef` من حلقة الالتقاط.
+## 4. Better speech: organized, non-repeating, richer voices
 
-## 4) تحسين الذكاء (Edge Function)
+- **Voice command parser** (new file `voiceCommands.ts`) replaces the regex chain. It returns an enum:
+  - `STOP`, `START`, `REPEAT`, `SCAN_AREA`, `WHATS_AROUND`, `READ_TEXT`, `SWITCH_LANG`, `SLOWER`, `FASTER`, `QUIETER`, `LOUDER`, `HELP`, `CHAT` (fallback).
+  - Each entry has both English and Arabic phrasings.
+  - Includes a 1.2 s debounce per command id so the same recognized utterance isn't acted on twice.
+- **Speech queue improvements** (`speechQueue.ts`):
+  - Stronger dedup window for `descriptive` (3.5 s) and `directional` (2 s).
+  - Coalesce same-direction guidance ("clear path ahead" repeated → spoken only every 6 s if unchanged).
+  - "Heartbeat" suppression: if nothing meaningful has changed for 8 s, stay silent (earcons only).
+  - Drop the redundant scan/earcon sound when TTS is about to speak.
+- **Voice quality**:
+  - Pick best available voice: prefer `Microsoft … Online (Natural)`, `Google …`, then platform default; cache per language.
+  - Tune `rate` per language (English 1.05, Arabic 0.98) and add a slight pitch bump on hazards for clarity.
+  - Optional upgrade: route critical/long sentences through the existing `accessibility-text-to-speech` ElevenLabs function (using `Sarah` for English, `Brian`/multilingual for Arabic) while keeping browser TTS as instant fallback — same pattern just used in `SensoryUpload`.
 
-`supabase/functions/blind-eye-vision/index.ts`:
-- وضع جديد `points`: يُرجع للـAI طلب تحديد **إحداثيات (x,y) لكل عنصر مهم** بنسبة 0-1، بدل شبكة 3×3 فقط. هذا يسمح برسم نقاط دقيقة.
-- مخطط جديد: `objects: [{x, y, w, h, label, hazard, proximity}]` max 6 عناصر.
-- استخدام `google/gemini-3-flash-preview` فقط (الأسرع)، مع تقصير الـprompt إلى 4 أسطر.
-- صورة 384×288 JPEG 0.55 (~20KB) → أسرع رفع.
-- إرسال **سياق الإطار السابق** (top objects + motion delta) ليُركّز الموديل على التغييرات.
+## 5. Smarter chat with suggestions
 
-## 5) تحسين النطق (Speech UX)
-
-- **طابور نطق ذكي** (`speechQueue.ts`):
-  - أولويات: critical (خطر) > directional (مسار) > descriptive (وصف).
-  - critical يقاطع أي شيء فوراً.
-  - descriptive يُسقط إذا لم يُنطق خلال 800ms (قديم).
-- **منع التكرار** بـsemantic hash (best_path + bucket of proximity + top hazard id) لمدة 2.5s.
-- **TTS rate تكيفي**: 1.05 عادي، 1.25 عند الخطر، 0.95 عند المعايرة.
-- **Earcons (نغمات قصيرة)** بدلاً من جمل في الحالات المتكررة:
-  - نقرة خفيفة كل مسح ناجح.
-  - beep صاعد = اقتراب.
-  - beep هابط = ابتعاد.
-  - beep مزدوج حاد = خطر.
-- **Spatial audio خفيف**: panning يسار/يمين حسب موقع العقبة (Web Audio stereo).
-
-## 6) تجربة المستخدم
-
-- **زر "مسح المنطقة"**: عند الضغط، يصدر تعليق صوتي مفصّل لكل ما يراه (top 5 عناصر + اتجاه آمن) — يستدعي وضع `detailed`.
-- **اهتزاز اتجاهي** (Vibration API نمط): نبضة قصيرة يسار/يمين/أمام حسب أفضل مسار.
-- **مؤشر حالة دائم** أعلى الشاشة: latency ms + FPS محلي + FPS AI + جودة الإضاءة.
-- **وضع المرافق**: يُظهر النقاط والتسميات والشبكة (للمبصر يساعد الكفيف).
-- **وضع الكفيف فقط**: شاشة سوداء بالكامل (توفير بطارية) + إشعارات صوتية واهتزازية فقط.
-
-## 7) أداء وبطارية
-
-- تشغيل الكشف المحلي في Web Worker.
-- `requestVideoFrameCallback` بدل `setInterval` لمزامنة مثالية مع الكاميرا.
-- إيقاف تلقائي للـAI عند ثبات المشهد (motion < 2%) لأكثر من 3 ثواني → استئناف فوري عند أي حركة.
-- ضغط JPEG محسّن (Canvas → blob → base64) بدل toDataURL المباشر.
+- `blind-eye-chat` edge function gets:
+  - A `lang` param ('en' | 'ar') and a system prompt instructing it to answer in that language, concisely (≤ 2 short sentences), and to always include 2–3 short `suggestions` (next things the user could ask — "describe the wall ahead", "read the sign", "is the door open?").
+  - Tool-call response so we get structured `{ spoken, suggestions[] }`.
+- HUD shows the last 3 suggestions as small chips at the bottom; tapping a chip (or saying it) runs it. They auto-refresh after each scene change.
+- Chat history is trimmed to the last 4 turns and includes the current `obstacles_summary` + `best_path` so replies stay grounded in what the camera actually sees.
 
 ---
 
-## الملفات المتأثرة
+## Technical notes
 
-| الملف | التعديل |
-|---|---|
-| `src/pages/damij/blind-eye/localVision.ts` (جديد) | كشف الحركة/الحواف/البقع محلياً |
-| `src/pages/damij/blind-eye/localVision.worker.ts` (جديد) | تشغيل الكشف في Worker |
-| `src/pages/damij/blind-eye/speechQueue.ts` (جديد) | طابور نطق بأولويات + earcons + spatial audio |
-| `src/pages/damij/blind-eye/HudOverlay.tsx` (جديد) | طبقة canvas للنقاط والتسميات والسهم |
-| `src/pages/damij/blind-eye/BlindEyeNavigator.tsx` | دمج الطبقات، حلقة streaming، وضع المرافق/الكفيف |
-| `supabase/functions/blind-eye-vision/index.ts` | وضع `points` بإحداثيات، prompt أقصر، صورة أصغر |
+- Files touched: `BlindEyeNavigator.tsx`, `speechQueue.ts`, `HudOverlay.tsx`, `localVision.ts`, new `i18n.ts`, new `voiceCommands.ts`, new `BlindEyeLangContext.tsx`, edge function `blind-eye-vision/index.ts` (accept `lang`, return `spoken` in chosen language), edge function `blind-eye-chat/index.ts` (accept `lang`, return suggestions via tool call).
+- No DB or schema changes.
+- Lovable AI Gateway remains the only AI backend for Blind Eye (per the existing exception).
+- Keeps all current safety behaviors: hazard earcons, vibration, critical-priority preemption, rate-limit/credit error toasts.
 
-## القياسات المستهدفة
+## Out of scope
 
-| المقياس | الحالي | المستهدف |
-|---|---|---|
-| زمن أول تحذير عند خطر مفاجئ | ~600ms | **<100ms** (محلي) |
-| تحديث النقاط البصرية | ~2/ثانية | **~14/ثانية** (محلي + tracking) |
-| زمن استجابة الـAI | ~600ms | **~350ms** |
-| استهلاك بيانات | ~80KB/طلب | **~20KB/طلب** |
-| تكرار النطق المزعج | يحدث | **يُمنع بالكامل** |
-
-هل توافق على البدء بالتنفيذ؟
+- Offline on-device object detection (would need a separate WebGPU/ONNX integration).
+- Persisting user language/voice preference to the backend (kept in `localStorage` only).

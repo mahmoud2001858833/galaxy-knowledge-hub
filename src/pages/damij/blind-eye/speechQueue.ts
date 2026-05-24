@@ -1,5 +1,8 @@
 // Prioritized speech queue + earcons + spatial audio for Blind Eye
-// Web Speech API has no real queue per priority, so we manage it manually.
+// Bilingual-aware (English + Arabic) with stronger dedup + heartbeat suppression.
+
+import type { BELang } from './i18n';
+import { BE_BCP47 } from './i18n';
 
 export type SpeechPriority = 'critical' | 'directional' | 'descriptive';
 
@@ -8,17 +11,21 @@ type SpeechItem = {
   priority: SpeechPriority;
   rate?: number;
   pitch?: number;
-  pan?: number; // -1 left, 0 center, +1 right
+  pan?: number;
+  lang?: BELang;
   enqueuedAt: number;
   onEnd?: () => void;
 };
 
-let arabicVoice: SpeechSynthesisVoice | null = null;
+const voicesCache: Record<BELang, SpeechSynthesisVoice | null> = { en: null, ar: null };
+let activeLang: BELang = 'en';
 let audioCtx: AudioContext | null = null;
 let panNode: StereoPannerNode | null = null;
 let queue: SpeechItem[] = [];
 let speakingItem: SpeechItem | null = null;
 let lastSpokenHash: { key: string; t: number } = { key: '', t: 0 };
+let lastAnySpeechAt = 0;
+let volume = 1;
 
 function ensureAudio() {
   if (!audioCtx) {
@@ -30,14 +37,54 @@ function ensureAudio() {
   return audioCtx;
 }
 
-export function pickArabicVoice() {
+function scoreVoice(v: SpeechSynthesisVoice, lang: BELang) {
+  const name = v.name.toLowerCase();
+  let s = 0;
+  // Prefer "Natural"/"Online"/"Google"/"Microsoft" voices when available
+  if (/natural/.test(name)) s += 8;
+  if (/online/.test(name)) s += 5;
+  if (/google/.test(name)) s += 6;
+  if (/microsoft/.test(name)) s += 4;
+  if (/premium|enhanced|wavenet/.test(name)) s += 5;
+  if (lang === 'en') {
+    if (v.lang === 'en-US') s += 4;
+    else if (v.lang === 'en-GB') s += 3;
+    else if (/^en/i.test(v.lang)) s += 2;
+  } else {
+    if (v.lang === 'ar-SA') s += 4;
+    else if (v.lang === 'ar-EG') s += 3;
+    else if (/^ar/i.test(v.lang)) s += 2;
+  }
+  if (v.default) s += 1;
+  return s;
+}
+
+export function setActiveLang(lang: BELang) {
+  activeLang = lang;
+  refreshVoices();
+}
+
+export function refreshVoices() {
   if (!('speechSynthesis' in window)) return;
-  const voices = window.speechSynthesis.getVoices();
-  arabicVoice = voices.find(v => /^ar/i.test(v.lang)) || null;
+  const all = window.speechSynthesis.getVoices();
+  for (const lang of ['en', 'ar'] as BELang[]) {
+    const candidates = all.filter(v => v.lang.toLowerCase().startsWith(lang));
+    candidates.sort((a, b) => scoreVoice(b, lang) - scoreVoice(a, lang));
+    voicesCache[lang] = candidates[0] ?? null;
+  }
+}
+
+// Back-compat: keep old name used elsewhere
+export function pickArabicVoice() {
+  refreshVoices();
 }
 
 export function isSpeaking() {
   return speakingItem !== null;
+}
+
+export function setSpeechVolume(v: number) {
+  volume = Math.max(0, Math.min(1, v));
 }
 
 function priWeight(p: SpeechPriority) {
@@ -46,22 +93,28 @@ function priWeight(p: SpeechPriority) {
 
 function drainQueue() {
   if (speakingItem) return;
-  // drop stale descriptive (>800ms old)
   const now = Date.now();
-  queue = queue.filter(q => !(q.priority === 'descriptive' && now - q.enqueuedAt > 800));
+  // Drop stale descriptive items (>800ms) and stale directional (>2.5s)
+  queue = queue.filter(q => {
+    if (q.priority === 'descriptive' && now - q.enqueuedAt > 800) return false;
+    if (q.priority === 'directional' && now - q.enqueuedAt > 2500) return false;
+    return true;
+  });
   if (queue.length === 0) return;
-  // sort by priority desc, then time
   queue.sort((a, b) => priWeight(b.priority) - priWeight(a.priority) || a.enqueuedAt - b.enqueuedAt);
   const item = queue.shift()!;
   speakingItem = item;
+  lastAnySpeechAt = now;
 
   if (!('speechSynthesis' in window)) { speakingItem = null; return; }
+  const lang = item.lang ?? activeLang;
   const u = new SpeechSynthesisUtterance(item.text);
-  u.lang = 'ar-SA';
-  if (arabicVoice) u.voice = arabicVoice;
-  u.rate = item.rate ?? 1.05;
+  u.lang = BE_BCP47[lang];
+  const voice = voicesCache[lang];
+  if (voice) u.voice = voice;
+  u.rate = item.rate ?? (lang === 'ar' ? 0.98 : 1.05);
   u.pitch = item.pitch ?? 1;
-  u.volume = 1;
+  u.volume = volume;
   const finish = () => {
     speakingItem = null;
     item.onEnd?.();
@@ -76,7 +129,6 @@ export function enqueueSpeech(item: Omit<SpeechItem, 'enqueuedAt'>) {
   if (!('speechSynthesis' in window)) return;
   const full: SpeechItem = { ...item, enqueuedAt: Date.now() };
   if (full.priority === 'critical') {
-    // interrupt anything
     try { window.speechSynthesis.cancel(); } catch {}
     speakingItem = null;
     queue = queue.filter(q => q.priority === 'critical');
@@ -89,13 +141,17 @@ export function speakDedup(
   text: string,
   hashKey: string,
   priority: SpeechPriority,
-  windowMs = 2500,
-  opts: { rate?: number; pitch?: number; onEnd?: () => void } = {},
+  windowMs = 3500,
+  opts: { rate?: number; pitch?: number; onEnd?: () => void; lang?: BELang } = {},
 ) {
   const now = Date.now();
   if (hashKey === lastSpokenHash.key && now - lastSpokenHash.t < windowMs && priority !== 'critical') return;
   lastSpokenHash = { key: hashKey, t: now };
   enqueueSpeech({ text, priority, ...opts });
+}
+
+export function timeSinceLastSpeech() {
+  return Date.now() - lastAnySpeechAt;
 }
 
 export function cancelAllSpeech() {
@@ -119,7 +175,7 @@ function tone(freq: number, durMs: number, pan = 0, gainPeak = 0.25) {
     g.connect(dest);
     const dur = durMs / 1000;
     g.gain.setValueAtTime(0.001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(gainPeak, ctx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(gainPeak * volume, ctx.currentTime + 0.01);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
     o.start();
     o.stop(ctx.currentTime + dur + 0.02);
@@ -134,6 +190,7 @@ export const earcons = {
   pointLeft:  () => tone(700, 80, -0.9, 0.25),
   pointRight: () => tone(700, 80,  0.9, 0.25),
   pointAhead: () => tone(700, 80,  0.0, 0.25),
+  sceneChange: () => { tone(520, 70, 0, 0.18); setTimeout(() => tone(780, 70, 0, 0.18), 80); },
 };
 
 export function vibrate(pattern: number | number[]) {
