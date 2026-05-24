@@ -517,26 +517,24 @@ Deno.serve(async (req) => {
         });
       }
       const fallbackText = deterministicReverseBraille(braille, langCode);
-      if (grade === 1) {
-        return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       try {
         const decoded = await reverseBraille(braille, langName, langCode);
         const refined = await refineDecodedText(decoded, langName, langCode);
-        return new Response(JSON.stringify({ text: refined, original_text: decoded, refined_text: refined, langCode }), {
+        const finalText = (refined && refined.trim()) ? refined : (decoded?.trim() ? decoded : fallbackText);
+        return new Response(JSON.stringify({ text: finalText, original_text: decoded || fallbackText, refined_text: finalText, langCode, grade }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {
         const msg = String(e?.message);
-        if (fallbackText) return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode, fallback: true, fallback_reason: msg }), {
+        console.warn("reverseBraille failed, using deterministic fallback:", msg);
+        if (fallbackText) return new Response(JSON.stringify({ text: fallbackText, original_text: fallbackText, refined_text: fallbackText, langCode, grade, fallback: true, fallback_reason: msg }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
         if (msg === "rate_limited") return new Response(JSON.stringify({ error: "تم تجاوز حد الطلبات. حاول لاحقاً." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (msg === "missing_key") return new Response(JSON.stringify({ error: "مفتاح Gemini غير مهيأ. يرجى إضافة BRAILLE_GEMINI_API_KEY." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         return new Response(JSON.stringify({ error: "فشل فك ترميز بريل. حاول مرة أخرى." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+
     }
 
     // mode === "convert"
