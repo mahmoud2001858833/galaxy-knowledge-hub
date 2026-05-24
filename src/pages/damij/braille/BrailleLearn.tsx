@@ -208,7 +208,7 @@ const BrailleLearn: React.FC = () => {
       </div>
 
       {/* Options */}
-      <div className="grid md:grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 gap-3 mb-4">
         <div className="bg-white rounded-2xl border border-[hsl(var(--damij-primary))]/15 p-3">
           <label className="text-xs font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 mb-1">
             <Globe className="w-4 h-4" /> اللغة
