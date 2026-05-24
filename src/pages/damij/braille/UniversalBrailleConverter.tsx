@@ -255,7 +255,7 @@ const UniversalBrailleConverter: React.FC = () => {
             value={brailleInput}
             onChange={(e) => setBrailleInput(e.target.value)}
             rows={6}
-            placeholder="ألصق نص بريل (⠁⠃⠉ ...) — يدعم المستوى الأول والثاني"
+            placeholder="ألصق نص بريل (⠁⠃⠉ ...) — فك ترميز ذكي بدقة عالية"
             className="w-full p-3 rounded-xl border border-[hsl(var(--damij-primary))]/20 bg-white text-2xl leading-loose font-mono"
             dir="ltr"
             style={{ fontFamily: '"Apple Braille", "Segoe UI Symbol", "Noto Sans Symbols 2", monospace' }}
