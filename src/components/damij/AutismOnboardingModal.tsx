@@ -42,13 +42,12 @@ const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
         }).select('id').maybeSingle();
         profileId = data?.id;
       }
+      const { child_name, age_years, parent_email } = parsed.data;
       localStorage.setItem('autism_active_profile', JSON.stringify({
         profile_id: profileId ?? null,
-        child_name: parsed.data.child_name,
-        age_years: parsed.data.age_years,
-        parent_email: parsed.data.parent_email,
+        child_name, age_years, parent_email,
       }));
-      onSaved({ ...parsed.data, profile_id: profileId });
+      onSaved({ child_name, age_years, parent_email, profile_id: profileId });
     } catch (e: any) {
       toast.error(e?.message || 'تعذّر الحفظ');
     } finally {
