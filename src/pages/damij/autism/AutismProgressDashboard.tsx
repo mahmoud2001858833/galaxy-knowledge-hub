@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Loader2, TrendingUp, Trophy, Target, CalendarCheck, Printer, Download, Search, Filter } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { exportElementToPdf } from '@/lib/pdfExport';
 import { toast } from 'sonner';
@@ -89,6 +89,40 @@ const AutismProgressDashboard: React.FC = () => {
       تحسن: i === 0 ? 0 : row.متوسط - arr[i - 1].متوسط,
     }));
   }, [days, reports]);
+
+  // Radar: 5 core skill domains aggregated from focus_skill_ar
+  const radarData = useMemo(() => {
+    const DOMAINS: { key: string; match: RegExp }[] = [
+      { key: 'انتباه', match: /انتباه|تركيز/ },
+      { key: 'تواصل', match: /تواصل|اجتماع|محادثة|طلب/ },
+      { key: 'مشاعر', match: /مشاعر|انفعال|تعبير/ },
+      { key: 'مرونة', match: /مرونة|تغيير|قاعدة/ },
+      { key: 'تنظيم حسي', match: /حسي|تنظيم|هدوء/ },
+    ];
+    return DOMAINS.map(d => {
+      const matched = days.filter(x => d.match.test(x.focus_skill_ar || ''));
+      const scores = matched.map(x => reports[x.id]?.score).filter((s): s is number => typeof s === 'number');
+      const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      return { domain: d.key, القيمة: avg };
+    });
+  }, [days, reports]);
+
+  // Per-game improvement aggregation
+  const improvementData = useMemo(() => {
+    const acc: Record<string, { gains: number[]; today: number[] }> = {};
+    Object.values(reports).forEach((r: any) => {
+      const ig = r?.improvement_by_game || {};
+      Object.entries(ig).forEach(([gameKey, v]: [string, any]) => {
+        acc[gameKey] = acc[gameKey] || { gains: [], today: [] };
+        if (typeof v?.improvement_pct === 'number') acc[gameKey].gains.push(v.improvement_pct);
+        if (typeof v?.today === 'number') acc[gameKey].today.push(v.today);
+      });
+    });
+    return Object.entries(acc).map(([key, v]) => ({
+      name: key,
+      'التحسن %': v.gains.length ? Math.round(v.gains.reduce((a, b) => a + b, 0) / v.gains.length) : 0,
+    })).sort((a, b) => b['التحسن %'] - a['التحسن %']).slice(0, 12);
+  }, [reports]);
 
   const skills = useMemo(() => Array.from(new Set(days.map(d => d.focus_skill_ar).filter(Boolean))), [days]);
 
@@ -183,6 +217,44 @@ const AutismProgressDashboard: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* Skill Radar */}
+        <section className="print-card bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 mb-6">
+          <h2 className="font-bold text-[hsl(var(--damij-primary))] mb-1">خريطة المهارات الخمس</h2>
+          <p className="text-xs text-slate-500 mb-3">متوسط الأداء في المجالات الأساسية</p>
+          <div className="h-64 sm:h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="domain" tick={{ fontSize: 12 }} />
+                <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                <Radar name="الأداء" dataKey="القيمة" stroke="hsl(var(--damij-primary))" fill="hsl(var(--damij-primary))" fillOpacity={0.35} />
+                <Tooltip />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        {/* Improvement by game */}
+        {improvementData.length > 0 && (
+          <section className="print-card bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 mb-6">
+            <h2 className="font-bold text-[hsl(var(--damij-primary))] mb-1">نسبة التحسن لكل لعبة</h2>
+            <p className="text-xs text-slate-500 mb-3">مقارنة بأول مرة لعبها الطفل</p>
+            <div className="h-64 sm:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={improvementData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="التحسن %" fill="hsl(var(--autism-success, 142 71% 45%))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
+
 
         <section className="print-card bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 mb-6">
           <h2 className="font-bold text-[hsl(var(--damij-primary))] mb-4">متوسط الأداء حسب المهارة</h2>
