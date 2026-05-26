@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Brain, ClipboardList, Calendar, UserCircle, Baby, Sparkles, Heart, Users } from 'lucide-react';
+import { Brain, ClipboardList, Calendar, UserCircle, Sparkles, Heart, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutismAdaptive } from '@/features/autism/ui/AutismAgeAdaptive';
 import DamijSEO from '@/components/damij/DamijSEO';
+import AutismOnboardingModal from '@/components/damij/AutismOnboardingModal';
+import Mascot from '@/features/autism/ui/Mascot';
+import { greetChild } from '@/features/autism/ui/gameFX';
 
 
 interface CardDef {
@@ -39,25 +42,35 @@ const AutismHome: React.FC = () => {
   const navigate = useNavigate();
   const { profile, ageBucket, isYoung, baseTextClass, reduceMotion } = useAutismAdaptive();
   const [activeProgram, setActiveProgram] = useState<{ id: string; share_token: string } | null>(null);
+  const [needsOnboard, setNeedsOnboard] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => { (async () => {
     const raw = localStorage.getItem('autism_active_profile');
-    if (!raw) return;
+    if (!raw) { setNeedsOnboard(true); return; }
     const prof = JSON.parse(raw);
+    if (!prof?.child_name) { setNeedsOnboard(true); return; }
+    if (prof?.child_name) setTimeout(() => greetChild(prof.child_name), 350);
     if (!prof.profile_id) return;
     const { data } = await supabase.from('autism_programs')
       .select('id, share_token').eq('child_profile_id', prof.profile_id).eq('status', 'active').maybeSingle();
     if (data) setActiveProgram(data as any);
-  })(); }, []);
+  })(); }, [refreshKey]);
 
   return (
     <div className="px-4 sm:px-6 pt-12 pb-16 max-w-6xl mx-auto" dir="rtl">
+      <AutismOnboardingModal open={needsOnboard} onSaved={() => { setNeedsOnboard(false); setRefreshKey(k => k + 1); }} />
       <DamijSEO
         title="دعم التوحّد — منصة دامج"
         description="نظام دعم التوحّد من منصة دامج: تشخيص ذكي وفق DSM-5 و M-CHAT-R/F، برنامج علاجي 90 يوماً، مكتبة ألعاب تفاعلية، وملف تقدّم الطفل."
         path="/damij/autism"
         keywords="التوحد, تشخيص التوحد, علاج التوحد, DSM-5, M-CHAT, منصة دامج التوحد"
       />
+      {profile?.child_name && (
+        <div className="mb-6 flex justify-center">
+          <Mascot childName={profile.child_name} message="جاهز لبدء يوم جديد من المرح والتعلّم؟" />
+        </div>
+      )}
       {/* Hero */}
       <header className="text-center mb-10 sm:mb-12">
         <div
