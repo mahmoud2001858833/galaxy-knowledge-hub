@@ -928,6 +928,8 @@ export type Database = {
           functional_profile: string | null
           id: string
           last_report: Json | null
+          parent_email: string | null
+          parent_phone: string | null
           support_level: number | null
           updated_at: string
           user_id: string
@@ -941,6 +943,8 @@ export type Database = {
           functional_profile?: string | null
           id?: string
           last_report?: Json | null
+          parent_email?: string | null
+          parent_phone?: string | null
           support_level?: number | null
           updated_at?: string
           user_id: string
@@ -954,6 +958,8 @@ export type Database = {
           functional_profile?: string | null
           id?: string
           last_report?: Json | null
+          parent_email?: string | null
+          parent_phone?: string | null
           support_level?: number | null
           updated_at?: string
           user_id?: string
@@ -965,6 +971,7 @@ export type Database = {
           day_id: string
           generated_at: string
           id: string
+          improvement_by_game: Json | null
           raw: Json | null
           recommendations_ar: Json | null
           score: number | null
@@ -977,6 +984,7 @@ export type Database = {
           day_id: string
           generated_at?: string
           id?: string
+          improvement_by_game?: Json | null
           raw?: Json | null
           recommendations_ar?: Json | null
           score?: number | null
@@ -989,6 +997,7 @@ export type Database = {
           day_id?: string
           generated_at?: string
           id?: string
+          improvement_by_game?: Json | null
           raw?: Json | null
           recommendations_ar?: Json | null
           score?: number | null
@@ -1006,6 +1015,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      autism_email_log: {
+        Row: {
+          child_profile_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          metadata: Json | null
+          provider_message_id: string | null
+          recipient_email: string
+          status: string
+          subject: string | null
+          user_id: string | null
+        }
+        Insert: {
+          child_profile_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          metadata?: Json | null
+          provider_message_id?: string | null
+          recipient_email: string
+          status?: string
+          subject?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          child_profile_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json | null
+          provider_message_id?: string | null
+          recipient_email?: string
+          status?: string
+          subject?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       autism_game_moves: {
         Row: {
