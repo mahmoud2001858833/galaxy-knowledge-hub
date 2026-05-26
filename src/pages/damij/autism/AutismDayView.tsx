@@ -92,6 +92,48 @@ const AutismDayView: React.FC = () => {
       if (data?.error) throw new Error(data.error);
       toast.success('تم إنشاء تقرير اليوم');
       await load();
+      // Auto-email parent with daily summary
+      try {
+        const profRaw = localStorage.getItem('autism_active_profile');
+        const prof = profRaw ? JSON.parse(profRaw) : null;
+        if (prof?.parent_email) {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { data: sess } = await supabase
+            .from('autism_game_sessions')
+            .select('template_id, accuracy, duration_sec, program_game_id')
+            .eq('day_id', dayId)
+            .eq('user_id', user?.id ?? '');
+          const gameMap = new Map(games.map(g => [g.id, g]));
+          const summaries = (sess || []).map((s: any) => {
+            const g = gameMap.get(s.program_game_id);
+            return {
+              title: g?.title_ar || s.template_id,
+              accuracy: s.accuracy ?? 0,
+              duration_sec: s.duration_sec ?? 0,
+            };
+          });
+          await supabase.functions.invoke('autism-email-report', {
+            body: {
+              kind: 'daily',
+              child_name: prof.child_name || 'طفلك',
+              parent_email: prof.parent_email,
+              day_index: day?.day_index,
+              summary_ar: data?.report?.summary_ar,
+              strengths_ar: data?.report?.strengths_ar,
+              weaknesses_ar: data?.report?.weaknesses_ar,
+              recommendations_ar: data?.report?.recommendations_ar,
+              games: summaries,
+            },
+          });
+          if (user) {
+            await supabase.from('autism_email_log').insert({
+              user_id: user.id, recipient_email: prof.parent_email,
+              kind: 'daily', subject: `تقرير اليوم ${day?.day_index} — ${prof.child_name}`, status: 'sent',
+            });
+          }
+          toast.success('تم إرسال تقرير اليوم لولي الأمر 📧');
+        }
+      } catch (mailErr) { console.warn('daily email failed', mailErr); }
     } catch (e: any) { toast.error(e?.message ?? 'تعذّر التحليل'); }
     finally { setGeneratingReport(false); }
   };
