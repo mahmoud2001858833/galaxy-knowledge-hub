@@ -90,6 +90,40 @@ const AutismProgressDashboard: React.FC = () => {
     }));
   }, [days, reports]);
 
+  // Radar: 5 core skill domains aggregated from focus_skill_ar
+  const radarData = useMemo(() => {
+    const DOMAINS: { key: string; match: RegExp }[] = [
+      { key: 'انتباه', match: /انتباه|تركيز/ },
+      { key: 'تواصل', match: /تواصل|اجتماع|محادثة|طلب/ },
+      { key: 'مشاعر', match: /مشاعر|انفعال|تعبير/ },
+      { key: 'مرونة', match: /مرونة|تغيير|قاعدة/ },
+      { key: 'تنظيم حسي', match: /حسي|تنظيم|هدوء/ },
+    ];
+    return DOMAINS.map(d => {
+      const matched = days.filter(x => d.match.test(x.focus_skill_ar || ''));
+      const scores = matched.map(x => reports[x.id]?.score).filter((s): s is number => typeof s === 'number');
+      const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      return { domain: d.key, القيمة: avg };
+    });
+  }, [days, reports]);
+
+  // Per-game improvement aggregation
+  const improvementData = useMemo(() => {
+    const acc: Record<string, { gains: number[]; today: number[] }> = {};
+    Object.values(reports).forEach((r: any) => {
+      const ig = r?.improvement_by_game || {};
+      Object.entries(ig).forEach(([gameKey, v]: [string, any]) => {
+        acc[gameKey] = acc[gameKey] || { gains: [], today: [] };
+        if (typeof v?.improvement_pct === 'number') acc[gameKey].gains.push(v.improvement_pct);
+        if (typeof v?.today === 'number') acc[gameKey].today.push(v.today);
+      });
+    });
+    return Object.entries(acc).map(([key, v]) => ({
+      name: key,
+      'التحسن %': v.gains.length ? Math.round(v.gains.reduce((a, b) => a + b, 0) / v.gains.length) : 0,
+    })).sort((a, b) => b['التحسن %'] - a['التحسن %']).slice(0, 12);
+  }, [reports]);
+
   const skills = useMemo(() => Array.from(new Set(days.map(d => d.focus_skill_ar).filter(Boolean))), [days]);
 
   const filteredDays = useMemo(() => {
