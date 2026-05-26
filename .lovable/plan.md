@@ -1,73 +1,67 @@
-# Blind Eye — Major upgrade plan
+## تحسين نظام التوحّد — خطة شاملة
 
-Goal: make Blind Eye feel professional and bilingual — English by default with Arabic toggle, sub-3-second initial and on-motion scene analysis with grid points on everything, cleaner voice commands without repetition, and a smarter chat that suggests next actions and switches language on demand with high-quality pronunciation.
+### 1) الواجهة الرئيسية (`AutismHome.tsx`)
+- إعادة تصميم البطاقات بأنيميشن أكثر حيوية (تأثير "نبض" خفيف على بطاقة "ابدأ الآن")، أيقونات أكبر، تدرّجات أنعم، خلفية متحرّكة هادئة (فقاعات/نجوم).
+- **اشتراط اسم الطفل قبل أي شيء**: لو ما في `autism_active_profile` ⇒ مودال إجباري يطلب اسم الطفل + عمره + بريد ولي الأمر، يُحفظ في `localStorage` و(إن كان مسجّل دخول) في `autism_child_profiles`.
+- إضافة شريط ترحيب شخصي: «أهلاً يا {الاسم} 👋» مع رسم متحرّك يحمل اسم الطفل (للجذب).
+- اختصارات سريعة: «العب الآن»، «تقريري اليومي»، «أرسل لولي الأمر».
 
----
+### 2) الألعاب — جذب الانتباه + استخدام الاسم
+لكل لعبة من القوالب الـ12 في `src/features/autism/games/templates/`:
+- إضافة **TTS ترحيبي** ينطق اسم الطفل في البداية والنهاية («أحسنت يا أحمد!»).
+- مؤثّرات صوتية مرحة (نقر/نجاح/فشل) + اهتزاز Haptics على النجاح.
+- جسيمات نجوم/قلوب عند الإنجاز (canvas-confetti).
+- شريط تقدّم ملوّن متحرّك أعلى الشاشة.
+- شخصية مرشد (Mascot) ثابتة (دب/نجم) تظهر التعليمات بفقاعة حوار وتذكر اسم الطفل.
+- ميزة Difficulty تتدرّج تلقائياً داخل الجلسة (Adaptive): تزيد بعد 3 نجاحات متتالية، تنقص بعد فشلين.
 
-## 1. Bilingual language system (English default + Arabic)
+### 3) تنويع ألعاب التشخيص والعلاج
+- **5 ألعاب تشخيصية ثابتة للجميع** (نقطة الانطلاق الموحّدة):
+  1. `name_response` — استجابة للاسم (تستخدم اسم الطفل فعلياً).
+  2. `bubble_tracking` — انتباه بصري.
+  3. `emotion_cards` — تمييز انفعالات.
+  4. `look_with_me` — انتباه مشترك.
+  5. `magic_mirror` — تقليد.
+- بعد انتهاء الخمسة، تُرسل النتائج (دقّة + زمن استجابة + raw metrics) إلى edge function جديدة `autism-personalize-diagnostic` تُرجع **بطارية مخصّصة** من 4–6 ألعاب إضافية مختارة من قوالب الـ12 مع `difficulty` و`duration_sec` و`adaptations_ar` مصمّمة على ضعف/قوة كل طفل.
+- نفس المنطق يُستخدم لاحقاً لتوليد ألعاب البرنامج العلاجي اليومي عبر `autism-generate-program` المحدّث (يقرأ آخر نتائج الطفل من `autism_game_sessions` قبل توليد اليوم التالي).
 
-- Add a `BlindEyeLangContext` (`'en' | 'ar'`) stored in `localStorage`, default `'en'`.
-- Build a single strings table `src/pages/damij/blind-eye/i18n.ts` covering: UI labels (Back, Stop, Eyes off, Companion, Listening…), system messages ("Camera ready", "Aligning…", "Stopped"…), spoken phrases (`scanning area now`, `stop!`, `clear path`), and chat suggestions.
-- Header gets a clean `EN | AR` toggle (large, single tap). Toggling:
-  - Updates UI text instantly.
-  - Switches the SpeechRecognition lang (`en-US` ↔ `ar-SA`).
-  - Switches TTS voice (best `en-US`/`en-GB` voice with `Google`/`Microsoft Natural` preference for English, best `ar-SA`/`ar-EG` voice for Arabic — see §4).
-  - Sends `lang` in every edge-function call so AI replies in that language.
-- Voice command "switch to Arabic" / "حوّل للعربية" toggles the language in one step and the next sentence is spoken in the new language.
+### 4) تقرير فوري + رسم بياني + بريد لولي الأمر
+عند انتهاء أي جلسة ألعاب (تشخيص أو علاج):
+- يُعرض **ReportView محسّن** فوراً يحتوي:
+  - بطاقات مؤشّرات (دقّة، زمن، مستوى انتباه، تنظيم حسّي).
+  - رسم Radar (Recharts) للنطاقات الخمسة (تواصل/تكرار/حسّي/لغة/لعب).
+  - رسم Bar لنسبة التحسّن لكل لعبة مقارنة بآخر 3 جلسات.
+  - زرّ «📧 أرسل لولي الأمر».
+- Edge function جديدة `autism-email-report`:
+  - يستقبل `child_profile_id` + `session_ids` + `parent_email`.
+  - يولّد HTML بتنسيق رسوم SVG مدمجة (chart-as-svg) + ملخّص AI عربي.
+  - يرسل عبر **Resend** (يحتاج `RESEND_API_KEY` — سأطلبه من المستخدم قبل التنفيذ).
+- إرسال تلقائي اختياري عند نهاية كل **يوم علاجي كامل**: ملخّص اليوم + نسبة التحسّن لكل لعبة + المجموع اليومي + توصيات الغد.
 
-## 2. Sub-3s initial scan + grid points on everything
+### 5) البرنامج العلاجي — تحسينات
+- جدول يومي ديناميكي: عدد الألعاب يتكيّف مع تركيز الطفل (5–10).
+- بعد كل يوم: `autism-analyze-day` يحسب `improvement_pct` لكل لعبة (مقارنة باليوم السابق) ويخزّنها في `autism_day_reports.metrics.improvement_by_game`.
+- لوحة تقدّم (`AutismProgressDashboard`) تعرض:
+  - منحنى تطوّر أسبوعي.
+  - أعلى 3 مهارات تحسّنت / أقل 3 مهارات.
+  - زر تنزيل/إرسال تقرير أسبوعي PDF لولي الأمر.
 
-- Calibration is now optional and capped at 1 quick attempt (was 3). The phase becomes `guiding` within ~700 ms if usable.
-- On `guiding` start, immediately fire one `points` AI call AND show a 3×3 + 4×4 hybrid HUD grid driven by the local-vision motion/edge cells so the user sees feedback before AI replies.
-- Reduce first AI tick latency:
-  - Smaller first frame (256 px wide, JPEG 0.45) to shave network time.
-  - Run local vision and AI request in parallel, render local points immediately, replace with AI labels when they land.
-- HUD: every active cell gets a labeled dot; when AI returns objects, dots upgrade to bounding boxes with name + hazard color. Dots fade after 1.2 s of inactivity so the overlay stays "alive".
+### 6) قاعدة البيانات
+ترحيل واحد يضيف:
+- `autism_child_profiles.parent_email TEXT`، `parent_phone TEXT`.
+- جدول جديد `autism_email_log` (message_id, recipient_email, kind: session|daily|weekly, status, child_profile_id, created_at) + GRANT + RLS (المالك فقط، service_role كامل).
+- عمود `autism_day_reports.improvement_by_game JSONB`.
 
-## 3. Fast re-detection on camera movement (<3s)
+### 7) الملفّات المتأثّرة
+- **جديد**: `supabase/functions/autism-personalize-diagnostic/index.ts`, `supabase/functions/autism-email-report/index.ts`, `src/features/autism/ui/Mascot.tsx`, `src/features/autism/ui/GameFX.tsx` (confetti + sound + tts helper), `src/features/autism/ReportView.tsx` (تحديث جوهري بـ Recharts), `src/components/damij/AutismOnboardingModal.tsx`.
+- **تحديث**: `AutismHome.tsx`, `AutismDiagnosis.tsx` (تثبيت 5 ألعاب موحّدة ثم استدعاء التخصيص), `AutismGamePlayer.tsx` (دمج Mascot/FX/الإرسال الفوري), `AutismDayView.tsx` (إرسال نهاية اليوم), `AutismProgressDashboard.tsx`, جميع `templates/*.tsx` (إضافة اسم الطفل + FX), `autism-generate-program/index.ts`, `autism-analyze-day/index.ts`.
 
-- Lower the scene-change threshold from `0.45` → `0.28` and add a second trigger from gyroscope/`devicemotion` (camera rotation > ~15°/s) so we react to panning, not just pixel motion.
-- When a scene change fires:
-  - Cancel in-flight `descriptive` AI calls.
-  - Force a `points` tick with `minGap` 250 ms.
-  - Re-render HUD points from local cells instantly while AI catches up.
-- AI tick gap during motion: 350 ms (was 700 ms for medium proximity).
-- Add a small "scanning…" earcon + a short spoken cue ("scanning"/"أمسح") only once per scene change, not per tick.
+### 8) سرّ مطلوب
+- **`RESEND_API_KEY`** للبريد. سأطلبه عبر أداة الأسرار فور الانتقال لوضع التنفيذ — بدونه لن تعمل ميزة إرسال التقرير، وكلّ شيء آخر سيعمل.
 
-## 4. Better speech: organized, non-repeating, richer voices
+### خارج النطاق
+- تطبيق ولي الأمر منفصل / إشعارات Push.
+- تكامل WhatsApp.
+- ترجمة الواجهة لغير العربية.
 
-- **Voice command parser** (new file `voiceCommands.ts`) replaces the regex chain. It returns an enum:
-  - `STOP`, `START`, `REPEAT`, `SCAN_AREA`, `WHATS_AROUND`, `READ_TEXT`, `SWITCH_LANG`, `SLOWER`, `FASTER`, `QUIETER`, `LOUDER`, `HELP`, `CHAT` (fallback).
-  - Each entry has both English and Arabic phrasings.
-  - Includes a 1.2 s debounce per command id so the same recognized utterance isn't acted on twice.
-- **Speech queue improvements** (`speechQueue.ts`):
-  - Stronger dedup window for `descriptive` (3.5 s) and `directional` (2 s).
-  - Coalesce same-direction guidance ("clear path ahead" repeated → spoken only every 6 s if unchanged).
-  - "Heartbeat" suppression: if nothing meaningful has changed for 8 s, stay silent (earcons only).
-  - Drop the redundant scan/earcon sound when TTS is about to speak.
-- **Voice quality**:
-  - Pick best available voice: prefer `Microsoft … Online (Natural)`, `Google …`, then platform default; cache per language.
-  - Tune `rate` per language (English 1.05, Arabic 0.98) and add a slight pitch bump on hazards for clarity.
-  - Optional upgrade: route critical/long sentences through the existing `accessibility-text-to-speech` ElevenLabs function (using `Sarah` for English, `Brian`/multilingual for Arabic) while keeping browser TTS as instant fallback — same pattern just used in `SensoryUpload`.
-
-## 5. Smarter chat with suggestions
-
-- `blind-eye-chat` edge function gets:
-  - A `lang` param ('en' | 'ar') and a system prompt instructing it to answer in that language, concisely (≤ 2 short sentences), and to always include 2–3 short `suggestions` (next things the user could ask — "describe the wall ahead", "read the sign", "is the door open?").
-  - Tool-call response so we get structured `{ spoken, suggestions[] }`.
-- HUD shows the last 3 suggestions as small chips at the bottom; tapping a chip (or saying it) runs it. They auto-refresh after each scene change.
-- Chat history is trimmed to the last 4 turns and includes the current `obstacles_summary` + `best_path` so replies stay grounded in what the camera actually sees.
-
----
-
-## Technical notes
-
-- Files touched: `BlindEyeNavigator.tsx`, `speechQueue.ts`, `HudOverlay.tsx`, `localVision.ts`, new `i18n.ts`, new `voiceCommands.ts`, new `BlindEyeLangContext.tsx`, edge function `blind-eye-vision/index.ts` (accept `lang`, return `spoken` in chosen language), edge function `blind-eye-chat/index.ts` (accept `lang`, return suggestions via tool call).
-- No DB or schema changes.
-- Lovable AI Gateway remains the only AI backend for Blind Eye (per the existing exception).
-- Keeps all current safety behaviors: hazard earcons, vibration, critical-priority preemption, rate-limit/credit error toasts.
-
-## Out of scope
-
-- Offline on-device object detection (would need a separate WebGPU/ONNX integration).
-- Persisting user language/voice preference to the backend (kept in `localStorage` only).
+هل أبدأ التنفيذ بهذا الترتيب؟
