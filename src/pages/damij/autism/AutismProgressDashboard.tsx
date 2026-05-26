@@ -218,6 +218,44 @@ const AutismProgressDashboard: React.FC = () => {
           )}
         </section>
 
+        {/* Skill Radar */}
+        <section className="print-card bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 mb-6">
+          <h2 className="font-bold text-[hsl(var(--damij-primary))] mb-1">خريطة المهارات الخمس</h2>
+          <p className="text-xs text-slate-500 mb-3">متوسط الأداء في المجالات الأساسية</p>
+          <div className="h-64 sm:h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="domain" tick={{ fontSize: 12 }} />
+                <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                <Radar name="الأداء" dataKey="القيمة" stroke="hsl(var(--damij-primary))" fill="hsl(var(--damij-primary))" fillOpacity={0.35} />
+                <Tooltip />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        {/* Improvement by game */}
+        {improvementData.length > 0 && (
+          <section className="print-card bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 mb-6">
+            <h2 className="font-bold text-[hsl(var(--damij-primary))] mb-1">نسبة التحسن لكل لعبة</h2>
+            <p className="text-xs text-slate-500 mb-3">مقارنة بأول مرة لعبها الطفل</p>
+            <div className="h-64 sm:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={improvementData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="التحسن %" fill="hsl(var(--autism-success, 142 71% 45%))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
+
+
         <section className="print-card bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 mb-6">
           <h2 className="font-bold text-[hsl(var(--damij-primary))] mb-4">متوسط الأداء حسب المهارة</h2>
           {barData.length === 0 ? (
