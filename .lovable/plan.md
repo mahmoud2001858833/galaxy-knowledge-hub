@@ -1,67 +1,58 @@
-## تحسين نظام التوحّد — خطة شاملة
+## خطة الإكمال والربط لنظام التوحد
 
-### 1) الواجهة الرئيسية (`AutismHome.tsx`)
-- إعادة تصميم البطاقات بأنيميشن أكثر حيوية (تأثير "نبض" خفيف على بطاقة "ابدأ الآن")، أيقونات أكبر، تدرّجات أنعم، خلفية متحرّكة هادئة (فقاعات/نجوم).
-- **اشتراط اسم الطفل قبل أي شيء**: لو ما في `autism_active_profile` ⇒ مودال إجباري يطلب اسم الطفل + عمره + بريد ولي الأمر، يُحفظ في `localStorage` و(إن كان مسجّل دخول) في `autism_child_profiles`.
-- إضافة شريط ترحيب شخصي: «أهلاً يا {الاسم} 👋» مع رسم متحرّك يحمل اسم الطفل (للجذب).
-- اختصارات سريعة: «العب الآن»، «تقريري اليومي»، «أرسل لولي الأمر».
+### 1. ربط تدفق التشخيص الذكي (Diagnostic Flow)
+- **`AutismDiagnosis.tsx`**: عرض الألعاب الخمس الثابتة بالترتيب، تتبع التقدم، وعند الانتهاء استدعاء `autism-personalize-diagnostic` لتوليد بطارية الألعاب المخصصة (4–6 ألعاب).
+- حفظ نتائج كل لعبة في `autism_game_sessions` مع `is_baseline=true` للخمسة الأولى.
+- بعد التخصيص: عرض شاشة "ألعابك المخصصة" مع تشغيل تلقائي للأولى، واستخدام اسم الطفل في الترحيب.
+- إرسال تقرير "نتائج التشخيص" لولي الأمر تلقائياً عبر `autism-email-report` (kind=`session` ملخّص).
 
-### 2) الألعاب — جذب الانتباه + استخدام الاسم
-لكل لعبة من القوالب الـ12 في `src/features/autism/games/templates/`:
-- إضافة **TTS ترحيبي** ينطق اسم الطفل في البداية والنهاية («أحسنت يا أحمد!»).
-- مؤثّرات صوتية مرحة (نقر/نجاح/فشل) + اهتزاز Haptics على النجاح.
-- جسيمات نجوم/قلوب عند الإنجاز (canvas-confetti).
-- شريط تقدّم ملوّن متحرّك أعلى الشاشة.
-- شخصية مرشد (Mascot) ثابتة (دب/نجم) تظهر التعليمات بفقاعة حوار وتذكر اسم الطفل.
-- ميزة Difficulty تتدرّج تلقائياً داخل الجلسة (Adaptive): تزيد بعد 3 نجاحات متتالية، تنقص بعد فشلين.
+### 2. ربط `AutismGamePlayer` مع المخصصات
+- قراءة `difficulty` و`adaptations_ar` و`duration_sec` من سجل اللعبة المخصصة.
+- تمرير هذه القيم لقوالب الألعاب الـ12 (props موحّدة: `childName`, `difficulty`, `adaptations`, `duration`).
+- التكيّف التلقائي: زيادة الصعوبة بعد 3 نجاحات متتالية، تخفيضها بعد فشلين (يحفظ في `autism_game_sessions.metadata`).
 
-### 3) تنويع ألعاب التشخيص والعلاج
-- **5 ألعاب تشخيصية ثابتة للجميع** (نقطة الانطلاق الموحّدة):
-  1. `name_response` — استجابة للاسم (تستخدم اسم الطفل فعلياً).
-  2. `bubble_tracking` — انتباه بصري.
-  3. `emotion_cards` — تمييز انفعالات.
-  4. `look_with_me` — انتباه مشترك.
-  5. `magic_mirror` — تقليد.
-- بعد انتهاء الخمسة، تُرسل النتائج (دقّة + زمن استجابة + raw metrics) إلى edge function جديدة `autism-personalize-diagnostic` تُرجع **بطارية مخصّصة** من 4–6 ألعاب إضافية مختارة من قوالب الـ12 مع `difficulty` و`duration_sec` و`adaptations_ar` مصمّمة على ضعف/قوة كل طفل.
-- نفس المنطق يُستخدم لاحقاً لتوليد ألعاب البرنامج العلاجي اليومي عبر `autism-generate-program` المحدّث (يقرأ آخر نتائج الطفل من `autism_game_sessions` قبل توليد اليوم التالي).
+### 3. تحديث قوالب الألعاب الـ12
+- إضافة المؤثرات الموحّدة (`gameFX`: TTS باسم الطفل، confetti، أصوات نجاح).
+- إضافة `Mascot` ثابت يعطي تعليمات قبل/أثناء/بعد اللعب.
+- ضمان أن كل لعبة تُرجع `{accuracy, duration, reactions, errors}` بشكل موحّد للتقارير.
 
-### 4) تقرير فوري + رسم بياني + بريد لولي الأمر
-عند انتهاء أي جلسة ألعاب (تشخيص أو علاج):
-- يُعرض **ReportView محسّن** فوراً يحتوي:
-  - بطاقات مؤشّرات (دقّة، زمن، مستوى انتباه، تنظيم حسّي).
-  - رسم Radar (Recharts) للنطاقات الخمسة (تواصل/تكرار/حسّي/لغة/لعب).
-  - رسم Bar لنسبة التحسّن لكل لعبة مقارنة بآخر 3 جلسات.
-  - زرّ «📧 أرسل لولي الأمر».
-- Edge function جديدة `autism-email-report`:
-  - يستقبل `child_profile_id` + `session_ids` + `parent_email`.
-  - يولّد HTML بتنسيق رسوم SVG مدمجة (chart-as-svg) + ملخّص AI عربي.
-  - يرسل عبر **Resend** (يحتاج `RESEND_API_KEY` — سأطلبه من المستخدم قبل التنفيذ).
-- إرسال تلقائي اختياري عند نهاية كل **يوم علاجي كامل**: ملخّص اليوم + نسبة التحسّن لكل لعبة + المجموع اليومي + توصيات الغد.
+### 4. تحديث `autism-generate-program` (البرنامج العلاجي اليومي)
+- يقرأ آخر تقرير تشخيصي + نتائج آخر 3 أيام من `autism_day_reports`.
+- يولّد 5–10 ألعاب لكل يوم (الأضعف يُكرّر، الأقوى يتقدّم بصعوبة).
+- يحفظ في `autism_program_days` مع `focus_skill_ar` و`rationale_ar`.
 
-### 5) البرنامج العلاجي — تحسينات
-- جدول يومي ديناميكي: عدد الألعاب يتكيّف مع تركيز الطفل (5–10).
-- بعد كل يوم: `autism-analyze-day` يحسب `improvement_pct` لكل لعبة (مقارنة باليوم السابق) ويخزّنها في `autism_day_reports.metrics.improvement_by_game`.
-- لوحة تقدّم (`AutismProgressDashboard`) تعرض:
-  - منحنى تطوّر أسبوعي.
-  - أعلى 3 مهارات تحسّنت / أقل 3 مهارات.
-  - زر تنزيل/إرسال تقرير أسبوعي PDF لولي الأمر.
+### 5. تحديث `autism-analyze-day` + `improvement_by_game`
+- يحسب نسبة التحسن لكل لعبة مقارنة بأول جلسة لها (baseline).
+- يخزن JSON في `autism_day_reports.improvement_by_game`: `{game_key: {baseline, today, improvement_pct}}`.
+- بعد التحليل: استدعاء `autism-email-report` (kind=`daily`) تلقائياً لإرسال تقرير اليوم لولي الأمر.
 
-### 6) قاعدة البيانات
-ترحيل واحد يضيف:
-- `autism_child_profiles.parent_email TEXT`، `parent_phone TEXT`.
-- جدول جديد `autism_email_log` (message_id, recipient_email, kind: session|daily|weekly, status, child_profile_id, created_at) + GRANT + RLS (المالك فقط، service_role كامل).
-- عمود `autism_day_reports.improvement_by_game JSONB`.
+### 6. ترقية `AutismProgressDashboard` (Recharts)
+- **Radar Chart**: 5 مهارات أساسية (انتباه، تواصل، مشاعر، حركة، لغة) — متوسط آخر 7 أيام.
+- **Bar Chart**: نسبة التحسن لكل لعبة.
+- **Line Chart**: الاتجاه الأسبوعي للنقاط الإجمالية.
+- بطاقات: أعلى 3 مهارات، أدنى 3 مهارات، أفضل يوم.
+- زر "إرسال تقرير أسبوعي" يستدعي `autism-email-report` (kind=`weekly`).
 
-### 7) الملفّات المتأثّرة
-- **جديد**: `supabase/functions/autism-personalize-diagnostic/index.ts`, `supabase/functions/autism-email-report/index.ts`, `src/features/autism/ui/Mascot.tsx`, `src/features/autism/ui/GameFX.tsx` (confetti + sound + tts helper), `src/features/autism/ReportView.tsx` (تحديث جوهري بـ Recharts), `src/components/damij/AutismOnboardingModal.tsx`.
-- **تحديث**: `AutismHome.tsx`, `AutismDiagnosis.tsx` (تثبيت 5 ألعاب موحّدة ثم استدعاء التخصيص), `AutismGamePlayer.tsx` (دمج Mascot/FX/الإرسال الفوري), `AutismDayView.tsx` (إرسال نهاية اليوم), `AutismProgressDashboard.tsx`, جميع `templates/*.tsx` (إضافة اسم الطفل + FX), `autism-generate-program/index.ts`, `autism-analyze-day/index.ts`.
+### 7. تحسينات `ReportView` (داخل التطبيق)
+- نفس المخططات (Radar + Bar) بصيغة مبسّطة.
+- تظهر مباشرة بعد إنهاء اليوم مع زر "إرسال لولي الأمر".
 
-### 8) سرّ مطلوب
-- **`RESEND_API_KEY`** للبريد. سأطلبه عبر أداة الأسرار فور الانتقال لوضع التنفيذ — بدونه لن تعمل ميزة إرسال التقرير، وكلّ شيء آخر سيعمل.
+### الملفات المتأثرة
 
-### خارج النطاق
-- تطبيق ولي الأمر منفصل / إشعارات Push.
-- تكامل WhatsApp.
-- ترجمة الواجهة لغير العربية.
+**تحديث:**
+- `src/pages/damij/autism/AutismDiagnosis.tsx`
+- `src/pages/damij/autism/AutismGamePlayer.tsx`
+- `src/pages/damij/autism/AutismProgressDashboard.tsx`
+- `src/features/autism/games/*` (12 قالب)
+- `supabase/functions/autism-generate-program/index.ts`
+- `supabase/functions/autism-analyze-day/index.ts`
 
-هل أبدأ التنفيذ بهذا الترتيب؟
+**إنشاء:**
+- `src/features/autism/ui/ReportView.tsx`
+- `src/features/autism/games/shared/GameShell.tsx` (غلاف موحّد للألعاب)
+
+### خارج النطاق (كما اتفقنا سابقاً)
+- تطبيق ولي الأمر المنفصل، WhatsApp، الإشعارات Push، الترجمة لغير العربية.
+
+### ملاحظة
+- `RESEND_API_KEY` متوفر ✅، الإيميل سيُرسل من `onboarding@resend.dev` ما لم تربط دومين مخصص.
