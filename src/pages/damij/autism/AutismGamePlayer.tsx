@@ -217,6 +217,8 @@ const AutismGamePlayer: React.FC = () => {
             difficulty={game.difficulty}
             durationSec={game.duration_sec}
             instructions={game.instructions_ar}
+            childName={childName}
+            adaptations={game.adaptations_ar}
             onComplete={handleComplete}
             onSkip={handleSkip}
           />
