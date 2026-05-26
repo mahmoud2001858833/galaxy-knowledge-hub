@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { exportElementToPdf } from '@/lib/pdfExport';
+import EmailReportDialog from '@/features/clinical/ui/EmailReportDialog';
 
 const ClinicalReport: React.FC = () => {
   const { reportId } = useParams();
@@ -53,6 +54,7 @@ const ClinicalReport: React.FC = () => {
         <a href={`/clinical/r/${r.share_token}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-white border text-sm flex items-center gap-1">
           <ExternalLink className="w-4 h-4" /> الصفحة العامة
         </a>
+        <EmailReportDialog reportId={r.id} />
         <button onClick={exportPdf} disabled={exporting} className="px-3 py-1.5 rounded-lg bg-[hsl(var(--damij-primary))] text-white text-sm font-bold flex items-center gap-1">
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} تصدير PDF
         </button>
