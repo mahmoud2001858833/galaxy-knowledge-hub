@@ -2,6 +2,8 @@ export interface GameTemplateProps {
   difficulty?: 'easy' | 'medium' | 'hard';
   durationSec?: number;
   instructions?: string;
+  childName?: string;
+  adaptations?: string[];
   onComplete: (metrics: { accuracy: number; raw?: Record<string, number> }, durationMs: number) => void;
   onSkip?: () => void;
 }
