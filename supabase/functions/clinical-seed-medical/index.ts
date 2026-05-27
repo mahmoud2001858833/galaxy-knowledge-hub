@@ -120,8 +120,15 @@ Deno.serve(async (req) => {
         const need = Math.min(4, TARGET_PROTOCOLS - pExist);
         try {
           const out = await callGemini(
-            'أنت مرجع طبي. أرجِع JSON فقط.',
-            `أنشئ ${need} بروتوكولاً سريرياً قياسياً في تخصص "${sp.ar}" (مثل: ACLS، فحص العمود الفقري، DKA management...). لكل بروتوكول: code، name_ar، short_ar، goal_ar، steps (5-8 خطوات لكل خطوة title_ar/instruction_ar/duration_sec/success_ar)، reference_ar.`,
+            'أنت استشاري طبي ومرجع للبروتوكولات السريرية. أرجِع JSON فقط.',
+            `أنشئ ${need} بروتوكولاً سريرياً قياسياً مختلفاً في تخصص "${sp.ar}" (مثل: ACLS، DKA management، Asthma exacerbation، Stroke code، Sepsis bundle، NIPT، فحص جسدي شامل...). لكل بروتوكول:
+- code فريد
+- name_ar
+- short_ar وصف مختصر
+- goal_ar الهدف السريري
+- steps (6-10 خطوات منطقية بالترتيب)، لكل خطوة: title_ar، instruction_ar (تعليمات تنفيذية واضحة)، duration_sec (تقدير زمني)، success_ar (معيار نجاح)
+- reference_ar (AHA/ESC/NICE/UpToDate/WHO/CDC)
+نوّع بين بروتوكولات الطوارئ والتشخيص والعلاج.`,
             PROTOCOLS_SCHEMA
           );
           const rows = (out.items || []).map((it: any) => ({
