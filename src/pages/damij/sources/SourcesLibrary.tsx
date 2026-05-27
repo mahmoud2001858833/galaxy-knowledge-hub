@@ -1,37 +1,156 @@
-import React from 'react';
-import { BookMarked, ExternalLink } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { BookMarked, ExternalLink, Search, Filter } from 'lucide-react';
+import { SOURCES, CATEGORY_LABELS, SOURCE_COUNT, type SourceCategory } from './sourcesData';
 
-const sources = [
-  { t: 'DSM-5-TR (APA, 2022)', d: 'الدليل التشخيصي والإحصائي للاضطرابات النفسية — المرجع المعتمد عالمياً.', tag: 'توحّد · ADHD' },
-  { t: 'M-CHAT-R/F', d: 'أداة فحص التوحّد المعدّلة للأطفال (Robins et al., 2014).', tag: 'فحص توحّد' },
-  { t: 'ADOS-2', d: 'مقياس ملاحظة تشخيص التوحّد — المعيار الذهبي للتشخيص.', tag: 'تشخيص توحّد' },
-  { t: 'Conners-3 / Vanderbilt', d: 'مقاييس تقييم ADHD المعتمدة من AAP.', tag: 'ADHD' },
-  { t: 'WHO ICF-CY', d: 'التصنيف الدولي لوظائف الأطفال واليافعين.', tag: 'إعاقة' },
-  { t: 'UNESCO Inclusive Education Guidelines', d: 'الدليل المرجعي للتعليم الدامج.', tag: 'سياسات' },
-  { t: 'Unicode Braille (ISO/TR 11548)', d: 'المعيار العالمي لترميز بريل.', tag: 'بريل' },
-  { t: 'WFD — World Federation of the Deaf', d: 'معايير لغات الإشارة العالمية.', tag: 'إشارة' },
-];
+const TYPE_LABEL: Record<string, string> = {
+  guideline: 'إرشادات',
+  research: 'بحث',
+  book: 'كتاب',
+  standard: 'معيار',
+  tool: 'أداة',
+  dataset: 'بيانات',
+  model: 'نموذج',
+};
 
-const SourcesLibrary: React.FC = () => (
-  <div className="px-6 pt-12 pb-16 max-w-5xl mx-auto">
-    <div className="flex items-center gap-3 mb-3">
-      <BookMarked className="w-8 h-8 text-[hsl(var(--damij-primary))]" />
-      <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))]">المصادر العلمية الموثّقة</h1>
-    </div>
-    <p className="text-[hsl(var(--damij-text))]/70 mb-8">جميع أدوات منصة دامج مبنية على مراجع علمية معتمدة دولياً.</p>
-    <div className="space-y-3">
-      {sources.map((s, i) => (
-        <div key={i} className="p-5 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 hover:shadow-lg transition-all">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-1">{s.t}</h3>
-              <p className="text-sm text-[hsl(var(--damij-text))]/75">{s.d}</p>
+const SourcesLibrary: React.FC = () => {
+  const [q, setQ] = useState('');
+  const [cat, setCat] = useState<SourceCategory | 'all'>('all');
+
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return SOURCES.filter((s) => {
+      if (cat !== 'all' && s.category !== cat) return false;
+      if (!query) return true;
+      return (
+        s.title.toLowerCase().includes(query) ||
+        s.authors.toLowerCase().includes(query) ||
+        s.usedIn.toLowerCase().includes(query) ||
+        s.note.toLowerCase().includes(query)
+      );
+    });
+  }, [q, cat]);
+
+  const counts = useMemo(() => {
+    const map: Record<string, number> = { all: SOURCES.length };
+    SOURCES.forEach((s) => {
+      map[s.category] = (map[s.category] || 0) + 1;
+    });
+    return map;
+  }, []);
+
+  return (
+    <div className="px-4 sm:px-6 pt-10 pb-16 max-w-6xl mx-auto" dir="rtl">
+      <div className="flex items-center gap-3 mb-2">
+        <BookMarked className="w-8 h-8 text-[hsl(var(--damij-primary))]" />
+        <h1 className="text-3xl font-bold text-[hsl(var(--damij-primary))]">المكتبة العلمية الموثّقة</h1>
+      </div>
+      <p className="text-[hsl(var(--damij-text))]/70 mb-2">
+        أكثر من <span className="font-bold text-[hsl(var(--damij-primary))]">{SOURCE_COUNT}</span> مرجعاً علمياً ودولياً تُبنى عليها كل أدوات منصة دامج.
+      </p>
+      <p className="text-xs text-[hsl(var(--damij-text))]/60 mb-6">
+        كل مصدر يوضّح: المؤلف، السنة، الجهة، أين استُخدم داخل المنصة، وشرح موجز لدوره العلمي.
+      </p>
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--damij-text))]/40" />
+        <input
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="ابحث عن مصدر، أو مؤلف، أو ميزة استُخدم فيها..."
+          className="w-full pr-10 pl-4 py-3 rounded-xl bg-white border border-[hsl(var(--damij-primary))]/15 focus:border-[hsl(var(--damij-primary))]/50 outline-none text-sm"
+        />
+      </div>
+
+      {/* Category chips */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => setCat('all')}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+            cat === 'all'
+              ? 'bg-[hsl(var(--damij-primary))] text-white'
+              : 'bg-white border border-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-text))]/70'
+          }`}
+        >
+          الكل ({counts.all})
+        </button>
+        {(Object.keys(CATEGORY_LABELS) as SourceCategory[]).map((k) => (
+          <button
+            key={k}
+            onClick={() => setCat(k)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+              cat === k
+                ? 'bg-[hsl(var(--damij-primary))] text-white'
+                : 'bg-white border border-[hsl(var(--damij-primary))]/15 text-[hsl(var(--damij-text))]/70'
+            }`}
+          >
+            {CATEGORY_LABELS[k]} ({counts[k] || 0})
+          </button>
+        ))}
+      </div>
+
+      <div className="text-sm text-[hsl(var(--damij-text))]/60 mb-3 flex items-center gap-2">
+        <Filter className="w-3.5 h-3.5" />
+        تظهر {filtered.length} نتيجة
+      </div>
+
+      {/* Sources list */}
+      <div className="space-y-3">
+        {filtered.map((s) => (
+          <article
+            key={s.id}
+            className="p-5 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 hover:shadow-md hover:border-[hsl(var(--damij-primary))]/30 transition-all"
+          >
+            <header className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-[hsl(var(--damij-primary))] leading-snug">
+                  {s.title}
+                </h3>
+                <p className="text-xs text-[hsl(var(--damij-text))]/60 mt-1">
+                  {s.authors} · {s.year}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(var(--damij-accent))]/25 text-[hsl(var(--damij-primary))] font-semibold whitespace-nowrap">
+                  {CATEGORY_LABELS[s.category]}
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-[hsl(var(--damij-primary))]/20 text-[hsl(var(--damij-text))]/70 font-semibold whitespace-nowrap">
+                  {TYPE_LABEL[s.type] || s.type}
+                </span>
+              </div>
+            </header>
+
+            <p className="text-sm text-[hsl(var(--damij-text))]/85 leading-relaxed mb-3">
+              {s.note}
+            </p>
+
+            <div className="rounded-lg bg-white/60 border border-[hsl(var(--damij-primary))]/10 p-3 mb-3">
+              <div className="text-[11px] font-bold text-[hsl(var(--damij-primary))]/80 mb-1">
+                ⚙️ أين استُخدم في المنصة
+              </div>
+              <div className="text-xs text-[hsl(var(--damij-text))]/75">{s.usedIn}</div>
             </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-[hsl(var(--damij-accent))]/20 text-[hsl(var(--damij-primary))] font-semibold whitespace-nowrap">{s.tag}</span>
+
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-[hsl(var(--damij-accent-2))] hover:underline font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              فتح المصدر الأصلي
+            </a>
+          </article>
+        ))}
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-[hsl(var(--damij-text))]/50">
+            لا توجد مراجع مطابقة لبحثك.
           </div>
-        </div>
-      ))}
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
 export default SourcesLibrary;
