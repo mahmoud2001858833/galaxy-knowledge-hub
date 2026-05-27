@@ -563,14 +563,27 @@ const AutismDiagnosis: React.FC = () => {
               🎯 <b>الهدف:</b> {g.target_skill_ar} — {g.rationale_ar}
             </div>
             <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
-              <Cmp
-                key={`ai_${aiGameIndex}_${g.template_id}`}
-                difficulty={g.difficulty}
-                durationSec={g.duration_sec}
-                instructions={g.instructions_ar}
-                onComplete={(m, d) => handleAiGameComplete(m, d, false)}
-                onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
-              />
+              {!introShown ? (
+                <GameIntroScreen
+                  title={g.title_ar}
+                  instructions={g.instructions_ar}
+                  childName={name || undefined}
+                  skill={g.target_skill_ar}
+                  emoji={meta?.emoji}
+                  onStart={() => setIntroShown(true)}
+                  onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
+                />
+              ) : (
+                <Cmp
+                  key={`ai_${aiGameIndex}_${g.template_id}`}
+                  difficulty={g.difficulty}
+                  durationSec={g.duration_sec}
+                  instructions={g.instructions_ar}
+                  childName={name || undefined}
+                  onComplete={(m, d) => handleAiGameComplete(m, d, false)}
+                  onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
+                />
+              )}
             </div>
           </div>
         );
