@@ -82,14 +82,30 @@ Deno.serve(async (req) => {
         const need = Math.min(6, TARGET_CASES - cExist);
         try {
           const out = await callGemini(
-            'أنت مرجع طبي. أرجِع JSON فقط.',
-            `أنشئ ${need} حالة سريرية واقعية متنوّعة في تخصص "${sp.ar}". لكل حالة: code فريد، name_ar (اسم مريض)، age_years، gender، severity (mild/moderate/severe)، summary_ar (1-2 جملة)، history_ar (تاريخ مرضي)، sensory_profile (jsonb مناسب — للطب يضع الأعراض الحيوية)، presenting_signs_ar (4-6 علامات)، patient_persona_ar (شخصية تمثل لردود AI)، reference_ar (مرجع: UpToDate/AHA/NICE/WHO).`,
+            'أنت استشاري طبي متخصص. أرجِع JSON فقط، محتوى دقيق وواقعي بمستوى مرجع سريري.',
+            `أنشئ ${need} حالة سريرية واقعية متنوّعة الشدة (mild/moderate/severe) في تخصص "${sp.ar}". لكل حالة:
+- code فريد بصيغة ${sp.key}_<اسم_مختصر_بالإنجليزي>
+- name_ar اسم مريض عربي
+- age_years متناسب مع التخصص (الأطفال/الكبار)
+- gender: male أو female
+- severity: mild/moderate/severe
+- summary_ar (2-3 جمل واضحة)
+- history_ar (تاريخ مرضي مفصّل: شكوى رئيسية، مدة، عوامل مفاقمة، أمراض مزمنة، أدوية، حساسية، تاريخ عائلي)
+- presenting_signs_ar (5-8 علامات سريرية واقعية ودقيقة)
+- vitals_initial (jsonb): {hr, sbp, dbp, spo2, rr, temp_c, glucose_mgdl} بأرقام واقعية حسب الحالة والشدة
+- current_medications (مصفوفة نصوص: اسم الدواء + الجرعة، مثل "Metformin 850mg BID")
+- sensory_profile (jsonb إضافي: pain_scale 0-10، consciousness AVPU، أي مكونات حسية مهمة)
+- patient_persona_ar (شخصية تفاعل واقعية بصوت المريض)
+- reference_ar (مرجع موثوق: UpToDate/AHA/NICE/WHO/ESC/CDC)
+نوّع الحالات: لا تكرّر نفس التشخيص، اشمل الحالات الحادة والمزمنة والشائعة والنادرة.`,
             CASES_SCHEMA
           );
           const rows = (out.items || []).map((it: any) => ({
             code: it.code, category: sp.key, name_ar: it.name_ar, age_years: it.age_years,
             gender: it.gender || 'male', severity: it.severity, summary_ar: it.summary_ar,
             history_ar: it.history_ar || '', sensory_profile: it.sensory_profile || {},
+            vitals_initial: it.vitals_initial || {},
+            current_medications: it.current_medications || [],
             presenting_signs_ar: it.presenting_signs_ar || [], patient_persona_ar: it.patient_persona_ar,
             reference_ar: it.reference_ar || '',
           }));
