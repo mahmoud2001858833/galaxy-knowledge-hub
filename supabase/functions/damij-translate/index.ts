@@ -133,7 +133,7 @@ serve(async (req) => {
       const results = await Promise.all(chunks.map(async (chunk) => {
         const numbered = chunk.map((s, i) => `${i + 1}. ${s.replace(/\n/g, " ")}`).join("\n");
         try {
-          const content = await geminiTranslate(sys, numbered);
+          const content = await lovableTranslate(sys, numbered);
           const out: Record<string, string> = {};
           for (const line of content.split(/\r?\n/)) {
             const m = line.match(/^\s*(\d+)[\.\)\:\-]\s*(.+)$/);
