@@ -19,8 +19,8 @@ const SPECIALTIES = [
   { key: 'psychiatry',    ar: 'الطب النفسي' },
 ];
 
-const TARGET_CASES = 12;
-const TARGET_PROTOCOLS = 6;
+const TARGET_CASES = 15;
+const TARGET_PROTOCOLS = 8;
 
 const CASES_SCHEMA = {
   type: 'object',
@@ -33,6 +33,8 @@ const CASES_SCHEMA = {
         severity: { type: 'string' }, summary_ar: { type: 'string' },
         history_ar: { type: 'string' },
         sensory_profile: { type: 'object' },
+        vitals_initial: { type: 'object' },
+        current_medications: { type: 'array', items: { type: 'string' } },
         presenting_signs_ar: { type: 'array', items: { type: 'string' } },
         patient_persona_ar: { type: 'string' }, reference_ar: { type: 'string' },
       },
