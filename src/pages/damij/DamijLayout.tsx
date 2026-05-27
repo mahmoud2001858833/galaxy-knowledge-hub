@@ -6,6 +6,7 @@ import DamijHeader from '@/components/damij/DamijHeader';
 import DamijEcoBanner from '@/components/damij/DamijEcoBanner';
 import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
 import DamijSpeechAutowire from '@/components/damij/DamijSpeechAutowire';
+import DamijFloatingDock from '@/components/damij/DamijFloatingDock';
 import { DamijLanguageProvider, useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 import { EcoModeProvider } from '@/features/damij/EcoModeContext';
 
@@ -33,8 +34,10 @@ const DamijLayoutInner: React.FC = () => {
       <main>
         <Outlet />
       </main>
-      <DamijSmartGuide />
-      <DamijHoverSpeak />
+      <DamijFloatingDock>
+        <DamijSmartGuide />
+        <DamijHoverSpeak />
+      </DamijFloatingDock>
       <DamijAutoTranslator />
       <DamijSpeechAutowire />
     </div>
