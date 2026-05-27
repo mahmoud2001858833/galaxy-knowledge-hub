@@ -86,15 +86,18 @@ const AutismDiagnosis: React.FC = () => {
   const [introShown, setIntroShown] = useState(false); // per-game intro screen flag
   const tts = useTTS();
 
-  // Auto-narrate the current question
-  React.useEffect(() => {
-    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
-  }, [step, currentItem?.id]); // eslint-disable-line
-
-
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
   const items = useMemo(() => getItemsForTrack(track), [track]);
   const currentItem = items[qIndex];
+
+  // Auto-narrate the current question
+  React.useEffect(() => {
+    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, currentItem?.id]);
+
+  // Reset per-game intro flag whenever we switch games
+  React.useEffect(() => { setIntroShown(false); }, [gameIndex, aiGameIndex, step]);
 
   const reset = () => {
     setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]);
@@ -502,11 +505,21 @@ const AutismDiagnosis: React.FC = () => {
               </div>
             </div>
             <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
-              <Cmp
-                key={game.id}
-                onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
-                onSkip={() => handleGameComplete({}, 0, true)}
-              />
+              {!introShown ? (
+                <GameIntroScreen
+                  title={game.title}
+                  instructions={(game as any).description || (game as any).instructions || 'اتبع التعليمات داخل اللعبة.'}
+                  childName={name || undefined}
+                  onStart={() => setIntroShown(true)}
+                  onSkip={() => handleGameComplete({}, 0, true)}
+                />
+              ) : (
+                <Cmp
+                  key={game.id}
+                  onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
+                  onSkip={() => handleGameComplete({}, 0, true)}
+                />
+              )}
             </div>
           </div>
         );
@@ -550,14 +563,27 @@ const AutismDiagnosis: React.FC = () => {
               🎯 <b>الهدف:</b> {g.target_skill_ar} — {g.rationale_ar}
             </div>
             <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
-              <Cmp
-                key={`ai_${aiGameIndex}_${g.template_id}`}
-                difficulty={g.difficulty}
-                durationSec={g.duration_sec}
-                instructions={g.instructions_ar}
-                onComplete={(m, d) => handleAiGameComplete(m, d, false)}
-                onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
-              />
+              {!introShown ? (
+                <GameIntroScreen
+                  title={g.title_ar}
+                  instructions={g.instructions_ar}
+                  childName={name || undefined}
+                  skill={g.target_skill_ar}
+                  emoji={meta?.emoji}
+                  onStart={() => setIntroShown(true)}
+                  onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
+                />
+              ) : (
+                <Cmp
+                  key={`ai_${aiGameIndex}_${g.template_id}`}
+                  difficulty={g.difficulty}
+                  durationSec={g.duration_sec}
+                  instructions={g.instructions_ar}
+                  childName={name || undefined}
+                  onComplete={(m, d) => handleAiGameComplete(m, d, false)}
+                  onSkip={() => handleAiGameComplete({ accuracy: 0 }, 0, true)}
+                />
+              )}
             </div>
           </div>
         );

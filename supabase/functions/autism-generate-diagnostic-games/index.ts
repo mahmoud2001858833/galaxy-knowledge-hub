@@ -23,6 +23,10 @@ const TEMPLATES = [
   { id: 'rhythm_turns', skill: 'تبادل أدوار' },
   { id: 'spot_difference', skill: 'انتباه للتفاصيل' },
   { id: 'name_response', skill: 'استجابة للاسم' },
+  { id: 'category_match', skill: 'تصنيف ومرونة معرفية' },
+  { id: 'impulse_control', skill: 'كبح اندفاعي (Go/No-go)' },
+  { id: 'speech_bubbles', skill: 'لغة اجتماعية تداولية' },
+  { id: 'feelings_colors', skill: 'تعبير عاطفي وتنظيم ذاتي' },
 ];
 
 const SYSTEM = `أنت أخصائي تشخيص نمائي. لا تستخدم أبداً أسئلة مقالية أو نصية — كل المحتوى ألعاب تفاعلية فقط.
@@ -40,8 +44,8 @@ const SCHEMA = {
   properties: {
     games: {
       type: 'array',
-      minItems: 5,
-      maxItems: 7,
+      minItems: 8,
+      maxItems: 10,
       items: {
         type: 'object',
         properties: {
@@ -142,8 +146,8 @@ ${JSON.stringify(SCHEMA)}`;
 
     // Validate: keep only known template_ids
     const validIds = new Set(TEMPLATES.map((t) => t.id));
-    parsed.games = parsed.games.filter((g: any) => validIds.has(g.template_id)).slice(0, 6);
-    if (parsed.games.length < 3) parsed = fallbackBattery(ageMonths);
+    parsed.games = parsed.games.filter((g: any) => validIds.has(g.template_id)).slice(0, 10);
+    if (parsed.games.length < 5) parsed = fallbackBattery(ageMonths);
 
     return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
