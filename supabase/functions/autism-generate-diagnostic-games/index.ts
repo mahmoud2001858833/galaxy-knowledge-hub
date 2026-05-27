@@ -23,6 +23,10 @@ const TEMPLATES = [
   { id: 'rhythm_turns', skill: 'تبادل أدوار' },
   { id: 'spot_difference', skill: 'انتباه للتفاصيل' },
   { id: 'name_response', skill: 'استجابة للاسم' },
+  { id: 'category_match', skill: 'تصنيف ومرونة معرفية' },
+  { id: 'impulse_control', skill: 'كبح اندفاعي (Go/No-go)' },
+  { id: 'speech_bubbles', skill: 'لغة اجتماعية تداولية' },
+  { id: 'feelings_colors', skill: 'تعبير عاطفي وتنظيم ذاتي' },
 ];
 
 const SYSTEM = `أنت أخصائي تشخيص نمائي. لا تستخدم أبداً أسئلة مقالية أو نصية — كل المحتوى ألعاب تفاعلية فقط.
