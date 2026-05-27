@@ -129,6 +129,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
     cancelAllSpeech();
     try { recRef.current?.stop(); } catch {}
     setListening(false);
+    targetLocalRef.current = null;
+    targetGeoRef.current = null;
+    if (geoWatchRef.current != null) {
+      try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
+      geoWatchRef.current = null;
+    }
     enqueueSpeech({ text: BE_STRINGS[langRef.current].stopping, priority: 'critical', lang: langRef.current });
   }, []);
 
