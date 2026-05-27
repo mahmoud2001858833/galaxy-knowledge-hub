@@ -242,6 +242,26 @@ const BlindEyeNavigatorInner: React.FC = () => {
           else if (g.best_path === 'right') earcons.pointRight();
           else earcons.pointAhead();
         }
+
+        // ---- Target-oriented local navigation ----
+        if (targetLocalRef.current && Array.isArray(g.objects)) {
+          const lps: LandmarkPoint[] = g.objects.map((o: AIObject) => ({
+            x: o.x, y: o.y, w: o.w, h: o.h, label: o.label, proximity: o.proximity,
+          }));
+          const found = findTarget(lps, targetLocalRef.current);
+          const step = buildStepAr(targetLocalRef.current, found);
+          const nowN = Date.now();
+          if (nowN - lastNavSpeakRef.current > 1800) {
+            lastNavSpeakRef.current = nowN;
+            const pri = step.arrived ? 'critical' : 'directional';
+            enqueueSpeech({ text: step.text, priority: pri as any, lang: langRef.current });
+            if (step.arrived) {
+              targetLocalRef.current = null;
+              earcons.approach();
+              vibrate([120, 60, 120]);
+            }
+          }
+        }
       }
     } catch (e) {
       console.warn('AI tick error', e);
