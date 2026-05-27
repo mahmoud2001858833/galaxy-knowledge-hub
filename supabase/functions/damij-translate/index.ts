@@ -1,8 +1,10 @@
-// Translates a batch of strings to the requested language using Lovable AI Gateway.
-// Returns an object keyed by the original strings -> translations.
+// Translates a batch of strings to the requested language using Lovable AI Gateway,
+// with a persistent shared cache in `damij_translation_cache` so repeated visitors
+// get instant results.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { geminiFetch } from "../_shared/gemini-shim.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -42,6 +44,10 @@ const LANG_NAMES: Record<string, string> = {
   haw: "Hawaiian", mi: "Maori", sm: "Samoan", to: "Tongan", fj: "Fijian",
 };
 
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -54,61 +60,91 @@ serve(async (req) => {
       });
     }
     const sourceLang: string = (source || "ar").toString();
-    if (target === sourceLang) {
-      const out: Record<string, string> = {};
-      for (const t of texts) out[t] = t;
-      return new Response(JSON.stringify({ translations: out }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const langName = LANG_NAMES[target] || target;
-    const sourceName = LANG_NAMES[sourceLang] || sourceLang;
-    const apiKey = "shim-key";
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-
-    // Numbered list to preserve mapping
-    const numbered = texts.map((s: string, i: number) => `${i + 1}. ${s.replace(/\\n/g, " ")}`).join("\n");
-
-    const sys =
-      `You are a professional UI translator. Translate each numbered line from ${sourceName} to ${langName}. ` +
-      `Keep the same numbering. Preserve placeholders, numbers, emojis, brand names. Do NOT add commentary. ` +
-      `Output ONLY the numbered translations, one per line.`;
-
-
-    const resp = await geminiFetch("ai-shim", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: sys },
-          { role: "user", content: numbered },
-        ],
-      }),
-    });
-
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.error("AI gateway error", resp.status, t);
-      return new Response(JSON.stringify({ error: "ai_error", status: resp.status }), {
-        status: resp.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const data = await resp.json();
-    const content: string = data?.choices?.[0]?.message?.content ?? "";
-
     const translations: Record<string, string> = {};
-    const lines = content.split(/\r?\n/);
-    for (const line of lines) {
-      const m = line.match(/^\s*(\d+)[\.\)\:\-]\s*(.+)$/);
-      if (!m) continue;
-      const idx = parseInt(m[1], 10) - 1;
-      if (idx < 0 || idx >= texts.length) continue;
-      translations[texts[idx]] = m[2].trim();
+
+    if (target === sourceLang) {
+      for (const t of texts) translations[t] = t;
+      return new Response(JSON.stringify({ translations }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-    // fallback: keep original
+
+    // 1) Lookup persistent cache first
+    const unique = Array.from(new Set(texts.filter((s: unknown) => typeof s === "string" && s.length > 0)));
+    if (unique.length > 0) {
+      const { data: cached } = await admin
+        .from("damij_translation_cache")
+        .select("source_text, translated")
+        .eq("lang", target)
+        .in("source_text", unique);
+      for (const row of cached ?? []) translations[row.source_text as string] = row.translated as string;
+    }
+
+    const missing = unique.filter((s) => !translations[s as string]) as string[];
+
+    // 2) Translate missing in parallel chunks via AI
+    if (missing.length > 0) {
+      const langName = LANG_NAMES[target] || target;
+      const sourceName = LANG_NAMES[sourceLang] || sourceLang;
+      const sys =
+        `You are a professional UI translator. Translate each numbered line from ${sourceName} to ${langName}. ` +
+        `Keep the same numbering. Preserve placeholders, numbers, emojis, brand names. Do NOT add commentary. ` +
+        `Output ONLY the numbered translations, one per line.`;
+
+      const CHUNK = 25;
+      const chunks: string[][] = [];
+      for (let i = 0; i < missing.length; i += CHUNK) chunks.push(missing.slice(i, i + CHUNK));
+
+      const results = await Promise.all(chunks.map(async (chunk) => {
+        const numbered = chunk.map((s, i) => `${i + 1}. ${s.replace(/\n/g, " ")}`).join("\n");
+        try {
+          const resp = await geminiFetch("ai-shim", {
+            method: "POST",
+            headers: { Authorization: `Bearer shim-key`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "google/gemini-3-flash-preview",
+              messages: [
+                { role: "system", content: sys },
+                { role: "user", content: numbered },
+              ],
+            }),
+          });
+          if (!resp.ok) return { chunk, out: {} as Record<string, string> };
+          const data = await resp.json();
+          const content: string = data?.choices?.[0]?.message?.content ?? "";
+          const out: Record<string, string> = {};
+          for (const line of content.split(/\r?\n/)) {
+            const m = line.match(/^\s*(\d+)[\.\)\:\-]\s*(.+)$/);
+            if (!m) continue;
+            const idx = parseInt(m[1], 10) - 1;
+            if (idx < 0 || idx >= chunk.length) continue;
+            out[chunk[idx]] = m[2].trim();
+          }
+          return { chunk, out };
+        } catch (e) {
+          console.warn("translate chunk error", e);
+          return { chunk, out: {} as Record<string, string> };
+        }
+      }));
+
+      const rowsToInsert: { source_text: string; lang: string; translated: string }[] = [];
+      for (const { chunk, out } of results) {
+        for (const src of chunk) {
+          const tr = out[src] || src;
+          translations[src] = tr;
+          if (out[src]) rowsToInsert.push({ source_text: src, lang: target, translated: tr });
+        }
+      }
+
+      // Persist new translations to shared cache (best-effort)
+      if (rowsToInsert.length > 0) {
+        admin.from("damij_translation_cache")
+          .upsert(rowsToInsert, { onConflict: "source_text,lang" })
+          .then(({ error }) => { if (error) console.warn("cache upsert error", error.message); });
+      }
+    }
+
+    // Final fallback: ensure every requested text has an entry
     for (const t of texts) if (!translations[t]) translations[t] = t;
 
     return new Response(JSON.stringify({ translations }), {
