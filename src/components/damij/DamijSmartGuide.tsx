@@ -76,20 +76,26 @@ const DamijSmartGuide: React.FC = () => {
   return (
     <>
       <motion.button
-        initial={{ scale: 0, rotate: -180 }}
+        initial={{ scale: 0, rotate: -90 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 0.3 }}
+        transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.25 }}
+        whileHover={{ scale: 1.08, rotate: 6 }}
+        whileTap={{ scale: 0.92 }}
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-20 end-4 z-[60] group"
+        className="relative group pointer-events-auto"
         aria-label={t.assistant.open}
+        data-damij-no-translate
+        data-damij-no-speak
       >
-        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 blur-xl opacity-70 group-hover:opacity-100 animate-pulse" />
-        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 animate-ping opacity-25" />
+        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 blur-xl opacity-60 group-hover:opacity-90 transition-opacity" />
         <span
-          className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 text-white shadow-2xl ring-4 ring-white/60 transition-transform group-hover:scale-110"
-          style={{ boxShadow: '0 20px 50px -10px rgba(234,179,8,0.65)' }}
+          className="relative flex items-center justify-center w-14 h-14 rounded-full text-white shadow-xl ring-1 ring-white/50"
+          style={{
+            background: 'conic-gradient(from 140deg, #fde68a, #f59e0b, #b45309, #f59e0b, #fde68a)',
+            boxShadow: '0 16px 40px -10px rgba(234,179,8,0.65), 0 0 0 4px rgba(255,255,255,0.55)',
+          }}
         >
-          <Sparkles className="w-7 h-7 drop-shadow-lg" />
+          <Sparkles className="w-6 h-6 drop-shadow-md" strokeWidth={2.2} />
           <motion.span
             className="absolute -top-1 -end-1 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-white"
             animate={{ scale: [1, 1.4, 1] }}

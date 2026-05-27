@@ -115,19 +115,14 @@ const DamijHoverSpeak: React.FC = () => {
   }, [enabled, speak]);
 
   return (
-    <div
-      data-damij-no-speak
-      data-damij-no-translate
-      className="fixed z-[60] end-4"
-      style={{ bottom: '11rem' }}
-    >
+    <div data-damij-no-speak data-damij-no-translate className="relative pointer-events-auto">
       <AnimatePresence>
         {showHint && (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            className={`absolute bottom-full mb-2 end-0 px-3 py-2 rounded-xl bg-slate-900/90 text-white text-[11px] leading-snug shadow-2xl max-w-[220px]`}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 8 }}
+            className="absolute end-full me-3 top-1/2 -translate-y-1/2 px-3 py-2 rounded-xl bg-slate-900/95 text-white text-[11px] leading-snug shadow-2xl whitespace-nowrap"
           >
             {labels.hint}
           </motion.div>
@@ -135,32 +130,35 @@ const DamijHoverSpeak: React.FC = () => {
       </AnimatePresence>
 
       <motion.button
-        initial={{ scale: 0, rotate: -180 }}
+        initial={{ scale: 0, rotate: -90 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 0.4 }}
+        transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.35 }}
+        whileHover={{ scale: 1.08, rotate: enabled ? 4 : -4 }}
+        whileTap={{ scale: 0.92 }}
         onClick={() => setEnabled((v) => !v)}
         onMouseEnter={() => setShowHint(true)}
         onMouseLeave={() => setShowHint(false)}
         aria-label={enabled ? labels.off : labels.on}
         title={labels.label}
-        className="group relative flex items-center justify-center w-16 h-16 rounded-full text-white shadow-2xl ring-4 ring-white/60 transition-transform hover:scale-110"
+        aria-pressed={enabled}
+        className="group relative flex items-center justify-center w-14 h-14 rounded-full text-white shadow-xl ring-1 ring-white/40 transition-colors"
         style={{
           background: enabled
-            ? 'linear-gradient(135deg, #14b8a6, #0ea5e9)'
-            : 'linear-gradient(135deg, #475569, #1e293b)',
+            ? 'conic-gradient(from 200deg, #06b6d4, #0ea5e9, #6366f1, #06b6d4)'
+            : 'linear-gradient(135deg, #334155, #0f172a)',
           boxShadow: enabled
-            ? '0 18px 44px -10px rgba(14,165,233,0.55)'
-            : '0 14px 34px -10px rgba(15,23,42,0.55)',
+            ? '0 16px 36px -10px rgba(14,165,233,0.65), 0 0 0 4px rgba(255,255,255,0.55)'
+            : '0 12px 30px -10px rgba(15,23,42,0.55), 0 0 0 4px rgba(255,255,255,0.55)',
         }}
       >
         {enabled
-          ? <Volume2 className="w-7 h-7 drop-shadow-lg" strokeWidth={2.4} />
-          : <VolumeX className="w-7 h-7 drop-shadow-lg" strokeWidth={2.4} />}
+          ? <Volume2 className="w-6 h-6 drop-shadow-md" strokeWidth={2.4} />
+          : <VolumeX className="w-6 h-6 drop-shadow-md" strokeWidth={2.4} />}
         {enabled && (
           <motion.span
-            className="absolute inset-0 rounded-full ring-2 ring-cyan-300"
-            animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }}
-            transition={{ duration: 1.6, repeat: Infinity }}
+            className="absolute inset-0 rounded-full ring-2 ring-cyan-200/80"
+            animate={{ scale: [1, 1.35, 1], opacity: [0.85, 0, 0.85] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
           />
         )}
       </motion.button>
