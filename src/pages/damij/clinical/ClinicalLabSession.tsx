@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ClinicalCase, ClinicalProtocol, ClinicalSession } from '@/features/clinical/types';
 import InterventionTryPanel from '@/features/clinical/InterventionTryPanel';
 import DeviceLauncher from '@/features/clinical/devices/DeviceLauncher';
+import VitalsMonitor from '@/features/clinical/ui/VitalsMonitor';
 
 const QUICK_ACTIONS = [
   { key: 'reinforce', ar: 'تعزيز إيجابي 👍', help: 'مدح أو مكافأة فورية بعد سلوك مرغوب لزيادة احتماليّة تكراره (Positive Reinforcement). يرفع الانتباه ويخفّض القلق.' },
@@ -130,6 +131,13 @@ const ClinicalLabSession: React.FC = () => {
         <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--damij-primary))]">{p.name_ar} • {c.name_ar}</h1>
         <div className="text-xs text-slate-500">الخطوة {session.current_step + 1}/{steps}: {step.title_ar}</div>
       </header>
+
+      <div className="mb-4">
+        <VitalsMonitor
+          vitals={{ ...((c as any).vitals_initial || {}), ...((session as any).vitals_state || {}) }}
+          ageYears={(c as any).age_years}
+        />
+      </div>
 
       <UnifiedWorkspace c={c} p={p} session={session} events={events} step={step}
         msg={msg} setMsg={setMsg} sending={sending} sendTurn={sendTurn}
