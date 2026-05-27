@@ -967,8 +967,16 @@ const router = createBrowserRouter([
         element: <PublicRoute><CancerDetection /></PublicRoute>,
       },
       {
+        path: 'damij/auth',
+        element: <DamijAuth />,
+      },
+      {
+        path: 'damij/auth/reset',
+        element: <DamijResetPassword />,
+      },
+      {
         path: 'damij',
-        element: <PublicRoute><DamijLayout /></PublicRoute>,
+        element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
         children: [
           { index: true, element: <DamijLanding /> },
           { path: 'braille', element: <BrailleHome /> },
