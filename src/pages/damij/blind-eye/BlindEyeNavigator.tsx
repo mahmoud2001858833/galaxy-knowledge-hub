@@ -12,6 +12,8 @@ import {
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
 import { BE_STRINGS, BE_BCP47, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed } from './voiceCommands';
+import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
+import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
@@ -65,6 +67,14 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const lastSceneChangeAt = useRef<number>(0);
   const lastSpokenPathRef = useRef<{ path: string; t: number }>({ path: '', t: 0 });
   const MAX_CALIB_ATTEMPTS = 1; // reduced for sub-3s startup
+  // Navigation state
+  const targetLocalRef = useRef<LocalLandmark | null>(null);
+  const targetGeoRef = useRef<{ name: string; dest: LatLng } | null>(null);
+  const geoWatchRef = useRef<number | null>(null);
+  const userPosRef = useRef<LatLng | null>(null);
+  const userHeadingRef = useRef<number | null>(null);
+  const lastNavSpeakRef = useRef<number>(0);
+
 
   const [phase, setPhase] = useState<Phase>('starting');
   const [lastGuide, setLastGuide] = useState<Guide | null>(null);

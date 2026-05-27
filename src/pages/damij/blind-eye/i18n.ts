@@ -1,4 +1,4 @@
-// Blind Eye bilingual strings (English default + Arabic toggle)
+// Blind Eye bilingual strings (Arabic default + English toggle)
 export type BELang = 'en' | 'ar';
 
 export const BE_BCP47: Record<BELang, string> = {
@@ -17,6 +17,8 @@ type Dict = {
   blind: string;
   calibrating: string;
   guiding: string;
+  idle: string;
+  navigating: string;
   stopped: string;
   starting: string;
   rateLimit: string;
@@ -29,11 +31,19 @@ type Dict = {
   greet: string;
   startNow: string;
   starting2: string;
+  readyAsk: string;        // "أنا جاهز، قل لي إلى أين تريد الذهاب"
   stopping: string;
   scanningArea: string;
   scanning: string;
   stop_loud: string;
   systemBusy: string;
+  navCancelled: string;
+  navStartLocal: string;   // "سأرشدك إلى {x}"
+  navStartGeo: string;     // "سأرشدك إلى {x}"
+  navNotFound: string;     // "لم أجد الموقع، حاول باسم آخر"
+  navGpsDenied: string;
+  navArrived: string;      // "وصلت إلى {x}"
+  navHere: string;         // "أنت الآن في موقعك الحالي"
   // Helper labels
   langToggleTitle: string;
   suggestionsTitle: string;
@@ -55,6 +65,8 @@ const EN: Dict = {
   blind: 'Blind',
   calibrating: 'Aligning',
   guiding: 'Guiding',
+  idle: 'Ready',
+  navigating: 'Navigating',
   stopped: 'Stopped',
   starting: 'Starting',
   rateLimit: 'System busy',
@@ -64,13 +76,21 @@ const EN: Dict = {
   busy: 'Busy',
   switchedLang: 'Switched to English',
   greet: 'Hello, hold the phone level so I can see the path.',
-  startNow: 'Starting now',
-  starting2: 'Started. You can talk to me anytime.',
+  startNow: 'Ready',
+  starting2: 'I am ready. Tell me where you want to go.',
+  readyAsk: 'I am ready. Tell me where you want to go.',
   stopping: 'Stopped',
   scanningArea: 'One moment, scanning the area',
   scanning: 'Scanning',
   stop_loud: 'Stop!',
   systemBusy: 'System is a little busy',
+  navCancelled: 'Navigation cancelled',
+  navStartLocal: 'Guiding you to',
+  navStartGeo: 'Guiding you to',
+  navNotFound: 'Place not found, try another name',
+  navGpsDenied: 'Location permission denied',
+  navArrived: 'You have arrived',
+  navHere: 'You are at your current location',
   langToggleTitle: 'Switch language',
   suggestionsTitle: 'Try asking',
   ariaSwitchLang: 'Switch language',
@@ -91,6 +111,8 @@ const AR: Dict = {
   blind: 'كفيف',
   calibrating: 'معايرة',
   guiding: 'إرشاد',
+  idle: 'جاهز',
+  navigating: 'يوجّه',
   stopped: 'متوقف',
   starting: 'يبدأ',
   rateLimit: 'النظام مزدحم',
@@ -100,13 +122,21 @@ const AR: Dict = {
   busy: 'مشغول',
   switchedLang: 'تم التحويل إلى العربية',
   greet: 'مرحباً، أمسك الهاتف باستقامة لأرى الطريق.',
-  startNow: 'سأبدأ الآن',
-  starting2: 'بدأنا. تستطيع التحدث معي في أي وقت.',
+  startNow: 'جاهز',
+  starting2: 'أنا جاهز. قل لي إلى أين تريد الذهاب.',
+  readyAsk: 'أنا جاهز. قل لي إلى أين تريد الذهاب.',
   stopping: 'تم الإيقاف',
   scanningArea: 'لحظة، أمسح المنطقة الآن',
   scanning: 'أمسح',
   stop_loud: 'قف!',
   systemBusy: 'النظام مشغول قليلاً',
+  navCancelled: 'تم إلغاء التوجيه',
+  navStartLocal: 'سأرشدك إلى',
+  navStartGeo: 'سأرشدك إلى',
+  navNotFound: 'لم أجد المكان، حاول باسم آخر',
+  navGpsDenied: 'الرجاء السماح بالوصول إلى الموقع',
+  navArrived: 'وصلت',
+  navHere: 'أنت في موقعك الحالي',
   langToggleTitle: 'تغيير اللغة',
   suggestionsTitle: 'جرّب أن تسأل',
   ariaSwitchLang: 'تغيير اللغة',
@@ -119,6 +149,6 @@ const AR: Dict = {
 export const BE_STRINGS: Record<BELang, Dict> = { en: EN, ar: AR };
 
 export const defaultSuggestions: Record<BELang, string[]> = {
-  en: ['What is in front of me?', 'Is the path clear?', 'Read any text you see'],
-  ar: ['ماذا أمامي؟', 'هل الطريق آمن؟', 'اقرأ أي نص تراه'],
+  en: ['Take me to the door', 'Take me to the chair', 'What is around me?'],
+  ar: ['خذني إلى الباب', 'خذني إلى الكرسي', 'ماذا حولي؟'],
 };
