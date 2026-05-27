@@ -254,20 +254,26 @@ const BlindEyeNavigatorInner: React.FC = () => {
           else earcons.pointAhead();
         }
 
-        // ---- Target-oriented local navigation ----
+        // ---- Target-oriented local navigation (with stability filter) ----
         if (targetLocalRef.current && Array.isArray(g.objects)) {
           const lps: LandmarkPoint[] = g.objects.map((o: AIObject) => ({
             x: o.x, y: o.y, w: o.w, h: o.h, label: o.label, proximity: o.proximity,
           }));
           const found = findTarget(lps, targetLocalRef.current);
-          const step = buildStepAr(targetLocalRef.current, found);
+          if (found) { targetStableRef.current.seen += 1; targetStableRef.current.missed = 0; }
+          else { targetStableRef.current.missed += 1; targetStableRef.current.seen = 0; }
+          const confident = found && targetStableRef.current.seen >= 2;
+          const reallyLost = !found && targetStableRef.current.missed >= 4;
+          const step = buildStepAr(targetLocalRef.current, confident ? found : (reallyLost ? null : null));
           const nowN = Date.now();
-          if (nowN - lastNavSpeakRef.current > 1800) {
+          if ((confident || reallyLost) && nowN - lastNavSpeakRef.current > 1800 && step.text !== lastNavTextRef.current) {
             lastNavSpeakRef.current = nowN;
+            lastNavTextRef.current = step.text;
             const pri = step.arrived ? 'critical' : 'directional';
             enqueueSpeech({ text: step.text, priority: pri as any, lang: langRef.current });
             if (step.arrived) {
               targetLocalRef.current = null;
+              targetStableRef.current = { seen: 0, missed: 0 };
               earcons.approach();
               vibrate([120, 60, 120]);
             }
