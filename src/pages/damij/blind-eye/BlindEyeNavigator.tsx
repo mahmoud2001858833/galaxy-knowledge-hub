@@ -471,9 +471,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
           try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
           geoWatchRef.current = null;
         }
+        // Disarm any pending fall-detection emergency call
+        (window as any).__beFallArmedAt = 0;
         enqueueSpeech({ text: BE_STRINGS[langRef.current].navCancelled, priority: 'critical', lang: langRef.current });
         return;
       }
+
       case 'WHERE_AM_I': {
         enqueueSpeech({ text: BE_STRINGS[langRef.current].navHere, priority: 'directional', lang: langRef.current });
         return;
