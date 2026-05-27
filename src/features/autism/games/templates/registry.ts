@@ -12,6 +12,10 @@ import SocialChoice from './SocialChoice';
 import RhythmTurns from './RhythmTurns';
 import SpotDifference from './SpotDifference';
 import NameResponse from './NameResponse';
+import CategoryMatch from './CategoryMatch';
+import ImpulseControl from './ImpulseControl';
+import SpeechBubbles from './SpeechBubbles';
+import FeelingsColors from './FeelingsColors';
 
 export const TEMPLATE_REGISTRY: Record<string, React.FC<GameTemplateProps>> = {
   bubble_tracking: BubbleTracking,
@@ -26,6 +30,10 @@ export const TEMPLATE_REGISTRY: Record<string, React.FC<GameTemplateProps>> = {
   rhythm_turns: RhythmTurns,
   spot_difference: SpotDifference,
   name_response: NameResponse,
+  category_match: CategoryMatch,
+  impulse_control: ImpulseControl,
+  speech_bubbles: SpeechBubbles,
+  feelings_colors: FeelingsColors,
 };
 
 export { TEMPLATE_META };

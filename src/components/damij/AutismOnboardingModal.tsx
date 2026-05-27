@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Baby, Mail, Sparkles } from 'lucide-react';
+import { Baby, Mail, Sparkles, User } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,22 +8,24 @@ import { supabase } from '@/integrations/supabase/client';
 const schema = z.object({
   child_name: z.string().trim().min(1, 'الرجاء إدخال اسم الطفل').max(60),
   age_years: z.coerce.number().int().min(1, 'العمر مطلوب').max(25),
+  parent_name: z.string().trim().min(1, 'اسم ولي الأمر مطلوب').max(80),
   parent_email: z.string().trim().email('بريد غير صالح').max(255),
 });
 
 interface Props {
   open: boolean;
-  onSaved: (profile: { child_name: string; age_years: number; parent_email: string; profile_id?: string }) => void;
+  onSaved: (profile: { child_name: string; age_years: number; parent_name: string; parent_email: string; profile_id?: string }) => void;
 }
 
 const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [parentName, setParentName] = useState('');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    const parsed = schema.safeParse({ child_name: name, age_years: age, parent_email: email });
+    const parsed = schema.safeParse({ child_name: name, age_years: age, parent_name: parentName, parent_email: email });
     if (!parsed.success) {
       const first = parsed.error.errors[0]?.message || 'تأكد من الحقول';
       toast.error(first);
@@ -38,16 +40,17 @@ const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
           user_id: user.id,
           child_name: parsed.data.child_name,
           age_years: parsed.data.age_years,
+          parent_name: parsed.data.parent_name,
           parent_email: parsed.data.parent_email,
-        }).select('id').maybeSingle();
+        } as any).select('id').maybeSingle();
         profileId = data?.id;
       }
-      const { child_name, age_years, parent_email } = parsed.data;
+      const { child_name, age_years, parent_name, parent_email } = parsed.data;
       localStorage.setItem('autism_active_profile', JSON.stringify({
         profile_id: profileId ?? null,
-        child_name, age_years, parent_email,
+        child_name, age_years, parent_name, parent_email,
       }));
-      onSaved({ child_name, age_years, parent_email, profile_id: profileId });
+      onSaved({ child_name, age_years, parent_name, parent_email, profile_id: profileId });
     } catch (e: any) {
       toast.error(e?.message || 'تعذّر الحفظ');
     } finally {
@@ -72,7 +75,7 @@ const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
                 <Baby className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-xl font-bold text-slate-900">لنتعرّف على طفلك أولاً</h2>
-              <p className="text-sm text-slate-600 mt-1">سنستخدم اسمه داخل الألعاب لزيادة التفاعل والانتباه ✨</p>
+              <p className="text-sm text-slate-600 mt-1">سنحفظ المعلومات مرّة واحدة — لن نطلبها لاحقاً ✨</p>
             </div>
             <div className="space-y-3">
               <div>
@@ -86,6 +89,12 @@ const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
                 <input value={age} onChange={(e) => setAge(e.target.value)} type="number" min={1} max={25}
                   className="w-full mt-1 px-3 py-2.5 rounded-xl border-2 border-slate-200 focus:border-violet-400 outline-none"
                   placeholder="مثال: 6" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1"><User className="w-3 h-3" /> اسم ولي الأمر *</label>
+                <input value={parentName} onChange={(e) => setParentName(e.target.value)} maxLength={80}
+                  className="w-full mt-1 px-3 py-2.5 rounded-xl border-2 border-slate-200 focus:border-violet-400 outline-none"
+                  placeholder="مثال: محمد علي" />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1"><Mail className="w-3 h-3" /> بريد ولي الأمر *</label>

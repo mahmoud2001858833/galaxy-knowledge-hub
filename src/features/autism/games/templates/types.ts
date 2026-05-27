@@ -28,4 +28,8 @@ export const TEMPLATE_META: Record<string, GameTemplateMeta> = {
   rhythm_turns: { id: 'rhythm_turns', title: 'الإيقاع المتبادل', emoji: '🎵', skill: 'تبادل الأدوار' },
   spot_difference: { id: 'spot_difference', title: 'اعثر على الفرق', emoji: '🔍', skill: 'انتباه للتفاصيل' },
   name_response: { id: 'name_response', title: 'استجابة للاسم', emoji: '📣', skill: 'استجابة' },
+  category_match: { id: 'category_match', title: 'المطابقة والتصنيف', emoji: '🗂️', skill: 'تصنيف ومرونة معرفية' },
+  impulse_control: { id: 'impulse_control', title: 'ضبط الاندفاع', emoji: '🚦', skill: 'كبح اندفاعي' },
+  speech_bubbles: { id: 'speech_bubbles', title: 'فقاعات الكلام', emoji: '💬', skill: 'لغة اجتماعية' },
+  feelings_colors: { id: 'feelings_colors', title: 'الأحاسيس والألوان', emoji: '🎨', skill: 'تعبير عاطفي' },
 };
