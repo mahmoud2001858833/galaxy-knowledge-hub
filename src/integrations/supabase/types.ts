@@ -927,8 +927,10 @@ export type Database = {
           created_at: string
           functional_profile: string | null
           id: string
+          intake_answers: Json | null
           last_report: Json | null
           parent_email: string | null
+          parent_name: string | null
           parent_phone: string | null
           support_level: number | null
           updated_at: string
@@ -942,8 +944,10 @@ export type Database = {
           created_at?: string
           functional_profile?: string | null
           id?: string
+          intake_answers?: Json | null
           last_report?: Json | null
           parent_email?: string | null
+          parent_name?: string | null
           parent_phone?: string | null
           support_level?: number | null
           updated_at?: string
@@ -957,8 +961,10 @@ export type Database = {
           created_at?: string
           functional_profile?: string | null
           id?: string
+          intake_answers?: Json | null
           last_report?: Json | null
           parent_email?: string | null
+          parent_name?: string | null
           parent_phone?: string | null
           support_level?: number | null
           updated_at?: string
