@@ -113,8 +113,21 @@ Deno.serve(async (req) => {
             reference_ar: it.reference_ar || '',
           }));
           if (rows.length) {
-            await fetch(rest('/clinical_cases'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(rows) });
-            entry.added_cases = rows.length;
+            // Dedupe codes within batch and append random suffix to avoid unique collisions on retries
+            const seen = new Set<string>();
+            const safeRows = rows.map((r: any) => {
+              let code = r.code;
+              if (seen.has(code)) code = `${code}_${Math.random().toString(36).slice(2, 6)}`;
+              seen.add(code);
+              return { ...r, code: `${code}_${Math.random().toString(36).slice(2, 5)}` };
+            });
+            const ins = await fetch(rest('/clinical_cases'), {
+              method: 'POST',
+              headers: svcHeaders({ Prefer: 'resolution=ignore-duplicates,return=representation' }),
+              body: JSON.stringify(safeRows),
+            });
+            if (!ins.ok) entry.cases_error = `insert ${ins.status}: ${(await ins.text()).slice(0, 200)}`;
+            else entry.added_cases = (await ins.json()).length;
           }
         } catch (e) { entry.cases_error = (e as Error).message; }
       }
