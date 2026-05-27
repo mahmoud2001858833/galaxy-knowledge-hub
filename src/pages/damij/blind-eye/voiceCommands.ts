@@ -61,6 +61,15 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
     en: [/\b(take me|guide me|navigate|go)\s+to\s+\w+/i, /^i want to go to .+/i],
     ar: [/(بدي|أريد|اريد|عاوز|عايز|ودي).{0,10}(أروح|اروح|أذهب|اذهب|أمشي|اوصل|أصل|نروح)/, /^(خذني|وجهني|وجّهني|دلني|دلّني|رشدني|ودّيني|وديني)\s+/]
   },
+  { id: 'SAVE_PLACE',
+    en: [/^save (?:this )?(?:place|location)?\s*as\s+.+/i],
+    ar: [/^(احفظ|إحفظ|سجل|سجّل)\s+(هذا|هاد|هذه|هاي)?\s*(المكان|الموقع)?/] },
+  { id: 'EMERGENCY',
+    en: [/\b(emergency|sos|help me)\b/i],
+    ar: [/(نجده|نجدة|طوارئ|انقذني|أنقذني|ساعدني الآن)/] },
+  { id: 'LIST_PLACES',
+    en: [/\b(list|show)\s+(saved\s+)?places\b/i],
+    ar: [/(اعرض|أعرض|اذكر|قائمة)\s+(الأماكن|اماكني|أماكني|المحفوظة)/] },
 ];
 
 
