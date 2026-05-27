@@ -445,6 +445,81 @@ const BlindEyeNavigatorInner: React.FC = () => {
         return;
       case 'SWITCH_LANG_AR': switchLang('ar'); return;
       case 'SWITCH_LANG_EN': switchLang('en'); return;
+      case 'CANCEL_NAV': {
+        targetLocalRef.current = null;
+        targetGeoRef.current = null;
+        if (geoWatchRef.current != null) {
+          try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
+          geoWatchRef.current = null;
+        }
+        enqueueSpeech({ text: BE_STRINGS[langRef.current].navCancelled, priority: 'critical', lang: langRef.current });
+        return;
+      }
+      case 'WHERE_AM_I': {
+        enqueueSpeech({ text: BE_STRINGS[langRef.current].navHere, priority: 'directional', lang: langRef.current });
+        return;
+      }
+      case 'ARRIVED_QUERY': {
+        const g = targetGeoRef.current; const up = userPosRef.current;
+        if (g && up) {
+          const dist = haversine(up, g.dest);
+          enqueueSpeech({ text: `${formatDistanceAr(dist)} ${dist < 20 ? '— وصلت' : 'باقي'}`, priority: 'directional', lang: langRef.current });
+        } else if (targetLocalRef.current) {
+          enqueueSpeech({ text: `أبحث عن ${LANDMARK_AR[targetLocalRef.current]}`, priority: 'directional', lang: langRef.current });
+        } else {
+          enqueueSpeech({ text: 'لا يوجد توجيه نشط حالياً', priority: 'directional', lang: langRef.current });
+        }
+        return;
+      }
+      case 'GO_TO': {
+        const dest = parseDestination(text);
+        if (!dest) { sendChat(text); return; }
+        if (dest.kind === 'local') {
+          targetGeoRef.current = null;
+          if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
+          targetLocalRef.current = dest.landmark;
+          enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartLocal} ${dest.arabic}`, priority: 'critical', lang: langRef.current });
+          runAI('points');
+        } else {
+          enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${dest.query}`, priority: 'critical', lang: langRef.current });
+          geocodePlace(dest.query).then((latlng) => {
+            if (!latlng) {
+              enqueueSpeech({ text: BE_STRINGS[langRef.current].navNotFound, priority: 'critical', lang: langRef.current });
+              return;
+            }
+            targetGeoRef.current = { name: dest.query, dest: latlng };
+            if (!navigator.geolocation) {
+              enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current });
+              return;
+            }
+            if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} }
+            geoWatchRef.current = navigator.geolocation.watchPosition(
+              (pos) => {
+                userPosRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                if (pos.coords.heading != null && !Number.isNaN(pos.coords.heading)) userHeadingRef.current = pos.coords.heading;
+                const tg = targetGeoRef.current;
+                if (!tg) return;
+                const dist = haversine(userPosRef.current, tg.dest);
+                const now = Date.now();
+                if (now - lastNavSpeakRef.current < 4000) return;
+                lastNavSpeakRef.current = now;
+                if (dist < 20) {
+                  enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
+                  if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
+                  targetGeoRef.current = null;
+                  return;
+                }
+                const b = bearing(userPosRef.current, tg.dest);
+                const dir = relativeDirectionAr(b, userHeadingRef.current);
+                enqueueSpeech({ text: `${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, priority: 'directional', lang: langRef.current });
+              },
+              () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
+              { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
+            );
+          });
+        }
+        return;
+      }
       case 'HELP':
         sendChat(langRef.current === 'ar' ? 'ماذا تستطيع أن تفعل؟ اقترح ٣ أوامر مفيدة.' : 'What can you do? Suggest 3 useful commands.');
         return;
