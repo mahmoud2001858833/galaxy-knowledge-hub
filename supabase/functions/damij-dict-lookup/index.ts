@@ -1,6 +1,8 @@
-import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Edge function: damij-dict-lookup
 // Returns rich detail for a single Arabic word in a chosen sign system + display language.
+// Uses direct Gemini key rotation; falls back to Lovable AI only when all Gemini keys fail.
+import { aiCallWithFallback, parseJson } from "../_shared/sign-ai-call.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -20,13 +22,6 @@ Deno.serve(async (req) => {
     if (!body?.ar_word || !body?.target_lang) {
       return new Response(JSON.stringify({ error: "missing ar_word or target_lang" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const apiKey = "shim-key";
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -57,44 +52,14 @@ Return ONLY minified JSON in this exact shape (all text fields in ${lang} unless
 
 Keep fingerspelling array empty [] if the word has a standard whole-word sign and is not a proper noun/number.`;
 
-    const r = await geminiFetch("ai-shim", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are a precise multilingual sign-language lexicographer." },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (r.status === 429) {
-      return new Response(JSON.stringify({ error: "rate_limited" }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (r.status === 402) {
-      return new Response(JSON.stringify({ error: "credits_exhausted" }), {
-        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!r.ok) {
-      const t = await r.text();
-      console.error("AI lookup error", r.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const raw = await aiCallWithFallback(prompt, true);
+    if (!raw) {
+      return new Response(JSON.stringify({ error: "AI providers unavailable" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await r.json();
-    const raw = data?.choices?.[0]?.message?.content?.trim() ?? "{}";
-    let parsed: any = null;
-    try { parsed = JSON.parse(raw); } catch {
-      const m = raw.match(/\{[\s\S]*\}/);
-      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-    }
+    const parsed = parseJson(raw);
     if (!parsed) {
       return new Response(JSON.stringify({ error: "invalid AI JSON" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
