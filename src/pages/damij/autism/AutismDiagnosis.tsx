@@ -29,6 +29,9 @@ import RepetitiveMatch from '@/features/autism/games/RepetitiveMatch';
 import EmotionRecognition from '@/features/autism/games/EmotionRecognition';
 import SensoryTolerance from '@/features/autism/games/SensoryTolerance';
 import { TEMPLATE_REGISTRY, TEMPLATE_META } from '@/features/autism/games/templates/registry';
+import GameIntroScreen from '@/features/autism/ui/GameIntroScreen';
+import { useTTS } from '@/features/autism/ui/useTTS';
+import { Volume2 } from 'lucide-react';
 
 type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'ai_games' | 'analyzing' | 'report';
 type Path = 'questionnaire' | 'games' | 'ai_games' | 'both';
