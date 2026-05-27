@@ -62,9 +62,13 @@ const inferTrack = (ageMonths: number): AgeTrack => {
 const AutismDiagnosis: React.FC = () => {
   const navigate = useNavigate();
   const { isYoung, baseTextClass, reduceMotion } = useAutismAdaptive();
-  const [step, setStep] = useState<Step>('intro');
-  const [name, setName] = useState('');
-  const [ageMonths, setAgeMonths] = useState(36);
+  // Auto-load child info from saved profile so we never ask twice
+  const savedProfile = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('autism_active_profile') || 'null'); } catch { return null; }
+  }, []);
+  const [step, setStep] = useState<Step>(savedProfile?.child_name ? 'path' : 'intro');
+  const [name, setName] = useState(savedProfile?.child_name || '');
+  const [ageMonths, setAgeMonths] = useState(savedProfile?.age_years ? savedProfile.age_years * 12 : 36);
   const [respondent, setRespondent] = useState<'caregiver' | 'self'>('caregiver');
   const [path, setPath] = useState<Path>('ai_games');
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
@@ -76,6 +80,7 @@ const AutismDiagnosis: React.FC = () => {
   const [aiGamesLoading, setAiGamesLoading] = useState(false);
   const [aiStrategy, setAiStrategy] = useState<string>('');
   const [report, setReport] = useState<AIReport | null>(null);
+  const [introShown, setIntroShown] = useState(false); // per-game intro screen flag
 
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
   const items = useMemo(() => getItemsForTrack(track), [track]);
