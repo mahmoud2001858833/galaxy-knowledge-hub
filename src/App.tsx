@@ -175,6 +175,9 @@ import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
 import DamijLayout from './pages/damij/DamijLayout';
 import DamijLanding from './pages/damij/DamijLanding';
+import DamijAuth from './pages/damij/auth/DamijAuth';
+import DamijResetPassword from './pages/damij/auth/DamijResetPassword';
+import DamijAuthGuard from './components/damij/DamijAuthGuard';
 import BrailleHome from './pages/damij/braille/BrailleHome';
 
 import BrailleToText from './pages/damij/braille/BrailleToText';
