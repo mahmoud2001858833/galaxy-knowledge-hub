@@ -86,15 +86,18 @@ const AutismDiagnosis: React.FC = () => {
   const [introShown, setIntroShown] = useState(false); // per-game intro screen flag
   const tts = useTTS();
 
-  // Auto-narrate the current question
-  React.useEffect(() => {
-    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
-  }, [step, currentItem?.id]); // eslint-disable-line
-
-
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
   const items = useMemo(() => getItemsForTrack(track), [track]);
   const currentItem = items[qIndex];
+
+  // Auto-narrate the current question
+  React.useEffect(() => {
+    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, currentItem?.id]);
+
+  // Reset per-game intro flag whenever we switch games
+  React.useEffect(() => { setIntroShown(false); }, [gameIndex, aiGameIndex, step]);
 
   const reset = () => {
     setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]);
