@@ -505,11 +505,21 @@ const AutismDiagnosis: React.FC = () => {
               </div>
             </div>
             <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
-              <Cmp
-                key={game.id}
-                onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
-                onSkip={() => handleGameComplete({}, 0, true)}
-              />
+              {!introShown ? (
+                <GameIntroScreen
+                  title={game.title}
+                  instructions={(game as any).description || (game as any).instructions || 'اتبع التعليمات داخل اللعبة.'}
+                  childName={name || undefined}
+                  onStart={() => setIntroShown(true)}
+                  onSkip={() => handleGameComplete({}, 0, true)}
+                />
+              ) : (
+                <Cmp
+                  key={game.id}
+                  onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
+                  onSkip={() => handleGameComplete({}, 0, true)}
+                />
+              )}
             </div>
           </div>
         );
