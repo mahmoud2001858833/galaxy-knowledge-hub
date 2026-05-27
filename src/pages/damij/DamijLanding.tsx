@@ -56,6 +56,45 @@ const DamijLanding: React.FC = () => {
       />
       <DamijHero3D />
 
+      {/* Blind Eye hero card */}
+      <section className="px-6 mt-6 mb-10">
+        <motion.a
+          href="/damij/blind-eye"
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          whileHover={{ scale: 1.01 }}
+          className="relative block max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-2xl group"
+          style={{ background: 'linear-gradient(135deg, hsl(160 84% 18%), hsl(190 90% 28%))' }}
+          aria-label="افتح عين الأعمى"
+        >
+          <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle at 30% 40%, hsl(160 90% 60% / 0.4), transparent 60%), radial-gradient(circle at 80% 70%, hsl(190 90% 70% / 0.35), transparent 55%)' }} />
+          <div className="relative p-7 md:p-9 flex flex-col md:flex-row items-center gap-6 text-white">
+            <motion.div
+              animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0 border border-white/25"
+            >
+              <Eye className="w-12 h-12 md:w-14 md:h-14" />
+            </motion.div>
+            <div className="flex-1 text-center md:text-right">
+              <div className="text-xs md:text-sm font-bold tracking-widest opacity-80 mb-1">DAMIJ · BLIND EYE</div>
+              <h3 className="text-2xl md:text-3xl font-extrabold leading-tight mb-2">
+                عين الأعمى — مرشدك للمشي بأمان
+              </h3>
+              <p className="text-sm md:text-base opacity-90 max-w-2xl md:mr-0 mx-auto">
+                مساعد ذكي بصوت عربي يرى الطريق نيابة عنك. قل له «خذني إلى الباب» أو «وين مدرستي» — يقودك خطوة بخطوة.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-emerald-900 font-extrabold shadow-lg group-hover:shadow-xl transition shrink-0">
+              افتح عيني
+              <Eye className="w-4 h-4" />
+            </span>
+          </div>
+        </motion.a>
+      </section>
+
+
       {/* Stats strip */}
       <section className="px-6 -mt-6 mb-14">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
