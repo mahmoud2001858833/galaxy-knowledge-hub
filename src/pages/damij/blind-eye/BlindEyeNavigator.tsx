@@ -77,6 +77,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const userPosRef = useRef<LatLng | null>(null);
   const userHeadingRef = useRef<number | null>(null);
   const lastNavSpeakRef = useRef<number>(0);
+  const targetStableRef = useRef<{ seen: number; missed: number }>({ seen: 0, missed: 0 });
+  const lastNavTextRef = useRef<string>('');
+
 
 
   const [phase, setPhase] = useState<Phase>('starting');
