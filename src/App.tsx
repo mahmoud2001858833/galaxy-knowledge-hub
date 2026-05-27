@@ -175,6 +175,9 @@ import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
 import DamijLayout from './pages/damij/DamijLayout';
 import DamijLanding from './pages/damij/DamijLanding';
+import DamijAuth from './pages/damij/auth/DamijAuth';
+import DamijResetPassword from './pages/damij/auth/DamijResetPassword';
+import DamijAuthGuard from './components/damij/DamijAuthGuard';
 import BrailleHome from './pages/damij/braille/BrailleHome';
 
 import BrailleToText from './pages/damij/braille/BrailleToText';
@@ -964,8 +967,16 @@ const router = createBrowserRouter([
         element: <PublicRoute><CancerDetection /></PublicRoute>,
       },
       {
+        path: 'damij/auth',
+        element: <DamijAuth />,
+      },
+      {
+        path: 'damij/auth/reset',
+        element: <DamijResetPassword />,
+      },
+      {
         path: 'damij',
-        element: <PublicRoute><DamijLayout /></PublicRoute>,
+        element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
         children: [
           { index: true, element: <DamijLanding /> },
           { path: 'braille', element: <BrailleHome /> },

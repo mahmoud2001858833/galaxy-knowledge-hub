@@ -2549,6 +2549,60 @@ export type Database = {
         }
         Relationships: []
       }
+      damij_translation_cache: {
+        Row: {
+          created_at: string
+          lang: string
+          source_text: string
+          translated: string
+        }
+        Insert: {
+          created_at?: string
+          lang: string
+          source_text: string
+          translated: string
+        }
+        Update: {
+          created_at?: string
+          lang?: string
+          source_text?: string
+          translated?: string
+        }
+        Relationships: []
+      }
+      damij_users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          preferred_lang: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          preferred_lang?: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          preferred_lang?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       drawing_challenge_messages: {
         Row: {
           challenge_id: string
