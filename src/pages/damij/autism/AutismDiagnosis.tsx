@@ -84,6 +84,13 @@ const AutismDiagnosis: React.FC = () => {
   const [aiStrategy, setAiStrategy] = useState<string>('');
   const [report, setReport] = useState<AIReport | null>(null);
   const [introShown, setIntroShown] = useState(false); // per-game intro screen flag
+  const tts = useTTS();
+
+  // Auto-narrate the current question
+  React.useEffect(() => {
+    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
+  }, [step, currentItem?.id]); // eslint-disable-line
+
 
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
   const items = useMemo(() => getItemsForTrack(track), [track]);
