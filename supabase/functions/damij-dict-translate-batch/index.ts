@@ -1,7 +1,8 @@
-import { geminiFetch } from "../_shared/gemini-shim.ts";
 // Edge function: damij-dict-translate-batch
-// Translates a list of Arabic words to a target language in one AI call.
-// Returns: { translations: { [ar_word]: translated_word } }
+// Translates Arabic words to a target language. Uses direct Gemini key rotation;
+// falls back to Lovable AI only when all Gemini keys fail.
+import { aiCallWithFallback, parseJson } from "../_shared/sign-ai-call.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -9,8 +10,8 @@ const corsHeaders = {
 
 interface Body {
   words: string[];
-  targetLang: string;       // BCP-47
-  targetLangName?: string;  // human readable
+  targetLang: string;
+  targetLangName?: string;
 }
 
 Deno.serve(async (req) => {
@@ -19,12 +20,10 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as Body;
     if (!Array.isArray(body?.words) || body.words.length === 0 || !body?.targetLang) {
       return new Response(JSON.stringify({ error: "missing words or targetLang" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // If target is Arabic, identity map
     if (body.targetLang.startsWith("ar")) {
       const out: Record<string, string> = {};
       for (const w of body.words) out[w] = w;
@@ -33,17 +32,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = "shim-key";
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const langName = body.targetLangName ?? body.targetLang;
-
-    // Process in chunks of 60 to stay safe
     const chunkSize = 60;
     const final: Record<string, string> = {};
 
@@ -63,44 +52,9 @@ RULES:
 Words:
 ${numbered}`;
 
-      const r = await geminiFetch("ai-shim", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: "You are a precise multilingual translator." },
-            { role: "user", content: prompt },
-          ],
-          response_format: { type: "json_object" },
-        }),
-      });
-
-      if (r.status === 429) {
-        return new Response(JSON.stringify({ error: "rate_limited" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (r.status === 402) {
-        return new Response(JSON.stringify({ error: "credits_exhausted" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (!r.ok) {
-        const t = await r.text();
-        console.error("AI batch error", r.status, t);
-        return new Response(JSON.stringify({ error: "AI gateway error" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const data = await r.json();
-      const raw = data?.choices?.[0]?.message?.content?.trim() ?? "{}";
-      let parsed: any = null;
-      try { parsed = JSON.parse(raw); } catch {
-        const m = raw.match(/\{[\s\S]*\}/);
-        if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-      }
+      const raw = await aiCallWithFallback(prompt, true);
+      if (!raw) continue;
+      const parsed = parseJson(raw);
       const items = parsed?.items;
       if (Array.isArray(items)) {
         for (const it of items) {
