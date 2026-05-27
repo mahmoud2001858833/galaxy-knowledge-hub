@@ -12,9 +12,9 @@ const STORAGE_KEY = 'blindEye.lang';
 
 export const BlindEyeLangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<BELang>(() => {
-    if (typeof window === 'undefined') return 'en';
+    if (typeof window === 'undefined') return 'ar';
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === 'ar' || stored === 'en' ? stored : 'en';
+    return stored === 'ar' || stored === 'en' ? stored : 'ar';
   });
 
   const setLang = useCallback((l: BELang) => {

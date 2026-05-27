@@ -13,21 +13,28 @@ const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
 
 type Lang = "en" | "ar";
 
-const POINTS_PROMPT = (lang: Lang) => lang === "ar"
-  ? `أنت "عين الأعمى" مرشد بصري للمكفوفين. أرجع كل العناصر المهمة المرئية الآن:
+const POINTS_PROMPT = (lang: Lang, target?: string) => {
+  const targetLine = target
+    ? (lang === "ar"
+        ? `\n- المستخدم يريد الذهاب إلى: "${target}". إذا رأيت هذا الكائن، اجعل target_seen=true وحدد target_bearing (left|center|right حسب موضعه أفقياً) و target_distance (far|mid|near|arrived) و next_step_ar كتعليمة عربية قصيرة (3-7 كلمات) تخبر المستخدم بالخطوة التالية. إذا لم تره: target_seen=false و next_step_ar اقتراح للبحث (مثل: "أدر الكاميرا يميناً ببطء").`
+        : `\n- User wants to reach: "${target}". If you see it, set target_seen=true, target_bearing (left|center|right), target_distance (far|mid|near|arrived), and next_step_ar as a SHORT ARABIC instruction (3-7 words). Otherwise target_seen=false and next_step_ar suggests a search move.`)
+    : "";
+  return lang === "ar"
+    ? `أنت "عين الأعمى" مرشد بصري للمكفوفين. أرجع كل العناصر المهمة المرئية الآن:
 - objects: حتى 6 عناصر، لكل عنصر x,y (مركز 0-1)، w,h (حجم 0-1)، label كلمة عربية واحدة، hazard low|medium|high، proximity 0-100.
 - best_path: left|center|right.
 - global_proximity 0-100.
 - spoken: 3-7 كلمات عربية. ابدأ بـ "قف!" عند خطر عالٍ.
-- obstacles_summary: 4-10 كلمات لأهم عقبة.
+- obstacles_summary: 4-10 كلمات لأهم عقبة.${targetLine}
 كن سريعاً جداً ودقيق الإحداثيات.`
-  : `You are "Blind Eye", a visual guide for blind users. Return everything important you see now:
-- objects: up to 6 items, each with x,y (center 0-1), w,h (size 0-1), label (one English word), hazard (low|medium|high), proximity 0-100.
+    : `You are "Blind Eye", a visual guide for blind users. Return everything important you see now:
+- objects: up to 6 items, each with x,y (center 0-1), w,h (size 0-1), label (one word), hazard (low|medium|high), proximity 0-100.
 - best_path: left|center|right.
 - global_proximity 0-100 (closest hazard).
-- spoken: 3-7 English words. Start with "Stop!" on high hazard.
-- obstacles_summary: 4-10 words on the main obstacle.
+- spoken: 3-7 words. Start with "Stop!" on high hazard.
+- obstacles_summary: 4-10 words on the main obstacle.${targetLine}
 Be very fast and precise.`;
+};
 
 const GUIDANCE_FAST_PROMPT = (lang: Lang) => lang === "ar"
   ? `أنت "عين الأعمى" مرشد للمكفوفين. حلل بسرعة:
@@ -84,6 +91,10 @@ const pointsTool = {
         global_proximity: { type: "number" },
         spoken: { type: "string" },
         obstacles_summary: { type: "string" },
+        target_seen: { type: "boolean" },
+        target_bearing: { type: "string", enum: ["left","center","right"] },
+        target_distance: { type: "string", enum: ["far","mid","near","arrived"] },
+        next_step_ar: { type: "string" },
       },
       required: ["objects","best_path","global_proximity","spoken","obstacles_summary"],
       additionalProperties: false,
@@ -178,7 +189,7 @@ const calibTool = {
 
 type Mode = "calibration" | "fast" | "detailed" | "points";
 
-async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang: Lang, extraContext?: string) {
+async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang: Lang, extraContext?: string, target?: string) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -186,7 +197,7 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
   let tool: any;
   if (mode === "calibration") { sys = CALIBRATION_PROMPT(lang); tool = calibTool; }
   else if (mode === "detailed") { sys = GUIDANCE_DETAILED_PROMPT(lang); tool = guidanceDetailedTool; }
-  else if (mode === "points") { sys = POINTS_PROMPT(lang); tool = pointsTool; }
+  else if (mode === "points") { sys = POINTS_PROMPT(lang, target); tool = pointsTool; }
   else { sys = GUIDANCE_FAST_PROMPT(lang); tool = guidanceFastTool; }
 
   const userText = extraContext
@@ -232,7 +243,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { image, context, mode, lang } = await req.json();
+    const { image, context, mode, lang, target } = await req.json();
     if (!image || typeof image !== "string") {
       return new Response(JSON.stringify({ error: "image required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -250,7 +261,7 @@ Deno.serve(async (req) => {
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, image, useMode, useLang, context);
+        const result = await callGateway(model, image, useMode, useLang, context, typeof target === 'string' ? target : undefined);
         return new Response(JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

@@ -4,7 +4,8 @@ import type { BELang } from './i18n';
 export type CommandId =
   | 'STOP' | 'START' | 'REPEAT' | 'SCAN_AREA' | 'WHATS_AROUND'
   | 'READ_TEXT' | 'SWITCH_LANG_AR' | 'SWITCH_LANG_EN'
-  | 'SLOWER' | 'FASTER' | 'QUIETER' | 'LOUDER' | 'HELP' | 'CHAT';
+  | 'SLOWER' | 'FASTER' | 'QUIETER' | 'LOUDER' | 'HELP' | 'CHAT'
+  | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY';
 
 const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
   { id: 'STOP',
@@ -46,7 +47,22 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
   { id: 'HELP',
     en: [/\b(help|what can you do|commands)\b/i],
     ar: [/(ساعدني|مساعدة|ماذا تستطيع|الأوامر)/] },
+  { id: 'CANCEL_NAV',
+    en: [/\b(cancel|stop) (navigation|guidance|guiding)\b/i, /\bnever ?mind\b/i],
+    ar: [/(ألغِ|الغ|الغي|أوقف|اوقف|توقف عن).{0,8}(التوجيه|الإرشاد|الارشاد)/, /^خلص$/] },
+  { id: 'WHERE_AM_I',
+    en: [/\bwhere am i\b/i, /\bmy location\b/i],
+    ar: [/(وين أنا|أين أنا|اين انا|موقعي|أين موقعي)/] },
+  { id: 'ARRIVED_QUERY',
+    en: [/\b(did i arrive|am i there)\b/i],
+    ar: [/(هل وصلت|وصلنا|قربت|هل قربت)/] },
+  { id: 'GO_TO',
+    en: [/\b(take me|guide me|navigate|go)\s+to\s+\w+/i, /^i want to go to .+/i],
+    ar: [/(بدي|أريد|اريد|عاوز|عايز|ودي).{0,10}(أروح|اروح|أذهب|اذهب|أمشي|اوصل|أصل|نروح)/, /^(خذني|وجهني|وجّهني|دلني|دلّني|رشدني|ودّيني|وديني)\s+/]
+  },
 ];
+
+
 
 export function parseCommand(rawText: string, lang: BELang): CommandId {
   const t = (rawText || '').trim();

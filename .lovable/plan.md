@@ -1,126 +1,63 @@
-# خطة شاملة لمنصة دامج
 
-## 1) نظام دخول مستقل لدامج (Damij Auth)
+## الهدف
+تحويل "عين الأعمى" من مساعد بصري عام إلى **نظام ملاحة لحظي موجَّه بالطلب** بالعربية أولاً، يفهم وجهة المستخدم (داخلية: "الباب"، أو خارجية: "مدرستي")، ثم يرشده خطوة خطوة بالصوت. وإبراز الميزة في واجهة دامج الرئيسية ببطاقة أنيقة.
 
-### الفكرة
-يستخدم Supabase Auth (نفس قاعدة المستخدمين الموحّدة لا يمكن تفاديها)، لكن **حساب دامج موجود فقط إذا كان للمستخدم سطر في جدول `damij_users`**. أي مستخدم سجّل في "ذروة العلم" ودخل `/damij` سيُطلب منه إنشاء حساب دامج جديد (أو ربط نفس البريد بحساب دامج).
+## التغييرات
 
-### الجداول الجديدة
-```sql
-CREATE TABLE public.damij_users (
-  id uuid PK default gen_random_uuid(),
-  user_id uuid not null unique,  -- auth.users.id
-  display_name text not null,
-  role text not null default 'caregiver' check (role in ('caregiver','therapist','teacher','self','other')),
-  preferred_lang text default 'ar',
-  avatar_url text,
-  created_at timestamptz default now()
-);
--- GRANT + RLS (auth.uid()=user_id select/insert/update)
-```
+### 1) اللغة العربية افتراضية
+- `BlindEyeLangContext.tsx`: تغيير الافتراضي من `'en'` إلى `'ar'`.
+- `i18n.ts`: إضافة مفاتيح جديدة للحوار الملاحي (التعليمات الاتجاهية، أسئلة الوجهة، تأكيد الوصول…).
+- جميع تعليمات النموذج (prompts) تُولَّد بالعربية افتراضياً.
 
-### الصفحات الجديدة
-- `src/pages/damij/auth/DamijAuth.tsx` — صفحة دخول/تسجيل أنيقة بتصميم زجاجي (glass-morphism) متوافق مع هوية دامج، تحوي:
-  - Tabs: "تسجيل دخول" / "إنشاء حساب"
-  - حقول: البريد، كلمة المرور، الاسم، الدور (في التسجيل)
-  - أزرار خط زجاجي + خلفية متحركة بتدرّجات دامج
-  - رابط "نسيت كلمة المرور" → `/damij/auth/reset`
-- `src/pages/damij/auth/DamijResetPassword.tsx` — صفحة تعيين كلمة مرور جديدة
+### 2) وضع "صامت يراقب" حتى يطلب المستخدم
+- إضافة حالة `Phase = 'idle_listening'` (افتراضية بعد المعايرة).
+- في هذا الوضع: الكاميرا تعمل + التحليل المحلي خفيف (motion/edges) + استماع دائم — **بدون كلام تلقائي** إلا عند خطر حاد جداً (proximity > 90).
+- بعد المعايرة الصوت الأول الوحيد: "أنا جاهز، قل لي إلى أين تريد الذهاب."
 
-### Guard
-- `src/components/damij/DamijAuthGuard.tsx` — يفحص session + وجود سطر `damij_users`. إن لم يوجد → redirect إلى `/damij/auth?returnUrl=<original>`.
-- يُلفّ حول `<DamijLayout />` في `App.tsx` (يستبدل `<PublicRoute>` الحالي بـ `<DamijAuthGuard>`).
-- استثناءات (تظل عامة): `/damij/auth`, `/damij/auth/reset`, `/damij/clinical/public/:token`, `/autism/c/:token`.
+### 3) محرك الوجهة والملاحة الموجَّهة
+- معالج صوتي جديد يفهم نوايا الوجهة بالعربية:
+  - **داخلي**: "بدي أروح للباب / للكرسي / للطاولة / للدرج / للنافذة" → يخزَّن `targetObject` ويبدأ Phase `'navigating_local'`.
+  - **خارجي**: "بدي أروح لمدرسة X / مستشفى / صيدلية / البيت" → Phase `'navigating_geo'`.
+  - **استكشاف**: "صف ما حولي / اقرأ النص" → سلوك حالي.
+- خلال `navigating_local`:
+  - كل تحليل AI يعيد، إضافة لما هو موجود، `target_seen: bool`, `target_bearing: 'left'|'center'|'right'`, `target_distance_estimate: 'far'|'mid'|'near'|'arrived'`, `next_step_ar: string` (مثال: "خطوتان للأمام ثم انعطف يميناً").
+  - منطق توجيهي يُلفظ تعليمة قصيرة كل 1.5-2.5 ث ("للأمام"، "يمين قليلاً"، "توقف، الباب أمامك").
+  - عند `arrived` → نغمة + "وصلت إلى الباب".
+- خلال `navigating_geo`:
+  - استخدام `navigator.geolocation.watchPosition` + Nominatim (OpenStreetMap) لتحويل اسم المكان لإحداثيات، وحساب bearing/distance لحظياً.
+  - تعليمات صوتية: "اتجه شمالاً 80 متراً"، ثم تحديث كل تغيُّر heading > 20° أو كل 10 ث.
+  - دمج مع تحذيرات الكاميرا (عوائق قريبة لها أولوية على تعليمات GPS).
 
-### تبديل الحساب
-- زر "تسجيل خروج من دامج" في `DamijHeader` يقوم بـ `signOut()` ويرجع لـ `/damij/auth` (لا يلمس جلسة ذروة العلم لأنه نفس الـ session — لكن سيحوّل المستخدم خارج دامج فقط).
+### 4) تحسين دقة الرؤية (في حدود متصفح)
+- زيادة معدل لقطات AI أثناء `navigating_local` من ~1 Hz إلى ~2 Hz (مع backoff عند 429).
+- تحديث prompt الـ vision ليرجع أيضاً قائمة `landmarks` (door, chair, table, stairs, window, person) مع `bearing` و`approx_meters` تقديري من حجم الصندوق.
+- خوارزمية اختيار: يطابق `targetObject` المطلوب مع `landmarks` ويُولِّد `next_step`.
 
----
+### 5) Edge function `blind-eye-vision`
+- إضافة حقول جديدة في الرد: `landmarks[]`, `target_match`, `target_bearing`, `target_distance`, `next_step_ar`.
+- إضافة معامل `target` في الطلب (اسم الكائن المرغوب بالعربية).
+- الاحتفاظ بـ Lovable AI Gateway (استثناء عين الأعمى المعتمد).
 
-## 2) تحسين الواجهة (Header + Logo + Eco)
+### 6) بطاقة "عين الأعمى" أنيقة في واجهة دامج الرئيسية
+- في `DamijLanding.tsx`: إضافة قسم Hero ثانوي/بطاقة كبيرة بارزة فوق `STATS` بعنوان "عين الأعمى — مرشدك للمشي بأمان"، تدرج لوني emerald→cyan، أيقونة Eye مع نبضة، CTA كبير "افتح عيني" يقود إلى `/damij/blind-eye`.
+- مدعومة بدعائم Motion (framer-motion) وتصميم زجاجي يطابق هوية دامج.
 
-### Header
-- شفافية زجاجية مع `backdrop-blur-xl`، خط ذهبي رفيع أسفل
-- شعار جديد متحرّك (SVG + شعاع نبضي خفيف) — تحديث `DamijBrandLogo`
-- زر اللغة + زر "الوضع البيئي" أصغر وأنيق داخل Header (يستبدل البانر العلوي)
+### 7) أوامر صوتية جديدة في `voiceCommands.ts`
+- `GO_TO` (يلتقط الوجهة بعد "بدي أروح / خذني / وجّهني إلى …")
+- `ARRIVED_QUERY` ("هل وصلت؟")
+- `CANCEL_NAV` ("ألغِ التوجيه / اوقف الإرشاد")
+- `WHERE_AM_I` ("وين أنا الآن؟")
 
-### نقل الوضع البيئي
-- **حذف `DamijEcoBanner` من أعلى الصفحة** ووضع زر دائري صغير في Header مع Popover يعرض: حالة الوضع، الـ CO₂ الموفّر، زر التشغيل/الإيقاف
-- ملف جديد: `src/components/damij/DamijEcoToggle.tsx`
+## تفاصيل تقنية موجزة
+- ملفات تُعدَّل: `BlindEyeLangContext.tsx`, `i18n.ts`, `BlindEyeNavigator.tsx`, `voiceCommands.ts`, `HudOverlay.tsx`, `DamijLanding.tsx`, `supabase/functions/blind-eye-vision/index.ts`.
+- ملفات تُنشأ: `src/pages/damij/blind-eye/navigation/geo.ts` (haversine + bearing + Nominatim wrapper)، `src/pages/damij/blind-eye/navigation/destinationParser.ts` (استخراج الوجهة من النص العربي)، `src/pages/damij/blind-eye/navigation/localGuidance.ts` (يحول landmark+target → تعليمة صوتية).
+- لا تغييرات قاعدة بيانات ولا أسرار جديدة.
+- يبقى استخدام Lovable AI مقتصراً على عين الأعمى كما في القاعدة الحالية.
 
----
+## خارج النطاق (مرحلة لاحقة إن أردت)
+- YOLOv8/MiDaS محلياً (يحتاج WebGPU/Onnx ضخم — مكلف على الموبايل).
+- كشف السقوط عبر DeviceMotion.
+- إرسال موقع للطوارئ.
+- OCR/تعرّف وجوه/عملات.
 
-## 3) Hover-Speak + Smart Guide: تصميم متحرّك مع التمرير
-
-### المشكلة الحالية
-الزرّان مثبّتان بـ `fixed bottom`، لا يتحركان مع scroll. المطلوب أن "يطلعوا وينزلوا" مع تحركات المنصة.
-
-### الحل
-- Container جديد `DamijFloatingDock` (Bottom-end، عمودي) يضم Smart Guide + Hover Speak + Eco Quick + Language Quick
-- استخدام `framer-motion` مع `useScroll` + `useTransform`:
-  - عند Scroll للأسفل بسرعة: تنزلق الأزرار للأسفل قليلاً (y: 20) وتقل العتامة (opacity 0.5)
-  - عند التوقف/Scroll للأعلى: ترجع لمكانها بـ spring
-- شكل أرقى: أزرار دائرية أصغر (12 → 14)، حلقة zircon متدرجة، ظل ملوّن، تموّج عند الضغط
-- لمسة فاخرة: micro-interaction عند Hover (rotate-y 8deg + glow)
-
-### ملفات
-- جديد: `src/components/damij/DamijFloatingDock.tsx`
-- تعديل: `DamijSmartGuide`, `DamijHoverSpeak` لاستقبال `compact` mode وحذف الـ `fixed` الخاص بهما (يصبحان داخل Dock)
-- تعديل: `DamijLayout` لاستبدالهما بـ `<DamijFloatingDock />`
-
----
-
-## 4) حل تأخر الترجمة
-
-### المشاكل القائمة
-- عند تبديل اللغة، الزوار يرون النص العربي ثم يتحدّث تدريجياً
-- لا تظهر مؤشر تقدّم واضح، فقط شارة صغيرة في الزاوية
-
-### الحلول
-1. **Skeleton فوري للنص**: عند تبديل اللغة، يُطبَّق فلتر `blur-sm opacity-60` على `.damij-root` مع overlay رسالة "جاري الترجمة…" حتى تصل أول دفعة
-2. **Cache مُسبق**: على أول زيارة بلغة ما، يجلب القاموس الأساسي (200 مصطلح شائع من قاموس ثابت `src/features/damij/i18n/core-dictionary.ts`) فوراً من ملف JSON محلي بدلاً من API
-3. **زيادة التوازي**: دفعات 30 → 60، وزيادة `Promise.all` إلى 6 دفعات متوازية بدل غير محدود
-4. **Cache مشترك في DB**: جدول جديد `damij_translation_cache (source_text text, lang text, translated text, PRIMARY KEY (source_text, lang))` يستخدمه edge function `damij-translate` للقراءة قبل استدعاء AI، ويكتب النتائج للجميع
-5. **Overlay عرض التقدّم**: عوض loader صغير، شريط علوي ممتدّ (`progress bar`) يعرض "ترجمة 45/120"
-
-### ملفات
-- جديد: `src/features/damij/i18n/core-dictionary.ts` (مصطلحات Header/Nav/Buttons الثابتة)
-- جديد: `supabase/migrations/...` لإنشاء `damij_translation_cache` و `damij_users`
-- تعديل: `supabase/functions/damij-translate/index.ts` للقراءة/الكتابة من Cache
-- تعديل: `DamijAutoTranslator.tsx` للـ skeleton + progress bar
-
----
-
-## 5) Routing تعديلات
-
-في `App.tsx`:
-```tsx
-{
-  path: 'damij',
-  element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
-  children: [
-    { index: true, element: <DamijLanding /> },
-    // باقي المسارات...
-  ],
-},
-{ path: 'damij/auth', element: <DamijAuth /> },           // خارج Guard
-{ path: 'damij/auth/reset', element: <DamijResetPassword /> },
-```
-
----
-
-## التقنيات
-- Supabase Auth (email/password)
-- Framer Motion للحركة المتزامنة مع scroll
-- Tailwind للـ glass-morphism
-- لا Lovable AI (محظور)
-- Cache في DB لتسريع الترجمة
-
-## ترتيب التنفيذ
-1. Migration (`damij_users` + `damij_translation_cache`)
-2. صفحات Auth + Guard + ربط Routing
-3. Header الجديد + نقل Eco
-4. Dock العائم + Scroll-aware animation
-5. تحسينات الترجمة (skeleton + cache + progress)
-
-هل أبدأ؟
+سأنفذ كل ما سبق دفعة واحدة عند الموافقة.
