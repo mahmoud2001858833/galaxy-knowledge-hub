@@ -146,8 +146,8 @@ ${JSON.stringify(SCHEMA)}`;
 
     // Validate: keep only known template_ids
     const validIds = new Set(TEMPLATES.map((t) => t.id));
-    parsed.games = parsed.games.filter((g: any) => validIds.has(g.template_id)).slice(0, 6);
-    if (parsed.games.length < 3) parsed = fallbackBattery(ageMonths);
+    parsed.games = parsed.games.filter((g: any) => validIds.has(g.template_id)).slice(0, 10);
+    if (parsed.games.length < 5) parsed = fallbackBattery(ageMonths);
 
     return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
