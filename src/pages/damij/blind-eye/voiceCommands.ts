@@ -5,7 +5,8 @@ export type CommandId =
   | 'STOP' | 'START' | 'REPEAT' | 'SCAN_AREA' | 'WHATS_AROUND'
   | 'READ_TEXT' | 'SWITCH_LANG_AR' | 'SWITCH_LANG_EN'
   | 'SLOWER' | 'FASTER' | 'QUIETER' | 'LOUDER' | 'HELP' | 'CHAT'
-  | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY';
+  | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY'
+  | 'SAVE_PLACE' | 'EMERGENCY' | 'LIST_PLACES';
 
 const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
   { id: 'STOP',
