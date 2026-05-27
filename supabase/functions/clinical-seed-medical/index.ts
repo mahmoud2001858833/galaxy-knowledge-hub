@@ -68,8 +68,11 @@ const PROTOCOLS_SCHEMA = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
+    const url = new URL(req.url);
+    const only = url.searchParams.get('only');
     const status: any[] = [];
-    for (const sp of SPECIALTIES) {
+    const list = only ? SPECIALTIES.filter((s) => s.key === only) : SPECIALTIES;
+    for (const sp of list) {
       const [casesRes, protocolsRes] = await Promise.all([
         fetch(rest(`/clinical_cases?category=eq.${sp.key}&select=id`), { headers: svcHeaders() }),
         fetch(rest(`/clinical_protocols?category=eq.${sp.key}&select=id`), { headers: svcHeaders() }),
