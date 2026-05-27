@@ -17,6 +17,8 @@ import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
 import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
 import { recognizeImage } from './navigation/ocr';
+import { startCompass, requestCompassPermission } from './navigation/compass';
+import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
