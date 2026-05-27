@@ -162,20 +162,7 @@ serve(async (req) => {
       const results = await Promise.all(chunks.map(async (chunk) => {
         const numbered = chunk.map((s, i) => `${i + 1}. ${s.replace(/\n/g, " ")}`).join("\n");
         try {
-          const resp = await geminiFetch("ai-shim", {
-            method: "POST",
-            headers: { Authorization: `Bearer shim-key`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "google/gemini-3-flash-preview",
-              messages: [
-                { role: "system", content: sys },
-                { role: "user", content: numbered },
-              ],
-            }),
-          });
-          if (!resp.ok) return { chunk, out: {} as Record<string, string> };
-          const data = await resp.json();
-          const content: string = data?.choices?.[0]?.message?.content ?? "";
+          const content = await geminiTranslate(sys, numbered);
           const out: Record<string, string> = {};
           for (const line of content.split(/\r?\n/)) {
             const m = line.match(/^\s*(\d+)[\.\)\:\-]\s*(.+)$/);
@@ -186,7 +173,7 @@ serve(async (req) => {
           }
           return { chunk, out };
         } catch (e) {
-          console.warn("translate chunk error", e);
+          console.warn("translate chunk error", (e as Error).message);
           return { chunk, out: {} as Record<string, string> };
         }
       }));
