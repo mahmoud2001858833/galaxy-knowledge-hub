@@ -152,8 +152,14 @@ Deno.serve(async (req) => {
             goal_ar: it.goal_ar, steps: it.steps || [], reference_ar: it.reference_ar || '',
           }));
           if (rows.length) {
-            await fetch(rest('/clinical_protocols'), { method: 'POST', headers: svcHeaders(), body: JSON.stringify(rows) });
-            entry.added_protocols = rows.length;
+            const safeRows = rows.map((r: any) => ({ ...r, code: `${r.code}_${Math.random().toString(36).slice(2, 5)}` }));
+            const ins = await fetch(rest('/clinical_protocols'), {
+              method: 'POST',
+              headers: svcHeaders({ Prefer: 'resolution=ignore-duplicates,return=representation' }),
+              body: JSON.stringify(safeRows),
+            });
+            if (!ins.ok) entry.protocols_error = `insert ${ins.status}: ${(await ins.text()).slice(0, 200)}`;
+            else entry.added_protocols = (await ins.json()).length;
           }
         } catch (e) { entry.protocols_error = (e as Error).message; }
       }
