@@ -15,6 +15,8 @@ import { parseCommand, commandAllowed } from './voiceCommands';
 import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
+import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
+import { recognizeImage } from './navigation/ocr';
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
@@ -75,6 +77,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const userPosRef = useRef<LatLng | null>(null);
   const userHeadingRef = useRef<number | null>(null);
   const lastNavSpeakRef = useRef<number>(0);
+  const targetStableRef = useRef<{ seen: number; missed: number }>({ seen: 0, missed: 0 });
+  const lastNavTextRef = useRef<string>('');
+
 
 
   const [phase, setPhase] = useState<Phase>('starting');
@@ -249,20 +254,26 @@ const BlindEyeNavigatorInner: React.FC = () => {
           else earcons.pointAhead();
         }
 
-        // ---- Target-oriented local navigation ----
+        // ---- Target-oriented local navigation (with stability filter) ----
         if (targetLocalRef.current && Array.isArray(g.objects)) {
           const lps: LandmarkPoint[] = g.objects.map((o: AIObject) => ({
             x: o.x, y: o.y, w: o.w, h: o.h, label: o.label, proximity: o.proximity,
           }));
           const found = findTarget(lps, targetLocalRef.current);
-          const step = buildStepAr(targetLocalRef.current, found);
+          if (found) { targetStableRef.current.seen += 1; targetStableRef.current.missed = 0; }
+          else { targetStableRef.current.missed += 1; targetStableRef.current.seen = 0; }
+          const confident = found && targetStableRef.current.seen >= 2;
+          const reallyLost = !found && targetStableRef.current.missed >= 4;
+          const step = buildStepAr(targetLocalRef.current, confident ? found : (reallyLost ? null : null));
           const nowN = Date.now();
-          if (nowN - lastNavSpeakRef.current > 1800) {
+          if ((confident || reallyLost) && nowN - lastNavSpeakRef.current > 1800 && step.text !== lastNavTextRef.current) {
             lastNavSpeakRef.current = nowN;
+            lastNavTextRef.current = step.text;
             const pri = step.arrived ? 'critical' : 'directional';
             enqueueSpeech({ text: step.text, priority: pri as any, lang: langRef.current });
             if (step.arrived) {
               targetLocalRef.current = null;
+              targetStableRef.current = { seen: 0, missed: 0 };
               earcons.approach();
               vibrate([120, 60, 120]);
             }
@@ -484,16 +495,16 @@ const BlindEyeNavigatorInner: React.FC = () => {
           targetGeoRef.current = null;
           if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
           targetLocalRef.current = dest.landmark;
+          targetStableRef.current = { seen: 0, missed: 0 };
+          lastNavTextRef.current = '';
           enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartLocal} ${dest.arabic}`, priority: 'critical', lang: langRef.current });
           runAI('points');
         } else {
-          enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${dest.query}`, priority: 'critical', lang: langRef.current });
-          geocodePlace(dest.query).then((latlng) => {
-            if (!latlng) {
-              enqueueSpeech({ text: BE_STRINGS[langRef.current].navNotFound, priority: 'critical', lang: langRef.current });
-              return;
-            }
-            targetGeoRef.current = { name: dest.query, dest: latlng };
+          // Check saved places first (e.g. "البيت" / "المدرسة") to skip geocoding.
+          const canonical = canonicalizePlaceName(dest.query);
+          const saved = getPlace(canonical);
+          const startGeo = (latlng: LatLng, displayName: string) => {
+            targetGeoRef.current = { name: displayName, dest: latlng };
             if (!navigator.geolocation) {
               enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current });
               return;
@@ -522,8 +533,70 @@ const BlindEyeNavigatorInner: React.FC = () => {
               () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
               { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
             );
-          });
+          };
+          if (saved?.coords) {
+            enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${saved.name}`, priority: 'critical', lang: langRef.current });
+            startGeo(saved.coords, saved.name);
+          } else {
+            const queryForGeo = saved?.query || dest.query;
+            enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${saved?.name || dest.query}`, priority: 'critical', lang: langRef.current });
+            geocodePlace(queryForGeo).then((latlng) => {
+              if (!latlng) { enqueueSpeech({ text: BE_STRINGS[langRef.current].navNotFound, priority: 'critical', lang: langRef.current }); return; }
+              if (saved) savePlace(saved.name, { query: queryForGeo, coords: latlng });
+              startGeo(latlng, saved?.name || dest.query);
+            });
+          }
         }
+        return;
+      }
+      case 'SAVE_PLACE': {
+        const name = extractSaveAsName(text);
+        if (!name) { enqueueSpeech({ text: 'قل: احفظ هذا المكان كالبيت', priority: 'directional', lang: langRef.current }); return; }
+        if (userPosRef.current) {
+          savePlace(name, { coords: userPosRef.current });
+          enqueueSpeech({ text: `تم حفظ موقعك الحالي باسم ${name}`, priority: 'critical', lang: langRef.current });
+        } else if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              userPosRef.current = c;
+              savePlace(name, { coords: c });
+              enqueueSpeech({ text: `تم حفظ موقعك الحالي باسم ${name}`, priority: 'critical', lang: langRef.current });
+            },
+            () => {
+              savePlace(name, { query: name });
+              enqueueSpeech({ text: `تم حفظ ${name} كاسم. لم أحصل على الموقع الحالي.`, priority: 'critical', lang: langRef.current });
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        } else {
+          savePlace(name, { query: name });
+          enqueueSpeech({ text: `تم حفظ ${name}`, priority: 'critical', lang: langRef.current });
+        }
+        return;
+      }
+      case 'LIST_PLACES': {
+        const places = listPlaces();
+        if (places.length === 0) { enqueueSpeech({ text: 'لا توجد أماكن محفوظة بعد', priority: 'directional', lang: langRef.current }); return; }
+        enqueueSpeech({ text: `أماكنك المحفوظة: ${places.map(p => p.name).join('، ')}`, priority: 'directional', lang: langRef.current });
+        return;
+      }
+      case 'EMERGENCY': {
+        const phone = getEmergencyPhone();
+        enqueueSpeech({ text: phone ? 'أتصل بجهة الطوارئ الآن' : 'لم يتم تعيين رقم طوارئ، اتصال بالإسعاف', priority: 'critical', lang: langRef.current });
+        const tel = phone || '911';
+        try { window.location.href = `tel:${tel}`; } catch {}
+        return;
+      }
+      case 'READ_TEXT': {
+        enqueueSpeech({ text: BE_STRINGS[langRef.current].scanningArea, priority: 'directional', lang: langRef.current });
+        const img = captureFrame('detailed');
+        if (!img) { enqueueSpeech({ text: 'لم أتمكن من التقاط الصورة', priority: 'directional', lang: langRef.current }); return; }
+        recognizeImage(img).then((txt) => {
+          const clean = (txt || '').replace(/\s+/g, ' ').trim();
+          if (!clean) { enqueueSpeech({ text: 'لا أرى نصاً واضحاً', priority: 'directional', lang: langRef.current }); return; }
+          enqueueSpeech({ text: clean.slice(0, 400), priority: 'directional', lang: langRef.current });
+        }).catch(() => enqueueSpeech({ text: 'تعذرت قراءة النص', priority: 'directional', lang: langRef.current }));
         return;
       }
       case 'HELP':

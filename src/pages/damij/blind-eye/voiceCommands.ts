@@ -5,7 +5,8 @@ export type CommandId =
   | 'STOP' | 'START' | 'REPEAT' | 'SCAN_AREA' | 'WHATS_AROUND'
   | 'READ_TEXT' | 'SWITCH_LANG_AR' | 'SWITCH_LANG_EN'
   | 'SLOWER' | 'FASTER' | 'QUIETER' | 'LOUDER' | 'HELP' | 'CHAT'
-  | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY';
+  | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY'
+  | 'SAVE_PLACE' | 'EMERGENCY' | 'LIST_PLACES';
 
 const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
   { id: 'STOP',
@@ -60,6 +61,15 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
     en: [/\b(take me|guide me|navigate|go)\s+to\s+\w+/i, /^i want to go to .+/i],
     ar: [/(بدي|أريد|اريد|عاوز|عايز|ودي).{0,10}(أروح|اروح|أذهب|اذهب|أمشي|اوصل|أصل|نروح)/, /^(خذني|وجهني|وجّهني|دلني|دلّني|رشدني|ودّيني|وديني)\s+/]
   },
+  { id: 'SAVE_PLACE',
+    en: [/^save (?:this )?(?:place|location)?\s*as\s+.+/i],
+    ar: [/^(احفظ|إحفظ|سجل|سجّل)\s+(هذا|هاد|هذه|هاي)?\s*(المكان|الموقع)?/] },
+  { id: 'EMERGENCY',
+    en: [/\b(emergency|sos|help me)\b/i],
+    ar: [/(نجده|نجدة|طوارئ|انقذني|أنقذني|ساعدني الآن)/] },
+  { id: 'LIST_PLACES',
+    en: [/\b(list|show)\s+(saved\s+)?places\b/i],
+    ar: [/(اعرض|أعرض|اذكر|قائمة)\s+(الأماكن|اماكني|أماكني|المحفوظة)/] },
 ];
 
 
