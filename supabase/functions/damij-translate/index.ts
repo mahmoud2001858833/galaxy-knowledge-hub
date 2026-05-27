@@ -1,73 +1,44 @@
-// Translates a batch of strings to the requested language directly via Gemini,
-// rotating across many API keys so one quota-exhausted key falls back to the next.
+// Translates a batch of strings to the requested language through Lovable AI.
 // Persists every translation in `damij_translation_cache` for instant reuse.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const KEY_NAMES = [
-  "GEMINI_API_KEY", "GEMINI_API_KEY_NEW", "GOOGLE_AI_API_KEY",
-  "AUTISM_GEMINI_API_KEY", "AUTISM_GEMINI_API_KEY_V2",
-  "GJU_AI_API_KEY", "ISLAMIC_HIJRI_AI_KEY", "ISLAMIC_ERAS_AI_KEY",
-  "ROBOTICS_AI_KEY", "MEDICAL_AI_KEY", "PLATFORM_BUILDER_AI_KEY",
-  "IMAGE_GENERATOR_API_KEY", "BRAILLE_LEARN_GEMINI_KEY",
-  "BRAILLE_GEMINI_API_KEY", "BRAILLE_TACTILE_GEMINI_API_KEY",
-  "SENSORY_TACTILE_GEMINI_KEY", "SIGN_TRANSLATE_GEMINI_KEY",
-  "JORDAN_TWIN_AI_KEY", "JORDANIAN_ASSISTANT_AI_KEY",
-  "JORDANIAN_AI_IMAGE_KEY",
-  "JORDANIAN_NEW_AI_KEY_1", "JORDANIAN_NEW_AI_KEY_2",
-  "JORDANIAN_NEW_AI_KEY_3", "JORDANIAN_NEW_AI_KEY_4", "JORDANIAN_NEW_AI_KEY_5",
-  "JORDANIAN_AI_ANSWER_KEY_1", "JORDANIAN_AI_ANSWER_KEY_2", "JORDANIAN_AI_ANSWER_KEY_3",
-  "JORDANIAN_AI_QUESTION_GEN_KEY_1", "JORDANIAN_AI_QUESTION_GEN_KEY_2",
-  "JORDANIAN_AI_QUESTION_GEN_KEY_3", "JORDANIAN_AI_QUESTION_GEN_KEY_4",
-  "JORDANIAN_AI_QUESTION_GEN_KEY_5", "JORDANIAN_AI_QUESTION_GEN_KEY_6",
-  "JORDANIAN_AI_QUESTION_GEN_KEY_7", "JORDANIAN_AI_QUESTION_GEN_KEY_8",
-  "JORDANIAN_AI_QUESTION_GEN_KEY_9", "JORDANIAN_AI_QUESTION_GEN_KEY_10",
-  "JORDANIAN_AI_SEARCH_KEY_1", "JORDANIAN_AI_SEARCH_KEY_2",
-  "JORDANIAN_AI_SEARCH_KEY_3", "JORDANIAN_AI_SEARCH_KEY_4", "JORDANIAN_AI_SEARCH_KEY_5",
-];
-const KEYS = Array.from(new Set(KEY_NAMES.map((n) => Deno.env.get(n)).filter((v): v is string => !!v)));
-let keyCursor = Math.floor(Math.random() * Math.max(1, KEYS.length));
-const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function geminiTranslate(systemPrompt: string, userPrompt: string): Promise<string> {
-  if (KEYS.length === 0) throw new Error("No Gemini API keys configured");
-  const body = {
-    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-    systemInstruction: { role: "system", parts: [{ text: systemPrompt }] },
-    generationConfig: { temperature: 0.1 },
-  };
-  let lastErr = "";
-  // Try every key with each model; rotate starting cursor so load spreads.
-  for (let attempt = 0; attempt < KEYS.length; attempt++) {
-    const key = KEYS[(keyCursor + attempt) % KEYS.length];
-    for (const model of MODELS) {
-      try {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
-        );
-        if (r.ok) {
-          const j = await r.json();
-          const text = (j?.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("");
-          keyCursor = (keyCursor + attempt) % KEYS.length;
-          return text;
-        }
-        const t = await r.text();
-        lastErr = `${r.status}: ${t.slice(0, 160)}`;
-        if (r.status !== 429 && r.status < 500) break; // permanent for this key
-      } catch (e) {
-        lastErr = (e as Error).message;
-      }
-    }
+async function lovableTranslate(systemPrompt: string, userPrompt: string): Promise<string> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+
+  const response = await fetch(LOVABLE_AI_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.05,
+    }),
+  });
+
+  if (!response.ok) {
+    const message = response.status === 429
+      ? "Lovable AI rate limit exceeded"
+      : response.status === 402
+        ? "Lovable AI credits are required"
+        : (await response.text()).slice(0, 240);
+    throw new Error(message);
   }
-  throw new Error(`All keys exhausted: ${lastErr}`);
-}
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) throw new Error("Lovable AI returned an empty translation");
+  return content.trim();
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -162,7 +133,7 @@ serve(async (req) => {
       const results = await Promise.all(chunks.map(async (chunk) => {
         const numbered = chunk.map((s, i) => `${i + 1}. ${s.replace(/\n/g, " ")}`).join("\n");
         try {
-          const content = await geminiTranslate(sys, numbered);
+          const content = await lovableTranslate(sys, numbered);
           const out: Record<string, string> = {};
           for (const line of content.split(/\r?\n/)) {
             const m = line.match(/^\s*(\d+)[\.\)\:\-]\s*(.+)$/);

@@ -21,7 +21,15 @@ const ATTR_ORIG = 'data-damij-orig';
 
 const loadCache = (lang: string): Record<string, string> => {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_PREFIX + lang) || '{}');
+    const parsed = JSON.parse(localStorage.getItem(CACHE_PREFIX + lang) || '{}') as Record<string, string>;
+    const clean: Record<string, string> = {};
+    for (const [source, translated] of Object.entries(parsed)) {
+      if (typeof translated === 'string' && translated.trim() && translated.trim() !== source.trim()) {
+        clean[source] = translated;
+      }
+    }
+    if (Object.keys(clean).length !== Object.keys(parsed).length) saveCache(lang, clean);
+    return clean;
   } catch {
     return {};
   }
@@ -62,7 +70,7 @@ const collectTextNodes = (root: Element, lang: string, cache: Record<string, str
   for (const tn of nodes) {
     const parent = tn.parentElement!;
     const orig = parent.getAttribute(ATTR_ORIG) || (tn.nodeValue || '').trim();
-    if (!cache[orig]) missing.add(orig);
+    if (!cache[orig] || cache[orig].trim() === orig.trim()) missing.add(orig);
   }
   return { nodes, missing: Array.from(missing) };
 };
@@ -199,7 +207,9 @@ const DamijAutoTranslator: React.FC = () => {
               return;
             }
             const translations: Record<string, string> = data?.translations || {};
-            Object.assign(cache, translations);
+            for (const [source, translated] of Object.entries(translations)) {
+              if (translated && translated.trim() !== source.trim()) cache[source] = translated;
+            }
             saveCache(lang, cache);
             const fresh = collectTextNodes(root, lang, cache);
             applyTranslations(fresh.nodes, lang, cache);
