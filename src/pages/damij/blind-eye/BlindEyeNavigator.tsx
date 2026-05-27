@@ -17,6 +17,8 @@ import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
 import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
 import { recognizeImage } from './navigation/ocr';
+import { startCompass, requestCompassPermission } from './navigation/compass';
+import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
@@ -469,9 +471,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
           try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
           geoWatchRef.current = null;
         }
+        // Disarm any pending fall-detection emergency call
+        (window as any).__beFallArmedAt = 0;
         enqueueSpeech({ text: BE_STRINGS[langRef.current].navCancelled, priority: 'critical', lang: langRef.current });
         return;
       }
+
       case 'WHERE_AM_I': {
         enqueueSpeech({ text: BE_STRINGS[langRef.current].navHere, priority: 'directional', lang: langRef.current });
         return;
@@ -647,6 +652,49 @@ const BlindEyeNavigatorInner: React.FC = () => {
     return () => { stopAll(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---- Compass: keep userHeadingRef fresh even when standing still ----
+  useEffect(() => {
+    if (phase === 'stopped') return;
+    let stop: (() => void) | null = null;
+    (async () => {
+      await requestCompassPermission();
+      stop = startCompass((h) => { userHeadingRef.current = h; });
+    })();
+    return () => { stop?.(); };
+  }, [phase]);
+
+  // ---- Fall detection: warn + auto-call emergency after countdown ----
+  useEffect(() => {
+    if (phase === 'stopped') return;
+    let enabled = true;
+    try { enabled = localStorage.getItem('damij.blindEye.fallDetection.v1') !== '0'; } catch {}
+    if (!enabled) return;
+    let cancelTimer: number | null = null;
+    let stop: (() => void) | null = null;
+    (async () => {
+      await requestMotionPermission();
+      stop = startFallDetection(() => {
+        enqueueSpeech({
+          text: 'تم اكتشاف سقوط محتمل. سأتصل بجهة الطوارئ بعد عشر ثوانٍ. قل "ألغِ" لإيقاف الاتصال.',
+          priority: 'critical', lang: langRef.current,
+        });
+        vibrate([300, 120, 300, 120, 300]);
+        if (cancelTimer) window.clearTimeout(cancelTimer);
+        const armedAt = Date.now();
+        (window as any).__beFallArmedAt = armedAt;
+        cancelTimer = window.setTimeout(() => {
+          if ((window as any).__beFallArmedAt !== armedAt) return;
+          const phone = getEmergencyPhone() || '911';
+          enqueueSpeech({ text: 'الاتصال بجهة الطوارئ الآن', priority: 'critical', lang: langRef.current });
+          try { window.location.href = `tel:${phone}`; } catch {}
+        }, 10000);
+      });
+    })();
+    return () => { stop?.(); if (cancelTimer) window.clearTimeout(cancelTimer); };
+  }, [phase]);
+
+
 
   const score = lastGuide?.global_proximity ?? 0;
   const urgencyColor =

@@ -34,9 +34,14 @@ const BlindEyeHome: React.FC = () => {
         keywords="عين الأعمى, مساعد المكفوفين, ملاحة المكفوفين, AI للمكفوفين, منصة دامج عين الأعمى"
       />
       <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col">
-        <Link to="/damij/braille" className="inline-flex items-center gap-2 text-white/70 hover:text-white mb-4 text-lg">
-          <ArrowLeft className="w-6 h-6" /> رجوع
-        </Link>
+        <div className="flex items-center justify-between mb-4">
+          <Link to="/damij/braille" className="inline-flex items-center gap-2 text-white/70 hover:text-white text-lg">
+            <ArrowLeft className="w-6 h-6" /> رجوع
+          </Link>
+          <Link to="/damij/blind-eye/settings" className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm px-3 py-2 rounded-full bg-white/10">
+            ⚙ الإعدادات
+          </Link>
+        </div>
 
         <div className="text-center mb-8">
           <div className="relative inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 backdrop-blur mb-4">
