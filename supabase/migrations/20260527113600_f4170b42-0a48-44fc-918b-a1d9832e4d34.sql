@@ -1,0 +1,1 @@
+REVOKE SELECT (password_hash) ON public.builder_app_users FROM anon, authenticated;
