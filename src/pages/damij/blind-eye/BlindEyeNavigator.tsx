@@ -14,6 +14,7 @@ import { BE_STRINGS, BE_BCP47, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed } from './voiceCommands';
 import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
+import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
