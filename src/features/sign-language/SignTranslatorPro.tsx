@@ -378,9 +378,14 @@ const SignTranslatorPro: React.FC = () => {
 
   // ─── MediaPipe init + detection loop (compact) ───
   const initHand = useCallback(async () => {
+    if (handLandmarkerRef.current) return handLandmarkerRef.current;
     setLoadingStep('تحميل نموذج الذكاء الاصطناعي…');
+    setModelLoading(true);
+    setModelError(null);
+    setModelProgress(0.05);
     try {
       const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      setModelProgress(0.25);
       const wasmCandidates = [
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm',
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
@@ -390,6 +395,7 @@ const SignTranslatorPro: React.FC = () => {
         try { vision = await FilesetResolver.forVisionTasks(w); break; } catch {}
       }
       if (!vision) throw new Error('WASM load failed');
+      setModelProgress(0.6);
       const opts = {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
@@ -406,9 +412,13 @@ const SignTranslatorPro: React.FC = () => {
       catch { hl = await HandLandmarker.createFromOptions(vision, { ...opts, baseOptions: { ...opts.baseOptions, delegate: 'CPU' as const } }); }
       handLandmarkerRef.current = hl;
       setMediapipeReady(true);
+      setModelProgress(1);
+      setTimeout(() => setModelLoading(false), 400);
       return hl;
     } catch (e) {
       console.error(e);
+      setModelLoading(false);
+      setModelError('تعذّر تحميل نموذج التعرّف. تحقّق من الإنترنت.');
       throw new Error('تعذّر تحميل نموذج التعرّف. تحقّق من الإنترنت أو مانع الإعلانات.');
     }
   }, []);
