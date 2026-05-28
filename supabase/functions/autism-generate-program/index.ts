@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
       if (!r.ok) throw new Error(`insert games batch ${i}: ${r.status}: ${await r.text()}`);
     }
 
-    return new Response(JSON.stringify({ programId: progRow.id, shareToken: progRow.share_token, totalDays, totalGames: allGames.length }), {
+    return new Response(JSON.stringify({ programId: progRow.id, shareToken: progRow.share_token, title_ar: progRow.title_ar, summary_ar: progRow.summary_ar, totalDays, totalGames: allGames.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
