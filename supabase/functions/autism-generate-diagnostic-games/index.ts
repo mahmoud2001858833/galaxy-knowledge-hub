@@ -45,8 +45,8 @@ const SCHEMA = {
   properties: {
     games: {
       type: 'array',
-      minItems: 8,
-      maxItems: 10,
+      minItems: 5,
+      maxItems: 8,
       items: {
         type: 'object',
         properties: {
