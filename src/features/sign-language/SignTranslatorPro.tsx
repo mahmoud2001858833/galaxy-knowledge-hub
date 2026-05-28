@@ -791,6 +791,41 @@ const SignTranslatorPro: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Model load progress (first-use, runs once on mount) */}
+      <AnimatePresence>
+        {modelLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className="fixed top-3 left-1/2 -translate-x-1/2 z-[61] w-[min(420px,92vw)] bg-white/95 backdrop-blur border border-[hsl(var(--damij-primary))]/40 shadow-lg rounded-2xl px-4 py-2.5"
+          >
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-[hsl(var(--damij-text))]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[hsl(var(--damij-primary))]" />
+              جاري تجهيز نموذج التعرّف على اليد…
+              <span className="ml-auto text-[11px] opacity-70">{Math.round(modelProgress * 100)}%</span>
+            </div>
+            <div className="h-1.5 mt-1.5 rounded-full bg-slate-200 overflow-hidden">
+              <motion.div
+                className="h-full bg-[hsl(var(--damij-primary))]"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(4, modelProgress * 100)}%` }}
+                transition={{ ease: 'easeOut', duration: 0.3 }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              يحدث مرة واحدة فقط — ستبدأ الكاميرا فورًا بعد ذلك.
+            </p>
+          </motion.div>
+        )}
+        {modelError && !modelLoading && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed top-3 left-1/2 -translate-x-1/2 z-[61] bg-rose-50 border border-rose-300 rounded-full px-3 py-1 text-[11px] font-semibold text-rose-700 shadow"
+          >
+            ⚠ {modelError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Vocab fetch progress (first-use of a language) */}
       <AnimatePresence>
         {vocabLoading && (
