@@ -30,13 +30,14 @@ const TEMPLATES = [
 ];
 
 const SYSTEM = `أنت أخصائي تشخيص نمائي. لا تستخدم أبداً أسئلة مقالية أو نصية — كل المحتوى ألعاب تفاعلية فقط.
-طيف التوحد يختلف من طفل لآخر، لذلك اختر بطارية ألعاب تشخيصية مخصّصة (5 إلى 7 ألعاب) من القوالب المتاحة فقط،
+طيف التوحد يختلف من طفل لآخر، لذلك اختر بطارية ألعاب تشخيصية مخصّصة (5 إلى 8 ألعاب) من القوالب المتاحة فقط،
 بحيث تغطّي مجالات الفحص الأساسية (تواصل اجتماعي، انتباه مشترك، حسي، مرونة، تقليد، تبادل أدوار، استجابة للاسم).
 - لا تخترع template_id جديد — استخدم القوائم المُعطاة فقط.
 - **حاسم: كيّف اللعبة للعمر** — للصغار (2-4) مفردات بسيطة جداً ومدة 30-50 ث وصعوبة easy؛ للأطفال (5-9) متوسطة 60-90 ث؛ للمراهقين (10+) أكثر تعقيداً 90-120 ث.
-- اكتب instructions_ar قصيرة وواضحة بمستوى عمر الطفل بالضبط (لا كلمات صعبة للصغار).
+- **استخدم discoveryProfile لتخصيص البطارية**: إذا كان accuracy منخفض (<0.4) خفّض الصعوبة وزِد ألعاب الانتباه الأساسي؛ إذا كان مرتفع (>0.75) ارفع الصعوبة وأدخل ألعاب مرونة معرفية ومرونة اجتماعية. إذا كان attention_span_sec قصير (<20) قلّل duration_sec. وظّف preferred_themes في صياغة instructions_ar (مثلاً "حيوانات" أو "سيارات"). اربط rationale_ar بنقاط من notes_ar.
+- اكتب instructions_ar قصيرة وواضحة بمستوى عمر الطفل بالضبط (لا كلمات صعبة للصغار)، واذكر الثيم المفضّل بشكل طبيعي.
 - اكتب target_skill_ar مكثّفاً (3-6 كلمات).
-- اكتب rationale_ar (سبب اختيار هذه اللعبة لهذا الطفل بالذات بناءً على عمره).
+- اكتب rationale_ar (سبب اختيار هذه اللعبة لهذا الطفل بالذات بناءً على عمره وملف الاكتشاف).
 - أعد JSON صرفاً وفق الـ schema، دون أي نص خارجي.`;
 
 const SCHEMA = {
@@ -92,19 +93,21 @@ function fallbackBattery(ageMonths: number) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
-    const { ageMonths = 36, ageTrack = 'child', respondent = 'caregiver', name, initialConcerns = [], questionnaireResult = null } = await req.json().catch(() => ({}));
+    const { ageMonths = 36, ageTrack = 'child', respondent = 'caregiver', name, initialConcerns = [], questionnaireResult = null, discoveryProfile = null, discoverySource = null } = await req.json().catch(() => ({}));
 
     const userPrompt = `بيانات الطفل:
 - العمر: ${ageMonths} شهراً (${ageTrack})
 - الاسم: ${name || '—'}
 - المُجيب: ${respondent === 'self' ? 'تقييم ذاتي' : 'ولي أمر'}
 - مخاوف أولية: ${initialConcerns?.length ? initialConcerns.join('، ') : 'غير محددة'}
-- نتائج استبيان أولي: ${questionnaireResult ? JSON.stringify(questionnaireResult).slice(0, 1500) : 'غير متوفرة'}
+- مصدر الاكتشاف: ${discoverySource || 'غير محدد'}
+- ملف الاكتشاف (discoveryProfile): ${discoveryProfile ? JSON.stringify(discoveryProfile).slice(0, 1200) : 'غير متوفر'}
+- نتائج استبيان أولي: ${questionnaireResult ? JSON.stringify(questionnaireResult).slice(0, 1200) : 'غير متوفرة'}
 
 القوالب المتاحة (template_id : skill):
 ${TEMPLATES.map((t) => `- ${t.id} : ${t.skill}`).join('\n')}
 
-اختر بطارية ألعاب تشخيصية مخصّصة لهذا الطفل وفق الـ schema:
+اختر بطارية ألعاب تشخيصية مخصّصة لهذا الطفل وفق الـ schema، وكيّف الصعوبة/المدة/الثيمات حسب discoveryProfile:
 ${JSON.stringify(SCHEMA)}`;
 
     const key = "shim-key";
