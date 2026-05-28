@@ -80,6 +80,9 @@ const SignTranslatorPro: React.FC = () => {
   const [handDetected, setHandDetected] = useState(false);
   const [handsCount, setHandsCount] = useState(0);
   const [mediapipeReady, setMediapipeReady] = useState(false);
+  const [modelLoading, setModelLoading] = useState(false);
+  const [modelProgress, setModelProgress] = useState(0);
+  const [modelError, setModelError] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
 
