@@ -19,6 +19,8 @@ import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceNa
 import { recognizeImage } from './navigation/ocr';
 import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
+import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
@@ -81,6 +83,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const lastNavSpeakRef = useRef<number>(0);
   const targetStableRef = useRef<{ seen: number; missed: number }>({ seen: 0, missed: 0 });
   const lastNavTextRef = useRef<string>('');
+  const turnByTurnRef = useRef<TurnByTurnState | null>(null);
+
 
 
 
@@ -138,6 +142,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
     setListening(false);
     targetLocalRef.current = null;
     targetGeoRef.current = null;
+    turnByTurnRef.current = null;
+
     if (geoWatchRef.current != null) {
       try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
       geoWatchRef.current = null;
@@ -150,21 +156,23 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const v = videoRef.current;
     const c = captureCanvasRef.current;
     if (!v || !c || v.readyState < 2) return null;
-    const w = mode === 'calibration' ? 256 : mode === 'detailed' ? 480 : 320;
+    const w = mode === 'calibration' ? 224 : mode === 'detailed' ? 480 : 256;
     const h = Math.round((v.videoHeight / v.videoWidth) * w) || Math.round(w * 0.75);
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(v, 0, 0, w, h);
-    const q = mode === 'calibration' ? 0.45 : mode === 'detailed' ? 0.6 : 0.5;
+    const q = mode === 'calibration' ? 0.4 : mode === 'detailed' ? 0.6 : 0.45;
     return c.toDataURL('image/jpeg', q);
+
   }, []);
 
   // ---- AI tick ----
   const runAI = useCallback(async (mode: 'calibration'|'fast'|'detailed'|'points') => {
     if (Date.now() < cooldownUntilRef.current) return;
-    if (inflightRef.current >= 3) return;
+    if (inflightRef.current >= 4) return;
     const img = captureFrame(mode);
+
     if (!img) return;
     inflightRef.current += 1;
     const t0 = performance.now();
@@ -181,13 +189,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
       if (error) {
         const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
         if (status === 429 || status === 402) {
-          cooldownUntilRef.current = Date.now() + 6000;
+          cooldownUntilRef.current = Date.now() + 2500;
           setErrMsg(status === 402 ? BE_STRINGS[langRef.current].outOfCredits : BE_STRINGS[langRef.current].rateLimit);
-          enqueueSpeech({ text: BE_STRINGS[langRef.current].systemBusy, priority: 'descriptive', lang: langRef.current });
           return;
         }
         throw error;
       }
+
       setErrMsg(null);
       if (!data?.spoken) return;
 
@@ -219,21 +227,19 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
         const score = g.global_proximity ?? 0;
         const bucket = score >= 75 ? 'H' : score >= 40 ? 'M' : 'L';
-        const key = `${g.best_path}|${bucket}|${g.obstacles_summary?.slice(0, 25)}`;
+        const key = `${g.best_path}|${bucket}|${g.spoken}`;
         const pri = score >= 75 ? 'critical' : score >= 40 ? 'directional' : 'descriptive';
-        // Coalesce: do not repeat same path within 6s unless hazard
         const now = Date.now();
         const samePath = lastSpokenPathRef.current.path === `${g.best_path}|${bucket}`;
-        const tooRecent = samePath && now - lastSpokenPathRef.current.t < 6000;
-        const heartbeatSilent = timeSinceLastSpeech() < 8000 && score < 40 && samePath;
-        if (!(userSpeakingRef.current && score < 75) && !tooRecent && !heartbeatSilent) {
-          speakDedup(g.spoken, key, pri, score >= 75 ? 1500 : 3500, {
-            rate: score >= 75 ? 1.2 : score >= 40 ? 1.1 : (langRef.current === 'ar' ? 1.0 : 1.05),
-            pitch: score >= 75 ? 1.2 : 1,
+        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 400 : 1200);
+        // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt.
+        if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
+          speakDedup(g.spoken, key, pri, score >= 75 ? 400 : 1200, {
             lang: langRef.current,
           });
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
         }
+
         const prev = prevProximityRef.current;
         if (score >= 75 && Date.now() - lastHazardSoundRef.current > 700) {
           lastHazardSoundRef.current = Date.now();
@@ -354,9 +360,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const stats = lastStatsRef.current;
       const sceneChanged = sceneChangePendingRef.current;
       const stagnant = stats && stats.globalMotion < 0.012;
-      let minGap = phase === 'calibrating' ? 1000 : score >= 75 ? 350 : score >= 40 ? 500 : 1200;
-      if (sceneChanged) minGap = 220;
-      if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 3000);
+      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 180 : score >= 40 ? 280 : 500;
+      if (sceneChanged) minGap = 140;
+      if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
+
 
       if (now - lastAITickRef.current >= minGap) {
         lastAITickRef.current = now;
@@ -467,6 +474,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
       case 'CANCEL_NAV': {
         targetLocalRef.current = null;
         targetGeoRef.current = null;
+        turnByTurnRef.current = null;
+
         if (geoWatchRef.current != null) {
           try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
           geoWatchRef.current = null;
@@ -510,35 +519,78 @@ const BlindEyeNavigatorInner: React.FC = () => {
           const saved = getPlace(canonical);
           const startGeo = (latlng: LatLng, displayName: string) => {
             targetGeoRef.current = { name: displayName, dest: latlng };
+            turnByTurnRef.current = null;
             if (!navigator.geolocation) {
               enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current });
               return;
             }
-            if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} }
-            geoWatchRef.current = navigator.geolocation.watchPosition(
-              (pos) => {
-                userPosRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                if (pos.coords.heading != null && !Number.isNaN(pos.coords.heading)) userHeadingRef.current = pos.coords.heading;
-                const tg = targetGeoRef.current;
-                if (!tg) return;
-                const dist = haversine(userPosRef.current, tg.dest);
-                const now = Date.now();
-                if (now - lastNavSpeakRef.current < 4000) return;
-                lastNavSpeakRef.current = now;
-                if (dist < 20) {
-                  enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
-                  if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
-                  targetGeoRef.current = null;
-                  return;
+            // First fix → fetch real walking route via OSRM, then start tracking.
+            navigator.geolocation.getCurrentPosition(
+              async (pos) => {
+                const from: LatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                userPosRef.current = from;
+                const route = await fetchRoute(from, latlng);
+                if (route && route.steps.length > 0) {
+                  turnByTurnRef.current = makeNavState(route);
+                  const kms = (route.totalDistance / 1000).toFixed(2);
+                  const mins = Math.max(1, Math.round(route.totalDuration / 60));
+                  enqueueSpeech({
+                    text: `سنسير ${kms} كيلومتر، حوالي ${mins} دقيقة مشياً إلى ${displayName}. الخطوة الأولى: ${route.steps[0].instruction}`,
+                    priority: 'critical', lang: langRef.current,
+                  });
+                } else {
+                  enqueueSpeech({
+                    text: `لم أجد مساراً تفصيلياً. سأرشدك بالاتجاه نحو ${displayName}.`,
+                    priority: 'directional', lang: langRef.current,
+                  });
                 }
-                const b = bearing(userPosRef.current, tg.dest);
-                const dir = relativeDirectionAr(b, userHeadingRef.current);
-                enqueueSpeech({ text: `${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, priority: 'directional', lang: langRef.current });
+                if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} }
+                geoWatchRef.current = navigator.geolocation.watchPosition(
+                  (p) => {
+                    userPosRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+                    if (p.coords.heading != null && !Number.isNaN(p.coords.heading)) userHeadingRef.current = p.coords.heading;
+                    const tg = targetGeoRef.current; if (!tg) return;
+                    const now = Date.now();
+
+                    // Turn-by-turn path if available
+                    const tbt = turnByTurnRef.current;
+                    if (tbt) {
+                      const tick = advanceStep(tbt, userPosRef.current!);
+                      if (tick.speak) {
+                        enqueueSpeech({ text: tick.speak, priority: 'directional', lang: langRef.current });
+                      }
+                      if (tick.arrived) {
+                        enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
+                        if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
+                        targetGeoRef.current = null;
+                        turnByTurnRef.current = null;
+                      }
+                      return;
+                    }
+
+                    // Fallback bearing-based guidance
+                    const dist = haversine(userPosRef.current!, tg.dest);
+                    if (now - lastNavSpeakRef.current < 4000) return;
+                    lastNavSpeakRef.current = now;
+                    if (dist < 20) {
+                      enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
+                      if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
+                      targetGeoRef.current = null;
+                      return;
+                    }
+                    const b = bearing(userPosRef.current!, tg.dest);
+                    const dir = relativeDirectionAr(b, userHeadingRef.current);
+                    enqueueSpeech({ text: `${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, priority: 'directional', lang: langRef.current });
+                  },
+                  () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
+                  { enableHighAccuracy: true, maximumAge: 2000, timeout: 12000 }
+                );
               },
               () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
-              { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
+              { enableHighAccuracy: true, timeout: 10000 }
             );
           };
+
           if (saved?.coords) {
             enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${saved.name}`, priority: 'critical', lang: langRef.current });
             startGeo(saved.coords, saved.name);

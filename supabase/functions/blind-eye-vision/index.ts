@@ -13,56 +13,60 @@ const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
 
 type Lang = "en" | "ar";
 
+// spoken MUST be a single short directional command — never describe what's seen.
+// Arabic: يسار | يمين | أمام | قف | استمر | تراجع
+// English: Left | Right | Ahead | Stop | Continue | Back
 const POINTS_PROMPT = (lang: Lang, target?: string) => {
   const targetLine = target
     ? (lang === "ar"
-        ? `\n- المستخدم يريد الذهاب إلى: "${target}". إذا رأيت هذا الكائن، اجعل target_seen=true وحدد target_bearing (left|center|right حسب موضعه أفقياً) و target_distance (far|mid|near|arrived) و next_step_ar كتعليمة عربية قصيرة (3-7 كلمات) تخبر المستخدم بالخطوة التالية. إذا لم تره: target_seen=false و next_step_ar اقتراح للبحث (مثل: "أدر الكاميرا يميناً ببطء").`
-        : `\n- User wants to reach: "${target}". If you see it, set target_seen=true, target_bearing (left|center|right), target_distance (far|mid|near|arrived), and next_step_ar as a SHORT ARABIC instruction (3-7 words). Otherwise target_seen=false and next_step_ar suggests a search move.`)
+        ? `\n- المستخدم يريد الذهاب إلى: "${target}". إذا رأيته اضبط target_seen=true، target_bearing=(left|center|right)، target_distance=(far|mid|near|arrived)، next_step_ar أمر واحد قصير: يسار/يمين/أمام/قف/وصلت. وإلا target_seen=false و next_step_ar=أدر الكاميرا.`
+        : `\n- User wants: "${target}". If seen: target_seen=true, target_bearing, target_distance, next_step_ar=one short Arabic command. Else target_seen=false.`)
     : "";
   return lang === "ar"
-    ? `أنت "عين الأعمى" مرشد بصري للمكفوفين. أرجع كل العناصر المهمة المرئية الآن:
-- objects: حتى 6 عناصر، لكل عنصر x,y (مركز 0-1)، w,h (حجم 0-1)، label كلمة عربية واحدة، hazard low|medium|high، proximity 0-100.
-- best_path: left|center|right.
-- global_proximity 0-100.
-- spoken: 3-7 كلمات عربية. ابدأ بـ "قف!" عند خطر عالٍ.
-- obstacles_summary: 4-10 كلمات لأهم عقبة.${targetLine}
-كن سريعاً جداً ودقيق الإحداثيات.`
-    : `You are "Blind Eye", a visual guide for blind users. Return everything important you see now:
-- objects: up to 6 items, each with x,y (center 0-1), w,h (size 0-1), label (one word), hazard (low|medium|high), proximity 0-100.
-- best_path: left|center|right.
-- global_proximity 0-100 (closest hazard).
-- spoken: 3-7 words. Start with "Stop!" on high hazard.
-- obstacles_summary: 4-10 words on the main obstacle.${targetLine}
-Be very fast and precise.`;
+    ? `أنت "عين الأعمى". أعد كائنات الإطار بإحداثيات مركز 0-1 وأبعاد 0-1.
+- objects: حتى 6 عناصر، label كلمة واحدة، hazard low|medium|high، proximity 0-100.
+- best_path: left|center|right
+- global_proximity 0-100
+- spoken: أمر واحد فقط من: "يسار" "يمين" "أمام" "قف" "استمر" "تراجع". لا تصف أي شيء.
+  قواعد: global_proximity≥70 → "قف". خطر جانبي → الاتجاه الآمن. مسار حر مباشر → "أمام" أو "استمر".
+- obstacles_summary: 3-6 كلمات (للعرض فقط، لن تُنطق).${targetLine}
+كن سريعاً.`
+    : `You are "Blind Eye". Return frame objects.
+- objects: up to 6, label one word, hazard low|medium|high, proximity 0-100.
+- best_path: left|center|right
+- global_proximity 0-100
+- spoken: EXACTLY one Arabic command word: "يسار" "يمين" "أمام" "قف" "استمر" "تراجع". Never describe.
+  Rules: global_proximity>=70 → "قف". Side hazard → safe direction. Clear → "أمام" or "استمر".
+- obstacles_summary: 3-6 words (display only, NOT spoken).${targetLine}
+Be fast.`;
 };
 
 const GUIDANCE_FAST_PROMPT = (lang: Lang) => lang === "ar"
-  ? `أنت "عين الأعمى" مرشد للمكفوفين. حلل بسرعة:
+  ? `أنت "عين الأعمى".
 - best_path: left|center|right
 - global_proximity 0-100
-- spoken: 3-7 كلمات عربية. عند خطر "قف!"
-- obstacles_summary: 5-10 كلمات
-- top_hazards: 1-2 max`
-  : `You are "Blind Eye". Analyze fast:
+- spoken: أمر واحد فقط: "يسار"/"يمين"/"أمام"/"قف"/"استمر"/"تراجع". لا تصف.
+- obstacles_summary: 3-6 كلمات للعرض فقط
+- top_hazards: 1-2`
+  : `You are "Blind Eye".
 - best_path: left|center|right
 - global_proximity 0-100
-- spoken: 3-7 English words. On hazard: "Stop!"
-- obstacles_summary: 5-10 words
-- top_hazards: 1-2 max`;
+- spoken: ONE Arabic command word only: "يسار"/"يمين"/"أمام"/"قف"/"استمر"/"تراجع". Never describe.
+- obstacles_summary: 3-6 words for display only
+- top_hazards: 1-2`;
 
 const GUIDANCE_DETAILED_PROMPT = (lang: Lang) => lang === "ar"
-  ? `أنت "عين الأعمى". حلل كشبكة 3×3 (TL TC TR / ML MC MR / BL BC BR).
-لكل خانة object/label/proximity 0-100/hazard low|medium|high.
-أرجع best_path, global_proximity, spoken (3-7 كلمات), obstacles_summary.`
-  : `You are "Blind Eye". Analyze as a 3×3 grid (TL TC TR / ML MC MR / BL BC BR).
-Per cell: object/label/proximity 0-100/hazard low|medium|high.
-Return best_path, global_proximity, spoken (3-7 English words), obstacles_summary.`;
+  ? `أنت "عين الأعمى". شبكة 3×3 (TL TC TR / ML MC MR / BL BC BR).
+لكل خانة object/label/proximity 0-100/hazard.
+أرجع best_path, global_proximity, spoken (أمر واحد فقط)، obstacles_summary للعرض.`
+  : `You are "Blind Eye". 3×3 grid (TL TC TR / ML MC MR / BL BC BR).
+Per cell: object/label/proximity 0-100/hazard.
+Return best_path, global_proximity, spoken (ONE command word only), obstacles_summary for display.`;
 
 const CALIBRATION_PROMPT = (lang: Lang) => lang === "ar"
-  ? `معايرة سريعة جداً. تساهل: أي صورة فيها تفاصيل للمشي → position_ok=true.
-spoken: 3-6 كلمات عربية.`
-  : `Very quick calibration. Be lenient: any frame with walkable detail → position_ok=true.
-spoken: 3-6 English words.`;
+  ? `معايرة سريعة. أي إطار للمشي → position_ok=true. spoken: كلمة واحدة "جاهز".`
+  : `Quick calibration. Any walkable frame → position_ok=true. spoken: ONE word "جاهز".`;
+
 
 const pointsTool = {
   type: "function",
@@ -206,6 +210,7 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
 
   const body = {
     model,
+    max_tokens: 200,
     messages: [
       { role: "system", content: sys },
       {
@@ -219,6 +224,7 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
     tools: [tool],
     tool_choice: { type: "function", function: { name: tool.function.name } },
   };
+
 
   const r = await fetch(GATEWAY, {
     method: "POST",

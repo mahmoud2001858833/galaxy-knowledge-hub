@@ -1,5 +1,5 @@
-// Prioritized speech queue + earcons + spatial audio for Blind Eye
-// Bilingual-aware (English + Arabic) with stronger dedup + heartbeat suppression.
+// Single-voice, no-earcon speech queue for Blind Eye.
+// Only TTS comes out of the device — no tones, no vibration, no audio FX.
 
 import type { BELang } from './i18n';
 import { BE_BCP47 } from './i18n';
@@ -11,7 +11,7 @@ type SpeechItem = {
   priority: SpeechPriority;
   rate?: number;
   pitch?: number;
-  pan?: number;
+  pan?: number; // ignored (kept for back-compat)
   lang?: BELang;
   enqueuedAt: number;
   onEnd?: () => void;
@@ -19,32 +19,19 @@ type SpeechItem = {
 
 const voicesCache: Record<BELang, SpeechSynthesisVoice | null> = { en: null, ar: null };
 let activeLang: BELang = 'en';
-let audioCtx: AudioContext | null = null;
-let panNode: StereoPannerNode | null = null;
 let queue: SpeechItem[] = [];
 let speakingItem: SpeechItem | null = null;
 let lastSpokenHash: { key: string; t: number } = { key: '', t: 0 };
 let lastAnySpeechAt = 0;
 let volume = 1;
 
-function ensureAudio() {
-  if (!audioCtx) {
-    try { audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)(); } catch {}
-  }
-  if (audioCtx && !panNode && (audioCtx as any).createStereoPanner) {
-    try { panNode = audioCtx.createStereoPanner(); panNode.connect(audioCtx.destination); } catch {}
-  }
-  return audioCtx;
-}
-
 function scoreVoice(v: SpeechSynthesisVoice, lang: BELang) {
   const name = v.name.toLowerCase();
   let s = 0;
-  // Prefer "Natural"/"Online"/"Google"/"Microsoft" voices when available
+  if (/google/.test(name)) s += 10;
   if (/natural/.test(name)) s += 8;
-  if (/online/.test(name)) s += 5;
-  if (/google/.test(name)) s += 6;
-  if (/microsoft/.test(name)) s += 4;
+  if (/microsoft/.test(name)) s += 6;
+  if (/online/.test(name)) s += 4;
   if (/premium|enhanced|wavenet/.test(name)) s += 5;
   if (lang === 'en') {
     if (v.lang === 'en-US') s += 4;
@@ -74,14 +61,9 @@ export function refreshVoices() {
   }
 }
 
-// Back-compat: keep old name used elsewhere
-export function pickArabicVoice() {
-  refreshVoices();
-}
+export function pickArabicVoice() { refreshVoices(); }
 
-export function isSpeaking() {
-  return speakingItem !== null;
-}
+export function isSpeaking() { return speakingItem !== null; }
 
 export function setSpeechVolume(v: number) {
   volume = Math.max(0, Math.min(1, v));
@@ -91,13 +73,16 @@ function priWeight(p: SpeechPriority) {
   return p === 'critical' ? 3 : p === 'directional' ? 2 : 1;
 }
 
+// Unified, elegant voice params — same breath for every utterance.
+function unifiedRate(lang: BELang) { return lang === 'ar' ? 1.0 : 1.05; }
+
 function drainQueue() {
   if (speakingItem) return;
   const now = Date.now();
-  // Drop stale descriptive items (>800ms) and stale directional (>2.5s)
+  // Drop stale items aggressively for snappy guidance.
   queue = queue.filter(q => {
-    if (q.priority === 'descriptive' && now - q.enqueuedAt > 800) return false;
-    if (q.priority === 'directional' && now - q.enqueuedAt > 2500) return false;
+    if (q.priority === 'descriptive' && now - q.enqueuedAt > 500) return false;
+    if (q.priority === 'directional' && now - q.enqueuedAt > 1500) return false;
     return true;
   });
   if (queue.length === 0) return;
@@ -112,13 +97,14 @@ function drainQueue() {
   u.lang = BE_BCP47[lang];
   const voice = voicesCache[lang];
   if (voice) u.voice = voice;
-  u.rate = item.rate ?? (lang === 'ar' ? 0.98 : 1.05);
-  u.pitch = item.pitch ?? 1;
+  // Unified params — ignore per-item rate/pitch overrides for a consistent voice.
+  u.rate = unifiedRate(lang);
+  u.pitch = 1.0;
   u.volume = volume;
   const finish = () => {
     speakingItem = null;
     item.onEnd?.();
-    setTimeout(drainQueue, 30);
+    setTimeout(drainQueue, 20);
   };
   u.onend = finish;
   u.onerror = finish;
@@ -141,7 +127,7 @@ export function speakDedup(
   text: string,
   hashKey: string,
   priority: SpeechPriority,
-  windowMs = 3500,
+  windowMs = 1500,
   opts: { rate?: number; pitch?: number; onEnd?: () => void; lang?: BELang } = {},
 ) {
   const now = Date.now();
@@ -160,41 +146,19 @@ export function cancelAllSpeech() {
   speakingItem = null;
 }
 
-// Earcons -----------------------------------------------------
-function tone(freq: number, durMs: number, pan = 0, gainPeak = 0.25) {
-  const ctx = ensureAudio();
-  if (!ctx) return;
-  try {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.frequency.value = freq;
-    o.type = 'sine';
-    const dest = panNode || ctx.destination;
-    if (panNode) panNode.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), ctx.currentTime);
-    o.connect(g);
-    g.connect(dest);
-    const dur = durMs / 1000;
-    g.gain.setValueAtTime(0.001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(gainPeak * volume, ctx.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    o.start();
-    o.stop(ctx.currentTime + dur + 0.02);
-  } catch {}
-}
-
+// ============================================================
+// No-op stubs — kept so existing imports don't break.
+// Blind Eye now emits ONLY voice commands. No tones, no vibration.
+// ============================================================
 export const earcons = {
-  scanTick: () => tone(420, 50, 0, 0.05),
-  approach: () => { tone(660, 100, 0, 0.18); setTimeout(() => tone(880, 100, 0, 0.2), 110); },
-  away:     () => { tone(660, 100, 0, 0.18); setTimeout(() => tone(440, 100, 0, 0.18), 110); },
-  hazard:   (pan = 0) => { tone(1100, 90, pan, 0.3); setTimeout(() => tone(1100, 90, pan, 0.3), 130); },
-  pointLeft:  () => tone(700, 80, -0.9, 0.25),
-  pointRight: () => tone(700, 80,  0.9, 0.25),
-  pointAhead: () => tone(700, 80,  0.0, 0.25),
-  sceneChange: () => { tone(520, 70, 0, 0.18); setTimeout(() => tone(780, 70, 0, 0.18), 80); },
+  scanTick: () => {},
+  approach: () => {},
+  away: () => {},
+  hazard: (_pan?: number) => {},
+  pointLeft: () => {},
+  pointRight: () => {},
+  pointAhead: () => {},
+  sceneChange: () => {},
 };
 
-export function vibrate(pattern: number | number[]) {
-  if ('vibrate' in navigator) {
-    try { (navigator as any).vibrate(pattern); } catch {}
-  }
-}
+export function vibrate(_pattern: number | number[]) { /* disabled */ }
