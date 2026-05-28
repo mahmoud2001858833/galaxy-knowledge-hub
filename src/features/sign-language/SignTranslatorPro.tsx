@@ -320,7 +320,12 @@ const SignTranslatorPro: React.FC = () => {
   }, [targetLang.code]);
 
   const handleGestureDetected = useCallback((gesture: string, gc: number) => {
-    const info = gestureFromVocab(liveVocab, gesture) || getGestureWord(signSystem, gesture);
+    // Try live vocab → system dictionary → built-in Arabic fallback so a word
+    // is ALWAYS produced for every classified gesture, regardless of sign system.
+    const info =
+      gestureFromVocab(liveVocab, gesture) ||
+      getGestureWord(signSystem, gesture) ||
+      (gestureToArabic[gesture] ? { text: gestureToArabic[gesture].text, emoji: gestureToArabic[gesture].emoji } : null);
     if (!info) return;
     const incoming: DetectedToken = { gesture, text: info.text, confidence: gc, timestamp: Date.now() };
     const decision = filterGesture(incoming, acceptedTokensRef.current);
