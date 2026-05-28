@@ -243,8 +243,8 @@ const AutismDiagnosis: React.FC = () => {
   const startAnalysis = async (finalGames: GameResult[]) => {
     setStep('analyzing');
     const questionnaireResult =
-      path !== 'games' ? scoreQuestionnaire(track, answers) : null;
-    const gameInsights = path !== 'questionnaire' ? summarizeGames(finalGames) : [];
+      path === 'discovery_q' ? scoreQuestionnaire(track, answers) : null;
+    const gameInsights = summarizeGames([...discoveryResults, ...finalGames]);
     const dsmRollup = rollupDsm(questionnaireResult, gameInsights);
 
     try {
@@ -276,34 +276,47 @@ const AutismDiagnosis: React.FC = () => {
     }
   };
 
-  const onQuestionnaireDone = () => {
-    if (path === 'questionnaire') startAnalysis([]);
-    else if (path === 'ai_games') startAiGames([]);
-    else { setStep('games'); setGameIndex(0); }
+  // Called when the quick discovery questionnaire ends → build profile, kick off AI games
+  const onDiscoveryQuestionnaireDone = () => {
+    const profile = profileFromQuestionnaire(track, answers);
+    startAiGames(profile);
   };
 
-  const handleGameComplete = (metrics: Record<string, number>, durationMs: number, skipped = false) => {
-    const game = GAMES[gameIndex];
-    const next: GameResult = { gameId: game.id, metrics, durationMs, skipped };
-    const all = [...gameResults, next];
-    setGameResults(all);
-    if (gameIndex + 1 >= GAMES.length) {
-      // Chain into AI-personalized games when path is `both`
-      if (path === 'both') startAiGames(all);
-      else startAnalysis(all);
-    } else setGameIndex((i) => i + 1);
+  // Called when one of the 3 discovery games finishes
+  const handleDiscoveryGameComplete = (metrics: { accuracy: number; raw?: any }, durationMs: number, skipped = false) => {
+    const tid = DISCOVERY_TEMPLATE_IDS[discoveryIndex];
+    const next: GameResult = {
+      gameId: `discovery_${tid}`,
+      metrics: { accuracy: metrics.accuracy ?? 0, ...(metrics.raw || {}) },
+      durationMs,
+      skipped,
+    };
+    const all = [...discoveryResults, next];
+    setDiscoveryResults(all);
+    if (discoveryIndex + 1 >= DISCOVERY_TEMPLATE_IDS.length) {
+      const profile = profileFromDiscoveryGames(all);
+      startAiGames(profile);
+    } else {
+      setDiscoveryIndex((i) => i + 1);
+    }
   };
 
   // Stepper definition
   const STEP_LABELS: { id: Step; label: string }[] = [
     { id: 'intro', label: 'البيانات' },
     { id: 'path', label: 'الطريقة' },
-    { id: 'questionnaire', label: 'الأسئلة' },
-    { id: 'games', label: 'الألعاب' },
-    { id: 'ai_games', label: 'AI' },
+    { id: 'discovery_q', label: 'تعرّف أوّلي' },
+    { id: 'discovery_g', label: 'تعرّف لعب' },
+    { id: 'ai_games', label: 'ألعاب AI' },
     { id: 'report', label: 'التقرير' },
   ];
-  const stepIndex = STEP_LABELS.findIndex(s => s.id === step);
+  // Only show the discovery step the user actually picked
+  const visibleSteps = STEP_LABELS.filter(s =>
+    !(s.id === 'discovery_q' && path !== 'discovery_q') &&
+    !(s.id === 'discovery_g' && path !== 'discovery_g')
+  );
+  const stepIndex = visibleSteps.findIndex(s => s.id === step);
+
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-16 max-w-4xl mx-auto" dir="rtl">
