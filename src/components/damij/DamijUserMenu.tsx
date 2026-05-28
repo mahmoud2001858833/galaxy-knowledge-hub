@@ -24,7 +24,6 @@ const DamijUserMenu: React.FC = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<DamijProfile | null>(null);
-  const [stats, setStats] = useState<{ programs: number; reports: number }>({ programs: 0, reports: 0 });
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -38,19 +37,7 @@ const DamijUserMenu: React.FC = () => {
         .eq('user_id', session.user.id)
         .maybeSingle();
       if (!active) return;
-      if (prof) {
-        setProfile({ ...(prof as any), email: session.user.email });
-        // إحصاءات سريعة (لا توقف الواجهة إذا فشلت)
-        try {
-          const [a, b] = await Promise.all([
-            supabase.from('adhd_programs').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
-            supabase.from('clinical_reports').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
-          ]);
-          if (active) setStats({ programs: a.count || 0, reports: b.count || 0 });
-        } catch { /* ignore */ }
-      } else {
-        setProfile(null);
-      }
+      setProfile(prof ? { ...(prof as any), email: session.user.email } : null);
       setLoading(false);
     };
     load();
