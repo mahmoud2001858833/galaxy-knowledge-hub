@@ -40,7 +40,7 @@ export type FilterDecision =
   | { action: 'replace'; text: string }
   | { action: 'ignore'; reason: string };
 
-const MIN_CONFIDENCE = 0.7;
+const MIN_CONFIDENCE = 0.6;
 const REPEAT_COOLDOWN_MS = 2000;
 const CORRECTION_WINDOW_MS = 600; // within this window, a higher-confidence
                                   // confusable gesture replaces the previous one
