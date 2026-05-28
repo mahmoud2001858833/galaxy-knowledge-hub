@@ -20,7 +20,9 @@ const movementToAnim: Record<Movement, any> = {
   tap:     { y: [0, 4, 0],     transition: { duration: 0.7, repeat: Infinity } },
   wave_h:  { x: [-4, 4, -4],   transition: { duration: 0.9, repeat: Infinity } },
   wave_v:  { y: [-4, 4, -4],   transition: { duration: 0.9, repeat: Infinity } },
-  circle:  { rotate: [0, 360], transition: { duration: 1.6, repeat: Infinity, ease: 'linear' } },
+  // Use a circular translation instead of full 360° rotation so the hand
+  // traces a small circle in place instead of spinning around itself.
+  circle:  { x: [0, 6, 0, -6, 0], y: [0, -6, 0, 6, 0], transition: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } },
   push:    { x: [0, 8, 0],     transition: { duration: 0.9, repeat: Infinity } },
   pull:    { x: [0, -8, 0],    transition: { duration: 0.9, repeat: Infinity } },
   up:      { y: [0, -8, 0],    transition: { duration: 0.9, repeat: Infinity } },

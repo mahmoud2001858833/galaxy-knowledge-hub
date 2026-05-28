@@ -202,16 +202,70 @@ async function fetchTranscriptViaPiped(videoId: string, preferredLang?: string):
   return null;
 }
 
+async function fetchTranscriptViaTimedText(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
+  // Direct YouTube timedtext API — works without watch page cookies for videos with manual CC.
+  try {
+    const listRes = await fetchWithTimeout(`https://video.google.com/timedtext?type=list&v=${videoId}`, 6000);
+    if (listRes.ok) {
+      const xml = await listRes.text();
+      const tracks: { lang: string; name: string }[] = [];
+      const re = /<track[^>]*lang_code="([^"]+)"[^>]*name="([^"]*)"/g;
+      let m;
+      while ((m = re.exec(xml))) tracks.push({ lang: m[1], name: m[2] });
+      if (tracks.length) {
+        const pref = preferredLang?.split("-")[0];
+        const pick = (pref && tracks.find(t => t.lang.startsWith(pref))) || tracks[0];
+        const segs = await fetchSubtitleUrl(`https://video.google.com/timedtext?lang=${pick.lang}&name=${encodeURIComponent(pick.name)}&v=${videoId}&fmt=json3`);
+        if (segs.length) return { lang: pick.lang, segments: segs };
+      }
+    }
+  } catch {}
+  return null;
+}
+
+async function fetchTranscriptViaInnerTube(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
+  try {
+    const r = await fetchWithTimeout("https://www.youtube.com/youtubei/v1/player?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w", 8000, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+      body: JSON.stringify({
+        videoId,
+        context: { client: { clientName: "ANDROID", clientVersion: "19.09.37", hl: "en", gl: "US", androidSdkVersion: 30 } },
+      }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const tracks: any[] = d?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+    if (!tracks.length) return null;
+    const pref = preferredLang?.split("-")[0];
+    const pick =
+      (pref && tracks.find(t => (t.languageCode || "").startsWith(pref))) ||
+      tracks.find(t => t.kind !== "asr") || tracks[0];
+    if (!pick?.baseUrl) return null;
+    const segs = await fetchSubtitleUrl(pick.baseUrl + "&fmt=json3");
+    if (segs.length) return { lang: pick.languageCode || "und", segments: segs };
+  } catch {}
+  return null;
+}
+
 async function fetchTranscript(videoId: string, preferredLang?: string): Promise<{ lang: string; segments: Segment[] } | null> {
-  // Primary: Piped API (works server-side reliably when up)
+  // Primary: InnerTube (most reliable, doesn't require watch-page cookies)
+  const it = await fetchTranscriptViaInnerTube(videoId, preferredLang);
+  if (it) return it;
+
+  // Secondary: direct timedtext list
+  const tt = await fetchTranscriptViaTimedText(videoId, preferredLang);
+  if (tt) return tt;
+
+  // Tertiary: Piped instances
   const piped = await fetchTranscriptViaPiped(videoId, preferredLang);
   if (piped) return piped;
 
-  // Secondary: Invidious instances
+  // Quaternary: Invidious
   const inv = await fetchTranscriptViaInvidious(videoId, preferredLang);
   if (inv) return inv;
 
-  // Fallback: try YouTube watch page
+  // Last resort: scrape watch page
   try {
     const html = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, {
       headers: { "User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9" },

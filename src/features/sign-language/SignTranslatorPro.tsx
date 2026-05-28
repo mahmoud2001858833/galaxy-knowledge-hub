@@ -320,7 +320,12 @@ const SignTranslatorPro: React.FC = () => {
   }, [targetLang.code]);
 
   const handleGestureDetected = useCallback((gesture: string, gc: number) => {
-    const info = gestureFromVocab(liveVocab, gesture) || getGestureWord(signSystem, gesture);
+    // Try live vocab → system dictionary → built-in Arabic fallback so a word
+    // is ALWAYS produced for every classified gesture, regardless of sign system.
+    const info =
+      gestureFromVocab(liveVocab, gesture) ||
+      getGestureWord(signSystem, gesture) ||
+      (gestureToArabic[gesture] ? { text: gestureToArabic[gesture].text, emoji: gestureToArabic[gesture].emoji } : null);
     if (!info) return;
     const incoming: DetectedToken = { gesture, text: info.text, confidence: gc, timestamp: Date.now() };
     const decision = filterGesture(incoming, acceptedTokensRef.current);
@@ -389,9 +394,9 @@ const SignTranslatorPro: React.FC = () => {
         },
         runningMode: 'VIDEO' as const,
         numHands: 2,
-        minHandDetectionConfidence: 0.2,
-        minHandPresenceConfidence: 0.2,
-        minTrackingConfidence: 0.2,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       };
       let hl;
       try { hl = await HandLandmarker.createFromOptions(vision, opts); }
@@ -447,8 +452,8 @@ const SignTranslatorPro: React.FC = () => {
             const t = Date.now();
             const diff = lastFiredGestureRef.current !== r.gesture;
             const cool = t - lastGestureTimeRef.current > 800;
-            // First gesture fires almost instantly (2 stable frames), subsequent need 3
-            const need = lastFiredGestureRef.current === null ? 2 : 3;
+            // First gesture fires instantly (1 stable frame), subsequent need 2
+            const need = lastFiredGestureRef.current === null ? 1 : 2;
             if (stableGestureRef.current.count >= need && (diff || cool)) {
               handleGestureDetected(r.gesture, r.confidence);
               lastGestureTimeRef.current = t;
