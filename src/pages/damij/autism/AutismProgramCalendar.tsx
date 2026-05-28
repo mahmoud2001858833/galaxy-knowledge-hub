@@ -179,11 +179,6 @@ const AutismProgramCalendar: React.FC = () => {
             className="px-3 py-1.5 rounded-xl bg-white/80 border border-[hsl(var(--autism-primary)/0.2)] text-[hsl(var(--autism-text))] text-sm font-bold flex items-center gap-1 hover:bg-white">
             <FileText className="w-4 h-4" /> CSV
           </button>
-
-          <button onClick={downloadCsv}
-            className="px-3 py-1.5 rounded-xl bg-white/80 border border-[hsl(var(--autism-primary)/0.2)] text-[hsl(var(--autism-text))] text-sm font-bold flex items-center gap-1 hover:bg-white">
-            <FileText className="w-4 h-4" /> CSV
-          </button>
         </div>
       </motion.header>
 
