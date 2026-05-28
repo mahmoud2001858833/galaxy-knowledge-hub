@@ -79,25 +79,24 @@ const DamijSmartGuide: React.FC = () => {
         initial={{ scale: 0, rotate: -90 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.25 }}
-        whileHover={{ scale: 1.08, rotate: 6 }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => setOpen((o) => !o)}
-        className="relative group pointer-events-auto"
+        className="relative pointer-events-auto"
         aria-label={t.assistant.open}
         data-damij-no-translate
         data-damij-no-speak
       >
-        <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 blur-xl opacity-60 group-hover:opacity-90 transition-opacity" />
         <span
           className="relative flex items-center justify-center w-14 h-14 rounded-full text-white shadow-xl ring-1 ring-white/50"
           style={{
-            background: 'conic-gradient(from 140deg, #fde68a, #f59e0b, #b45309, #f59e0b, #fde68a)',
-            boxShadow: '0 16px 40px -10px rgba(234,179,8,0.65), 0 0 0 4px rgba(255,255,255,0.55)',
+            background: 'linear-gradient(135deg, hsl(var(--damij-primary)) 0%, hsl(var(--damij-accent-2)) 100%)',
+            boxShadow: '0 14px 36px -10px hsl(var(--damij-primary) / 0.6), 0 0 0 4px rgba(255,255,255,0.55)',
           }}
         >
           <Sparkles className="w-6 h-6 drop-shadow-md" strokeWidth={2.2} />
           <motion.span
-            className="absolute -top-1 -end-1 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-white"
+            className="absolute top-0.5 end-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white"
             animate={{ scale: [1, 1.4, 1] }}
             transition={{ duration: 1.6, repeat: Infinity }}
           />
