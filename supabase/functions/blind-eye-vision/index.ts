@@ -210,6 +210,7 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
 
   const body = {
     model,
+    max_tokens: 200,
     messages: [
       { role: "system", content: sys },
       {
@@ -223,6 +224,7 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
     tools: [tool],
     tool_choice: { type: "function", function: { name: tool.function.name } },
   };
+
 
   const r = await fetch(GATEWAY, {
     method: "POST",
