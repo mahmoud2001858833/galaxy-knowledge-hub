@@ -389,9 +389,9 @@ const SignTranslatorPro: React.FC = () => {
         },
         runningMode: 'VIDEO' as const,
         numHands: 2,
-        minHandDetectionConfidence: 0.2,
-        minHandPresenceConfidence: 0.2,
-        minTrackingConfidence: 0.2,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       };
       let hl;
       try { hl = await HandLandmarker.createFromOptions(vision, opts); }
