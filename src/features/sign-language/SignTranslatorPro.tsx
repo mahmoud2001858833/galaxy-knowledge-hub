@@ -80,6 +80,9 @@ const SignTranslatorPro: React.FC = () => {
   const [handDetected, setHandDetected] = useState(false);
   const [handsCount, setHandsCount] = useState(0);
   const [mediapipeReady, setMediapipeReady] = useState(false);
+  const [modelLoading, setModelLoading] = useState(false);
+  const [modelProgress, setModelProgress] = useState(0);
+  const [modelError, setModelError] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [cameraSupport, setCameraSupport] = useState<CameraSupport | null>(null);
 
@@ -375,9 +378,14 @@ const SignTranslatorPro: React.FC = () => {
 
   // ─── MediaPipe init + detection loop (compact) ───
   const initHand = useCallback(async () => {
+    if (handLandmarkerRef.current) return handLandmarkerRef.current;
     setLoadingStep('تحميل نموذج الذكاء الاصطناعي…');
+    setModelLoading(true);
+    setModelError(null);
+    setModelProgress(0.05);
     try {
       const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      setModelProgress(0.25);
       const wasmCandidates = [
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm',
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
@@ -387,6 +395,7 @@ const SignTranslatorPro: React.FC = () => {
         try { vision = await FilesetResolver.forVisionTasks(w); break; } catch {}
       }
       if (!vision) throw new Error('WASM load failed');
+      setModelProgress(0.6);
       const opts = {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
@@ -403,9 +412,13 @@ const SignTranslatorPro: React.FC = () => {
       catch { hl = await HandLandmarker.createFromOptions(vision, { ...opts, baseOptions: { ...opts.baseOptions, delegate: 'CPU' as const } }); }
       handLandmarkerRef.current = hl;
       setMediapipeReady(true);
+      setModelProgress(1);
+      setTimeout(() => setModelLoading(false), 400);
       return hl;
     } catch (e) {
       console.error(e);
+      setModelLoading(false);
+      setModelError('تعذّر تحميل نموذج التعرّف. تحقّق من الإنترنت.');
       throw new Error('تعذّر تحميل نموذج التعرّف. تحقّق من الإنترنت أو مانع الإعلانات.');
     }
   }, []);
@@ -778,6 +791,41 @@ const SignTranslatorPro: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Model load progress (first-use, runs once on mount) */}
+      <AnimatePresence>
+        {modelLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className="fixed top-3 left-1/2 -translate-x-1/2 z-[61] w-[min(420px,92vw)] bg-white/95 backdrop-blur border border-[hsl(var(--damij-primary))]/40 shadow-lg rounded-2xl px-4 py-2.5"
+          >
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-[hsl(var(--damij-text))]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[hsl(var(--damij-primary))]" />
+              جاري تجهيز نموذج التعرّف على اليد…
+              <span className="ml-auto text-[11px] opacity-70">{Math.round(modelProgress * 100)}%</span>
+            </div>
+            <div className="h-1.5 mt-1.5 rounded-full bg-slate-200 overflow-hidden">
+              <motion.div
+                className="h-full bg-[hsl(var(--damij-primary))]"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(4, modelProgress * 100)}%` }}
+                transition={{ ease: 'easeOut', duration: 0.3 }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              يحدث مرة واحدة فقط — ستبدأ الكاميرا فورًا بعد ذلك.
+            </p>
+          </motion.div>
+        )}
+        {modelError && !modelLoading && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed top-3 left-1/2 -translate-x-1/2 z-[61] bg-rose-50 border border-rose-300 rounded-full px-3 py-1 text-[11px] font-semibold text-rose-700 shadow"
+          >
+            ⚠ {modelError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Vocab fetch progress (first-use of a language) */}
       <AnimatePresence>
         {vocabLoading && (
