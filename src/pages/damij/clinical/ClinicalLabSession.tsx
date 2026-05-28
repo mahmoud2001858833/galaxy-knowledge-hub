@@ -122,54 +122,57 @@ const ClinicalLabSession: React.FC = () => {
   const steps = (p.steps || []).length;
 
   return (
-    <div className="px-4 sm:px-6 pt-6 pb-16 max-w-6xl mx-auto" dir="rtl">
+    <div className="px-3 sm:px-4 pt-4 pb-16 max-w-[1400px] mx-auto" dir="rtl">
       <button onClick={() => navigate(`/damij/clinical/case/${c.id}`)}
-        className="px-3 py-1.5 mb-4 rounded-lg bg-white border text-sm flex items-center gap-1">
+        className="px-3 py-1.5 mb-3 rounded-lg bg-white border text-sm flex items-center gap-1">
         <ArrowRight className="w-4 h-4" /> الحالة
       </button>
 
-      <header className="mb-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--damij-primary))]">{p.name_ar} • {c.name_ar}</h1>
+      <header className="mb-3">
+        <h1 className="text-lg sm:text-xl font-bold text-[hsl(var(--damij-primary))]">{p.name_ar} • {c.name_ar}</h1>
         <div className="text-xs text-slate-500">الخطوة {session.current_step + 1}/{steps}: {step.title_ar}</div>
       </header>
 
-      <div className="mb-4">
-        <VitalsMonitor
-          vitals={{ ...((c as any).vitals_initial || {}), ...((session as any).vitals_state || {}) }}
-          ageYears={(c as any).age_years}
-        />
-      </div>
-
-      <UnifiedWorkspace c={c} p={p} session={session} events={events} step={step}
-        msg={msg} setMsg={setMsg} sending={sending} sendTurn={sendTurn}
-        listening={listening} toggleVoice={toggleVoice} speak={speak} logRef={logRef}
-        sessionId={sessionId!} reload={load}
-        finalize={finalize} finalizing={finalizing} />
-    </div>
-  );
-};
-
-const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; hint?: string }> = ({ icon, title, hint }) => (
-  <div className="flex items-center justify-between mb-3">
-    <h2 className="text-sm font-extrabold text-[hsl(var(--damij-primary))] flex items-center gap-2">{icon} {title}</h2>
-    {hint && <span className="text-[10px] text-slate-500">{hint}</span>}
-  </div>
-);
-
-const UnifiedWorkspace: React.FC<any> = ({ c, p, session, events, step, msg, setMsg, sending, sendTurn, listening, toggleVoice, speak, logRef, sessionId, reload, finalize, finalizing }) => {
-  return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-      <div className="space-y-4 min-w-0">
-        {/* Conversation */}
-        <section className="rounded-3xl bg-white border flex flex-col">
-          <div className="p-3 border-b bg-slate-50 rounded-t-3xl flex items-start justify-between gap-3">
-            <div>
-              <SectionHeader icon={<MessageSquare className="w-4 h-4" />} title="المحادثة مع المريض" />
-              <div className="text-sm font-bold text-[hsl(var(--damij-primary))]">📋 {step.instruction_ar}</div>
-              <div className="text-xs text-slate-500 mt-1">معيار النجاح: {step.success_ar}</div>
-            </div>
+      {/* 3-column workspace: [side metrics | conversation | tools tabs] */}
+      <div className="grid gap-3 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_minmax(0,1.1fr)]">
+        {/* LEFT: vitals + protocol + finalize (sticky) */}
+        <aside className="space-y-3 lg:sticky lg:top-3 self-start max-h-[calc(100vh-1.5rem)] overflow-y-auto pr-1">
+          <VitalsMonitor
+            vitals={{ ...((c as any).vitals_initial || {}), ...((session as any).vitals_state || {}) }}
+            ageYears={(c as any).age_years}
+          />
+          <div className="p-3 rounded-2xl bg-white border">
+            <div className="text-[11px] text-slate-500 mb-2">المؤشرات الحيّة</div>
+            <Metric label="الانتباه" value={session.attention} color="emerald" />
+            <Metric label="القلق" value={session.anxiety} color="rose" invert />
+            <Metric label="التقدّم" value={session.progress} color="sky" />
           </div>
-          <div ref={logRef} className="overflow-y-auto p-3 space-y-2 max-h-[50vh]">
+          <div className="p-3 rounded-2xl bg-white border text-xs">
+            <div className="font-bold text-[hsl(var(--damij-primary))] mb-1">خطوات البروتوكول</div>
+            <ol className="space-y-1">
+              {(p.steps || []).map((s: any, i: number) => (
+                <li key={i} className={`flex items-center gap-2 ${i === session.current_step ? 'font-bold text-[hsl(var(--damij-accent-2))]' : i < session.current_step ? 'text-emerald-600 line-through' : 'text-slate-500'}`}>
+                  <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">{i + 1}</span>
+                  <span className="line-clamp-1">{s.title_ar}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <button onClick={finalize} disabled={finalizing}
+            className="w-full py-2.5 rounded-2xl bg-[hsl(var(--damij-primary))] text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60">
+            {finalizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            إنهاء وتوليد التقرير
+          </button>
+        </aside>
+
+        {/* CENTER: Conversation */}
+        <section className="rounded-3xl bg-white border flex flex-col min-w-0 h-[calc(100vh-9rem)]">
+          <div className="p-3 border-b bg-slate-50 rounded-t-3xl">
+            <SectionHeader icon={<MessageSquare className="w-4 h-4" />} title="المحادثة مع المريض" />
+            <div className="text-sm font-bold text-[hsl(var(--damij-primary))]">📋 {step.instruction_ar}</div>
+            <div className="text-xs text-slate-500 mt-1">معيار النجاح: {step.success_ar}</div>
+          </div>
+          <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-2">
             {events.length === 0 && <div className="text-center text-slate-400 text-sm pt-8">ابدأ بإعطاء التعليمة للمريض الافتراضي…</div>}
             {events.map((e: any) => (
               <div key={e.id} className={`flex ${e.actor === 'student' ? 'justify-start' : e.actor === 'patient' ? 'justify-end' : 'justify-center'}`}>
@@ -214,52 +217,37 @@ const UnifiedWorkspace: React.FC<any> = ({ c, p, session, events, step, msg, set
           </div>
         </section>
 
-        {/* Interventions */}
-        <section className="rounded-3xl bg-white border p-4">
-          <SectionHeader icon={<FlaskConical className="w-4 h-4" />} title="جرّب تدخّلاً سريرياً" hint="مفتوح دائماً" />
-          <InterventionTryPanel sessionId={sessionId} caseCategory={c.category} onApplied={reload} />
-        </section>
-
-        {/* Devices */}
-        <section className="rounded-3xl bg-white border p-4">
-          <SectionHeader icon={<span>🩺</span>} title="الأجهزة الطبية والمحاكيات" hint="كل الأجهزة معروضة" />
-          <DeviceLauncher sessionId={sessionId} caseCategory={c.category} caseContext={{
-            category: c.category, severity: (c as any).severity, age_years: (c as any).age_years,
-            vitals: { ...((c as any).vitals_initial || {}), ...((session as any).vitals_state || {}) },
-            presenting_signs_ar: (c as any).presenting_signs_ar, name_ar: c.name_ar,
-            vitals_state: (session as any).vitals_state || {},
-          } as any} onApplied={reload} />
+        {/* RIGHT: Tools tabs — interventions / devices side-by-side, no vertical stack */}
+        <section className="rounded-3xl bg-white border min-w-0 h-[calc(100vh-9rem)] flex flex-col">
+          <Tabs defaultValue="interventions" className="flex flex-col h-full">
+            <TabsList className="m-3 grid grid-cols-2">
+              <TabsTrigger value="interventions" className="gap-1.5"><FlaskConical className="w-4 h-4" /> التدخلات</TabsTrigger>
+              <TabsTrigger value="devices" className="gap-1.5"><Stethoscope className="w-4 h-4" /> الأجهزة</TabsTrigger>
+            </TabsList>
+            <TabsContent value="interventions" className="flex-1 overflow-y-auto px-3 pb-3 mt-0">
+              <InterventionTryPanel sessionId={sessionId} caseCategory={c.category} onApplied={load} />
+            </TabsContent>
+            <TabsContent value="devices" className="flex-1 overflow-y-auto px-3 pb-3 mt-0">
+              <DeviceLauncher sessionId={sessionId} caseCategory={c.category} caseContext={{
+                category: c.category, severity: (c as any).severity, age_years: (c as any).age_years,
+                vitals: { ...((c as any).vitals_initial || {}), ...((session as any).vitals_state || {}) },
+                presenting_signs_ar: (c as any).presenting_signs_ar, name_ar: c.name_ar,
+                vitals_state: (session as any).vitals_state || {},
+              } as any} onApplied={load} />
+            </TabsContent>
+          </Tabs>
         </section>
       </div>
-
-      {/* Sidebar metrics */}
-      <aside className="space-y-3 lg:sticky lg:top-4 self-start">
-        <div className="p-4 rounded-2xl bg-white border">
-          <div className="text-xs text-slate-500 mb-2">المؤشرات الحيّة</div>
-          <Metric label="الانتباه" value={session.attention} color="emerald" />
-          <Metric label="القلق" value={session.anxiety} color="rose" invert />
-          <Metric label="التقدّم" value={session.progress} color="sky" />
-        </div>
-        <div className="p-4 rounded-2xl bg-white border text-xs">
-          <div className="font-bold text-[hsl(var(--damij-primary))] mb-1">خطوات البروتوكول</div>
-          <ol className="space-y-1">
-            {(p.steps || []).map((s: any, i: number) => (
-              <li key={i} className={`flex items-center gap-2 ${i === session.current_step ? 'font-bold text-[hsl(var(--damij-accent-2))]' : i < session.current_step ? 'text-emerald-600 line-through' : 'text-slate-500'}`}>
-                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">{i + 1}</span>
-                <span className="line-clamp-1">{s.title_ar}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <button onClick={finalize} disabled={finalizing}
-          className="w-full py-3 rounded-2xl bg-[hsl(var(--damij-primary))] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60">
-          {finalizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-          إنهاء وتوليد التقرير
-        </button>
-      </aside>
     </div>
   );
 };
+
+const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; hint?: string }> = ({ icon, title, hint }) => (
+  <div className="flex items-center justify-between mb-1">
+    <h2 className="text-sm font-extrabold text-[hsl(var(--damij-primary))] flex items-center gap-2">{icon} {title}</h2>
+    {hint && <span className="text-[10px] text-slate-500">{hint}</span>}
+  </div>
+);
 
 const Metric: React.FC<{ label: string; value: number; color: string; invert?: boolean }> = ({ label, value, color, invert }) => {
   const map: Record<string, string> = { emerald: 'bg-emerald-500', rose: 'bg-rose-500', sky: 'bg-sky-500' };
