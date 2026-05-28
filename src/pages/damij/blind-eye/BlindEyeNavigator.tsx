@@ -187,13 +187,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
       if (error) {
         const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
         if (status === 429 || status === 402) {
-          cooldownUntilRef.current = Date.now() + 6000;
+          cooldownUntilRef.current = Date.now() + 2500;
           setErrMsg(status === 402 ? BE_STRINGS[langRef.current].outOfCredits : BE_STRINGS[langRef.current].rateLimit);
-          enqueueSpeech({ text: BE_STRINGS[langRef.current].systemBusy, priority: 'descriptive', lang: langRef.current });
           return;
         }
         throw error;
       }
+
       setErrMsg(null);
       if (!data?.spoken) return;
 
