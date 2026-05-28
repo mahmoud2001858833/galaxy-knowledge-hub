@@ -83,6 +83,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const lastNavSpeakRef = useRef<number>(0);
   const targetStableRef = useRef<{ seen: number; missed: number }>({ seen: 0, missed: 0 });
   const lastNavTextRef = useRef<string>('');
+  const turnByTurnRef = useRef<TurnByTurnState | null>(null);
+
 
 
 
