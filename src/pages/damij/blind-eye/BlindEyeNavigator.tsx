@@ -472,6 +472,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
       case 'CANCEL_NAV': {
         targetLocalRef.current = null;
         targetGeoRef.current = null;
+        turnByTurnRef.current = null;
+
         if (geoWatchRef.current != null) {
           try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
           geoWatchRef.current = null;
