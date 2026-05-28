@@ -1,95 +1,56 @@
-## 1) دمج لوحة جلساتي + مقارنة بين تجارب + تقاريري تحت «حقيبتي»
+# خطة تحسين منصة الدعم (دامج)
 
-في `ClinicalHome.tsx` ستبقى البطاقات الأساسية:
-- مكتبة الحالات الافتراضية
-- تجربة سريرية حرّة
-- **حقيبتي** (جديدة — تجمع الثلاث)
+## 1) إتاحة الصفحة الرئيسية بدون تسجيل دخول
+- في `src/App.tsx` السطر 981 سيُزال غلاف `<DamijAuthGuard>` من حول `<DamijLayout/>`.
+- يُلفّ كل **route فرعي** بـ `DamijAuthGuard` (braille, blind-eye, autism, adhd, sign, clinical, dashboard…) بحيث:
+  - `/damij` (الـ `index`) = **عام بدون دخول**.
+  - أي خيار آخر = يفتح شاشة الدخول مع `returnUrl` للرجوع التلقائي بعد الدخول.
+- `DamijAuthGuard` نفسه يبقى كما هو (يحوي منطق `getSession` + `damij_users` + `onAuthStateChange`).
 
-«حقيبتي» = صفحة جديدة `/damij/clinical/portfolio` (`ClinicalPortfolio.tsx`) فيها 3 بطاقات أنيقة بصور AI خاصة بكل واحدة:
-- **لوحة جلساتي** — صورة AI: لوحة بيانات طبية مع رسوم بيانية → `/damij/clinical/dashboard`
-- **مقارنة بين تجارب** — صورة AI: ميزان/مخططان متقابلان → `/damij/clinical/compare`
-- **تقاريري** — صورة AI: ملف طبي مع أوراق وختم → `/damij/clinical/reports`
+## 2) Header منصة دامج — قائمة المستخدم
+يُضاف إلى `src/components/damij/DamijHeader.tsx` في الجانب اليساري (بجوار Eco + اللغة):
 
-تخطيط بطاقات كبيرة 3D-tilt مع overlay متدرّج، إحصائية سريعة لكل بطاقة (عدد الجلسات/المقارنات/التقارير)، شارة آخر نشاط، تنسيق shadcn متكامل بـ semantic tokens.
+**حالة غير مسجَّل:**
+- زرّ «تسجيل الدخول» يربط إلى `/damij/auth?returnUrl=<current>` بنفس ألوان المنصّة (`--damij-primary`).
 
-## 2) منظار العين الواقعي + أجهزة عيون إضافية
+**حالة مسجَّل دخول:**
+- زرّ دائريّ يعرض الحرف الأول من الاسم + إشارة حالة خضراء.
+- عند الضغط: قائمة منسدلة (Popover من shadcn) تعرض:
+  - الاسم الكامل + البريد + الدور (caregiver/therapist/teacher…)
+  - حالة الجلسة («متصل الآن») وعداد الإحصاءات (عدد البرامج النشطة، عدد التقارير)
+  - روابط: «حسابي»، «لوحتي» (`/damij/dashboard`)، «الإعدادات»
+  - زرّ «تسجيل الخروج» (`supabase.auth.signOut()` ثم تحويل إلى `/damij`).
+- يُضاف `useEffect` يستمع لـ `supabase.auth.onAuthStateChange` ويسحب صفّ `damij_users` لعرض الاسم والدور.
 
-الحالي (`SimOphthalmo`) = `ScopePanel` مشترك يعرض دائرة ملوّنة فقط — غير واقعي.
+## 3) تحسين شاشة الدخول `DamijAuth`
+- نفس tokens الحالية (`--damij-primary`, `--damij-accent-2`, `--damij-bg`) — **بدون تغيير الألوان**.
+- إعادة تخطيط بطاقة الدخول:
+  - عمودان على الشاشات الكبيرة: يسار = بطاقة الدخول، يمين = panel ترحيب (شعار + 3 نقاط تعريفية + اقتباس).
+  - حقول بإطار glass + أيقونة Mail/Lock أنيقة، تركيز focus-ring بلون primary.
+  - تبويبتان زجاجيتان «دخول / إنشاء» مع underline متحرّك (Framer Motion `layoutId`).
+  - زرّ submit بتدرّج `primary → accent-2` + حالة loading واضحة.
+  - رابطان أسفل: «نسيت كلمة المرور» و«العودة لصفحة دامج» (لا يجبر المستخدم على الدخول).
 
-سيُستبدل بـ`InteractiveOphthalmoscope.tsx` مخصّص يحاكي قاع العين فعلياً:
-- canvas يرسم **fundus** واقعي: قرص بصري + شبكة أوعية متفرعة + بقعة صفراء + خلفية برتقالية مع texture
-- نتائج مرضية متغيّرة حسب الحالة:
-  - سكري → microaneurysms + hemorrhages + exudates
-  - ضغط → cotton wool spots + AV nicking
-  - زرق → cupping للقرص البصري
-  - انفصال شبكية → tear + detached folds
-- تكبير/تصغير + تحريك المنظار + ضبط الإضاءة
-- زر "التقاط صورة fundus" + قراءة سريرية تفصيلية
+## 4) أيقونتا «المرشد الذكي» و«النطق» — حجم وموضع موحَّدان
+- الأيقونتان أصلاً بحجم `w-14 h-14` لكن المسافات والـ glow مختلفان فيظهران غير متطابقتَين.
+- في `DamijFloatingDock.tsx`: يُثبَّت `flex flex-col items-center gap-2` (بدل `items-end gap-3`)، ويُمنح كل طفل صندوق ثابت `w-14 h-14` بمحاذاة مركز.
+- يُوحَّد التصميم في `DamijSmartGuide` و`DamijHoverSpeak`:
+  - زرّ دائريّ `w-14 h-14` بنفس الـ shadow وحلقة `ring-1 ring-white/50`.
+  - تدرّج لون كلٍّ منهما يلتزم بـ design tokens:
+    - المرشد: `from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-accent-2))]`.
+    - النطق: نفس التدرّج لكن معكوس، حتى يصبحان «أخوَين» بصرياً.
+  - badges (النقطة الخضراء / حلقة التشغيل) تُوضع داخل نفس الـ bounding-box حتى لا تُزحزح المركز.
+- الدوك يبقى `fixed bottom-24 end-4` ويتبع كل صفحات `/damij` (موجود حالياً في `DamijLayout`).
+- ترتيب عمودي ثابت: **المرشد فوق، النطق تحت** (أو العكس حسب تفضيل المستخدم — افتراضياً المرشد فوق).
 
-**أجهزة عيون جديدة** تُضاف إلى `simulators.tsx` وتُسجَّل في `registry.ts` + تُضاف إلى جدول `clinical_devices` عبر migration:
-- **Snellen Chart** (مخطط سنيلن) — قياس حدة البصر تفاعلي
-- **Tonometer** (مقياس ضغط العين) — قياس IOP مع اكتشاف الزرق
-- **Slit Lamp** (المصباح الشقي) — فحص القرنية والقزحية بطبقات
-- **Color Vision Test** (Ishihara) — فحص عمى الألوان بأرقام مخفية
-- **Pupillary Reflex Test** — فحص استجابة الحدقة للضوء
+## 5) ملفّات ستُعدَّل
+- `src/App.tsx` — توزيع `DamijAuthGuard` على الأبناء بدل اللفّ الكلّي.
+- `src/components/damij/DamijHeader.tsx` — قائمة مستخدم/دخول.
+- `src/pages/damij/auth/DamijAuth.tsx` — إعادة تصميم الشاشة.
+- `src/components/damij/DamijFloatingDock.tsx` — توحيد المحاذاة.
+- `src/components/damij/DamijSmartGuide.tsx` و`DamijHoverSpeak.tsx` — توحيد التصميم.
 
-كلها بمنطق `ctx.category==='ophthalmology'` لتُظهر النتائج المرضية المناسبة.
-
-## 3) Emojis ذكر/أنثى فقط للحالات
-
-في `src/features/clinical/types.ts`:
-- `caseAvatarFromName(name, gender?)` يصبح: إن كان `gender==='female'` → `'👩'`، وإلا → `'👨'`.
-- إزالة `pool` الكامل (🧒🧑🧓...).
-- جميع الاستدعاءات في `ClinicalCases.tsx` و`ClinicalFreeExperiment.tsx` و`ClinicalDashboard.tsx` ستمرّر `case.gender`.
-
-## 4) فحص شامل لكل التدخلات (أجهزة + علاجات)
-
-سأمشي على كل عنصر في `DEVICE_REGISTRY` (28 جهاز) و`InterventionTryPanel.tsx`:
-
-| الفحص | الإجراء |
-|-------|---------|
-| كل جهاز يُنفّذ `onApply` ويعيد `reading_ar` | إصلاح أي جهاز لا يستدعي `onApply` |
-| كل جهاز يستجيب لـ`ctx.category` بنتيجة مرضية مختلفة | إضافة فروع للحالات الناقصة |
-| التدخّلات الدوائية تُسجَّل في `clinical_session_events` | التحقق من INSERT صحيح |
-| التدخلات السلوكية/الحسية تُحدّث attention/anxiety/progress | التحقق |
-| أزرار "اعتمد القراءة" موجودة وتعمل | إضافة حيث ناقصة |
-| رسائل toast واضحة عند النجاح/الفشل | توحيد |
-
-نتيجة الفحص: تقرير قصير في الـchat بعد التنفيذ يذكر ما كان معطّلاً وما أُصلح.
-
-## 5) تحسين بيئة العمل في مختبر المحاكاة
-
-في `ClinicalLabSession.tsx` و`DeviceLauncher.tsx`:
-- استبدال الـstack العمودي بـ**workspace grid ثلاثي** على الديسكتوب:
-  - عمود يسار (مع RTL = يمين): بطاقة المريض + الحيويات الحيّة (مثبّتة، sticky)
-  - عمود وسط واسع: المحاكيات النشطة (drag-to-reorder، tabs لكل جهاز مفتوح)
-  - عمود يمين: chips التدخلات + ملاحظات + توقيت الجلسة
-- المحاكيات الحيّة (`AlwaysOnSimulators`) تصبح **شريط أفقي قابل للطي** بدل grid عمودي
-- كل جهاز مفتوح يفتح في **panel منفصل قابل للسحب والإغلاق** بدل تكديس عمودي
-- transitions ناعمة + skeleton أثناء التحميل
-- breakpoints موبايل: tabs بين الأعمدة الثلاثة بدل grid
-
-## تفاصيل تقنية
-
-- **صور AI**: 3 صور لـ«حقيبتي» (1024×768 jpg، semantic، بدون نصوص عربية) في `src/assets/clinical/`.
-- **Migration**: إدراج 5 صفوف جديدة في `clinical_devices` (Snellen, Tonometer, SlitLamp, Ishihara, PupilReflex) بـ`category='ophthalmo'` و`applicable_specialties=['ophthalmology']`.
-- **Routing**: إضافة `/damij/clinical/portfolio` في `App.tsx`.
-- **بدون تغيير DB schema** خارج إدراج الصفوف.
-- **لا تعديل** على GJU/منصة اللغة العربية/Capacitor.
-- **لا استخدام Lovable AI** (الحظر العام).
-
-## الملفات المتأثرة
-
-- `src/pages/damij/clinical/ClinicalHome.tsx` (تعديل: استبدال 3 بطاقات ببطاقة حقيبتي)
-- `src/pages/damij/clinical/ClinicalPortfolio.tsx` (جديد)
-- `src/pages/damij/clinical/ClinicalLabSession.tsx` (إعادة تخطيط)
-- `src/features/clinical/types.ts` (تبسيط avatar)
-- `src/features/clinical/devices/simulators.tsx` (5 أجهزة جديدة + تحسينات)
-- `src/features/clinical/devices/InteractiveOphthalmoscope.tsx` (جديد)
-- `src/features/clinical/devices/registry.ts` (تسجيل الجديد)
-- `src/features/clinical/devices/DeviceLauncher.tsx` (تحسين العرض)
-- `src/features/clinical/InterventionTryPanel.tsx` (فحص + إصلاحات)
-- `src/App.tsx` (route جديد)
-- `src/assets/clinical/portfolio-*.jpg` × 3 (صور AI)
-- migration: إدراج 5 أجهزة عيون
-
+## ملاحظات تقنية
+- لا تغييرات في قاعدة البيانات أو RLS.
+- لا مساس بنمط GJU 3030 ولا بمكوّنات النسخة الأندرويد.
+- جميع الألوان عبر CSS variables الحالية — لا hex مباشر.
