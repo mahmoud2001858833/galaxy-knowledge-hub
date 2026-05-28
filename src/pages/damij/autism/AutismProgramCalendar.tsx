@@ -3,11 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Loader2, CheckCircle2, Lock, Play, Copy, ExternalLink, BarChart3,
-  Sparkles, Trophy, CalendarDays, Target, Download, FileText, ChevronRight, ChevronLeft,
+  Sparkles, Trophy, CalendarDays, Target, FileText, ChevronRight, ChevronLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import jsPDF from 'jspdf';
+
 
 interface Day { id: string; day_index: number; theme_ar: string; focus_skill_ar: string; }
 interface Program { id: string; title_ar: string; summary_ar: string; total_days: number; start_date: string; share_token: string; }
@@ -115,36 +115,8 @@ const AutismProgramCalendar: React.FC = () => {
     toast.success('تم تنزيل ملف CSV');
   };
 
-  const downloadPdf = () => {
-    if (!program) return;
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('Autism Therapy Program Report', 105, 20, { align: 'center' });
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Program: ${program.title_ar}`, 14, 32);
-    doc.text(`Total days: ${program.total_days}`, 14, 39);
-    doc.text(`Completed: ${stats.completed} / ${stats.total} (${stats.percent}%)`, 14, 46);
-    doc.text(`Average score: ${stats.avg} / 100`, 14, 53);
-    doc.text(`Best day score: ${stats.best} / 100`, 14, 60);
-    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 14, 67);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('Day-by-day summary', 14, 80);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    let y = 88;
-    days.forEach(d => {
-      const r = reports[d.id];
-      const line = `Day ${d.day_index} | ${d.focus_skill_ar} | ${r ? 'Completed (' + Math.round(r.score) + '/100)' : (d.day_index <= today ? 'Available' : 'Locked')}`;
-      doc.text(line, 14, y);
-      y += 5;
-      if (y > 280) { doc.addPage(); y = 20; }
-    });
-    doc.save(`${program.title_ar}.pdf`);
-    toast.success('تم تنزيل تقرير PDF');
-  };
+
 
   if (loading) return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -203,10 +175,11 @@ const AutismProgramCalendar: React.FC = () => {
             style={{ background: 'linear-gradient(135deg, hsl(var(--autism-primary)), hsl(var(--autism-accent)))' }}>
             <BarChart3 className="w-4 h-4" /> لوحة التقدم
           </button>
-          <button onClick={downloadPdf}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-sm font-bold flex items-center gap-1 hover:bg-emerald-700">
-            <Download className="w-4 h-4" /> تحميل PDF
+          <button onClick={downloadCsv}
+            className="px-3 py-1.5 rounded-xl bg-white/80 border border-[hsl(var(--autism-primary)/0.2)] text-[hsl(var(--autism-text))] text-sm font-bold flex items-center gap-1 hover:bg-white">
+            <FileText className="w-4 h-4" /> CSV
           </button>
+
           <button onClick={downloadCsv}
             className="px-3 py-1.5 rounded-xl bg-white/80 border border-[hsl(var(--autism-primary)/0.2)] text-[hsl(var(--autism-text))] text-sm font-bold flex items-center gap-1 hover:bg-white">
             <FileText className="w-4 h-4" /> CSV
