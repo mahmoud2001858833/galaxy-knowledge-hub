@@ -78,6 +78,30 @@ const AutismProgramSetup: React.FC = () => {
       stopProgress(true);
       localStorage.setItem(`autism_active_program_${profile.profile_id}`, data.programId);
       toast.success(data.existing ? 'تم فتح برنامج الطفل المحفوظ' : 'تم إنشاء البرنامج بنجاح (90 يوماً × 5 ألعاب)');
+
+      // Send program link by email (best-effort, non-blocking)
+      if (!data.existing) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email && data.shareToken) {
+            const shareUrl = `${window.location.origin}/autism/c/${data.shareToken}`;
+            const calendarUrl = `${window.location.origin}/damij/autism/program/${data.programId}`;
+            await supabase.functions.invoke('autism-email-program', {
+              body: {
+                to: user.email,
+                child_name: profile.child_name || 'طفلك',
+                program_title: data.title_ar || 'برنامج علاج التوحّد',
+                program_summary: data.summary_ar || '',
+                total_days: 90,
+                share_url: shareUrl,
+                calendar_url: calendarUrl,
+              },
+            });
+            toast.success('📧 أُرسل رابط البرنامج إلى بريدك');
+          }
+        } catch (mailErr) { console.warn('email send failed', mailErr); }
+      }
+
       navigate(`/damij/autism/program/${data.programId}`);
     } catch (e: any) {
       console.error(e);
@@ -85,6 +109,7 @@ const AutismProgramSetup: React.FC = () => {
       toast.error(e?.message ?? 'تعذّر إنشاء البرنامج');
     } finally { setLoading(false); }
   };
+
 
   if (checking) {
     return (
@@ -111,7 +136,9 @@ const AutismProgramSetup: React.FC = () => {
           <li>6 مراحل تدرّجية: انتباه ⇐ تواصل ⇐ مشاعر ⇐ مرونة ⇐ اجتماعي ⇐ دمج.</li>
           <li>كل لعبة لُعبت تظهر عليها علامة ✓ ولا تتكرّر إلا عند الحاجة.</li>
           <li>مدد الجلسات تُكيَّف تلقائياً مع عمر طفلك.</li>
-          <li>تقارير يومية تلقائية بعد إكمال جميع ألعاب اليوم + تنزيل PDF.</li>
+          <li>تقارير يومية تلقائية بعد إكمال جميع ألعاب اليوم.</li>
+          <li>📧 يصلك إيميل برابط متابعة الطفل فور إنشاء البرنامج.</li>
+
         </ul>
       </div>
 
