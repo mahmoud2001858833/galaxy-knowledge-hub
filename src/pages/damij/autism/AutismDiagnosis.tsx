@@ -84,10 +84,11 @@ const AutismDiagnosis: React.FC = () => {
   const [name, setName] = useState(savedProfile?.child_name || '');
   const [ageMonths, setAgeMonths] = useState(savedProfile?.age_years ? savedProfile.age_years * 12 : 36);
   const [respondent, setRespondent] = useState<'caregiver' | 'self'>('caregiver');
-  const [path, setPath] = useState<Path>('ai_games');
+  const [path, setPath] = useState<Path>('discovery_g');
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [qIndex, setQIndex] = useState(0);
-  const [gameIndex, setGameIndex] = useState(0);
+  const [discoveryIndex, setDiscoveryIndex] = useState(0);
+  const [discoveryResults, setDiscoveryResults] = useState<GameResult[]>([]);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [aiGames, setAiGames] = useState<AIGame[]>([]);
   const [aiGameIndex, setAiGameIndex] = useState(0);
@@ -98,32 +99,37 @@ const AutismDiagnosis: React.FC = () => {
   const tts = useTTS();
 
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
-  const items = useMemo(() => getItemsForTrack(track), [track]);
+  const allItems = useMemo(() => getItemsForTrack(track), [track]);
+  // Quick discovery questionnaire = first N items only
+  const items = useMemo(() => allItems.slice(0, DISCOVERY_QUESTIONNAIRE_LIMIT), [allItems]);
   const currentItem = items[qIndex];
 
   // Auto-narrate the current question
   React.useEffect(() => {
-    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
+    if (step === 'discovery_q' && currentItem?.text) tts.speak(currentItem.text);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, currentItem?.id]);
 
   // Reset per-game intro flag whenever we switch games
-  React.useEffect(() => { setIntroShown(false); }, [gameIndex, aiGameIndex, step]);
+  React.useEffect(() => { setIntroShown(false); }, [discoveryIndex, aiGameIndex, step]);
 
   const reset = () => {
-    setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]);
+    setStep('intro'); setAnswers({}); setQIndex(0);
+    setDiscoveryIndex(0); setDiscoveryResults([]); setGameResults([]);
     setAiGames([]); setAiGameIndex(0); setAiStrategy(''); setReport(null);
   };
 
-  const startAiGames = async (afterClassicGames: GameResult[]) => {
+  const startAiGames = async (discoveryProfile: DiscoveryProfile) => {
     setAiGamesLoading(true);
     setStep('ai_games');
     try {
-      const qr = path !== 'games' && path !== 'ai_games' ? scoreQuestionnaire(track, answers) : null;
+      const qr = path === 'discovery_q' ? scoreQuestionnaire(track, answers) : null;
       const { data, error } = await supabase.functions.invoke('autism-generate-diagnostic-games', {
         body: {
           ageMonths, ageTrack: track, respondent, name: name || undefined,
           questionnaireResult: qr,
+          discoveryProfile,
+          discoverySource: discoveryProfile.source,
         },
       });
       if (error) throw error;
@@ -132,16 +138,16 @@ const AutismDiagnosis: React.FC = () => {
       setAiGames(games);
       setAiStrategy(data?.overall_strategy_ar || '');
       setAiGameIndex(0);
-      // Keep classic results for later analysis
-      setGameResults(afterClassicGames);
+      setGameResults([]);
     } catch (e: any) {
       console.warn('AI diagnostic games failed, skipping:', e);
       toast.warning('تعذّر توليد ألعاب التشخيص الذكية — سيتم الانتقال للتحليل.');
-      startAnalysis(afterClassicGames);
+      startAnalysis([]);
     } finally {
       setAiGamesLoading(false);
     }
   };
+
 
   const handleAiGameComplete = (metrics: { accuracy: number; raw?: any }, durationMs: number, skipped = false) => {
     const g = aiGames[aiGameIndex];
