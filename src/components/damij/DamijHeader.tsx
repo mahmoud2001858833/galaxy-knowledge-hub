@@ -83,6 +83,7 @@ const DamijHeader: React.FC = () => {
             <span className="hidden sm:inline">Eco</span>
           </button>
           <DamijLanguageSwitcher />
+          <DamijUserMenu />
           <button
             className="lg:hidden p-2 rounded-lg border border-[hsl(var(--damij-border))] text-[hsl(var(--damij-primary))]"
             onClick={() => setMobileOpen((v) => !v)}
