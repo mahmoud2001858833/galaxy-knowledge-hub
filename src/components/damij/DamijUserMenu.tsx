@@ -108,9 +108,8 @@ const DamijUserMenu: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-px bg-[hsl(var(--damij-border))]">
-          <Stat label="برامج نشطة" value={stats.programs} />
-          <Stat label="تقارير" value={stats.reports} />
+        <div className="px-4 py-3 text-[11px] text-[hsl(var(--damij-muted))] border-b border-[hsl(var(--damij-border))] bg-[hsl(var(--damij-bg-2))]">
+          أهلاً بك في منصة دامج — وصول كامل ومتساوٍ لجميع الأدوات والبرامج.
         </div>
 
         <div className="py-1">
