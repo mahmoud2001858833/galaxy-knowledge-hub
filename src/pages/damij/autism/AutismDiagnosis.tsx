@@ -346,7 +346,7 @@ const AutismDiagnosis: React.FC = () => {
 
         {/* Stepper */}
         <div className="mt-5 flex items-center justify-center gap-1 overflow-x-auto pb-1">
-          {STEP_LABELS.map((s, i) => {
+          {visibleSteps.map((s, i) => {
             const done = stepIndex > i;
             const active = stepIndex === i;
             return (
@@ -361,7 +361,8 @@ const AutismDiagnosis: React.FC = () => {
                   </div>
                   <span className={`text-[10px] ${active ? 'text-[hsl(var(--autism-primary))] font-bold' : 'text-[hsl(var(--autism-muted))]'}`}>{s.label}</span>
                 </div>
-                {i < STEP_LABELS.length - 1 && (
+                {i < visibleSteps.length - 1 && (
+
                   <div className={`h-0.5 w-4 sm:w-8 rounded-full ${stepIndex > i ? 'bg-[hsl(var(--autism-success))]' : 'bg-[hsl(var(--autism-primary)/0.15)]'}`} />
                 )}
               </React.Fragment>
