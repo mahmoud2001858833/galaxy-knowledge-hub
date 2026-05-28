@@ -19,6 +19,8 @@ import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceNa
 import { recognizeImage } from './navigation/ocr';
 import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
+import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
 
