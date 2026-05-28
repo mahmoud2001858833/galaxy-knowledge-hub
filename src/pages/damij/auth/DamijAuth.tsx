@@ -287,13 +287,13 @@ const Field: React.FC<{
   type?: string;
 }> = ({ icon, placeholder, value, onChange, type = 'text' }) => (
   <div className="relative">
-    <span className="absolute inset-y-0 start-3 flex items-center text-cyan-200/80 pointer-events-none">{icon}</span>
+    <span className="absolute inset-y-0 start-3 flex items-center text-[hsl(var(--damij-primary))] pointer-events-none">{icon}</span>
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full bg-white/10 border border-white/15 rounded-xl py-3 ps-10 pe-4 text-white placeholder:text-white/40 text-sm font-semibold focus:outline-none focus:border-cyan-300/60 focus:bg-white/15 transition-colors"
+      className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-4 text-[hsl(var(--damij-text))] placeholder:text-[hsl(var(--damij-muted))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-2 focus:ring-[hsl(var(--damij-primary))]/15 transition-colors"
     />
   </div>
 );
