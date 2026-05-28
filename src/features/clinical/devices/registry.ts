@@ -6,7 +6,9 @@ import {
   SimBP, SimPulseOx, SimGlucometer, SimThermo, SimSpirometer, SimPeakFlow,
   SimNebulizer, SimO2, SimCapno, SimXRay, SimCT, SimMRI, SimUS, SimEcho,
   SimGoniometer, SimReflex, SimTuning, SimGCS, SimEEG, SimOtoscope, SimOphthalmo,
-  SimUrineStrip, SimTroponin, SimDoppler, SimHolter, type SimProps, type CaseContext,
+  SimUrineStrip, SimTroponin, SimDoppler, SimHolter,
+  SimSnellen, SimTonometer, SimSlitLamp, SimIshihara, SimPupilReflex,
+  type SimProps, type CaseContext,
 } from './simulators';
 
 export type { SimProps, CaseContext };
@@ -41,4 +43,9 @@ export const DEVICE_REGISTRY: Record<string, React.FC<any>> = {
   troponin: SimTroponin,
   vascular_doppler: SimDoppler,
   holter: SimHolter,
+  snellen_chart: SimSnellen,
+  tonometer: SimTonometer,
+  slit_lamp: SimSlitLamp,
+  ishihara: SimIshihara,
+  pupil_reflex: SimPupilReflex,
 };

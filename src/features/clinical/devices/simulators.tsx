@@ -896,3 +896,169 @@ export const WoundControlKit: React.FC<SimProps> = ({ onApply }) => {
     </Wrap>
   );
 };
+
+// =============== Snellen Chart (Visual Acuity) ===============
+export const SimSnellen: React.FC<SimProps> = ({ ctx, onApply }) => {
+  const impaired = ctx.category === 'ophthalmology' || ctx.category === 'visual';
+  const lines = [
+    { size: 64, txt: 'E',      acuity: '20/200' },
+    { size: 44, txt: 'F P',    acuity: '20/100' },
+    { size: 32, txt: 'T O Z',  acuity: '20/70' },
+    { size: 24, txt: 'L P E D', acuity: '20/50' },
+    { size: 18, txt: 'P E C F D', acuity: '20/40' },
+    { size: 14, txt: 'E D F C Z P', acuity: '20/30' },
+    { size: 11, txt: 'F E L O P Z D', acuity: '20/20' },
+  ];
+  const cutoff = impaired ? 3 : 6;
+  const acuity = lines[cutoff]?.acuity || '20/20';
+  return (
+    <Wrap title="مخطط سنيلن لحدة البصر" icon="👁️" tone="from-indigo-50 to-white">
+      <div className="bg-white border rounded-lg p-3 text-center font-mono leading-tight">
+        {lines.map((l, i) => (
+          <div key={i} style={{ fontSize: l.size, opacity: i <= cutoff ? 1 : 0.18 }} className="tracking-widest">
+            {l.txt}
+          </div>
+        ))}
+      </div>
+      <div className="text-[11px] text-center">حدة البصر المُقاسة: <b className="text-indigo-700">{acuity}</b> {impaired && <span className="text-rose-600">— ضعف بصر</span>}</div>
+      <ApplyBtn onClick={() => onApply?.({ reading_ar: `Snellen: حدة بصر ${acuity}${impaired ? ' — يحتاج تصحيحاً' : ''}` })} />
+    </Wrap>
+  );
+};
+
+// =============== Tonometer (IOP) ===============
+export const SimTonometer: React.FC<SimProps> = ({ ctx, onApply }) => {
+  const [phase, setPhase] = useState<'idle' | 'measuring' | 'done'>('idle');
+  const isGlaucoma = ctx.category === 'ophthalmology' && (ctx.severity === 'moderate' || ctx.severity === 'severe' || ctx.severity === 'high');
+  const iop = isGlaucoma ? 28 + Math.floor(Math.random() * 8) : 13 + Math.floor(Math.random() * 6);
+  const status = iop > 21 ? 'مرتفع — احتمال زرق' : iop < 10 ? 'منخفض' : 'طبيعي';
+  const run = () => { setPhase('measuring'); setTimeout(() => setPhase('done'), 1500); };
+  return (
+    <Wrap title="مقياس ضغط العين" icon="💧" tone="from-blue-50 to-white">
+      <div className="h-24 bg-gradient-to-b from-blue-100 to-white rounded-lg flex items-center justify-center text-5xl">
+        {phase === 'measuring' ? <span className="animate-pulse">💨</span> : '👁️'}
+      </div>
+      <Screen>
+        {phase === 'idle' && 'وجّه الجهاز نحو العين'}
+        {phase === 'measuring' && 'نفخة هوائية… قياس IOP'}
+        {phase === 'done' && (<>
+          <div className={`text-3xl font-extrabold ${iop > 21 ? 'text-rose-300' : 'text-emerald-300'}`}>{iop}</div>
+          <div className="text-xs">mmHg — {status}</div>
+        </>)}
+      </Screen>
+      <button onClick={run} disabled={phase === 'measuring'} className="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold disabled:opacity-50">
+        {phase === 'done' ? 'إعادة القياس' : '▶ قس الضغط'}
+      </button>
+      {phase === 'done' && <ApplyBtn onClick={() => onApply?.({ reading_ar: `IOP: ${iop} mmHg (${status})` })} />}
+    </Wrap>
+  );
+};
+
+// =============== Slit Lamp ===============
+export const SimSlitLamp: React.FC<SimProps> = ({ ctx, onApply }) => {
+  const [layer, setLayer] = useState<'cornea' | 'iris' | 'lens'>('cornea');
+  const findings: Record<typeof layer, string> = {
+    cornea: ctx.category === 'ophthalmology' ? 'تآكل سطحي + تسلّل قرني خفيف' : 'قرنية صافية، سطح أملس',
+    iris: ctx.category === 'ophthalmology' && ctx.severity === 'severe' ? 'هالات التهابية + synechiae خلفية' : 'قزحية منتظمة الزخرفة',
+    lens: ctx.category === 'endocrinology' || (ctx.age_years ?? 0) > 60 ? 'تعتيم نووي مبكر — كتاركت' : 'عدسة شفافة',
+  } as any;
+  return (
+    <Wrap title="المصباح الشقي" icon="🔬" tone="from-cyan-50 to-white">
+      <div className="relative h-32 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 50%, #67e8f9 0%, #0e7490 40%, #082f49 100%)' }} />
+        <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 bg-yellow-200/80 shadow-[0_0_20px_rgba(254,240,138,0.8)]" />
+        {layer === 'iris' && <div className="absolute w-16 h-16 rounded-full border-4 border-amber-700/60" />}
+        {layer === 'lens' && <div className="absolute w-20 h-20 rounded-full bg-white/10 border border-white/30" />}
+      </div>
+      <div className="grid grid-cols-3 gap-1">
+        {(['cornea', 'iris', 'lens'] as const).map(k => (
+          <button key={k} onClick={() => setLayer(k)} className={`py-1 rounded text-[11px] border ${layer === k ? 'bg-cyan-600 text-white' : 'bg-white'}`}>
+            {k === 'cornea' ? 'قرنية' : k === 'iris' ? 'قزحية' : 'عدسة'}
+          </button>
+        ))}
+      </div>
+      <div className="text-[11px] p-2 bg-white border rounded"><b>الفحص: </b>{findings[layer]}</div>
+      <ApplyBtn onClick={() => onApply?.({ reading_ar: `Slit Lamp (${layer}): ${findings[layer]}` })} />
+    </Wrap>
+  );
+};
+
+// =============== Ishihara Color Vision ===============
+export const SimIshihara: React.FC<SimProps> = ({ ctx, onApply }) => {
+  const plates = [
+    { num: '12', dots: ['#dc2626', '#ea580c'] },
+    { num: '8',  dots: ['#16a34a', '#65a30d'] },
+    { num: '5',  dots: ['#ea580c', '#fb923c'] },
+    { num: '74', dots: ['#16a34a', '#84cc16'] },
+  ];
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const isColorBlind = ctx.category === 'ophthalmology' || ctx.category === 'visual';
+  const plate = plates[idx];
+  const submit = (val: string) => {
+    const correct = !isColorBlind && val === plate.num;
+    setAnswers(a => [...a, correct ? '✓' : '✗']);
+    if (idx < plates.length - 1) setIdx(idx + 1);
+  };
+  const done = answers.length === plates.length;
+  const correctCount = answers.filter(a => a === '✓').length;
+  return (
+    <Wrap title="فحص رؤية الألوان (إيشيهارا)" icon="🎨" tone="from-rose-50 to-white">
+      {!done ? (
+        <div className="space-y-2">
+          <div className="relative h-32 rounded-full bg-amber-50 overflow-hidden mx-auto" style={{ width: 128 }}>
+            {Array.from({ length: 90 }).map((_, i) => {
+              const a = Math.random() * Math.PI * 2; const r = Math.random() * 56;
+              const x = 64 + Math.cos(a) * r; const y = 64 + Math.sin(a) * r;
+              const onNum = Math.random() > 0.55;
+              return <div key={i} className="absolute rounded-full" style={{
+                left: x - 4, top: y - 4, width: 8 + Math.random() * 4, height: 8 + Math.random() * 4,
+                background: onNum ? plate.dots[0] : plate.dots[1],
+              }} />;
+            })}
+          </div>
+          <div className="text-[11px] text-center text-slate-600">اللوحة {idx + 1}/{plates.length} — ماذا ترى؟</div>
+          <div className="grid grid-cols-4 gap-1">
+            {['8', '12', '5', '74', '3', '6', '29', 'لا شيء'].map(opt => (
+              <button key={opt} onClick={() => submit(opt)} className="py-1.5 rounded border bg-white text-xs font-bold hover:bg-rose-50">{opt}</button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="text-center space-y-1">
+          <div className="text-2xl font-extrabold text-rose-700">{correctCount}/{plates.length}</div>
+          <div className="text-xs">{correctCount === plates.length ? 'رؤية ألوان طبيعية' : correctCount >= 2 ? 'ضعف خفيف في تمييز الألوان' : 'عمى ألوان واضح'}</div>
+        </div>
+      )}
+      {done && <ApplyBtn onClick={() => onApply?.({ reading_ar: `Ishihara: ${correctCount}/${plates.length} — ${correctCount === plates.length ? 'طبيعي' : 'خلل في رؤية الألوان'}` })} />}
+    </Wrap>
+  );
+};
+
+// =============== Pupillary Light Reflex ===============
+export const SimPupilReflex: React.FC<SimProps> = ({ ctx, onApply }) => {
+  const [lightOn, setLightOn] = useState(false);
+  const abnormal = (ctx.category === 'neurology' && (ctx.severity === 'high' || ctx.severity === 'severe' || ctx.severity === 'critical'))
+    || ctx.category === 'emergency';
+  const pupilSize = lightOn ? (abnormal ? 7 : 3) : (abnormal ? 8 : 6);
+  return (
+    <Wrap title="فحص منعكس الحدقة" icon="🔦" tone="from-amber-50 to-white">
+      <div className="relative h-32 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-amber-100 flex items-center justify-center relative overflow-hidden">
+          <div className="rounded-full bg-slate-900 transition-all duration-300" style={{ width: pupilSize * 5, height: pupilSize * 5 }} />
+          {lightOn && <div className="absolute inset-0 bg-yellow-200/40 mix-blend-screen animate-pulse" />}
+        </div>
+        {lightOn && <div className="absolute top-1/2 right-2 w-12 h-1 bg-yellow-300 shadow-[0_0_20px_rgba(254,240,138,1)]" />}
+      </div>
+      <button onMouseDown={() => setLightOn(true)} onMouseUp={() => setLightOn(false)}
+        onTouchStart={() => setLightOn(true)} onTouchEnd={() => setLightOn(false)}
+        className="w-full py-2 rounded-lg bg-amber-600 text-white text-xs font-bold select-none">
+        💡 اضغط مطوّلاً لتسليط الضوء
+      </button>
+      <div className="text-[11px] text-center">
+        قطر الحدقة: <b>{pupilSize}mm</b> {abnormal ? <span className="text-rose-600">— استجابة بطيئة/شاذة</span> : <span className="text-emerald-600">— تفاعل سريع PERRLA</span>}
+      </div>
+      <ApplyBtn onClick={() => onApply?.({ reading_ar: `Pupil Reflex: ${abnormal ? 'استجابة شاذة، قد يدلّ على آفة عصبية' : 'PERRLA طبيعي'}` })} />
+    </Wrap>
+  );
+};
