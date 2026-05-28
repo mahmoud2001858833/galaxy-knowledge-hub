@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEVICE_REGISTRY, type CaseContext } from './registry';
@@ -7,6 +7,8 @@ import InteractiveECG from './InteractiveECG';
 import InteractiveStethoscope from './InteractiveStethoscope';
 import { SimBP, SimPulseOx, SimThermo, SimGCS, WoundControlKit } from './simulators';
 import HelpTooltip from '../HelpTooltip';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Device {
   id: string; key: string; name_ar: string; name_en?: string; category: string;
