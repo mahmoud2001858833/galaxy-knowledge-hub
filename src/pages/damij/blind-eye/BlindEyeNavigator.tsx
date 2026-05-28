@@ -358,9 +358,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const stats = lastStatsRef.current;
       const sceneChanged = sceneChangePendingRef.current;
       const stagnant = stats && stats.globalMotion < 0.012;
-      let minGap = phase === 'calibrating' ? 1000 : score >= 75 ? 350 : score >= 40 ? 500 : 1200;
-      if (sceneChanged) minGap = 220;
-      if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 3000);
+      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 180 : score >= 40 ? 280 : 500;
+      if (sceneChanged) minGap = 140;
+      if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
+
 
       if (now - lastAITickRef.current >= minGap) {
         lastAITickRef.current = now;
