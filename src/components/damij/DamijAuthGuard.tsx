@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
  * Public exceptions: any path matching PUBLIC_PATTERNS.
  */
 const PUBLIC_PATTERNS: RegExp[] = [
+  /^\/damij\/?$/,                 // الصفحة الرئيسية لمنصة دامج — مفتوحة بدون تسجيل دخول
   /^\/damij\/auth(\/|$)/,
   /^\/damij\/clinical\/public\//,
 ];
