@@ -225,21 +225,19 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
         const score = g.global_proximity ?? 0;
         const bucket = score >= 75 ? 'H' : score >= 40 ? 'M' : 'L';
-        const key = `${g.best_path}|${bucket}|${g.obstacles_summary?.slice(0, 25)}`;
+        const key = `${g.best_path}|${bucket}|${g.spoken}`;
         const pri = score >= 75 ? 'critical' : score >= 40 ? 'directional' : 'descriptive';
-        // Coalesce: do not repeat same path within 6s unless hazard
         const now = Date.now();
         const samePath = lastSpokenPathRef.current.path === `${g.best_path}|${bucket}`;
-        const tooRecent = samePath && now - lastSpokenPathRef.current.t < 6000;
-        const heartbeatSilent = timeSinceLastSpeech() < 8000 && score < 40 && samePath;
-        if (!(userSpeakingRef.current && score < 75) && !tooRecent && !heartbeatSilent) {
-          speakDedup(g.spoken, key, pri, score >= 75 ? 1500 : 3500, {
-            rate: score >= 75 ? 1.2 : score >= 40 ? 1.1 : (langRef.current === 'ar' ? 1.0 : 1.05),
-            pitch: score >= 75 ? 1.2 : 1,
+        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 400 : 1200);
+        // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt.
+        if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
+          speakDedup(g.spoken, key, pri, score >= 75 ? 400 : 1200, {
             lang: langRef.current,
           });
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
         }
+
         const prev = prevProximityRef.current;
         if (score >= 75 && Date.now() - lastHazardSoundRef.current > 700) {
           lastHazardSoundRef.current = Date.now();
