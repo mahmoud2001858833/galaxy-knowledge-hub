@@ -133,7 +133,7 @@ const DamijHoverSpeak: React.FC = () => {
         initial={{ scale: 0, rotate: -90 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.35 }}
-        whileHover={{ scale: 1.08, rotate: enabled ? 4 : -4 }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
         onClick={() => setEnabled((v) => !v)}
         onMouseEnter={() => setShowHint(true)}
@@ -141,14 +141,14 @@ const DamijHoverSpeak: React.FC = () => {
         aria-label={enabled ? labels.off : labels.on}
         title={labels.label}
         aria-pressed={enabled}
-        className="group relative flex items-center justify-center w-14 h-14 rounded-full text-white shadow-xl ring-1 ring-white/40 transition-colors"
+        className="relative flex items-center justify-center w-14 h-14 rounded-full text-white shadow-xl ring-1 ring-white/50 transition-colors"
         style={{
           background: enabled
-            ? 'conic-gradient(from 200deg, #06b6d4, #0ea5e9, #6366f1, #06b6d4)'
-            : 'linear-gradient(135deg, #334155, #0f172a)',
+            ? 'linear-gradient(135deg, hsl(var(--damij-accent-2)) 0%, hsl(var(--damij-primary)) 100%)'
+            : 'linear-gradient(135deg, hsl(var(--damij-muted) / 0.85) 0%, hsl(var(--damij-text) / 0.9) 100%)',
           boxShadow: enabled
-            ? '0 16px 36px -10px rgba(14,165,233,0.65), 0 0 0 4px rgba(255,255,255,0.55)'
-            : '0 12px 30px -10px rgba(15,23,42,0.55), 0 0 0 4px rgba(255,255,255,0.55)',
+            ? '0 14px 36px -10px hsl(var(--damij-accent-2) / 0.6), 0 0 0 4px rgba(255,255,255,0.55)'
+            : '0 12px 30px -10px rgba(15,23,42,0.5), 0 0 0 4px rgba(255,255,255,0.55)',
         }}
       >
         {enabled
@@ -156,7 +156,7 @@ const DamijHoverSpeak: React.FC = () => {
           : <VolumeX className="w-6 h-6 drop-shadow-md" strokeWidth={2.4} />}
         {enabled && (
           <motion.span
-            className="absolute inset-0 rounded-full ring-2 ring-cyan-200/80"
+            className="absolute inset-0 rounded-full ring-2 ring-white/70 pointer-events-none"
             animate={{ scale: [1, 1.35, 1], opacity: [0.85, 0, 0.85] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
           />
