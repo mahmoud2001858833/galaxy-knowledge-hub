@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEVICE_REGISTRY, type CaseContext } from './registry';
@@ -7,6 +7,8 @@ import InteractiveECG from './InteractiveECG';
 import InteractiveStethoscope from './InteractiveStethoscope';
 import { SimBP, SimPulseOx, SimThermo, SimGCS, WoundControlKit } from './simulators';
 import HelpTooltip from '../HelpTooltip';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Device {
   id: string; key: string; name_ar: string; name_en?: string; category: string;
@@ -150,10 +152,21 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext,
         </div>
       )}
 
-      {/* Selected device */}
-      {selected && (
-        <DeviceRenderer device={selected} ctx={ctx} onApply={(r) => recordUse(selected.key, selected.name_ar, r)} />
-      )}
+      {/* Selected device opens in a Sheet, never stacks under the grid */}
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent side="left" className="w-full sm:max-w-lg overflow-y-auto" dir="rtl">
+          <SheetHeader>
+            <SheetTitle className="text-right flex items-center gap-2">
+              <span className="text-2xl">{selected?.icon || '🩺'}</span> {selected?.name_ar}
+            </SheetTitle>
+          </SheetHeader>
+          {selected && (
+            <div className="mt-3">
+              <DeviceRenderer device={selected} ctx={ctx} onApply={(r) => { recordUse(selected.key, selected.name_ar, r); setSelected(null); }} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
       <div className="text-[10px] text-center text-slate-400">محاكاة تعليمية — ليست بديلاً عن الفحص أو الجهاز الحقيقي</div>
     </div>
   );
@@ -198,26 +211,35 @@ const AlwaysOnSimulators: React.FC<{ ctx: CaseContext; onApply: (name: string, r
   const isTrauma = /emergency|trauma|ortho/i.test(cat);
   const isNeuro = /neuro|psychiatry|autism|adhd/i.test(cat);
   const isPeds = /pediatric|طفل/i.test(cat);
+  const [open, setOpen] = useState(false);
+
+  const anyApplicable = isCardiac || isResp || isTrauma || isNeuro || isPeds;
+  if (!anyApplicable) return null;
 
   return (
-    <div className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white p-3 space-y-3">
-      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات حيّة (تعكس آخر قراءات المريض لحظياً)</div>
-      <div className="grid md:grid-cols-2 gap-2">
-        {isCardiac && (
-          <div className="space-y-1">
-            <div className="text-[11px] font-bold">📈 ECG</div>
-            <InteractiveECG hr={ctx.vitals?.hr ?? 88} rhythm={ctx.severity==='high'||ctx.severity==='critical' ? 'sinus_tachy' : 'sinus'} />
-          </div>
-        )}
-        {(isCardiac || isTrauma || isResp || isPeds) && <SimPulseOx ctx={ctx} onApply={(r) => onApply('Pulse Ox', r)} />}
-        {(isCardiac || isTrauma) && <SimBP ctx={ctx} onApply={(r) => onApply('BP', r)} />}
-        {isResp && <InteractiveStethoscope defaultSound="wheeze" />}
-        {isCardiac && <InteractiveStethoscope defaultSound="murmur" />}
-        {isTrauma && <WoundControlKit ctx={ctx} onApply={(r) => onApply('Wound Kit', r)} />}
-        {isNeuro && <SimGCS ctx={ctx} onApply={(r) => onApply('GCS', r)} />}
-        {isPeds && <SimThermo ctx={ctx} onApply={(r) => onApply('Thermo', r)} />}
-      </div>
-    </div>
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white">
+      <CollapsibleTrigger className="w-full flex items-center justify-between p-3">
+        <span className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات حيّة (تعكس آخر القراءات)</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-3 pb-3">
+        <div className="grid md:grid-cols-2 gap-2">
+          {isCardiac && (
+            <div className="space-y-1">
+              <div className="text-[11px] font-bold">📈 ECG</div>
+              <InteractiveECG hr={ctx.vitals?.hr ?? 88} rhythm={ctx.severity==='high'||ctx.severity==='critical' ? 'sinus_tachy' : 'sinus'} />
+            </div>
+          )}
+          {(isCardiac || isTrauma || isResp || isPeds) && <SimPulseOx ctx={ctx} onApply={(r) => onApply('Pulse Ox', r)} />}
+          {(isCardiac || isTrauma) && <SimBP ctx={ctx} onApply={(r) => onApply('BP', r)} />}
+          {isResp && <InteractiveStethoscope defaultSound="wheeze" />}
+          {isCardiac && <InteractiveStethoscope defaultSound="murmur" />}
+          {isTrauma && <WoundControlKit ctx={ctx} onApply={(r) => onApply('Wound Kit', r)} />}
+          {isNeuro && <SimGCS ctx={ctx} onApply={(r) => onApply('GCS', r)} />}
+          {isPeds && <SimThermo ctx={ctx} onApply={(r) => onApply('Thermo', r)} />}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
