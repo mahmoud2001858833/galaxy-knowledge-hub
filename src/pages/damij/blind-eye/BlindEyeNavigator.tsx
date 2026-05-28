@@ -154,14 +154,15 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const v = videoRef.current;
     const c = captureCanvasRef.current;
     if (!v || !c || v.readyState < 2) return null;
-    const w = mode === 'calibration' ? 256 : mode === 'detailed' ? 480 : 320;
+    const w = mode === 'calibration' ? 224 : mode === 'detailed' ? 480 : 256;
     const h = Math.round((v.videoHeight / v.videoWidth) * w) || Math.round(w * 0.75);
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(v, 0, 0, w, h);
-    const q = mode === 'calibration' ? 0.45 : mode === 'detailed' ? 0.6 : 0.5;
+    const q = mode === 'calibration' ? 0.4 : mode === 'detailed' ? 0.6 : 0.45;
     return c.toDataURL('image/jpeg', q);
+
   }, []);
 
   // ---- AI tick ----
