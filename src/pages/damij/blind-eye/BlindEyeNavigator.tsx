@@ -168,8 +168,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
   // ---- AI tick ----
   const runAI = useCallback(async (mode: 'calibration'|'fast'|'detailed'|'points') => {
     if (Date.now() < cooldownUntilRef.current) return;
-    if (inflightRef.current >= 3) return;
+    if (inflightRef.current >= 4) return;
     const img = captureFrame(mode);
+
     if (!img) return;
     inflightRef.current += 1;
     const t0 = performance.now();
