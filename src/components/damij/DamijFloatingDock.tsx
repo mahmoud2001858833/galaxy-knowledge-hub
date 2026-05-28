@@ -46,12 +46,14 @@ const DamijFloatingDock: React.FC<{ children: React.ReactNode }> = ({ children }
       data-damij-no-translate
       data-damij-no-speak
       aria-hidden={false}
-      className="fixed bottom-24 end-4 z-[60] pointer-events-none flex flex-col items-end gap-3"
+      className="fixed bottom-24 end-4 z-[60] pointer-events-none flex flex-col items-center gap-2.5"
       style={{ y: translateY }}
       animate={{ opacity: hidden ? 0.35 : 1, scale: hidden ? 0.94 : 1 }}
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
     >
-      {children}
+      {React.Children.map(children, (child) => (
+        <div className="w-14 h-14 flex items-center justify-center pointer-events-auto">{child}</div>
+      ))}
     </motion.div>
   );
 };
