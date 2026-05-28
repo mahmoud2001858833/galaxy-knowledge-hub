@@ -21,6 +21,11 @@ import {
 import { GAMES } from '@/features/autism/playGames';
 import { AUTISM_SOURCES, SCREENING_DISCLAIMER_AR } from '@/features/autism/sources';
 import ReportView, { AIReport } from '@/features/autism/ReportView';
+import {
+  DiscoveryProfile,
+  profileFromQuestionnaire,
+  profileFromDiscoveryGames,
+} from '@/features/autism/discoveryProfile';
 
 import ResponseToName from '@/features/autism/games/ResponseToName';
 import JointAttention from '@/features/autism/games/JointAttention';
@@ -33,8 +38,14 @@ import GameIntroScreen from '@/features/autism/ui/GameIntroScreen';
 import { useTTS } from '@/features/autism/ui/useTTS';
 import { Volume2 } from 'lucide-react';
 
-type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'ai_games' | 'analyzing' | 'report';
-type Path = 'questionnaire' | 'games' | 'ai_games' | 'both';
+type Step = 'intro' | 'path' | 'discovery_q' | 'discovery_g' | 'ai_games' | 'analyzing' | 'report';
+type Path = 'discovery_q' | 'discovery_g';
+
+// Discovery games: 3 short, interactive templates used only to surface
+// preferences/skill level. The AI then builds the real diagnostic battery.
+const DISCOVERY_TEMPLATE_IDS = ['category_match', 'emotion_cards', 'look_with_me'] as const;
+const DISCOVERY_QUESTIONNAIRE_LIMIT = 10;
+
 
 interface AIGame {
   template_id: string;
