@@ -1,51 +1,107 @@
-# خطة إصلاح مترجم لغة الإشارة (3 مشاكل)
+## الهدف
+1. تغيير شاشة اختيار طريقة التشخيص لتعرض **خياري تعرّف أوّلي فقط** (استبيان ولي الأمر أو ألعاب أوّلية)، ثم يبني الذكاء الاصطناعي حزمة ألعاب تشخيصية مخصّصة بناءً عليها.
+2. ضمان أن جميع ألعاب مرحلة التشخيص الفعلي **ألعاب تفاعلية** (لا أسئلة استبيانية مكتوبة).
+3. إصلاح لعبة **انظر إلى الوجه** ليقع الوجه تمامًا فوق العنصر.
+4. إصلاح لعبة **تتبّع الفقاعات** بحيث تستجيب لكل ضغطة وتصبح أكثر تفاعلية.
 
-## 1) سرعة فتح الكاميرا + لا يترجم الإشارة إلى نص
+---
 
-**الأسباب المكتشفة:**
-- النموذج (MediaPipe HandLandmarker) يُحمَّل أوّل مرة عند الضغط على «تشغيل»، فيظهر تأخير 3–8 ثوانٍ. الـ pre-warm الحالي داخل `useEffect` لا يُنفَّذ بشكل موثوق لأن `initHand` معرَّفة بعد `useEffect` (hoisting صحيح للدالّة لكن التحميل قد يتأخر إلى ما بعد التفاعل).
-- في `handleGestureDetected` نُسقِط الإشارة إذا لم نجد لها كلمة في `liveVocab` ولا في القاموس الثابت. حين يكون `signSystem` غير ArSL/ASL أو يكون `vocabLoading=true` تكون النتيجة **فارغة دائماً** ⇒ "ما بترجم أبداً".
-- عتبات MediaPipe (0.2) منخفضة جداً ⇒ كثير من الـ false-positives ثم الـ confidence < 0.7 يُرفض في `filterGesture` ⇒ لا تُسجَّل كلمات.
+## 1) إعادة هيكلة تدفّق التشخيص — `AutismDiagnosis.tsx`
 
-**الإصلاح في `SignTranslatorPro.tsx` و `gestureFilter.ts`:**
-- تشغيل `initHand()` **فوراً عند mount** بشكل مضمون مع شريط تقدّم صغير "جاري تجهيز نموذج التعرف…" حتى يكون جاهزاً قبل ضغط المستخدم. عرض الزر معطّلاً مع رسالة "جاري التحميل…" بدلاً من البدء بالتحميل بعد النقر.
-- رفع `minHandDetectionConfidence` و `minTrackingConfidence` إلى 0.5 لتقليل الضوضاء.
-- **Fallback إجباري** في `handleGestureDetected`: إذا لم تتوفّر كلمة في `liveVocab` أو في قاموس النظام، نستخدم القاموس العربي الافتراضي `gestureToArabic` (الموجود أصلاً أعلى الملف) ثم نترجمه عبر AI إلى لغة النظام المختار. هكذا أي نظام إشارة سيُنتج نصاً.
-- إذا كان `vocabLoading=true` نعرض شريط "جاري تجهيز قاموس {اللغة}…" داخل البطاقة بدل ترك المستخدم يظن أن الكاميرا لا تعمل.
-- خفض `MIN_CONFIDENCE` في `gestureFilter` من 0.7 إلى 0.6، وخفض ثبات الإطارات من 3 إلى 2 لتسريع أول كلمة.
-- إضافة مؤشّر بصري واضح "تم اكتشاف الإشارة: ✋ مرحبا" فوق الفيديو لإعطاء feedback فوري حتى قبل وصول الـ AI.
-
-## 2) المشغّل السينمائي «الإشارة تدور حوالين نفسها»
-
-**السبب:** في `HandSignCard.tsx` السطر 23:
-```ts
-circle: { rotate: [0, 360], transition: { duration: 1.6, repeat: Infinity, ease: 'linear' } }
+### تدفّق جديد
 ```
-أي حركة `circle` (وهي شائعة في مخرجات الذكاء الاصطناعي) تجعل اليد كلها تدور بلا توقّف وكأنها تدور حول نفسها.
+intro (الاسم/العمر) 
+   → path  (اختيار طريقة التعرّف الأوّلي)
+        ├─ "استبيان ولي الأمر"  → questionnaire (سريع، ~10 أسئلة فقط لاستخراج صورة أولية)
+        └─ "ألعاب تعرّف أوّلية"  → discovery_games (2–3 ألعاب قصيرة من القالب الجاهز)
+   → (تحويل التعرّف الأوّلي إلى ملف اهتمام/قدرات للطفل)
+   → ai_games  (الذكاء الاصطناعي يولّد بطارية ألعاب تشخيصية مخصّصة من معطيات التعرّف)
+   → analyzing → report
+```
 
-**الإصلاح:**
-- تغيير الحركة `circle` إلى حركة دائرية للموضع (translate على دائرة صغيرة) بدلاً من `rotate` الكامل: `{ x: [0, 8, 0, -8, 0], y: [0, -8, 0, 8, 0] }`.
-- تطبيق نفس المبدأ على باقي الحركات المتكرّرة (wave_h/wave_v): استخدام تنويعات `x`/`y` بدل rotation الكامل.
-- في `SignSequencePlayer` التأكّد من أن `loop=false` افتراضياً (هو كذلك) لكن إيقاف الـ animation عند الانتقال للكلمة التالية عبر `key={idx}` ⇒ موجود.
+### تعديلات `path` step
+- استبدال الخيارين الحاليين بخيارين:
+  - **استبيان ولي الأمر** (أيقونة `ClipboardList`) — «أجب على أسئلة قصيرة عن طفلك، يستخدمها الذكاء الاصطناعي لتفصيل الألعاب».
+  - **ألعاب تعرّف أوّلية** (أيقونة `Gamepad2`) — «ألعاب تفاعلية قصيرة تستخرج اهتمامات ومستوى الطفل تلقائيًا».
+- إزالة خيار «الألعاب الأساسية الجاهزة» المنفرد وخيار «AI مباشر بدون تعرّف» — كلاهما يصب الآن في نفس مسار AI.
 
-## 3) ترجمة فيديوهات YouTube: «تعذر جلب الترجمة»
+### مرحلة `discovery_games` (جديدة)
+- تشغيل 2–3 ألعاب قصيرة من قوالب `templates/` (مثل `CategoryMatch`، `EmotionCards`، `LookWithMe`) بهدف **استخراج تفضيلات/قدرات** فقط (سرعة الاستجابة، الفئة المفضّلة، التركيز).
+- النتائج تُجمّع في كائن `discoveryProfile`:
+  ```ts
+  { preferred_categories, avg_response_ms, attention_span_sec, social_score, accuracy }
+  ```
 
-**السبب:** instances الـ Piped/Invidious في `damij-youtube-sign/index.ts` معظمها معطّل أو يحجب الطلبات الآن، وصفحة watch تُرجِع نسخة بدون `captionTracks` للطلبات بدون كوكيز.
+### اختصار الاستبيان عند اختياره كتعرّف أوّلي
+- تشغيل أوّل 8–10 أسئلة فقط من `getItemsForTrack(track)` بدل القائمة الكاملة، مع شارة «تعرّف أوّلي سريع».
+- النتائج تُحوّل إلى `discoveryProfile` بنفس البنية.
 
-**الإصلاح في `supabase/functions/damij-youtube-sign/index.ts`:**
-1. **تحديث قائمة الـ instances** بأحدث Piped/Invidious العاملة (نأخذها من قائمتهما الرسمية وقت الكتابة) وزيادة عددها إلى ~10 من كل نوع، مع إعادة المحاولة في حال 5xx/timeout.
-2. **مسار جديد رئيسي:** استدعاء `https://video.google.com/timedtext?type=list&v={id}` أولاً للحصول على قائمة المسارات بدون watch page، ثم تنزيل المسار بـ `&fmt=json3`. هذا يعمل لمعظم الفيديوهات التي لديها CC يدوية.
-3. **مسار `youtubei` (InnerTube)** كاحتياط: POST إلى `https://www.youtube.com/youtubei/v1/player` بـ client `ANDROID` للحصول على `captions.playerCaptionsTracklistRenderer.captionTracks` بشكل موثوق.
-4. **توليد ASR ذاتي عند الفشل التام:** إذا لم تتوفّر ترجمات، نُنزِّل صوت الفيديو عبر Piped (`streams[].url` audio-only) ونمرّره إلى Gemini `audio` لتفريغه. (اختياري — خلف flag `allowAsr=true` ليبقى الزمن سريعاً).
-5. تحسين رسالة الخطأ لتوضيح الفرق بين "الفيديو بدون ترجمة" و"تعذّر الوصول للخوادم"، مع إعادة `errorCode` للواجهة.
+### تمرير التعرّف الأوّلي إلى مولّد ألعاب AI
+- تعديل استدعاء `startAiGames`:
+  ```ts
+  supabase.functions.invoke('autism-generate-diagnostic-games', {
+    body: { ageMonths, ageTrack, respondent, name,
+            discoveryProfile,                         // ⟵ جديد
+            discoverySource: 'questionnaire' | 'games', // ⟵ جديد
+            questionnaireResult: qr }
+  })
+  ```
+- النتيجة: ألعاب AI مولّدة بأسلوب/مواضيع متوافقة مع اهتمامات الطفل (مثلًا إن أحبّ الحيوانات تظهر الحيوانات في الأمثلة).
 
-## التحقق
-- فتح صفحة المترجم → الكاميرا تبدأ خلال ~1 ثانية، أوّل إشارة (open_palm) تُسجَّل كنص خلال ثانيتين.
-- تحويل "مرحبا أنا أحبك" إلى إشارة وتشغيله سينمائياً ⇒ لا تدوير لانهائي.
-- لصق فيديو YouTube بترجمات يدوية (مثلاً TED) ⇒ يجلب الترجمة ويُولِّد الإشارات.
+### تحديث الخطوات (`STEP_LABELS`)
+```
+البيانات → الطريقة → (تعرّف أوّلي) → ألعاب AI → التقرير
+```
 
-## الملفات المتأثّرة
-- `src/features/sign-language/SignTranslatorPro.tsx`
-- `src/features/sign-language/gestureFilter.ts`
-- `src/features/sign-language/HandSignCard.tsx`
-- `supabase/functions/damij-youtube-sign/index.ts`
+---
+
+## 2) تعديل Edge Function `autism-generate-diagnostic-games`
+- استقبال الحقلين الجديدين `discoveryProfile` و `discoverySource`.
+- تحديث system prompt: «أنشئ بطارية 4–6 ألعاب تشخيصية **تفاعلية فقط** من قوالب: BubbleTracking, LookWithMe, CategoryMatch, EmotionCards, MagicMirror, SpeechBubbles. استخدم اهتمامات الطفل المستخرجة لاختيار المواضيع والصعوبة. **ممنوع** إنشاء أسئلة استبيانية نصية».
+- إجبار schema على `template_id ∈` (قوالب التفاعلية فقط) بحيث لا يمكن للنموذج إنتاج لعبة غير لعبة.
+- ضمان وجود `difficulty` متدرّجة بناءً على `discoveryProfile.accuracy`.
+
+---
+
+## 3) إصلاح لعبة «انظر إلى الوجه» — `templates/LookWithMe.tsx`
+
+المشكلة الحالية: قيم `x` ثابتة (`-80/-25/25/80`) لا تتطابق مع مواقع الأزرار الأربعة، ولا يوجد سهم/زاوية واضحة.
+
+### الحل
+- وضع الوجه في حاوية بنفس عرض شبكة الأزرار (`grid-cols-4` بعرض ثابت 4×88px مثلًا).
+- حساب موقع الوجه ديناميكيًا فوق الزر الهدف عبر `ref` لكل زر ثم تحريك `motion.div` إلى `targetRef.current.offsetLeft + width/2 - faceWidth/2`.
+- إضافة دوران بصري بسيط: عين/سهم يميل بزاوية نحو الهدف لتأكيد الاتجاه.
+- زيادة مدة التحريك إلى 0.8s مع `easeOut` لتلتزم بمحاذاة دقيقة.
+
+---
+
+## 4) إصلاح لعبة «تتبّع الفقاعات» — `templates/BubbleTracking.tsx`
+
+المشاكل:
+- `animate={{ y: [0, -8, 0] }}` مع `transition repeat: Infinity` على `motion.button` يمنع تسجيل النقر أحيانًا.
+- طبقة `<div onClick=misses>` تغطي الفقاعات بـ `inset-0` (z-index 0 بنفس مستوى الفقاعات في بعض المتصفّحات) وتسرق النقرات.
+- وتيرة ظهور الفقاعات بطيئة (1.4s) ولا تنفجر بصريًا.
+
+### الحل
+- استبدال `repeat: Infinity` على عنصر الزر بانفصال: حركة العوم تجري على `<motion.span>` داخلي، بينما يبقى `<motion.button>` بدون أنيميشن متكرّر يضمن `pointer-events`.
+- إضافة `style={{ touchAction: 'manipulation' }}` و `onPointerDown` بدل `onClick` لاستجابة فورية على الموبايل.
+- نقل طبقة `misses` لتكون `pointer-events-none` على الفقاعات أو استخدام `onClick` على الخلفية فقط مع `z-index` أصغر ضمنًا.
+- تقليل فترة الظهور إلى 900ms، رفع عدد الفقاعات المسموح في الشاشة إلى 8، وإضافة:
+  - تأثير انفجار (`scale 0 → 1.4` + جزيئات `★` صغيرة).
+  - صوت `pop` خفيف (Web Audio oscillator قصير).
+  - عدّاد كومبو يزيد عند النقر السريع المتتالي لزيادة التفاعلية.
+- إصلاح حساب `accuracy`: تجاهل النقرات على الخلفية إن جاءت قبل ظهور أي فقاعة.
+
+---
+
+## ملفات سيتم تعديلها
+- `src/pages/damij/autism/AutismDiagnosis.tsx` — تدفّق جديد + مرحلة `discovery_games` + تمرير `discoveryProfile`.
+- `src/features/autism/games/templates/LookWithMe.tsx` — محاذاة الوجه الديناميكية.
+- `src/features/autism/games/templates/BubbleTracking.tsx` — استجابة فورية + تفاعلية محسّنة.
+- `supabase/functions/autism-generate-diagnostic-games/index.ts` — استقبال profile + prompt جديد + قيود schema.
+
+## ملفات قد تُضاف
+- `src/features/autism/discoveryProfile.ts` — أنواع ومحوّلات (questionnaire→profile, games→profile).
+
+## لن يتغيّر
+- مولّد التقرير `autism-screen-analyze`، التخزين، شكل التقرير، باقي القوالب.

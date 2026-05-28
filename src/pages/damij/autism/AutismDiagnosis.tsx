@@ -21,6 +21,11 @@ import {
 import { GAMES } from '@/features/autism/playGames';
 import { AUTISM_SOURCES, SCREENING_DISCLAIMER_AR } from '@/features/autism/sources';
 import ReportView, { AIReport } from '@/features/autism/ReportView';
+import {
+  DiscoveryProfile,
+  profileFromQuestionnaire,
+  profileFromDiscoveryGames,
+} from '@/features/autism/discoveryProfile';
 
 import ResponseToName from '@/features/autism/games/ResponseToName';
 import JointAttention from '@/features/autism/games/JointAttention';
@@ -33,8 +38,14 @@ import GameIntroScreen from '@/features/autism/ui/GameIntroScreen';
 import { useTTS } from '@/features/autism/ui/useTTS';
 import { Volume2 } from 'lucide-react';
 
-type Step = 'intro' | 'path' | 'questionnaire' | 'games' | 'ai_games' | 'analyzing' | 'report';
-type Path = 'questionnaire' | 'games' | 'ai_games' | 'both';
+type Step = 'intro' | 'path' | 'discovery_q' | 'discovery_g' | 'ai_games' | 'analyzing' | 'report';
+type Path = 'discovery_q' | 'discovery_g';
+
+// Discovery games: 3 short, interactive templates used only to surface
+// preferences/skill level. The AI then builds the real diagnostic battery.
+const DISCOVERY_TEMPLATE_IDS = ['category_match', 'emotion_cards', 'look_with_me'] as const;
+const DISCOVERY_QUESTIONNAIRE_LIMIT = 10;
+
 
 interface AIGame {
   template_id: string;
@@ -73,10 +84,11 @@ const AutismDiagnosis: React.FC = () => {
   const [name, setName] = useState(savedProfile?.child_name || '');
   const [ageMonths, setAgeMonths] = useState(savedProfile?.age_years ? savedProfile.age_years * 12 : 36);
   const [respondent, setRespondent] = useState<'caregiver' | 'self'>('caregiver');
-  const [path, setPath] = useState<Path>('ai_games');
+  const [path, setPath] = useState<Path>('discovery_g');
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [qIndex, setQIndex] = useState(0);
-  const [gameIndex, setGameIndex] = useState(0);
+  const [discoveryIndex, setDiscoveryIndex] = useState(0);
+  const [discoveryResults, setDiscoveryResults] = useState<GameResult[]>([]);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [aiGames, setAiGames] = useState<AIGame[]>([]);
   const [aiGameIndex, setAiGameIndex] = useState(0);
@@ -87,32 +99,37 @@ const AutismDiagnosis: React.FC = () => {
   const tts = useTTS();
 
   const track = useMemo(() => inferTrack(ageMonths), [ageMonths]);
-  const items = useMemo(() => getItemsForTrack(track), [track]);
+  const allItems = useMemo(() => getItemsForTrack(track), [track]);
+  // Quick discovery questionnaire = first N items only
+  const items = useMemo(() => allItems.slice(0, DISCOVERY_QUESTIONNAIRE_LIMIT), [allItems]);
   const currentItem = items[qIndex];
 
   // Auto-narrate the current question
   React.useEffect(() => {
-    if (step === 'questionnaire' && currentItem?.text) tts.speak(currentItem.text);
+    if (step === 'discovery_q' && currentItem?.text) tts.speak(currentItem.text);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, currentItem?.id]);
 
   // Reset per-game intro flag whenever we switch games
-  React.useEffect(() => { setIntroShown(false); }, [gameIndex, aiGameIndex, step]);
+  React.useEffect(() => { setIntroShown(false); }, [discoveryIndex, aiGameIndex, step]);
 
   const reset = () => {
-    setStep('intro'); setAnswers({}); setQIndex(0); setGameIndex(0); setGameResults([]);
+    setStep('intro'); setAnswers({}); setQIndex(0);
+    setDiscoveryIndex(0); setDiscoveryResults([]); setGameResults([]);
     setAiGames([]); setAiGameIndex(0); setAiStrategy(''); setReport(null);
   };
 
-  const startAiGames = async (afterClassicGames: GameResult[]) => {
+  const startAiGames = async (discoveryProfile: DiscoveryProfile) => {
     setAiGamesLoading(true);
     setStep('ai_games');
     try {
-      const qr = path !== 'games' && path !== 'ai_games' ? scoreQuestionnaire(track, answers) : null;
+      const qr = path === 'discovery_q' ? scoreQuestionnaire(track, answers) : null;
       const { data, error } = await supabase.functions.invoke('autism-generate-diagnostic-games', {
         body: {
           ageMonths, ageTrack: track, respondent, name: name || undefined,
           questionnaireResult: qr,
+          discoveryProfile,
+          discoverySource: discoveryProfile.source,
         },
       });
       if (error) throw error;
@@ -121,16 +138,16 @@ const AutismDiagnosis: React.FC = () => {
       setAiGames(games);
       setAiStrategy(data?.overall_strategy_ar || '');
       setAiGameIndex(0);
-      // Keep classic results for later analysis
-      setGameResults(afterClassicGames);
+      setGameResults([]);
     } catch (e: any) {
       console.warn('AI diagnostic games failed, skipping:', e);
       toast.warning('تعذّر توليد ألعاب التشخيص الذكية — سيتم الانتقال للتحليل.');
-      startAnalysis(afterClassicGames);
+      startAnalysis([]);
     } finally {
       setAiGamesLoading(false);
     }
   };
+
 
   const handleAiGameComplete = (metrics: { accuracy: number; raw?: any }, durationMs: number, skipped = false) => {
     const g = aiGames[aiGameIndex];
@@ -226,8 +243,8 @@ const AutismDiagnosis: React.FC = () => {
   const startAnalysis = async (finalGames: GameResult[]) => {
     setStep('analyzing');
     const questionnaireResult =
-      path !== 'games' ? scoreQuestionnaire(track, answers) : null;
-    const gameInsights = path !== 'questionnaire' ? summarizeGames(finalGames) : [];
+      path === 'discovery_q' ? scoreQuestionnaire(track, answers) : null;
+    const gameInsights = summarizeGames([...discoveryResults, ...finalGames]);
     const dsmRollup = rollupDsm(questionnaireResult, gameInsights);
 
     try {
@@ -259,34 +276,47 @@ const AutismDiagnosis: React.FC = () => {
     }
   };
 
-  const onQuestionnaireDone = () => {
-    if (path === 'questionnaire') startAnalysis([]);
-    else if (path === 'ai_games') startAiGames([]);
-    else { setStep('games'); setGameIndex(0); }
+  // Called when the quick discovery questionnaire ends → build profile, kick off AI games
+  const onDiscoveryQuestionnaireDone = () => {
+    const profile = profileFromQuestionnaire(track, answers);
+    startAiGames(profile);
   };
 
-  const handleGameComplete = (metrics: Record<string, number>, durationMs: number, skipped = false) => {
-    const game = GAMES[gameIndex];
-    const next: GameResult = { gameId: game.id, metrics, durationMs, skipped };
-    const all = [...gameResults, next];
-    setGameResults(all);
-    if (gameIndex + 1 >= GAMES.length) {
-      // Chain into AI-personalized games when path is `both`
-      if (path === 'both') startAiGames(all);
-      else startAnalysis(all);
-    } else setGameIndex((i) => i + 1);
+  // Called when one of the 3 discovery games finishes
+  const handleDiscoveryGameComplete = (metrics: { accuracy: number; raw?: any }, durationMs: number, skipped = false) => {
+    const tid = DISCOVERY_TEMPLATE_IDS[discoveryIndex];
+    const next: GameResult = {
+      gameId: `discovery_${tid}`,
+      metrics: { accuracy: metrics.accuracy ?? 0, ...(metrics.raw || {}) },
+      durationMs,
+      skipped,
+    };
+    const all = [...discoveryResults, next];
+    setDiscoveryResults(all);
+    if (discoveryIndex + 1 >= DISCOVERY_TEMPLATE_IDS.length) {
+      const profile = profileFromDiscoveryGames(all);
+      startAiGames(profile);
+    } else {
+      setDiscoveryIndex((i) => i + 1);
+    }
   };
 
   // Stepper definition
   const STEP_LABELS: { id: Step; label: string }[] = [
     { id: 'intro', label: 'البيانات' },
     { id: 'path', label: 'الطريقة' },
-    { id: 'questionnaire', label: 'الأسئلة' },
-    { id: 'games', label: 'الألعاب' },
-    { id: 'ai_games', label: 'AI' },
+    { id: 'discovery_q', label: 'تعرّف أوّلي' },
+    { id: 'discovery_g', label: 'تعرّف لعب' },
+    { id: 'ai_games', label: 'ألعاب AI' },
     { id: 'report', label: 'التقرير' },
   ];
-  const stepIndex = STEP_LABELS.findIndex(s => s.id === step);
+  // Only show the discovery step the user actually picked
+  const visibleSteps = STEP_LABELS.filter(s =>
+    !(s.id === 'discovery_q' && path !== 'discovery_q') &&
+    !(s.id === 'discovery_g' && path !== 'discovery_g')
+  );
+  const stepIndex = visibleSteps.findIndex(s => s.id === step);
+
 
   return (
     <div className="px-4 sm:px-6 pt-8 pb-16 max-w-4xl mx-auto" dir="rtl">
@@ -316,7 +346,7 @@ const AutismDiagnosis: React.FC = () => {
 
         {/* Stepper */}
         <div className="mt-5 flex items-center justify-center gap-1 overflow-x-auto pb-1">
-          {STEP_LABELS.map((s, i) => {
+          {visibleSteps.map((s, i) => {
             const done = stepIndex > i;
             const active = stepIndex === i;
             return (
@@ -331,7 +361,8 @@ const AutismDiagnosis: React.FC = () => {
                   </div>
                   <span className={`text-[10px] ${active ? 'text-[hsl(var(--autism-primary))] font-bold' : 'text-[hsl(var(--autism-muted))]'}`}>{s.label}</span>
                 </div>
-                {i < STEP_LABELS.length - 1 && (
+                {i < visibleSteps.length - 1 && (
+
                   <div className={`h-0.5 w-4 sm:w-8 rounded-full ${stepIndex > i ? 'bg-[hsl(var(--autism-success))]' : 'bg-[hsl(var(--autism-primary)/0.15)]'}`} />
                 )}
               </React.Fragment>
@@ -388,11 +419,13 @@ const AutismDiagnosis: React.FC = () => {
 
       {step === 'path' && (
         <div className="space-y-4">
-          <p className="text-center text-[hsl(var(--autism-text))]/70 mb-4">اختر طريقة التقييم:</p>
+          <p className="text-center text-[hsl(var(--autism-text))]/70 mb-4">
+            اختر طريقة <b>التعرّف الأوّلي</b> على الطفل — بعدها يولّد الذكاء الاصطناعي بطارية ألعاب تشخيصية مخصّصة:
+          </p>
           {([
-            { id: 'ai_games', icon: Wand2, title: 'ألعاب تشخيصية ذكية مخصّصة بالـ AI ✨ (موصى به)', desc: 'يولّد الذكاء الاصطناعي بطارية ألعاب فريدة لكل طفل بناءً على عمره — لا توجد أسئلة مكتوبة، كله ألعاب تفاعلية.' },
-            { id: 'games', icon: Gamepad2, title: 'الألعاب الأساسية الجاهزة', desc: '6 ألعاب تفاعلية ثابتة تقيس الانتباه والتواصل والحس.' },
-          ] as const).map((p) => (
+            { id: 'discovery_q' as const, icon: ClipboardList, title: 'استبيان قصير لولي الأمر', desc: '~10 أسئلة سريعة عن سلوك الطفل، يستخدمها الذكاء الاصطناعي لتفصيل بطارية الألعاب التشخيصية.' },
+            { id: 'discovery_g' as const, icon: Gamepad2, title: 'ألعاب تعرّف أوّلية (موصى به) ✨', desc: '3 ألعاب تفاعلية قصيرة تستخرج تلقائيًا مستوى الطفل واهتماماته دون أي أسئلة مكتوبة.' },
+          ]).map((p) => (
             <button key={p.id} onClick={() => setPath(p.id)}
               className={`w-full p-5 rounded-2xl border-2 transition flex items-center gap-4 text-right ${
                 path === p.id ? 'border-[hsl(var(--autism-accent))] bg-[hsl(var(--autism-accent))]/5' : 'border-[hsl(var(--autism-primary))]/15 bg-white'
@@ -410,9 +443,8 @@ const AutismDiagnosis: React.FC = () => {
               <ArrowRight className="w-4 h-4" /> رجوع
             </button>
             <button onClick={() => {
-              if (path === 'games') setStep('games');
-              else if (path === 'ai_games') startAiGames([]);
-              else setStep('questionnaire');
+              setQIndex(0); setDiscoveryIndex(0); setDiscoveryResults([]);
+              setStep(path);
             }}
               className="flex-1 py-3 rounded-xl bg-[hsl(var(--autism-primary))] text-white font-bold">
               متابعة
@@ -421,10 +453,10 @@ const AutismDiagnosis: React.FC = () => {
         </div>
       )}
 
-      {step === 'questionnaire' && currentItem && (
+      {step === 'discovery_q' && currentItem && (
         <div className="space-y-5">
           <div className="flex justify-between text-sm text-[hsl(var(--autism-text))]/60">
-            <span>السؤال {qIndex + 1} من {items.length}</span>
+            <span>سؤال {qIndex + 1} من {items.length} (تعرّف أوّلي سريع)</span>
             <span className="px-2 py-0.5 rounded-full bg-[hsl(var(--autism-primary))]/10">
               {currentItem.domain === 'social_communication' ? 'تواصل اجتماعي'
                 : currentItem.domain === 'restricted_repetitive' ? 'سلوك مقيّد'
@@ -441,89 +473,84 @@ const AutismDiagnosis: React.FC = () => {
               {currentItem.text}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {currentItem.scale === 'yesno'
-                ? (Object.entries(ANSWER_LABELS_YESNO) as [AnswerValue, string][]).map(([v, l]) => (
-                  <button key={v} onClick={() => {
-                    const newAns = { ...answers, [currentItem.id]: v };
-                    setAnswers(newAns);
-                    if (qIndex + 1 < items.length) setQIndex(qIndex + 1);
-                    else onQuestionnaireDone();
-                  }}
-                    className={`px-4 py-3 rounded-xl font-semibold border-2 transition ${
-                      answers[currentItem.id] === v
-                        ? 'bg-[hsl(var(--autism-accent))] text-white border-[hsl(var(--autism-accent))]'
-                        : 'bg-white border-[hsl(var(--autism-primary))]/20 hover:bg-[hsl(var(--autism-primary))]/5'
-                    }`}>{l}</button>
-                ))
-                : (Object.entries(ANSWER_LABELS_4PT) as [AnswerValue, string][]).map(([v, l]) => (
-                  <button key={v} onClick={() => {
-                    const newAns = { ...answers, [currentItem.id]: v };
-                    setAnswers(newAns);
-                    if (qIndex + 1 < items.length) setQIndex(qIndex + 1);
-                    else onQuestionnaireDone();
-                  }}
-                    className={`px-4 py-3 rounded-xl font-semibold border-2 transition ${
-                      answers[currentItem.id] === v
-                        ? 'bg-[hsl(var(--autism-accent))] text-white border-[hsl(var(--autism-accent))]'
-                        : 'bg-white border-[hsl(var(--autism-primary))]/20 hover:bg-[hsl(var(--autism-primary))]/5'
-                    }`}>{l}</button>
-                ))
-              }
+              {(currentItem.scale === 'yesno'
+                ? (Object.entries(ANSWER_LABELS_YESNO) as [AnswerValue, string][])
+                : (Object.entries(ANSWER_LABELS_4PT) as [AnswerValue, string][])
+              ).map(([v, l]) => (
+                <button key={v} onClick={() => {
+                  const newAns = { ...answers, [currentItem.id]: v };
+                  setAnswers(newAns);
+                  if (qIndex + 1 < items.length) setQIndex(qIndex + 1);
+                  else onDiscoveryQuestionnaireDone();
+                }}
+                  className={`px-4 py-3 rounded-xl font-semibold border-2 transition ${
+                    answers[currentItem.id] === v
+                      ? 'bg-[hsl(var(--autism-accent))] text-white border-[hsl(var(--autism-accent))]'
+                      : 'bg-white border-[hsl(var(--autism-primary))]/20 hover:bg-[hsl(var(--autism-primary))]/5'
+                  }`}>{l}</button>
+              ))}
             </div>
           </div>
           <div className="flex justify-between">
             <button disabled={qIndex === 0} onClick={() => setQIndex((i) => Math.max(0, i - 1))}
               className="px-4 py-2 rounded-lg border border-[hsl(var(--autism-primary))]/20 disabled:opacity-30">
-              السؤال السابق
+              السابق
             </button>
-            <button onClick={onQuestionnaireDone}
+            <button onClick={onDiscoveryQuestionnaireDone}
               className="px-4 py-2 rounded-lg bg-[hsl(var(--autism-primary))] text-white font-semibold">
-              {path === 'questionnaire' ? 'إنهاء وتحليل' : path === 'ai_games' ? 'توليد ألعاب AI' : 'الانتقال للألعاب'}
+              توليد ألعاب AI
             </button>
           </div>
         </div>
       )}
 
-      {step === 'games' && (() => {
-        const game = GAMES[gameIndex];
-        if (!game) return null;
-        const Cmp = GAME_COMPONENTS[game.id];
+      {step === 'discovery_g' && (() => {
+        const tid = DISCOVERY_TEMPLATE_IDS[discoveryIndex];
+        const Cmp = TEMPLATE_REGISTRY[tid];
+        const meta = TEMPLATE_META[tid];
         if (!Cmp) {
-          // skip unknown game
-          setTimeout(() => handleGameComplete({}, 0, true), 0);
+          setTimeout(() => handleDiscoveryGameComplete({ accuracy: 0 }, 0, true), 0);
           return null;
         }
         return (
-          <div>
-            <div className="flex justify-between items-center mb-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-[hsl(var(--autism-text))]/60">
-                لعبة {gameIndex + 1} من {GAMES.length} — {game.title}
+                تعرّف أوّلي {discoveryIndex + 1} من {DISCOVERY_TEMPLATE_IDS.length} — {meta?.emoji} {meta?.title}
               </span>
               <div className="h-2 w-32 rounded-full bg-[hsl(var(--autism-primary))]/10 overflow-hidden">
                 <div className="h-full bg-[hsl(var(--autism-accent))]"
-                  style={{ width: `${((gameIndex + 1) / GAMES.length) * 100}%` }} />
+                  style={{ width: `${((discoveryIndex + 1) / DISCOVERY_TEMPLATE_IDS.length) * 100}%` }} />
               </div>
+            </div>
+            <div className="text-xs p-2 rounded-lg bg-sky-50 border border-sky-200 text-sky-900">
+              🎯 ألعاب قصيرة لاستخراج اهتمامات ومستوى الطفل — لن يُحسب التشخيص منها مباشرة.
             </div>
             <div className="bg-[hsl(var(--autism-surface))] rounded-3xl p-4 border border-[hsl(var(--autism-primary))]/10">
               {!introShown ? (
                 <GameIntroScreen
-                  title={game.title}
-                  instructions={(game as any).description || (game as any).instructions || 'اتبع التعليمات داخل اللعبة.'}
+                  title={meta?.title || 'لعبة'}
+                  instructions={'العب لعدة ثوانٍ فقط — نريد التعرّف على أسلوبك.'}
                   childName={name || undefined}
+                  skill={meta?.skill}
+                  emoji={meta?.emoji}
                   onStart={() => setIntroShown(true)}
-                  onSkip={() => handleGameComplete({}, 0, true)}
+                  onSkip={() => handleDiscoveryGameComplete({ accuracy: 0 }, 0, true)}
                 />
               ) : (
                 <Cmp
-                  key={game.id}
-                  onComplete={(m: Record<string, number>, d: number) => handleGameComplete(m, d, false)}
-                  onSkip={() => handleGameComplete({}, 0, true)}
+                  key={`discovery_${discoveryIndex}_${tid}`}
+                  difficulty="easy"
+                  durationSec={30}
+                  onComplete={(m, d) => handleDiscoveryGameComplete(m, d, false)}
+                  onSkip={() => handleDiscoveryGameComplete({ accuracy: 0 }, 0, true)}
                 />
               )}
             </div>
           </div>
         );
       })()}
+
 
       {step === 'ai_games' && (() => {
         if (aiGamesLoading || !aiGames.length) {
