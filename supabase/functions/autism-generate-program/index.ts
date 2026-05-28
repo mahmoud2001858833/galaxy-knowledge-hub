@@ -161,12 +161,18 @@ Deno.serve(async (req) => {
 
     // Check existing active program (idempotent)
     const existingResp = await fetch(
-      `${supabaseUrl}/rest/v1/autism_programs?child_profile_id=eq.${childProfileId}&status=eq.active&select=id,share_token&limit=1`,
+      `${supabaseUrl}/rest/v1/autism_programs?child_profile_id=eq.${childProfileId}&status=eq.active&select=id,share_token,title_ar,summary_ar&limit=1`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
     );
     const existing = await existingResp.json();
     if (Array.isArray(existing) && existing.length > 0) {
-      return new Response(JSON.stringify({ programId: existing[0].id, shareToken: existing[0].share_token, existing: true }), {
+      return new Response(JSON.stringify({
+        programId: existing[0].id,
+        shareToken: existing[0].share_token,
+        title_ar: existing[0].title_ar,
+        summary_ar: existing[0].summary_ar,
+        existing: true,
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
