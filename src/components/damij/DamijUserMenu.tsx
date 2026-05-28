@@ -124,12 +124,8 @@ const DamijUserMenu: React.FC = () => {
   );
 };
 
-const Stat: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <div className="bg-white px-3 py-2 text-center">
-    <div className="text-base font-extrabold text-[hsl(var(--damij-primary))]">{value}</div>
-    <div className="text-[10px] text-[hsl(var(--damij-muted))]">{label}</div>
-  </div>
-);
+
+
 
 const MenuItem: React.FC<{ icon: any; label: string; onClick: () => void; danger?: boolean }> = ({ icon: Icon, label, onClick, danger }) => (
   <button
