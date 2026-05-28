@@ -525,7 +525,233 @@ const ScopePanel: React.FC<{title:string;icon:string;findings:string;onApply?:Si
   );
 };
 export const SimOtoscope: React.FC<SimProps> = ({ ctx, onApply }) => <ScopePanel title="منظار الأذن" icon="👂" type="ear" findings={ctx.category==='ent'?'احمرار وانتفاخ طبلة الأذن — التهاب أذن وسطى':'طبلة لؤلؤية، انعكاس الضوء طبيعي'} onApply={onApply} />;
-export const SimOphthalmo: React.FC<SimProps> = ({ ctx, onApply }) => <ScopePanel title="منظار العين" icon="👁️" type="eye" findings={ctx.category==='endocrinology'?'نزيف نقطي + إفرازات قطنية — اعتلال شبكية سكري':'قرص بصري طبيعي، أوعية متناظرة'} onApply={onApply} />;
+
+// =============== Realistic Fundus Ophthalmoscope ===============
+type EyePathology = 'normal' | 'diabetic' | 'hypertensive' | 'glaucoma' | 'retinal_detachment' | 'macular_degeneration';
+
+const detectEyePathology = (ctx: CaseContext): EyePathology => {
+  const cat = (ctx.category || '').toLowerCase();
+  const sev = ctx.severity || '';
+  if (cat === 'endocrinology') return 'diabetic';
+  if (cat === 'cardiology' && (sev === 'high' || sev === 'critical' || sev === 'severe')) return 'hypertensive';
+  if (cat === 'ophthalmology') {
+    if (sev === 'severe' || sev === 'high') return 'retinal_detachment';
+    if (sev === 'moderate') return 'glaucoma';
+    return 'macular_degeneration';
+  }
+  if (cat === 'neurology' && (sev === 'high' || sev === 'severe')) return 'glaucoma';
+  return 'normal';
+};
+
+const PATHO_LABEL: Record<EyePathology, string> = {
+  normal: 'قاع عين طبيعي — قرص بصري وردي، أوعية متناظرة، بقعة صفراء سليمة',
+  diabetic: 'اعتلال شبكية سكري: نزيف نقطي + إفرازات قطنية صلبة + microaneurysms',
+  hypertensive: 'اعتلال شبكية ارتفاع ضغط: AV nicking + cotton wool spots + ضيق شراييني',
+  glaucoma: 'زرق: cupping متقدم للقرص البصري (نسبة C/D > 0.7)، شحوب حلقي',
+  retinal_detachment: 'انفصال شبكية: تمزّق علوي + ثنيات مرفوعة شفافة + فقدان انعكاس',
+  macular_degeneration: 'تنكّس بقعي: drusen صفراء حول البقعة + تشوّش الصبغ + atrophy خفيف',
+};
+
+export const SimOphthalmo: React.FC<SimProps> = ({ ctx, onApply }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const [zoom, setZoom] = useState(1);
+  const [brightness, setBrightness] = useState(70);
+  const [captured, setCaptured] = useState(false);
+  const patho = useMemo(() => detectEyePathology(ctx), [ctx]);
+
+  useEffect(() => {
+    const c = canvasRef.current; if (!c) return;
+    const g = c.getContext('2d'); if (!g) return;
+    const W = c.width = 320, H = c.height = 240;
+    const cx = W * (pos.x / 100), cy = H * (pos.y / 100);
+
+    // Base fundus (orange/red retina)
+    const bg = g.createRadialGradient(cx, cy, 0, cx, cy, 220);
+    bg.addColorStop(0, '#ff8c5a');
+    bg.addColorStop(0.5, '#d65a2a');
+    bg.addColorStop(1, '#7a2e15');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+
+    // Choroidal texture (random subtle blotches)
+    for (let i = 0; i < 90; i++) {
+      g.fillStyle = `rgba(${120 + Math.random() * 60}, ${40 + Math.random() * 30}, 20, ${0.15 + Math.random() * 0.15})`;
+      g.beginPath(); g.arc(Math.random() * W, Math.random() * H, 4 + Math.random() * 10, 0, Math.PI * 2); g.fill();
+    }
+
+    // Optic disc (yellowish-pink circle, slightly left of center)
+    const discX = W * 0.35, discY = H * 0.5, discR = 22;
+    const discGrad = g.createRadialGradient(discX, discY, 0, discX, discY, discR);
+    if (patho === 'glaucoma') {
+      discGrad.addColorStop(0, '#e5e7eb'); // deep cup
+      discGrad.addColorStop(0.55, '#fde68a');
+      discGrad.addColorStop(1, '#fbbf24');
+    } else {
+      discGrad.addColorStop(0, '#fef3c7');
+      discGrad.addColorStop(0.7, '#fbbf24');
+      discGrad.addColorStop(1, '#d97706');
+    }
+    g.fillStyle = discGrad;
+    g.beginPath(); g.arc(discX, discY, discR, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#92400e'; g.lineWidth = 1.2; g.stroke();
+
+    // Vessels (branching tree from optic disc)
+    const drawVessel = (sx: number, sy: number, ex: number, ey: number, width: number, isArtery: boolean, depth: number) => {
+      g.strokeStyle = isArtery ? (patho === 'hypertensive' ? '#b91c1c' : '#dc2626') : '#7f1d1d';
+      g.lineWidth = width;
+      g.lineCap = 'round';
+      g.beginPath(); g.moveTo(sx, sy);
+      const mx = (sx + ex) / 2 + (Math.random() - 0.5) * 10;
+      const my = (sy + ey) / 2 + (Math.random() - 0.5) * 10;
+      g.quadraticCurveTo(mx, my, ex, ey); g.stroke();
+      // AV nicking marker
+      if (patho === 'hypertensive' && depth === 1 && isArtery) {
+        g.fillStyle = '#fbbf24'; g.beginPath(); g.arc(mx, my, 2.5, 0, Math.PI * 2); g.fill();
+      }
+      if (depth < 3 && width > 1) {
+        drawVessel(ex, ey, ex + (Math.random() - 0.3) * 60, ey + (Math.random() - 0.5) * 50, width * 0.65, isArtery, depth + 1);
+        drawVessel(ex, ey, ex + (Math.random() - 0.7) * 60, ey + (Math.random() - 0.5) * 50, width * 0.65, !isArtery, depth + 1);
+      }
+    };
+    // 4 main branches from disc
+    drawVessel(discX, discY, discX + 90, discY - 70, 3.2, true, 1);
+    drawVessel(discX, discY, discX + 110, discY + 60, 3.2, false, 1);
+    drawVessel(discX, discY, discX + 60, discY - 90, 2.8, true, 1);
+    drawVessel(discX, discY, discX + 130, discY + 20, 2.8, false, 1);
+
+    // Macula (darker zone, right of disc)
+    const macX = W * 0.65, macY = H * 0.5;
+    const macGrad = g.createRadialGradient(macX, macY, 0, macX, macY, 28);
+    macGrad.addColorStop(0, 'rgba(60,20,10,0.5)');
+    macGrad.addColorStop(1, 'rgba(60,20,10,0)');
+    g.fillStyle = macGrad;
+    g.beginPath(); g.arc(macX, macY, 28, 0, Math.PI * 2); g.fill();
+
+    // Pathology overlays
+    if (patho === 'diabetic') {
+      // microaneurysms (small red dots)
+      for (let i = 0; i < 16; i++) {
+        g.fillStyle = '#7f1d1d';
+        g.beginPath(); g.arc(80 + Math.random() * 220, 30 + Math.random() * 180, 1.5 + Math.random() * 1.2, 0, Math.PI * 2); g.fill();
+      }
+      // hemorrhages (irregular dark splotches)
+      for (let i = 0; i < 6; i++) {
+        g.fillStyle = 'rgba(80,10,10,0.85)';
+        g.beginPath(); g.ellipse(100 + Math.random() * 180, 50 + Math.random() * 140, 5 + Math.random() * 4, 3 + Math.random() * 3, Math.random() * Math.PI, 0, Math.PI * 2); g.fill();
+      }
+      // cotton wool / hard exudates (yellow patches)
+      for (let i = 0; i < 8; i++) {
+        g.fillStyle = 'rgba(254,240,138,0.85)';
+        g.beginPath(); g.arc(90 + Math.random() * 200, 40 + Math.random() * 160, 3 + Math.random() * 3, 0, Math.PI * 2); g.fill();
+      }
+    }
+    if (patho === 'hypertensive') {
+      for (let i = 0; i < 7; i++) {
+        g.fillStyle = 'rgba(254,240,138,0.8)';
+        g.beginPath(); g.arc(100 + Math.random() * 180, 50 + Math.random() * 140, 4 + Math.random() * 3, 0, Math.PI * 2); g.fill();
+      }
+      // flame hemorrhages
+      for (let i = 0; i < 4; i++) {
+        g.fillStyle = 'rgba(127,29,29,0.8)';
+        g.beginPath();
+        const fx = 120 + Math.random() * 160, fy = 60 + Math.random() * 120;
+        g.moveTo(fx, fy); g.lineTo(fx + 8, fy + 14); g.lineTo(fx - 2, fy + 12); g.closePath(); g.fill();
+      }
+    }
+    if (patho === 'glaucoma') {
+      // deep central cup
+      g.fillStyle = '#e5e7eb';
+      g.beginPath(); g.arc(discX, discY, discR * 0.7, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#9ca3af'; g.lineWidth = 0.8; g.stroke();
+    }
+    if (patho === 'retinal_detachment') {
+      // wavy translucent fold upper area
+      g.fillStyle = 'rgba(200,200,255,0.35)';
+      g.beginPath();
+      g.moveTo(40, 30);
+      for (let x = 40; x < W - 30; x += 8) g.lineTo(x, 80 + Math.sin(x * 0.1) * 20);
+      g.lineTo(W - 30, 30); g.closePath(); g.fill();
+      // tear arc
+      g.strokeStyle = '#fde047'; g.lineWidth = 2;
+      g.beginPath(); g.arc(W * 0.7, 90, 18, 0, Math.PI); g.stroke();
+    }
+    if (patho === 'macular_degeneration') {
+      // drusen (small yellowish-white deposits around macula)
+      for (let i = 0; i < 14; i++) {
+        const a = Math.random() * Math.PI * 2; const r = 8 + Math.random() * 22;
+        g.fillStyle = 'rgba(254,243,199,0.9)';
+        g.beginPath(); g.arc(macX + Math.cos(a) * r, macY + Math.sin(a) * r, 1.5 + Math.random() * 2, 0, Math.PI * 2); g.fill();
+      }
+    }
+
+    // Apply zoom by clipping a circle at pos
+    g.save();
+    g.beginPath(); g.arc(cx, cy, 110 / zoom, 0, Math.PI * 2);
+    g.clip();
+    // brighten viewable area
+    g.fillStyle = `rgba(255,255,200,${(brightness - 70) / 200})`;
+    if (brightness > 70) g.fillRect(0, 0, W, H);
+    g.restore();
+
+    // Dark vignette outside the ophthalmoscope aperture
+    const vig = g.createRadialGradient(cx, cy, 80 / zoom, cx, cy, 160);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(0.6, 'rgba(0,0,0,0.55)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.95)');
+    g.fillStyle = vig; g.fillRect(0, 0, W, H);
+
+    // Aperture ring
+    g.strokeStyle = 'rgba(255,255,255,0.25)'; g.lineWidth = 2;
+    g.beginPath(); g.arc(cx, cy, 110 / zoom, 0, Math.PI * 2); g.stroke();
+  }, [pos, zoom, brightness, patho]);
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.currentTarget as HTMLDivElement;
+    const r = target.getBoundingClientRect();
+    const p = 'touches' in e ? e.touches[0] : (e as React.MouseEvent);
+    setPos({ x: ((p.clientX - r.left) / r.width) * 100, y: ((p.clientY - r.top) / r.height) * 100 });
+  };
+
+  return (
+    <Wrap title="منظار العين (Fundoscopy)" icon="👁️" tone="from-indigo-50 to-white">
+      <div
+        className="relative w-full bg-slate-950 rounded-lg overflow-hidden cursor-crosshair touch-none select-none"
+        onMouseMove={handleMove}
+        onTouchMove={handleMove}
+        style={{ aspectRatio: '4/3' }}
+      >
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+        <div className="absolute top-2 right-2 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded font-mono">
+          ×{zoom.toFixed(1)} • {brightness}%
+        </div>
+        <div className="absolute bottom-2 left-2 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded">
+          حرّك المؤشر لاستكشاف القاع
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-[10px]">
+        <label className="space-y-0.5">
+          <div className="text-slate-600">التكبير</div>
+          <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={e => setZoom(+e.target.value)} className="w-full accent-indigo-600" />
+        </label>
+        <label className="space-y-0.5">
+          <div className="text-slate-600">شدة الإضاءة</div>
+          <input type="range" min={30} max={100} value={brightness} onChange={e => setBrightness(+e.target.value)} className="w-full accent-amber-500" />
+        </label>
+      </div>
+      <button
+        onClick={() => setCaptured(true)}
+        className="w-full py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1"
+      >📸 التقاط صورة القاع</button>
+      {captured && (
+        <div className="text-[11px] p-2 bg-white border rounded space-y-1">
+          <div className="font-bold text-indigo-700">تقرير قاع العين:</div>
+          <div>{PATHO_LABEL[patho]}</div>
+        </div>
+      )}
+      <ApplyBtn onClick={() => onApply?.({ reading_ar: `Fundoscopy: ${PATHO_LABEL[patho]}` })} />
+    </Wrap>
+  );
+};
 
 // =============== Urine Strip ===============
 export const SimUrineStrip: React.FC<SimProps> = ({ ctx, onApply }) => {
