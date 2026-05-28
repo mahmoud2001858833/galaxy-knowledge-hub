@@ -161,7 +161,7 @@ const CasesGrid: React.FC<{ cases: ClinicalCase[]; totalCases: number }> = ({ ca
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {cases.map(c => {
         const theme = CATEGORY_THEME[c.category] || CATEGORY_THEME.internal;
-        const avatar = caseAvatarFromName(c.name_ar + c.code);
+        const avatar = caseAvatarFromName(c.name_ar + c.code, (c as any).gender);
         return (
           <Link key={c.id} to={`/damij/clinical/case/${c.id}`}
             className="group relative overflow-hidden rounded-3xl bg-white border border-slate-200 hover:border-[hsl(var(--damij-accent-2))]/40 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">

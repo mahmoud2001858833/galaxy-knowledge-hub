@@ -95,9 +95,9 @@ export const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGOR
 export const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.emoji]));
 export const CATEGORY_GROUP: Record<string, 'special' | 'medical'> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.group as any]));
 
-// أيقونة فريدة لكل حالة بناءً على اسمها (استقرار البصمة)
-export const caseAvatarFromName = (name: string): string => {
-  const pool = ['🧒','👦','👧','🧑','👨','👩','🧓','👴','👵','🧕','🤴','👸','🧙','🧚','🧝','🦸','🧑‍🎓','🧑‍⚕️','🧑‍🚀','🧑‍🎤'];
-  let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return pool[h % pool.length];
+// أيقونة الحالة: ذكر/أنثى فقط بناءً على gender (لا أي رموز أخرى)
+export const caseAvatarFromName = (_name: string, gender?: string): string => {
+  const g = (gender || '').toLowerCase().trim();
+  const isFemale = g === 'female' || g === 'f' || g === 'أنثى' || g === 'انثى' || g === 'بنت' || g === 'فتاة' || g === 'امرأة' || g === 'سيدة';
+  return isFemale ? '👩' : '👨';
 };
