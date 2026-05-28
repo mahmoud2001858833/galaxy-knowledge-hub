@@ -211,26 +211,35 @@ const AlwaysOnSimulators: React.FC<{ ctx: CaseContext; onApply: (name: string, r
   const isTrauma = /emergency|trauma|ortho/i.test(cat);
   const isNeuro = /neuro|psychiatry|autism|adhd/i.test(cat);
   const isPeds = /pediatric|طفل/i.test(cat);
+  const [open, setOpen] = useState(false);
+
+  const anyApplicable = isCardiac || isResp || isTrauma || isNeuro || isPeds;
+  if (!anyApplicable) return null;
 
   return (
-    <div className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white p-3 space-y-3">
-      <div className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات حيّة (تعكس آخر قراءات المريض لحظياً)</div>
-      <div className="grid md:grid-cols-2 gap-2">
-        {isCardiac && (
-          <div className="space-y-1">
-            <div className="text-[11px] font-bold">📈 ECG</div>
-            <InteractiveECG hr={ctx.vitals?.hr ?? 88} rhythm={ctx.severity==='high'||ctx.severity==='critical' ? 'sinus_tachy' : 'sinus'} />
-          </div>
-        )}
-        {(isCardiac || isTrauma || isResp || isPeds) && <SimPulseOx ctx={ctx} onApply={(r) => onApply('Pulse Ox', r)} />}
-        {(isCardiac || isTrauma) && <SimBP ctx={ctx} onApply={(r) => onApply('BP', r)} />}
-        {isResp && <InteractiveStethoscope defaultSound="wheeze" />}
-        {isCardiac && <InteractiveStethoscope defaultSound="murmur" />}
-        {isTrauma && <WoundControlKit ctx={ctx} onApply={(r) => onApply('Wound Kit', r)} />}
-        {isNeuro && <SimGCS ctx={ctx} onApply={(r) => onApply('GCS', r)} />}
-        {isPeds && <SimThermo ctx={ctx} onApply={(r) => onApply('Thermo', r)} />}
-      </div>
-    </div>
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-2xl border bg-gradient-to-b from-sky-50/60 to-white">
+      <CollapsibleTrigger className="w-full flex items-center justify-between p-3">
+        <span className="text-xs font-extrabold text-[hsl(var(--damij-primary))]">📡 محاكيات حيّة (تعكس آخر القراءات)</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-3 pb-3">
+        <div className="grid md:grid-cols-2 gap-2">
+          {isCardiac && (
+            <div className="space-y-1">
+              <div className="text-[11px] font-bold">📈 ECG</div>
+              <InteractiveECG hr={ctx.vitals?.hr ?? 88} rhythm={ctx.severity==='high'||ctx.severity==='critical' ? 'sinus_tachy' : 'sinus'} />
+            </div>
+          )}
+          {(isCardiac || isTrauma || isResp || isPeds) && <SimPulseOx ctx={ctx} onApply={(r) => onApply('Pulse Ox', r)} />}
+          {(isCardiac || isTrauma) && <SimBP ctx={ctx} onApply={(r) => onApply('BP', r)} />}
+          {isResp && <InteractiveStethoscope defaultSound="wheeze" />}
+          {isCardiac && <InteractiveStethoscope defaultSound="murmur" />}
+          {isTrauma && <WoundControlKit ctx={ctx} onApply={(r) => onApply('Wound Kit', r)} />}
+          {isNeuro && <SimGCS ctx={ctx} onApply={(r) => onApply('GCS', r)} />}
+          {isPeds && <SimThermo ctx={ctx} onApply={(r) => onApply('Thermo', r)} />}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
