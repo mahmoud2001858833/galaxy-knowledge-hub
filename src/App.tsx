@@ -251,6 +251,7 @@ import ClinicalLabSession from './pages/damij/clinical/ClinicalLabSession';
 import ClinicalReport from './pages/damij/clinical/ClinicalReport';
 import ClinicalDashboard from './pages/damij/clinical/ClinicalDashboard';
 import ClinicalCompare from './pages/damij/clinical/ClinicalCompare';
+import ClinicalPortfolio from './pages/damij/clinical/ClinicalPortfolio';
 import ClinicalPublicReport from './pages/damij/clinical/ClinicalPublicReport';
 import SourcesLibrary from './pages/damij/sources/SourcesLibrary';
 import './App.css';
@@ -1054,6 +1055,7 @@ const router = createBrowserRouter([
           { path: 'clinical/report/:reportId', element: <ClinicalReport /> },
           { path: 'clinical/dashboard', element: <ClinicalDashboard /> },
           { path: 'clinical/compare', element: <ClinicalCompare /> },
+          { path: 'clinical/portfolio', element: <ClinicalPortfolio /> },
           { path: 'clinical/public/:token', element: <ClinicalPublicReport /> },
           { path: 'sources', element: <SourcesLibrary /> },
         ],

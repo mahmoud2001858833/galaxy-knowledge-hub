@@ -305,7 +305,7 @@ const ClinicalFreeExperiment: React.FC = () => {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-1">
               {filtered.map(c => {
                 const theme = CATEGORY_THEME[c.category] || CATEGORY_THEME.internal;
-                const avatar = caseAvatarFromName(c.name_ar + (c as any).code);
+                const avatar = caseAvatarFromName(c.name_ar + (c as any).code, (c as any).gender);
                 return (
                   <button key={c.id} onClick={() => setPicked(c)}
                     className={`text-right p-3 rounded-2xl bg-white border-2 transition-all ${

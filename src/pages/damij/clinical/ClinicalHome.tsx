@@ -4,12 +4,12 @@ import { FileBarChart, ClipboardList, ArrowLeft, GitCompare, LayoutDashboard, Be
 import { supabase } from '@/integrations/supabase/client';
 import DamijSEO from '@/components/damij/DamijSEO';
 
+import { Briefcase } from 'lucide-react';
+
 const cards = [
   { to: '/damij/clinical/cases',     icon: ClipboardList,   title: 'مكتبة الحالات الافتراضية', desc: 'حالات جاهزة مصنّفة بفئات طبية واضحة، كل فئة بصورة وموارد كاملة.', gradient: 'from-sky-500 to-indigo-600',     badge: 'ابدأ من هنا' },
   { to: '/damij/clinical/free',      icon: Beaker,          title: 'تجربة سريرية حرّة',        desc: 'صمّم تدخّلك من الصفر أو من أمثلة جاهزة وعدّلها بحرية.',           gradient: 'from-fuchsia-500 to-rose-500', badge: 'إبداع' },
-  { to: '/damij/clinical/dashboard', icon: LayoutDashboard, title: 'لوحة جلساتي',              desc: 'كل جلساتك السابقة مع رسوم تطوّر مهاراتك السريرية.',                gradient: 'from-emerald-500 to-teal-600',  badge: null },
-  { to: '/damij/clinical/compare',   icon: GitCompare,      title: 'مقارنة بين تجارب',          desc: 'حلّل تطوّرك بمقارنة جلستين أو أكثر بمساعدة الذكاء الاصطناعي.',     gradient: 'from-amber-500 to-orange-600',  badge: 'متقدّم' },
-  { to: '/damij/clinical/reports',   icon: FileBarChart,    title: 'تقاريري',                  desc: 'كل التقارير جاهزة للعرض والتنزيل والمشاركة والإرسال بالبريد.',     gradient: 'from-violet-500 to-purple-600', badge: null },
+  { to: '/damij/clinical/portfolio', icon: Briefcase,       title: 'حقيبتي',                   desc: 'لوحة جلساتي، مقارنة تجاربي، وكل تقاريري في مكان واحد أنيق.',       gradient: 'from-emerald-500 to-teal-600',  badge: 'الكل في واحد' },
 ];
 
 const ClinicalHome: React.FC = () => {

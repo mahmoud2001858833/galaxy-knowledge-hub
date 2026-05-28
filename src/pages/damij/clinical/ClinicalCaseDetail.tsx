@@ -72,7 +72,7 @@ const ClinicalCaseDetail: React.FC = () => {
   if (!c) return <div className="text-center pt-20">الحالة غير موجودة</div>;
 
   const theme = CATEGORY_THEME[c.category] || CATEGORY_THEME.internal;
-  const avatar = caseAvatarFromName(c.name_ar + (c as any).code);
+  const avatar = caseAvatarFromName(c.name_ar + (c as any).code, (c as any).gender);
   const itemsByCat = (k: string) => catalog.filter(x => x.category === k);
 
   return (

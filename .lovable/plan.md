@@ -1,107 +1,95 @@
-## الهدف
-1. تغيير شاشة اختيار طريقة التشخيص لتعرض **خياري تعرّف أوّلي فقط** (استبيان ولي الأمر أو ألعاب أوّلية)، ثم يبني الذكاء الاصطناعي حزمة ألعاب تشخيصية مخصّصة بناءً عليها.
-2. ضمان أن جميع ألعاب مرحلة التشخيص الفعلي **ألعاب تفاعلية** (لا أسئلة استبيانية مكتوبة).
-3. إصلاح لعبة **انظر إلى الوجه** ليقع الوجه تمامًا فوق العنصر.
-4. إصلاح لعبة **تتبّع الفقاعات** بحيث تستجيب لكل ضغطة وتصبح أكثر تفاعلية.
+## 1) دمج لوحة جلساتي + مقارنة بين تجارب + تقاريري تحت «حقيبتي»
 
----
+في `ClinicalHome.tsx` ستبقى البطاقات الأساسية:
+- مكتبة الحالات الافتراضية
+- تجربة سريرية حرّة
+- **حقيبتي** (جديدة — تجمع الثلاث)
 
-## 1) إعادة هيكلة تدفّق التشخيص — `AutismDiagnosis.tsx`
+«حقيبتي» = صفحة جديدة `/damij/clinical/portfolio` (`ClinicalPortfolio.tsx`) فيها 3 بطاقات أنيقة بصور AI خاصة بكل واحدة:
+- **لوحة جلساتي** — صورة AI: لوحة بيانات طبية مع رسوم بيانية → `/damij/clinical/dashboard`
+- **مقارنة بين تجارب** — صورة AI: ميزان/مخططان متقابلان → `/damij/clinical/compare`
+- **تقاريري** — صورة AI: ملف طبي مع أوراق وختم → `/damij/clinical/reports`
 
-### تدفّق جديد
-```
-intro (الاسم/العمر) 
-   → path  (اختيار طريقة التعرّف الأوّلي)
-        ├─ "استبيان ولي الأمر"  → questionnaire (سريع، ~10 أسئلة فقط لاستخراج صورة أولية)
-        └─ "ألعاب تعرّف أوّلية"  → discovery_games (2–3 ألعاب قصيرة من القالب الجاهز)
-   → (تحويل التعرّف الأوّلي إلى ملف اهتمام/قدرات للطفل)
-   → ai_games  (الذكاء الاصطناعي يولّد بطارية ألعاب تشخيصية مخصّصة من معطيات التعرّف)
-   → analyzing → report
-```
+تخطيط بطاقات كبيرة 3D-tilt مع overlay متدرّج، إحصائية سريعة لكل بطاقة (عدد الجلسات/المقارنات/التقارير)، شارة آخر نشاط، تنسيق shadcn متكامل بـ semantic tokens.
 
-### تعديلات `path` step
-- استبدال الخيارين الحاليين بخيارين:
-  - **استبيان ولي الأمر** (أيقونة `ClipboardList`) — «أجب على أسئلة قصيرة عن طفلك، يستخدمها الذكاء الاصطناعي لتفصيل الألعاب».
-  - **ألعاب تعرّف أوّلية** (أيقونة `Gamepad2`) — «ألعاب تفاعلية قصيرة تستخرج اهتمامات ومستوى الطفل تلقائيًا».
-- إزالة خيار «الألعاب الأساسية الجاهزة» المنفرد وخيار «AI مباشر بدون تعرّف» — كلاهما يصب الآن في نفس مسار AI.
+## 2) منظار العين الواقعي + أجهزة عيون إضافية
 
-### مرحلة `discovery_games` (جديدة)
-- تشغيل 2–3 ألعاب قصيرة من قوالب `templates/` (مثل `CategoryMatch`، `EmotionCards`، `LookWithMe`) بهدف **استخراج تفضيلات/قدرات** فقط (سرعة الاستجابة، الفئة المفضّلة، التركيز).
-- النتائج تُجمّع في كائن `discoveryProfile`:
-  ```ts
-  { preferred_categories, avg_response_ms, attention_span_sec, social_score, accuracy }
-  ```
+الحالي (`SimOphthalmo`) = `ScopePanel` مشترك يعرض دائرة ملوّنة فقط — غير واقعي.
 
-### اختصار الاستبيان عند اختياره كتعرّف أوّلي
-- تشغيل أوّل 8–10 أسئلة فقط من `getItemsForTrack(track)` بدل القائمة الكاملة، مع شارة «تعرّف أوّلي سريع».
-- النتائج تُحوّل إلى `discoveryProfile` بنفس البنية.
+سيُستبدل بـ`InteractiveOphthalmoscope.tsx` مخصّص يحاكي قاع العين فعلياً:
+- canvas يرسم **fundus** واقعي: قرص بصري + شبكة أوعية متفرعة + بقعة صفراء + خلفية برتقالية مع texture
+- نتائج مرضية متغيّرة حسب الحالة:
+  - سكري → microaneurysms + hemorrhages + exudates
+  - ضغط → cotton wool spots + AV nicking
+  - زرق → cupping للقرص البصري
+  - انفصال شبكية → tear + detached folds
+- تكبير/تصغير + تحريك المنظار + ضبط الإضاءة
+- زر "التقاط صورة fundus" + قراءة سريرية تفصيلية
 
-### تمرير التعرّف الأوّلي إلى مولّد ألعاب AI
-- تعديل استدعاء `startAiGames`:
-  ```ts
-  supabase.functions.invoke('autism-generate-diagnostic-games', {
-    body: { ageMonths, ageTrack, respondent, name,
-            discoveryProfile,                         // ⟵ جديد
-            discoverySource: 'questionnaire' | 'games', // ⟵ جديد
-            questionnaireResult: qr }
-  })
-  ```
-- النتيجة: ألعاب AI مولّدة بأسلوب/مواضيع متوافقة مع اهتمامات الطفل (مثلًا إن أحبّ الحيوانات تظهر الحيوانات في الأمثلة).
+**أجهزة عيون جديدة** تُضاف إلى `simulators.tsx` وتُسجَّل في `registry.ts` + تُضاف إلى جدول `clinical_devices` عبر migration:
+- **Snellen Chart** (مخطط سنيلن) — قياس حدة البصر تفاعلي
+- **Tonometer** (مقياس ضغط العين) — قياس IOP مع اكتشاف الزرق
+- **Slit Lamp** (المصباح الشقي) — فحص القرنية والقزحية بطبقات
+- **Color Vision Test** (Ishihara) — فحص عمى الألوان بأرقام مخفية
+- **Pupillary Reflex Test** — فحص استجابة الحدقة للضوء
 
-### تحديث الخطوات (`STEP_LABELS`)
-```
-البيانات → الطريقة → (تعرّف أوّلي) → ألعاب AI → التقرير
-```
+كلها بمنطق `ctx.category==='ophthalmology'` لتُظهر النتائج المرضية المناسبة.
 
----
+## 3) Emojis ذكر/أنثى فقط للحالات
 
-## 2) تعديل Edge Function `autism-generate-diagnostic-games`
-- استقبال الحقلين الجديدين `discoveryProfile` و `discoverySource`.
-- تحديث system prompt: «أنشئ بطارية 4–6 ألعاب تشخيصية **تفاعلية فقط** من قوالب: BubbleTracking, LookWithMe, CategoryMatch, EmotionCards, MagicMirror, SpeechBubbles. استخدم اهتمامات الطفل المستخرجة لاختيار المواضيع والصعوبة. **ممنوع** إنشاء أسئلة استبيانية نصية».
-- إجبار schema على `template_id ∈` (قوالب التفاعلية فقط) بحيث لا يمكن للنموذج إنتاج لعبة غير لعبة.
-- ضمان وجود `difficulty` متدرّجة بناءً على `discoveryProfile.accuracy`.
+في `src/features/clinical/types.ts`:
+- `caseAvatarFromName(name, gender?)` يصبح: إن كان `gender==='female'` → `'👩'`، وإلا → `'👨'`.
+- إزالة `pool` الكامل (🧒🧑🧓...).
+- جميع الاستدعاءات في `ClinicalCases.tsx` و`ClinicalFreeExperiment.tsx` و`ClinicalDashboard.tsx` ستمرّر `case.gender`.
 
----
+## 4) فحص شامل لكل التدخلات (أجهزة + علاجات)
 
-## 3) إصلاح لعبة «انظر إلى الوجه» — `templates/LookWithMe.tsx`
+سأمشي على كل عنصر في `DEVICE_REGISTRY` (28 جهاز) و`InterventionTryPanel.tsx`:
 
-المشكلة الحالية: قيم `x` ثابتة (`-80/-25/25/80`) لا تتطابق مع مواقع الأزرار الأربعة، ولا يوجد سهم/زاوية واضحة.
+| الفحص | الإجراء |
+|-------|---------|
+| كل جهاز يُنفّذ `onApply` ويعيد `reading_ar` | إصلاح أي جهاز لا يستدعي `onApply` |
+| كل جهاز يستجيب لـ`ctx.category` بنتيجة مرضية مختلفة | إضافة فروع للحالات الناقصة |
+| التدخّلات الدوائية تُسجَّل في `clinical_session_events` | التحقق من INSERT صحيح |
+| التدخلات السلوكية/الحسية تُحدّث attention/anxiety/progress | التحقق |
+| أزرار "اعتمد القراءة" موجودة وتعمل | إضافة حيث ناقصة |
+| رسائل toast واضحة عند النجاح/الفشل | توحيد |
 
-### الحل
-- وضع الوجه في حاوية بنفس عرض شبكة الأزرار (`grid-cols-4` بعرض ثابت 4×88px مثلًا).
-- حساب موقع الوجه ديناميكيًا فوق الزر الهدف عبر `ref` لكل زر ثم تحريك `motion.div` إلى `targetRef.current.offsetLeft + width/2 - faceWidth/2`.
-- إضافة دوران بصري بسيط: عين/سهم يميل بزاوية نحو الهدف لتأكيد الاتجاه.
-- زيادة مدة التحريك إلى 0.8s مع `easeOut` لتلتزم بمحاذاة دقيقة.
+نتيجة الفحص: تقرير قصير في الـchat بعد التنفيذ يذكر ما كان معطّلاً وما أُصلح.
 
----
+## 5) تحسين بيئة العمل في مختبر المحاكاة
 
-## 4) إصلاح لعبة «تتبّع الفقاعات» — `templates/BubbleTracking.tsx`
+في `ClinicalLabSession.tsx` و`DeviceLauncher.tsx`:
+- استبدال الـstack العمودي بـ**workspace grid ثلاثي** على الديسكتوب:
+  - عمود يسار (مع RTL = يمين): بطاقة المريض + الحيويات الحيّة (مثبّتة، sticky)
+  - عمود وسط واسع: المحاكيات النشطة (drag-to-reorder، tabs لكل جهاز مفتوح)
+  - عمود يمين: chips التدخلات + ملاحظات + توقيت الجلسة
+- المحاكيات الحيّة (`AlwaysOnSimulators`) تصبح **شريط أفقي قابل للطي** بدل grid عمودي
+- كل جهاز مفتوح يفتح في **panel منفصل قابل للسحب والإغلاق** بدل تكديس عمودي
+- transitions ناعمة + skeleton أثناء التحميل
+- breakpoints موبايل: tabs بين الأعمدة الثلاثة بدل grid
 
-المشاكل:
-- `animate={{ y: [0, -8, 0] }}` مع `transition repeat: Infinity` على `motion.button` يمنع تسجيل النقر أحيانًا.
-- طبقة `<div onClick=misses>` تغطي الفقاعات بـ `inset-0` (z-index 0 بنفس مستوى الفقاعات في بعض المتصفّحات) وتسرق النقرات.
-- وتيرة ظهور الفقاعات بطيئة (1.4s) ولا تنفجر بصريًا.
+## تفاصيل تقنية
 
-### الحل
-- استبدال `repeat: Infinity` على عنصر الزر بانفصال: حركة العوم تجري على `<motion.span>` داخلي، بينما يبقى `<motion.button>` بدون أنيميشن متكرّر يضمن `pointer-events`.
-- إضافة `style={{ touchAction: 'manipulation' }}` و `onPointerDown` بدل `onClick` لاستجابة فورية على الموبايل.
-- نقل طبقة `misses` لتكون `pointer-events-none` على الفقاعات أو استخدام `onClick` على الخلفية فقط مع `z-index` أصغر ضمنًا.
-- تقليل فترة الظهور إلى 900ms، رفع عدد الفقاعات المسموح في الشاشة إلى 8، وإضافة:
-  - تأثير انفجار (`scale 0 → 1.4` + جزيئات `★` صغيرة).
-  - صوت `pop` خفيف (Web Audio oscillator قصير).
-  - عدّاد كومبو يزيد عند النقر السريع المتتالي لزيادة التفاعلية.
-- إصلاح حساب `accuracy`: تجاهل النقرات على الخلفية إن جاءت قبل ظهور أي فقاعة.
+- **صور AI**: 3 صور لـ«حقيبتي» (1024×768 jpg، semantic، بدون نصوص عربية) في `src/assets/clinical/`.
+- **Migration**: إدراج 5 صفوف جديدة في `clinical_devices` (Snellen, Tonometer, SlitLamp, Ishihara, PupilReflex) بـ`category='ophthalmo'` و`applicable_specialties=['ophthalmology']`.
+- **Routing**: إضافة `/damij/clinical/portfolio` في `App.tsx`.
+- **بدون تغيير DB schema** خارج إدراج الصفوف.
+- **لا تعديل** على GJU/منصة اللغة العربية/Capacitor.
+- **لا استخدام Lovable AI** (الحظر العام).
 
----
+## الملفات المتأثرة
 
-## ملفات سيتم تعديلها
-- `src/pages/damij/autism/AutismDiagnosis.tsx` — تدفّق جديد + مرحلة `discovery_games` + تمرير `discoveryProfile`.
-- `src/features/autism/games/templates/LookWithMe.tsx` — محاذاة الوجه الديناميكية.
-- `src/features/autism/games/templates/BubbleTracking.tsx` — استجابة فورية + تفاعلية محسّنة.
-- `supabase/functions/autism-generate-diagnostic-games/index.ts` — استقبال profile + prompt جديد + قيود schema.
+- `src/pages/damij/clinical/ClinicalHome.tsx` (تعديل: استبدال 3 بطاقات ببطاقة حقيبتي)
+- `src/pages/damij/clinical/ClinicalPortfolio.tsx` (جديد)
+- `src/pages/damij/clinical/ClinicalLabSession.tsx` (إعادة تخطيط)
+- `src/features/clinical/types.ts` (تبسيط avatar)
+- `src/features/clinical/devices/simulators.tsx` (5 أجهزة جديدة + تحسينات)
+- `src/features/clinical/devices/InteractiveOphthalmoscope.tsx` (جديد)
+- `src/features/clinical/devices/registry.ts` (تسجيل الجديد)
+- `src/features/clinical/devices/DeviceLauncher.tsx` (تحسين العرض)
+- `src/features/clinical/InterventionTryPanel.tsx` (فحص + إصلاحات)
+- `src/App.tsx` (route جديد)
+- `src/assets/clinical/portfolio-*.jpg` × 3 (صور AI)
+- migration: إدراج 5 أجهزة عيون
 
-## ملفات قد تُضاف
-- `src/features/autism/discoveryProfile.ts` — أنواع ومحوّلات (questionnaire→profile, games→profile).
-
-## لن يتغيّر
-- مولّد التقرير `autism-screen-analyze`، التخزين، شكل التقرير، باقي القوالب.
