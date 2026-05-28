@@ -4,6 +4,7 @@ import { Home, Hand, Layers, Brain, Activity, Eye, FlaskConical, Leaf, Menu, X }
 import { motion, AnimatePresence } from 'framer-motion';
 import DamijBrandLogo from './DamijBrandLogo';
 import DamijLanguageSwitcher from './DamijLanguageSwitcher';
+import DamijUserMenu from './DamijUserMenu';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
 import { useEcoMode } from '@/features/damij/EcoModeContext';
 
