@@ -515,35 +515,78 @@ const BlindEyeNavigatorInner: React.FC = () => {
           const saved = getPlace(canonical);
           const startGeo = (latlng: LatLng, displayName: string) => {
             targetGeoRef.current = { name: displayName, dest: latlng };
+            turnByTurnRef.current = null;
             if (!navigator.geolocation) {
               enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current });
               return;
             }
-            if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} }
-            geoWatchRef.current = navigator.geolocation.watchPosition(
-              (pos) => {
-                userPosRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                if (pos.coords.heading != null && !Number.isNaN(pos.coords.heading)) userHeadingRef.current = pos.coords.heading;
-                const tg = targetGeoRef.current;
-                if (!tg) return;
-                const dist = haversine(userPosRef.current, tg.dest);
-                const now = Date.now();
-                if (now - lastNavSpeakRef.current < 4000) return;
-                lastNavSpeakRef.current = now;
-                if (dist < 20) {
-                  enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
-                  if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
-                  targetGeoRef.current = null;
-                  return;
+            // First fix → fetch real walking route via OSRM, then start tracking.
+            navigator.geolocation.getCurrentPosition(
+              async (pos) => {
+                const from: LatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                userPosRef.current = from;
+                const route = await fetchRoute(from, latlng);
+                if (route && route.steps.length > 0) {
+                  turnByTurnRef.current = makeNavState(route);
+                  const kms = (route.totalDistance / 1000).toFixed(2);
+                  const mins = Math.max(1, Math.round(route.totalDuration / 60));
+                  enqueueSpeech({
+                    text: `سنسير ${kms} كيلومتر، حوالي ${mins} دقيقة مشياً إلى ${displayName}. الخطوة الأولى: ${route.steps[0].instruction}`,
+                    priority: 'critical', lang: langRef.current,
+                  });
+                } else {
+                  enqueueSpeech({
+                    text: `لم أجد مساراً تفصيلياً. سأرشدك بالاتجاه نحو ${displayName}.`,
+                    priority: 'directional', lang: langRef.current,
+                  });
                 }
-                const b = bearing(userPosRef.current, tg.dest);
-                const dir = relativeDirectionAr(b, userHeadingRef.current);
-                enqueueSpeech({ text: `${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, priority: 'directional', lang: langRef.current });
+                if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} }
+                geoWatchRef.current = navigator.geolocation.watchPosition(
+                  (p) => {
+                    userPosRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+                    if (p.coords.heading != null && !Number.isNaN(p.coords.heading)) userHeadingRef.current = p.coords.heading;
+                    const tg = targetGeoRef.current; if (!tg) return;
+                    const now = Date.now();
+
+                    // Turn-by-turn path if available
+                    const tbt = turnByTurnRef.current;
+                    if (tbt) {
+                      const tick = advanceStep(tbt, userPosRef.current!);
+                      if (tick.speak) {
+                        enqueueSpeech({ text: tick.speak, priority: 'directional', lang: langRef.current });
+                      }
+                      if (tick.arrived) {
+                        enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
+                        if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
+                        targetGeoRef.current = null;
+                        turnByTurnRef.current = null;
+                      }
+                      return;
+                    }
+
+                    // Fallback bearing-based guidance
+                    const dist = haversine(userPosRef.current!, tg.dest);
+                    if (now - lastNavSpeakRef.current < 4000) return;
+                    lastNavSpeakRef.current = now;
+                    if (dist < 20) {
+                      enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
+                      if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
+                      targetGeoRef.current = null;
+                      return;
+                    }
+                    const b = bearing(userPosRef.current!, tg.dest);
+                    const dir = relativeDirectionAr(b, userHeadingRef.current);
+                    enqueueSpeech({ text: `${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, priority: 'directional', lang: langRef.current });
+                  },
+                  () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
+                  { enableHighAccuracy: true, maximumAge: 2000, timeout: 12000 }
+                );
               },
               () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
-              { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
+              { enableHighAccuracy: true, timeout: 10000 }
             );
           };
+
           if (saved?.coords) {
             enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${saved.name}`, priority: 'critical', lang: langRef.current });
             startGeo(saved.coords, saved.name);
