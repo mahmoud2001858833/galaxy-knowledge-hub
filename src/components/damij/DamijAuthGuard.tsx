@@ -54,6 +54,7 @@ const DamijAuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
     check();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (PUBLIC_PATTERNS.some((re) => re.test(location.pathname))) return;
       if (!session) {
         setStatus('redirect');
         navigate(`/damij/auth?returnUrl=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
