@@ -152,10 +152,21 @@ const DeviceLauncher: React.FC<Props> = ({ sessionId, caseCategory, caseContext,
         </div>
       )}
 
-      {/* Selected device */}
-      {selected && (
-        <DeviceRenderer device={selected} ctx={ctx} onApply={(r) => recordUse(selected.key, selected.name_ar, r)} />
-      )}
+      {/* Selected device opens in a Sheet, never stacks under the grid */}
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent side="left" className="w-full sm:max-w-lg overflow-y-auto" dir="rtl">
+          <SheetHeader>
+            <SheetTitle className="text-right flex items-center gap-2">
+              <span className="text-2xl">{selected?.icon || '🩺'}</span> {selected?.name_ar}
+            </SheetTitle>
+          </SheetHeader>
+          {selected && (
+            <div className="mt-3">
+              <DeviceRenderer device={selected} ctx={ctx} onApply={(r) => { recordUse(selected.key, selected.name_ar, r); setSelected(null); }} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
       <div className="text-[10px] text-center text-slate-400">محاكاة تعليمية — ليست بديلاً عن الفحص أو الجهاز الحقيقي</div>
     </div>
   );
