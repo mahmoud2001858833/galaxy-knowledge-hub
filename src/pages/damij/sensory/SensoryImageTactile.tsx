@@ -439,7 +439,7 @@ const SensoryImageTactile: React.FC = () => {
 
                 {/* Tactile model */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <h3 className="font-bold mb-2 flex items-center gap-2"><Hand className="w-5 h-5 text-purple-600"/> النموذج اللمسي</h3>
+                  <h3 className="font-bold mb-2 flex items-center gap-2"><Hand className="w-5 h-5 text-purple-600"/> النموذج التعليمي التفاعلي</h3>
                   <div className="flex flex-col gap-1 mb-2 text-xs">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={geoMapping} onChange={(e) => setGeoMapping(e.target.checked)} />
