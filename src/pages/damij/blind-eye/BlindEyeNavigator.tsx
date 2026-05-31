@@ -447,7 +447,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
         enqueueSpeech({
           text: data.spoken,
-          priority: 'directional',
+          priority: 'critical',
           rate: langRef.current === 'ar' ? 1.0 : 1.1,
           lang: langRef.current,
           onEnd: () => { userSpeakingRef.current = false; },
