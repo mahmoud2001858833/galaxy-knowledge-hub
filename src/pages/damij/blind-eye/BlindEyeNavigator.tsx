@@ -876,6 +876,17 @@ const BlindEyeNavigatorInner: React.FC = () => {
       {eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-0 h-0 opacity-0" />}
       <canvas ref={captureCanvasRef} className="hidden" />
 
+      {/* Floating emergency button (long-press to send SMS) */}
+      <BlindEyeEmergencyButton />
+
+      {/* Offline indicator */}
+      {!online && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-rose-600/90 text-white text-sm font-bold shadow-2xl">
+          ⚠ بدون إنترنت — التوجيه الأساسي يعمل
+        </div>
+      )}
+
+
       {!eyesOff && phase === 'guiding' && (
         <HudOverlay
           points={points}
