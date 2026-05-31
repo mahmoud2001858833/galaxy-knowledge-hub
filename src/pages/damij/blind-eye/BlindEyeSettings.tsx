@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Phone, MapPin, Trash2, Save, Compass, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Phone, MapPin, Trash2, Save, Compass, ShieldAlert, Vibrate, Siren, Plus, Star } from 'lucide-react';
 import {
   listPlaces, removePlace, savePlace, canonicalizePlaceName,
   getEmergencyPhone, setEmergencyPhone, type SavedPlace,
 } from './navigation/savedPlaces';
 import { requestCompassPermission } from './navigation/compass';
 import { requestMotionPermission } from './navigation/fallDetection';
+import { isHapticsEnabled, setHapticsEnabled, haptics } from './haptics';
+import { listContacts, addContact, deleteContact, type EmergencyContact } from './emergencyService';
 import { toast } from 'sonner';
 
 const FALL_KEY = 'damij.blindEye.fallDetection.v1';
@@ -19,10 +21,19 @@ const BlindEyeSettings: React.FC = () => {
   const [fallOn, setFallOn] = useState<boolean>(() => {
     try { return localStorage.getItem(FALL_KEY) !== '0'; } catch { return true; }
   });
+  const [haptOn, setHaptOn] = useState<boolean>(() => isHapticsEnabled());
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [cName, setCName] = useState('');
+  const [cPhone, setCPhone] = useState('');
+
+  const reloadContacts = async () => {
+    try { setContacts(await listContacts()); } catch {}
+  };
 
   useEffect(() => {
     setPhone(getEmergencyPhone() || '');
     setPlaces(listPlaces());
+    reloadContacts();
   }, []);
 
   const savePhone = () => {
