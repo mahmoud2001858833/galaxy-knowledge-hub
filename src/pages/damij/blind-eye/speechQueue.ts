@@ -17,7 +17,7 @@ type SpeechItem = {
   onEnd?: () => void;
 };
 
-const voicesCache: Record<BELang, SpeechSynthesisVoice | null> = { en: null, ar: null };
+const voicesCache: Partial<Record<BELang, SpeechSynthesisVoice | null>> = {};
 let activeLang: BELang = 'en';
 let queue: SpeechItem[] = [];
 let speakingItem: SpeechItem | null = null;
