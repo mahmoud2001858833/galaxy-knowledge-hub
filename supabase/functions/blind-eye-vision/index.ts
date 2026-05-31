@@ -11,7 +11,27 @@ const corsHeaders = {
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
 
-type Lang = "en" | "ar";
+type Lang =
+  | "en" | "ar" | "fr" | "es" | "de" | "pt" | "ru" | "tr"
+  | "fa" | "ur" | "he" | "hi" | "ja" | "ko" | "zh";
+
+const COMMANDS: Record<Lang, { left: string; right: string; ahead: string; stop: string; back: string; continue_: string }> = {
+  en: { left: "Left", right: "Right", ahead: "Ahead", stop: "Stop", back: "Back", continue_: "Continue" },
+  ar: { left: "يسار", right: "يمين", ahead: "أمام", stop: "قف", back: "تراجع", continue_: "استمر" },
+  fr: { left: "Gauche", right: "Droite", ahead: "Avancez", stop: "Stop", back: "Reculez", continue_: "Continuez" },
+  es: { left: "Izquierda", right: "Derecha", ahead: "Adelante", stop: "Alto", back: "Atrás", continue_: "Continúa" },
+  de: { left: "Links", right: "Rechts", ahead: "Geradeaus", stop: "Halt", back: "Zurück", continue_: "Weiter" },
+  pt: { left: "Esquerda", right: "Direita", ahead: "Em frente", stop: "Pare", back: "Recue", continue_: "Continue" },
+  ru: { left: "Налево", right: "Направо", ahead: "Прямо", stop: "Стоп", back: "Назад", continue_: "Продолжайте" },
+  tr: { left: "Sol", right: "Sağ", ahead: "İleri", stop: "Dur", back: "Geri", continue_: "Devam" },
+  fa: { left: "چپ", right: "راست", ahead: "جلو", stop: "بایست", back: "عقب", continue_: "ادامه" },
+  ur: { left: "بائیں", right: "دائیں", ahead: "آگے", stop: "رکو", back: "پیچھے", continue_: "جاری رکھیں" },
+  he: { left: "שמאלה", right: "ימינה", ahead: "קדימה", stop: "עצור", back: "אחורה", continue_: "המשך" },
+  hi: { left: "बाएं", right: "दाएं", ahead: "आगे", stop: "रुको", back: "पीछे", continue_: "जारी रखें" },
+  ja: { left: "左", right: "右", ahead: "前へ", stop: "止まれ", back: "後ろ", continue_: "進め" },
+  ko: { left: "왼쪽", right: "오른쪽", ahead: "앞으로", stop: "멈춰", back: "뒤로", continue_: "계속" },
+  zh: { left: "左", right: "右", ahead: "前进", stop: "停", back: "后退", continue_: "继续" },
+};
 
 // spoken MUST be a single short directional command — never describe what's seen.
 // Arabic: يسار | يمين | أمام | قف | استمر | تراجع
