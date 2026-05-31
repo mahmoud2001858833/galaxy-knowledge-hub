@@ -305,14 +305,14 @@ const BlindEyeNavigatorInner: React.FC = () => {
     }
   }, [captureFrame]);
 
-  // Gyro-based motion trigger
+  // Gyro-based motion trigger (very sensitive — small rotations count as scene change)
   useEffect(() => {
     if (phase === 'stopped') return;
     const handler = (e: DeviceMotionEvent) => {
       const r = e.rotationRate;
       if (!r) return;
       const mag = Math.abs(r.alpha || 0) + Math.abs(r.beta || 0) + Math.abs(r.gamma || 0);
-      if (mag > 45) sceneChangePendingRef.current = true;
+      if (mag > 18) sceneChangePendingRef.current = true;
     };
     window.addEventListener('devicemotion', handler);
     return () => window.removeEventListener('devicemotion', handler);
