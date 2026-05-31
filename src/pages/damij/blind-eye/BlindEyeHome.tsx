@@ -15,14 +15,32 @@ const speak = (text: string) => {
 };
 
 const BlindEyeHome: React.FC = () => {
+  const navigate = useNavigate();
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [online, setOnline] = useState<boolean>(isOnline());
+
   useEffect(() => {
+    // Decide onboarding gate (cached first, then remote refresh)
+    const local = getLocalPrefs();
+    if (!local.disclaimer_accepted || !local.onboarding_completed) setNeedsOnboarding(true);
+    loadRemotePrefs().then((p) => {
+      if (p && (!p.disclaimer_accepted || !p.onboarding_completed)) setNeedsOnboarding(true);
+      if (p && p.disclaimer_accepted && p.onboarding_completed) setNeedsOnboarding(false);
+    }).catch(() => {});
+
+    const off = onConnectivityChange(setOnline);
     const t = setTimeout(() => {
       speak('مرحباً بك في عين الأعمى. اضغط على الزر الكبير لفتح الكاميرا. سأرشدك أولاً لأفضل وضعية للهاتف، ثم أساعدك على المشي بأمان وأتحدث معك في أي وقت.');
     }, 600);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); off(); };
   }, []);
 
-  const handleOpen = () => {
+  const handleOpen = (e: React.MouseEvent) => {
+    if (needsOnboarding) {
+      e.preventDefault();
+      navigate('/damij/blind-eye/onboarding');
+      return;
+    }
     speak('فتح الكاميرا الآن');
     if ('vibrate' in navigator) navigator.vibrate(80);
   };
