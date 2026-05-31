@@ -465,7 +465,23 @@ const BlindEyeNavigatorInner: React.FC = () => {
     };
   }, [phase, companionMode, runAI]);
 
+  // Warm up local detector + watch connectivity
+  useEffect(() => {
+    ensureDetector().catch(() => {});
+    const off = onConnectivityChange((o) => {
+      onlineRef.current = o;
+      setOnline(o);
+      if (!o) {
+        enqueueSpeech({ text: BE_STRINGS[langRef.current].offlineFallback ?? 'وضع عدم الاتصال — التوجيه الأساسي يعمل', priority: 'critical', lang: langRef.current });
+      } else {
+        enqueueSpeech({ text: BE_STRINGS[langRef.current].onlineResumed ?? 'عاد الاتصال', priority: 'directional', lang: langRef.current });
+      }
+    });
+    return () => { off(); };
+  }, []);
+
   // Speak "started" once when guiding begins
+
   useEffect(() => {
     if (phase === 'guiding') {
       const timer = setTimeout(() => {
