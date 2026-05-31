@@ -517,7 +517,7 @@ const SensoryImageTactile: React.FC = () => {
                       <Download className="w-4 h-4"/> تنزيل
                     </button>
                     <button onClick={printModel} className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm font-bold inline-flex items-center justify-center gap-2">
-                      <Printer className="w-4 h-4"/> طباعة لمسية
+                      <Printer className="w-4 h-4"/> طباعة
                     </button>
                     </div>
 
