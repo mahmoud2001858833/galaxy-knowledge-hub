@@ -20,6 +20,10 @@ import { recognizeImage } from './navigation/ocr';
 import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic } from './localDetector';
+import { isOnline, onConnectivityChange } from './offlineMode';
+import { hapticForDirection, haptics } from './haptics';
+import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
