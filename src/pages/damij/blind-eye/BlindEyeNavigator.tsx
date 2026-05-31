@@ -182,7 +182,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const runAI = useCallback(async (mode: 'calibration'|'fast'|'detailed'|'points') => {
     if (Date.now() < cooldownUntilRef.current) return;
     if (inflightRef.current >= 4) return;
+    // Offline: skip remote vision entirely; local detector handles safety.
+    if (!onlineRef.current) return;
     const img = captureFrame(mode);
+
 
     if (!img) return;
     inflightRef.current += 1;
