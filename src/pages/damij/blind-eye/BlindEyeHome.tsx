@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, Camera, ArrowLeft, Mic, Radio, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, Camera, ArrowLeft, Mic, Radio, AlertTriangle, ShieldAlert } from 'lucide-react';
 import DamijSEO from '@/components/damij/DamijSEO';
+import { getLocalPrefs, loadRemotePrefs } from './userPrefs';
+import { isOnline, onConnectivityChange } from './offlineMode';
 
 const speak = (text: string) => {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -13,14 +15,32 @@ const speak = (text: string) => {
 };
 
 const BlindEyeHome: React.FC = () => {
+  const navigate = useNavigate();
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [online, setOnline] = useState<boolean>(isOnline());
+
   useEffect(() => {
+    // Decide onboarding gate (cached first, then remote refresh)
+    const local = getLocalPrefs();
+    if (!local.disclaimer_accepted || !local.onboarding_completed) setNeedsOnboarding(true);
+    loadRemotePrefs().then((p) => {
+      if (p && (!p.disclaimer_accepted || !p.onboarding_completed)) setNeedsOnboarding(true);
+      if (p && p.disclaimer_accepted && p.onboarding_completed) setNeedsOnboarding(false);
+    }).catch(() => {});
+
+    const off = onConnectivityChange(setOnline);
     const t = setTimeout(() => {
       speak('مرحباً بك في عين الأعمى. اضغط على الزر الكبير لفتح الكاميرا. سأرشدك أولاً لأفضل وضعية للهاتف، ثم أساعدك على المشي بأمان وأتحدث معك في أي وقت.');
     }, 600);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); off(); };
   }, []);
 
-  const handleOpen = () => {
+  const handleOpen = (e: React.MouseEvent) => {
+    if (needsOnboarding) {
+      e.preventDefault();
+      navigate('/damij/blind-eye/onboarding');
+      return;
+    }
     speak('فتح الكاميرا الآن');
     if ('vibrate' in navigator) navigator.vibrate(80);
   };
@@ -70,6 +90,21 @@ const BlindEyeHome: React.FC = () => {
             </div>
           </div>
         </Link>
+
+        {/* Status row: onboarding gate + offline indicator */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {needsOnboarding && (
+            <Link to="/damij/blind-eye/onboarding" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-100 text-sm">
+              <ShieldAlert className="w-4 h-4" /> أكمل الإعداد الأولي قبل البدء
+            </Link>
+          )}
+          {!online && (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-100 text-sm">
+              ⚠ وضع عدم الاتصال — يعمل التوجيه الأساسي محلياً
+            </span>
+          )}
+        </div>
+
 
         {/* Feature badges */}
         <div className="grid grid-cols-3 gap-3 mt-6">

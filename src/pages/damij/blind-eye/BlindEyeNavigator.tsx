@@ -20,6 +20,10 @@ import { recognizeImage } from './navigation/ocr';
 import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic } from './localDetector';
+import { isOnline, onConnectivityChange } from './offlineMode';
+import { hapticForDirection, haptics } from './haptics';
+import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 
 
 type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
@@ -84,6 +88,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const targetStableRef = useRef<{ seen: number; missed: number }>({ seen: 0, missed: 0 });
   const lastNavTextRef = useRef<string>('');
   const turnByTurnRef = useRef<TurnByTurnState | null>(null);
+
+  // Local detector + offline state
+  const lastDetTickRef = useRef<number>(0);
+  const lastLocalHazardSpeakRef = useRef<number>(0);
+  const onlineRef = useRef<boolean>(isOnline());
+  const [online, setOnline] = useState<boolean>(isOnline());
+
 
 
 
@@ -171,7 +182,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const runAI = useCallback(async (mode: 'calibration'|'fast'|'detailed'|'points') => {
     if (Date.now() < cooldownUntilRef.current) return;
     if (inflightRef.current >= 4) return;
+    // Offline: skip remote vision entirely; local detector handles safety.
+    if (!onlineRef.current) return;
     const img = captureFrame(mode);
+
 
     if (!img) return;
     inflightRef.current += 1;
@@ -248,6 +262,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
             speakDedup(g.spoken, key, pri, 1200, { lang: langRef.current });
           }
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
+          // Directional haptic mirrors the spoken direction
+          hapticForDirection(g.best_path);
+
         }
 
         const prev = prevProximityRef.current;
@@ -366,6 +383,44 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
       }
 
+      // ---- On-device COCO-SSD object detection (runs ~6 fps, parallel to AI) ----
+      if (v && v.videoWidth && now - lastDetTickRef.current >= 160) {
+        lastDetTickRef.current = now;
+        detectFromVideo(v, 6).then((objs) => {
+          const hazard = detectImmediateHazard(objs);
+          if (hazard && now - lastLocalHazardSpeakRef.current > 1400) {
+            lastLocalHazardSpeakRef.current = now;
+            const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
+            // Three-step: STOP. STOP. → label → escape direction
+            const label = langRef.current === 'ar' ? labelToArabic(hazard.label) : hazard.label;
+            enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
+            enqueueSpeech({ text: label, priority: 'critical', lang: langRef.current });
+            // Pick escape: if hazard is left of center -> go right, else go left
+            const cx = hazard.x + hazard.w / 2;
+            const escape = cx < 0.5 ? cmds.right : cmds.left;
+            enqueueSpeech({ text: escape, priority: 'critical', lang: langRef.current });
+            haptics.stop();
+          }
+          // Surface detected objects as HUD points (lightweight)
+          if (objs.length && companionMode) {
+            setPoints(prev => {
+              const keep = prev.filter(p => p.source === 'ai').slice(0, 4);
+              const ds: DetectedPoint[] = objs.slice(0, 6).map(o => ({
+                x: o.x + o.w / 2,
+                y: o.y + o.h / 2,
+                w: o.w, h: o.h,
+                label: labelToArabic(o.label),
+                hazard: (o.w * o.h > 0.18 && (o.y + o.h / 2) > 0.5) ? 'high' : 'medium',
+                proximity: Math.round(Math.min(100, (o.w * o.h) * 200)),
+                source: 'local' as const,
+              }));
+              return [...keep, ...ds];
+            });
+          }
+        }).catch(() => {});
+      }
+
+
       const score = lastGuideRef.current?.global_proximity ?? 0;
       const stats = lastStatsRef.current;
       const sceneChanged = sceneChangePendingRef.current;
@@ -410,7 +465,23 @@ const BlindEyeNavigatorInner: React.FC = () => {
     };
   }, [phase, companionMode, runAI]);
 
+  // Warm up local detector + watch connectivity
+  useEffect(() => {
+    ensureDetector().catch(() => {});
+    const off = onConnectivityChange((o) => {
+      onlineRef.current = o;
+      setOnline(o);
+      if (!o) {
+        enqueueSpeech({ text: 'وضع عدم الاتصال. التوجيه الأساسي يعمل.', priority: 'critical', lang: langRef.current });
+      } else {
+        enqueueSpeech({ text: 'عاد الاتصال.', priority: 'directional', lang: langRef.current });
+      }
+    });
+    return () => { off(); };
+  }, []);
+
   // Speak "started" once when guiding begins
+
   useEffect(() => {
     if (phase === 'guiding') {
       const timer = setTimeout(() => {
@@ -804,6 +875,17 @@ const BlindEyeNavigatorInner: React.FC = () => {
       {!eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />}
       {eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-0 h-0 opacity-0" />}
       <canvas ref={captureCanvasRef} className="hidden" />
+
+      {/* Floating emergency button (long-press to send SMS) */}
+      <BlindEyeEmergencyButton />
+
+      {/* Offline indicator */}
+      {!online && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-rose-600/90 text-white text-sm font-bold shadow-2xl">
+          ⚠ بدون إنترنت — التوجيه الأساسي يعمل
+        </div>
+      )}
+
 
       {!eyesOff && phase === 'guiding' && (
         <HudOverlay

@@ -1386,6 +1386,75 @@ export type Database = {
           },
         ]
       }
+      blind_eye_emergency_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blind_eye_user_prefs: {
+        Row: {
+          created_at: string
+          detail_level: string
+          disclaimer_accepted: boolean
+          haptics_enabled: boolean
+          id: string
+          onboarding_completed: boolean
+          preferred_ear: string
+          updated_at: string
+          user_id: string
+          walking_speed: string
+        }
+        Insert: {
+          created_at?: string
+          detail_level?: string
+          disclaimer_accepted?: boolean
+          haptics_enabled?: boolean
+          id?: string
+          onboarding_completed?: boolean
+          preferred_ear?: string
+          updated_at?: string
+          user_id: string
+          walking_speed?: string
+        }
+        Update: {
+          created_at?: string
+          detail_level?: string
+          disclaimer_accepted?: boolean
+          haptics_enabled?: boolean
+          id?: string
+          onboarding_completed?: boolean
+          preferred_ear?: string
+          updated_at?: string
+          user_id?: string
+          walking_speed?: string
+        }
+        Relationships: []
+      }
       btec_custom_platforms: {
         Row: {
           created_at: string | null

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Phone, MapPin, Trash2, Save, Compass, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Phone, MapPin, Trash2, Save, Compass, ShieldAlert, Vibrate, Siren, Plus, Star } from 'lucide-react';
 import {
   listPlaces, removePlace, savePlace, canonicalizePlaceName,
   getEmergencyPhone, setEmergencyPhone, type SavedPlace,
 } from './navigation/savedPlaces';
 import { requestCompassPermission } from './navigation/compass';
 import { requestMotionPermission } from './navigation/fallDetection';
+import { isHapticsEnabled, setHapticsEnabled, haptics } from './haptics';
+import { listContacts, addContact, deleteContact, type EmergencyContact } from './emergencyService';
 import { toast } from 'sonner';
 
 const FALL_KEY = 'damij.blindEye.fallDetection.v1';
@@ -19,10 +21,19 @@ const BlindEyeSettings: React.FC = () => {
   const [fallOn, setFallOn] = useState<boolean>(() => {
     try { return localStorage.getItem(FALL_KEY) !== '0'; } catch { return true; }
   });
+  const [haptOn, setHaptOn] = useState<boolean>(() => isHapticsEnabled());
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [cName, setCName] = useState('');
+  const [cPhone, setCPhone] = useState('');
+
+  const reloadContacts = async () => {
+    try { setContacts(await listContacts()); } catch {}
+  };
 
   useEffect(() => {
     setPhone(getEmergencyPhone() || '');
     setPlaces(listPlaces());
+    reloadContacts();
   }, []);
 
   const savePhone = () => {
@@ -83,6 +94,63 @@ const BlindEyeSettings: React.FC = () => {
             <button onClick={savePhone} className="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold flex items-center gap-1"><Save className="w-4 h-4" /> حفظ</button>
           </div>
         </section>
+
+        {/* Emergency contacts list (cloud) */}
+        <section className="rounded-2xl bg-white/5 border border-white/10 p-5 mb-6">
+          <h2 className="flex items-center gap-2 text-2xl font-bold mb-3"><Siren className="w-6 h-6 text-rose-300" /> جهات اتصال الطوارئ</h2>
+          <p className="text-white/70 text-sm mb-3">اضغط مطوّلاً على الزر الأحمر داخل شاشة الإرشاد لإرسال رسالة طوارئ مع موقعك. (يحفظ في حسابك)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+            <input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="الاسم (مثل: أبي)"
+              className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-rose-400" />
+            <input value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="الرقم (مثال: +962790000000)" type="tel"
+              className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-rose-400" />
+          </div>
+          <button
+            onClick={async () => {
+              if (!cName.trim() || !cPhone.trim()) { toast.error('أدخل الاسم والرقم'); return; }
+              try {
+                await addContact({ name: cName.trim(), phone: cPhone.trim(), is_primary: contacts.length === 0 });
+                setCName(''); setCPhone(''); await reloadContacts();
+                toast.success('تمت إضافة جهة اتصال');
+              } catch (e: any) {
+                toast.error(e?.message === 'not_authenticated' ? 'سجّل الدخول أولاً' : 'تعذرت الإضافة');
+              }
+            }}
+            className="px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 font-bold inline-flex items-center gap-2 mb-3"
+          ><Plus className="w-4 h-4" /> إضافة</button>
+          <ul className="space-y-2">
+            {contacts.length === 0 && <li className="text-white/50 text-sm">لا توجد جهات طوارئ بعد.</li>}
+            {contacts.map((c) => (
+              <li key={c.id} className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl p-3">
+                <div className="flex-1">
+                  <div className="font-bold text-lg flex items-center gap-2">
+                    {c.is_primary && <Star className="w-4 h-4 text-amber-300 fill-amber-300" />}
+                    {c.name}
+                  </div>
+                  <div className="text-xs text-white/60 ltr:font-mono" dir="ltr">{c.phone}</div>
+                </div>
+                <button onClick={async () => { await deleteContact(c.id); reloadContacts(); }}
+                  className="p-2 rounded-lg bg-rose-600/80 hover:bg-rose-500"><Trash2 className="w-4 h-4" /></button>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Haptics toggle */}
+        <section className="rounded-2xl bg-white/5 border border-white/10 p-5 mb-6">
+          <h2 className="flex items-center gap-2 text-2xl font-bold mb-3"><Vibrate className="w-6 h-6 text-fuchsia-300" /> الاهتزاز الاتجاهي</h2>
+          <p className="text-white/70 text-sm mb-3">يمين = نبضة قصيرة. يسار = نبضة طويلة. توقف = نبضات سريعة. مفيد في الأماكن الصاخبة.</p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => { const n = !haptOn; setHaptOn(n); setHapticsEnabled(n); haptics.tap(); }}
+              className={`px-5 py-3 rounded-xl font-bold ${haptOn ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-white/10 hover:bg-white/20'}`}>
+              {haptOn ? 'مفعّل ✓' : 'معطّل'}
+            </button>
+            <button onClick={() => haptics.right()} className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20">جرّب يمين</button>
+            <button onClick={() => haptics.left()} className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20">جرّب يسار</button>
+            <button onClick={() => haptics.stop()} className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20">جرّب توقف</button>
+          </div>
+        </section>
+
 
         {/* Fall detection toggle */}
         <section className="rounded-2xl bg-white/5 border border-white/10 p-5 mb-6">

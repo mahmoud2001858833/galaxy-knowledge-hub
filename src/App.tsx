@@ -188,6 +188,7 @@ import InteractiveBrailleLearn from './pages/damij/braille/InteractiveBrailleLea
 import BlindEyeHome from './pages/damij/blind-eye/BlindEyeHome';
 import BlindEyeNavigator from './pages/damij/blind-eye/BlindEyeNavigator';
 import BlindEyeSettings from './pages/damij/blind-eye/BlindEyeSettings';
+import BlindEyeOnboarding from './pages/damij/blind-eye/BlindEyeOnboarding';
 import AutismLayout from './pages/damij/autism/AutismLayout';
 import AutismHome from './pages/damij/autism/AutismHome';
 import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
@@ -991,6 +992,7 @@ const router = createBrowserRouter([
           { path: 'blind-eye', element: <BlindEyeHome /> },
           { path: 'blind-eye/navigate', element: <BlindEyeNavigator /> },
           { path: 'blind-eye/settings', element: <BlindEyeSettings /> },
+          { path: 'blind-eye/onboarding', element: <BlindEyeOnboarding /> },
           {
             path: 'autism',
             element: <AutismLayout />,
