@@ -48,11 +48,30 @@ type Calib = {
   spoken: string;
 };
 
+const BE_LANG_LABELS: Record<BELang, { native: string; flag: string }> = {
+  en: { native: 'English', flag: '🇺🇸' },
+  ar: { native: 'العربية', flag: '🇸🇦' },
+  fr: { native: 'Français', flag: '🇫🇷' },
+  es: { native: 'Español', flag: '🇪🇸' },
+  de: { native: 'Deutsch', flag: '🇩🇪' },
+  pt: { native: 'Português', flag: '🇵🇹' },
+  ru: { native: 'Русский', flag: '🇷🇺' },
+  tr: { native: 'Türkçe', flag: '🇹🇷' },
+  fa: { native: 'فارسی', flag: '🇮🇷' },
+  ur: { native: 'اردو', flag: '🇵🇰' },
+  he: { native: 'עברית', flag: '🇮🇱' },
+  hi: { native: 'हिन्दी', flag: '🇮🇳' },
+  ja: { native: '日本語', flag: '🇯🇵' },
+  ko: { native: '한국어', flag: '🇰🇷' },
+  zh: { native: '中文', flag: '🇨🇳' },
+};
+
 const BlindEyeNavigatorInner: React.FC = () => {
   const { lang, setLang, toggle } = useBlindEyeLang();
   const langRef = useRef<BELang>(lang);
   useEffect(() => { langRef.current = lang; setActiveLang(lang); }, [lang]);
   const t = BE_STRINGS[lang];
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
