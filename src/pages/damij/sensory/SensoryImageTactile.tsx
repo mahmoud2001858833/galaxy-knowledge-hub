@@ -423,27 +423,7 @@ const SensoryImageTactile: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Haptic toggle */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Vibrate className="w-6 h-6 text-orange-500" />
-                  <div>
-                    <p className="font-bold">الاهتزاز التفاعلي (Haptic Feedback)</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <Smartphone className="w-3 h-3"/> {mobile && vibrate ? 'متاح على هذا الجهاز' : 'متاح فقط على الهواتف الداعمة'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  disabled={!mobile || !vibrate}
-                  onClick={() => { setHapticEnabled(v => !v); if (!hapticEnabled && vibrate) navigator.vibrate(150); }}
-                  className={`relative w-14 h-8 rounded-full transition disabled:opacity-40 ${hapticEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
-                >
-                  <span className={`absolute top-1 w-6 h-6 rounded-full bg-white transition ${hapticEnabled ? 'right-1' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
+
 
             {result && (
               <>
