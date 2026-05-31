@@ -10,8 +10,8 @@ import {
   earcons, vibrate, isSpeaking, timeSinceLastSpeech,
 } from './speechQueue';
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
-import { BE_STRINGS, BE_BCP47, defaultSuggestions, type BELang } from './i18n';
-import { parseCommand, commandAllowed } from './voiceCommands';
+import { BE_STRINGS, BE_BCP47, BE_COMMANDS, defaultSuggestions, type BELang } from './i18n';
+import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
 import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
