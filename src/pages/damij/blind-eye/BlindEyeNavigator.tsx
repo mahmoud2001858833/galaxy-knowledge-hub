@@ -380,6 +380,44 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
       }
 
+      // ---- On-device COCO-SSD object detection (runs ~6 fps, parallel to AI) ----
+      if (v && v.videoWidth && now - lastDetTickRef.current >= 160) {
+        lastDetTickRef.current = now;
+        detectFromVideo(v, 6).then((objs) => {
+          const hazard = detectImmediateHazard(objs);
+          if (hazard && now - lastLocalHazardSpeakRef.current > 1400) {
+            lastLocalHazardSpeakRef.current = now;
+            const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
+            // Three-step: STOP. STOP. → label → escape direction
+            const label = langRef.current === 'ar' ? labelToArabic(hazard.label) : hazard.label;
+            enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
+            enqueueSpeech({ text: label, priority: 'critical', lang: langRef.current });
+            // Pick escape: if hazard is left of center -> go right, else go left
+            const cx = hazard.x + hazard.w / 2;
+            const escape = cx < 0.5 ? cmds.right : cmds.left;
+            enqueueSpeech({ text: escape, priority: 'critical', lang: langRef.current });
+            haptics.stop();
+          }
+          // Surface detected objects as HUD points (lightweight)
+          if (objs.length && companionMode) {
+            setPoints(prev => {
+              const keep = prev.filter(p => p.source === 'ai').slice(0, 4);
+              const ds: DetectedPoint[] = objs.slice(0, 6).map(o => ({
+                x: o.x + o.w / 2,
+                y: o.y + o.h / 2,
+                w: o.w, h: o.h,
+                label: labelToArabic(o.label),
+                hazard: (o.w * o.h > 0.18 && (o.y + o.h / 2) > 0.5) ? 'high' : 'medium',
+                proximity: Math.round(Math.min(100, (o.w * o.h) * 200)),
+                source: 'local' as const,
+              }));
+              return [...keep, ...ds];
+            });
+          }
+        }).catch(() => {});
+      }
+
+
       const score = lastGuideRef.current?.global_proximity ?? 0;
       const stats = lastStatsRef.current;
       const sceneChanged = sceneChangePendingRef.current;
