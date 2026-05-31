@@ -367,12 +367,12 @@ const SensoryImageTactile: React.FC = () => {
     const legend = (result.tactileRegions || []).map((r, i) =>
       `<li><b>${i+1}. ${r.label}</b> — ملمس: ${r.texture} / ارتفاع: ${r.elevation}/5 — ${r.description}</li>`
     ).join('');
-    w.document.write(`<html dir="rtl"><head><title>نموذج لمسي قابل للطباعة</title>
+    w.document.write(`<html dir="rtl"><head><title>نموذج تعليمي قابل للطباعة</title>
       <style>body{font-family:sans-serif;padding:20px}img{max-width:100%;border:2px solid #000}
       h1{font-size:20px}ul{line-height:1.8}</style></head><body>
-      <h1>${result.title || 'نموذج لمسي'}</h1>
+      <h1>${result.title || 'نموذج تعليمي'}</h1>
       <img src="${dataUrl}"/>
-      <h2>دليل المناطق اللمسية</h2><ul>${legend}</ul>
+      <h2>دليل المناطق</h2><ul>${legend}</ul>
       <p><b>إرشادات الطباعة:</b> ${result.printingNotes || 'استخدم طابعة بريل أو طابعة 3D لإبراز المناطق المحدّدة'}</p>
       </body></html>`);
     w.document.close(); setTimeout(() => w.print(), 500);
