@@ -710,10 +710,23 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const rec = new SR();
     rec.lang = BE_BCP47[lang];
     rec.continuous = true;
-    rec.interimResults = false;
+    rec.interimResults = true;
+    let interruptedFor = -1;
     rec.onresult = (e: any) => {
-      if (isSpeaking()) return;
-      const txt = e.results[e.results.length - 1][0].transcript;
+      const last = e.results[e.results.length - 1];
+      const txt = (last[0]?.transcript || '').trim();
+      // As soon as the user starts speaking (≥2 chars), cut off any ongoing TTS
+      // so the assistant responds instantly and never talks over them.
+      if (!last.isFinal) {
+        if (txt.length >= 2 && interruptedFor !== e.results.length - 1) {
+          interruptedFor = e.results.length - 1;
+          cancelAllSpeech();
+          userSpeakingRef.current = true;
+        }
+        return;
+      }
+      userSpeakingRef.current = false;
+      interruptedFor = -1;
       handleVoiceInput(txt);
     };
     rec.onerror = (e: any) => { console.warn('rec err', e?.error); };
