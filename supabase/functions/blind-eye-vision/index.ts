@@ -33,59 +33,44 @@ const COMMANDS: Record<Lang, { left: string; right: string; ahead: string; stop:
   zh: { left: "左", right: "右", ahead: "前进", stop: "停", back: "后退", continue_: "继续" },
 };
 
-// spoken MUST be a single short directional command — never describe what's seen.
-// Arabic: يسار | يمين | أمام | قف | استمر | تراجع
-// English: Left | Right | Ahead | Stop | Continue | Back
+// spoken MUST be a single short directional command in the user's language.
+// Never describe what's seen.
+function cmdList(lang: Lang): string {
+  const c = COMMANDS[lang] || COMMANDS.en;
+  return `"${c.left}" "${c.right}" "${c.ahead}" "${c.stop}" "${c.back}" "${c.continue_}"`;
+}
+
 const POINTS_PROMPT = (lang: Lang, target?: string) => {
+  const c = COMMANDS[lang] || COMMANDS.en;
   const targetLine = target
-    ? (lang === "ar"
-        ? `\n- المستخدم يريد الذهاب إلى: "${target}". إذا رأيته اضبط target_seen=true، target_bearing=(left|center|right)، target_distance=(far|mid|near|arrived)، next_step_ar أمر واحد قصير: يسار/يمين/أمام/قف/وصلت. وإلا target_seen=false و next_step_ar=أدر الكاميرا.`
-        : `\n- User wants: "${target}". If seen: target_seen=true, target_bearing, target_distance, next_step_ar=one short Arabic command. Else target_seen=false.`)
+    ? `\n- User destination: "${target}". If seen: target_seen=true, target_bearing=(left|center|right), target_distance=(far|mid|near|arrived), next_step_ar=one short command word in language "${lang}". Else target_seen=false.`
     : "";
-  return lang === "ar"
-    ? `أنت "عين الأعمى". أعد كائنات الإطار بإحداثيات مركز 0-1 وأبعاد 0-1.
-- objects: حتى 6 عناصر، label كلمة واحدة، hazard low|medium|high، proximity 0-100.
+  return `You are "Blind Eye" helping a blind user. Reply strictly in language "${lang}".
+- objects: up to 6, label one word in language "${lang}", hazard low|medium|high, proximity 0-100, coordinates 0-1.
 - best_path: left|center|right
 - global_proximity 0-100
-- spoken: أمر واحد فقط من: "يسار" "يمين" "أمام" "قف" "استمر" "تراجع". لا تصف أي شيء.
-  قواعد: global_proximity≥70 → "قف". خطر جانبي → الاتجاه الآمن. مسار حر مباشر → "أمام" أو "استمر".
-- obstacles_summary: 3-6 كلمات (للعرض فقط، لن تُنطق).${targetLine}
-كن سريعاً.`
-    : `You are "Blind Eye". Return frame objects.
-- objects: up to 6, label one word, hazard low|medium|high, proximity 0-100.
-- best_path: left|center|right
-- global_proximity 0-100
-- spoken: EXACTLY one Arabic command word: "يسار" "يمين" "أمام" "قف" "استمر" "تراجع". Never describe.
-  Rules: global_proximity>=70 → "قف". Side hazard → safe direction. Clear → "أمام" or "استمر".
-- obstacles_summary: 3-6 words (display only, NOT spoken).${targetLine}
+- spoken: EXACTLY one word from: ${cmdList(lang)}. Never describe.
+  Rules: global_proximity>=70 → "${c.stop}". Side hazard → safe direction. Clear → "${c.ahead}" or "${c.continue_}".
+- obstacles_summary: 3-6 words in language "${lang}" (display only, NOT spoken).${targetLine}
 Be fast.`;
 };
 
-const GUIDANCE_FAST_PROMPT = (lang: Lang) => lang === "ar"
-  ? `أنت "عين الأعمى".
+const GUIDANCE_FAST_PROMPT = (lang: Lang) => {
+  return `You are "Blind Eye". Reply strictly in language "${lang}".
 - best_path: left|center|right
 - global_proximity 0-100
-- spoken: أمر واحد فقط: "يسار"/"يمين"/"أمام"/"قف"/"استمر"/"تراجع". لا تصف.
-- obstacles_summary: 3-6 كلمات للعرض فقط
-- top_hazards: 1-2`
-  : `You are "Blind Eye".
-- best_path: left|center|right
-- global_proximity 0-100
-- spoken: ONE Arabic command word only: "يسار"/"يمين"/"أمام"/"قف"/"استمر"/"تراجع". Never describe.
-- obstacles_summary: 3-6 words for display only
+- spoken: EXACTLY one word from: ${cmdList(lang)}. Never describe.
+- obstacles_summary: 3-6 words in "${lang}" for display only
 - top_hazards: 1-2`;
+};
 
-const GUIDANCE_DETAILED_PROMPT = (lang: Lang) => lang === "ar"
-  ? `أنت "عين الأعمى". شبكة 3×3 (TL TC TR / ML MC MR / BL BC BR).
-لكل خانة object/label/proximity 0-100/hazard.
-أرجع best_path, global_proximity, spoken (أمر واحد فقط)، obstacles_summary للعرض.`
-  : `You are "Blind Eye". 3×3 grid (TL TC TR / ML MC MR / BL BC BR).
+const GUIDANCE_DETAILED_PROMPT = (lang: Lang) => {
+  return `You are "Blind Eye". 3×3 grid (TL TC TR / ML MC MR / BL BC BR). Reply strictly in language "${lang}".
 Per cell: object/label/proximity 0-100/hazard.
-Return best_path, global_proximity, spoken (ONE command word only), obstacles_summary for display.`;
+Return best_path, global_proximity, spoken (ONE word from ${cmdList(lang)}), obstacles_summary for display.`;
+};
 
-const CALIBRATION_PROMPT = (lang: Lang) => lang === "ar"
-  ? `معايرة سريعة. أي إطار للمشي → position_ok=true. spoken: كلمة واحدة "جاهز".`
-  : `Quick calibration. Any walkable frame → position_ok=true. spoken: ONE word "جاهز".`;
+const CALIBRATION_PROMPT = (lang: Lang) => `Quick calibration. Any walkable frame → position_ok=true. spoken: ONE short ready-word in language "${lang}".`;
 
 
 const pointsTool = {
