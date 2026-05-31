@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
     else if (mode === "points") useMode = "points";
     else if (mode === "guidance") useMode = "fast";
 
-    const useLang: Lang = lang === "ar" ? "ar" : "en";
+    const useLang: Lang = (typeof lang === "string" && lang in COMMANDS) ? (lang as Lang) : "en";
 
     let lastErr = "";
     for (const model of MODELS) {
