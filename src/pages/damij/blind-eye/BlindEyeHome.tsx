@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, Camera, ArrowLeft, Mic, Radio, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, Camera, ArrowLeft, Mic, Radio, AlertTriangle, ShieldAlert } from 'lucide-react';
 import DamijSEO from '@/components/damij/DamijSEO';
+import { getLocalPrefs, loadRemotePrefs } from './userPrefs';
+import { isOnline, onConnectivityChange } from './offlineMode';
 
 const speak = (text: string) => {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
