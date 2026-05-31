@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2 } from 'lucide-react';
+import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2, BookOpen, ExternalLink } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
 import DamijSEO from '@/components/damij/DamijSEO';
@@ -93,6 +94,49 @@ const DamijLanding: React.FC = () => {
           </div>
         </motion.a>
       </section>
+
+      {/* Documentation hub CTA */}
+      <section className="px-6 mb-10">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto"
+        >
+          <Link
+            to="/damij/docs"
+            className="group block relative rounded-3xl overflow-hidden border-2 border-[hsl(var(--damij-primary))]/20 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 hover:border-[hsl(var(--damij-primary))]/50 transition-all shadow-sm hover:shadow-xl"
+          >
+            <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ background: 'radial-gradient(circle at 20% 30%, hsl(var(--damij-primary) / 0.25), transparent 55%), radial-gradient(circle at 80% 70%, hsl(var(--damij-primary-2) / 0.2), transparent 50%)' }} />
+            <div className="relative p-6 md:p-8 flex flex-col md:flex-row items-center gap-5">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[hsl(var(--damij-primary))] text-white flex items-center justify-center shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+                <BookOpen className="w-9 h-9 md:w-11 md:h-11" />
+              </div>
+              <div className="flex-1 text-center md:text-right">
+                <div className="text-xs font-bold tracking-widest text-[hsl(var(--damij-primary))]/70 mb-1">DAMIJ · DOCUMENTATION</div>
+                <h3 className="text-2xl md:text-3xl font-black text-[hsl(var(--damij-primary))] mb-1.5 leading-tight">
+                  توثيق منصة دامج
+                </h3>
+                <p className="text-sm md:text-base text-[hsl(var(--damij-muted))] max-w-2xl md:mr-0 mx-auto leading-relaxed">
+                  كل شيء عن المنصة في مكان واحد: الأنظمة الثمانية، التقنيات واللغات البرمجية، المصادر العلمية، وروابط مباشرة لكل صفحة.
+                </p>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-3 text-xs">
+                  <span className="px-2.5 py-1 rounded-full bg-[hsl(var(--damij-primary))]/10 text-[hsl(var(--damij-primary))] font-bold">8 أنظمة</span>
+                  <span className="px-2.5 py-1 rounded-full bg-[hsl(var(--damij-primary))]/10 text-[hsl(var(--damij-primary))] font-bold">60+ صفحة</span>
+                  <span className="px-2.5 py-1 rounded-full bg-[hsl(var(--damij-primary))]/10 text-[hsl(var(--damij-primary))] font-bold">15 لغة</span>
+                  <span className="px-2.5 py-1 rounded-full bg-[hsl(var(--damij-primary))]/10 text-[hsl(var(--damij-primary))] font-bold">مرجعية علمية موثّقة</span>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-extrabold shadow-md group-hover:shadow-lg transition shrink-0">
+                استكشف التوثيق
+                <ExternalLink className="w-4 h-4" />
+              </span>
+            </div>
+          </Link>
+        </motion.div>
+      </section>
+
+
 
 
       {/* Stats strip */}
