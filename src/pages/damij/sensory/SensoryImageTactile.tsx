@@ -432,9 +432,14 @@ const SensoryImageTactile: React.FC = () => {
                   <h3 className="font-bold mb-2 flex items-center gap-2"><Volume2 className="w-5 h-5 text-blue-600"/> الوصف الصوتي</h3>
                   {result.title && <p className="font-bold text-[hsl(var(--damij-primary))] mb-2">{result.title}</p>}
                   <p className="text-sm leading-relaxed mb-3 max-h-48 overflow-y-auto">{result.audioDescription}</p>
-                  <button onClick={() => speak(result.audioDescription || '')} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold">
-                    🔊 استمع للوصف
-                  </button>
+                  <div className="flex gap-2 flex-wrap">
+                    <button onClick={() => speak(result.audioDescription || '')} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold">
+                      🔊 استمع للوصف
+                    </button>
+                    <button onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }} className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-bold">
+                      ⏹ إنهاء الوصف
+                    </button>
+                  </div>
                 </div>
 
                 {/* Tactile model */}
