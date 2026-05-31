@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2 } from 'lucide-react';
+import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2, BookOpen, ExternalLink } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
 import DamijSEO from '@/components/damij/DamijSEO';
