@@ -167,7 +167,7 @@ const DamijSmartGuide: React.FC = () => {
               <div className="absolute -top-8 -end-6 w-24 h-24 rounded-full bg-white/15 blur-2xl" />
               <div className="relative flex items-center gap-2.5 min-w-0">
                 <div className="relative w-9 h-9 rounded-xl bg-white/20 ring-1 ring-white/30 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4.5 h-4.5" />
+                  <Sparkles className="w-4 h-4" />
                   {(isSpeaking || loading) && (
                     <span className="absolute -bottom-0.5 -end-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
                   )}
