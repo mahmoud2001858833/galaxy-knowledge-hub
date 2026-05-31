@@ -474,8 +474,16 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const handleVoiceInput = useCallback((txt: string) => {
     const text = txt.trim();
     if (!text) return;
+    // 1) Generic "switch to <any language>" detector — fires before parseCommand
+    //    so the user can change to any of the 15 supported languages instantly.
+    const targetLang = detectSwitchLang(text);
+    if (targetLang && targetLang !== langRef.current) {
+      switchLang(targetLang);
+      return;
+    }
     const cmd = parseCommand(text, langRef.current);
-    if (cmd !== 'CHAT' && !commandAllowed(cmd)) return;
+    // Shorter cooldown for interactive commands so replies feel instant.
+    if (cmd !== 'CHAT' && !commandAllowed(cmd, 500)) return;
     switch (cmd) {
       case 'STOP': stopAll(); return;
       case 'START':
