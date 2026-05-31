@@ -31,7 +31,7 @@ const SensoryImageTactile: React.FC = () => {
   const [imgUrl, setImgUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [hapticEnabled, setHapticEnabled] = useState(false);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
   const [speakingMerged, setSpeakingMerged] = useState(false);
   const [geoMapping, setGeoMapping] = useState(true);
   const [visualMapping, setVisualMapping] = useState(true);
