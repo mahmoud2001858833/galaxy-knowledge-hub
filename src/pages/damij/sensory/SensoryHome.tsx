@@ -7,7 +7,7 @@ const SensoryHome: React.FC = () => (
   <div className="px-6 pt-12 pb-16 max-w-6xl mx-auto">
     <DamijSEO
       title="الجسر الحسّي العكسي — منصة دامج"
-      description="الجسر الحسّي العكسي من منصة دامج: تحويل تلقائي لأي محتوى تعليمي إلى الحاسة المتاحة لكل طالب — نص مبسّط، صوت، إشارة، بريل، أو اهتزاز."
+      description="الجسر الحسّي العكسي من منصة دامج: تحويل تلقائي لأي محتوى تعليمي إلى الحاسة المتاحة لكل طالب — نص مبسّط، صوت، إشارة، أو بريل."
       path="/damij/sensory"
       keywords="الجسر الحسي, تكيف المحتوى التعليمي, منصة دامج الجسر الحسي"
     />
@@ -18,7 +18,7 @@ const SensoryHome: React.FC = () => (
       <h1 className="text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-4">الجسر الحسّي العكسي</h1>
       <p className="text-lg text-[hsl(var(--damij-text))]/75 max-w-3xl mx-auto leading-relaxed">
         ارفع أي محتوى تعليمي (نص، صورة، فيديو، صوت، PDF) وسيتم تحويله تلقائياً إلى الحاسة المتاحة لكل طالب —
-        نص مبسّط، صوت، إشارة، بريل، أو اهتزاز إيقاعي.
+        نص مبسّط، صوت، إشارة، أو بريل.
       </p>
     </div>
 
