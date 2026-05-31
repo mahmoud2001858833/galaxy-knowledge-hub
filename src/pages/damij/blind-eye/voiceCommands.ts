@@ -98,3 +98,38 @@ export function commandAllowed(id: CommandId, windowMs = 1200): boolean {
   lastFired.set(id, now);
   return true;
 }
+
+// Detect "switch to <language>" intent in any of the supported languages
+// and return the BELang target. Returns null if no switch intent was found.
+const LANG_NAME_PATTERNS: Array<{ target: BELang; rx: RegExp }> = [
+  { target: 'en', rx: /\b(english|إنجلي|انجلي|إنكلي|انكلي|anglais|inglés|englisch|inglês|английск|ingilizce|انگلیسی|انگریزی|אנגלית|अंग्र|英語|英语|영어)\b/i },
+  { target: 'ar', rx: /\b(arabic|عرب|arabe|árabe|arabisch|арабск|arapça|عربی|ערבית|अरबी|アラビア|阿拉伯|아랍)\b/i },
+  { target: 'fr', rx: /\b(french|français|francais|الفرنسي|فرنسي|francés|französisch|francês|француз|fransızca|فرانسوی|فرانسیسی|צרפתית|फ्रेंच|フランス|法语|프랑스)\b/i },
+  { target: 'es', rx: /\b(spanish|español|espanol|الإسباني|إسباني|اسباني|espagnol|spanisch|espanhol|испанск|i̇spanyolca|ispanyolca|اسپانیایی|ہسپانوی|ספרדית|स्पेनिश|スペイン|西班牙|스페인)\b/i },
+  { target: 'de', rx: /\b(german|deutsch|الألماني|ألماني|الماني|allemand|alemán|alemão|немецк|almanca|آلمانی|جرمن|גרמנית|जर्मन|ドイツ|德语|독일)\b/i },
+  { target: 'pt', rx: /\b(portuguese|português|portugues|البرتغالي|برتغالي|portugais|portugués|portugiesisch|португальск|portekizce|پرتغالی|پرتگالی|פורטוגזית|पुर्तगाली|ポルトガル|葡萄牙|포르투갈)\b/i },
+  { target: 'ru', rx: /\b(russian|русск|الروسي|روسي|russe|ruso|russisch|russo|rusça|روسی|רוסית|रूसी|ロシア|俄语|러시아)\b/i },
+  { target: 'tr', rx: /\b(turkish|türkçe|turkce|التركي|تركي|turc|turco|türkisch|турецк|ترکی|טורקית|तुर्की|トルコ|土耳其|터키)\b/i },
+  { target: 'fa', rx: /\b(persian|farsi|فارسی|الفارسي|فارسي|perse|persan|persa|persisch|персидск|farsça|פרסית|फ़ारसी|ペルシア|波斯|페르시아)\b/i },
+  { target: 'ur', rx: /\b(urdu|اردو|الأردو|أردو|اردية|hindoustani|урду|उर्दू|אורדו|ウルドゥー|乌尔都|우르두)\b/i },
+  { target: 'he', rx: /\b(hebrew|עברית|العبري|عبري|hébreu|hebreo|hebräisch|hebraico|иврит|i̇branice|ibranice|عبری|हिब्रू|ヘブライ|希伯来|히브리)\b/i },
+  { target: 'hi', rx: /\b(hindi|हिन्दी|हिंदी|الهندي|هندي|hindou|хинди|hintçe|ہندی|הינדי|ヒンディー|印地|힌디)\b/i },
+  { target: 'ja', rx: /\b(japanese|日本語|اليابان|ياباني|japonais|japonés|japanisch|japonês|японск|japonca|ژاپنی|جاپانی|יפנית|जापानी|일본)\b/i },
+  { target: 'ko', rx: /\b(korean|한국어|الكوري|كوري|coréen|coreano|koreanisch|корейск|korece|کره ای|کوریا|קוריאנית|कोरियाई|韓国|韩语|韓語)\b/i },
+  { target: 'zh', rx: /\b(chinese|mandarin|中文|普通话|الصيني|صيني|chinois|chino|chinesisch|chinês|китайск|çince|چینی|סינית|चीनी|中国語)\b/i },
+];
+
+const SWITCH_INTENT = /(switch|change|go|speak|talk|set|to)|(حوّل|حول|بدّل|بدل|تكلم|إحكي|احكي|إلى)|(passe|parle|en)|(cambia|habla|al)|(wechsle|sprich|auf)|(mude|fale|para)|(переключ|говори|на)|(geç|konuş)|(تغییر|صحبت|به)|(پر|بدلیں|بولیں)|(החלף|דבר|ל)|(बदल|बोलो|पर)|(切り替え|話して|に)|(전환|말해|로|으로)|(切换|说|改)/i;
+
+export function detectSwitchLang(rawText: string): BELang | null {
+  const t = (rawText || '').trim();
+  if (!t) return null;
+  // Require either an intent verb OR a very short input like just "arabic"/"عربي"
+  const hasIntent = SWITCH_INTENT.test(t) || t.split(/\s+/).length <= 3;
+  if (!hasIntent) return null;
+  for (const { target, rx } of LANG_NAME_PATTERNS) {
+    if (rx.test(t)) return target;
+  }
+  return null;
+}
+
