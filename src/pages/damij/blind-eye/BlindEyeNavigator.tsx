@@ -925,14 +925,42 @@ const BlindEyeNavigatorInner: React.FC = () => {
         </Link>
 
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <button
-            onClick={toggle}
-            aria-label={t.ariaSwitchLang}
-            title={t.langToggleTitle}
-            className="text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur flex items-center gap-1 font-bold"
-          >
-            <Languages className="w-3 h-3" /> {lang.toUpperCase()}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setLangMenuOpen(o => !o)}
+              aria-label={t.ariaSwitchLang}
+              title={t.langToggleTitle}
+              className="text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur flex items-center gap-1 font-bold"
+            >
+              <Languages className="w-3 h-3" />
+              <span>{BE_LANG_LABELS[lang].flag}</span>
+              <span>{BE_LANG_LABELS[lang].native}</span>
+            </button>
+            {langMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+                <div className="absolute end-0 mt-2 w-56 max-h-80 overflow-y-auto rounded-xl bg-black/90 backdrop-blur border border-white/15 shadow-2xl z-50 py-1">
+                  {(Object.keys(BE_LANG_LABELS) as BELang[]).map((code) => {
+                    const meta = BE_LANG_LABELS[code];
+                    const active = code === lang;
+                    return (
+                      <button
+                        key={code}
+                        onClick={() => { switchLang(code); setLangMenuOpen(false); }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-start transition ${
+                          active ? 'bg-white/20 font-bold' : 'hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="text-base">{meta.flag}</span>
+                        <span className="flex-1">{meta.native}</span>
+                        <span className="text-[10px] opacity-60 font-mono uppercase">{code}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
           {phase === 'guiding' && (
             <>
               <div className="text-[11px] bg-white/15 backdrop-blur px-2 py-1 rounded-full flex items-center gap-1 font-mono">
