@@ -89,6 +89,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const lastNavTextRef = useRef<string>('');
   const turnByTurnRef = useRef<TurnByTurnState | null>(null);
 
+  // Local detector + offline state
+  const lastDetTickRef = useRef<number>(0);
+  const lastLocalHazardSpeakRef = useRef<number>(0);
+  const onlineRef = useRef<boolean>(isOnline());
+  const [online, setOnline] = useState<boolean>(isOnline());
+
+
 
 
 
