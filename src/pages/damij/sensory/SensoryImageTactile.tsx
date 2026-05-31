@@ -616,7 +616,7 @@ const SensoryImageTactile: React.FC = () => {
                   disabled={speakingMerged}
                   className="w-full px-4 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold shadow-lg disabled:opacity-50"
                 >
-                  {speakingMerged ? '...جاري التشغيل' : '✨ تشغيل التجربة الكاملة (صوت + لمس + اهتزاز)'}
+                  {speakingMerged ? '...جاري التشغيل' : '✨ تشغيل التجربة الكاملة'}
                 </button>
               </>
             )}
