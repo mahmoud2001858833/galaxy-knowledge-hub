@@ -26,7 +26,7 @@ const SensoryHome: React.FC = () => (
       {[
         { icon: Ear, t: 'للأصم', d: 'نص مبسّط + بطاقات PECS + أفاتار إشارة' },
         { icon: Eye, t: 'للكفيف', d: 'نطق صوتي + وصف الصور + بريل' },
-        { icon: Hand, t: 'للأصم-الكفيف', d: 'بريل ملموس + اهتزاز إيقاعي' },
+        { icon: Hand, t: 'للأصم-الكفيف', d: 'بريل ملموس + تنبيهات حسّية متعدّدة' },
         { icon: Brain, t: 'للتوحّد/ADHD', d: 'تبسيط لغوي + إزالة المشتتات' },
       ].map(({ icon: Icon, t, d }) => (
         <div key={t} className="p-6 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 text-center">
