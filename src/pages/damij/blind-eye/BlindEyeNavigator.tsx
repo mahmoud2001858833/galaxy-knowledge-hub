@@ -262,6 +262,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
             speakDedup(g.spoken, key, pri, 1200, { lang: langRef.current });
           }
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
+          // Directional haptic mirrors the spoken direction
+          hapticForDirection(g.best_path);
+
         }
 
         const prev = prevProximityRef.current;
