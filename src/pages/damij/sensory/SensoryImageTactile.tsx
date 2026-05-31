@@ -384,20 +384,18 @@ const SensoryImageTactile: React.FC = () => {
         <Link to="/damij/sensory" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] hover:underline">
           <ArrowRight className="w-4 h-4" /> رجوع
         </Link>
-        <Link to="/damij/sensory/haptic-settings" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 text-sm font-bold hover:bg-orange-200">
-          <Settings className="w-4 h-4" /> إعدادات الاهتزاز
-        </Link>
       </div>
 
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 mb-3">
           <ImageIcon className="w-4 h-4" /><span className="text-sm font-bold">أداة جديدة في الجسر الحسّي الذكي</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-2">صورة → وصف صوتي + لمسي</h1>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-2">صورة → وصف صوتي تفاعلي</h1>
         <p className="text-[hsl(var(--damij-text))]/70 max-w-2xl mx-auto">
-          ارفع صورة تعليمية، وسيقوم الذكاء الاصطناعي بتحليلها وتحويلها إلى وصف صوتي مفصّل ونموذج لمسي قابل للطباعة، مع دعم الاهتزاز التفاعلي على الهاتف.
+          ارفع صورة تعليمية، وسيقوم الذكاء الاصطناعي بتحليلها وتحويلها إلى وصف صوتي مفصّل ونموذج تعليمي تفاعلي قابل للطباعة.
         </p>
       </div>
+
 
       {!file && (
         <label className="block max-w-xl mx-auto cursor-pointer">
