@@ -472,9 +472,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
       onlineRef.current = o;
       setOnline(o);
       if (!o) {
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].offlineFallback ?? 'وضع عدم الاتصال — التوجيه الأساسي يعمل', priority: 'critical', lang: langRef.current });
+        enqueueSpeech({ text: 'وضع عدم الاتصال. التوجيه الأساسي يعمل.', priority: 'critical', lang: langRef.current });
       } else {
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].onlineResumed ?? 'عاد الاتصال', priority: 'directional', lang: langRef.current });
+        enqueueSpeech({ text: 'عاد الاتصال.', priority: 'directional', lang: langRef.current });
       }
     });
     return () => { off(); };
