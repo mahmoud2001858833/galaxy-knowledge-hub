@@ -31,7 +31,7 @@ const SensoryImageTactile: React.FC = () => {
   const [imgUrl, setImgUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [hapticEnabled, setHapticEnabled] = useState(false);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
   const [speakingMerged, setSpeakingMerged] = useState(false);
   const [geoMapping, setGeoMapping] = useState(true);
   const [visualMapping, setVisualMapping] = useState(true);
@@ -367,12 +367,12 @@ const SensoryImageTactile: React.FC = () => {
     const legend = (result.tactileRegions || []).map((r, i) =>
       `<li><b>${i+1}. ${r.label}</b> — ملمس: ${r.texture} / ارتفاع: ${r.elevation}/5 — ${r.description}</li>`
     ).join('');
-    w.document.write(`<html dir="rtl"><head><title>نموذج لمسي قابل للطباعة</title>
+    w.document.write(`<html dir="rtl"><head><title>نموذج تعليمي قابل للطباعة</title>
       <style>body{font-family:sans-serif;padding:20px}img{max-width:100%;border:2px solid #000}
       h1{font-size:20px}ul{line-height:1.8}</style></head><body>
-      <h1>${result.title || 'نموذج لمسي'}</h1>
+      <h1>${result.title || 'نموذج تعليمي'}</h1>
       <img src="${dataUrl}"/>
-      <h2>دليل المناطق اللمسية</h2><ul>${legend}</ul>
+      <h2>دليل المناطق</h2><ul>${legend}</ul>
       <p><b>إرشادات الطباعة:</b> ${result.printingNotes || 'استخدم طابعة بريل أو طابعة 3D لإبراز المناطق المحدّدة'}</p>
       </body></html>`);
     w.document.close(); setTimeout(() => w.print(), 500);
@@ -384,20 +384,18 @@ const SensoryImageTactile: React.FC = () => {
         <Link to="/damij/sensory" className="inline-flex items-center gap-2 text-[hsl(var(--damij-primary))] hover:underline">
           <ArrowRight className="w-4 h-4" /> رجوع
         </Link>
-        <Link to="/damij/sensory/haptic-settings" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 text-sm font-bold hover:bg-orange-200">
-          <Settings className="w-4 h-4" /> إعدادات الاهتزاز
-        </Link>
       </div>
 
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 mb-3">
           <ImageIcon className="w-4 h-4" /><span className="text-sm font-bold">أداة جديدة في الجسر الحسّي الذكي</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-2">صورة → وصف صوتي + لمسي</h1>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-[hsl(var(--damij-primary))] mb-2">صورة → وصف صوتي تفاعلي</h1>
         <p className="text-[hsl(var(--damij-text))]/70 max-w-2xl mx-auto">
-          ارفع صورة تعليمية، وسيقوم الذكاء الاصطناعي بتحليلها وتحويلها إلى وصف صوتي مفصّل ونموذج لمسي قابل للطباعة، مع دعم الاهتزاز التفاعلي على الهاتف.
+          ارفع صورة تعليمية، وسيقوم الذكاء الاصطناعي بتحليلها وتحويلها إلى وصف صوتي مفصّل ونموذج تعليمي تفاعلي قابل للطباعة.
         </p>
       </div>
+
 
       {!file && (
         <label className="block max-w-xl mx-auto cursor-pointer">
@@ -425,27 +423,7 @@ const SensoryImageTactile: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Haptic toggle */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Vibrate className="w-6 h-6 text-orange-500" />
-                  <div>
-                    <p className="font-bold">الاهتزاز التفاعلي (Haptic Feedback)</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <Smartphone className="w-3 h-3"/> {mobile && vibrate ? 'متاح على هذا الجهاز' : 'متاح فقط على الهواتف الداعمة'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  disabled={!mobile || !vibrate}
-                  onClick={() => { setHapticEnabled(v => !v); if (!hapticEnabled && vibrate) navigator.vibrate(150); }}
-                  className={`relative w-14 h-8 rounded-full transition disabled:opacity-40 ${hapticEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
-                >
-                  <span className={`absolute top-1 w-6 h-6 rounded-full bg-white transition ${hapticEnabled ? 'right-1' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
+
 
             {result && (
               <>
@@ -461,7 +439,7 @@ const SensoryImageTactile: React.FC = () => {
 
                 {/* Tactile model */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <h3 className="font-bold mb-2 flex items-center gap-2"><Hand className="w-5 h-5 text-purple-600"/> النموذج اللمسي</h3>
+                  <h3 className="font-bold mb-2 flex items-center gap-2"><Hand className="w-5 h-5 text-purple-600"/> النموذج التعليمي التفاعلي</h3>
                   <div className="flex flex-col gap-1 mb-2 text-xs">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={geoMapping} onChange={(e) => setGeoMapping(e.target.checked)} />
@@ -539,7 +517,7 @@ const SensoryImageTactile: React.FC = () => {
                       <Download className="w-4 h-4"/> تنزيل
                     </button>
                     <button onClick={printModel} className="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm font-bold inline-flex items-center justify-center gap-2">
-                      <Printer className="w-4 h-4"/> طباعة لمسية
+                      <Printer className="w-4 h-4"/> طباعة
                     </button>
                     </div>
 
@@ -638,7 +616,7 @@ const SensoryImageTactile: React.FC = () => {
                   disabled={speakingMerged}
                   className="w-full px-4 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold shadow-lg disabled:opacity-50"
                 >
-                  {speakingMerged ? '...جاري التشغيل' : '✨ تشغيل التجربة الكاملة (صوت + لمس + اهتزاز)'}
+                  {speakingMerged ? '...جاري التشغيل' : '✨ تشغيل التجربة الكاملة'}
                 </button>
               </>
             )}
