@@ -340,7 +340,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
             earcons.hazard(0);
             vibrate(50);
           }
-          if (stats.sceneChange > 0.28) sceneChangePendingRef.current = true;
+        if (stats.sceneChange > 0.18) sceneChangePendingRef.current = true;
 
           if (companionMode) {
             const localPts: DetectedPoint[] = [];
@@ -370,8 +370,14 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const stats = lastStatsRef.current;
       const sceneChanged = sceneChangePendingRef.current;
       const stagnant = stats && stats.globalMotion < 0.012;
+      // Higher concurrency right after a scene change so the user gets fresh frames fast.
+      const inflightCap = sceneChanged ? 6 : 4;
+      if (inflightRef.current >= inflightCap) {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
       let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 180 : score >= 40 ? 280 : 500;
-      if (sceneChanged) minGap = 140;
+      if (sceneChanged) minGap = 0;
       if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
 
 
@@ -379,14 +385,20 @@ const BlindEyeNavigatorInner: React.FC = () => {
         lastAITickRef.current = now;
         if (sceneChanged) {
           sceneChangePendingRef.current = false;
+          // Wipe stale boxes immediately so the HUD reflects the new view.
+          setPoints(prev => prev.filter(p => p.source === 'local'));
+          lastGuideRef.current = null;
+          // Fire two parallel requests for fastest catch-up.
           if (now - lastSceneChangeAt.current > 1500) {
             lastSceneChangeAt.current = now;
-            earcons.sceneChange();
           }
+          const mode = phase === 'calibrating' ? 'calibration' : 'points';
+          runAI(mode);
+          runAI(mode);
+        } else {
+          const mode = phase === 'calibrating' ? 'calibration' : 'points';
+          runAI(mode);
         }
-        const mode = phase === 'calibrating' ? 'calibration' : 'points';
-        runAI(mode);
-        if (phase === 'guiding') earcons.scanTick();
       }
 
       rafRef.current = requestAnimationFrame(loop);
