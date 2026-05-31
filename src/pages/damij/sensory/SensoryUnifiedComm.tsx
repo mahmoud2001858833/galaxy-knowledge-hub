@@ -253,9 +253,8 @@ const SensoryUnifiedComm: React.FC = () => {
             { k: 'voice',   label: 'صوت',        icon: Mic },
             { k: 'braille', label: 'بريل',       icon: Eye },
             { k: 'sign',    label: 'لغة إشارة',  icon: Hand },
-            { k: 'camera',  label: 'فتح الكاميرا', icon: Camera },
           ] as { k: Modality; label: string; icon: any }[]).map(({ k, label, icon: I }) => (
-            <button key={k} onClick={() => { setActiveInput(k); if (k !== 'camera') stopCamera(); }}
+            <button key={k} onClick={() => setActiveInput(k)}
               className={`px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-1.5 transition ${activeInput === k ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-gray-100 text-gray-700'}`}>
               <I className="w-4 h-4" /> {label}
             </button>
@@ -277,19 +276,88 @@ const SensoryUnifiedComm: React.FC = () => {
             className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-300 outline-none text-base"/>
         )}
         {activeInput === 'voice' && (
-          <div className="text-center py-4">
-            <button onClick={toggleListen}
-              className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-white shadow ${listening ? 'bg-red-600' : 'bg-emerald-600'}`}>
-              {listening ? <><Square className="w-5 h-5"/> إيقاف التسجيل</> : <><Mic className="w-5 h-5"/> ابدأ التحدّث</>}
-            </button>
-            <p className="text-xs text-gray-500 mt-2">يحوّل المتصفح صوتك إلى نص ويترجمه فوراً للصيغ الأخرى.</p>
-            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3}
-              className="w-full mt-3 p-3 rounded-xl border border-gray-200 text-sm" placeholder="النص المُسجَّل..."/>
+          <div className="py-4">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-xs text-gray-500">لغة التعرّف:</span>
+              {([
+                { v: 'ar-SA' as const, label: 'العربية' },
+                { v: 'en-US' as const, label: 'English' },
+              ]).map(opt => (
+                <button key={opt.v}
+                  onClick={() => { if (voiceLang !== opt.v) { shouldListenRef.current = false; try { recRef.current?.stop(); } catch {} stopAudioMeter(); setVoiceLang(opt.v); } }}
+                  className={`text-xs px-3 py-1 rounded-full font-bold transition ${voiceLang === opt.v ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-gray-100 text-gray-700'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="relative w-40 h-40 flex items-center justify-center">
+                {listening && (
+                  <>
+                    <span className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping" />
+                    <span
+                      className="absolute rounded-full bg-emerald-500/20 transition-transform duration-100"
+                      style={{ width: '100%', height: '100%', transform: `scale(${1 + audioLevel * 0.6})` }}
+                    />
+                  </>
+                )}
+                <button onClick={toggleListen}
+                  aria-label={listening ? 'إيقاف التسجيل' : 'ابدأ التحدّث'}
+                  className={`relative z-10 w-28 h-28 rounded-full font-bold text-white shadow-2xl inline-flex flex-col items-center justify-center gap-1 transition-transform hover:scale-105 active:scale-95 ${
+                    listening ? 'bg-gradient-to-br from-red-500 to-rose-600' : 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                  }`}>
+                  {listening ? <Square className="w-8 h-8 fill-white"/> : <Mic className="w-10 h-10"/>}
+                  <span className="text-[11px] leading-none">{listening ? 'إيقاف' : 'ابدأ'}</span>
+                </button>
+              </div>
+
+              <div className="mt-3 inline-flex items-center gap-2 text-xs">
+                {listening ? (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-50 text-red-700 font-bold">
+                    <Radio className="w-3 h-3 animate-pulse" /> يستمع الآن... تكلّم بوضوح
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold">
+                    <Mic className="w-3 h-3" /> اضغط الزر لبدء التحدّث
+                  </span>
+                )}
+              </div>
+
+              {listening && (
+                <div className="mt-3 flex items-end gap-1 h-8" aria-hidden>
+                  {Array.from({ length: 14 }).map((_, i) => {
+                    const seed = (Math.sin((i + 1) * 0.9) + 1) / 2;
+                    const h = Math.max(4, Math.min(32, audioLevel * 32 * (0.5 + seed)));
+                    return (
+                      <span key={i} className="w-1.5 rounded-full bg-emerald-500 transition-all duration-75"
+                        style={{ height: `${h}px`, opacity: 0.3 + Math.min(0.7, audioLevel * 1.5) }} />
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-[11px] text-gray-500 mt-3 text-center max-w-md">
+                يعمل أفضل في Chrome / Edge على جهاز يحتوي ميكروفون. يُترجم الكلام مباشرة إلى نص ثم إلى بريل ولغة الإشارة.
+              </p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl border border-gray-200 bg-gray-50 min-h-[88px]">
+              <p className="text-[11px] text-gray-500 mb-1">النص المُسجَّل (يتم تحديثه أثناء التحدّث):</p>
+              <p className="text-base leading-relaxed">
+                <span className="text-gray-900">{text}</span>{' '}
+                <span className="text-gray-400 italic">{interim}</span>
+                {!text && !interim && <span className="text-gray-400">— لا يوجد نص بعد —</span>}
+              </p>
+            </div>
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2}
+              className="w-full mt-3 p-3 rounded-xl border border-gray-200 text-sm"
+              placeholder="يمكنك تعديل النص يدوياً هنا..."/>
           </div>
         )}
         {activeInput === 'braille' && (
           <div>
-            <p className="text-xs text-gray-500 mb-1">ألصق رموز بريل (Unicode ⠁⠃⠉…) هنا، وستُحوَّل تلقائيًا إلى نص.</p>
+            <p className="text-xs text-gray-500 mb-1">ألصق رموز بريل (Unicode ⠁⠃⠉…) هنا، وستُحوَّل تلقائيًا إلى نص.</p>
             <textarea defaultValue={textToBraille(text)} onChange={(e) => onBrailleInput(e.target.value)} rows={3}
               className="w-full p-3 rounded-xl border border-gray-200 font-mono text-2xl leading-relaxed" placeholder="⠁⠇⠎⠇⠁⠍ ⠷⠇⠽⠅⠍"/>
           </div>
@@ -300,62 +368,6 @@ const SensoryUnifiedComm: React.FC = () => {
             <textarea value={text} onChange={(e) => onSignGloss(e.target.value)} rows={3}
               className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا أنا أحب المدرسة"/>
             <p className="text-[11px] text-gray-400 mt-1">القاموس يدعم: التحيات، الأسرة، الأفعال، المشاعر، الأسئلة، الزمن. للترجمة بالكاميرا استخدم صفحة نظام لغة الإشارة.</p>
-          </div>
-        )}
-        {activeInput === 'camera' && (
-          <div>
-            <p className="text-xs text-gray-500 mb-2">
-              شغّل الكاميرا وأدِّ الإشارة أمام العدسة، سيتعرّف الذكاء الاصطناعي على الكلمة العربية ويُترجمها فورًا للصيغ الأربع.
-            </p>
-            <div className="grid md:grid-cols-2 gap-3">
-              <div className="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-                <video ref={videoRef} playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-                <canvas ref={canvasRef} className="hidden" />
-                {!camOn && !camLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white/80 text-sm gap-2">
-                    <Camera className="w-10 h-10 opacity-70" />
-                    <span>الكاميرا متوقفة</span>
-                  </div>
-                )}
-                {camLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  </div>
-                )}
-                {camBusy && camOn && (
-                  <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-2 py-1 rounded-full">
-                    <Loader2 className="w-3 h-3 animate-spin" /> يحلّل الإشارة...
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                {!camOn ? (
-                  <button onClick={startCamera} disabled={camLoading}
-                    className="px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50">
-                    <Camera className="w-4 h-4" /> فتح الكاميرا
-                  </button>
-                ) : (
-                  <>
-                    <button onClick={recognizeOnce} disabled={camBusy}
-                      className="px-4 py-3 rounded-xl bg-[hsl(var(--damij-primary))] text-white font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50">
-                      {camBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Hand className="w-4 h-4" />}
-                      التقط إشارة
-                    </button>
-                    <label className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 cursor-pointer">
-                      <input type="checkbox" checked={camAuto} onChange={e => setCamAuto(e.target.checked)} />
-                      التقاط تلقائي كل 3 ثواني
-                    </label>
-                    <button onClick={stopCamera}
-                      className="px-4 py-2 rounded-xl bg-red-50 text-red-700 font-bold inline-flex items-center justify-center gap-2 border border-red-200">
-                      <CameraOff className="w-4 h-4" /> إيقاف الكاميرا
-                    </button>
-                  </>
-                )}
-                <p className="text-[11px] text-gray-500 leading-relaxed">
-                  نصيحة: قف على خلفية واضحة وأظهر يدك بالكامل في الإطار. تُدعم لغة الإشارة العربية والتهجئة بالحروف.
-                </p>
-              </div>
-            </div>
           </div>
         )}
       </div>
