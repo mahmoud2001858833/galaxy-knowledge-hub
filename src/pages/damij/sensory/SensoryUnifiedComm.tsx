@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Type, Mic, Hand, Volume2, Square, Play, Copy, RefreshCw,
-  Languages, Eye, Ear, Accessibility, Search, BookOpen, X, Camera, Loader2, CameraOff,
+  Languages, Eye, Ear, Accessibility, Search, BookOpen, X, Loader2, Radio,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +13,8 @@ import {
   type SignToken,
 } from './signDictionary';
 
-type Modality = 'text' | 'voice' | 'braille' | 'sign' | 'camera';
+type Modality = 'text' | 'voice' | 'braille' | 'sign';
+
 
 // Sign-language dictionary lives in ./signDictionary (hundreds of entries +
 // fingerspelling fallback). All gesture tokens come from there.
