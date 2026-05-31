@@ -10,8 +10,8 @@ import {
   earcons, vibrate, isSpeaking, timeSinceLastSpeech,
 } from './speechQueue';
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
-import { BE_STRINGS, BE_BCP47, defaultSuggestions, type BELang } from './i18n';
-import { parseCommand, commandAllowed } from './voiceCommands';
+import { BE_STRINGS, BE_BCP47, BE_COMMANDS, defaultSuggestions, type BELang } from './i18n';
+import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
 import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
@@ -231,12 +231,22 @@ const BlindEyeNavigatorInner: React.FC = () => {
         const pri = score >= 75 ? 'critical' : score >= 40 ? 'directional' : 'descriptive';
         const now = Date.now();
         const samePath = lastSpokenPathRef.current.path === `${g.best_path}|${bucket}`;
-        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 400 : 1200);
+        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 1500 : 1200);
         // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt.
         if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
-          speakDedup(g.spoken, key, pri, score >= 75 ? 400 : 1200, {
-            lang: langRef.current,
-          });
+          const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
+          if (score >= 75) {
+            // 3-step hazard pattern: "Stop. Stop." → obstacle label → action
+            const obstacleLabel = (g.objects?.[0]?.label || g.obstacles_summary || '').toString().split(/[,،.]/)[0].trim().slice(0, 24);
+            const action = g.best_path === 'left' ? cmds.left : g.best_path === 'right' ? cmds.right : cmds.back;
+            enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
+            if (obstacleLabel) {
+              enqueueSpeech({ text: obstacleLabel, priority: 'critical', lang: langRef.current });
+            }
+            enqueueSpeech({ text: action, priority: 'critical', lang: langRef.current });
+          } else {
+            speakDedup(g.spoken, key, pri, 1200, { lang: langRef.current });
+          }
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
         }
 
@@ -295,14 +305,14 @@ const BlindEyeNavigatorInner: React.FC = () => {
     }
   }, [captureFrame]);
 
-  // Gyro-based motion trigger
+  // Gyro-based motion trigger (very sensitive — small rotations count as scene change)
   useEffect(() => {
     if (phase === 'stopped') return;
     const handler = (e: DeviceMotionEvent) => {
       const r = e.rotationRate;
       if (!r) return;
       const mag = Math.abs(r.alpha || 0) + Math.abs(r.beta || 0) + Math.abs(r.gamma || 0);
-      if (mag > 45) sceneChangePendingRef.current = true;
+      if (mag > 18) sceneChangePendingRef.current = true;
     };
     window.addEventListener('devicemotion', handler);
     return () => window.removeEventListener('devicemotion', handler);
@@ -330,7 +340,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
             earcons.hazard(0);
             vibrate(50);
           }
-          if (stats.sceneChange > 0.28) sceneChangePendingRef.current = true;
+        if (stats.sceneChange > 0.18) sceneChangePendingRef.current = true;
 
           if (companionMode) {
             const localPts: DetectedPoint[] = [];
@@ -360,8 +370,14 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const stats = lastStatsRef.current;
       const sceneChanged = sceneChangePendingRef.current;
       const stagnant = stats && stats.globalMotion < 0.012;
+      // Higher concurrency right after a scene change so the user gets fresh frames fast.
+      const inflightCap = sceneChanged ? 6 : 4;
+      if (inflightRef.current >= inflightCap) {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
       let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 180 : score >= 40 ? 280 : 500;
-      if (sceneChanged) minGap = 140;
+      if (sceneChanged) minGap = 0;
       if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
 
 
@@ -369,14 +385,20 @@ const BlindEyeNavigatorInner: React.FC = () => {
         lastAITickRef.current = now;
         if (sceneChanged) {
           sceneChangePendingRef.current = false;
+          // Wipe stale boxes immediately so the HUD reflects the new view.
+          setPoints(prev => prev.filter(p => p.source === 'local'));
+          lastGuideRef.current = null;
+          // Fire two parallel requests for fastest catch-up.
           if (now - lastSceneChangeAt.current > 1500) {
             lastSceneChangeAt.current = now;
-            earcons.sceneChange();
           }
+          const mode = phase === 'calibrating' ? 'calibration' : 'points';
+          runAI(mode);
+          runAI(mode);
+        } else {
+          const mode = phase === 'calibrating' ? 'calibration' : 'points';
+          runAI(mode);
         }
-        const mode = phase === 'calibrating' ? 'calibration' : 'points';
-        runAI(mode);
-        if (phase === 'guiding') earcons.scanTick();
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -425,7 +447,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
         enqueueSpeech({
           text: data.spoken,
-          priority: 'directional',
+          priority: 'critical',
           rate: langRef.current === 'ar' ? 1.0 : 1.1,
           lang: langRef.current,
           onEnd: () => { userSpeakingRef.current = false; },
@@ -452,8 +474,16 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const handleVoiceInput = useCallback((txt: string) => {
     const text = txt.trim();
     if (!text) return;
+    // 1) Generic "switch to <any language>" detector — fires before parseCommand
+    //    so the user can change to any of the 15 supported languages instantly.
+    const targetLang = detectSwitchLang(text);
+    if (targetLang && targetLang !== langRef.current) {
+      switchLang(targetLang);
+      return;
+    }
     const cmd = parseCommand(text, langRef.current);
-    if (cmd !== 'CHAT' && !commandAllowed(cmd)) return;
+    // Shorter cooldown for interactive commands so replies feel instant.
+    if (cmd !== 'CHAT' && !commandAllowed(cmd, 500)) return;
     switch (cmd) {
       case 'STOP': stopAll(); return;
       case 'START':
@@ -680,10 +710,23 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const rec = new SR();
     rec.lang = BE_BCP47[lang];
     rec.continuous = true;
-    rec.interimResults = false;
+    rec.interimResults = true;
+    let interruptedFor = -1;
     rec.onresult = (e: any) => {
-      if (isSpeaking()) return;
-      const txt = e.results[e.results.length - 1][0].transcript;
+      const last = e.results[e.results.length - 1];
+      const txt = (last[0]?.transcript || '').trim();
+      // As soon as the user starts speaking (≥2 chars), cut off any ongoing TTS
+      // so the assistant responds instantly and never talks over them.
+      if (!last.isFinal) {
+        if (txt.length >= 2 && interruptedFor !== e.results.length - 1) {
+          interruptedFor = e.results.length - 1;
+          cancelAllSpeech();
+          userSpeakingRef.current = true;
+        }
+        return;
+      }
+      userSpeakingRef.current = false;
+      interruptedFor = -1;
       handleVoiceInput(txt);
     };
     rec.onerror = (e: any) => { console.warn('rec err', e?.error); };

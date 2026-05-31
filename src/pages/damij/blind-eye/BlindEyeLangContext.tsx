@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { BELang } from './i18n';
+import { BE_BCP47 } from './i18n';
 
 type Ctx = {
   lang: BELang;
@@ -9,12 +10,13 @@ type Ctx = {
 
 const BlindEyeLangCtx = createContext<Ctx | null>(null);
 const STORAGE_KEY = 'blindEye.lang';
+const RTL_LANGS: BELang[] = ['ar', 'fa', 'ur', 'he'];
 
 export const BlindEyeLangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<BELang>(() => {
     if (typeof window === 'undefined') return 'ar';
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === 'ar' || stored === 'en' ? stored : 'ar';
+    const stored = window.localStorage.getItem(STORAGE_KEY) as BELang | null;
+    return stored && stored in BE_BCP47 ? stored : 'ar';
   });
 
   const setLang = useCallback((l: BELang) => {
@@ -25,10 +27,9 @@ export const BlindEyeLangProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const toggle = useCallback(() => setLang(lang === 'en' ? 'ar' : 'en'), [lang, setLang]);
 
   useEffect(() => {
-    // Reflect on the document only while a Blind Eye page is mounted; restore on unmount.
     const prevDir = document.documentElement.getAttribute('dir');
     const prevLang = document.documentElement.getAttribute('lang');
-    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('dir', RTL_LANGS.includes(lang) ? 'rtl' : 'ltr');
     document.documentElement.setAttribute('lang', lang);
     return () => {
       if (prevDir) document.documentElement.setAttribute('dir', prevDir); else document.documentElement.removeAttribute('dir');

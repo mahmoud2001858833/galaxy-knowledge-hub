@@ -17,7 +17,7 @@ type SpeechItem = {
   onEnd?: () => void;
 };
 
-const voicesCache: Record<BELang, SpeechSynthesisVoice | null> = { en: null, ar: null };
+const voicesCache: Partial<Record<BELang, SpeechSynthesisVoice | null>> = {};
 let activeLang: BELang = 'en';
 let queue: SpeechItem[] = [];
 let speakingItem: SpeechItem | null = null;
@@ -27,21 +27,15 @@ let volume = 1;
 
 function scoreVoice(v: SpeechSynthesisVoice, lang: BELang) {
   const name = v.name.toLowerCase();
+  const target = BE_BCP47[lang];
   let s = 0;
   if (/google/.test(name)) s += 10;
   if (/natural/.test(name)) s += 8;
   if (/microsoft/.test(name)) s += 6;
   if (/online/.test(name)) s += 4;
   if (/premium|enhanced|wavenet/.test(name)) s += 5;
-  if (lang === 'en') {
-    if (v.lang === 'en-US') s += 4;
-    else if (v.lang === 'en-GB') s += 3;
-    else if (/^en/i.test(v.lang)) s += 2;
-  } else {
-    if (v.lang === 'ar-SA') s += 4;
-    else if (v.lang === 'ar-EG') s += 3;
-    else if (/^ar/i.test(v.lang)) s += 2;
-  }
+  if (v.lang.toLowerCase() === target.toLowerCase()) s += 4;
+  else if (v.lang.toLowerCase().startsWith(lang.toLowerCase())) s += 2;
   if (v.default) s += 1;
   return s;
 }
@@ -54,8 +48,9 @@ export function setActiveLang(lang: BELang) {
 export function refreshVoices() {
   if (!('speechSynthesis' in window)) return;
   const all = window.speechSynthesis.getVoices();
-  for (const lang of ['en', 'ar'] as BELang[]) {
-    const candidates = all.filter(v => v.lang.toLowerCase().startsWith(lang));
+  for (const lang of Object.keys(BE_BCP47) as BELang[]) {
+    const prefix = lang.toLowerCase();
+    const candidates = all.filter(v => v.lang.toLowerCase().startsWith(prefix));
     candidates.sort((a, b) => scoreVoice(b, lang) - scoreVoice(a, lang));
     voicesCache[lang] = candidates[0] ?? null;
   }
