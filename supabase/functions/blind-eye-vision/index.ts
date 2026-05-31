@@ -210,8 +210,8 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
   else { sys = GUIDANCE_FAST_PROMPT(lang); tool = guidanceFastTool; }
 
   const userText = extraContext
-    ? (lang === "ar" ? `سياق: ${extraContext}\nحلل.` : `Context: ${extraContext}\nAnalyze.`)
-    : (lang === "ar" ? "حلل." : "Analyze.");
+    ? `Context: ${extraContext}\nAnalyze in language "${lang}".`
+    : `Analyze in language "${lang}".`;
 
   const body = {
     model,
