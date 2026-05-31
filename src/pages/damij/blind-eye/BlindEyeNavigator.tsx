@@ -231,12 +231,22 @@ const BlindEyeNavigatorInner: React.FC = () => {
         const pri = score >= 75 ? 'critical' : score >= 40 ? 'directional' : 'descriptive';
         const now = Date.now();
         const samePath = lastSpokenPathRef.current.path === `${g.best_path}|${bucket}`;
-        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 400 : 1200);
+        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 1500 : 1200);
         // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt.
         if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
-          speakDedup(g.spoken, key, pri, score >= 75 ? 400 : 1200, {
-            lang: langRef.current,
-          });
+          const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
+          if (score >= 75) {
+            // 3-step hazard pattern: "Stop. Stop." → obstacle label → action
+            const obstacleLabel = (g.objects?.[0]?.label || g.obstacles_summary || '').toString().split(/[,،.]/)[0].trim().slice(0, 24);
+            const action = g.best_path === 'left' ? cmds.left : g.best_path === 'right' ? cmds.right : cmds.back;
+            enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
+            if (obstacleLabel) {
+              enqueueSpeech({ text: obstacleLabel, priority: 'critical', lang: langRef.current });
+            }
+            enqueueSpeech({ text: action, priority: 'critical', lang: langRef.current });
+          } else {
+            speakDedup(g.spoken, key, pri, 1200, { lang: langRef.current });
+          }
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
         }
 
