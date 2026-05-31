@@ -91,6 +91,21 @@ const BlindEyeHome: React.FC = () => {
           </div>
         </Link>
 
+        {/* Status row: onboarding gate + offline indicator */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {needsOnboarding && (
+            <Link to="/damij/blind-eye/onboarding" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-100 text-sm">
+              <ShieldAlert className="w-4 h-4" /> أكمل الإعداد الأولي قبل البدء
+            </Link>
+          )}
+          {!online && (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-100 text-sm">
+              ⚠ وضع عدم الاتصال — يعمل التوجيه الأساسي محلياً
+            </span>
+          )}
+        </div>
+
+
         {/* Feature badges */}
         <div className="grid grid-cols-3 gap-3 mt-6">
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
