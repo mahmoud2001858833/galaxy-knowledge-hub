@@ -23,130 +23,129 @@ const SensoryUnifiedComm: React.FC = () => {
   const [text, setText] = useState('');
   const [activeInput, setActiveInput] = useState<Modality>('text');
   const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState('');
+  const [voiceLang, setVoiceLang] = useState<'ar-SA' | 'en-US'>('ar-SA');
+  const [audioLevel, setAudioLevel] = useState(0);
   const [signIdx, setSignIdx] = useState<number>(-1);
   const [autoTTS, setAutoTTS] = useState(false);
   const recRef = useRef<any>(null);
   const signTimerRef = useRef<number | null>(null);
+  const shouldListenRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
 
-  // ===== Camera (sign recognition) state =====
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [camOn, setCamOn] = useState(false);
-  const [camLoading, setCamLoading] = useState(false);
-  const [camBusy, setCamBusy] = useState(false);
-  const [camAuto, setCamAuto] = useState(false);
-  const camAutoTimerRef = useRef<number | null>(null);
-  const lastWordRef = useRef<string>('');
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) videoRef.current.srcObject = null;
-    if (camAutoTimerRef.current) { clearInterval(camAutoTimerRef.current); camAutoTimerRef.current = null; }
-    setCamOn(false); setCamAuto(false);
-  };
-
-  const startCamera = async () => {
-    try {
-      setCamLoading(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setCamOn(true);
-      logToolUse('sign');
-    } catch (e: any) {
-      toast.error(e?.name === 'NotAllowedError' ? 'تم رفض إذن الكاميرا.' : 'تعذّر تشغيل الكاميرا.');
-    } finally { setCamLoading(false); }
-  };
-
-  const captureFrame = (): { dataUrl: string; mime: string } | null => {
-    const v = videoRef.current; const c = canvasRef.current;
-    if (!v || !c || v.readyState < 2) return null;
-    const w = v.videoWidth || 640, h = v.videoHeight || 480;
-    c.width = w; c.height = h;
-    const ctx = c.getContext('2d'); if (!ctx) return null;
-    ctx.drawImage(v, 0, 0, w, h);
-    return { dataUrl: c.toDataURL('image/jpeg', 0.85), mime: 'image/jpeg' };
-  };
-
-  const recognizeOnce = async () => {
-    if (camBusy) return;
-    const frame = captureFrame();
-    if (!frame) { toast.error('الكاميرا غير جاهزة بعد'); return; }
-    setCamBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('damij-sign-camera', {
-        body: { image: frame.dataUrl, mime: frame.mime },
-      });
-      if (error) throw error;
-      const word: string = (data?.word || '').toString().trim();
-      const conf: number = Number(data?.confidence || 0);
-      if (!word || conf < 0.35) {
-        if (!camAuto) toast.warning(data?.notes || 'لم يتم التعرّف على إشارة واضحة.');
-        return;
-      }
-      // avoid duplicating the same word back-to-back in auto mode
-      if (camAuto && word === lastWordRef.current) return;
-      lastWordRef.current = word;
-      setText(prev => (prev ? prev + ' ' : '') + word);
-      setActiveInput('camera');
-      if (!camAuto) toast.success(`تم التعرّف: ${word}`);
-    } catch (e) {
-      if (!camAuto) toast.error('تعذّر تحليل الإشارة.');
-    } finally { setCamBusy(false); }
-  };
-
-  // Auto-capture loop every 3s when enabled
-  useEffect(() => {
-    if (!camOn || !camAuto) {
-      if (camAutoTimerRef.current) { clearInterval(camAutoTimerRef.current); camAutoTimerRef.current = null; }
-      return;
-    }
-    camAutoTimerRef.current = window.setInterval(() => { recognizeOnce(); }, 3000);
-    return () => { if (camAutoTimerRef.current) { clearInterval(camAutoTimerRef.current); camAutoTimerRef.current = null; } };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [camOn, camAuto]);
-
-  useEffect(() => () => { stopCamera(); }, []);
-
-  // ===== Voice input (Web Speech API) =====
-  useEffect(() => {
+  // ===== Voice input (Web Speech API) with auto-restart + live interim =====
+  const buildRecognizer = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) return null;
     const r = new SR();
-    r.lang = 'ar-SA';
+    r.lang = voiceLang;
     r.interimResults = true;
     r.continuous = true;
+    r.maxAlternatives = 1;
+    r.onstart = () => { setListening(true); };
     r.onresult = (e: any) => {
       let finalT = '';
+      let interimT = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalT += e.results[i][0].transcript;
+        const tr = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalT += tr + ' ';
+        else interimT += tr;
       }
-      if (finalT) setText(prev => (prev + ' ' + finalT).trim());
+      if (finalT) setText(prev => (prev + ' ' + finalT).replace(/\s+/g, ' ').trim());
+      setInterim(interimT);
     };
-    r.onerror = () => setListening(false);
-    r.onend = () => setListening(false);
-    recRef.current = r;
-    return () => { try { r.stop(); } catch {} };
-  }, []);
+    r.onerror = (e: any) => {
+      const err = e?.error || '';
+      if (err === 'not-allowed' || err === 'service-not-allowed') {
+        toast.error('تم رفض إذن الميكروفون. فعّله من إعدادات المتصفح.');
+        shouldListenRef.current = false;
+      } else if (err === 'no-speech') {
+        // ignore — auto-restart will fire on onend
+      } else if (err === 'audio-capture') {
+        toast.error('لا يوجد ميكروفون متاح.');
+        shouldListenRef.current = false;
+      } else if (err === 'network') {
+        toast.error('انقطع الاتصال — سأحاول مجدداً.');
+      }
+    };
+    r.onend = () => {
+      setListening(false);
+      setInterim('');
+      // Auto-restart while user still wants to listen
+      if (shouldListenRef.current) {
+        try { r.start(); } catch {}
+      } else {
+        stopAudioMeter();
+      }
+    };
+    return r;
+  };
 
-  const toggleListen = () => {
-    if (!recRef.current) { toast.error('التعرّف على الصوت غير مدعوم في هذا المتصفح'); return; }
-    if (listening) { recRef.current.stop(); setListening(false); }
-    else {
-      try { recRef.current.start(); setListening(true); setActiveInput('voice'); logToolUse('stt'); }
-      catch { /* already started */ }
+  // Rebuild recognizer when language changes
+  useEffect(() => {
+    try { recRef.current?.stop(); } catch {}
+    recRef.current = buildRecognizer();
+    return () => { try { recRef.current?.stop?.(); } catch {} };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceLang]);
+
+  const startAudioMeter = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx: AudioContext = new Ctx();
+      audioCtxRef.current = ctx;
+      const src = ctx.createMediaStreamSource(stream);
+      const an = ctx.createAnalyser();
+      an.fftSize = 512;
+      src.connect(an);
+      analyserRef.current = an;
+      const buf = new Uint8Array(an.frequencyBinCount);
+      const tick = () => {
+        an.getByteTimeDomainData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / buf.length);
+        setAudioLevel(Math.min(1, rms * 3));
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch {/* mic permission denied — recognizer error path handles it */}
+  };
+  const stopAudioMeter = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    setAudioLevel(0);
+    if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch {} audioCtxRef.current = null; }
+    analyserRef.current = null;
+    if (micStreamRef.current) { micStreamRef.current.getTracks().forEach(t => t.stop()); micStreamRef.current = null; }
+  };
+
+  const toggleListen = async () => {
+    if (!recRef.current) {
+      toast.error('التعرّف على الصوت غير مدعوم في هذا المتصفح. جرّب Chrome / Edge.');
+      return;
+    }
+    if (listening || shouldListenRef.current) {
+      shouldListenRef.current = false;
+      try { recRef.current.stop(); } catch {}
+      setListening(false);
+      stopAudioMeter();
+    } else {
+      shouldListenRef.current = true;
+      setActiveInput('voice');
+      logToolUse('stt');
+      await startAudioMeter();
+      try { recRef.current.start(); } catch { /* already started */ }
     }
   };
+
+  useEffect(() => () => { shouldListenRef.current = false; stopAudioMeter(); }, []);
+
 
   // ===== Braille input → text =====
   const onBrailleInput = (val: string) => {
