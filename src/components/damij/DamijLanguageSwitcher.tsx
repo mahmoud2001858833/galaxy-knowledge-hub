@@ -20,6 +20,7 @@ const DamijLanguageSwitcher: React.FC = () => {
   return (
     <div className="relative">
       <button
+        data-damij-lang-trigger
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/95 hover:bg-white border border-[hsl(var(--damij-primary))]/15 shadow-md text-sm font-semibold text-[hsl(var(--damij-primary))] backdrop-blur-md transition"
         aria-label={t.langSwitch.label}
