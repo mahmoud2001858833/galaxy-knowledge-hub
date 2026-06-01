@@ -286,18 +286,29 @@ const SensoryUnifiedComm: React.FC = () => {
         )}
         {activeInput === 'voice' && (
           <div className="py-4">
-            <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
               <span className="text-xs text-gray-500">لغة التعرّف:</span>
-              {([
-                { v: 'ar-SA' as const, label: 'العربية' },
-                { v: 'en-US' as const, label: 'English' },
-              ]).map(opt => (
-                <button key={opt.v}
-                  onClick={() => { if (voiceLang !== opt.v) { shouldListenRef.current = false; try { recRef.current?.stop(); } catch {} stopAudioMeter(); setVoiceLang(opt.v); } }}
-                  className={`text-xs px-3 py-1 rounded-full font-bold transition ${voiceLang === opt.v ? 'bg-[hsl(var(--damij-primary))] text-white' : 'bg-gray-100 text-gray-700'}`}>
-                  {opt.label}
-                </button>
-              ))}
+              <select
+                value={voiceLang}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (voiceLang !== v) {
+                    shouldListenRef.current = false;
+                    try { recRef.current?.stop(); } catch {}
+                    stopAudioMeter();
+                    setVoiceLang(v);
+                  }
+                }}
+                className="text-xs px-3 py-1.5 rounded-full font-bold bg-[hsl(var(--damij-primary))] text-white border-0 outline-none cursor-pointer max-w-[220px]"
+                aria-label="لغة التعرّف على الصوت"
+              >
+                {DAMIJ_LANGS.map(l => (
+                  <option key={l.code} value={l.code} className="bg-white text-gray-900">
+                    {l.flag} {l.name} — {l.english}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[10px] text-gray-400">({toBcp47(voiceLang)})</span>
             </div>
 
             <div className="flex flex-col items-center">
