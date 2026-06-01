@@ -58,16 +58,18 @@ const PROFILE_INSTRUCTIONS = (p: Profile) => {
 
 async function callGemini(parts: any[], systemPrompt: string): Promise<string> {
   const key = "shim-key";
-  if (!key) throw new Error("LOVABLE_API_KEY missing");
   const r = await geminiFetch("ai-shim", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-2.5-flash-lite",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: parts },
       ],
+      temperature: 0.2,
+      reasoning_effort: "minimal",
+      response_format: { type: "json_object" },
     }),
   });
   if (!r.ok) {
