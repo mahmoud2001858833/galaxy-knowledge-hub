@@ -405,23 +405,37 @@ const BlindEyeNavigatorInner: React.FC = () => {
       }
 
       // ---- On-device COCO-SSD object detection (runs ~6 fps, parallel to AI) ----
-      if (v && v.videoWidth && now - lastDetTickRef.current >= 160) {
+      if (v && v.videoWidth && now - lastDetTickRef.current >= 120) {
         lastDetTickRef.current = now;
         detectFromVideo(v, 6).then((objs) => {
           const hazard = detectImmediateHazard(objs);
-          if (hazard && now - lastLocalHazardSpeakRef.current > 1400) {
+          if (hazard && now - lastLocalHazardSpeakRef.current > 900) {
             lastLocalHazardSpeakRef.current = now;
             const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
             // Three-step: STOP. STOP. → label → escape direction
             const label = langRef.current === 'ar' ? labelToArabic(hazard.label) : hazard.label;
             enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
             enqueueSpeech({ text: label, priority: 'critical', lang: langRef.current });
-            // Pick escape: if hazard is left of center -> go right, else go left
             const cx = hazard.x + hazard.w / 2;
             const escape = cx < 0.5 ? cmds.right : cmds.left;
             enqueueSpeech({ text: escape, priority: 'critical', lang: langRef.current });
             haptics.stop();
+            // Followup: short cloud sentence explaining what it is (throttled)
+            if (now - lastHazardDescribeRef.current > 3500 && onlineRef.current) {
+              lastHazardDescribeRef.current = now;
+              const img = captureFrame('fast');
+              if (img) {
+                supabase.functions.invoke('blind-eye-vision', {
+                  body: { image: img, mode: 'describe_hazard', lang: langRef.current },
+                }).then(({ data }) => {
+                  if (data?.spoken) {
+                    enqueueSpeech({ text: data.spoken, priority: 'critical', lang: langRef.current });
+                  }
+                }).catch(() => {});
+              }
+            }
           }
+
           // Surface detected objects as HUD points (lightweight)
           if (objs.length && companionMode) {
             setPoints(prev => {
@@ -447,14 +461,15 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const sceneChanged = sceneChangePendingRef.current;
       const stagnant = stats && stats.globalMotion < 0.012;
       // Higher concurrency right after a scene change so the user gets fresh frames fast.
-      const inflightCap = sceneChanged ? 6 : 4;
+      const inflightCap = sceneChanged ? 6 : 5;
       if (inflightRef.current >= inflightCap) {
         rafRef.current = requestAnimationFrame(loop);
         return;
       }
-      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 180 : score >= 40 ? 280 : 500;
+      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 140 : score >= 40 ? 220 : 400;
       if (sceneChanged) minGap = 0;
       if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
+
 
 
       if (now - lastAITickRef.current >= minGap) {
