@@ -54,11 +54,15 @@ const SensoryUpload: React.FC = () => {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PROFILE_KEY);
-      if (!raw) { navigate('/damij/sensory/profile', { replace: true }); return; }
-      setProfile(JSON.parse(raw));
-    } catch {
-      navigate('/damij/sensory/profile', { replace: true });
-    }
+      if (raw) { setProfile(JSON.parse(raw)); return; }
+    } catch {}
+    setProfile({
+      vision: 'normal', hearing: 'normal', motor: 'mouse',
+      learningStyle: 'mixed', languageLevel: 'simplified', focus: 'normal',
+      fontFamily: 'default', fontSize: 'md', colorScheme: 'light',
+      speechRate: 'normal', avatarSpeed: 'normal', preferTouch: false,
+      cognitive: 'normal', savedAt: new Date().toISOString(),
+    });
   }, [navigate]);
 
   const handleSubmit = async () => {
@@ -202,7 +206,7 @@ const SensoryUpload: React.FC = () => {
           <Sparkles className="w-4 h-4" /><span className="text-sm font-bold">الجسر الحسّي العكسي الذكي</span>
         </div>
         <h1 className="text-3xl font-extrabold text-[hsl(var(--damij-primary))]">حوّل أي محتوى إلى تجربة متعددة الحواس</h1>
-        <p className="text-[hsl(var(--damij-text))]/70 mt-2">نص، صورة، صوت، أو فيديو → نطق + بريل + إشارة + اهتزاز + بطاقات بصرية</p>
+        <p className="text-[hsl(var(--damij-text))]/70 mt-2">نص، صورة، صوت، أو فيديو → نطق + بريل + إشارة + بطاقات بصرية</p>
       </div>
 
       <div className="bg-white rounded-3xl p-5 shadow-lg border border-[hsl(var(--damij-primary))]/10 mb-6">
