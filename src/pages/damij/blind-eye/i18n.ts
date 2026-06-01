@@ -123,3 +123,31 @@ export const defaultSuggestions: Record<BELang, string[]> = {
   ko: ['문으로 안내해', '주변에 뭐가 있어?', '영어로 전환해'],
   zh: ['带我去门口', '我周围有什么？', '切换到英语'],
 };
+
+// Spin-scan onboarding strings (AR/EN only — other langs fall back to EN).
+export const BE_SPIN: Record<BELang, {
+  ask: string; progress: (p: number) => string; quarter: string;
+  done: string; askDestination: string; skip: string;
+}> = (() => {
+  const en = {
+    ask: 'Please turn slowly in a full circle so I can learn the area.',
+    progress: (p: number) => `${Math.round(p * 100)} percent.`,
+    quarter: 'Keep going.',
+    done: 'Scan complete.',
+    askDestination: 'Where would you like to go?',
+    skip: 'Scan skipped.',
+  };
+  const ar = {
+    ask: 'من فضلك استدر ببطء دورة كاملة حتى أتعرف على المكان.',
+    progress: (p: number) => `${Math.round(p * 100)} بالمئة.`,
+    quarter: 'استمر.',
+    done: 'انتهى المسح.',
+    askDestination: 'إلى أين تريد أن تذهب؟',
+    skip: 'تم تخطي المسح.',
+  };
+  const all: any = {};
+  (['en','fr','es','de','pt','ru','tr','fa','ur','he','hi','ja','ko','zh'] as BELang[]).forEach(l => { all[l] = en; });
+  all.ar = ar;
+  return all;
+})();
+
