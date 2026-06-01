@@ -28,7 +28,10 @@ const SensoryUnifiedComm: React.FC = () => {
   const [activeInput, setActiveInput] = useState<Modality>('text');
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
-  const [voiceLang, setVoiceLang] = useState<'ar-SA' | 'en-US'>('ar-SA');
+  const { lang: damijLang } = useDamijLang();
+  const [voiceLang, setVoiceLang] = useState<string>(damijLang || 'ar');
+  const bcp47 = toBcp47(voiceLang);
+  const { translate: translateSign, ready: signTrReady } = useSignTranslations(voiceLang);
   const [audioLevel, setAudioLevel] = useState(0);
   const [signIdx, setSignIdx] = useState<number>(-1);
   const [autoTTS, setAutoTTS] = useState(false);
