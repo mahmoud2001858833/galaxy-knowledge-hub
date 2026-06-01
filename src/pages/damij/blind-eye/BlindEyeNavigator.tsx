@@ -167,8 +167,16 @@ const BlindEyeNavigatorInner: React.FC = () => {
     targetLocalRef.current = null;
     targetGeoRef.current = null;
     turnByTurnRef.current = null;
+    spinHandleRef.current?.stop();
+    spinHandleRef.current = null;
+    spinShotsRef.current = [];
+    spinShotAnglesRef.current = new Set();
+    spinSummaryRef.current = null;
+    awaitingDestinationRef.current = false;
+    setSpinPct(0);
 
     if (geoWatchRef.current != null) {
+
       try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
       geoWatchRef.current = null;
     }
