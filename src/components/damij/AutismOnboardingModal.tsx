@@ -31,30 +31,55 @@ const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
       toast.error(first);
       return;
     }
+    if (saving) return;
     setSaving(true);
-    let profileId: string | undefined;
+
+    const { child_name, age_years, parent_name, parent_email } = parsed.data;
+
+    // 1) Save locally immediately so the user never gets stuck on this screen,
+    //    even if Supabase auth/insert is slow or fails.
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase.from('autism_child_profiles').insert({
-          user_id: user.id,
-          child_name: parsed.data.child_name,
-          age_years: parsed.data.age_years,
-          parent_name: parsed.data.parent_name,
-          parent_email: parsed.data.parent_email,
-        } as any).select('id').maybeSingle();
-        profileId = data?.id;
-      }
-      const { child_name, age_years, parent_name, parent_email } = parsed.data;
       localStorage.setItem('autism_active_profile', JSON.stringify({
-        profile_id: profileId ?? null,
+        profile_id: null,
         child_name, age_years, parent_name, parent_email,
       }));
-      onSaved({ child_name, age_years, parent_name, parent_email, profile_id: profileId });
+    } catch {}
+
+    // 2) Try to persist to Supabase with a hard timeout, but never block onSaved.
+    let profileId: string | undefined;
+    try {
+      const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+        Promise.race<T>([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+      const userRes = await withTimeout(supabase.auth.getUser(), 6000).catch(() => null);
+      const user = (userRes as any)?.data?.user;
+      if (user) {
+        const insertPromise = Promise.resolve(
+          supabase.from('autism_child_profiles').insert({
+            user_id: user.id,
+            child_name, age_years, parent_name, parent_email,
+          } as any).select('id').maybeSingle()
+        );
+        const insertRes = await withTimeout(insertPromise, 8000).catch((e) => ({ data: null, error: e }));
+        const { data, error } = insertRes as any;
+        if (error) {
+          console.warn('[AutismOnboarding] insert failed, continuing locally:', error);
+        }
+        profileId = data?.id;
+        if (profileId) {
+          try {
+            localStorage.setItem('autism_active_profile', JSON.stringify({
+              profile_id: profileId,
+              child_name, age_years, parent_name, parent_email,
+            }));
+          } catch {}
+        }
+      }
     } catch (e: any) {
-      toast.error(e?.message || 'تعذّر الحفظ');
+      console.warn('[AutismOnboarding] save error, continuing locally:', e);
     } finally {
       setSaving(false);
+      onSaved({ child_name, age_years, parent_name, parent_email, profile_id: profileId });
     }
   };
 
