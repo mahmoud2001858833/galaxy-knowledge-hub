@@ -290,10 +290,11 @@ ${braille}
 
 Final decoded ${langName} text:`;
 
+  // Speed priority: fastest models first, single pass, smaller tokens.
   const out = await callGemini(
-    ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    ["gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"],
     prompt,
-    { temperature: 0.05, maxOutputTokens: 8192, mimeType: "text/plain" },
+    { temperature: 0.05, maxOutputTokens: 4096, mimeType: "text/plain" },
   );
   return out.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
 }
@@ -435,7 +436,7 @@ async function fetchUrlText(url: string): Promise<string> {
 
   // 1) Try direct fetch with browser-like headers
   try {
-    const r = await fetchWithTimeout(url, 15000, BROWSER_HEADERS);
+    const r = await fetchWithTimeout(url, 8000, BROWSER_HEADERS);
     if (!r.ok) {
       if (r.status === 403 || r.status === 401) directError = "الموقع يرفض الجلب التلقائي (403)";
       else if (r.status === 404) directError = "الصفحة غير موجودة (404)";
@@ -464,7 +465,7 @@ async function fetchUrlText(url: string): Promise<string> {
   // 2) Fallback: r.jina.ai readability proxy (returns clean text for any page)
   try {
     const proxyUrl = `https://r.jina.ai/${url}`;
-    const r = await fetchWithTimeout(proxyUrl, 20000, {
+    const r = await fetchWithTimeout(proxyUrl, 12000, {
       "User-Agent": BROWSER_HEADERS["User-Agent"],
       "Accept": "text/plain, text/markdown, */*",
       "Accept-Language": BROWSER_HEADERS["Accept-Language"],
@@ -518,10 +519,10 @@ Deno.serve(async (req) => {
       }
       const fallbackText = deterministicReverseBraille(braille, langCode);
       try {
+        // Single AI pass — skip the second "refine" call for speed.
         const decoded = await reverseBraille(braille, langName, langCode);
-        const refined = await refineDecodedText(decoded, langName, langCode);
-        const finalText = (refined && refined.trim()) ? refined : (decoded?.trim() ? decoded : fallbackText);
-        return new Response(JSON.stringify({ text: finalText, original_text: decoded || fallbackText, refined_text: finalText, langCode, grade }), {
+        const finalText = (decoded && decoded.trim()) ? decoded : fallbackText;
+        return new Response(JSON.stringify({ text: finalText, original_text: finalText, refined_text: finalText, langCode, grade }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {

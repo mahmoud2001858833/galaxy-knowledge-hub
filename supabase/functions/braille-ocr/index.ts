@@ -148,7 +148,8 @@ Deno.serve(async (req) => {
     let lastError = "";
 
     // Primary: direct Gemini (project rule: do not use Lovable AI Gateway)
-    const models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+    // Speed priority: fastest model first.
+    const models = ["gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"];
     for (const mdl of models) {
       try {
         raw = await geminiVision(mdl, geminiKey, prompt, mime, b64, true);
@@ -196,7 +197,7 @@ Deno.serve(async (req) => {
 النص:
 ${parsed.text}`;
         const refineFn = async () => {
-          if (geminiKey) return await geminiText("gemini-2.5-flash", geminiKey, refinePrompt);
+          if (geminiKey) return await geminiText("gemini-2.5-flash-lite", geminiKey, refinePrompt);
           return "";
         };
         const refined = (await refineFn())
