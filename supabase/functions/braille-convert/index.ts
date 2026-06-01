@@ -519,10 +519,10 @@ Deno.serve(async (req) => {
       }
       const fallbackText = deterministicReverseBraille(braille, langCode);
       try {
+        // Single AI pass — skip the second "refine" call for speed.
         const decoded = await reverseBraille(braille, langName, langCode);
-        const refined = await refineDecodedText(decoded, langName, langCode);
-        const finalText = (refined && refined.trim()) ? refined : (decoded?.trim() ? decoded : fallbackText);
-        return new Response(JSON.stringify({ text: finalText, original_text: decoded || fallbackText, refined_text: finalText, langCode, grade }), {
+        const finalText = (decoded && decoded.trim()) ? decoded : fallbackText;
+        return new Response(JSON.stringify({ text: finalText, original_text: finalText, refined_text: finalText, langCode, grade }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {
