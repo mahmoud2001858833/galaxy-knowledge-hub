@@ -269,8 +269,8 @@ const DamijAuth: React.FC = () => {
 
         {/* ─── Right card ─── */}
         <div className="relative">
-          <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-br from-[hsl(var(--damij-primary))]/35 via-transparent to-[hsl(var(--damij-accent-2))]/35 blur-2xl opacity-70" />
-          <div className="relative rounded-[28px] border border-[hsl(var(--damij-border))] bg-white/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-br from-[hsl(var(--damij-primary))]/40 via-fuchsia-400/20 to-[hsl(var(--damij-accent-2))]/40 blur-2xl opacity-80" />
+          <div className="relative rounded-[28px] border-2 border-white/80 bg-white shadow-[0_30px_80px_-20px_rgba(15,23,42,0.45)] overflow-hidden">
 
             <AnimatePresence mode="wait">
               {phase === 'success' ? (
@@ -312,20 +312,20 @@ const DamijAuth: React.FC = () => {
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <div className="px-7 pt-7 pb-2 text-center">
-                    <h1 className="text-2xl font-extrabold text-[hsl(var(--damij-primary))]">
+                    <h1 className="text-2xl font-extrabold text-slate-900">
                       {mode === 'login' ? 'مرحباً بعودتك 👋' : 'أنشئ حسابك في دامج'}
                     </h1>
-                    <p className="text-sm text-[hsl(var(--damij-muted))] mt-1.5">
+                    <p className="text-sm text-slate-600 mt-1.5 font-medium">
                       {mode === 'login' ? 'سجّل الدخول للوصول إلى أدواتك وبرامجك' : 'خطوة واحدة تفصلك عن منصة الدمج الكاملة'}
                     </p>
                   </div>
 
                   {/* Tabs */}
-                  <div className="mx-7 mt-4 grid grid-cols-2 rounded-2xl bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] p-1 text-sm font-bold">
+                  <div className="mx-7 mt-4 grid grid-cols-2 rounded-2xl bg-slate-100 border border-slate-200 p-1 text-sm font-bold">
                     {(['login', 'signup'] as Mode[]).map((m) => (
                       <button
                         key={m} type="button" onClick={() => setMode(m)}
-                        className={`relative py-2.5 rounded-xl transition-colors ${mode === m ? 'text-white' : 'text-[hsl(var(--damij-muted))] hover:text-[hsl(var(--damij-primary))]'}`}
+                        className={`relative py-2.5 rounded-xl transition-colors ${mode === m ? 'text-white' : 'text-slate-600 hover:text-slate-900'}`}
                       >
                         {mode === m && (
                           <motion.span
@@ -339,6 +339,7 @@ const DamijAuth: React.FC = () => {
                       </button>
                     ))}
                   </div>
+
 
                   <form onSubmit={handleSubmit} className="p-7 pt-5 space-y-4">
                     <AnimatePresence mode="wait">
@@ -358,11 +359,12 @@ const DamijAuth: React.FC = () => {
                             <select
                               value={role}
                               onChange={(e) => setRole(e.target.value)}
-                              className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-4 text-[hsl(var(--damij-text))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white transition-colors"
+                              className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 ps-10 pe-4 text-slate-900 text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white transition-colors"
                             >
                               {ROLES.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
                             </select>
                           </div>
+
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -383,16 +385,17 @@ const DamijAuth: React.FC = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="كلمة المرور"
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                        className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-11 text-[hsl(var(--damij-text))] placeholder:text-[hsl(var(--damij-muted))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-2 focus:ring-[hsl(var(--damij-primary))]/15 transition-colors"
+                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 ps-10 pe-11 text-slate-900 placeholder:text-slate-400 text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-4 focus:ring-[hsl(var(--damij-primary))]/15 transition-all"
                       />
                       <button
                         type="button" onClick={() => setShowPw((v) => !v)}
-                        className="absolute inset-y-0 end-2 flex items-center px-2 text-[hsl(var(--damij-muted))] hover:text-[hsl(var(--damij-primary))]"
+                        className="absolute inset-y-0 end-2 flex items-center px-2 text-slate-500 hover:text-[hsl(var(--damij-primary))]"
                         aria-label={showPw ? 'إخفاء' : 'إظهار'}
                       >
                         {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+
 
                     {mode === 'signup' && password.length > 0 && (
                       <div className="flex items-center gap-1.5">
@@ -414,15 +417,15 @@ const DamijAuth: React.FC = () => {
 
                     {mode === 'login' && (
                       <div className="flex items-center justify-between text-xs">
-                        <label className="inline-flex items-center gap-2 text-[hsl(var(--damij-muted))] cursor-pointer">
+                        <label className="inline-flex items-center gap-2 text-slate-700 font-semibold cursor-pointer">
                           <input
                             type="checkbox" checked={remember}
                             onChange={(e) => setRemember(e.target.checked)}
-                            className="accent-[hsl(var(--damij-primary))]"
+                            className="accent-[hsl(var(--damij-primary))] w-4 h-4"
                           />
                           تذكّرني
                         </label>
-                        <Link to="/damij/auth/reset" className="text-[hsl(var(--damij-primary))] hover:underline font-semibold">
+                        <Link to="/damij/auth/reset" className="text-[hsl(var(--damij-primary))] hover:underline font-bold">
                           نسيت كلمة المرور؟
                         </Link>
                       </div>
@@ -444,24 +447,25 @@ const DamijAuth: React.FC = () => {
                       )}
                     </button>
 
-                    <div className="text-center text-xs text-[hsl(var(--damij-muted))]">
+                    <div className="text-center text-xs text-slate-600 font-medium">
                       {mode === 'login' ? 'ليس لديك حساب دامج؟' : 'لديك حساب بالفعل؟'}{' '}
                       <button
                         type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                        className="text-[hsl(var(--damij-primary))] font-bold hover:underline"
+                        className="text-[hsl(var(--damij-primary))] font-extrabold hover:underline"
                       >
                         {mode === 'login' ? 'أنشئ واحداً جديداً' : 'سجّل دخول'}
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-center gap-2 text-[11px] text-[hsl(var(--damij-muted))] pt-3 border-t border-[hsl(var(--damij-border))]">
+                    <div className="flex items-center justify-center gap-2 text-[11px] text-slate-600 font-semibold pt-3 border-t border-slate-200">
                       <Shield className="w-3.5 h-3.5" />
                       <span>حساب دامج مستقل تمامًا عن منصة ذروة العلم</span>
                     </div>
 
-                    <Link to="/damij" className="block text-center text-[11px] text-[hsl(var(--damij-muted))] hover:text-[hsl(var(--damij-primary))]">
+                    <Link to="/damij" className="block text-center text-[11px] text-slate-500 hover:text-[hsl(var(--damij-primary))] font-semibold">
                       ← العودة لصفحة دامج
                     </Link>
+
                   </form>
                 </motion.div>
               )}
@@ -486,9 +490,10 @@ const Field: React.FC<{
     <input
       type={type} value={value} onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder} autoComplete={autoComplete}
-      className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-4 text-[hsl(var(--damij-text))] placeholder:text-[hsl(var(--damij-muted))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-2 focus:ring-[hsl(var(--damij-primary))]/15 transition-colors"
+      className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 ps-10 pe-4 text-slate-900 placeholder:text-slate-400 text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-4 focus:ring-[hsl(var(--damij-primary))]/15 transition-all"
     />
   </div>
+
 );
 
 export default DamijAuth;
