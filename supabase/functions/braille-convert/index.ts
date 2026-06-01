@@ -465,7 +465,7 @@ async function fetchUrlText(url: string): Promise<string> {
   // 2) Fallback: r.jina.ai readability proxy (returns clean text for any page)
   try {
     const proxyUrl = `https://r.jina.ai/${url}`;
-    const r = await fetchWithTimeout(proxyUrl, 20000, {
+    const r = await fetchWithTimeout(proxyUrl, 12000, {
       "User-Agent": BROWSER_HEADERS["User-Agent"],
       "Accept": "text/plain, text/markdown, */*",
       "Accept-Language": BROWSER_HEADERS["Accept-Language"],
