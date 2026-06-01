@@ -84,7 +84,7 @@ export function detectImmediateHazard(objs: DetectedObject[]): DetectedObject | 
     if (cx < 0.2 || cx > 0.8) continue;
     // Risk = area * verticality * score.
     const area = o.w * o.h;
-    if (area < 0.12) continue; // too small/far
+    if (area < 0.08) continue; // earlier warning — smaller objects now trigger
     const risk = area * (cy) * (o.score);
     if (risk > worstScore) { worstScore = risk; worst = o; }
   }

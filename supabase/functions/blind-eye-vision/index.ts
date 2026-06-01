@@ -196,9 +196,51 @@ const calibTool = {
   },
 };
 
-type Mode = "calibration" | "fast" | "detailed" | "points";
+const spinScanTool = {
+  type: "function",
+  function: {
+    name: "spin_scan_summary",
+    description: "Summarize a 360° look around the user",
+    parameters: {
+      type: "object",
+      properties: {
+        place_type: { type: "string" },
+        landmarks: { type: "array", maxItems: 6, items: { type: "string" } },
+        open_directions: { type: "array", maxItems: 4, items: { type: "string" } },
+        warnings: { type: "array", maxItems: 4, items: { type: "string" } },
+        summary_spoken: { type: "string" },
+      },
+      required: ["place_type", "summary_spoken"],
+      additionalProperties: false,
+    },
+  },
+};
 
-async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang: Lang, extraContext?: string, target?: string) {
+const describeHazardTool = {
+  type: "function",
+  function: {
+    name: "describe_hazard",
+    description: "One short sentence describing the obstacle directly in front",
+    parameters: {
+      type: "object",
+      properties: {
+        spoken: { type: "string" },
+        label: { type: "string" },
+        side: { type: "string", enum: ["left","center","right"] },
+      },
+      required: ["spoken"],
+      additionalProperties: false,
+    },
+  },
+};
+
+type Mode = "calibration" | "fast" | "detailed" | "points" | "spin_scan" | "describe_hazard";
+
+const SPIN_SCAN_PROMPT = (lang: Lang) => `You are "Blind Eye". The blind user just rotated 360°. From these snapshots, give ONE warm short summary in language "${lang}" (<= 25 words) saying place_type, key landmarks, open directions, and any clear warnings. summary_spoken must be ready-to-speak in language "${lang}".`;
+
+const DESCRIBE_HAZARD_PROMPT = (lang: Lang) => `You are "Blind Eye". Describe ONLY the closest obstacle directly in front of the blind user in <= 8 words in language "${lang}". Include a short safe action (e.g. step right/back). No extra text.`;
+
+async function callGateway(model: string, imageDataUrl: string | string[], mode: Mode, lang: Lang, extraContext?: string, target?: string) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -207,28 +249,30 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
   if (mode === "calibration") { sys = CALIBRATION_PROMPT(lang); tool = calibTool; }
   else if (mode === "detailed") { sys = GUIDANCE_DETAILED_PROMPT(lang); tool = guidanceDetailedTool; }
   else if (mode === "points") { sys = POINTS_PROMPT(lang, target); tool = pointsTool; }
+  else if (mode === "spin_scan") { sys = SPIN_SCAN_PROMPT(lang); tool = spinScanTool; }
+  else if (mode === "describe_hazard") { sys = DESCRIBE_HAZARD_PROMPT(lang); tool = describeHazardTool; }
   else { sys = GUIDANCE_FAST_PROMPT(lang); tool = guidanceFastTool; }
+
 
   const userText = extraContext
     ? `Context: ${extraContext}\nAnalyze in language "${lang}".`
     : `Analyze in language "${lang}".`;
 
+  const images = Array.isArray(imageDataUrl) ? imageDataUrl : [imageDataUrl];
+  const userContent: any[] = [{ type: "text", text: userText }];
+  for (const url of images) userContent.push({ type: "image_url", image_url: { url } });
+
   const body = {
     model,
-    max_tokens: 200,
+    max_tokens: mode === "spin_scan" ? 220 : mode === "describe_hazard" ? 60 : 200,
     messages: [
       { role: "system", content: sys },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: userText },
-          { type: "image_url", image_url: { url: imageDataUrl } },
-        ],
-      },
+      { role: "user", content: userContent },
     ],
     tools: [tool],
     tool_choice: { type: "function", function: { name: tool.function.name } },
   };
+
 
 
   const r = await fetch(GATEWAY, {
@@ -254,8 +298,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { image, context, mode, lang, target } = await req.json();
-    if (!image || typeof image !== "string") {
+    const { image, images, context, mode, lang, target } = await req.json();
+    const imgInput: string | string[] | null =
+      Array.isArray(images) && images.length ? images.filter((i: any) => typeof i === "string") :
+      typeof image === "string" ? image : null;
+    if (!imgInput || (Array.isArray(imgInput) && imgInput.length === 0)) {
       return new Response(JSON.stringify({ error: "image required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -265,6 +312,8 @@ Deno.serve(async (req) => {
     else if (mode === "detailed") useMode = "detailed";
     else if (mode === "fast") useMode = "fast";
     else if (mode === "points") useMode = "points";
+    else if (mode === "spin_scan") useMode = "spin_scan";
+    else if (mode === "describe_hazard") useMode = "describe_hazard";
     else if (mode === "guidance") useMode = "fast";
 
     const useLang: Lang = (typeof lang === "string" && lang in COMMANDS) ? (lang as Lang) : "en";
@@ -272,10 +321,11 @@ Deno.serve(async (req) => {
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, image, useMode, useLang, context, typeof target === 'string' ? target : undefined);
+        const result = await callGateway(model, imgInput, useMode, useLang, context, typeof target === 'string' ? target : undefined);
         return new Response(JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "RATE_LIMIT") {

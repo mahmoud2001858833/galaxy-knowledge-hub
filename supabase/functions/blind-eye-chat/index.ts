@@ -66,6 +66,7 @@ async function callGateway(
   imageDataUrl?: string,
   history: HistoryMsg[] = [],
   visualContext?: string,
+  intent?: string,
 ) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
@@ -78,20 +79,26 @@ async function callGateway(
 
   const ctxLabel = lang === "ar" ? "[سياق بصري حالي من الكاميرا]" : "[Live visual context from camera]";
   const askLabel = lang === "ar" ? "[سؤال المستخدم]" : "[User]";
+  const intentLine = intent
+    ? (lang === "ar" ? `\n[نوع الطلب]: ${intent}` : `\n[Intent]: ${intent}`)
+    : "";
   const prefixText = visualContext
-    ? `${ctxLabel}: ${visualContext}\n\n${askLabel}: ${userText}`
-    : userText;
+    ? `${ctxLabel}: ${visualContext}${intentLine}\n\n${askLabel}: ${userText}`
+    : `${intentLine}\n${userText}`.trim();
 
   const userContent: any[] = [{ type: "text", text: prefixText }];
   if (imageDataUrl) userContent.push({ type: "image_url", image_url: { url: imageDataUrl } });
   messages.push({ role: "user", content: userContent });
 
+
   const body = {
     model,
+    max_tokens: 120,
     messages,
     tools: [speakTool],
     tool_choice: { type: "function", function: { name: "speak" } },
   };
+
 
   const r = await fetch(GATEWAY, {
     method: "POST",
@@ -121,7 +128,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { text, image, history, visualContext, lang } = await req.json();
+    const { text, image, history, visualContext, lang, intent } = await req.json();
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "text required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -136,10 +143,11 @@ Deno.serve(async (req) => {
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, text, useLang, image, safeHistory, typeof visualContext === "string" ? visualContext : undefined);
+        const result = await callGateway(model, text, useLang, image, safeHistory, typeof visualContext === "string" ? visualContext : undefined, typeof intent === "string" ? intent : undefined);
         return new Response(JSON.stringify({ ok: true, model, lang: useLang, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "RATE_LIMIT") {

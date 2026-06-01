@@ -10,7 +10,7 @@ import {
   earcons, vibrate, isSpeaking, timeSinceLastSpeech,
 } from './speechQueue';
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
-import { BE_STRINGS, BE_BCP47, BE_COMMANDS, defaultSuggestions, type BELang } from './i18n';
+import { BE_STRINGS, BE_BCP47, BE_COMMANDS, BE_SPIN, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
 import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
@@ -20,13 +20,14 @@ import { recognizeImage } from './navigation/ocr';
 import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+import { startSpinScan, type SpinHandle } from './navigation/spinScan';
 import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic } from './localDetector';
 import { isOnline, onConnectivityChange } from './offlineMode';
 import { hapticForDirection, haptics } from './haptics';
 import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 
 
-type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
+type Phase = 'starting' | 'calibrating' | 'spin' | 'guiding' | 'stopped';
 
 type AIObject = {
   x: number; y: number; w: number; h: number;
@@ -95,6 +96,17 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const onlineRef = useRef<boolean>(isOnline());
   const [online, setOnline] = useState<boolean>(isOnline());
 
+  // Spin-scan state
+  const spinHandleRef = useRef<SpinHandle | null>(null);
+  const spinShotsRef = useRef<string[]>([]);
+  const spinShotAnglesRef = useRef<Set<number>>(new Set());
+  const spinSummaryRef = useRef<string | null>(null);
+  const [spinPct, setSpinPct] = useState(0);
+  const awaitingDestinationRef = useRef<boolean>(false);
+  // Hazard description cooldown
+  const lastHazardDescribeRef = useRef<number>(0);
+
+
 
 
 
@@ -131,10 +143,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
       calibAttemptsRef.current = 0;
       setPhaseBoth('calibrating');
       enqueueSpeech({ text: BE_STRINGS[langRef.current].greet, priority: 'critical', lang: langRef.current });
-      // auto-promote to guiding after a brief moment so first AI tick can render immediately
+      // auto-promote into the spin-scan phase quickly
       setTimeout(() => {
-        if (phaseRef.current === 'calibrating') setPhaseBoth('guiding');
-      }, 1500);
+        if (phaseRef.current === 'calibrating') setPhaseBoth('spin');
+      }, 800);
+
     } catch (e) {
       console.error(e);
       toast.error(BE_STRINGS[langRef.current].cameraFailed);
@@ -154,8 +167,16 @@ const BlindEyeNavigatorInner: React.FC = () => {
     targetLocalRef.current = null;
     targetGeoRef.current = null;
     turnByTurnRef.current = null;
+    spinHandleRef.current?.stop();
+    spinHandleRef.current = null;
+    spinShotsRef.current = [];
+    spinShotAnglesRef.current = new Set();
+    spinSummaryRef.current = null;
+    awaitingDestinationRef.current = false;
+    setSpinPct(0);
 
     if (geoWatchRef.current != null) {
+
       try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
       geoWatchRef.current = null;
     }
@@ -337,7 +358,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
   // ---- Main loop ----
   useEffect(() => {
-    if (phase === 'stopped' || phase === 'starting') return;
+    if (phase === 'stopped' || phase === 'starting' || phase === 'spin') return;
     if (!localVisionRef.current) localVisionRef.current = new LocalVision();
 
     let cancelled = false;
@@ -384,23 +405,37 @@ const BlindEyeNavigatorInner: React.FC = () => {
       }
 
       // ---- On-device COCO-SSD object detection (runs ~6 fps, parallel to AI) ----
-      if (v && v.videoWidth && now - lastDetTickRef.current >= 160) {
+      if (v && v.videoWidth && now - lastDetTickRef.current >= 120) {
         lastDetTickRef.current = now;
         detectFromVideo(v, 6).then((objs) => {
           const hazard = detectImmediateHazard(objs);
-          if (hazard && now - lastLocalHazardSpeakRef.current > 1400) {
+          if (hazard && now - lastLocalHazardSpeakRef.current > 900) {
             lastLocalHazardSpeakRef.current = now;
             const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
             // Three-step: STOP. STOP. → label → escape direction
             const label = langRef.current === 'ar' ? labelToArabic(hazard.label) : hazard.label;
             enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
             enqueueSpeech({ text: label, priority: 'critical', lang: langRef.current });
-            // Pick escape: if hazard is left of center -> go right, else go left
             const cx = hazard.x + hazard.w / 2;
             const escape = cx < 0.5 ? cmds.right : cmds.left;
             enqueueSpeech({ text: escape, priority: 'critical', lang: langRef.current });
             haptics.stop();
+            // Followup: short cloud sentence explaining what it is (throttled)
+            if (now - lastHazardDescribeRef.current > 3500 && onlineRef.current) {
+              lastHazardDescribeRef.current = now;
+              const img = captureFrame('fast');
+              if (img) {
+                supabase.functions.invoke('blind-eye-vision', {
+                  body: { image: img, mode: 'describe_hazard', lang: langRef.current },
+                }).then(({ data }) => {
+                  if (data?.spoken) {
+                    enqueueSpeech({ text: data.spoken, priority: 'critical', lang: langRef.current });
+                  }
+                }).catch(() => {});
+              }
+            }
           }
+
           // Surface detected objects as HUD points (lightweight)
           if (objs.length && companionMode) {
             setPoints(prev => {
@@ -426,14 +461,15 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const sceneChanged = sceneChangePendingRef.current;
       const stagnant = stats && stats.globalMotion < 0.012;
       // Higher concurrency right after a scene change so the user gets fresh frames fast.
-      const inflightCap = sceneChanged ? 6 : 4;
+      const inflightCap = sceneChanged ? 6 : 5;
       if (inflightRef.current >= inflightCap) {
         rafRef.current = requestAnimationFrame(loop);
         return;
       }
-      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 180 : score >= 40 ? 280 : 500;
+      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 140 : score >= 40 ? 220 : 400;
       if (sceneChanged) minGap = 0;
       if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
+
 
 
       if (now - lastAITickRef.current >= minGap) {
@@ -480,26 +516,99 @@ const BlindEyeNavigatorInner: React.FC = () => {
     return () => { off(); };
   }, []);
 
-  // Speak "started" once when guiding begins
-
+  // Speak greeting once when guiding begins (after spin asked destination already)
   useEffect(() => {
     if (phase === 'guiding') {
       const timer = setTimeout(() => {
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].starting2, priority: 'critical', lang: langRef.current });
-        // force an immediate AI tick so points appear ASAP
+        // Don't re-ask destination here — spin completion already prompted.
         runAI('points');
       }, 100);
       return () => clearTimeout(timer);
     }
   }, [phase, runAI]);
 
+  // ---- Spin-scan onboarding ----
+  useEffect(() => {
+    if (phase !== 'spin') return;
+    spinShotsRef.current = [];
+    spinShotAnglesRef.current = new Set();
+    setSpinPct(0);
+
+    const lang = langRef.current;
+    enqueueSpeech({ text: BE_SPIN[lang].ask, priority: 'critical', lang });
+
+    // Capture a snapshot when we cross each 90° quadrant.
+    const captureSpinShot = () => {
+      const img = captureFrame('fast');
+      if (img && spinShotsRef.current.length < 4) {
+        spinShotsRef.current.push(img);
+      }
+    };
+    // Initial snapshot.
+    setTimeout(captureSpinShot, 250);
+
+    const handle = startSpinScan({
+      onProgress: (_deg, pct) => { setSpinPct(pct); },
+      onQuarter: (q) => {
+        captureSpinShot();
+        if (q < 4) {
+          haptics.stop();
+          enqueueSpeech({ text: BE_SPIN[lang].quarter, priority: 'directional', lang });
+        }
+      },
+      onComplete: async () => {
+        spinHandleRef.current?.stop();
+        spinHandleRef.current = null;
+        enqueueSpeech({ text: BE_SPIN[lang].done, priority: 'critical', lang });
+        // Send snapshots to vision spin_scan mode for summary
+        try {
+          const { data } = await supabase.functions.invoke('blind-eye-vision', {
+            body: { images: spinShotsRef.current.slice(0, 4), mode: 'spin_scan', lang },
+          });
+          const sum = data?.summary_spoken as string | undefined;
+          if (sum) {
+            spinSummaryRef.current = sum;
+            enqueueSpeech({ text: sum, priority: 'critical', lang });
+          }
+        } catch (e) { console.warn('spin scan err', e); }
+        // Ask destination & enter guiding
+        awaitingDestinationRef.current = true;
+        enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
+        setPhaseBoth('guiding');
+      },
+    });
+    spinHandleRef.current = handle;
+
+    // Safety: if compass never produces movement after 18s, auto-skip to guiding.
+    const safety = window.setTimeout(() => {
+      if (phaseRef.current === 'spin') {
+        spinHandleRef.current?.stop();
+        spinHandleRef.current = null;
+        enqueueSpeech({ text: BE_SPIN[lang].skip, priority: 'directional', lang });
+        awaitingDestinationRef.current = true;
+        enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
+        setPhaseBoth('guiding');
+      }
+    }, 18000);
+
+    return () => {
+      window.clearTimeout(safety);
+      spinHandleRef.current?.stop();
+      spinHandleRef.current = null;
+    };
+  }, [phase, captureFrame]);
+
+
   // ---- Voice chat dispatcher ----
-  const sendChat = useCallback(async (text: string) => {
+  const sendChat = useCallback(async (text: string, intent?: string) => {
     userSpeakingRef.current = true;
     const g = lastGuideRef.current;
-    const visualContext = g
-      ? `top obstacle: ${g.obstacles_summary}. best direction: ${g.best_path}. proximity: ${g.global_proximity}/100.`
-      : undefined;
+    const parts: string[] = [];
+    if (g) parts.push(`top obstacle: ${g.obstacles_summary}. best direction: ${g.best_path}. proximity: ${g.global_proximity}/100.`);
+    if (spinSummaryRef.current) parts.push(`spin scan: ${spinSummaryRef.current}`);
+    const visualContext = parts.length ? parts.join(' | ') : undefined;
+    const wasAwaitingDest = awaitingDestinationRef.current;
+    if (wasAwaitingDest) awaitingDestinationRef.current = false;
     chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user' as const, text }].slice(-4);
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
@@ -508,9 +617,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
           history: chatHistoryRef.current.slice(0, -1),
           visualContext,
           lang: langRef.current,
+          intent: intent || (wasAwaitingDest ? 'destination' : undefined),
         },
       });
       if (error) throw error;
+
       if (data?.spoken) {
         chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant' as const, text: data.spoken }].slice(-4);
         if (Array.isArray(data.suggestions) && data.suggestions.length) {
@@ -793,7 +904,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
           interruptedFor = e.results.length - 1;
           cancelAllSpeech();
           userSpeakingRef.current = true;
+          // Audible "I'm listening" cue so the user knows they were heard.
+          try { earcons.pointAhead(); } catch {}
         }
+
         return;
       }
       userSpeakingRef.current = false;
@@ -944,7 +1058,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
           </div>
           <div className="text-xs bg-white/15 backdrop-blur px-2 py-1 rounded-full flex items-center gap-1">
             <Activity className="w-3 h-3" />
-            {phase === 'calibrating' ? t.calibrating : phase === 'guiding' ? t.guiding : phase === 'stopped' ? t.stopped : t.starting}
+            {phase === 'calibrating' ? t.calibrating : phase === 'spin' ? (lang === 'ar' ? 'مسح المنطقة' : 'Scanning') : phase === 'guiding' ? t.guiding : phase === 'stopped' ? t.stopped : t.starting}
           </div>
         </div>
       </div>
@@ -965,6 +1079,39 @@ const BlindEyeNavigatorInner: React.FC = () => {
           )}
         </div>
       )}
+
+      {phase === 'spin' && (
+        <div className="absolute top-20 inset-x-4 p-5 rounded-2xl bg-fuchsia-700/90 backdrop-blur shadow-2xl z-10 text-center">
+          <div className="text-2xl font-extrabold leading-tight mb-3">
+            {BE_SPIN[lang].ask}
+          </div>
+          <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
+            <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
+              <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.25)" strokeWidth="8" fill="none" />
+              <circle
+                cx="50" cy="50" r="44" stroke="white" strokeWidth="8" fill="none"
+                strokeDasharray={`${Math.round(spinPct * 276)} 276`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="text-3xl font-black">{Math.round(spinPct * 100)}%</div>
+          </div>
+          <button
+            onClick={() => {
+              spinHandleRef.current?.stop();
+              spinHandleRef.current = null;
+              enqueueSpeech({ text: BE_SPIN[lang].skip, priority: 'directional', lang });
+              awaitingDestinationRef.current = true;
+              enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
+              setPhaseBoth('guiding');
+            }}
+            className="mt-4 text-xs px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30"
+          >
+            {lang === 'ar' ? 'تخطّي المسح' : 'Skip scan'}
+          </button>
+        </div>
+      )}
+
 
       {errMsg && (
         <div className="absolute top-20 inset-x-4 p-3 rounded-xl bg-red-600/90 backdrop-blur z-10 text-center font-bold">
