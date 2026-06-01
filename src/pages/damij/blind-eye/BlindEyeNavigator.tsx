@@ -664,7 +664,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
   }, [setLang]);
 
   const handleVoiceInput = useCallback((txt: string) => {
-    const text = txt.trim();
+    let text = txt.trim();
     if (!text) return;
     // 1) Generic "switch to <any language>" detector — fires before parseCommand
     //    so the user can change to any of the 15 supported languages instantly.
@@ -672,6 +672,19 @@ const BlindEyeNavigatorInner: React.FC = () => {
     if (targetLang && targetLang !== langRef.current) {
       switchLang(targetLang);
       return;
+    }
+    // 1.5) If we just asked the user "where do you want to go?", treat ANY
+    //      reasonable answer (even one word like "الباب" or "kitchen") as a destination.
+    if (awaitingDestinationRef.current) {
+      const loose = parseDestinationLoose(text);
+      if (loose) {
+        // Re-formulate so the command parser sees it as GO_TO and the GO_TO
+        // case can run its full local/geo logic uniformly.
+        text = langRef.current === 'ar'
+          ? `بدي أروح على ${loose.kind === 'local' ? loose.arabic : loose.query}`
+          : `take me to ${loose.kind === 'local' ? loose.arabic : loose.query}`;
+        awaitingDestinationRef.current = false;
+      }
     }
     const cmd = parseCommand(text, langRef.current);
     // Shorter cooldown for interactive commands so replies feel instant.
