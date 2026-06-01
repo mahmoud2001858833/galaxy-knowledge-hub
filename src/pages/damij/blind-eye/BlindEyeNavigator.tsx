@@ -260,6 +260,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
             source: 'ai' as const,
           })));
         }
+        // ---- IMPORTANT: stay completely silent until the user states a destination ----
+        // No directional cues, no hazard warnings, no earcons — Blind Eye must wait
+        // until the person says where they want to go (e.g. "أريد أن أذهب إلى الباب").
+        const hasDestination = !!(targetLocalRef.current || targetGeoRef.current);
+        if (!hasDestination) {
+          // skip all spoken/auditory navigation; keep updating HUD points only
+        } else {
         const score = g.global_proximity ?? 0;
         const bucket = score >= 75 ? 'H' : score >= 40 ? 'M' : 'L';
         const key = `${g.best_path}|${bucket}|${g.spoken}`;
@@ -309,6 +316,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
           else if (g.best_path === 'right') earcons.pointRight();
           else earcons.pointAhead();
         }
+        } // end hasDestination
+
 
         // ---- Target-oriented local navigation (with stability filter) ----
         if (targetLocalRef.current && Array.isArray(g.objects)) {
@@ -408,7 +417,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
       if (v && v.videoWidth && now - lastDetTickRef.current >= 120) {
         lastDetTickRef.current = now;
         detectFromVideo(v, 6).then((objs) => {
-          const hazard = detectImmediateHazard(objs);
+          const hasDest = !!(targetLocalRef.current || targetGeoRef.current);
+          const hazard = hasDest ? detectImmediateHazard(objs) : null;
           if (hazard && now - lastLocalHazardSpeakRef.current > 900) {
             lastLocalHazardSpeakRef.current = now;
             const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
