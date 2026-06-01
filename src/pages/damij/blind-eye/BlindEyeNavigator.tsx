@@ -358,7 +358,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
   // ---- Main loop ----
   useEffect(() => {
-    if (phase === 'stopped' || phase === 'starting') return;
+    if (phase === 'stopped' || phase === 'starting' || phase === 'spin') return;
     if (!localVisionRef.current) localVisionRef.current = new LocalVision();
 
     let cancelled = false;
