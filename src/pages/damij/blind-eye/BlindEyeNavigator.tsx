@@ -143,10 +143,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
       calibAttemptsRef.current = 0;
       setPhaseBoth('calibrating');
       enqueueSpeech({ text: BE_STRINGS[langRef.current].greet, priority: 'critical', lang: langRef.current });
-      // auto-promote to guiding after a brief moment so first AI tick can render immediately
+      // auto-promote into the spin-scan phase quickly
       setTimeout(() => {
-        if (phaseRef.current === 'calibrating') setPhaseBoth('guiding');
-      }, 1500);
+        if (phaseRef.current === 'calibrating') setPhaseBoth('spin');
+      }, 800);
+
     } catch (e) {
       console.error(e);
       toast.error(BE_STRINGS[langRef.current].cameraFailed);
