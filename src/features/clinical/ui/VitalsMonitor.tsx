@@ -48,17 +48,17 @@ const Tile: React.FC<{
 }> = ({ icon, label, value, unit, status, pulse }) => {
   const t = tone[status];
   return (
-    <div className={`relative p-3 rounded-2xl bg-gradient-to-b ${t.bg} ring-1 ${t.ring} min-w-[110px]`}>
-      <div className="flex items-center justify-between">
-        <span className={`text-[10px] font-bold ${t.text}`}>{label}</span>
-        <span className={`w-2 h-2 rounded-full ${t.dot} ${status !== 'ok' ? 'animate-pulse' : ''}`} />
+    <div className={`relative p-2 rounded-xl bg-gradient-to-b ${t.bg} ring-1 ${t.ring} overflow-hidden`}>
+      <div className="flex items-center justify-between gap-1">
+        <span className={`text-[10px] font-bold ${t.text} truncate`}>{label}</span>
+        <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${t.dot} ${status !== 'ok' ? 'animate-pulse' : ''}`} />
       </div>
-      <div className="flex items-baseline gap-1 mt-1">
-        <span className={`text-2xl font-extrabold tabular-nums ${t.text} ${pulse && status !== 'ok' ? 'animate-pulse' : ''}`}>{value}</span>
-        {unit && <span className={`text-[10px] ${t.text} opacity-70`}>{unit}</span>}
+      <div className="flex items-baseline gap-1 mt-0.5 leading-none">
+        <span className={`text-lg font-extrabold tabular-nums ${t.text} ${pulse && status !== 'ok' ? 'animate-pulse' : ''}`}>{value}</span>
+        {unit && <span className={`text-[9px] ${t.text} opacity-70 truncate`}>{unit}</span>}
       </div>
-      <div className={`mt-1.5 flex items-center gap-1 text-[10px] ${t.text} opacity-80`}>
-        <span className="opacity-70">{icon}</span><span>{t.label}</span>
+      <div className={`mt-1 flex items-center gap-1 text-[9px] ${t.text} opacity-80`}>
+        <span className="opacity-70">{icon}</span><span className="truncate">{t.label}</span>
       </div>
     </div>
   );
@@ -90,7 +90,7 @@ const VitalsMonitor: React.FC<Props> = ({ vitals, ageYears }) => {
           {new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
         <Tile icon={<Heart className="w-3 h-3" />} label="HR" value={hr != null ? String(j(hr, 1)) : '—'} unit="bpm" status={hrStatus(hr, ageYears)} pulse />
         <Tile icon={<Activity className="w-3 h-3" />} label="BP" value={bpSys && bpDia ? `${j(bpSys, 1)}/${j(bpDia, 0)}` : '—'} unit="mmHg" status={bpStatus(bpSys, bpDia)} />
         <Tile icon={<Droplet className="w-3 h-3" />} label="SpO₂" value={spo2 != null ? String(j(spo2, 0)) : '—'} unit="%" status={spo2Status(spo2)} />
