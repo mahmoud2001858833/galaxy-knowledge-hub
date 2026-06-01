@@ -298,8 +298,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { image, context, mode, lang, target } = await req.json();
-    if (!image || typeof image !== "string") {
+    const { image, images, context, mode, lang, target } = await req.json();
+    const imgInput: string | string[] | null =
+      Array.isArray(images) && images.length ? images.filter((i: any) => typeof i === "string") :
+      typeof image === "string" ? image : null;
+    if (!imgInput || (Array.isArray(imgInput) && imgInput.length === 0)) {
       return new Response(JSON.stringify({ error: "image required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -309,6 +312,8 @@ Deno.serve(async (req) => {
     else if (mode === "detailed") useMode = "detailed";
     else if (mode === "fast") useMode = "fast";
     else if (mode === "points") useMode = "points";
+    else if (mode === "spin_scan") useMode = "spin_scan";
+    else if (mode === "describe_hazard") useMode = "describe_hazard";
     else if (mode === "guidance") useMode = "fast";
 
     const useLang: Lang = (typeof lang === "string" && lang in COMMANDS) ? (lang as Lang) : "en";
@@ -316,10 +321,11 @@ Deno.serve(async (req) => {
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, image, useMode, useLang, context, typeof target === 'string' ? target : undefined);
+        const result = await callGateway(model, imgInput, useMode, useLang, context, typeof target === 'string' ? target : undefined);
         return new Response(JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "RATE_LIMIT") {
