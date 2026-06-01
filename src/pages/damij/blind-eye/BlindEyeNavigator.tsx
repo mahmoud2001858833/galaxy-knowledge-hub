@@ -393,6 +393,55 @@ const BlindEyeNavigatorInner: React.FC = () => {
           }
         if (stats.sceneChange > 0.18) sceneChangePendingRef.current = true;
 
+          // ---- Detect crossing into a NEW environment (e.g. exiting a room) ----
+          // A real environment change shows sustained large scene-diff over a short window
+          // — not a single jolt. Require 3 big changes within 1.5s, then auto-scan & re-ask.
+          if (
+            phaseRef.current === 'guiding' &&
+            !envScanInflightRef.current &&
+            now - lastEnvScanAt.current > 12000 &&
+            stats.sceneChange > 0.36
+          ) {
+            const acc = bigSceneAccumRef.current;
+            if (now - acc.firstAt > 1500) { acc.count = 0; acc.firstAt = now; }
+            acc.count += 1;
+            if (acc.count >= 3) {
+              acc.count = 0; acc.firstAt = 0;
+              lastEnvScanAt.current = now;
+              envScanInflightRef.current = true;
+              const lg = langRef.current;
+              // Cancel current local target — user is now in a different place.
+              targetLocalRef.current = null;
+              targetStableRef.current = { seen: 0, missed: 0 };
+              const announce = lg === 'ar'
+                ? 'لاحظت أنك دخلت إلى مكان جديد، أمسح المنطقة...'
+                : 'New environment detected, scanning the area...';
+              enqueueSpeech({ text: announce, priority: 'critical', lang: lg });
+              const img = captureFrame('detailed');
+              if (img && onlineRef.current) {
+                supabase.functions.invoke('blind-eye-vision', {
+                  body: { image: img, mode: 'detailed', lang: lg },
+                }).then(({ data }) => {
+                  const summary = (data?.obstacles_summary as string | undefined) || '';
+                  if (summary) {
+                    enqueueSpeech({
+                      text: lg === 'ar' ? `أمامك: ${summary}` : `In front of you: ${summary}`,
+                      priority: 'directional', lang: lg,
+                    });
+                  }
+                }).catch(() => {}).finally(() => {
+                  awaitingDestinationRef.current = true;
+                  enqueueSpeech({ text: BE_SPIN[lg].askDestination, priority: 'critical', lang: lg });
+                  envScanInflightRef.current = false;
+                });
+              } else {
+                awaitingDestinationRef.current = true;
+                enqueueSpeech({ text: BE_SPIN[lg].askDestination, priority: 'critical', lang: lg });
+                envScanInflightRef.current = false;
+              }
+            }
+          }
+
           if (companionMode) {
             const localPts: DetectedPoint[] = [];
             stats.cells.forEach((cell, idx) => {
