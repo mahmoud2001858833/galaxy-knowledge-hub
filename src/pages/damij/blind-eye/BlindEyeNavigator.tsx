@@ -10,7 +10,7 @@ import {
   earcons, vibrate, isSpeaking, timeSinceLastSpeech,
 } from './speechQueue';
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
-import { BE_STRINGS, BE_BCP47, BE_COMMANDS, defaultSuggestions, type BELang } from './i18n';
+import { BE_STRINGS, BE_BCP47, BE_COMMANDS, BE_SPIN, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
 import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
@@ -20,13 +20,14 @@ import { recognizeImage } from './navigation/ocr';
 import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+import { startSpinScan, type SpinHandle } from './navigation/spinScan';
 import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic } from './localDetector';
 import { isOnline, onConnectivityChange } from './offlineMode';
 import { hapticForDirection, haptics } from './haptics';
 import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 
 
-type Phase = 'starting' | 'calibrating' | 'guiding' | 'stopped';
+type Phase = 'starting' | 'calibrating' | 'spin' | 'guiding' | 'stopped';
 
 type AIObject = {
   x: number; y: number; w: number; h: number;
