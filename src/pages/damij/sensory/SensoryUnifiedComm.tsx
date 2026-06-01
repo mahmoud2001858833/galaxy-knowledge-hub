@@ -12,6 +12,10 @@ import {
   SIGN_DICT, SIGN_CATEGORIES, tokenizeSigns, lookupSign,
   type SignToken,
 } from './signDictionary';
+import { DAMIJ_LANGS } from '@/features/damij/i18n/types';
+import { toBcp47 } from '@/features/damij/i18n/bcp47';
+import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
+import { useSignTranslations } from '@/features/sign-language/dictionary/translations';
 
 type Modality = 'text' | 'voice' | 'braille' | 'sign';
 
