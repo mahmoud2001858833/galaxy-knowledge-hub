@@ -1058,7 +1058,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
           </div>
           <div className="text-xs bg-white/15 backdrop-blur px-2 py-1 rounded-full flex items-center gap-1">
             <Activity className="w-3 h-3" />
-            {phase === 'calibrating' ? t.calibrating : phase === 'guiding' ? t.guiding : phase === 'stopped' ? t.stopped : t.starting}
+            {phase === 'calibrating' ? t.calibrating : phase === 'spin' ? (lang === 'ar' ? 'مسح المنطقة' : 'Scanning') : phase === 'guiding' ? t.guiding : phase === 'stopped' ? t.stopped : t.starting}
           </div>
         </div>
       </div>
@@ -1079,6 +1079,39 @@ const BlindEyeNavigatorInner: React.FC = () => {
           )}
         </div>
       )}
+
+      {phase === 'spin' && (
+        <div className="absolute top-20 inset-x-4 p-5 rounded-2xl bg-fuchsia-700/90 backdrop-blur shadow-2xl z-10 text-center">
+          <div className="text-2xl font-extrabold leading-tight mb-3">
+            {BE_SPIN[lang].ask}
+          </div>
+          <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
+            <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
+              <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.25)" strokeWidth="8" fill="none" />
+              <circle
+                cx="50" cy="50" r="44" stroke="white" strokeWidth="8" fill="none"
+                strokeDasharray={`${Math.round(spinPct * 276)} 276`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="text-3xl font-black">{Math.round(spinPct * 100)}%</div>
+          </div>
+          <button
+            onClick={() => {
+              spinHandleRef.current?.stop();
+              spinHandleRef.current = null;
+              enqueueSpeech({ text: BE_SPIN[lang].skip, priority: 'directional', lang });
+              awaitingDestinationRef.current = true;
+              enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
+              setPhaseBoth('guiding');
+            }}
+            className="mt-4 text-xs px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30"
+          >
+            {lang === 'ar' ? 'تخطّي المسح' : 'Skip scan'}
+          </button>
+        </div>
+      )}
+
 
       {errMsg && (
         <div className="absolute top-20 inset-x-4 p-3 rounded-xl bg-red-600/90 backdrop-blur z-10 text-center font-bold">
