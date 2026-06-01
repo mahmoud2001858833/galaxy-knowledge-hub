@@ -12,7 +12,7 @@ import {
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
 import { BE_STRINGS, BE_BCP47, BE_COMMANDS, BE_SPIN, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
-import { parseDestination, parseDestinationLoose, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
+import { parseDestinationLoose, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
 import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
