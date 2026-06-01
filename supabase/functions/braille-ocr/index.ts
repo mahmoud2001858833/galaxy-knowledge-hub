@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
 النص:
 ${parsed.text}`;
         const refineFn = async () => {
-          if (geminiKey) return await geminiText("gemini-2.5-flash", geminiKey, refinePrompt);
+          if (geminiKey) return await geminiText("gemini-2.5-flash-lite", geminiKey, refinePrompt);
           return "";
         };
         const refined = (await refineFn())
