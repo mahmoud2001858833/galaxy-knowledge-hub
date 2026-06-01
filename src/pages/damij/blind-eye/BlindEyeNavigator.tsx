@@ -904,7 +904,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
           interruptedFor = e.results.length - 1;
           cancelAllSpeech();
           userSpeakingRef.current = true;
+          // Audible "I'm listening" cue so the user knows they were heard.
+          try { earcons.pointAhead(); } catch {}
         }
+
         return;
       }
       userSpeakingRef.current = false;
