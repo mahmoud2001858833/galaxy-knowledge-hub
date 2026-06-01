@@ -24,17 +24,28 @@ const SensoryHome: React.FC = () => (
 
     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
       {[
-        { icon: Ear, t: 'للأصم', d: 'نص مبسّط + بطاقات PECS + أفاتار إشارة' },
-        { icon: Eye, t: 'للكفيف', d: 'نطق صوتي + وصف الصور + بريل' },
-        { icon: Hand, t: 'للأصم-الكفيف', d: 'بريل ملموس + تنبيهات حسّية متعدّدة' },
-        { icon: Brain, t: 'للتوحّد/ADHD', d: 'تبسيط لغوي + إزالة المشتتات' },
-      ].map(({ icon: Icon, t, d }) => (
-        <div key={t} className="p-6 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 text-center">
-          <Icon className="w-10 h-10 text-[hsl(var(--damij-accent-2))] mx-auto mb-3" />
-          <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-2">{t}</h3>
-          <p className="text-sm text-[hsl(var(--damij-text))]/70">{d}</p>
-        </div>
-      ))}
+        { to: null, icon: Ear, t: 'للأصم', d: 'نص مبسّط + بطاقات PECS + أفاتار إشارة' },
+        { to: null, icon: Eye, t: 'للكفيف', d: 'نطق صوتي + وصف الصور + بريل' },
+        { to: '/damij/sensory/image-tactile', icon: ImageIcon, t: 'صورة → وصف صوتي', d: 'تحليل صورة ووصفها صوتياً مع نموذج تعليمي قابل للطباعة' },
+        { to: '/damij/sensory/adaptive-ui', icon: Wand2, t: 'الواجهة التكيّفية الذكية', d: 'ألوان وأحجام وسرعة عرض تتغيّر تلقائياً وفق حالتك' },
+      ].map(({ to, icon: Icon, t, d }) => {
+        const inner = (
+          <>
+            <Icon className="w-10 h-10 text-[hsl(var(--damij-accent-2))] mx-auto mb-3" />
+            <h3 className="font-bold text-[hsl(var(--damij-primary))] mb-2">{t}</h3>
+            <p className="text-sm text-[hsl(var(--damij-text))]/70">{d}</p>
+          </>
+        );
+        return to ? (
+          <Link key={t} to={to} className="p-6 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 text-center hover:-translate-y-1 hover:shadow-md transition-all block">
+            {inner}
+          </Link>
+        ) : (
+          <div key={t} className="p-6 rounded-2xl bg-[hsl(var(--damij-surface))] border border-[hsl(var(--damij-primary))]/10 text-center">
+            {inner}
+          </div>
+        );
+      })}
     </div>
 
     <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mb-6">
