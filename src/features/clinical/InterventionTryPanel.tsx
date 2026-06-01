@@ -105,21 +105,27 @@ const InterventionTryPanel: React.FC<Props> = ({ sessionId, caseCategory, onAppl
   return (
     <div className="space-y-3" dir="rtl">
       {/* Categories */}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {cats.map((c) => {
           const Icon = c.icon;
           const active = cat === c.key;
           return (
-            <div key={c.key} className="inline-flex items-center gap-0.5">
-              <button onClick={() => setCat(c.key)}
-                className={`px-2.5 py-1.5 rounded-full text-xs flex items-center gap-1 border ${active ? 'bg-[hsl(var(--damij-primary))] text-white border-transparent' : 'bg-white hover:bg-slate-50'}`}>
-                <Icon className="w-3.5 h-3.5" /> {c.ar}
-              </button>
-              <HelpTooltip title={c.ar} content={c.help} />
-            </div>
+            <button
+              key={c.key}
+              onClick={() => setCat(c.key)}
+              title={c.help}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 border transition-colors ${
+                active
+                  ? 'bg-[hsl(var(--damij-primary))] text-white border-transparent shadow-sm'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" /> {c.ar}
+            </button>
           );
         })}
       </div>
+
 
       {/* Catalog list / custom input */}
       {cat === 'custom' ? (
