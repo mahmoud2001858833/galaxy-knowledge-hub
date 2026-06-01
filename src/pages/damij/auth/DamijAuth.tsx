@@ -385,16 +385,17 @@ const DamijAuth: React.FC = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="كلمة المرور"
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                        className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-11 text-[hsl(var(--damij-text))] placeholder:text-[hsl(var(--damij-muted))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-2 focus:ring-[hsl(var(--damij-primary))]/15 transition-colors"
+                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 ps-10 pe-11 text-slate-900 placeholder:text-slate-400 text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-4 focus:ring-[hsl(var(--damij-primary))]/15 transition-all"
                       />
                       <button
                         type="button" onClick={() => setShowPw((v) => !v)}
-                        className="absolute inset-y-0 end-2 flex items-center px-2 text-[hsl(var(--damij-muted))] hover:text-[hsl(var(--damij-primary))]"
+                        className="absolute inset-y-0 end-2 flex items-center px-2 text-slate-500 hover:text-[hsl(var(--damij-primary))]"
                         aria-label={showPw ? 'إخفاء' : 'إظهار'}
                       >
                         {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+
 
                     {mode === 'signup' && password.length > 0 && (
                       <div className="flex items-center gap-1.5">
