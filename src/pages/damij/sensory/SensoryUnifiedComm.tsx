@@ -48,7 +48,7 @@ const SensoryUnifiedComm: React.FC = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return null;
     const r = new SR();
-    r.lang = voiceLang;
+    r.lang = bcp47;
     r.interimResults = true;
     r.continuous = true;
     r.maxAlternatives = 1;
