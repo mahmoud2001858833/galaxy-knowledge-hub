@@ -417,7 +417,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
       if (v && v.videoWidth && now - lastDetTickRef.current >= 120) {
         lastDetTickRef.current = now;
         detectFromVideo(v, 6).then((objs) => {
-          const hazard = detectImmediateHazard(objs);
+          const hasDest = !!(targetLocalRef.current || targetGeoRef.current);
+          const hazard = hasDest ? detectImmediateHazard(objs) : null;
           if (hazard && now - lastLocalHazardSpeakRef.current > 900) {
             lastLocalHazardSpeakRef.current = now;
             const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
