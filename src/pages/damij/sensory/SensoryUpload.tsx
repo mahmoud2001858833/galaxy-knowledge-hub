@@ -54,11 +54,15 @@ const SensoryUpload: React.FC = () => {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PROFILE_KEY);
-      if (!raw) { navigate('/damij/sensory/profile', { replace: true }); return; }
-      setProfile(JSON.parse(raw));
-    } catch {
-      navigate('/damij/sensory/profile', { replace: true });
-    }
+      if (raw) { setProfile(JSON.parse(raw)); return; }
+    } catch {}
+    setProfile({
+      vision: 'normal', hearing: 'normal', motor: 'mouse',
+      learningStyle: 'mixed', languageLevel: 'simplified', focus: 'normal',
+      fontFamily: 'default', fontSize: 'md', colorScheme: 'light',
+      speechRate: 'normal', avatarSpeed: 'normal', preferTouch: false,
+      cognitive: 'normal', savedAt: new Date().toISOString(),
+    });
   }, [navigate]);
 
   const handleSubmit = async () => {
