@@ -359,11 +359,12 @@ const DamijAuth: React.FC = () => {
                             <select
                               value={role}
                               onChange={(e) => setRole(e.target.value)}
-                              className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-4 text-[hsl(var(--damij-text))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white transition-colors"
+                              className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 ps-10 pe-4 text-slate-900 text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white transition-colors"
                             >
                               {ROLES.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
                             </select>
                           </div>
+
                         </motion.div>
                       )}
                     </AnimatePresence>
