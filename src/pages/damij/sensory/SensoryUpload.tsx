@@ -209,28 +209,6 @@ const SensoryUpload: React.FC = () => {
         <p className="text-[hsl(var(--damij-text))]/70 mt-2">نص، صورة، صوت، أو فيديو → نطق + بريل + إشارة + بطاقات بصرية</p>
       </div>
 
-      <div className="bg-white rounded-3xl p-5 shadow-lg border border-[hsl(var(--damij-primary))]/10 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-lg text-[hsl(var(--damij-primary))]">ملفك الحسّي</h2>
-          <button onClick={() => navigate('/damij/sensory/profile')} className="inline-flex items-center gap-1 text-sm text-[hsl(var(--damij-primary))] hover:underline">
-            <Settings className="w-4 h-4" /> تعديل
-          </button>
-        </div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl bg-[hsl(var(--damij-surface))] flex items-center gap-2">
-            <Eye className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
-            <div><div className="text-xs text-[hsl(var(--damij-text))]/60">البصر</div><div className="font-bold text-[hsl(var(--damij-primary))]">{VISION_LABELS[profile.vision]}</div></div>
-          </div>
-          <div className="p-3 rounded-xl bg-[hsl(var(--damij-surface))] flex items-center gap-2">
-            <Ear className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
-            <div><div className="text-xs text-[hsl(var(--damij-text))]/60">السمع</div><div className="font-bold text-[hsl(var(--damij-primary))]">{HEARING_LABELS[profile.hearing]}</div></div>
-          </div>
-          <div className="p-3 rounded-xl bg-[hsl(var(--damij-surface))] flex items-center gap-2">
-            <Hand className="w-5 h-5 text-[hsl(var(--damij-accent-2))]" />
-            <div><div className="text-xs text-[hsl(var(--damij-text))]/60">التحكّم</div><div className="font-bold text-[hsl(var(--damij-primary))]">{MOTOR_LABELS[profile.motor]}</div></div>
-          </div>
-        </div>
-      </div>
 
       <div className="bg-white rounded-3xl p-6 shadow-lg border border-[hsl(var(--damij-primary))]/10 mb-6">
         <h2 className="font-bold text-lg text-[hsl(var(--damij-primary))] mb-4">2) أدخل المحتوى التعليمي</h2>
