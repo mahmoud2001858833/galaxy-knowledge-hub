@@ -389,13 +389,17 @@ const SensoryUnifiedComm: React.FC = () => {
                 <Hand className="w-3 h-3" /> قاموس الإشارات
               </span>
               <p className="text-[11px] text-gray-500">اضغط على أي إشارة لإضافتها للجملة، وستُترجم تلقائياً إلى نص وصوت وبريل.</p>
+              <span className="ms-auto inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded-full">
+                <Languages className="w-3 h-3" /> لغة العرض: {DAMIJ_LANGS.find(l => l.code === voiceLang)?.name || voiceLang}
+                {!signTrReady && voiceLang !== 'ar' && <Loader2 className="w-3 h-3 animate-spin" />}
+              </span>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="w-4 h-4 absolute top-2.5 right-3 text-gray-400" />
                 <input value={libQuery} onChange={e => setLibQuery(e.target.value)}
-                  placeholder="ابحث عن إشارة..."
+                  placeholder="ابحث بأي لغة..."
                   className="w-full pe-9 ps-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
               </div>
               <button type="button" onClick={() => setText('')}
@@ -416,20 +420,29 @@ const SensoryUnifiedComm: React.FC = () => {
 
             <div className="max-h-[420px] overflow-y-auto pe-1 space-y-4">
               {libQuery.trim() ? (() => {
-                const q = libQuery.trim();
-                const hits = Object.keys(SIGN_DICT).filter(k => k.includes(q)).slice(0, 120);
+                const q = libQuery.trim().toLowerCase();
+                const hits = Object.keys(SIGN_DICT).filter(k => {
+                  if (k.toLowerCase().includes(q)) return true;
+                  const tr = translateSign(k);
+                  return tr && tr.toLowerCase().includes(q);
+                }).slice(0, 120);
                 return hits.length ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                     {hits.map(k => {
                       const lk = lookupSign(k);
                       const gs = lk.kind === 'word' ? lk.gesture : null;
+                      const label = translateSign(k);
+                      const insert = voiceLang === 'ar' ? k : (label || k);
                       return (
                         <button type="button" key={k}
-                          onClick={() => { setActiveInput('sign'); setText(t => (t ? t + ' ' : '') + k); }}
-                          title={gs?.desc || k}
+                          onClick={() => { setActiveInput('sign'); setText(t => (t ? t + ' ' : '') + insert); }}
+                          title={`${k}${label && label !== k ? ' — ' + label : ''}`}
                           className="p-2 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-center transition-transform hover:-translate-y-0.5 hover:shadow-md">
                           <div className="text-2xl">{gs?.emoji || '✋'}</div>
-                          <div className="text-xs font-bold text-emerald-800">{k}</div>
+                          <div className="text-xs font-bold text-emerald-800 leading-tight">{label || k}</div>
+                          {label && label !== k && (
+                            <div className="text-[10px] text-gray-400 leading-tight mt-0.5">{k}</div>
+                          )}
                         </button>
                       );
                     })}
@@ -442,13 +455,18 @@ const SensoryUnifiedComm: React.FC = () => {
                     {cat.words.map(w => {
                       const lk = lookupSign(w);
                       const gs = lk.kind === 'word' ? lk.gesture : null;
+                      const label = translateSign(w);
+                      const insert = voiceLang === 'ar' ? w : (label || w);
                       return (
                         <button type="button" key={w}
-                          onClick={() => { setActiveInput('sign'); setText(t => (t ? t + ' ' : '') + w); }}
-                          title={gs?.desc || w}
+                          onClick={() => { setActiveInput('sign'); setText(t => (t ? t + ' ' : '') + insert); }}
+                          title={`${w}${label && label !== w ? ' — ' + label : ''}`}
                           className="p-2 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-center transition-transform hover:-translate-y-0.5 hover:shadow-md">
                           <div className="text-2xl">{gs?.emoji || '✋'}</div>
-                          <div className="text-xs font-bold text-emerald-800">{w}</div>
+                          <div className="text-xs font-bold text-emerald-800 leading-tight">{label || w}</div>
+                          {label && label !== w && (
+                            <div className="text-[10px] text-gray-400 leading-tight mt-0.5">{w}</div>
+                          )}
                         </button>
                       );
                     })}
