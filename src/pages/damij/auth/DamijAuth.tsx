@@ -417,15 +417,15 @@ const DamijAuth: React.FC = () => {
 
                     {mode === 'login' && (
                       <div className="flex items-center justify-between text-xs">
-                        <label className="inline-flex items-center gap-2 text-[hsl(var(--damij-muted))] cursor-pointer">
+                        <label className="inline-flex items-center gap-2 text-slate-700 font-semibold cursor-pointer">
                           <input
                             type="checkbox" checked={remember}
                             onChange={(e) => setRemember(e.target.checked)}
-                            className="accent-[hsl(var(--damij-primary))]"
+                            className="accent-[hsl(var(--damij-primary))] w-4 h-4"
                           />
                           تذكّرني
                         </label>
-                        <Link to="/damij/auth/reset" className="text-[hsl(var(--damij-primary))] hover:underline font-semibold">
+                        <Link to="/damij/auth/reset" className="text-[hsl(var(--damij-primary))] hover:underline font-bold">
                           نسيت كلمة المرور؟
                         </Link>
                       </div>
@@ -447,24 +447,25 @@ const DamijAuth: React.FC = () => {
                       )}
                     </button>
 
-                    <div className="text-center text-xs text-[hsl(var(--damij-muted))]">
+                    <div className="text-center text-xs text-slate-600 font-medium">
                       {mode === 'login' ? 'ليس لديك حساب دامج؟' : 'لديك حساب بالفعل؟'}{' '}
                       <button
                         type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                        className="text-[hsl(var(--damij-primary))] font-bold hover:underline"
+                        className="text-[hsl(var(--damij-primary))] font-extrabold hover:underline"
                       >
                         {mode === 'login' ? 'أنشئ واحداً جديداً' : 'سجّل دخول'}
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-center gap-2 text-[11px] text-[hsl(var(--damij-muted))] pt-3 border-t border-[hsl(var(--damij-border))]">
+                    <div className="flex items-center justify-center gap-2 text-[11px] text-slate-600 font-semibold pt-3 border-t border-slate-200">
                       <Shield className="w-3.5 h-3.5" />
                       <span>حساب دامج مستقل تمامًا عن منصة ذروة العلم</span>
                     </div>
 
-                    <Link to="/damij" className="block text-center text-[11px] text-[hsl(var(--damij-muted))] hover:text-[hsl(var(--damij-primary))]">
+                    <Link to="/damij" className="block text-center text-[11px] text-slate-500 hover:text-[hsl(var(--damij-primary))] font-semibold">
                       ← العودة لصفحة دامج
                     </Link>
+
                   </form>
                 </motion.div>
               )}
