@@ -196,9 +196,51 @@ const calibTool = {
   },
 };
 
-type Mode = "calibration" | "fast" | "detailed" | "points";
+const spinScanTool = {
+  type: "function",
+  function: {
+    name: "spin_scan_summary",
+    description: "Summarize a 360° look around the user",
+    parameters: {
+      type: "object",
+      properties: {
+        place_type: { type: "string" },
+        landmarks: { type: "array", maxItems: 6, items: { type: "string" } },
+        open_directions: { type: "array", maxItems: 4, items: { type: "string" } },
+        warnings: { type: "array", maxItems: 4, items: { type: "string" } },
+        summary_spoken: { type: "string" },
+      },
+      required: ["place_type", "summary_spoken"],
+      additionalProperties: false,
+    },
+  },
+};
 
-async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang: Lang, extraContext?: string, target?: string) {
+const describeHazardTool = {
+  type: "function",
+  function: {
+    name: "describe_hazard",
+    description: "One short sentence describing the obstacle directly in front",
+    parameters: {
+      type: "object",
+      properties: {
+        spoken: { type: "string" },
+        label: { type: "string" },
+        side: { type: "string", enum: ["left","center","right"] },
+      },
+      required: ["spoken"],
+      additionalProperties: false,
+    },
+  },
+};
+
+type Mode = "calibration" | "fast" | "detailed" | "points" | "spin_scan" | "describe_hazard";
+
+const SPIN_SCAN_PROMPT = (lang: Lang) => `You are "Blind Eye". The blind user just rotated 360°. From these snapshots, give ONE warm short summary in language "${lang}" (<= 25 words) saying place_type, key landmarks, open directions, and any clear warnings. summary_spoken must be ready-to-speak in language "${lang}".`;
+
+const DESCRIBE_HAZARD_PROMPT = (lang: Lang) => `You are "Blind Eye". Describe ONLY the closest obstacle directly in front of the blind user in <= 8 words in language "${lang}". Include a short safe action (e.g. step right/back). No extra text.`;
+
+async function callGateway(model: string, imageDataUrl: string | string[], mode: Mode, lang: Lang, extraContext?: string, target?: string) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -207,7 +249,10 @@ async function callGateway(model: string, imageDataUrl: string, mode: Mode, lang
   if (mode === "calibration") { sys = CALIBRATION_PROMPT(lang); tool = calibTool; }
   else if (mode === "detailed") { sys = GUIDANCE_DETAILED_PROMPT(lang); tool = guidanceDetailedTool; }
   else if (mode === "points") { sys = POINTS_PROMPT(lang, target); tool = pointsTool; }
+  else if (mode === "spin_scan") { sys = SPIN_SCAN_PROMPT(lang); tool = spinScanTool; }
+  else if (mode === "describe_hazard") { sys = DESCRIBE_HAZARD_PROMPT(lang); tool = describeHazardTool; }
   else { sys = GUIDANCE_FAST_PROMPT(lang); tool = guidanceFastTool; }
+
 
   const userText = extraContext
     ? `Context: ${extraContext}\nAnalyze in language "${lang}".`
