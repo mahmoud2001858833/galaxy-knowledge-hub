@@ -516,18 +516,88 @@ const BlindEyeNavigatorInner: React.FC = () => {
     return () => { off(); };
   }, []);
 
-  // Speak "started" once when guiding begins
-
+  // Speak greeting once when guiding begins (after spin asked destination already)
   useEffect(() => {
     if (phase === 'guiding') {
       const timer = setTimeout(() => {
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].starting2, priority: 'critical', lang: langRef.current });
-        // force an immediate AI tick so points appear ASAP
+        // Don't re-ask destination here — spin completion already prompted.
         runAI('points');
       }, 100);
       return () => clearTimeout(timer);
     }
   }, [phase, runAI]);
+
+  // ---- Spin-scan onboarding ----
+  useEffect(() => {
+    if (phase !== 'spin') return;
+    spinShotsRef.current = [];
+    spinShotAnglesRef.current = new Set();
+    setSpinPct(0);
+
+    const lang = langRef.current;
+    enqueueSpeech({ text: BE_SPIN[lang].ask, priority: 'critical', lang });
+
+    // Capture a snapshot when we cross each 90° quadrant.
+    const captureSpinShot = () => {
+      const img = captureFrame('fast');
+      if (img && spinShotsRef.current.length < 4) {
+        spinShotsRef.current.push(img);
+      }
+    };
+    // Initial snapshot.
+    setTimeout(captureSpinShot, 250);
+
+    const handle = startSpinScan({
+      onProgress: (_deg, pct) => { setSpinPct(pct); },
+      onQuarter: (q) => {
+        captureSpinShot();
+        if (q < 4) {
+          haptics.stop();
+          enqueueSpeech({ text: BE_SPIN[lang].quarter, priority: 'directional', lang });
+        }
+      },
+      onComplete: async () => {
+        spinHandleRef.current?.stop();
+        spinHandleRef.current = null;
+        enqueueSpeech({ text: BE_SPIN[lang].done, priority: 'critical', lang });
+        // Send snapshots to vision spin_scan mode for summary
+        try {
+          const { data } = await supabase.functions.invoke('blind-eye-vision', {
+            body: { images: spinShotsRef.current.slice(0, 4), mode: 'spin_scan', lang },
+          });
+          const sum = data?.summary_spoken as string | undefined;
+          if (sum) {
+            spinSummaryRef.current = sum;
+            enqueueSpeech({ text: sum, priority: 'critical', lang });
+          }
+        } catch (e) { console.warn('spin scan err', e); }
+        // Ask destination & enter guiding
+        awaitingDestinationRef.current = true;
+        enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
+        setPhaseBoth('guiding');
+      },
+    });
+    spinHandleRef.current = handle;
+
+    // Safety: if compass never produces movement after 18s, auto-skip to guiding.
+    const safety = window.setTimeout(() => {
+      if (phaseRef.current === 'spin') {
+        spinHandleRef.current?.stop();
+        spinHandleRef.current = null;
+        enqueueSpeech({ text: BE_SPIN[lang].skip, priority: 'directional', lang });
+        awaitingDestinationRef.current = true;
+        enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
+        setPhaseBoth('guiding');
+      }
+    }, 18000);
+
+    return () => {
+      window.clearTimeout(safety);
+      spinHandleRef.current?.stop();
+      spinHandleRef.current = null;
+    };
+  }, [phase, captureFrame]);
+
 
   // ---- Voice chat dispatcher ----
   const sendChat = useCallback(async (text: string) => {
