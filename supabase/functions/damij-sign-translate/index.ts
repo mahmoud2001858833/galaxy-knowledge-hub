@@ -148,20 +148,51 @@ Deno.serve(async (req) => {
       }
     }
 
+    // If all Gemini keys/models failed, fall back to Lovable AI Gateway
+    // (explicit user-granted exception for the sign-language translator).
+    let raw = "";
     if (!r || !r.ok) {
-      const status = r?.status ?? 500;
-      const msg = status === 429
-        ? "تم تجاوز حد الطلبات لجميع المفاتيح. حاول بعد دقيقة."
-        : `Gemini error ${status}: ${lastErrText.slice(0, 200)}`;
-      return new Response(JSON.stringify({ error: msg }), {
-        status: status === 429 ? 429 : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      console.warn("All Gemini attempts failed — falling back to Lovable AI Gateway");
+      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+      if (!lovableKey) {
+        const status = r?.status ?? 500;
+        const msg = status === 429
+          ? "تم تجاوز حد الطلبات. حاول بعد دقيقة."
+          : `AI error ${status}: ${lastErrText.slice(0, 200)}`;
+        return new Response(JSON.stringify({ error: msg }), {
+          status: status === 429 ? 429 : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const lvBody: any = {
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: prompt }],
+      };
+      if (isJson) lvBody.response_format = { type: "json_object" };
+      const lr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(lvBody),
       });
+      if (!lr.ok) {
+        const t = await lr.text().catch(() => "");
+        console.error("Lovable AI fallback failed", lr.status, t.slice(0, 200));
+        const status = lr.status === 429 ? 429 : (lr.status === 402 ? 402 : 500);
+        const msg = lr.status === 429
+          ? "النظام مزدحم، حاول بعد قليل."
+          : lr.status === 402
+          ? "نفذت أرصدة الذكاء الاصطناعي."
+          : `AI error ${lr.status}`;
+        return new Response(JSON.stringify({ error: msg }), {
+          status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const ld = await lr.json();
+      raw = String(ld?.choices?.[0]?.message?.content ?? "").trim();
+    } else {
+      const data = await r.json();
+      raw = data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim() ?? "";
     }
-
-    const data = await r.json();
-    const raw: string =
-      data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim() ?? "";
 
     if (isJson) {
       let parsed: any = null;
