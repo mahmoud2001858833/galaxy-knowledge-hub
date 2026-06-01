@@ -490,9 +490,10 @@ const Field: React.FC<{
     <input
       type={type} value={value} onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder} autoComplete={autoComplete}
-      className="w-full bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] rounded-xl py-3 ps-10 pe-4 text-[hsl(var(--damij-text))] placeholder:text-[hsl(var(--damij-muted))] text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-2 focus:ring-[hsl(var(--damij-primary))]/15 transition-colors"
+      className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 ps-10 pe-4 text-slate-900 placeholder:text-slate-400 text-sm font-semibold focus:outline-none focus:border-[hsl(var(--damij-primary))] focus:bg-white focus:ring-4 focus:ring-[hsl(var(--damij-primary))]/15 transition-all"
     />
   </div>
+
 );
 
 export default DamijAuth;
