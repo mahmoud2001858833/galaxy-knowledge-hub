@@ -178,13 +178,15 @@ const SensoryUnifiedComm: React.FC = () => {
     try { window.speechSynthesis.cancel(); } catch {}
     const start = () => {
       const u = new SpeechSynthesisUtterance(clean);
-      u.lang = 'ar-SA';
+      u.lang = bcp47;
       u.rate = 0.95;
       u.pitch = 1;
       u.volume = 1;
       const voices = window.speechSynthesis.getVoices();
-      const arVoice = voices.find(v => v.lang?.toLowerCase().startsWith('ar'));
-      if (arVoice) u.voice = arVoice;
+      const langPrefix = bcp47.toLowerCase().split('-')[0];
+      const match = voices.find(v => v.lang?.toLowerCase().startsWith(bcp47.toLowerCase()))
+        || voices.find(v => v.lang?.toLowerCase().startsWith(langPrefix));
+      if (match) u.voice = match;
       window.speechSynthesis.speak(u);
     };
     if (window.speechSynthesis.getVoices().length === 0) {
