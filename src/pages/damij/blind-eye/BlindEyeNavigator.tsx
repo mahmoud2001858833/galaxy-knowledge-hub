@@ -105,6 +105,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const awaitingDestinationRef = useRef<boolean>(false);
   // Hazard description cooldown
   const lastHazardDescribeRef = useRef<number>(0);
+  // Auto-scan when the user crosses into a new environment (e.g. exits a room)
+  const lastEnvScanAt = useRef<number>(0);
+  const envScanInflightRef = useRef<boolean>(false);
+  const bigSceneAccumRef = useRef<{ count: number; firstAt: number }>({ count: 0, firstAt: 0 });
 
 
 
