@@ -90,7 +90,7 @@ const VitalsMonitor: React.FC<Props> = ({ vitals, ageYears }) => {
           {new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
         <Tile icon={<Heart className="w-3 h-3" />} label="HR" value={hr != null ? String(j(hr, 1)) : '—'} unit="bpm" status={hrStatus(hr, ageYears)} pulse />
         <Tile icon={<Activity className="w-3 h-3" />} label="BP" value={bpSys && bpDia ? `${j(bpSys, 1)}/${j(bpDia, 0)}` : '—'} unit="mmHg" status={bpStatus(bpSys, bpDia)} />
         <Tile icon={<Droplet className="w-3 h-3" />} label="SpO₂" value={spo2 != null ? String(j(spo2, 0)) : '—'} unit="%" status={spo2Status(spo2)} />
