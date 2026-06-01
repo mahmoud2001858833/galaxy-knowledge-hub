@@ -312,20 +312,20 @@ const DamijAuth: React.FC = () => {
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <div className="px-7 pt-7 pb-2 text-center">
-                    <h1 className="text-2xl font-extrabold text-[hsl(var(--damij-primary))]">
+                    <h1 className="text-2xl font-extrabold text-slate-900">
                       {mode === 'login' ? 'مرحباً بعودتك 👋' : 'أنشئ حسابك في دامج'}
                     </h1>
-                    <p className="text-sm text-[hsl(var(--damij-muted))] mt-1.5">
+                    <p className="text-sm text-slate-600 mt-1.5 font-medium">
                       {mode === 'login' ? 'سجّل الدخول للوصول إلى أدواتك وبرامجك' : 'خطوة واحدة تفصلك عن منصة الدمج الكاملة'}
                     </p>
                   </div>
 
                   {/* Tabs */}
-                  <div className="mx-7 mt-4 grid grid-cols-2 rounded-2xl bg-[hsl(var(--damij-bg-2))] border border-[hsl(var(--damij-border))] p-1 text-sm font-bold">
+                  <div className="mx-7 mt-4 grid grid-cols-2 rounded-2xl bg-slate-100 border border-slate-200 p-1 text-sm font-bold">
                     {(['login', 'signup'] as Mode[]).map((m) => (
                       <button
                         key={m} type="button" onClick={() => setMode(m)}
-                        className={`relative py-2.5 rounded-xl transition-colors ${mode === m ? 'text-white' : 'text-[hsl(var(--damij-muted))] hover:text-[hsl(var(--damij-primary))]'}`}
+                        className={`relative py-2.5 rounded-xl transition-colors ${mode === m ? 'text-white' : 'text-slate-600 hover:text-slate-900'}`}
                       >
                         {mode === m && (
                           <motion.span
@@ -339,6 +339,7 @@ const DamijAuth: React.FC = () => {
                       </button>
                     ))}
                   </div>
+
 
                   <form onSubmit={handleSubmit} className="p-7 pt-5 space-y-4">
                     <AnimatePresence mode="wait">
