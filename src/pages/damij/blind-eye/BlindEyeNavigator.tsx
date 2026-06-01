@@ -12,7 +12,7 @@ import {
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
 import { BE_STRINGS, BE_BCP47, BE_COMMANDS, BE_SPIN, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
-import { parseDestination, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
+import { parseDestinationLoose, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
 import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
 import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
@@ -105,6 +105,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const awaitingDestinationRef = useRef<boolean>(false);
   // Hazard description cooldown
   const lastHazardDescribeRef = useRef<number>(0);
+  // Auto-scan when the user crosses into a new environment (e.g. exits a room)
+  const lastEnvScanAt = useRef<number>(0);
+  const envScanInflightRef = useRef<boolean>(false);
+  const bigSceneAccumRef = useRef<{ count: number; firstAt: number }>({ count: 0, firstAt: 0 });
 
 
 
@@ -389,6 +393,55 @@ const BlindEyeNavigatorInner: React.FC = () => {
           }
         if (stats.sceneChange > 0.18) sceneChangePendingRef.current = true;
 
+          // ---- Detect crossing into a NEW environment (e.g. exiting a room) ----
+          // A real environment change shows sustained large scene-diff over a short window
+          // — not a single jolt. Require 3 big changes within 1.5s, then auto-scan & re-ask.
+          if (
+            phaseRef.current === 'guiding' &&
+            !envScanInflightRef.current &&
+            now - lastEnvScanAt.current > 12000 &&
+            stats.sceneChange > 0.36
+          ) {
+            const acc = bigSceneAccumRef.current;
+            if (now - acc.firstAt > 1500) { acc.count = 0; acc.firstAt = now; }
+            acc.count += 1;
+            if (acc.count >= 3) {
+              acc.count = 0; acc.firstAt = 0;
+              lastEnvScanAt.current = now;
+              envScanInflightRef.current = true;
+              const lg = langRef.current;
+              // Cancel current local target — user is now in a different place.
+              targetLocalRef.current = null;
+              targetStableRef.current = { seen: 0, missed: 0 };
+              const announce = lg === 'ar'
+                ? 'لاحظت أنك دخلت إلى مكان جديد، أمسح المنطقة...'
+                : 'New environment detected, scanning the area...';
+              enqueueSpeech({ text: announce, priority: 'critical', lang: lg });
+              const img = captureFrame('detailed');
+              if (img && onlineRef.current) {
+                supabase.functions.invoke('blind-eye-vision', {
+                  body: { image: img, mode: 'detailed', lang: lg },
+                }).then(({ data }) => {
+                  const summary = (data?.obstacles_summary as string | undefined) || '';
+                  if (summary) {
+                    enqueueSpeech({
+                      text: lg === 'ar' ? `أمامك: ${summary}` : `In front of you: ${summary}`,
+                      priority: 'directional', lang: lg,
+                    });
+                  }
+                }).catch(() => {}).finally(() => {
+                  awaitingDestinationRef.current = true;
+                  enqueueSpeech({ text: BE_SPIN[lg].askDestination, priority: 'critical', lang: lg });
+                  envScanInflightRef.current = false;
+                });
+              } else {
+                awaitingDestinationRef.current = true;
+                enqueueSpeech({ text: BE_SPIN[lg].askDestination, priority: 'critical', lang: lg });
+                envScanInflightRef.current = false;
+              }
+            }
+          }
+
           if (companionMode) {
             const localPts: DetectedPoint[] = [];
             stats.cells.forEach((cell, idx) => {
@@ -664,7 +717,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
   }, [setLang]);
 
   const handleVoiceInput = useCallback((txt: string) => {
-    const text = txt.trim();
+    let text = txt.trim();
     if (!text) return;
     // 1) Generic "switch to <any language>" detector — fires before parseCommand
     //    so the user can change to any of the 15 supported languages instantly.
@@ -672,6 +725,19 @@ const BlindEyeNavigatorInner: React.FC = () => {
     if (targetLang && targetLang !== langRef.current) {
       switchLang(targetLang);
       return;
+    }
+    // 1.5) If we just asked the user "where do you want to go?", treat ANY
+    //      reasonable answer (even one word like "الباب" or "kitchen") as a destination.
+    if (awaitingDestinationRef.current) {
+      const loose = parseDestinationLoose(text);
+      if (loose) {
+        // Re-formulate so the command parser sees it as GO_TO and the GO_TO
+        // case can run its full local/geo logic uniformly.
+        text = langRef.current === 'ar'
+          ? `بدي أروح على ${loose.kind === 'local' ? loose.arabic : loose.query}`
+          : `take me to ${loose.kind === 'local' ? loose.arabic : loose.query}`;
+        awaitingDestinationRef.current = false;
+      }
     }
     const cmd = parseCommand(text, langRef.current);
     // Shorter cooldown for interactive commands so replies feel instant.
@@ -725,7 +791,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         return;
       }
       case 'GO_TO': {
-        const dest = parseDestination(text);
+        const dest = parseDestinationLoose(text);
         if (!dest) { sendChat(text); return; }
         if (dest.kind === 'local') {
           targetGeoRef.current = null;
