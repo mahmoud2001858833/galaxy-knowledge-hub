@@ -269,8 +269,8 @@ const DamijAuth: React.FC = () => {
 
         {/* ─── Right card ─── */}
         <div className="relative">
-          <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-br from-[hsl(var(--damij-primary))]/35 via-transparent to-[hsl(var(--damij-accent-2))]/35 blur-2xl opacity-70" />
-          <div className="relative rounded-[28px] border border-[hsl(var(--damij-border))] bg-white/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-br from-[hsl(var(--damij-primary))]/40 via-fuchsia-400/20 to-[hsl(var(--damij-accent-2))]/40 blur-2xl opacity-80" />
+          <div className="relative rounded-[28px] border-2 border-white/80 bg-white shadow-[0_30px_80px_-20px_rgba(15,23,42,0.45)] overflow-hidden">
 
             <AnimatePresence mode="wait">
               {phase === 'success' ? (
