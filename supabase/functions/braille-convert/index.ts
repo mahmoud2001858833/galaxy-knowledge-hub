@@ -436,7 +436,7 @@ async function fetchUrlText(url: string): Promise<string> {
 
   // 1) Try direct fetch with browser-like headers
   try {
-    const r = await fetchWithTimeout(url, 15000, BROWSER_HEADERS);
+    const r = await fetchWithTimeout(url, 8000, BROWSER_HEADERS);
     if (!r.ok) {
       if (r.status === 403 || r.status === 401) directError = "الموقع يرفض الجلب التلقائي (403)";
       else if (r.status === 404) directError = "الصفحة غير موجودة (404)";
