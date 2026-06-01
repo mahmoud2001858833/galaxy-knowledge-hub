@@ -54,13 +54,13 @@ const AutismOnboardingModal: React.FC<Props> = ({ open, onSaved }) => {
       const userRes = await withTimeout(supabase.auth.getUser(), 6000).catch(() => null);
       const user = (userRes as any)?.data?.user;
       if (user) {
-        const insertRes = await withTimeout(
+        const insertPromise = Promise.resolve(
           supabase.from('autism_child_profiles').insert({
             user_id: user.id,
             child_name, age_years, parent_name, parent_email,
-          } as any).select('id').maybeSingle(),
-          8000
-        ).catch((e) => ({ data: null, error: e }));
+          } as any).select('id').maybeSingle()
+        );
+        const insertRes = await withTimeout(insertPromise, 8000).catch((e) => ({ data: null, error: e }));
         const { data, error } = insertRes as any;
         if (error) {
           console.warn('[AutismOnboarding] insert failed, continuing locally:', error);
