@@ -290,10 +290,11 @@ ${braille}
 
 Final decoded ${langName} text:`;
 
+  // Speed priority: fastest models first, single pass, smaller tokens.
   const out = await callGemini(
-    ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    ["gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"],
     prompt,
-    { temperature: 0.05, maxOutputTokens: 8192, mimeType: "text/plain" },
+    { temperature: 0.05, maxOutputTokens: 4096, mimeType: "text/plain" },
   );
   return out.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
 }
