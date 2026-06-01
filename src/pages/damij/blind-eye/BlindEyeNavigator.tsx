@@ -738,7 +738,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         return;
       }
       case 'GO_TO': {
-        const dest = parseDestination(text);
+        const dest = parseDestinationLoose(text);
         if (!dest) { sendChat(text); return; }
         if (dest.kind === 'local') {
           targetGeoRef.current = null;
