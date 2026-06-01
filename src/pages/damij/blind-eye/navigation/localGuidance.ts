@@ -14,17 +14,28 @@ export type LandmarkPoint = {
 // Map AI english labels (possibly noisy) to our canonical landmark.
 const LABEL_MAP: Array<[RegExp, LocalLandmark]> = [
   [/door|gate|entrance|exit|باب/i, 'door'],
-  [/chair|كرسي/i, 'chair'],
-  [/table|desk|طاولة|طابلة|مكتب/i, 'table'],
-  [/stair|step|staircase|درج|سلم/i, 'stairs'],
+  [/chair|seat|كرسي/i, 'chair'],
+  [/table|dining|طاولة|طابلة|سفرة/i, 'table'],
+  [/desk|مكتب/i, 'desk'],
+  [/stair|step|staircase|درج|سلم|سلالم/i, 'stairs'],
   [/window|نافذة|شباك/i, 'window'],
-  [/person|man|woman|people|human|شخص|رجل/i, 'person'],
-  [/bed|سرير/i, 'bed'],
-  [/sink|basin|مغسلة|حوض/i, 'sink'],
-  [/toilet|wc|حمام|مرحاض/i, 'toilet'],
-  [/sofa|couch|كنبة|أريكة/i, 'sofa'],
-  [/car|vehicle|سيارة/i, 'car'],
+  [/person|man|woman|people|human|شخص|رجل|ولد/i, 'person'],
+  [/bed|سرير|تخت/i, 'bed'],
+  [/sink|basin|مغسلة|حوض|مجلى/i, 'sink'],
+  [/toilet|wc|restroom|حمام|مرحاض|تواليت/i, 'toilet'],
+  [/sofa|couch|كنبة|أريكة|صوفا/i, 'sofa'],
+  [/car|vehicle|truck|سيارة|عربية/i, 'car'],
+  [/kitchen|stove|oven|cooker|مطبخ|كزينه/i, 'kitchen'],
+  [/fridge|refrigerator|ثلاجة|براد|فريزر/i, 'fridge'],
+  [/tv|television|screen|monitor|تلفاز|تلفزيون|شاشة/i, 'tv'],
+  [/closet|wardrobe|cabinet|cupboard|drawer|خزانة|دولاب|كبت/i, 'closet'],
+  [/switch|button|مفتاح|زر/i, 'light_switch'],
+  [/computer|laptop|pc|كمبيوتر|حاسوب|لابتوب/i, 'computer'],
+  [/balcony|terrace|patio|شرفة|بلكون|تراس/i, 'balcony'],
+  [/elevator|lift|مصعد|اسانسير/i, 'elevator'],
+  [/plant|tree|flower|leaf|نبتة|زرع|شجرة|ورد/i, 'plant'],
 ];
+
 
 export function classifyLandmark(label: string): LocalLandmark | null {
   for (const [rx, lm] of LABEL_MAP) if (rx.test(label)) return lm;
