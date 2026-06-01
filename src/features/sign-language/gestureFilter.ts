@@ -23,13 +23,19 @@ const CONFUSION_PAIRS: Record<string, string[]> = {
   love: ['rock'],
 };
 
-// Pick the cleanest single word from a "نعم / موافق" style label.
+// Pick the cleanest single word from a "yes / okay" or "نعم / موافق" style label.
+// Works for ANY language — we only strip ASCII punctuation/symbols and keep
+// letters from every script (Arabic, Latin, CJK, Cyrillic, Devanagari, etc.).
 export const cleanGestureText = (raw: string): string => {
   if (!raw) return '';
-  // Take the first variant before "/"
-  const first = raw.split('/')[0].trim();
-  // Remove any non-Arabic punctuation residue
-  return first.replace(/[^\u0600-\u06FF\s]/g, '').trim();
+  // Take the first variant before "/" or "|"
+  const first = raw.split(/[\/|]/)[0].trim();
+  // Strip bidi marks and ASCII punctuation; keep letters/numbers from every script.
+  return first
+    .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+    .replace(/[!-/:-@[-`{-~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 // Decide whether a newly detected gesture should be APPENDED to the sentence,
