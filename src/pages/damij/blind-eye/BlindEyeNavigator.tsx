@@ -600,12 +600,15 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
 
   // ---- Voice chat dispatcher ----
-  const sendChat = useCallback(async (text: string) => {
+  const sendChat = useCallback(async (text: string, intent?: string) => {
     userSpeakingRef.current = true;
     const g = lastGuideRef.current;
-    const visualContext = g
-      ? `top obstacle: ${g.obstacles_summary}. best direction: ${g.best_path}. proximity: ${g.global_proximity}/100.`
-      : undefined;
+    const parts: string[] = [];
+    if (g) parts.push(`top obstacle: ${g.obstacles_summary}. best direction: ${g.best_path}. proximity: ${g.global_proximity}/100.`);
+    if (spinSummaryRef.current) parts.push(`spin scan: ${spinSummaryRef.current}`);
+    const visualContext = parts.length ? parts.join(' | ') : undefined;
+    const wasAwaitingDest = awaitingDestinationRef.current;
+    if (wasAwaitingDest) awaitingDestinationRef.current = false;
     chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user' as const, text }].slice(-4);
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
@@ -614,9 +617,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
           history: chatHistoryRef.current.slice(0, -1),
           visualContext,
           lang: langRef.current,
+          intent: intent || (wasAwaitingDest ? 'destination' : undefined),
         },
       });
       if (error) throw error;
+
       if (data?.spoken) {
         chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant' as const, text: data.spoken }].slice(-4);
         if (Array.isArray(data.suggestions) && data.suggestions.length) {
