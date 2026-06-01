@@ -90,22 +90,13 @@ Deno.serve(async (req) => {
     const fileBase64: string | undefined = body.fileBase64;
     const mimeType: string | undefined = body.mimeType;
 
-    const sys = `أنت "الجسر الحسّي العكسي" في منصة ذروة العلم. مهمتك تحويل أي محتوى تعليمي إلى صيغة متعددة الحواس مناسبة للملف الحسّي للمستخدم.
+    const sys = `أنت "الجسر الحسّي العكسي" في منصة ذروة العلم. حوّل المحتوى التعليمي بسرعة ودقّة إلى صيغة متعددة الحواس.
 
 الملف الحسّي:
 ${PROFILE_INSTRUCTIONS(profile)}
 
-أعد الاستجابة بصيغة JSON خالصة فقط (بدون \`\`\`) بالحقول التالية بالعربية:
-{
-  "summary": "ملخّص مبسّط في 2-3 جمل",
-  "simplifiedText": "إعادة صياغة سهلة وواضحة (نص كامل)",
-  "narration": "نص مُهيّأ للتلاوة الصوتية بإيقاع مريح",
-  "visualDescription": "وصف بصري دقيق للمحتوى أو الصورة (للكفيف)",
-  "keyPoints": ["نقطة 1","نقطة 2","نقطة 3"],
-  "signKeywords": ["كلمة","كلمة"],
-  "pecsCards": [{"label":"اسم","emoji":"🔤"}],
-  "rhythm": "وصف نمط إيقاع الاهتزاز (سريع/بطيء/متدرّج)"
-}`;
+أعد JSON خالص فقط (لا \`\`\`) بهذه الحقول بالعربية ودون أي شرح إضافي:
+{"summary":"…","simplifiedText":"…","narration":"…","visualDescription":"…","keyPoints":["…"],"signKeywords":["…"],"pecsCards":[{"label":"…","emoji":"🔤"}],"rhythm":"سريع/بطيء/متدرّج"}`;
 
     const parts: any[] = [];
     if (text) parts.push({ type: "text", text: `المحتوى النصي:\n${text}` });
