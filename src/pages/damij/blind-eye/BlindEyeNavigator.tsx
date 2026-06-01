@@ -96,6 +96,17 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const onlineRef = useRef<boolean>(isOnline());
   const [online, setOnline] = useState<boolean>(isOnline());
 
+  // Spin-scan state
+  const spinHandleRef = useRef<SpinHandle | null>(null);
+  const spinShotsRef = useRef<string[]>([]);
+  const spinShotAnglesRef = useRef<Set<number>>(new Set());
+  const spinSummaryRef = useRef<string | null>(null);
+  const [spinPct, setSpinPct] = useState(0);
+  const awaitingDestinationRef = useRef<boolean>(false);
+  // Hazard description cooldown
+  const lastHazardDescribeRef = useRef<number>(0);
+
+
 
 
 
