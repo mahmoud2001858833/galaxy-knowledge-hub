@@ -15,7 +15,7 @@ import {
 import { DAMIJ_LANGS } from '@/features/damij/i18n/types';
 import { toBcp47 } from '@/features/damij/i18n/bcp47';
 import { useDamijLang } from '@/features/damij/i18n/DamijLanguageContext';
-import { useSignTranslations } from '@/features/sign-language/dictionary/translations';
+import { useSignTranslations, findArabicWordByTranslation } from '@/features/sign-language/dictionary/translations';
 
 type Modality = 'text' | 'voice' | 'braille' | 'sign';
 
@@ -209,7 +209,18 @@ const SensoryUnifiedComm: React.FC = () => {
   }, [text, autoTTS]);
 
   // Sign-language playback: step through WORDS/GESTURES (with spelling fallback)
-  const signTokens = useMemo(() => tokenizeSigns(text), [text]);
+  const signTokens = useMemo(() => {
+    if (voiceLang === 'ar') return tokenizeSigns(text);
+    const words = text.split(/\s+/).filter(Boolean);
+    return words.map((w) => {
+      const cleaned = w.replace(/[.,!?؟،;:"'()\[\]{}]/g, '');
+      const ar = signTrReady ? findArabicWordByTranslation(cleaned, voiceLang) : null;
+      const lk = lookupSign(ar || cleaned);
+      if (lk.kind === 'word') return { word: w, kind: 'word' as const, gesture: lk.gesture };
+      if (lk.kind === 'spell') return { word: w, kind: 'spell' as const, letters: lk.letters };
+      return { word: w, kind: 'unknown' as const };
+    });
+  }, [text, voiceLang, signTrReady]);
   const recognizedCount = signTokens.filter(t => t.kind !== 'unknown').length;
   const [signSpeed, setSignSpeed] = useState(1300);
   const [showLib, setShowLib] = useState(false);
