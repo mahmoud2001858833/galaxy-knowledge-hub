@@ -258,22 +258,21 @@ async function callGateway(model: string, imageDataUrl: string | string[], mode:
     ? `Context: ${extraContext}\nAnalyze in language "${lang}".`
     : `Analyze in language "${lang}".`;
 
+  const images = Array.isArray(imageDataUrl) ? imageDataUrl : [imageDataUrl];
+  const userContent: any[] = [{ type: "text", text: userText }];
+  for (const url of images) userContent.push({ type: "image_url", image_url: { url } });
+
   const body = {
     model,
-    max_tokens: 200,
+    max_tokens: mode === "spin_scan" ? 220 : mode === "describe_hazard" ? 60 : 200,
     messages: [
       { role: "system", content: sys },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: userText },
-          { type: "image_url", image_url: { url: imageDataUrl } },
-        ],
-      },
+      { role: "user", content: userContent },
     ],
     tools: [tool],
     tool_choice: { type: "function", function: { name: tool.function.name } },
   };
+
 
 
   const r = await fetch(GATEWAY, {
