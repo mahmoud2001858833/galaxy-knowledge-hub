@@ -364,10 +364,78 @@ const SensoryUnifiedComm: React.FC = () => {
         )}
         {activeInput === 'sign' && (
           <div>
-            <p className="text-xs text-gray-500 mb-1">اكتب جملة بكلمات كاملة (مثلاً: «مرحبا أنا أحب المدرسة») وستظهر كل كلمة كحركة/إشارة بصرية مع شرح للحركة.</p>
-            <textarea value={text} onChange={(e) => onSignGloss(e.target.value)} rows={3}
-              className="w-full p-3 rounded-xl border border-gray-200 text-base" placeholder="مثال: مرحبا أنا أحب المدرسة"/>
-            <p className="text-[11px] text-gray-400 mt-1">القاموس يدعم: التحيات، الأسرة، الأفعال، المشاعر، الأسئلة، الزمن. للترجمة بالكاميرا استخدم صفحة نظام لغة الإشارة.</p>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
+                <Hand className="w-3 h-3" /> قاموس الإشارات
+              </span>
+              <p className="text-[11px] text-gray-500">اضغط على أي إشارة لإضافتها للجملة، وستُترجم تلقائياً إلى نص وصوت وبريل.</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 absolute top-2.5 right-3 text-gray-400" />
+                <input value={libQuery} onChange={e => setLibQuery(e.target.value)}
+                  placeholder="ابحث عن إشارة..."
+                  className="w-full pe-9 ps-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
+              </div>
+              <button type="button" onClick={() => setText('')}
+                disabled={!text}
+                className="text-xs px-3 py-2 rounded-xl bg-gray-100 text-gray-700 disabled:opacity-50 inline-flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" /> مسح الجملة
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl border border-emerald-100 bg-emerald-50/40 min-h-[56px] mb-3">
+              <p className="text-[10px] text-emerald-700/70 mb-1">الجملة الحالية:</p>
+              {text ? (
+                <p className="text-base font-bold text-emerald-900 leading-relaxed">{text}</p>
+              ) : (
+                <p className="text-xs text-emerald-700/50">لم تُختر أي إشارة بعد — انقر على الإشارات أدناه.</p>
+              )}
+            </div>
+
+            <div className="max-h-[420px] overflow-y-auto pe-1 space-y-4">
+              {libQuery.trim() ? (() => {
+                const q = libQuery.trim();
+                const hits = Object.keys(SIGN_DICT).filter(k => k.includes(q)).slice(0, 120);
+                return hits.length ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {hits.map(k => {
+                      const lk = lookupSign(k);
+                      const gs = lk.kind === 'word' ? lk.gesture : null;
+                      return (
+                        <button type="button" key={k}
+                          onClick={() => { setActiveInput('sign'); setText(t => (t ? t + ' ' : '') + k); }}
+                          title={gs?.desc || k}
+                          className="p-2 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-center transition-transform hover:-translate-y-0.5 hover:shadow-md">
+                          <div className="text-2xl">{gs?.emoji || '✋'}</div>
+                          <div className="text-xs font-bold text-emerald-800">{k}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : <p className="text-sm text-gray-500 text-center py-6">لا نتائج. جرّب كلمة أخرى.</p>;
+              })() : SIGN_CATEGORIES.map(cat => (
+                <div key={cat.name}>
+                  <h4 className="font-bold text-xs text-emerald-700 mb-2 sticky top-0 bg-white py-1">{cat.name}</h4>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {cat.words.map(w => {
+                      const lk = lookupSign(w);
+                      const gs = lk.kind === 'word' ? lk.gesture : null;
+                      return (
+                        <button type="button" key={w}
+                          onClick={() => { setActiveInput('sign'); setText(t => (t ? t + ' ' : '') + w); }}
+                          title={gs?.desc || w}
+                          className="p-2 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-center transition-transform hover:-translate-y-0.5 hover:shadow-md">
+                          <div className="text-2xl">{gs?.emoji || '✋'}</div>
+                          <div className="text-xs font-bold text-emerald-800">{w}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
