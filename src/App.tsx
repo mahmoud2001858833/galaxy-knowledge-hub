@@ -346,7 +346,9 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <PublicRoute><Index /></PublicRoute>,
+        element: (typeof window !== 'undefined' && /(^|\.)damij-jo\.life$/i.test(window.location.hostname))
+          ? <Navigate to="/damij" replace />
+          : <PublicRoute><Index /></PublicRoute>,
       },
       {
         path: 'autism/c/:token',
