@@ -75,19 +75,41 @@ const DamijAuth: React.FC = () => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      // Auto-heal: if user has session but no damij profile, create from metadata
+      // Auto-heal for ANY authenticated user (including existing ذروة العلم users):
+      // create a Damij profile if one doesn't exist yet, using metadata if available.
       const meta = (session.user.user_metadata ?? {}) as any;
-      if (meta?.damij_signup) {
-        await ensureDamijProfile(session.user.id, {
-          name: meta.damij_name, role: meta.damij_role,
-        });
-      }
+      await ensureDamijProfile(session.user.id, {
+        name: meta?.damij_name || meta?.full_name || meta?.name || (session.user.email?.split('@')[0]),
+        role: meta?.damij_role || 'other',
+      });
       const { data: prof } = await supabase
         .from('damij_users').select('id').eq('user_id', session.user.id).maybeSingle();
       if (prof && mounted) navigate(returnUrl, { replace: true });
     })();
     return () => { mounted = false; };
   }, [navigate, returnUrl]);
+
+  const handleGoogle = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/damij/auth?returnUrl=${encodeURIComponent(returnUrl)}`,
+          queryParams: { access_type: 'offline', prompt: 'select_account' },
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast({
+        title: 'تعذّر تسجيل الدخول بقوقل',
+        description: err?.message || 'يرجى التأكد من تفعيل مزوّد Google في إعدادات Supabase.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,8 +128,10 @@ const DamijAuth: React.FC = () => {
         if (error) throw error;
 
         const meta = (data.user?.user_metadata ?? {}) as any;
+        // Always ensure a Damij profile exists — covers existing ذروة العلم users
         await ensureDamijProfile(data.user!.id, {
-          name: meta?.damij_name, role: meta?.damij_role,
+          name: meta?.damij_name || meta?.full_name || meta?.name || (data.user!.email?.split('@')[0]),
+          role: meta?.damij_role || 'other',
         });
 
         const { data: prof } = await supabase
@@ -115,11 +139,10 @@ const DamijAuth: React.FC = () => {
 
         if (!prof) {
           toast({
-            title: 'يلزم استكمال البيانات',
-            description: 'أنشئ ملفك في دامج لاستكمال الدخول.',
+            title: 'تعذّر إنشاء ملف دامج',
+            description: 'حدث خطأ غير متوقع، حاول مرة أخرى أو تواصل مع الدعم.',
             variant: 'destructive',
           });
-          setMode('signup');
           return;
         }
         setPhase('success');
@@ -447,6 +470,29 @@ const DamijAuth: React.FC = () => {
                       )}
                     </button>
 
+                    {/* OR divider */}
+                    <div className="relative flex items-center gap-3 py-1">
+                      <div className="flex-1 h-px bg-slate-200" />
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">أو</span>
+                      <div className="flex-1 h-px bg-slate-200" />
+                    </div>
+
+                    {/* Google sign-in */}
+                    <button
+                      type="button"
+                      onClick={handleGoogle}
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-bold text-slate-800 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm transition-all disabled:opacity-60"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
+                        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+                        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+                        <path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.3l-6.3-5.2C29.5 35 26.9 36 24 36c-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.7 16.2 44 24 44z"/>
+                        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.5l6.3 5.2C41.4 35.3 44 30 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+                      </svg>
+                      <span className="text-sm">المتابعة بحساب جوجل</span>
+                    </button>
+
                     <div className="text-center text-xs text-slate-600 font-medium">
                       {mode === 'login' ? 'ليس لديك حساب دامج؟' : 'لديك حساب بالفعل؟'}{' '}
                       <button
@@ -457,14 +503,19 @@ const DamijAuth: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-center gap-2 text-[11px] text-slate-600 font-semibold pt-3 border-t border-slate-200">
-                      <Shield className="w-3.5 h-3.5" />
-                      <span>حساب دامج مستقل تمامًا عن منصة ذروة العلم</span>
+                    {/* ذروة العلم users notice */}
+                    <div className="rounded-xl bg-gradient-to-l from-emerald-50 to-sky-50 border-2 border-emerald-200/70 px-4 py-3 text-[12px] text-slate-700 font-semibold leading-relaxed flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>
+                        <strong className="text-emerald-700">مستخدمو منصة «ذروة العلم»:</strong>{' '}
+                        نفس بريدك وكلمة مرورك تعمل هنا — فقط اضغط <span className="text-[hsl(var(--damij-primary))] font-extrabold">«دخول»</span> وسننشئ لك ملف دامج تلقائياً.
+                      </span>
                     </div>
 
                     <Link to="/damij" className="block text-center text-[11px] text-slate-500 hover:text-[hsl(var(--damij-primary))] font-semibold">
                       ← العودة لصفحة دامج
                     </Link>
+
 
                   </form>
                 </motion.div>
