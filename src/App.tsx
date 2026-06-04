@@ -344,12 +344,16 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <NotFound />,
     children: [
-      {
-        index: true,
-        element: (typeof window !== 'undefined' && /(^|\.)damij-jo\.life$/i.test(window.location.hostname))
-          ? <DamijAuthGuard><DamijLayout><DamijLanding /></DamijLayout></DamijAuthGuard>
-          : <PublicRoute><Index /></PublicRoute>,
-      },
+      ...((typeof window !== 'undefined' && /(^|\.)damij-jo\.life$/i.test(window.location.hostname))
+        ? [{
+            index: true as const,
+            element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
+            children: [{ index: true as const, element: <DamijLanding /> }],
+          }]
+        : [{
+            index: true as const,
+            element: <PublicRoute><Index /></PublicRoute>,
+          }]),
       {
         path: 'autism/c/:token',
         element: <AutismChildPage />,
