@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2, BookOpen, ExternalLink, Stethoscope } from 'lucide-react';
+import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2, BookOpen, ExternalLink, Stethoscope, BarChart3, Lock as LockIcon } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
 import DamijSEO from '@/components/damij/DamijSEO';
@@ -176,7 +176,7 @@ const DamijLanding: React.FC = () => {
                 <div className="text-[10px] font-bold tracking-widest text-[hsl(var(--damij-primary))]/80 mb-1">DAMIJ · RESULTS</div>
                 <h3 className="text-xl md:text-2xl font-black text-[hsl(var(--damij-primary))] mb-1 leading-tight flex items-center gap-2 justify-end">
                   رؤية النتائج
-                  <Lock className="w-4 h-4 text-[hsl(var(--damij-muted))]" />
+                  <LockIcon className="w-4 h-4 text-[hsl(var(--damij-muted))]" />
                 </h3>
                 <p className="text-sm text-[hsl(var(--damij-muted))] leading-relaxed">
                   محمي بكلمة مرور — للاطلاع على إجابات الأطباء.
