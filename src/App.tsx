@@ -987,6 +987,10 @@ const router = createBrowserRouter([
         element: <DamijDoctorSurvey />,
       },
       {
+        path: 'damij/results',
+        element: <DamijResults />,
+      },
+      {
         path: 'damij',
         element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
         children: [
