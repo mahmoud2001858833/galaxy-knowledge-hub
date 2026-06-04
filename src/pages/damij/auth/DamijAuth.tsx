@@ -128,8 +128,10 @@ const DamijAuth: React.FC = () => {
         if (error) throw error;
 
         const meta = (data.user?.user_metadata ?? {}) as any;
+        // Always ensure a Damij profile exists — covers existing ذروة العلم users
         await ensureDamijProfile(data.user!.id, {
-          name: meta?.damij_name, role: meta?.damij_role,
+          name: meta?.damij_name || meta?.full_name || meta?.name || (data.user!.email?.split('@')[0]),
+          role: meta?.damij_role || 'other',
         });
 
         const { data: prof } = await supabase
@@ -137,11 +139,10 @@ const DamijAuth: React.FC = () => {
 
         if (!prof) {
           toast({
-            title: 'يلزم استكمال البيانات',
-            description: 'أنشئ ملفك في دامج لاستكمال الدخول.',
+            title: 'تعذّر إنشاء ملف دامج',
+            description: 'حدث خطأ غير متوقع، حاول مرة أخرى أو تواصل مع الدعم.',
             variant: 'destructive',
           });
-          setMode('signup');
           return;
         }
         setPhase('success');
