@@ -75,19 +75,41 @@ const DamijAuth: React.FC = () => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      // Auto-heal: if user has session but no damij profile, create from metadata
+      // Auto-heal for ANY authenticated user (including existing ذروة العلم users):
+      // create a Damij profile if one doesn't exist yet, using metadata if available.
       const meta = (session.user.user_metadata ?? {}) as any;
-      if (meta?.damij_signup) {
-        await ensureDamijProfile(session.user.id, {
-          name: meta.damij_name, role: meta.damij_role,
-        });
-      }
+      await ensureDamijProfile(session.user.id, {
+        name: meta?.damij_name || meta?.full_name || meta?.name || (session.user.email?.split('@')[0]),
+        role: meta?.damij_role || 'other',
+      });
       const { data: prof } = await supabase
         .from('damij_users').select('id').eq('user_id', session.user.id).maybeSingle();
       if (prof && mounted) navigate(returnUrl, { replace: true });
     })();
     return () => { mounted = false; };
   }, [navigate, returnUrl]);
+
+  const handleGoogle = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/damij/auth?returnUrl=${encodeURIComponent(returnUrl)}`,
+          queryParams: { access_type: 'offline', prompt: 'select_account' },
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast({
+        title: 'تعذّر تسجيل الدخول بقوقل',
+        description: err?.message || 'يرجى التأكد من تفعيل مزوّد Google في إعدادات Supabase.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
