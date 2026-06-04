@@ -235,7 +235,23 @@ const DamijDoctorSurvey: React.FC = () => {
   return (
     <div className="damij-root min-h-screen" dir="rtl"
       style={{ background: 'linear-gradient(135deg, hsl(var(--damij-bg)), hsl(var(--damij-bg-2)))' }}>
+      <Helmet>
+        <title>استبيان الأطباء — منصة دامج</title>
+        <meta name="description" content="استبيان مخصص للأطباء وأخصائيي الرعاية الصحية لمشاركة آرائهم وأفكارهم حول منصة دامج للدمج التعليمي وأدواتها لذوي الإعاقة." />
+        <link rel="canonical" href="https://damij-jo.life/damij/doctor-survey" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://damij-jo.life/damij/doctor-survey" />
+        <meta property="og:title" content="استبيان الأطباء — منصة دامج" />
+        <meta property="og:description" content="شارك أفكارك ورؤيتك كطبيب أو أخصائي حول منصة دامج وأدواتها للتوحد، ADHD، البصر، السمع، البريل ولغة الإشارة." />
+        <meta property="og:image" content="https://damij-jo.life/damij-doctor-survey-og.jpg" />
+        <meta property="og:locale" content="ar_AR" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="استبيان الأطباء — منصة دامج" />
+        <meta name="twitter:description" content="شارك أفكارك كطبيب حول منصة دامج للدمج التعليمي وأدواتها لذوي الإعاقة." />
+        <meta name="twitter:image" content="https://damij-jo.life/damij-doctor-survey-og.jpg" />
+      </Helmet>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+
         <Link
           to="/damij"
           className="inline-flex items-center gap-2 mb-6 text-sm hover:opacity-70 transition"
