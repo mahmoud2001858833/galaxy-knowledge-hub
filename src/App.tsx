@@ -983,6 +983,10 @@ const router = createBrowserRouter([
         element: <DamijResetPassword />,
       },
       {
+        path: 'damij/doctor-survey',
+        element: <DamijDoctorSurvey />,
+      },
+      {
         path: 'damij',
         element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
         children: [
