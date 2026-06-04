@@ -988,6 +988,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <DamijLanding /> },
           { path: 'docs', element: <DamijDocs /> },
+          { path: 'doctor-survey', element: <DamijDoctorSurvey /> },
           { path: 'braille', element: <BrailleHome /> },
           
           { path: 'braille/braille-to-text', element: <BrailleToText /> },
