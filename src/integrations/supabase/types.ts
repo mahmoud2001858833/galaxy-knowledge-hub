@@ -2618,6 +2618,36 @@ export type Database = {
         }
         Relationships: []
       }
+      damij_doctor_surveys: {
+        Row: {
+          answers: Json
+          created_at: string
+          doctor_name: string | null
+          email: string | null
+          id: string
+          specialty: string | null
+          workplace: string | null
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          doctor_name?: string | null
+          email?: string | null
+          id?: string
+          specialty?: string | null
+          workplace?: string | null
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          doctor_name?: string | null
+          email?: string | null
+          id?: string
+          specialty?: string | null
+          workplace?: string | null
+        }
+        Relationships: []
+      }
       damij_translation_cache: {
         Row: {
           created_at: string
