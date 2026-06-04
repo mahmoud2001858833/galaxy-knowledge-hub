@@ -177,6 +177,7 @@ import DamijLayout from './pages/damij/DamijLayout';
 import DamijLanding from './pages/damij/DamijLanding';
 import DamijLandingStandalone from './pages/damij/DamijLandingStandalone';
 import DamijDocs from './pages/damij/DamijDocs';
+import DamijDoctorSurvey from './pages/damij/DamijDoctorSurvey';
 import DamijAuth from './pages/damij/auth/DamijAuth';
 import DamijResetPassword from './pages/damij/auth/DamijResetPassword';
 import DamijAuthGuard from './components/damij/DamijAuthGuard';
@@ -982,11 +983,16 @@ const router = createBrowserRouter([
         element: <DamijResetPassword />,
       },
       {
+        path: 'damij/doctor-survey',
+        element: <DamijDoctorSurvey />,
+      },
+      {
         path: 'damij',
         element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
         children: [
           { index: true, element: <DamijLanding /> },
           { path: 'docs', element: <DamijDocs /> },
+          { path: 'doctor-survey', element: <DamijDoctorSurvey /> },
           { path: 'braille', element: <BrailleHome /> },
           
           { path: 'braille/braille-to-text', element: <BrailleToText /> },

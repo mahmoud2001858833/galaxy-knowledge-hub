@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2, BookOpen, ExternalLink } from 'lucide-react';
+import { Brain, Activity, Hand, FlaskConical, Layers, BookMarked, Eye, Sparkles, Users, ShieldCheck, Heart, Globe2, BookOpen, ExternalLink, Stethoscope } from 'lucide-react';
 import SystemCard from '@/components/damij/SystemCard';
 import DamijHero3D from '@/components/damij/DamijHero3D';
 import DamijSEO from '@/components/damij/DamijSEO';
@@ -135,6 +135,41 @@ const DamijLanding: React.FC = () => {
           </Link>
         </motion.div>
       </section>
+
+      {/* Doctor Survey CTA */}
+      <section className="px-6 mb-10">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto"
+        >
+          <Link
+            to="/damij/doctor-survey"
+            className="group block relative rounded-3xl overflow-hidden border-2 border-[hsl(var(--damij-warm))]/30 bg-gradient-to-br from-orange-50 via-white to-amber-50 hover:border-[hsl(var(--damij-warm))]/60 transition-all shadow-sm hover:shadow-xl"
+          >
+            <div className="relative p-6 md:p-8 flex flex-col md:flex-row items-center gap-5">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[hsl(var(--damij-warm))] text-white flex items-center justify-center shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+                <Stethoscope className="w-9 h-9 md:w-11 md:h-11" />
+              </div>
+              <div className="flex-1 text-center md:text-right">
+                <div className="text-xs font-bold tracking-widest text-[hsl(var(--damij-warm))]/80 mb-1">DAMIJ · DOCTORS SURVEY</div>
+                <h3 className="text-2xl md:text-3xl font-black text-[hsl(var(--damij-primary))] mb-1.5 leading-tight">
+                  استبيان الأطباء — شاركنا أفكارك
+                </h3>
+                <p className="text-sm md:text-base text-[hsl(var(--damij-muted))] max-w-2xl md:mr-0 mx-auto leading-relaxed">
+                  10 أسئلة سريعة موجّهة للأطباء حول الأفكار والرؤية لتطوير منصة دامج — لا علاقة لها بالأداء الوظيفي.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[hsl(var(--damij-warm))] text-white font-extrabold shadow-md group-hover:shadow-lg transition shrink-0">
+                ابدأ الاستبيان
+                <ExternalLink className="w-4 h-4" />
+              </span>
+            </div>
+          </Link>
+        </motion.div>
+      </section>
+
 
 
 
