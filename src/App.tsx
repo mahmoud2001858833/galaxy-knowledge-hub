@@ -347,7 +347,7 @@ const router = createBrowserRouter([
       {
         index: true,
         element: (typeof window !== 'undefined' && /(^|\.)damij-jo\.life$/i.test(window.location.hostname))
-          ? <Navigate to="/damij" replace />
+          ? <DamijAuthGuard><DamijLayout><DamijLanding /></DamijLayout></DamijAuthGuard>
           : <PublicRoute><Index /></PublicRoute>,
       },
       {
