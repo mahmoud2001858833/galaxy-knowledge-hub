@@ -178,6 +178,7 @@ import DamijLanding from './pages/damij/DamijLanding';
 import DamijLandingStandalone from './pages/damij/DamijLandingStandalone';
 import DamijDocs from './pages/damij/DamijDocs';
 import DamijDoctorSurvey from './pages/damij/DamijDoctorSurvey';
+import DamijResults from './pages/damij/DamijResults';
 import DamijAuth from './pages/damij/auth/DamijAuth';
 import DamijResetPassword from './pages/damij/auth/DamijResetPassword';
 import DamijAuthGuard from './components/damij/DamijAuthGuard';
