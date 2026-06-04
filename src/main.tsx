@@ -12,13 +12,7 @@ import { NotificationProvider } from "@/components/NotificationProvider";
 
 const queryClient = new QueryClient();
 
-// Hostname-based redirect: damij-jo.life always serves the Damij platform
-if (typeof window !== 'undefined' && /(^|\.)damij-jo\.life$/i.test(window.location.hostname)) {
-  const path = window.location.pathname;
-  if (!path.startsWith('/damij')) {
-    window.location.replace('/damij' + window.location.search + window.location.hash);
-  }
-}
+// damij-jo.life serves the Damij platform at the root path (handled in App router).
 
 // Make sure React is correctly initialized before rendering
 const root = ReactDOM.createRoot(document.getElementById("root")!);

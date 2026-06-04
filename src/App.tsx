@@ -175,6 +175,7 @@ import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
 import DamijLayout from './pages/damij/DamijLayout';
 import DamijLanding from './pages/damij/DamijLanding';
+import DamijLandingStandalone from './pages/damij/DamijLandingStandalone';
 import DamijDocs from './pages/damij/DamijDocs';
 import DamijAuth from './pages/damij/auth/DamijAuth';
 import DamijResetPassword from './pages/damij/auth/DamijResetPassword';
@@ -347,7 +348,7 @@ const router = createBrowserRouter([
       {
         index: true,
         element: (typeof window !== 'undefined' && /(^|\.)damij-jo\.life$/i.test(window.location.hostname))
-          ? <Navigate to="/damij" replace />
+          ? <DamijAuthGuard><DamijLandingStandalone /></DamijAuthGuard>
           : <PublicRoute><Index /></PublicRoute>,
       },
       {
