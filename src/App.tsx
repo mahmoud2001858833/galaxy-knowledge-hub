@@ -173,92 +173,143 @@ import JordanDigitalTwin from './pages/JordanDigitalTwin';
 import HassanGardenAI from './pages/HassanGardenAI';
 import MemoryTree from './pages/MemoryTree';
 import CancerDetection from './pages/CancerDetection';
-import DamijLayout from './pages/damij/DamijLayout';
-import DamijLanding from './pages/damij/DamijLanding';
-import DamijLandingStandalone from './pages/damij/DamijLandingStandalone';
-import DamijDocs from './pages/damij/DamijDocs';
-import DamijDoctorSurvey from './pages/damij/DamijDoctorSurvey';
-import DamijResults from './pages/damij/DamijResults';
-import DamijAuth from './pages/damij/auth/DamijAuth';
-import DamijResetPassword from './pages/damij/auth/DamijResetPassword';
+// ===== Damij: lazy-loaded to keep the main bundle small (faster first load + Safari friendly) =====
 import DamijAuthGuard from './components/damij/DamijAuthGuard';
-import BrailleHome from './pages/damij/braille/BrailleHome';
 
-import BrailleToText from './pages/damij/braille/BrailleToText';
-import BrailleLearn from './pages/damij/braille/BrailleLearn';
-import UniversalBrailleConverter from './pages/damij/braille/UniversalBrailleConverter';
-import TactileGraphics from './pages/damij/braille/TactileGraphics';
-import InteractiveBrailleLearn from './pages/damij/braille/InteractiveBrailleLearn';
-import BlindEyeHome from './pages/damij/blind-eye/BlindEyeHome';
-import BlindEyeNavigator from './pages/damij/blind-eye/BlindEyeNavigator';
-import BlindEyeSettings from './pages/damij/blind-eye/BlindEyeSettings';
-import BlindEyeOnboarding from './pages/damij/blind-eye/BlindEyeOnboarding';
-import AutismLayout from './pages/damij/autism/AutismLayout';
-import AutismHome from './pages/damij/autism/AutismHome';
-import AutismDiagnosis from './pages/damij/autism/AutismDiagnosis';
-import AutismTherapy from './pages/damij/autism/AutismTherapy';
-import AutismTherapyPlan from './pages/damij/autism/AutismTherapyPlan';
-import AutismGamePlayer from './pages/damij/autism/AutismGamePlayer';
-import AutismProfile from './pages/damij/autism/AutismProfile';
-import AutismProgramSetup from './pages/damij/autism/AutismProgramSetup';
-import AutismProgramCalendar from './pages/damij/autism/AutismProgramCalendar';
-import AutismDayView from './pages/damij/autism/AutismDayView';
-import AutismChildPage from './pages/damij/autism/AutismChildPage';
-import AutismProgressDashboard from './pages/damij/autism/AutismProgressDashboard';
-import ADHDHome from './pages/damij/adhd/ADHDHome';
-import ADHDScreening from './pages/damij/adhd/ADHDScreening';
-import ADHDTraining from './pages/damij/adhd/ADHDTraining';
-import ADHDInstrumentRunner from './pages/damij/adhd/ADHDInstrumentRunner';
-import ADHDScreeningReport from './pages/damij/adhd/ADHDScreeningReport';
-import ADHDAssessmentHub from './pages/damij/adhd/ADHDAssessmentHub';
-import ADHDCPTTask from './pages/damij/adhd/ADHDCPTTask';
-import ADHDNBackTask from './pages/damij/adhd/ADHDNBackTask';
-import ADHDStroopTask from './pages/damij/adhd/ADHDStroopTask';
-import ADHDGoNoGoTask from './pages/damij/adhd/ADHDGoNoGoTask';
-import ADHDTrainingHub from './pages/damij/adhd/ADHDTrainingHub';
-import ADHDFocusBuilder from './pages/damij/adhd/ADHDFocusBuilder';
-import ADHDInterventions from './pages/damij/adhd/ADHDInterventions';
-import ADHDDashboard from './pages/damij/adhd/ADHDDashboard';
-import ADHDResources from './pages/damij/adhd/ADHDResources';
-import ADHDGamesHub from './pages/damij/adhd/ADHDGamesHub';
-import ADHDGamePlay from './pages/damij/adhd/ADHDGamePlay';
-import ADHDDiagnosticReport from './pages/damij/adhd/ADHDDiagnosticReport';
-import ADHDProgramSetup from './pages/damij/adhd/ADHDProgramSetup';
-import ADHDProgramCalendar from './pages/damij/adhd/ADHDProgramCalendar';
-import ADHDProgramDay from './pages/damij/adhd/ADHDProgramDay';
-import ADHDMonthlyTracker from './pages/damij/adhd/ADHDMonthlyTracker';
-import DamijDashboard from './pages/damij/dashboard/DamijDashboard';
-import SignHome from './pages/damij/sign/SignHome';
-import SignTranslator from './pages/damij/sign/SignTranslator';
-import YouTubeSignTranslator from './pages/damij/sign/YouTubeSignTranslator';
-import SignDictionaryAdmin from './pages/damij/sign/SignDictionaryAdmin';
-import SignVocabOverridesAdmin from './pages/damij/sign/SignVocabOverridesAdmin';
-import SensoryHome from './pages/damij/sensory/SensoryHome';
-import SensoryUpload from './pages/damij/sensory/SensoryUpload';
-import SensoryOutput from './pages/damij/sensory/SensoryOutput';
-import SensoryProfileSetup from './pages/damij/sensory/SensoryProfileSetup';
-import SensoryImageTactile from './pages/damij/sensory/SensoryImageTactile';
-import SensoryInteractionLog from './pages/damij/sensory/SensoryInteractionLog';
-import SensoryHapticSettings from './pages/damij/sensory/SensoryHapticSettings';
-import SensoryUnifiedComm from './pages/damij/sensory/SensoryUnifiedComm';
-import SensoryTriSense from './pages/damij/sensory/SensoryTriSense';
-import SensoryAdaptiveUI from './pages/damij/sensory/SensoryAdaptiveUI';
-import { installInteractionTracking } from './pages/damij/sensory/interactionLog';
-import { initAdaptiveUI } from './pages/damij/sensory/adaptiveUI';
-if (typeof window !== 'undefined') { try { installInteractionTracking(); } catch {} try { initAdaptiveUI(); } catch {} }
-import ClinicalHome from './pages/damij/clinical/ClinicalHome';
-import ClinicalCases from './pages/damij/clinical/ClinicalCases';
-import ClinicalLab from './pages/damij/clinical/ClinicalLab';
-import ClinicalFreeExperiment from './pages/damij/clinical/ClinicalFreeExperiment';
-import ClinicalReports from './pages/damij/clinical/ClinicalReports';
-import ClinicalCaseDetail from './pages/damij/clinical/ClinicalCaseDetail';
-import ClinicalLabSession from './pages/damij/clinical/ClinicalLabSession';
-import ClinicalReport from './pages/damij/clinical/ClinicalReport';
-import ClinicalDashboard from './pages/damij/clinical/ClinicalDashboard';
-import ClinicalCompare from './pages/damij/clinical/ClinicalCompare';
-import ClinicalPortfolio from './pages/damij/clinical/ClinicalPortfolio';
-import ClinicalPublicReport from './pages/damij/clinical/ClinicalPublicReport';
-import SourcesLibrary from './pages/damij/sources/SourcesLibrary';
+const DamijFallback = () => (
+  <div style={{
+    minHeight: '60vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: '"Tajawal","Cairo","Inter",sans-serif',
+    color: 'hsl(215 55% 22%)',
+    background: 'linear-gradient(180deg,#f6f9fc,#eef3f8)',
+  }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{
+        width: 44, height: 44, margin: '0 auto 12px',
+        border: '3px solid rgba(0,0,0,0.1)',
+        borderTopColor: 'hsl(200 65% 34%)',
+        borderRadius: '50%',
+        animation: 'spin 0.9s linear infinite'
+      }} />
+      <div style={{ fontSize: 14, opacity: 0.7 }}>...جاري التحميل</div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  </div>
+);
+
+const wrap = <P,>(Comp: React.LazyExoticComponent<ComponentType<P>>) => {
+  const Wrapped: React.FC<P> = (props) => (
+    <Suspense fallback={<DamijFallback />}>
+      <Comp {...(props as any)} />
+    </Suspense>
+  );
+  return Wrapped;
+};
+
+const DamijLayout = wrap(lazy(() => import('./pages/damij/DamijLayout')));
+const DamijLanding = wrap(lazy(() => import('./pages/damij/DamijLanding')));
+const DamijLandingStandalone = wrap(lazy(() => import('./pages/damij/DamijLandingStandalone')));
+const DamijDocs = wrap(lazy(() => import('./pages/damij/DamijDocs')));
+const DamijDoctorSurvey = wrap(lazy(() => import('./pages/damij/DamijDoctorSurvey')));
+const DamijResults = wrap(lazy(() => import('./pages/damij/DamijResults')));
+const DamijAuth = wrap(lazy(() => import('./pages/damij/auth/DamijAuth')));
+const DamijResetPassword = wrap(lazy(() => import('./pages/damij/auth/DamijResetPassword')));
+const BrailleHome = wrap(lazy(() => import('./pages/damij/braille/BrailleHome')));
+const BrailleToText = wrap(lazy(() => import('./pages/damij/braille/BrailleToText')));
+const BrailleLearn = wrap(lazy(() => import('./pages/damij/braille/BrailleLearn')));
+const UniversalBrailleConverter = wrap(lazy(() => import('./pages/damij/braille/UniversalBrailleConverter')));
+const TactileGraphics = wrap(lazy(() => import('./pages/damij/braille/TactileGraphics')));
+const InteractiveBrailleLearn = wrap(lazy(() => import('./pages/damij/braille/InteractiveBrailleLearn')));
+const BlindEyeHome = wrap(lazy(() => import('./pages/damij/blind-eye/BlindEyeHome')));
+const BlindEyeNavigator = wrap(lazy(() => import('./pages/damij/blind-eye/BlindEyeNavigator')));
+const BlindEyeSettings = wrap(lazy(() => import('./pages/damij/blind-eye/BlindEyeSettings')));
+const BlindEyeOnboarding = wrap(lazy(() => import('./pages/damij/blind-eye/BlindEyeOnboarding')));
+const AutismLayout = wrap(lazy(() => import('./pages/damij/autism/AutismLayout')));
+const AutismHome = wrap(lazy(() => import('./pages/damij/autism/AutismHome')));
+const AutismDiagnosis = wrap(lazy(() => import('./pages/damij/autism/AutismDiagnosis')));
+const AutismTherapy = wrap(lazy(() => import('./pages/damij/autism/AutismTherapy')));
+const AutismTherapyPlan = wrap(lazy(() => import('./pages/damij/autism/AutismTherapyPlan')));
+const AutismGamePlayer = wrap(lazy(() => import('./pages/damij/autism/AutismGamePlayer')));
+const AutismProfile = wrap(lazy(() => import('./pages/damij/autism/AutismProfile')));
+const AutismProgramSetup = wrap(lazy(() => import('./pages/damij/autism/AutismProgramSetup')));
+const AutismProgramCalendar = wrap(lazy(() => import('./pages/damij/autism/AutismProgramCalendar')));
+const AutismDayView = wrap(lazy(() => import('./pages/damij/autism/AutismDayView')));
+const AutismChildPage = wrap(lazy(() => import('./pages/damij/autism/AutismChildPage')));
+const AutismProgressDashboard = wrap(lazy(() => import('./pages/damij/autism/AutismProgressDashboard')));
+const ADHDHome = wrap(lazy(() => import('./pages/damij/adhd/ADHDHome')));
+const ADHDScreening = wrap(lazy(() => import('./pages/damij/adhd/ADHDScreening')));
+const ADHDTraining = wrap(lazy(() => import('./pages/damij/adhd/ADHDTraining')));
+const ADHDInstrumentRunner = wrap(lazy(() => import('./pages/damij/adhd/ADHDInstrumentRunner')));
+const ADHDScreeningReport = wrap(lazy(() => import('./pages/damij/adhd/ADHDScreeningReport')));
+const ADHDAssessmentHub = wrap(lazy(() => import('./pages/damij/adhd/ADHDAssessmentHub')));
+const ADHDCPTTask = wrap(lazy(() => import('./pages/damij/adhd/ADHDCPTTask')));
+const ADHDNBackTask = wrap(lazy(() => import('./pages/damij/adhd/ADHDNBackTask')));
+const ADHDStroopTask = wrap(lazy(() => import('./pages/damij/adhd/ADHDStroopTask')));
+const ADHDGoNoGoTask = wrap(lazy(() => import('./pages/damij/adhd/ADHDGoNoGoTask')));
+const ADHDTrainingHub = wrap(lazy(() => import('./pages/damij/adhd/ADHDTrainingHub')));
+const ADHDFocusBuilder = wrap(lazy(() => import('./pages/damij/adhd/ADHDFocusBuilder')));
+const ADHDInterventions = wrap(lazy(() => import('./pages/damij/adhd/ADHDInterventions')));
+const ADHDDashboard = wrap(lazy(() => import('./pages/damij/adhd/ADHDDashboard')));
+const ADHDResources = wrap(lazy(() => import('./pages/damij/adhd/ADHDResources')));
+const ADHDGamesHub = wrap(lazy(() => import('./pages/damij/adhd/ADHDGamesHub')));
+const ADHDGamePlay = wrap(lazy(() => import('./pages/damij/adhd/ADHDGamePlay')));
+const ADHDDiagnosticReport = wrap(lazy(() => import('./pages/damij/adhd/ADHDDiagnosticReport')));
+const ADHDProgramSetup = wrap(lazy(() => import('./pages/damij/adhd/ADHDProgramSetup')));
+const ADHDProgramCalendar = wrap(lazy(() => import('./pages/damij/adhd/ADHDProgramCalendar')));
+const ADHDProgramDay = wrap(lazy(() => import('./pages/damij/adhd/ADHDProgramDay')));
+const ADHDMonthlyTracker = wrap(lazy(() => import('./pages/damij/adhd/ADHDMonthlyTracker')));
+const DamijDashboard = wrap(lazy(() => import('./pages/damij/dashboard/DamijDashboard')));
+const SignHome = wrap(lazy(() => import('./pages/damij/sign/SignHome')));
+const SignTranslator = wrap(lazy(() => import('./pages/damij/sign/SignTranslator')));
+const YouTubeSignTranslator = wrap(lazy(() => import('./pages/damij/sign/YouTubeSignTranslator')));
+const SignDictionaryAdmin = wrap(lazy(() => import('./pages/damij/sign/SignDictionaryAdmin')));
+const SignVocabOverridesAdmin = wrap(lazy(() => import('./pages/damij/sign/SignVocabOverridesAdmin')));
+const SensoryHome = wrap(lazy(() => import('./pages/damij/sensory/SensoryHome')));
+const SensoryUpload = wrap(lazy(() => import('./pages/damij/sensory/SensoryUpload')));
+const SensoryOutput = wrap(lazy(() => import('./pages/damij/sensory/SensoryOutput')));
+const SensoryProfileSetup = wrap(lazy(() => import('./pages/damij/sensory/SensoryProfileSetup')));
+const SensoryImageTactile = wrap(lazy(() => import('./pages/damij/sensory/SensoryImageTactile')));
+const SensoryInteractionLog = wrap(lazy(() => import('./pages/damij/sensory/SensoryInteractionLog')));
+const SensoryHapticSettings = wrap(lazy(() => import('./pages/damij/sensory/SensoryHapticSettings')));
+const SensoryUnifiedComm = wrap(lazy(() => import('./pages/damij/sensory/SensoryUnifiedComm')));
+const SensoryTriSense = wrap(lazy(() => import('./pages/damij/sensory/SensoryTriSense')));
+const SensoryAdaptiveUI = wrap(lazy(() => import('./pages/damij/sensory/SensoryAdaptiveUI')));
+const ClinicalHome = wrap(lazy(() => import('./pages/damij/clinical/ClinicalHome')));
+const ClinicalCases = wrap(lazy(() => import('./pages/damij/clinical/ClinicalCases')));
+const ClinicalLab = wrap(lazy(() => import('./pages/damij/clinical/ClinicalLab')));
+const ClinicalFreeExperiment = wrap(lazy(() => import('./pages/damij/clinical/ClinicalFreeExperiment')));
+const ClinicalReports = wrap(lazy(() => import('./pages/damij/clinical/ClinicalReports')));
+const ClinicalCaseDetail = wrap(lazy(() => import('./pages/damij/clinical/ClinicalCaseDetail')));
+const ClinicalLabSession = wrap(lazy(() => import('./pages/damij/clinical/ClinicalLabSession')));
+const ClinicalReport = wrap(lazy(() => import('./pages/damij/clinical/ClinicalReport')));
+const ClinicalDashboard = wrap(lazy(() => import('./pages/damij/clinical/ClinicalDashboard')));
+const ClinicalCompare = wrap(lazy(() => import('./pages/damij/clinical/ClinicalCompare')));
+const ClinicalPortfolio = wrap(lazy(() => import('./pages/damij/clinical/ClinicalPortfolio')));
+const ClinicalPublicReport = wrap(lazy(() => import('./pages/damij/clinical/ClinicalPublicReport')));
+const SourcesLibrary = wrap(lazy(() => import('./pages/damij/sources/SourcesLibrary')));
+
+// Lazy-init sensory tracking only when a damij route is opened (and only in the browser)
+if (typeof window !== 'undefined') {
+  const initDamijSideEffects = () => {
+    const onDamij = (window.location.pathname || '').toLowerCase().startsWith('/damij')
+      || /(^|\.)damij-jo\.life$/i.test(window.location.hostname);
+    if (!onDamij) return;
+    import('./pages/damij/sensory/interactionLog')
+      .then(m => { try { m.installInteractionTracking(); } catch {} })
+      .catch(() => {});
+    import('./pages/damij/sensory/adaptiveUI')
+      .then(m => { try { m.initAdaptiveUI(); } catch {} })
+      .catch(() => {});
+  };
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(initDamijSideEffects, { timeout: 2000 });
+  } else {
+    setTimeout(initDamijSideEffects, 800);
+  }
+}
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
