@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy, ComponentType } from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
