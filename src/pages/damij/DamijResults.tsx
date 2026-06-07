@@ -393,13 +393,30 @@ const DamijResults: React.FC = () => {
             <ArrowRight className="w-4 h-4" /> العودة للمنصة
           </Link>
           {surveys.length > 0 && (
-            <button
-              onClick={() => downloadCsv(surveys)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition shadow"
-              style={{ background: 'hsl(var(--damij-accent))', color: 'white' }}
-            >
-              <Download className="w-4 h-4" /> تصدير CSV
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={loadSurveys}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition shadow"
+                style={{ background: 'hsl(var(--damij-surface))', color: 'hsl(var(--damij-primary))', border: '1px solid hsl(var(--damij-border))' }}
+                title="تحديث"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => downloadCsv(surveys)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition shadow"
+                style={{ background: 'hsl(var(--damij-accent))', color: 'white' }}
+              >
+                <Download className="w-4 h-4" /> تصدير CSV
+              </button>
+              <button
+                onClick={() => setConfirmDelete({ kind: 'all' })}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition shadow text-white"
+                style={{ background: 'hsl(0 70% 50%)' }}
+              >
+                <Trash2 className="w-4 h-4" /> حذف الكل والبدء من جديد
+              </button>
+            </div>
           )}
         </div>
 
