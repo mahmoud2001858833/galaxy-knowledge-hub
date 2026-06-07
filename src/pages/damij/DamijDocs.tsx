@@ -5,7 +5,9 @@ import {
   BookOpen, ChevronDown, ExternalLink, Code2, Database, Cpu, Globe2, Sparkles,
   Eye, Hand, Brain, Activity, Layers, FlaskConical, Type, ShieldCheck, Cloud,
   Mic, Camera, MapPin, Vibrate, Languages, FileText, BarChart3, Users,
+  Copy, Check, Info, Rocket,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import DamijSEO from '@/components/damij/DamijSEO';
 
 // ----------------------------------------------------------------------------
