@@ -5,7 +5,9 @@ import {
   BookOpen, ChevronDown, ExternalLink, Code2, Database, Cpu, Globe2, Sparkles,
   Eye, Hand, Brain, Activity, Layers, FlaskConical, Type, ShieldCheck, Cloud,
   Mic, Camera, MapPin, Vibrate, Languages, FileText, BarChart3, Users,
+  Copy, Check, Info, Rocket,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import DamijSEO from '@/components/damij/DamijSEO';
 
 // ----------------------------------------------------------------------------
@@ -374,6 +376,211 @@ const ModuleCard: React.FC<{ m: Module; defaultOpen?: boolean }> = ({ m, default
   );
 };
 
+// ----------------------------------------------------------------------------
+// Future vision content (Arabic) — surfaced in PlatformInfoSection
+// ----------------------------------------------------------------------------
+const FUTURE_VISION: { title: string; items: string[] }[] = [
+  {
+    title: 'الرؤية المستقبلية القريبة (1 — 2 سنة)',
+    items: [
+      'إطلاق تطبيق Android أصلي عبر Capacitor مع دعم كامل لوضع عدم الاتصال.',
+      'توسعة "عين الأعمى" لتدعم 30 لغة + وصف ثلاثي الأبعاد للمشهد.',
+      'إضافة لغة الإشارة الأردنية والمصرية والسعودية كقواميس منفصلة.',
+      'دمج مستشعرات الذراع (EMG) لتدريب اليد على الإشارة.',
+      'بناء "ملف رقمي مستمر" للطفل يصاحبه من سنتين حتى البلوغ.',
+      'شراكات مع وزارات الصحة العربية لاعتماد المنصة كأداة وطنية.',
+    ],
+  },
+  {
+    title: 'الرؤية المتوسطة (3 — 5 سنوات)',
+    items: [
+      'بناء قاعدة بحثية عربية مفتوحة من تفاعلات المنصة (مجهولة الهوية).',
+      'إدخال الواقع المعزز (AR) لمحاكاة "الجسر الحسّي العكسي" للأطباء.',
+      'إطلاق منصة "دامج للمعلمين" مع لوحات صف وأهداف فردية لكل طالب.',
+      'دمج أجهزة التعقب الذكية (smart glasses, smart canes) مع المنصة.',
+      'فتح المنصة كـ Open Source ليتاح للجمعيات تخصيصها.',
+      'برنامج اعتماد للأطباء العرب على استخدام "الجسر الحسّي" في التدريب.',
+    ],
+  },
+  {
+    title: 'الرؤية البعيدة (5 — 10 سنوات)',
+    items: [
+      'تحويل دامج إلى "مرجع عربي عالمي" في الرعاية الرقمية لذوي الإعاقة.',
+      'بناء مجتمع عربي يضم الأهل والأطباء والمعلمين كشبكة دعم متكاملة.',
+      'إدخال نماذج ذكاء اصطناعي عربية مفتوحة مدرّبة على بيانات دامج.',
+      'إنشاء "متحف الإعاقة الرقمي" لتوثيق رحلات وقصص نجاح حقيقية.',
+      'الوصول إلى مليون مستخدم عربي نشط شهرياً.',
+    ],
+  },
+];
+
+// ----------------------------------------------------------------------------
+// Build a long, human-readable Arabic platform description for copying
+// ----------------------------------------------------------------------------
+const buildFullPlatformText = (): string => {
+  const lines: string[] = [];
+  lines.push('منصة دامج — المعلومات الكاملة');
+  lines.push('====================================');
+  lines.push('');
+  lines.push('نبذة عامة:');
+  lines.push('دامج منصة عربية متكاملة لذوي الإعاقة تجمع تحت سقف واحد أدوات للمكفوفين، الصم، التوحد، فرط الحركة وتشتت الانتباه (ADHD)، بريل، لغة الإشارة، الجسر الحسّي، والتدريب السريري. الرؤية الجوهرية: "الإعاقة ليست نقصاً بل اختلاف في الوصول"، وأن تكون دامج مرافقاً رقمياً يصاحب الإنسان من الطفولة إلى البلوغ.');
+  lines.push('');
+  lines.push('تم إنشاء المنصة بواسطة: مدرسة عنبه الثانية الشاملة للبنين.');
+  lines.push('الرابط الرئيسي: https://damij-jo.life');
+  lines.push('');
+  lines.push('====================================');
+  lines.push('الأنظمة الثمانية بالتفصيل:');
+  lines.push('====================================');
+  MODULES.forEach((m, i) => {
+    lines.push('');
+    lines.push(`${i + 1}. ${m.title}`);
+    lines.push(`الرابط: ${m.rootPath}`);
+    lines.push(`الوصف المختصر: ${m.shortDesc}`);
+    lines.push(`الوصف الكامل: ${m.longDesc}`);
+    lines.push('الخيارات والوظائف:');
+    m.features.forEach((f) => {
+      lines.push(`  • ${f.name}: ${f.desc}${f.path ? ` — ${f.path}` : ''}`);
+    });
+    lines.push(`التقنيات: ${m.tech.join('، ')}`);
+    lines.push(`الخدمات الخارجية: ${m.apis.join('، ')}`);
+  });
+  lines.push('');
+  lines.push('====================================');
+  lines.push('التقنيات واللغات البرمجية:');
+  lines.push('====================================');
+  TECH_STACK.forEach((g) => {
+    lines.push('');
+    lines.push(`▸ ${g.cat}`);
+    g.items.forEach((it) => lines.push(`  • ${it.name} — ${it.why}`));
+  });
+  lines.push('');
+  lines.push('====================================');
+  lines.push('المعمارية العامة:');
+  lines.push('====================================');
+  lines.push('Frontend: React 18 + TypeScript + Vite + Tailwind + shadcn/ui + Framer Motion.');
+  lines.push('Backend: Supabase (PostgreSQL + Auth + Storage + Realtime + Edge Functions Deno).');
+  lines.push('على الجهاز: TensorFlow.js (COCO-SSD) + MediaPipe (Hands/Pose/Face) — لدعم وضع عدم الاتصال.');
+  lines.push('خدمات خارجية: Gemini 2.5 Flash/Pro، ElevenLabs (TTS)، OSRM (الملاحة)، Nominatim (الجغرافيا)، OCR.space، Resend (البريد).');
+  lines.push('');
+  lines.push('====================================');
+  lines.push('كيف تشتغل المنصة (دليل سريع):');
+  lines.push('====================================');
+  lines.push('1. الدخول: عبر /damij/auth — إنشاء حساب أو تسجيل دخول. حسابات ذروة العلم لا تعمل في دامج لذلك يحتاج المستخدم لإنشاء حساب دامج خاص.');
+  lines.push('2. الصفحة الرئيسية /damij: عرض الأنظمة الثمانية كبطاقات. كل بطاقة تأخذك للقسم.');
+  lines.push('3. مفاتيح الواجهة: مبدّل لغة (15 لغة)، ترجمة فورية لكل DOM، وضع Eco لتقليل الحركة والاستهلاك.');
+  lines.push('4. الأدوات السريرية (ADHD/توحد/سريري) تنتج تقارير قابلة للمشاركة عبر رابط واحد بين الأهل والطبيب والمدرسة.');
+  lines.push('5. الإعدادات الحسية تتحكم بالاهتزاز، النطق، التباين، وحجم الخط — قابلة للحفظ في الملف الشخصي.');
+  lines.push('6. كل البيانات تُحفظ في Supabase مع RLS، ولا تُشارك مع أطراف ثالثة.');
+  lines.push('');
+  lines.push('====================================');
+  lines.push('الرؤية المستقبلية الكاملة:');
+  lines.push('====================================');
+  FUTURE_VISION.forEach((v) => {
+    lines.push('');
+    lines.push(`▸ ${v.title}`);
+    v.items.forEach((it) => lines.push(`  • ${it}`));
+  });
+  lines.push('');
+  lines.push('====================================');
+  lines.push('المصادر العلمية المعتمدة:');
+  lines.push('====================================');
+  SOURCES.forEach((s) => lines.push(`• ${s.name} — ${s.use}`));
+  lines.push('');
+  lines.push('====================================');
+  lines.push('انتهت معلومات المنصة. آخر تحديث: 2026.');
+  return lines.join('\n');
+};
+
+const PlatformInfoSection: React.FC = () => {
+  const [copied, setCopied] = useState(false);
+  const fullText = React.useMemo(() => buildFullPlatformText(), []);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(fullText);
+      setCopied(true);
+      toast.success('تم نسخ معلومات المنصة بالكامل');
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // fallback for non-secure contexts
+      const ta = document.createElement('textarea');
+      ta.value = fullText;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast.success('تم النسخ'); setCopied(true); setTimeout(() => setCopied(false), 2500); }
+      catch { toast.error('تعذّر النسخ — انسخ النص يدوياً'); }
+      finally { document.body.removeChild(ta); }
+    }
+  };
+
+  return (
+    <section id="platform-info" className="px-6 py-12 bg-gradient-to-br from-[hsl(var(--damij-primary))]/5 to-[hsl(var(--damij-primary-2))]/5 scroll-mt-20 border-t border-[hsl(var(--damij-border))]">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-start gap-4 mb-6 flex-wrap">
+          <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--damij-primary))] text-white flex items-center justify-center shrink-0 shadow-lg">
+            <Info className="w-7 h-7" />
+          </div>
+          <div className="flex-1 min-w-[240px]">
+            <h2 className="text-2xl md:text-3xl font-black text-[hsl(var(--damij-primary))] mb-1">
+              معلومات المنصة بشكل كامل
+            </h2>
+            <p className="text-sm md:text-base text-[hsl(var(--damij-muted))] leading-relaxed">
+              ملخّص شامل وقابل للنسخ يحتوي على: كل الأنظمة، كل الخيارات وكيف تشتغل، التقنيات المستخدمة، والرؤية المستقبلية لمنصة دامج — بالتفصيل الممل.
+            </p>
+          </div>
+          <button
+            onClick={handleCopy}
+            className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold shadow-lg transition text-white ${
+              copied ? 'bg-emerald-600' : 'bg-[hsl(var(--damij-primary))] hover:opacity-90'
+            }`}
+          >
+            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+            {copied ? 'تم النسخ' : 'نسخ كل المعلومات'}
+          </button>
+        </div>
+
+        {/* Future vision quick view */}
+        <div className="grid md:grid-cols-3 gap-3 mb-6">
+          {FUTURE_VISION.map((v) => (
+            <div key={v.title} className="p-5 rounded-2xl bg-white border border-[hsl(var(--damij-border))]">
+              <div className="flex items-center gap-2 mb-3">
+                <Rocket className="w-5 h-5 text-[hsl(var(--damij-primary))]" />
+                <h3 className="font-bold text-sm text-[hsl(var(--damij-primary))] leading-snug">{v.title}</h3>
+              </div>
+              <ul className="space-y-1.5">
+                {v.items.map((it) => (
+                  <li key={it} className="flex items-start gap-2 text-xs leading-relaxed text-[hsl(var(--damij-text))]">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[hsl(var(--damij-accent))] shrink-0" />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Full text preview */}
+        <details className="rounded-2xl bg-white border border-[hsl(var(--damij-border))] overflow-hidden">
+          <summary className="cursor-pointer select-none px-5 py-4 font-bold text-[hsl(var(--damij-primary))] flex items-center gap-2 hover:bg-slate-50 transition">
+            <FileText className="w-5 h-5" /> عرض النص الكامل القابل للنسخ
+          </summary>
+          <pre
+            dir="rtl"
+            className="px-5 py-4 text-xs md:text-sm leading-relaxed whitespace-pre-wrap text-[hsl(var(--damij-text))] bg-slate-50 border-t border-[hsl(var(--damij-border))] max-h-[480px] overflow-auto"
+            style={{ fontFamily: '"Tajawal","Cairo","Inter",sans-serif' }}
+          >
+            {fullText}
+          </pre>
+        </details>
+      </div>
+    </section>
+  );
+};
+
+
+
 const DamijDocs: React.FC = () => {
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
@@ -524,6 +731,9 @@ const DamijDocs: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Complete platform information (copyable) */}
+      <PlatformInfoSection />
 
       {/* Footer note */}
       <footer className="px-6 py-10 text-center border-t border-[hsl(var(--damij-border))]">

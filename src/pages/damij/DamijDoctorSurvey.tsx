@@ -15,6 +15,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import heroImg from '@/assets/damij-doctor-survey-hero.jpg';
+import { DamijLanguageProvider } from '@/features/damij/i18n/DamijLanguageContext';
+import DamijLanguageSwitcher from '@/components/damij/DamijLanguageSwitcher';
+import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
 
 type Choice = { value: string; label: string };
 type Question = {
@@ -438,13 +441,16 @@ const DamijDoctorSurvey: React.FC = () => {
       </Helmet>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
 
-        <Link
-          to="/damij"
-          className="inline-flex items-center gap-2 mb-6 text-sm hover:opacity-70 transition"
-          style={{ color: 'hsl(var(--damij-primary))' }}
-        >
-          <ArrowRight className="w-4 h-4" /> العودة للمنصة
-        </Link>
+        <div className="flex items-center justify-between mb-6 gap-3">
+          <Link
+            to="/damij"
+            className="inline-flex items-center gap-2 text-sm hover:opacity-70 transition"
+            style={{ color: 'hsl(var(--damij-primary))' }}
+          >
+            <ArrowRight className="w-4 h-4" /> العودة للمنصة
+          </Link>
+          <DamijLanguageSwitcher />
+        </div>
 
         {/* Progress bar */}
         <div className="mb-6">
@@ -798,4 +804,11 @@ const DamijDoctorSurvey: React.FC = () => {
   );
 };
 
-export default DamijDoctorSurvey;
+const DamijDoctorSurveyWithProvider: React.FC = () => (
+  <DamijLanguageProvider>
+    <DamijDoctorSurvey />
+    <DamijAutoTranslator />
+  </DamijLanguageProvider>
+);
+
+export default DamijDoctorSurveyWithProvider;
