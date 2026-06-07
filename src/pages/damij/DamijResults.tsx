@@ -16,6 +16,9 @@ import {
   Calendar,
   Briefcase,
   Quote,
+  Trash2,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
