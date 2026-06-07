@@ -666,6 +666,13 @@ const DamijResults: React.FC = () => {
                               </div>
                             </div>
                           )}
+                          <button
+                            onClick={() => setConfirmDelete({ kind: 'one', id: s.id, name: s.doctor_name })}
+                            className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white hover:opacity-90 transition"
+                            style={{ background: 'hsl(0 70% 50%)' }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> حذف هذا الرد
+                          </button>
                         </div>
                       )}
                     </div>
@@ -674,6 +681,57 @@ const DamijResults: React.FC = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Confirm delete modal */}
+        {confirmDelete && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.55)' }}
+            onClick={() => !deleting && setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="rounded-2xl shadow-2xl max-w-md w-full p-6"
+              style={{ background: 'hsl(var(--damij-surface))' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'hsl(0 70% 50% / 0.12)' }}>
+                  <AlertTriangle className="w-6 h-6" style={{ color: 'hsl(0 70% 50%)' }} />
+                </div>
+                <h3 className="text-lg font-extrabold" style={{ color: 'hsl(var(--damij-primary))' }}>
+                  {confirmDelete.kind === 'all' ? 'حذف جميع الردود؟' : 'حذف هذا الرد؟'}
+                </h3>
+              </div>
+              <p className="text-sm mb-6 leading-relaxed" style={{ color: 'hsl(var(--damij-text))' }}>
+                {confirmDelete.kind === 'all'
+                  ? `سيتم حذف ${surveys.length} رد بشكل نهائي ولا يمكن استرجاعها. هل أنت متأكد من البدء من جديد؟`
+                  : `سيتم حذف رد ${('name' in confirmDelete ? confirmDelete.name : '')} بشكل نهائي. هل تريد المتابعة؟`}
+              </p>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl font-bold text-sm hover:opacity-80 transition"
+                  style={{ background: 'hsl(var(--damij-bg))', color: 'hsl(var(--damij-text))', border: '1px solid hsl(var(--damij-border))' }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={() => confirmDelete.kind === 'all' ? deleteAll() : deleteOne(confirmDelete.id)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl font-bold text-sm text-white flex items-center gap-2 disabled:opacity-50 hover:opacity-90 transition"
+                  style={{ background: 'hsl(0 70% 50%)' }}
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {confirmDelete.kind === 'all' ? 'حذف الكل' : 'حذف'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </div>
     </div>
