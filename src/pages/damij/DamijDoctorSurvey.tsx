@@ -804,4 +804,11 @@ const DamijDoctorSurvey: React.FC = () => {
   );
 };
 
-export default DamijDoctorSurvey;
+const DamijDoctorSurveyWithProvider: React.FC = () => (
+  <DamijLanguageProvider>
+    <DamijDoctorSurvey />
+    <DamijAutoTranslator />
+  </DamijLanguageProvider>
+);
+
+export default DamijDoctorSurveyWithProvider;
