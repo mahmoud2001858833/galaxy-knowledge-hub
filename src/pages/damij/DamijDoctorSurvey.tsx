@@ -15,6 +15,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import heroImg from '@/assets/damij-doctor-survey-hero.jpg';
+import { DamijLanguageProvider } from '@/features/damij/i18n/DamijLanguageContext';
+import DamijLanguageSwitcher from '@/components/damij/DamijLanguageSwitcher';
+import DamijAutoTranslator from '@/components/damij/DamijAutoTranslator';
 
 type Choice = { value: string; label: string };
 type Question = {
