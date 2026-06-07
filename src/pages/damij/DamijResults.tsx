@@ -233,6 +233,8 @@ const DamijResults: React.FC = () => {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [tab, setTab] = useState<'overview' | 'charts' | 'feedback' | 'responses'>('overview');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<null | { kind: 'all' } | { kind: 'one'; id: string; name: string }>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadSurveys = async () => {
     setLoading(true);
@@ -253,6 +255,29 @@ const DamijResults: React.FC = () => {
     }
     setUnlocked(true);
     await loadSurveys();
+  };
+
+  const deleteOne = async (id: string) => {
+    setDeleting(true);
+    const { error } = await supabase.from('damij_doctor_surveys').delete().eq('id', id);
+    setDeleting(false);
+    setConfirmDelete(null);
+    if (error) { toast.error(error.message); return; }
+    setSurveys((s) => s.filter((x) => x.id !== id));
+    toast.success('تم حذف الرد');
+  };
+
+  const deleteAll = async () => {
+    setDeleting(true);
+    const { error } = await supabase
+      .from('damij_doctor_surveys')
+      .delete()
+      .not('id', 'is', null);
+    setDeleting(false);
+    setConfirmDelete(null);
+    if (error) { toast.error(error.message); return; }
+    setSurveys([]);
+    toast.success('تم حذف جميع الردود — بدأنا من جديد');
   };
 
   // ---------- Aggregations ----------
