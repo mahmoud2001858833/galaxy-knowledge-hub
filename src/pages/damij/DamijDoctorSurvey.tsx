@@ -325,6 +325,7 @@ const DamijDoctorSurvey: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [doctorName, setDoctorName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [workplace, setWorkplace] = useState('');
   const [email, setEmail] = useState('');
