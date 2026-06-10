@@ -429,13 +429,13 @@ const DamijDoctorSurvey: React.FC = () => {
     <div className="damij-root min-h-screen" dir="rtl"
       style={{ background: 'linear-gradient(135deg, hsl(var(--damij-bg)), hsl(var(--damij-bg-2)))' }}>
       <Helmet>
-        <title>استبيان الأطباء — منصة دامج</title>
-        <meta name="description" content="استبيان موجّه للأطباء حول الأفكار والرؤية الكامنة وراء منصة دامج للدمج التعليمي وذوي الإعاقة." />
+        <title>استبيان الأفكار — منصة دامج</title>
+        <meta name="description" content="استبيان مفتوح للجميع حول الأفكار والرؤية الكامنة وراء منصة دامج للدمج التعليمي وذوي الإعاقة." />
         <link rel="canonical" href="https://damij-jo.life/damij/doctor-survey" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://damij-jo.life/damij/doctor-survey" />
-        <meta property="og:title" content="استبيان الأطباء — منصة دامج" />
-        <meta property="og:description" content="شارك أفكارك ورؤيتك كطبيب حول منصة دامج." />
+        <meta property="og:title" content="استبيان الأفكار — منصة دامج" />
+        <meta property="og:description" content="شارك أفكارك ورؤيتك حول منصة دامج." />
         <meta property="og:image" content="https://damij-jo.life/damij-doctor-survey-og.jpg" />
         <meta property="og:locale" content="ar_AR" />
         <meta name="twitter:card" content="summary_large_image" />
