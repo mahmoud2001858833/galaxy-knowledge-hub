@@ -62,9 +62,9 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: 'q4',
-    text: 'فلسفة "الجسر الحسّي العكسي" — أن يجرّب الطبيب/الأهل الإعاقة افتراضياً قبل التشخيص. ما رأيك بهذه الفكرة كمفهوم؟',
+    text: 'فلسفة "الجسر الحسّي العكسي" — أن تجرّب الإعاقة افتراضياً قبل الحكم أو التشخيص. ما رأيك بهذه الفكرة كمفهوم؟',
     choices: [
-      { value: 'essential', label: 'مفهوم أخلاقي يجب أن يُدرَّس في كليات الطب' },
+      { value: 'essential', label: 'مفهوم أخلاقي يجب أن يُدرَّس في كل المؤسسات التعليمية والصحية' },
       { value: 'powerful', label: 'فكرة قوية لزيادة التعاطف' },
       { value: 'symbolic', label: 'فكرة رمزية أكثر منها عملية' },
       { value: 'unconvinced', label: 'غير مقتنع بجدواها' },
@@ -84,8 +84,8 @@ export const QUESTIONS: Question[] = [
     id: 'q6',
     text: 'فكرة دمج الذكاء الاصطناعي داخل أدوات التشخيص والمتابعة. كيف تراها فلسفياً؟',
     choices: [
-      { value: 'partner', label: 'شريك حقيقي للطبيب في القرار' },
-      { value: 'assistant', label: 'مساعد فقط — القرار للطبيب دائماً' },
+      { value: 'partner', label: 'شريك حقيقي للإنسان في القرار' },
+      { value: 'assistant', label: 'مساعد فقط — القرار للإنسان دائماً' },
       { value: 'concerned', label: 'فكرة محفوفة بمخاطر أخلاقية' },
       { value: 'against', label: 'يجب أن يبقى التشخيص بشرياً 100%' },
     ],
@@ -192,9 +192,9 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: 'q17',
-    text: 'فكرة جعل المعلّمين شريكاً مباشراً مع الأهل والأطباء داخل دامج. ما رأيك بهذا الدمج الثلاثي؟',
+    text: 'فكرة جعل المعلّمين شريكاً مباشراً مع الأهل والمختصين داخل دامج. ما رأيك بهذا الدمج الثلاثي؟',
     choices: [
-      { value: 'essential', label: 'ضروري — المعلّم يرى الطفل أكثر من الطبيب' },
+      { value: 'essential', label: 'ضروري — المعلّم يرى الطفل أكثر من المختص' },
       { value: 'good', label: 'مفيد لكن يحتاج بروتوكولات واضحة' },
       { value: 'boundary', label: 'يجب الفصل المهني بين الأدوار' },
       { value: 'against', label: 'لا أرى دوراً للمعلّم في الجانب السريري' },
@@ -212,7 +212,7 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: 'q19',
-    text: 'فكرة إدخال "محاكاة الإعاقة" كمتطلب في برامج تدريب الأطباء الجدد. ما رأيك؟',
+    text: 'فكرة إدخال "محاكاة الإعاقة" كمتطلب في برامج التدريب المهني (للأطباء والمعلّمين والمصمّمين). ما رأيك؟',
     choices: [
       { value: 'must', label: 'يجب أن يكون متطلباً إلزامياً' },
       { value: 'optional', label: 'اختياري ضمن التدريب' },
@@ -325,6 +325,7 @@ const DamijDoctorSurvey: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [doctorName, setDoctorName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [workplace, setWorkplace] = useState('');
   const [email, setEmail] = useState('');
@@ -353,6 +354,10 @@ const DamijDoctorSurvey: React.FC = () => {
       toast.error('من فضلك أدخل اسمك للمتابعة');
       return;
     }
+    if (step === 0 && !jobTitle.trim()) {
+      toast.error('من فضلك أدخل المسمى الوظيفي للمتابعة');
+      return;
+    }
     if (step >= 1 && step <= QUESTIONS.length) {
       if (!isAnswered(QUESTIONS[step - 1])) {
         toast.error('يرجى اختيار إجابة للمتابعة');
@@ -374,10 +379,10 @@ const DamijDoctorSurvey: React.FC = () => {
       const trimmedFeedback = feedback.trim().slice(0, 2000);
       const payload = {
         doctor_name: doctorName.trim().slice(0, 100),
-        specialty: specialty.trim().slice(0, 100) || null,
+        specialty: (jobTitle.trim() || specialty.trim()).slice(0, 100) || null,
         workplace: workplace.trim().slice(0, 150) || null,
         email: email.trim().slice(0, 255) || null,
-        answers: { ...answers, feedback: trimmedFeedback || null },
+        answers: { ...answers, jobTitle: jobTitle.trim() || null, specialty: specialty.trim() || null, feedback: trimmedFeedback || null },
       };
       const { error } = await supabase.from('damij_doctor_surveys').insert(payload);
       if (error) throw error;
@@ -410,7 +415,7 @@ const DamijDoctorSurvey: React.FC = () => {
             تم استلام أفكارك بنجاح
           </h2>
           <p className="mb-6 leading-relaxed" style={{ color: 'hsl(var(--damij-muted))' }}>
-            شكراً جزيلاً دكتور/ة على وقتك وأفكارك القيّمة. آراؤك ستساعدنا في تطوير منصة دامج.
+            شكراً جزيلاً على وقتك وأفكارك القيّمة. آراؤك ستساعدنا في تطوير منصة دامج.
           </p>
           <button
             onClick={() => navigate('/damij')}
@@ -428,13 +433,13 @@ const DamijDoctorSurvey: React.FC = () => {
     <div className="damij-root min-h-screen" dir="rtl"
       style={{ background: 'linear-gradient(135deg, hsl(var(--damij-bg)), hsl(var(--damij-bg-2)))' }}>
       <Helmet>
-        <title>استبيان الأطباء — منصة دامج</title>
-        <meta name="description" content="استبيان موجّه للأطباء حول الأفكار والرؤية الكامنة وراء منصة دامج للدمج التعليمي وذوي الإعاقة." />
+        <title>استبيان الأفكار — منصة دامج</title>
+        <meta name="description" content="استبيان مفتوح للجميع حول الأفكار والرؤية الكامنة وراء منصة دامج للدمج التعليمي وذوي الإعاقة." />
         <link rel="canonical" href="https://damij-jo.life/damij/doctor-survey" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://damij-jo.life/damij/doctor-survey" />
-        <meta property="og:title" content="استبيان الأطباء — منصة دامج" />
-        <meta property="og:description" content="شارك أفكارك ورؤيتك كطبيب حول منصة دامج." />
+        <meta property="og:title" content="استبيان الأفكار — منصة دامج" />
+        <meta property="og:description" content="شارك أفكارك ورؤيتك حول منصة دامج." />
         <meta property="og:image" content="https://damij-jo.life/damij-doctor-survey-og.jpg" />
         <meta property="og:locale" content="ar_AR" />
         <meta name="twitter:card" content="summary_large_image" />
@@ -493,7 +498,7 @@ const DamijDoctorSurvey: React.FC = () => {
               <div className="relative">
                 <img
                   src={heroImg}
-                  alt="استبيان الأطباء"
+                  alt="استبيان الأفكار"
                   width={1536}
                   height={768}
                   className="w-full h-56 sm:h-72 object-cover"
@@ -507,7 +512,7 @@ const DamijDoctorSurvey: React.FC = () => {
                     </div>
                     <div>
                       <h1 className="text-2xl sm:text-3xl font-extrabold">استبيان الأفكار</h1>
-                      <p className="text-white/85 text-sm">{QUESTIONS.length} سؤال حول رؤية ومفاهيم منصة دامج</p>
+                      <p className="text-white/85 text-sm">{QUESTIONS.length} سؤال — مفتوح للجميع (أطباء، معلّمين، أهل، طلاب، مهتمّين)</p>
                     </div>
                   </div>
                 </div>
@@ -537,7 +542,15 @@ const DamijDoctorSurvey: React.FC = () => {
                     style={{ background: 'hsl(var(--damij-bg))', borderColor: 'hsl(var(--damij-border))', color: 'hsl(var(--damij-text))' }}
                   />
                   <input
-                    placeholder="التخصص (مثال: طب أطفال)"
+                    placeholder="المسمى الوظيفي * (مثال: طبيب، معلّم، أهل، طالب، مهندس)"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value.slice(0, 100))}
+                    maxLength={100}
+                    className="px-4 py-3 rounded-xl border-2 outline-none transition focus:border-[hsl(var(--damij-primary))]"
+                    style={{ background: 'hsl(var(--damij-bg))', borderColor: 'hsl(var(--damij-border))', color: 'hsl(var(--damij-text))' }}
+                  />
+                  <input
+                    placeholder="التخصص (اختياري)"
                     value={specialty}
                     onChange={(e) => setSpecialty(e.target.value.slice(0, 100))}
                     maxLength={100}
