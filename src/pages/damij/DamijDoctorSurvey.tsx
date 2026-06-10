@@ -375,10 +375,10 @@ const DamijDoctorSurvey: React.FC = () => {
       const trimmedFeedback = feedback.trim().slice(0, 2000);
       const payload = {
         doctor_name: doctorName.trim().slice(0, 100),
-        specialty: specialty.trim().slice(0, 100) || null,
+        specialty: (jobTitle.trim() || specialty.trim()).slice(0, 100) || null,
         workplace: workplace.trim().slice(0, 150) || null,
         email: email.trim().slice(0, 255) || null,
-        answers: { ...answers, feedback: trimmedFeedback || null },
+        answers: { ...answers, jobTitle: jobTitle.trim() || null, specialty: specialty.trim() || null, feedback: trimmedFeedback || null },
       };
       const { error } = await supabase.from('damij_doctor_surveys').insert(payload);
       if (error) throw error;
