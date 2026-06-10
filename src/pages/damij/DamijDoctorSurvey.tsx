@@ -494,7 +494,7 @@ const DamijDoctorSurvey: React.FC = () => {
               <div className="relative">
                 <img
                   src={heroImg}
-                  alt="استبيان الأطباء"
+                  alt="استبيان الأفكار"
                   width={1536}
                   height={768}
                   className="w-full h-56 sm:h-72 object-cover"
@@ -508,7 +508,7 @@ const DamijDoctorSurvey: React.FC = () => {
                     </div>
                     <div>
                       <h1 className="text-2xl sm:text-3xl font-extrabold">استبيان الأفكار</h1>
-                      <p className="text-white/85 text-sm">{QUESTIONS.length} سؤال حول رؤية ومفاهيم منصة دامج</p>
+                      <p className="text-white/85 text-sm">{QUESTIONS.length} سؤال — مفتوح للجميع (أطباء، معلّمين، أهل، طلاب، مهتمّين)</p>
                     </div>
                   </div>
                 </div>
