@@ -84,8 +84,8 @@ export const QUESTIONS: Question[] = [
     id: 'q6',
     text: 'فكرة دمج الذكاء الاصطناعي داخل أدوات التشخيص والمتابعة. كيف تراها فلسفياً؟',
     choices: [
-      { value: 'partner', label: 'شريك حقيقي للطبيب في القرار' },
-      { value: 'assistant', label: 'مساعد فقط — القرار للطبيب دائماً' },
+      { value: 'partner', label: 'شريك حقيقي للإنسان في القرار' },
+      { value: 'assistant', label: 'مساعد فقط — القرار للإنسان دائماً' },
       { value: 'concerned', label: 'فكرة محفوفة بمخاطر أخلاقية' },
       { value: 'against', label: 'يجب أن يبقى التشخيص بشرياً 100%' },
     ],
