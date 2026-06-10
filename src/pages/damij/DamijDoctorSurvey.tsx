@@ -354,6 +354,10 @@ const DamijDoctorSurvey: React.FC = () => {
       toast.error('من فضلك أدخل اسمك للمتابعة');
       return;
     }
+    if (step === 0 && !jobTitle.trim()) {
+      toast.error('من فضلك أدخل المسمى الوظيفي للمتابعة');
+      return;
+    }
     if (step >= 1 && step <= QUESTIONS.length) {
       if (!isAnswered(QUESTIONS[step - 1])) {
         toast.error('يرجى اختيار إجابة للمتابعة');
