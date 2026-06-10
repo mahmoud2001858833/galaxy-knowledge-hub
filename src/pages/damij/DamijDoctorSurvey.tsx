@@ -411,7 +411,7 @@ const DamijDoctorSurvey: React.FC = () => {
             تم استلام أفكارك بنجاح
           </h2>
           <p className="mb-6 leading-relaxed" style={{ color: 'hsl(var(--damij-muted))' }}>
-            شكراً جزيلاً دكتور/ة على وقتك وأفكارك القيّمة. آراؤك ستساعدنا في تطوير منصة دامج.
+            شكراً جزيلاً على وقتك وأفكارك القيّمة. آراؤك ستساعدنا في تطوير منصة دامج.
           </p>
           <button
             onClick={() => navigate('/damij')}
