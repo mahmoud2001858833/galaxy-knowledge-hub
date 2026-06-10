@@ -538,7 +538,15 @@ const DamijDoctorSurvey: React.FC = () => {
                     style={{ background: 'hsl(var(--damij-bg))', borderColor: 'hsl(var(--damij-border))', color: 'hsl(var(--damij-text))' }}
                   />
                   <input
-                    placeholder="التخصص (مثال: طب أطفال)"
+                    placeholder="المسمى الوظيفي * (مثال: طبيب، معلّم، أهل، طالب، مهندس)"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value.slice(0, 100))}
+                    maxLength={100}
+                    className="px-4 py-3 rounded-xl border-2 outline-none transition focus:border-[hsl(var(--damij-primary))]"
+                    style={{ background: 'hsl(var(--damij-bg))', borderColor: 'hsl(var(--damij-border))', color: 'hsl(var(--damij-text))' }}
+                  />
+                  <input
+                    placeholder="التخصص (اختياري)"
                     value={specialty}
                     onChange={(e) => setSpecialty(e.target.value.slice(0, 100))}
                     maxLength={100}
