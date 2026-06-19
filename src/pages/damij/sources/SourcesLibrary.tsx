@@ -15,6 +15,7 @@ const TYPE_LABEL: Record<string, string> = {
 const SourcesLibrary: React.FC = () => {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<SourceCategory | 'all'>('all');
+  const [copied, setCopied] = useState<'none' | 'all' | 'filtered'>('none');
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
