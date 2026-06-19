@@ -5,10 +5,10 @@ import {
   BookOpen, ChevronDown, ExternalLink, Code2, Database, Cpu, Globe2, Sparkles,
   Eye, Hand, Brain, Activity, Layers, FlaskConical, Type, ShieldCheck, Cloud,
   Mic, Camera, MapPin, Vibrate, Languages, FileText, BarChart3, Users,
-  Copy, Check, Info, Rocket,
+  Copy, Check, Info, Rocket, Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import DamijSEO from '@/components/damij/DamijSEO';
+import { DamijSEO } from '@/components/damij/DamijSEO';
 
 // ----------------------------------------------------------------------------
 // Types
@@ -415,6 +415,347 @@ const FUTURE_VISION: { title: string; items: string[] }[] = [
 ];
 
 // ----------------------------------------------------------------------------
+// $150K Expansion Plan — detailed budget, tools, and sustainability
+// ----------------------------------------------------------------------------
+interface BudgetPhase {
+  phase: string;
+  duration: string;
+  budget: string;
+  items: { tool: string; cost: string; purpose: string; sustainability: string }[];
+}
+
+const EXPANSION_PLAN_150K: BudgetPhase[] = [
+  {
+    phase: 'المرحلة الأولى: البنية التحتية والاستقرار (شهر 1–3)',
+    duration: '3 أشهر',
+    budget: '~$35,000',
+    items: [
+      {
+        tool: 'Supabase Pro + Edge Network',
+        cost: '$500/شهر × 12 = $6,000',
+        purpose: 'قاعدة بيانات إنتاجية مع RLS، Realtime، وتوزيع جغرافي للحد من التأخير في الأردن والخليج.',
+        sustainability: 'يضمن استقراراً 99.9% ويقلل وقت التحميل بنسبة 70% للمستخدمين العرب.',
+      },
+      {
+        tool: 'AWS S3 / CloudFront (احتياطي)',
+        cost: '~$3,000/سنة',
+        purpose: 'تخزين الصوت والفيديو والصور عالي الدقة بشكل موزع جغرافياً.',
+        sustainability: 'تخزين قابل للتوسع لمليون ملف دون انقطاع.',
+      },
+      {
+        tool: 'Sentry Pro + LogRocket',
+        cost: '$2,400/سنة',
+        purpose: 'مراقبة الأخطاء في الوقت الفعلي، تسجيل جلسات المستخدمين، وتحليل الانهيارات.',
+        sustainability: 'يقلل وقت إصلاح الأخطاء بنسبة 80% ويحسّن تجربة المستخدم المكفوف وذوي ADHD.',
+      },
+      {
+        tool: 'Vercel Pro + Analytics',
+        cost: '$2,400/سنة',
+        purpose: 'استضافة CDN عالمي مع تقارير Core Web Vitals وتحسين الأداء التلقائي.',
+        sustainability: 'سرعة تحميل أقل من 2 ثانية في كل الدول العربية.',
+      },
+      {
+        tool: 'Upstash Redis (Caching)',
+        cost: '$1,200/سنة',
+        purpose: 'تخزين مؤقت للاستجابات المتكررة (ترجمات، نتائج اختبارات).',
+        sustainability: 'يقلل التكلفة السحابية بنسبة 40% ويُسرّع الاستجابة 10 مرات.',
+      },
+      {
+        tool: 'GitHub Actions + CI/CD Advanced',
+        cost: '$2,400/سنة',
+        purpose: 'بناء واختبار ونشر آلي لكل تعديل، مع اختبارات Accessibility (axe-core).',
+        sustainability: 'يمنع الأخطاء من الوصول للمستخدمين ويُسرّع دورة التطوير.',
+      },
+      {
+        tool: 'Domain + SSL + Security (Cloudflare Pro)',
+        cost: '$2,400/سنة',
+        purpose: 'حماية DDoS، WAF، وتحسين DNS عالمي.',
+        sustainability: 'يحمي بيانات الأطفال والأطباء ويضمن استمرارية الخدمة.',
+      },
+      {
+        tool: 'Capacitor Enterprise + Google Play',
+        cost: '$5,000 (مرة واحدة) + $500/سنة',
+        purpose: 'تطبيق Android أصلي مع دفع إشعارات، تحديثات OTA، ودعم الأجهزة اللوحية.',
+        sustainability: 'يصل لمناطق لا يتوفر فيها إنترنت سريع عبر تطبيق يعمل Offline.',
+      },
+      {
+        tool: 'TestFlight + App Store (مستقبلي)',
+        cost: '$1,700/سنة',
+        purpose: 'إعداد قناة iOS لإطلاق تطبيق iPhone/iPad مستقبلاً.',
+        sustainability: 'يفتح سوقاً جديدة (40% من مستخدمي الهواتف في الخليج يستخدمون iOS).',
+      },
+      {
+        tool: 'Legal + GDPR/PDPA Compliance',
+        cost: '$5,000 (مرة واحدة)',
+        purpose: 'سياسات خصوصية معتمدة قانونياً للأطفال (COPPA) وذوي الإعاقة.',
+        sustainability: 'يُمكّن الشراكات مع وزارات الصحة والتعليم دون مخاطر قانونية.',
+      },
+    ],
+  },
+  {
+    phase: 'المرحلة الثانية: الذكاء الاصطناعي والرؤية (شهر 4–8)',
+    duration: '5 أشهر',
+    budget: '~$55,000',
+    items: [
+      {
+        tool: 'OpenAI GPT-4o / Claude 3.5 Enterprise API',
+        cost: '$15,000/سنة',
+        purpose: 'نماذج لغوية متقدمة للمرشد الذكي، تقارير التوحد/ADHD، والمحاكاة السريرية.',
+        sustainability: 'دقة أعلى في التشخيص ودعم 50+ لغة إضافية.',
+      },
+      {
+        tool: 'Google Cloud Vision + AutoML',
+        cost: '$8,000/سنة',
+        purpose: 'تدريب نماذج مخصصة للإشارة العربية، OCR لبريل، وكشف العوائق للمكفوفين.',
+        sustainability: 'نماذج عربية مملوكة لدامج لا تعتمد على مزود أجنبي.',
+      },
+      {
+        tool: 'ElevenLabs Enterprise (TTS)',
+        cost: '$6,000/سنة',
+        purpose: 'أصوات طبيعية بـ 15 لهجة عربية (مصرية، خليجية، مغربية...) للمكفوفين وقراءة التقارير.',
+        sustainability: 'يُحسّن فهم المكفوف بنسبة 300% مقارنة بـ Web Speech API المجاني.',
+      },
+      {
+        tool: 'DeepL + Custom Translation API',
+        cost: '$4,000/سنة',
+        purpose: 'ترجمة آلية لمحتوى التوثيق الطبي والتعليمي مع مصطلحات دقيقة.',
+        sustainability: 'توسيع المحتوى لـ 30 لغة دون الحاجة لمترجمين لكل لغة.',
+      },
+      {
+        tool: 'Pinecone / Weaviate (Vector DB)',
+        cost: '$3,600/سنة',
+        purpose: 'قاعدة بيانات متجهة لتخزين حالات سريرية، إشارات، وملفات حسية.',
+        sustainability: 'بحث فوري ذكي بين آلاف الحالات الطبية باستخدام Semantic Search.',
+      },
+      {
+        tool: 'Replicate / RunPod (GPU Inference)',
+        cost: '$6,000/سنة',
+        purpose: 'تشغيل نماذج توليد صور وتحليل فيديو بجودة عالية على GPU سحابي.',
+        sustainability: 'تشخيص بصري متقدم للتوحد وADHD عبر تحليل تعابير الوجه والحركة.',
+      },
+      {
+        tool: 'Hugging Face Enterprise',
+        cost: '$4,800/سنة',
+        purpose: 'استضافة نماذج عربية مفتوحة (AraBERT، CAMeL...) مع Fine-tuning مستمر.',
+        sustainability: 'استقلالية تقنية: نماذج عربية لا تتوقف إذا توقف مزود خارجي.',
+      },
+      {
+        tool: 'Weights & Biases',
+        cost: '$2,400/سنة',
+        purpose: 'تتبع تجارب تدريب النماذج وقياس الأداء عبر الزمن.',
+        sustainability: 'يضمن تحسيناً مستمراً للنماذج بناءً على بيانات حقيقية.',
+      },
+      {
+        tool: 'Data Annotation Team (Toloka / Scale)',
+        cost: '$5,000 (مرة واحدة)',
+        purpose: 'تسمية آلاف مقاطع فيديو إشارة وصور بريل لتدريب النماذج.',
+        sustainability: 'بيانات عربية حقيقية تُحسّن دقة النماذج بنسبة 50%.',
+      },
+    ],
+  },
+  {
+    phase: 'المرحلة الثالثة: الأجهزة والتكامل المادي (شهر 9–12)',
+    duration: '4 أشهر',
+    budget: '~$35,000',
+    items: [
+      {
+        tool: 'ESP32 + Haptic Motors (100 وحدة)',
+        cost: '$8,000',
+        purpose: 'أذرع لمسية (wearable) للجسر الحسي العكسي: تحويل صوت/صورة إلى اهتزازات.',
+        sustainability: 'توزيع على مراكز إعادة التأهيل في الأردن كتجربة أولية قابلة للتكرار.',
+      },
+      {
+        tool: 'Raspberry Pi 5 + Camera (50 وحدة)',
+        cost: '$7,500',
+        purpose: 'أجهزة كشف إشارة مستقلة للمدارس (لا تحتاج إنترنت).',
+        sustainability: 'تقليل الاعتماد على الهواتف الذكية في المناطق الريفية.',
+      },
+      {
+        tool: 'Smart Glasses (Envision / OrCam) × 20',
+        cost: '$10,000',
+        purpose: 'دمج مع "عين الأعمى" لتجربة ميدانية مع المكفوفين.',
+        sustainability: 'دراسة ميدانية تنشر في مؤتمرات علمية وتجذب مزيداً من التمويل.',
+      },
+      {
+        tool: 'EMG Sensors + Arduino Kits',
+        cost: '$4,500',
+        purpose: 'مستشعرات عضلية لتدريب يد الأطفال على الإشارة.',
+        sustainability: 'أداة علاجية فريدة تجذب مراكز العلاج الطبيعي كعملاء.',
+      },
+      {
+        tool: '3D Printer + Filament',
+        cost: '$3,000',
+        purpose: 'طباعة رسومات لمسية (Tactile Graphics) ونماذج بريل للمدارس.',
+        sustainability: 'توفير آلاف الرسومات اللمسية بتكلفة 90% أقل من الطباعة التجارية.',
+      },
+      {
+        tool: 'IoT Cloud (ThingsBoard / AWS IoT)',
+        cost: '$2,000/سنة',
+        purpose: 'ربط الأجهزة بالمنصة وتتبع استخدامها في الوقت الحقيقي.',
+        sustainability: 'بيانات استخدام حقيقية تُحسّن الأجهزة وتُبرهن الأثر للجهات المانحة.',
+      },
+    ],
+  },
+  {
+    phase: 'المرحلة الرابعة: الفريق والنمو (مستمر)',
+    duration: '12 شهر',
+    budget: '~$25,000',
+    items: [
+      {
+        tool: 'مطوّر Full-Stack متفرغ × 1',
+        cost: '$12,000/سنة',
+        purpose: 'صيانة المنصة، إضافة ميزات جديدة، وتحسين الأداء.',
+        sustainability: 'يضمن استمرارية التطوير ولا يترك المنصة معتمدة على متطوعين فقط.',
+      },
+      {
+        tool: 'أخصائي بيانات / AI Engineer × 0.5',
+        cost: '$8,000/سنة',
+        purpose: 'تحسين النماذج، قياس الأثر، وتوليد تقارير للجهات المانحة.',
+        sustainability: 'بيانات دقيقة تُقنّع النجاح وتجلب تمويلاً إضافياً.',
+      },
+      {
+        tool: 'منسّق مجتمع (Community Manager)',
+        cost: '$5,000/سنة',
+        purpose: 'تواصل مع الأهل والأطباء والمدارس، جمع feedback، وتنظيم ورش.',
+        sustainability: 'بناء مجتمع ولاء يُبقي المستخدمين ويُحوّلهم لسفراء للمنصة.',
+      },
+    ],
+  },
+];
+
+const ExpansionPlanSection: React.FC = () => {
+  const [openPhase, setOpenPhase] = useState<number | null>(0);
+  const totalBudget = '$150,000';
+
+  return (
+    <section id="expansion" className="px-6 py-12 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 scroll-mt-20 border-t border-[hsl(var(--damij-border))]">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-start gap-4 mb-8 flex-wrap">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-600 text-white flex items-center justify-center shrink-0 shadow-lg">
+            <Rocket className="w-7 h-7" />
+          </div>
+          <div className="flex-1 min-w-[240px]">
+            <h2 className="text-2xl md:text-3xl font-black text-[hsl(var(--damij-primary))] mb-1">
+              خطة التوسع التقني — بميزانية 150,000 دولار
+            </h2>
+            <p className="text-sm md:text-base text-[hsl(var(--damij-muted))] leading-relaxed">
+              خارطة طريق عملية مقسمة على 4 مراحل: من استقرار البنية التحتية إلى الذكاء الاصطناعي المتقدم،
+              ثم التكامل مع أجهزة لمسية وإنترنت الأشياء، وأخيراً بناء فريق مستدام.
+            </p>
+          </div>
+          <div className="shrink-0 px-5 py-3 rounded-xl bg-emerald-600 text-white font-black text-lg shadow-lg">
+            {totalBudget}
+          </div>
+        </div>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          {[
+            { v: '4', l: 'مراحل تنفيذية', i: Layers },
+            { v: '32+', l: 'أداة/نظام', i: Code2 },
+            { v: '12', l: 'شهر زمني', i: Clock },
+            { v: '∞', l: 'استدامة طويلة', i: Globe2 },
+          ].map((s) => (
+            <div key={s.l} className="p-4 rounded-xl bg-white border border-[hsl(var(--damij-border))] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <s.i className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-2xl font-black text-emerald-700 leading-none">{s.v}</div>
+                <div className="text-xs text-[hsl(var(--damij-muted))] mt-1">{s.l}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Phases */}
+        <div className="space-y-3">
+          {EXPANSION_PLAN_150K.map((phase, idx) => (
+            <motion.div
+              key={phase.phase}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              className="rounded-2xl bg-white border border-[hsl(var(--damij-border))] overflow-hidden shadow-sm"
+            >
+              <button
+                onClick={() => setOpenPhase(openPhase === idx ? null : idx)}
+                className="w-full text-right p-5 flex items-center gap-4 hover:bg-slate-50 transition-colors"
+                aria-expanded={openPhase === idx}
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 text-white flex items-center justify-center shrink-0 shadow-md font-black text-lg">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-extrabold text-[hsl(var(--damij-primary))] mb-0.5">{phase.phase}</h3>
+                  <p className="text-xs text-[hsl(var(--damij-muted))]">المدة: {phase.duration} · الميزانية: {phase.budget}</p>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-[hsl(var(--damij-muted))] transition-transform shrink-0 ${openPhase === idx ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openPhase === idx && (
+                <div className="border-t border-[hsl(var(--damij-border))] p-5 bg-slate-50/50">
+                  <div className="grid grid-cols-1 gap-3">
+                    {phase.items.map((item, i) => (
+                      <div key={i} className="p-4 rounded-xl bg-white border border-[hsl(var(--damij-border))]">
+                        <div className="flex flex-col md:flex-row md:items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-[hsl(var(--damij-text))]">{item.tool}</span>
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-mono">{item.cost}</span>
+                            </div>
+                            <p className="text-sm text-[hsl(var(--damij-text))] mt-1.5 leading-relaxed">{item.purpose}</p>
+                            <div className="mt-2 flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="text-emerald-700 font-medium">الاستدامة:</span>
+                              <span className="text-[hsl(var(--damij-muted))]">{item.sustainability}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Impact summary */}
+        <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-[hsl(var(--damij-primary))] to-[hsl(var(--damij-primary-2))] text-white">
+          <h3 className="text-xl font-black mb-3 flex items-center gap-2">
+            <Sparkles className="w-6 h-6" /> كيف تُحقّق هذه الخطة الاستدامة والتوسع؟
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm leading-relaxed">
+            <div>
+              <div className="font-bold mb-1">🔄 استدامة تقنية</div>
+              <div className="opacity-90">
+                كل أداة تُبنى على معايير مفتوحة (Open Source) أو واجهات برمجية قابلة للاستبدال.
+                لا يوجد قفل تقني (Vendor Lock-in) — يمكن استبدال أي مزود دون إعادة بناء المنصة.
+              </div>
+            </div>
+            <div>
+              <div className="font-bold mb-1">📈 توسع تلقائي</div>
+              <div className="opacity-90">
+                البنية السحابية على Supabase + AWS تتوسع تلقائياً مع عدد المستخدمين.
+                من 100 مستخدم إلى مليون مستخدم دون تغيير في البنية — تدفع فقط حسب الاستخدام.
+              </div>
+            </div>
+            <div>
+              <div className="font-bold mb-1">🤝 شراكات مؤسسية</div>
+              <div className="opacity-90">
+                الجهازيات اللمسية والدراسات الميدانية تُنتج أدلة علمية تُجذب وزارات الصحة والتعليم
+                كشركاء دائمين، تحوّل المنصة من مشروع إلى منظومة وطنية.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ----------------------------------------------------------------------------
 // Build a long, human-readable Arabic platform description for copying
 // ----------------------------------------------------------------------------
 const buildFullPlatformText = (): string => {
@@ -482,6 +823,20 @@ const buildFullPlatformText = (): string => {
   });
   lines.push('');
   lines.push('====================================');
+  lines.push('خطة التوسع التقني — بميزانية 150,000 دولار:');
+  lines.push('====================================');
+  EXPANSION_PLAN_150K.forEach((phase) => {
+    lines.push('');
+    lines.push(`▸ ${phase.phase}`);
+    lines.push(`المدة: ${phase.duration} · الميزانية: ${phase.budget}`);
+    phase.items.forEach((it) => {
+      lines.push(`  • ${it.tool} (${it.cost})`);
+      lines.push(`    الغرض: ${it.purpose}`);
+      lines.push(`    الاستدامة: ${it.sustainability}`);
+    });
+  });
+  lines.push('');
+  lines.push('====================================');
   lines.push('المصادر العلمية المعتمدة:');
   lines.push('====================================');
   SOURCES.forEach((s) => lines.push(`• ${s.name} — ${s.use}`));
@@ -527,7 +882,8 @@ const PlatformInfoSection: React.FC = () => {
               معلومات المنصة بشكل كامل
             </h2>
             <p className="text-sm md:text-base text-[hsl(var(--damij-muted))] leading-relaxed">
-              ملخّص شامل وقابل للنسخ يحتوي على: كل الأنظمة، كل الخيارات وكيف تشتغل، التقنيات المستخدمة، والرؤية المستقبلية لمنصة دامج — بالتفصيل الممل.
+              ملخّص شامل وقابل للنسخ يحتوي على: كل الأنظمة، كل الخيارات وكيف تشتغل، التقنيات المستخدمة،
+              خطة التوسع التقني بميزانية 150,000 دولار، والرؤية المستقبلية لمنصة دامج — بالتفصيل الممل.
             </p>
           </div>
           <button
@@ -608,6 +964,7 @@ const DamijDocs: React.FC = () => {
             <a href="#tech" className="px-4 py-2 rounded-full bg-white border border-[hsl(var(--damij-border))] hover:border-[hsl(var(--damij-primary))]/40 transition">التقنيات</a>
             <a href="#sources" className="px-4 py-2 rounded-full bg-white border border-[hsl(var(--damij-border))] hover:border-[hsl(var(--damij-primary))]/40 transition">المصادر العلمية</a>
             <a href="#architecture" className="px-4 py-2 rounded-full bg-white border border-[hsl(var(--damij-border))] hover:border-[hsl(var(--damij-primary))]/40 transition">المعمارية</a>
+            <a href="#expansion" className="px-4 py-2 rounded-full bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 transition font-bold">خطة التوسع 150K$</a>
           </div>
         </div>
       </section>
@@ -734,6 +1091,9 @@ const DamijDocs: React.FC = () => {
 
       {/* Complete platform information (copyable) */}
       <PlatformInfoSection />
+
+      {/* $150K Expansion Plan */}
+      <ExpansionPlanSection />
 
       {/* Footer note */}
       <footer className="px-6 py-10 text-center border-t border-[hsl(var(--damij-border))]">
