@@ -39,6 +39,51 @@ const SourcesLibrary: React.FC = () => {
     return map;
   }, []);
 
+  const formatSources = (list: typeof SOURCES) =>
+    list
+      .map(
+        (s, i) =>
+          `${i + 1}. ${s.title}\n` +
+          `   • المؤلف/الجهة: ${s.authors} (${s.year})\n` +
+          `   • الفئة: ${CATEGORY_LABELS[s.category]}\n` +
+          `   • أين استُخدم في منصة دامج: ${s.usedIn}\n` +
+          `   • الشرح: ${s.note}\n` +
+          `   • الرابط: ${s.url}\n`
+      )
+      .join('\n');
+
+  const copyToClipboard = async (text: string, kind: 'all' | 'filtered') => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(kind);
+    setTimeout(() => setCopied('none'), 2500);
+  };
+
+  const downloadTxt = () => {
+    const header =
+      `المكتبة العلمية الموثّقة — منصة دامج\n` +
+      `إجمالي المصادر: ${SOURCES.length}\n` +
+      `تاريخ التصدير: ${new Date().toLocaleString('ar')}\n` +
+      `——————————————————————————————\n\n`;
+    const blob = new Blob([header + formatSources(SOURCES)], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `damij-scientific-sources-${SOURCES.length}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="px-4 sm:px-6 pt-10 pb-16 max-w-6xl mx-auto" dir="rtl">
       <div className="flex items-center gap-3 mb-2">
@@ -48,9 +93,38 @@ const SourcesLibrary: React.FC = () => {
       <p className="text-[hsl(var(--damij-text))]/70 mb-2">
         أكثر من <span className="font-bold text-[hsl(var(--damij-primary))]">{SOURCE_COUNT}</span> مرجعاً علمياً ودولياً تُبنى عليها كل أدوات منصة دامج.
       </p>
-      <p className="text-xs text-[hsl(var(--damij-text))]/60 mb-6">
-        كل مصدر يوضّح: المؤلف، السنة، الجهة، أين استُخدم داخل المنصة، وشرح موجز لدوره العلمي.
+      <p className="text-xs text-[hsl(var(--damij-text))]/60 mb-4">
+        كل مصدر يوضّح: المؤلف، السنة، الجهة، أين استُخدم داخل المنصة، الشرح العلمي، والرابط الرسمي الخاص به.
       </p>
+
+      {/* Copy / Download bar */}
+      <div className="flex flex-wrap gap-2 mb-6 p-3 rounded-2xl bg-[hsl(var(--damij-accent))]/10 border border-[hsl(var(--damij-primary))]/15">
+        <button
+          onClick={() => copyToClipboard(formatSources(SOURCES), 'all')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[hsl(var(--damij-primary))] text-white text-sm font-bold hover:opacity-90 transition"
+        >
+          {copied === 'all' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied === 'all' ? 'تم نسخ كل المصادر ✓' : `نسخ كل المصادر (${SOURCES.length})`}
+        </button>
+        <button
+          onClick={() => copyToClipboard(formatSources(filtered), 'filtered')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[hsl(var(--damij-primary))]/30 text-[hsl(var(--damij-primary))] text-sm font-bold hover:bg-[hsl(var(--damij-primary))]/5 transition"
+        >
+          {copied === 'filtered' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied === 'filtered' ? 'تم نسخ النتائج ✓' : `نسخ النتائج الظاهرة (${filtered.length})`}
+        </button>
+        <button
+          onClick={downloadTxt}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[hsl(var(--damij-primary))]/30 text-[hsl(var(--damij-text))] text-sm font-bold hover:bg-[hsl(var(--damij-primary))]/5 transition"
+        >
+          <Download className="w-4 h-4" />
+          تنزيل ملف TXT
+        </button>
+        <div className="flex-1 min-w-[200px] text-[11px] text-[hsl(var(--damij-text))]/60 self-center leading-relaxed">
+          النسخ يشمل: العنوان، المؤلف، السنة، الفئة، مكان الاستخدام في المنصة، الشرح، والرابط الرسمي لكل مصدر.
+        </div>
+      </div>
+
 
       {/* Search */}
       <div className="relative mb-4">
