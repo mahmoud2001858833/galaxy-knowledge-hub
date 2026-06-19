@@ -8,7 +8,7 @@ import {
   Copy, Check, Info, Rocket,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import DamijSEO from '@/components/damij/DamijSEO';
+import { DamijSEO } from '@/components/damij/DamijSEO';
 
 // ----------------------------------------------------------------------------
 // Types
