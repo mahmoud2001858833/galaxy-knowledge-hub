@@ -1076,6 +1076,9 @@ const DamijDocs: React.FC = () => {
       {/* Complete platform information (copyable) */}
       <PlatformInfoSection />
 
+      {/* $150K Expansion Plan */}
+      <ExpansionPlanSection />
+
       {/* Footer note */}
       <footer className="px-6 py-10 text-center border-t border-[hsl(var(--damij-border))]">
         <p className="text-sm text-[hsl(var(--damij-muted))] max-w-2xl mx-auto leading-relaxed">
