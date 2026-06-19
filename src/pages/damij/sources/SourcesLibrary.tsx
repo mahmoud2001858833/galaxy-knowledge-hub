@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BookMarked, ExternalLink, Search, Filter } from 'lucide-react';
+import { BookMarked, ExternalLink, Search, Filter, Copy, Check, Download } from 'lucide-react';
 import { SOURCES, CATEGORY_LABELS, SOURCE_COUNT, type SourceCategory } from './sourcesData';
 
 const TYPE_LABEL: Record<string, string> = {
