@@ -936,6 +936,281 @@ const PlatformInfoSection: React.FC = () => {
 };
 
 
+// ----------------------------------------------------------------------------
+// Tools Catalog — 80+ منصة وأداة موزعة على 17 محوراً
+// ----------------------------------------------------------------------------
+type ToolItem = { name: string; desc: string };
+type ToolCategory = { title: string; icon: React.ElementType; items: ToolItem[] };
+
+const TOOLS_CATALOG: ToolCategory[] = [
+  {
+    title: 'البنية التحتية والاستضافة السحابية',
+    icon: Cloud,
+    items: [
+      { name: 'Supabase', desc: 'قاعدة البيانات، المصادقة، التخزين، وEdge Functions مع Row Level Security.' },
+      { name: 'Vercel', desc: 'استضافة المنصة ونشرها بشكل متواصل (CI/CD).' },
+      { name: 'Cloudflare', desc: 'حماية من هجمات DDoS، CDN عالمي، وتسريع التحميل.' },
+      { name: 'AWS S3 + CloudFront', desc: 'تخزين الملفات الكبيرة (فيديوهات لغة الإشارة، الرسومات التكتيلية).' },
+      { name: 'Docker + Kubernetes', desc: 'تشغيل نماذج الذكاء الاصطناعي بشكل قابل للتوسع.' },
+      { name: 'Redis', desc: 'تخزين مؤقت فائق السرعة للاستجابات.' },
+      { name: 'PostgreSQL', desc: 'قاعدة البيانات الرئيسية للسجلات الطبية الافتراضية.' },
+    ],
+  },
+  {
+    title: 'الذكاء الاصطناعي التوليدي والمحادثة',
+    icon: Sparkles,
+    items: [
+      { name: 'OpenAI GPT-4o / GPT-4 Turbo', desc: 'المحادثة الذكية مع المكفوفين والمرضى الافتراضيين.' },
+      { name: 'Anthropic Claude 3.5 Sonnet', desc: 'التحليل السريري العميق وتوليد البروتوكولات العلاجية.' },
+      { name: 'Google Gemini Pro', desc: 'معالجة متعددة الوسائط (صور + نص + صوت).' },
+      { name: 'Meta LLaMA 3', desc: 'نموذج مفتوح المصدر للتشغيل المحلي (Offline Mode).' },
+      { name: 'Mistral AI', desc: 'نموذج خفيف للأجهزة محدودة الموارد.' },
+      { name: 'Hugging Face Transformers', desc: 'تدريب وضبط النماذج المخصصة.' },
+    ],
+  },
+  {
+    title: 'أدوات الأوامر الصوتية والتعرف على الكلام',
+    icon: Mic,
+    items: [
+      { name: 'OpenAI Whisper', desc: 'تحويل الصوت إلى نص بدقة عالية يدعم 99 لغة.' },
+      { name: 'Google Cloud Speech-to-Text', desc: 'تعرف صوتي لحظي بـ 125+ لغة ولهجة.' },
+      { name: 'Azure Speech Services', desc: 'تعرف صوتي مع تخصيص للهجات العربية.' },
+      { name: 'AssemblyAI', desc: 'تحويل صوت لنص مع تحليل المشاعر والسياق.' },
+      { name: 'Deepgram Nova-2', desc: 'تعرف صوتي فوري (<300ms) لتطبيقات الملاحة الحية.' },
+      { name: 'Picovoice Porcupine', desc: 'كشف كلمات التنبيه (Wake Words) محلياً على الجهاز.' },
+      { name: 'Web Speech API', desc: 'تعرف صوتي مدمج في المتصفح للعمل دون اتصال.' },
+      { name: 'Vosk', desc: 'تعرف صوتي مفتوح المصدر يعمل محلياً بالكامل (Offline).' },
+      { name: 'Coqui STT', desc: 'بديل مفتوح المصدر لتدريب نماذج صوتية مخصصة.' },
+    ],
+  },
+  {
+    title: 'تحويل النص إلى صوت (TTS) متعدد اللغات',
+    icon: Mic,
+    items: [
+      { name: 'ElevenLabs', desc: 'أصوات طبيعية بـ 32 لغة مع استنساخ صوتي.' },
+      { name: 'Google Cloud Text-to-Speech', desc: 'أصوات WaveNet بأكثر من 50 لغة و220 صوتاً.' },
+      { name: 'Azure Neural TTS', desc: '140+ صوتاً عصبياً بـ 90+ لغة.' },
+      { name: 'Amazon Polly', desc: 'TTS بـ 60+ صوتاً يدعم SSML للتحكم بالنطق.' },
+      { name: 'OpenAI TTS (tts-1-hd)', desc: 'جودة استوديو للأصوات الإرشادية.' },
+      { name: 'Coqui TTS', desc: 'تشغيل محلي مفتوح المصدر للوضع غير المتصل.' },
+    ],
+  },
+  {
+    title: 'أدوات الترجمة ودعم 120+ لغة',
+    icon: Languages,
+    items: [
+      { name: 'Google Cloud Translation API', desc: 'ترجمة فورية بين 133 لغة.' },
+      { name: 'DeepL API', desc: 'ترجمات عالية الجودة لـ 31 لغة (الأدق عالمياً).' },
+      { name: 'Microsoft Translator', desc: 'ترجمة لحظية بـ 135 لغة مع كشف اللغة التلقائي.' },
+      { name: 'Meta NLLB-200', desc: 'نموذج مفتوح المصدر يدعم 200 لغة بما فيها لغات نادرة.' },
+      { name: 'Lingvanex', desc: 'ترجمة عربية متخصصة باللهجات.' },
+      { name: 'LibreTranslate', desc: 'بديل مفتوح المصدر يعمل محلياً.' },
+      { name: 'i18next + react-i18next', desc: 'إطار التدويل والترجمة في الواجهة الأمامية.' },
+      { name: 'Crowdin / Lokalise', desc: 'إدارة ملفات الترجمة وتعاون المترجمين البشريين.' },
+      { name: 'ICU MessageFormat', desc: 'تنسيق الرسائل المعقدة (جموع، تواريخ، أرقام) لكل لغة.' },
+      { name: 'Unicode CLDR', desc: 'قاعدة بيانات أنماط الكتابة والاتجاهات (RTL/LTR).' },
+    ],
+  },
+  {
+    title: 'الرؤية الحاسوبية وتحليل الصور',
+    icon: Camera,
+    items: [
+      { name: 'Google Cloud Vision AI', desc: 'كشف الأجسام والنصوص (لمساعد عين الأعمى).' },
+      { name: 'OpenCV', desc: 'معالجة الصور وعزل الحواف للرسومات التكتيلية.' },
+      { name: 'YOLO v8 / YOLOv9', desc: 'كشف الأجسام في الوقت الحقيقي (3Hz للملاحة).' },
+      { name: 'MediaPipe', desc: 'تتبع مفاصل اليد والجسم للغة الإشارة.' },
+      { name: 'TensorFlow.js', desc: 'تشغيل نماذج الرؤية محلياً في المتصفح (Offline Mode).' },
+      { name: 'PyTorch + TorchVision', desc: 'تدريب نماذج الرؤية الحاسوبية المخصصة.' },
+      { name: 'Roboflow', desc: 'تجهيز وتسمية مجموعات بيانات الرؤية الحاسوبية.' },
+      { name: 'CLIP (OpenAI)', desc: 'فهم الصور بالربط مع الوصف اللغوي.' },
+      { name: 'Segment Anything (Meta SAM 2)', desc: 'تقسيم دقيق للأجسام في الصور.' },
+    ],
+  },
+  {
+    title: 'تدريب الذكاء الاصطناعي (مليون موقف تدريبي)',
+    icon: Brain,
+    items: [
+      { name: 'Hugging Face Hub', desc: 'استضافة ومشاركة النماذج المدربة.' },
+      { name: 'Weights & Biases (W&B)', desc: 'تتبع تجارب التدريب والمقاييس.' },
+      { name: 'MLflow', desc: 'إدارة دورة حياة نماذج التعلم الآلي.' },
+      { name: 'Label Studio', desc: 'منصة تسمية البيانات يدوياً وآلياً.' },
+      { name: 'DVC (Data Version Control)', desc: 'إدارة إصدارات مجموعات البيانات الضخمة.' },
+      { name: 'Apache Kafka', desc: 'معالجة تدفقات بيانات التدريب اللحظية.' },
+      { name: 'Ray / Ray Tune', desc: 'تدريب موزع على عدة GPUs.' },
+      { name: 'NVIDIA CUDA + cuDNN', desc: 'تسريع التدريب على معالجات الرسوميات.' },
+      { name: 'RunPod / Lambda Labs / Vast.ai', desc: 'استئجار وحدات GPU سحابية للتدريب الموسّع.' },
+      { name: 'Google Colab Pro+', desc: 'بيئة تجريب وتدريب أولية.' },
+    ],
+  },
+  {
+    title: 'البحث الدلالي وقواعد البيانات الذكية',
+    icon: Database,
+    items: [
+      { name: 'Pinecone', desc: 'قاعدة بيانات متجهة للبحث الدلالي في الحالات الطبية.' },
+      { name: 'Weaviate', desc: 'بديل مفتوح المصدر للبحث المتجهي.' },
+      { name: 'ChromaDB', desc: 'قاعدة متجهات خفيفة للتشغيل المحلي.' },
+      { name: 'LangChain', desc: 'تنسيق سلاسل عمل الذكاء الاصطناعي والوكلاء الذكيين.' },
+      { name: 'LlamaIndex', desc: 'ربط النماذج بقواعد المعرفة الطبية.' },
+    ],
+  },
+  {
+    title: 'لغة الإشارة (50+ لغة إشارية)',
+    icon: Hand,
+    items: [
+      { name: 'MediaPipe Holistic', desc: 'تتبع الجسم الكامل (Pose + Hands + Face) للترجمة.' },
+      { name: 'OpenPose', desc: 'تتبع مفاصل بديل لدقة أعلى.' },
+      { name: 'SignAll SDK', desc: 'مكتبة متخصصة في تعرف لغات الإشارة.' },
+      { name: 'WLASL Dataset', desc: 'قاعدة بيانات لغة الإشارة الأمريكية لتدريب النماذج.' },
+      { name: 'YouTube IFrame API', desc: 'لدمج الترجمة الحية فوق فيديوهات يوتيوب.' },
+    ],
+  },
+  {
+    title: 'أدوات الفحص النفسي والتعليمي',
+    icon: Activity,
+    items: [
+      { name: 'DSM-5-TR Digital References', desc: 'مرجع التشخيص النفسي الرقمي.' },
+      { name: 'Phaser.js / PixiJS', desc: 'محركات ألعاب لتوليد ألعاب التشخيص التفاعلية.' },
+      { name: 'Three.js', desc: 'رسومات ثلاثية الأبعاد للمختبر السريري الافتراضي.' },
+      { name: 'D3.js', desc: 'تصورات بيانية لتقارير تطور الأطفال.' },
+    ],
+  },
+  {
+    title: 'الجسر الحسي العكسي (Sensory Bridge)',
+    icon: Vibrate,
+    items: [
+      { name: 'Web Vibration API', desc: 'التحكم باهتزاز الأجهزة لتحويل الصوت/النص لاهتزاز.' },
+      { name: 'Web Audio API', desc: 'تحليل وتوليد الإشارات الصوتية.' },
+      { name: 'Tone.js', desc: 'مكتبة معالجة صوتية متقدمة.' },
+    ],
+  },
+  {
+    title: 'خرائط الملاحة (عين الأعمى)',
+    icon: MapPin,
+    items: [
+      { name: 'Google Maps Platform', desc: 'الخرائط والمسارات والأماكن.' },
+      { name: 'Mapbox GL JS', desc: 'بديل احتياطي للملاحة.' },
+      { name: 'OpenStreetMap + Leaflet', desc: 'حل مفتوح للوضع غير المتصل.' },
+    ],
+  },
+  {
+    title: 'المراسلة والإشعارات (تقارير الأهالي)',
+    icon: FileText,
+    items: [
+      { name: 'Resend / SendGrid', desc: 'إرسال تقارير يومية وشهرية للبريد الإلكتروني.' },
+      { name: 'React Email', desc: 'تصميم قوالب البريد التفاعلية متعددة اللغات.' },
+      { name: 'Twilio', desc: 'رسائل SMS احتياطية للتنبيهات الحرجة.' },
+    ],
+  },
+  {
+    title: 'الأمان وحماية الخصوصية',
+    icon: ShieldCheck,
+    items: [
+      { name: 'Row Level Security (RLS)', desc: 'حماية بيانات السجلات الطبية على مستوى الصف.' },
+      { name: 'Auth0 / Supabase Auth', desc: 'مصادقة آمنة بمعايير عالمية.' },
+      { name: 'Sentry', desc: 'رصد الأخطاء في الإنتاج.' },
+      { name: 'Snyk', desc: 'فحص ثغرات الاعتماديات البرمجية.' },
+      { name: 'HIPAA / GDPR Compliance Tools', desc: 'معايير حماية البيانات الصحية.' },
+    ],
+  },
+  {
+    title: 'الواجهة الأمامية وتجربة المستخدم',
+    icon: Code2,
+    items: [
+      { name: 'React 18 + Vite + TypeScript', desc: 'بناء الواجهة بأداء عالٍ.' },
+      { name: 'Tailwind CSS', desc: 'تصميم متجاوب وسريع.' },
+      { name: 'shadcn/ui + Radix UI', desc: 'مكونات واجهة قابلة للوصول (WCAG 2.1 AA).' },
+      { name: 'Framer Motion', desc: 'حركات سلسة لتحسين تجربة الأطفال.' },
+      { name: 'React Query (TanStack)', desc: 'إدارة الحالة وتزامن البيانات.' },
+    ],
+  },
+  {
+    title: 'التصميم والإنتاج الإبداعي',
+    icon: Type,
+    items: [
+      { name: 'Figma', desc: 'تصميم الواجهات والنماذج الأولية.' },
+      { name: 'Blender', desc: 'نمذجة الرسومات التكتيلية ثلاثية الأبعاد.' },
+      { name: 'Adobe After Effects', desc: 'رسوم متحركة تعليمية للغة الإشارة.' },
+    ],
+  },
+  {
+    title: 'مجموعات البيانات التدريبية المفتوحة',
+    icon: Database,
+    items: [
+      { name: 'Common Voice (Mozilla)', desc: 'أصوات بـ 100+ لغة للتدريب الصوتي.' },
+      { name: 'PhysioNet', desc: 'بيانات طبية مفتوحة للمختبر السريري.' },
+      { name: 'WHO Open Data', desc: 'إحصائيات صحية عالمية.' },
+      { name: 'Kaggle Datasets', desc: 'مجموعات بيانات تشخيصية وسلوكية.' },
+      { name: 'WLASL / RWTH-PHOENIX', desc: 'قواعد لغة الإشارة العالمية.' },
+    ],
+  },
+];
+
+const ToolsCatalogSection: React.FC = () => {
+  const totalTools = TOOLS_CATALOG.reduce((s, c) => s + c.items.length, 0);
+  return (
+    <section
+      id="tools-catalog"
+      className="px-6 py-12 bg-gradient-to-br from-indigo-50 via-white to-violet-50 scroll-mt-20 border-t border-[hsl(var(--damij-border))]"
+    >
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white mb-3 shadow-lg">
+            <Layers className="w-7 h-7" />
+          </div>
+          <h2 className="text-2xl md:text-4xl font-black text-indigo-900 mb-2">
+            ترسانة دامج التقنية الشاملة
+          </h2>
+          <p className="text-[hsl(var(--damij-muted))] max-w-3xl mx-auto leading-relaxed">
+            {totalTools}+ منصة وأداة موزعة على {TOOLS_CATALOG.length} محوراً تقنياً متكاملاً،
+            تشمل التعرف الصوتي بـ 125+ لغة، الترجمة لـ 200 لغة، ودعم 50+ لغة إشارة عالمية،
+            لتدريب الذكاء الاصطناعي على أكثر من مليون موقف واقعي.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-5 text-xs">
+            <span className="px-3 py-1.5 rounded-full bg-indigo-600 text-white font-bold">{totalTools}+ أداة</span>
+            <span className="px-3 py-1.5 rounded-full bg-white border border-indigo-200 text-indigo-700 font-bold">{TOOLS_CATALOG.length} محوراً</span>
+            <span className="px-3 py-1.5 rounded-full bg-white border border-indigo-200 text-indigo-700 font-bold">120+ لغة واجهة</span>
+            <span className="px-3 py-1.5 rounded-full bg-white border border-indigo-200 text-indigo-700 font-bold">50+ لغة إشارة</span>
+            <span className="px-3 py-1.5 rounded-full bg-white border border-indigo-200 text-indigo-700 font-bold">مليون موقف تدريبي</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {TOOLS_CATALOG.map((cat, idx) => (
+            <div
+              key={cat.title}
+              className="p-5 rounded-2xl bg-white border border-indigo-100 hover:border-indigo-300 hover:shadow-md transition"
+            >
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-indigo-50">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                  <cat.icon className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-indigo-400 font-bold">المحور {idx + 1}</div>
+                  <h3 className="font-bold text-sm text-indigo-900 leading-snug">{cat.title}</h3>
+                </div>
+                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md shrink-0">
+                  {cat.items.length}
+                </span>
+              </div>
+              <ul className="space-y-2.5">
+                {cat.items.map((it) => (
+                  <li key={it.name} className="flex items-start gap-2 text-xs leading-relaxed">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                    <div>
+                      <span className="font-bold text-[hsl(var(--damij-text))]">{it.name}</span>
+                      <span className="text-[hsl(var(--damij-muted))]"> — {it.desc}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 
 const DamijDocs: React.FC = () => {
   return (
