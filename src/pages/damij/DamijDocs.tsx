@@ -823,6 +823,20 @@ const buildFullPlatformText = (): string => {
   });
   lines.push('');
   lines.push('====================================');
+  lines.push('خطة التوسع التقني — بميزانية 150,000 دولار:');
+  lines.push('====================================');
+  EXPANSION_PLAN_150K.forEach((phase) => {
+    lines.push('');
+    lines.push(`▸ ${phase.phase}`);
+    lines.push(`المدة: ${phase.duration} · الميزانية: ${phase.budget}`);
+    phase.items.forEach((it) => {
+      lines.push(`  • ${it.tool} (${it.cost})`);
+      lines.push(`    الغرض: ${it.purpose}`);
+      lines.push(`    الاستدامة: ${it.sustainability}`);
+    });
+  });
+  lines.push('');
+  lines.push('====================================');
   lines.push('المصادر العلمية المعتمدة:');
   lines.push('====================================');
   SOURCES.forEach((s) => lines.push(`• ${s.name} — ${s.use}`));
