@@ -1,67 +1,17 @@
-## الهدف
-تحسين تجربة "عين الأعمى" ليصبح أسرع في فهم المحيط، ويبدأ بمسح دائري للبيئة، ويُحاور المستخدم بذكاء ليأخذه إلى وجهته، ويُنبّه فورًا عند ظهور أي عائق.
+## Goal
+Provide a complete list of all digital platforms that will be used in the Damij project, with a simple explanation of each platform's purpose, without mentioning any prices.
 
-## التغييرات
+## Context
+The user asked for this information "هون بشات" (here in chat) as a reference, not necessarily as a code change.
 
-### 1. مرحلة "المسح الدائري" (Spin Scan) — جديدة
-- إضافة مرحلة `phase: 'spin'` بين `calibrating` و`guiding` في `BlindEyeNavigator.tsx`.
-- عند بدء الكاميرا، يطلب المساعد صوتيًا: «استدِر ببطء دورة كاملة حول نفسك لأتعرّف على المكان» مع نبضات اهتزاز خفيفة كل ربع دورة.
-- استخدام البوصلة (`compass.ts`) لقياس مجموع زاوية الدوران؛ يكتمل المسح عند ≥ 320°.
-- أثناء الدوران: التقاط 4 لقطات (شمال/شرق/جنوب/غرب) وإرسالها لـ `blind-eye-vision` بوضع جديد `spin_scan` يُرجع ملخّص: نوع المكان، المعالم البارزة، الاتجاهات المفتوحة، التحذيرات.
-- بعد اكتمال المسح، المساعد يقول الملخّص بإيجاز، ثم يسأل: «إلى أين تريد أن تذهب؟» وينتظر إجابة المستخدم.
-- زر/أمر صوتي لتخطّي المسح إن أراد المستخدم.
+## Deliverable
+A categorized list of platforms covering:
+1. Infrastructure & Hosting (Supabase, Vercel, AWS S3 + CloudFront)
+2. AI & Computer Vision (OpenAI GPT-4o / Claude 3.5, Google Cloud Vision, ElevenLabs, Pinecone/Weaviate)
+3. IoT & Hardware (ESP32, Raspberry Pi, Arduino IDE)
+4. App Development (Capacitor, React + Vite + TypeScript)
+5. Monitoring & Quality (Sentry)
+6. Design & 3D Modeling (Blender)
 
-### 2. توجيه ذكي للوجهة بعد المسح
-- عند سماع وجهة المستخدم: استخدام `parseDestination` الحالي + استدعاء `blind-eye-chat` بوضع `mode: 'destination_plan'` لتأكيد الوجهة وإصدار أول خطوة بصوت طبيعي.
-- ربط المسح الدائري بالملاحة: تمرير ملخّص المسح كـ `visualContext` للـ chat حتى يتكلّم بثقة عن المكان.
-- تسريع رد فعل "تغيّر المنطقة" أثناء الحركة: خفض `minGap` عند حدوث `sceneChange` من 0 → استدعاءَين متوازيَين فورًا (موجود) + إضافة استدعاء `fast` تلقائي كل 1.5 ثانية في وضع التنقّل النشط لتحديث الوصف.
-
-### 3. تنبيه «قف. قف.» الفوري عند الاقتراب
-- منطق "Stop. Stop." الثلاثي موجود بالفعل في `runAI` وفي كاشف COCO-SSD المحلي (lines 252-260, 391-403).
-- التحسينات المطلوبة:
-  - خفض عتبة COCO-SSD للتشغيل من حجم `0.18` نسبي إلى `0.12` ليُطلق التنبيه مبكرًا.
-  - بعد جملتَي «قف. قف.» وعند الاقتراب الحاد، إضافة طلب وصف تفصيلي قصير (≤ 8 كلمات) عبر `blind-eye-vision` mode `describe_hazard` يشرح ماهية الشيء (مثال: «سيّارة متوقفة على يمينك، تراجع خطوة»).
-  - تقليل cooldown التنبيه المحلي من 1400ms إلى 900ms لزيادة الاستجابة.
-
-### 4. حوار أسرع وأذكى مع المستخدم
-- في `blind-eye-chat/index.ts`:
-  - رفع نموذج الدردشة الافتراضي إلى `google/gemini-3-flash-preview` (موجود) مع `max_tokens: 80` لتقليل التأخير.
-  - تمرير نوع `intent` في الطلب (`destination | question | confirm`) ليُكيّف الرد.
-- في الواجهة:
-  - قطع TTS فور بدء المستخدم بالكلام موجود (line 791-796) — تأكيد عمله بإضافة "barge-in earcon" قصير.
-  - تشغيل نغمة استماع (`earcons.pointAhead`) عند بدء التعرّف الصوتي ليعرف المستخدم أن النظام يصغي.
-
-### 5. تسريع استيعاب المحيط عمومًا
-- إعادة ضبط جدول التحديث في الحلقة الرئيسية:
-  - score ≥ 70 → 140ms (من 180)
-  - score ≥ 40 → 220ms (من 280)
-  - مستقر → 400ms (من 500)
-- زيادة `inflightCap` أثناء التنقل النشط من 4 → 5.
-- تقليل `lastDetTickRef` من 160ms إلى 120ms لكاشف COCO-SSD المحلي.
-
-## الملفات المتأثرة
-
-```text
-src/pages/damij/blind-eye/
-├── BlindEyeNavigator.tsx          (مرحلة spin + توجيه + تسريع)
-├── i18n.ts                        (نصوص المسح والتوجيه)
-├── localDetector.ts               (خفض عتبة الخطر)
-└── navigation/
-    └── spinScan.ts                (جديد: تتبّع زاوية الدوران)
-
-supabase/functions/
-├── blind-eye-vision/index.ts      (وضعَي spin_scan + describe_hazard)
-└── blind-eye-chat/index.ts        (intents + max_tokens أقل)
-```
-
-## تفاصيل تقنية
-
-- `spinScan.ts` يصدر `onProgress(degrees)` و`onComplete(snapshots[])`، يعتمد على `startCompass` ومجموع الفروقات الزاوية المطلقة.
-- وضع `spin_scan` في edge function يستقبل مصفوفة من 2-4 صور ويُرجع `{ place_type, landmarks[], open_directions[], warnings[], summary_spoken }`.
-- لا تغييرات على قاعدة البيانات أو الـ RLS.
-- مستثنى من قاعدة "لا Lovable AI" كما هو موثّق في memory.
-
-## ما لن يتغيّر
-- مفاتيح API والأسرار.
-- بقية ميزات منصة دامج.
-- بنية الملفات خارج مجلد blind-eye.
+## Next Step
+If the user wants this list added to the Damij Documentation page (without prices), implement the update upon approval.
