@@ -1368,6 +1368,9 @@ const DamijDocs: React.FC = () => {
       {/* Complete platform information (copyable) */}
       <PlatformInfoSection />
 
+      {/* Tools Catalog — ترسانة الأدوات 80+ */}
+      <ToolsCatalogSection />
+
       {/* $150K Expansion Plan */}
       <ExpansionPlanSection />
 
