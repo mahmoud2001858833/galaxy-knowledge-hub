@@ -949,6 +949,7 @@ const DamijDocs: React.FC = () => {
             <a href="#tech" className="px-4 py-2 rounded-full bg-white border border-[hsl(var(--damij-border))] hover:border-[hsl(var(--damij-primary))]/40 transition">التقنيات</a>
             <a href="#sources" className="px-4 py-2 rounded-full bg-white border border-[hsl(var(--damij-border))] hover:border-[hsl(var(--damij-primary))]/40 transition">المصادر العلمية</a>
             <a href="#architecture" className="px-4 py-2 rounded-full bg-white border border-[hsl(var(--damij-border))] hover:border-[hsl(var(--damij-primary))]/40 transition">المعمارية</a>
+            <a href="#expansion" className="px-4 py-2 rounded-full bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 transition font-bold">خطة التوسع 150K$</a>
           </div>
         </div>
       </section>
