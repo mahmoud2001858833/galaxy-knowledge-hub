@@ -1043,6 +1043,10 @@ const router = createBrowserRouter([
         element: <DamijResults />,
       },
       {
+        path: 'docs',
+        element: <DamijDocs />,
+      },
+      {
         path: 'damij',
         element: <DamijAuthGuard><DamijLayout /></DamijAuthGuard>,
         children: [
