@@ -1,17 +1,83 @@
-## Goal
-Provide a complete list of all digital platforms that will be used in the Damij project, with a simple explanation of each platform's purpose, without mentioning any prices.
 
-## Context
-The user asked for this information "هون بشات" (here in chat) as a reference, not necessarily as a code change.
+# خطة إنتاج فيديو "دامج" لجائزة زايد للاستدامة
 
-## Deliverable
-A categorized list of platforms covering:
-1. Infrastructure & Hosting (Supabase, Vercel, AWS S3 + CloudFront)
-2. AI & Computer Vision (OpenAI GPT-4o / Claude 3.5, Google Cloud Vision, ElevenLabs, Pinecone/Weaviate)
-3. IoT & Hardware (ESP32, Raspberry Pi, Arduino IDE)
-4. App Development (Capacitor, React + Vite + TypeScript)
-5. Monitoring & Quality (Sentry)
-6. Design & 3D Modeling (Blender)
+## الهدف
+إنتاج فيديو موشن-جرافيك احترافي (~4:45 دقيقة) بأسلوب **Editorial Minimal** (تايبوغرافي ضخمة، مساحات بيضاء، إيقاع مهيب) يغطي النقاط الأربع المطلوبة، يُولَّد عبر Remotion ويُحفظ كـ MP4 في `/mnt/documents/`، مع نص مكتوب (سكربت) يمكن للطلاب قراءته حرفياً عند التسجيل النهائي.
 
-## Next Step
-If the user wants this list added to the Damij Documentation page (without prices), implement the update upon approval.
+## المخرجات
+1. `/mnt/documents/damij-zayed-video.mp4` — فيديو 1920×1080 / 30fps / ~8550 frames.
+2. `/mnt/documents/damij-script-arabic.md` — السكربت الكامل بالعربية الفصحى مقسّم على المشاهد مع توقيت كل جملة، يقرأه الطلاب.
+3. ملف تعليق صوتي AI (Lovable AI TTS - voice: `verse` عربي) كـ track مرجعي مدمج في الفيديو (mute-able) في `/mnt/documents/damij-voiceover-ref.mp3`.
+4. صفحة داخل المنصة `/damij/award-video` لمعاينة الفيديو وتنزيل السكربت والـ MP4.
+
+## هوية بصرية
+- **الألوان** (مستلهمة من الشعار + اختيار المستخدم): `#0F172A` خلفية أساسية، `#3B82F6` أزرق رئيسي، `#7C3AED` بنفسجي accent، `#10B981` أخضر أمل، `#E2E8F0` نص فاتح، `#FFFFFF` للعناوين الضخمة.
+- **الخطوط**: `Cairo` (900/700) للعناوين العربية الضخمة، `Tajawal` (400/500) للنص الجسمي، `Orbitron` (700) لأرقام إنجليزية وKickers.
+- **الموسيقى**: ElevenLabs Music — مقطوعة سينمائية هادئة (Piano + Strings + Ambient pads) بطول كامل الفيديو، تتصاعد عند الذروات.
+- **SFX**: ElevenLabs SFX — whoosh ناعم للانتقالات، tick خفيف للأرقام، pad نهائي.
+- **الشعار**: يُرفع كأصل ويظهر في المقدمة + النهاية + watermark خفيف.
+
+## بنية الفيديو (5 فصول + مقدمة + خاتمة)
+
+| # | المشهد | المدة | المحتوى الأساسي |
+|---|--------|------|-----------------|
+| 0 | المقدمة (Cover) | 15s | شعار دامج يتجمع من جزيئات، اسم المدرسة + جائزة زايد للاستدامة |
+| 1 | السؤال 1 — ما المشروع ولماذا مبتكر؟ | 60s | شرح "دامج" كمنظومة 8 أنظمة (عين الأعمى، برايل، ترجمة إشارة، ADHD، Sensory Bridge، المختبر السريري، …) مع أيقونات متحركة لكل نظام |
+| 2 | السؤال 2 — كيف يُلهم الطلاب | 70s | إرث "ذروة العلم"، 15 طالب متقن، تدريب 30 طالب جديد، ريادة أعمال أخلاقية |
+| 3 | السؤال 3 — الاستدامة طويلة الأمد | 75s | منحة 150,000$ تكفي 5 سنوات (550$/شهر تشغيلية)، B2B SaaS، تبني وزارة التربية، إشادة الأمير حسن، 50,000+ مستفيد |
+| 4 | السؤال 4 — لماذا تستحق المدرسة | 70s | إرث ذروة العلم، 15% MVP مبنية ذاتياً، 500 متخصص أيّدوا، اعتمادات طبية (4 مستشفيات)، جوائز سابقة (الحسن بن طلال، أنا موهوب، أولمبياد الكيمياء) |
+| 5 | الخاتمة (CTA) | 25s | "من قلب الأردن إلى العالم" + الشعار + شكر الشيخ زايد + رابط المنصة |
+
+**الإجمالي**: ~285 ثانية (4:45)
+
+## السكربت (سيُكتب بالكامل في الملف المرافق)
+نص عربي فصيح موجز، كل جملة ≤ 12 ثانية، يتطابق توقيتها مع ظهور العناصر على الشاشة. يقرأه الطلاب حرفياً عند التسجيل النهائي مع إمكانية إسكات الـ AI track.
+
+## التفاصيل التقنية
+
+### إعداد المشروع
+- المجلد `remotion/` موجود مسبقاً (يحتوي MainVideo للفيديو السابق).
+- إنشاء composition جديدة `damij-zayed` في `remotion/src/Root.tsx` بدون لمس `main` القديم.
+- ملفات جديدة:
+  - `remotion/src/DamijZayedVideo.tsx` — الـ root composition
+  - `remotion/src/damij/scenes/Scene0Cover.tsx` … `Scene6CTA.tsx`
+  - `remotion/src/damij/components/LogoMark.tsx` — SVG للشعار
+  - `remotion/src/damij/components/PersistentBg.tsx` — خلفية gradient متحركة
+  - `remotion/src/damij/theme.ts` — ألوان وخطوط
+  - `remotion/scripts/render-damij.mjs` — سكربت render مخصص
+  - `remotion/public/damij-logo.png` — الشعار المرفوع
+  - `remotion/public/damij-music.mp3` — موسيقى ElevenLabs
+  - `remotion/public/damij-vo-ar.mp3` — تعليق Lovable AI TTS العربي (مدمج كـ `<Audio>` بـ volume قابل للضبط)
+
+### توليد الأصول الصوتية (Edge Functions موجودة في المشروع)
+- استخدام `LOVABLE_API_KEY` (موجود) لاستدعاء `/v1/audio/speech` بـ `openai/gpt-4o-mini-tts` + voice `verse` لتوليد التعليق العربي.
+- إذا كان ElevenLabs متصل: استخدام Music API لتوليد المقطوعة. وإلا: استخدام موسيقى public domain أو طبقة pads مبنية برمجياً (silence + AI music optional).
+- جميع الصوتيات تُولَّد محلياً عبر سكربت Node منفصل (`remotion/scripts/build-damij-audio.mjs`) ثم تُحفظ في `remotion/public/`.
+
+### الحركة (Editorial Minimal)
+- جميع العناصر spring damping 18-25 (هادئ، بلا ارتداد مبالغ)
+- كل سطر يدخل بـ blur-to-sharp + slide بسيط من الأسفل
+- انتقالات بين المشاهد: `fade` 30 frame من `@remotion/transitions` (لا wipes صاخبة)
+- خلفية gradient ناعمة متحركة طوال الفيديو + جزيئات قليلة جداً
+
+### صفحة العرض
+- `src/pages/damij/DamijAwardVideo.tsx` — صفحة بسيطة RTL تعرض:
+  - فيديو player (إذا تم استضافة MP4) أو زر تنزيل
+  - السكربت الكامل للطلاب مع نسخه وطباعته
+  - تعليمات التسجيل (كيف يقرأ الطلاب فوق الفيديو)
+- route: `/damij/award-video` في `src/App.tsx`
+
+## خطوات التنفيذ (في وضع البناء)
+1. رفع الشعار كأصل (`lovable-assets` ثم نسخة في `remotion/public/`)
+2. توليد السكربت العربي وحفظه (`/mnt/documents/damij-script-arabic.md`)
+3. توليد التعليق الصوتي AI عبر Lovable TTS وحفظه
+4. توليد الموسيقى (ElevenLabs أو احتياطي صامت)
+5. كتابة ملفات Remotion (theme, scenes, MainVideo, Root)
+6. تشغيل سكربت الـ render → `/mnt/documents/damij-zayed-video.mp4`
+7. إنشاء صفحة `/damij/award-video` لعرض النتائج
+8. التحقق من حجم/مدة الـ MP4 وعرض الروابط للمستخدم
+
+## ملاحظات
+- لن أعدّل ملفات الفيديو القديم (`MainVideo.tsx`, `Scene1-5` الحالية).
+- مدة الـ render قد تستغرق ~5-8 دقائق ضمن حد 600 ثانية لـ exec.
+- إذا فشل توليد الموسيقى، سأستمر مع التعليق الصوتي فقط.
