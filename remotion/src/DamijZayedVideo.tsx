@@ -14,8 +14,8 @@ export const DamijZayedVideo: React.FC = () => {
   return (
     <AbsoluteFill>
       <Bg />
-      <Audio src={staticFile("audio/damij-vo-ar.mp3")} volume={1} />
-      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.18} loop />
+      {/* Music only — no narration. Light volume so on-screen Arabic reads. */}
+      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.22} loop />
       <Series>
         <Series.Sequence durationInFrames={DUR.cover}><SceneCover /></Series.Sequence>
         <Series.Sequence durationInFrames={DUR.s1}><Scene1What /></Series.Sequence>

@@ -1,77 +1,100 @@
-import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, staticFile, useCurrentFrame, interpolate } from "remotion";
 import { loadFont as loadCairo } from "@remotion/google-fonts/Cairo";
-import { loadFont as loadOrbitron } from "@remotion/google-fonts/Orbitron";
-import { D } from "../theme";
-import { Reveal } from "../components/Reveal";
+import { loadFont as loadAmiri } from "@remotion/google-fonts/Amiri";
+import { D, FPS } from "../theme";
+import { Reveal, KenBurns } from "../components/Reveal";
 
 const cairo = loadCairo("normal", { weights: ["400", "700", "900"], subsets: ["arabic"] });
-const orbitron = loadOrbitron("normal", { weights: ["700"] });
+const amiri = loadAmiri("normal", { weights: ["400", "700"], subsets: ["arabic"] });
 
 const SYSTEMS = [
-  { ar: "عين الأعمى", en: "BLIND VISION", color: D.primary },
-  { ar: "برايل", en: "BRAILLE", color: D.accent },
-  { ar: "ترجمة الإشارة", en: "SIGN LANG", color: D.hope },
-  { ar: "ADHD", en: "FOCUS", color: D.primary },
-  { ar: "جسر الحواس", en: "SENSORY", color: D.accent },
-  { ar: "المختبر السريري", en: "CLINICAL", color: D.hope },
-  { ar: "التوحد", en: "AUTISM", color: D.primary },
-  { ar: "الإدارة", en: "ADMIN", color: D.accent },
+  { ar: "عين الأعمى", note: "تحويل المرئيات إلى صوت", c: "#1A3766" },
+  { ar: "نظام برايل", note: "تعليم ذكي للكفيف", c: "#1E6FA8" },
+  { ar: "ترجمة الإشارة", note: "كاميرا تترجم لحظياً", c: "#228889" },
+  { ar: "تركيز الـADHD", note: "ألعاب تأهيلية تكيفية", c: "#E8A12C" },
+  { ar: "جسر الحواس", note: "تكييف الواجهات حسياً", c: "#B85A3E" },
+  { ar: "المختبر السريري", note: "محاكاة فحوصات طبية", c: "#2A9163" },
+  { ar: "دعم التوحد", note: "خطط علاجية فردية", c: "#1A3766" },
+  { ar: "إدارة المدرسة", note: "لوحة قيادة شاملة", c: "#1E6FA8" },
 ];
 
 export const Scene1What: React.FC = () => {
   const frame = useCurrentFrame();
-  const exit = interpolate(frame, [60 * 30 - 30, 60 * 30], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const exit = interpolate(frame, [55 * FPS - 25, 55 * FPS], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ direction: "rtl", padding: "100px 120px", opacity: exit, flexDirection: "column", justifyContent: "center" }}>
-      <Reveal delay={5}>
-        <div style={{ fontFamily: orbitron.fontFamily, color: D.primary, fontSize: 18, letterSpacing: 10, marginBottom: 16 }}>
-          01 — THE PROJECT
-        </div>
-      </Reveal>
-      <Reveal delay={15}>
-        <h1 style={{ fontFamily: cairo.fontFamily, fontSize: 96, fontWeight: 900, color: D.text, margin: 0, lineHeight: 1.1 }}>
-          ما هو <span style={{ color: D.primary }}>"دامج"</span>؟
-        </h1>
-      </Reveal>
-      <Reveal delay={40} y={20}>
-        <p style={{ fontFamily: cairo.fontFamily, fontSize: 36, color: D.fade, marginTop: 30, marginBottom: 60, maxWidth: 1400, lineHeight: 1.5, fontWeight: 400 }}>
-          منصة سيادية ذكية تُحوّل ذوي الإعاقة من فئة مستقبِلة
-          إلى شركاء في صناعة المعرفة.
-        </p>
-      </Reveal>
+    <AbsoluteFill style={{ direction: "rtl", opacity: exit, padding: "60px 80px", flexDirection: "row", gap: 50 }}>
+      {/* Left: image column */}
+      <div style={{ flex: 1.1, display: "flex", flexDirection: "column", gap: 16 }}>
+        <Reveal delay={5}>
+          <div style={{ fontFamily: amiri.fontFamily, color: D.gold, fontSize: 16, letterSpacing: 6 }}>
+            ٠١  ·  المـشـروع
+          </div>
+        </Reveal>
+        <Reveal delay={12}>
+          <h1 style={{ fontFamily: cairo.fontFamily, fontSize: 76, fontWeight: 900, color: D.primary, margin: 0, lineHeight: 1.05 }}>
+            ما هو <span style={{ color: D.gold }}>"دامِج"؟</span>
+          </h1>
+        </Reveal>
+        <Reveal delay={30}>
+          <p style={{ fontFamily: cairo.fontFamily, fontSize: 22, color: D.fade, margin: 0, lineHeight: 1.7, maxWidth: 580 }}>
+            منصةٌ سياديةٌ ذكية تحوّل ذوي الإعاقة
+            من فئةٍ مستقبِلة إلى شركاءَ في صناعة المعرفة،
+            عبر ثمانية أنظمةٍ متكاملةٍ تحت سقفٍ واحد.
+          </p>
+        </Reveal>
 
-      {/* 8 systems grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, marginTop: 20 }}>
+        <div style={{ display: "flex", gap: 14, marginTop: 18 }}>
+          <Reveal delay={48}>
+            <KenBurns
+              src={staticFile("images/damij-braille.jpg")}
+              delay={48}
+              duration={300}
+              scaleFrom={1.08}
+              scaleTo={1.22}
+              style={{ width: 320, height: 220, borderRadius: 10, border: `1px solid ${D.border}` }}
+              overlay={`linear-gradient(180deg, transparent 40%, ${D.primary}55)`}
+            />
+          </Reveal>
+          <Reveal delay={70}>
+            <KenBurns
+              src={staticFile("images/damij-sign.jpg")}
+              delay={70}
+              duration={300}
+              scaleFrom={1.08}
+              scaleTo={1.22}
+              panX={-20}
+              style={{ width: 240, height: 220, borderRadius: 10, border: `1px solid ${D.border}` }}
+              overlay={`linear-gradient(180deg, transparent 40%, ${D.primary}55)`}
+            />
+          </Reveal>
+        </div>
+      </div>
+
+      {/* Right: 8 systems grid */}
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, alignContent: "center" }}>
         {SYSTEMS.map((s, i) => (
-          <Reveal key={i} delay={70 + i * 12} y={40}>
+          <Reveal key={i} delay={40 + i * 9} y={20}>
             <div
               style={{
-                background: `linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))`,
-                border: `1px solid ${s.color}55`,
-                borderRadius: 18,
-                padding: "28px 24px",
-                height: 140,
+                background: D.surface,
+                border: `1px solid ${D.border}`,
+                borderRight: `3px solid ${s.c}`,
+                borderRadius: 10,
+                padding: "18px 20px",
+                minHeight: 92,
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
+                justifyContent: "center",
+                boxShadow: "0 4px 14px rgba(14,30,54,0.04)",
               }}
             >
-              <div style={{ width: 36, height: 3, background: s.color, boxShadow: `0 0 12px ${s.color}` }} />
-              <div>
-                <div style={{ fontFamily: cairo.fontFamily, fontSize: 28, color: D.text, fontWeight: 700 }}>{s.ar}</div>
-                <div style={{ fontFamily: orbitron.fontFamily, fontSize: 12, color: D.muted, letterSpacing: 3, marginTop: 6 }}>{s.en}</div>
-              </div>
+              <div style={{ fontFamily: cairo.fontFamily, fontSize: 22, color: D.ink, fontWeight: 700 }}>{s.ar}</div>
+              <div style={{ fontFamily: cairo.fontFamily, fontSize: 14, color: D.muted, marginTop: 4, fontWeight: 400 }}>{s.note}</div>
             </div>
           </Reveal>
         ))}
       </div>
-
-      <Reveal delay={70 + 8 * 12 + 30} y={20}>
-        <div style={{ marginTop: 60, fontFamily: cairo.fontFamily, fontSize: 32, color: D.hope, fontWeight: 700 }}>
-          ابتكارنا في الدمج: ثمانية أنظمة • خوارزميات عصبية واحدة • منصة مفتوحة المصدر
-        </div>
-      </Reveal>
     </AbsoluteFill>
   );
 };
