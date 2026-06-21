@@ -1,11 +1,11 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { D } from "../theme";
 
+// Quiet editorial backdrop — soft warm light bg with subtle navy/gold washes.
 export const Bg: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height, durationInFrames } = useVideoConfig();
-  const drift = interpolate(frame, [0, durationInFrames], [0, 60]);
-  const hue = interpolate(frame, [0, durationInFrames], [0, 20]);
+  const drift = interpolate(frame, [0, durationInFrames], [0, 30]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: D.bg, overflow: "hidden" }}>
@@ -13,45 +13,24 @@ export const Bg: React.FC = () => {
         style={{
           position: "absolute",
           inset: 0,
-          background: `radial-gradient(circle at ${25 + drift}% ${30 + drift / 2}%, ${D.primary}33, transparent 55%), radial-gradient(circle at ${75 - drift / 2}% ${70 - drift / 3}%, ${D.accent}26, transparent 60%), radial-gradient(circle at 50% 90%, ${D.hope}1A, transparent 50%)`,
-          filter: `hue-rotate(${hue}deg)`,
+          background:
+            `radial-gradient(900px 600px at ${15 + drift / 3}% ${20}%, ${D.primary}14, transparent 60%),` +
+            `radial-gradient(800px 500px at ${80 - drift / 4}% ${85}%, ${D.gold}14, transparent 60%),` +
+            `radial-gradient(700px 400px at 50% 50%, ${D.teal}08, transparent 70%)`,
         }}
       />
-      {/* subtle grid */}
-      <svg width={width} height={height} style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+      {/* hairline grid */}
+      <svg width={width} height={height} style={{ position: "absolute", inset: 0, opacity: 0.05 }}>
         <defs>
-          <pattern id="dg" width="120" height="120" patternUnits="userSpaceOnUse">
-            <path d="M 120 0 L 0 0 0 120" fill="none" stroke={D.fade} strokeWidth="0.5" />
+          <pattern id="dg" width="160" height="160" patternUnits="userSpaceOnUse">
+            <path d="M 160 0 L 0 0 0 160" fill="none" stroke={D.ink} strokeWidth="0.6" />
           </pattern>
         </defs>
         <rect width={width} height={height} fill="url(#dg)" />
       </svg>
-      {/* particles */}
-      {Array.from({ length: 22 }).map((_, i) => {
-        const seed = i * 173.3;
-        const x = seed % width;
-        const y = (seed * 1.9) % height;
-        const speed = 14 + (i % 4) * 6;
-        const offY = ((frame * speed) / 60) % height;
-        const size = 1.5 + (i % 3);
-        const color = i % 2 === 0 ? D.primary : D.accent;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: x,
-              top: (y - offY + height) % height,
-              width: size,
-              height: size,
-              borderRadius: "50%",
-              backgroundColor: color,
-              boxShadow: `0 0 ${size * 5}px ${color}`,
-              opacity: 0.55,
-            }}
-          />
-        );
-      })}
+      {/* corner gold rule */}
+      <div style={{ position: "absolute", top: 60, right: 60, width: 90, height: 2, background: D.gold }} />
+      <div style={{ position: "absolute", bottom: 60, left: 60, width: 90, height: 2, background: D.primary }} />
     </AbsoluteFill>
   );
 };
