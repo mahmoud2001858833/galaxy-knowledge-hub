@@ -26,8 +26,8 @@ export const RemotionRoot = () => (
       component={DamijZayedVideo}
       durationInFrames={DAMIJ_TOTAL}
       fps={30}
-      width={1920}
-      height={1080}
+      width={1280}
+      height={720}
     />
   </>
 );

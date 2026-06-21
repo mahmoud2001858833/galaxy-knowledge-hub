@@ -32,11 +32,12 @@ await renderMedia({
   outputLocation: videoOnly,
   puppeteerInstance: browser,
   muted: true,
-  concurrency: 1,
+  concurrency: 3,
+  jpegQuality: 80,
   onProgress: ({ progress }) => {
     const p = Math.round(progress * 100);
     if (p % 5 === 0) process.stdout.write(`${p}% `);
   },
 });
-console.log("\nVideo rendered. Muxing audio...");
+console.log("\nVideo rendered.");
 await browser.close({ silent: false });
