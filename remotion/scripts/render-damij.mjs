@@ -24,18 +24,19 @@ const composition = await selectComposition({
 });
 console.log("Composition:", composition.durationInFrames, "frames");
 
+const videoOnly = "/tmp/damij-video-only.mp4";
 await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: process.env.OUT || "/mnt/documents/damij-zayed-video.mp4",
+  outputLocation: videoOnly,
   puppeteerInstance: browser,
-  muted: false,
+  muted: true,
   concurrency: 1,
   onProgress: ({ progress }) => {
     const p = Math.round(progress * 100);
     if (p % 5 === 0) process.stdout.write(`${p}% `);
   },
 });
-console.log("\nDone.");
+console.log("\nVideo rendered. Muxing audio...");
 await browser.close({ silent: false });
