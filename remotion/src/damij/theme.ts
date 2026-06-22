@@ -19,8 +19,7 @@ export const D = {
 };
 
 export const FPS = 30;
-
-// 10 slides — each scene = title duration in seconds.
-export const SLIDE_SECS = [22, 30, 32, 38, 30, 36, 30, 36, 30, 16];
-export const SLIDE_FRAMES = SLIDE_SECS.map((s) => s * FPS);
-export const TOTAL = SLIDE_FRAMES.reduce((a, b) => a + b, 0); // 300s = 9000 frames
+export const SLIDE_SEC = 5;
+export const SLIDE_FRAMES_EACH = SLIDE_SEC * FPS; // 150
+export const TOTAL_SLIDES = 36;
+export const TOTAL = SLIDE_FRAMES_EACH * TOTAL_SLIDES; // 5400 = 180s = 3min
