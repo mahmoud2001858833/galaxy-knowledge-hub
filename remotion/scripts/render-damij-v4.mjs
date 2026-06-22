@@ -48,11 +48,11 @@ await browser.close({ silent: false });
 const totalSec = composition.durationInFrames / composition.fps;
 console.log(`Total duration: ${totalSec}s`);
 
-const bgRaw = path.resolve("remotion/public/audio/bg-music.mp3");
+const bgRaw = path.resolve(__dirname, "../public/audio/bg-music.mp3");
 const bgProcessed = "/tmp/damij-v4-bg.mp3";
-const whoosh = path.resolve("remotion/public/audio/whoosh.mp3");
-const chime = path.resolve("remotion/public/audio/chime.mp3");
-const tick = path.resolve("remotion/public/audio/tick.mp3");
+const whoosh = path.resolve(__dirname, "../public/audio/whoosh.mp3");
+const chime = path.resolve(__dirname, "../public/audio/chime.mp3");
+const tick = path.resolve(__dirname, "../public/audio/tick.mp3");
 
 // Process bg music: warmer, with reverb tail, looped to length, fade in/out
 console.log("Processing background music...");
