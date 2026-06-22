@@ -206,13 +206,13 @@ export const SLIDES: Slide[] = [
     sfx: ["whoosh"],
   },
 
-  // 14 — (was 15) +30 trainees (RTL number, mention leadership)
+  // 14 — +30 trainees per year × 3 years
   {
     n: 14, layout: "bigNumber", kicker: "STUDENT  ·  TEAM", accent: GR,
     title: "فريق طلابي يقود الكود والتأهيل",
     big: "+30",
-    bigCaptionAr: "طالب متدرّب سنوياً بقيادة الطالب محمود جوارنة",
-    bigCaption: "Student Trainees per Year · Led by Mahmoud Jawarneh",
+    bigCaptionAr: "طالب سنوياً لمدة 3 سنوات بقيادة الطالب محمود جوارنة",
+    bigCaption: "Trainees per Year for 3 Years · Led by Mahmoud Jawarneh",
     bullets: [
       { ar: "طلاب من مدرسة عنبة يتقنون البرمجة وقواعد البيانات" },
       { ar: "نقل الخبرة بين الدفعات عبر الأنشطة المدرسية" },
@@ -299,7 +299,7 @@ export const SLIDES: Slide[] = [
     subtitle: "Ministry of Education  ·  Jordan",
     bullets: [
       { ar: "اجتماع رسمي مع معالي وزير التربية والتعليم" },
-      { ar: "إرث «ذروة العلم» مُدمج في منصة «أجيال» السيادية" },
+      { ar: "إرث «ذروة العلم» نُشر على المدارس الحكومية والخاصة بدعم حكومي" },
       { ar: "خارطة طريق لتعميم دامج على مدارس المملكة" },
     ],
     sfx: ["whoosh", "tick", "tick", "tick"],
@@ -319,8 +319,8 @@ export const SLIDES: Slide[] = [
     title: "سجلّ نجاح حكومي مثبت",
     subtitle: "Proven Government-Adopted Project",
     bullets: [
-      { ar: "«ذروة العلم» تبنّته الدولة وأُدمج في منصة «أجيال»" },
-      { ar: "المركز الأول في البحث العلمي بالمملكة لعام 2026" },
+      { ar: "المركز الأول في جائزة الحسن بن طلال للإبداع العلمي" },
+      { ar: "المركز الأول على مستوى المملكة في الذكاء الاصطناعي" },
       { ar: "كفاءة إدارية ومالية موثّقة" },
     ],
     sfx: ["whoosh", "tick", "tick", "tick"],

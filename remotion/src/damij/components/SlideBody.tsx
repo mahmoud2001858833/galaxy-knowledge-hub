@@ -37,13 +37,13 @@ const Cover: React.FC<{ slide: Slide }> = ({ slide }) => (
       </RevealRTL>
     )}
     <RevealRTL delay={16} x={200}>
-      <h1 style={{ fontFamily: cairo, fontSize: 230, fontWeight: 900, color: D.primary, margin: 0, letterSpacing: -4, lineHeight: 1, textShadow: "0 8px 28px rgba(26,55,102,0.12)" }}>
+      <h1 style={{ fontFamily: cairo, fontSize: 180, fontWeight: 900, color: D.primary, margin: 0, letterSpacing: -4, lineHeight: 1, textShadow: "0 8px 28px rgba(26,55,102,0.12)" }}>
         {slide.title}
       </h1>
     </RevealRTL>
     {slide.lead && (
       <RevealRTL delay={32}>
-        <div style={{ fontFamily: cairo, fontWeight: 700, fontSize: 22, color: D.primary, letterSpacing: 2, marginTop: 6 }}>
+        <div style={{ fontFamily: cairo, fontWeight: 700, fontSize: 22, color: D.primary, letterSpacing: 2, marginTop: 28 }}>
           {slide.lead}
         </div>
       </RevealRTL>
@@ -121,15 +121,13 @@ const BigNumber: React.FC<{ slide: Slide }> = ({ slide }) => (
       <h1 style={{ fontFamily: cairo, fontSize: 50, fontWeight: 900, color: D.primary, margin: 0, lineHeight: 1.2, textAlign: "right" }}>{slide.title}</h1>
     </RevealRTL>
     <RevealRTL delay={16} x={200}>
-      <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end", width: "100%" }}>
-        <div style={{ fontFamily: manrope, fontWeight: 800, fontSize: 210, color: slide.accent, lineHeight: 0.95, letterSpacing: -6, unicodeBidi: "plaintext" }}>
-          <CountUp target={slide.big!} delay={20} />
-        </div>
+      <div style={{ marginTop: 18, direction: "ltr", textAlign: "right", fontFamily: manrope, fontWeight: 800, fontSize: 210, color: slide.accent, lineHeight: 0.95, letterSpacing: -6 }}>
+        <CountUp target={slide.big!} delay={20} />
       </div>
     </RevealRTL>
     {slide.bigCaptionAr && (
       <RevealRTL delay={46}>
-        <div style={{ fontFamily: cairo, fontWeight: 800, fontSize: 26, color: D.primary, marginTop: 6, textAlign: "right", lineHeight: 1.4 }}>
+        <div style={{ fontFamily: cairo, fontWeight: 800, fontSize: 26, color: D.primary, marginTop: 6, textAlign: "right", direction: "rtl", lineHeight: 1.4 }}>
           {slide.bigCaptionAr}
         </div>
       </RevealRTL>
