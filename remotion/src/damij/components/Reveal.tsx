@@ -1,5 +1,6 @@
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 
+/** Generic upward reveal (kept for backwards compat) */
 export const Reveal: React.FC<{
   delay?: number;
   children: React.ReactNode;
@@ -22,37 +23,28 @@ export const Reveal: React.FC<{
   );
 };
 
-// Image with subtle Ken Burns + clip-path reveal
-export const KenBurns: React.FC<{
-  src: string;
+/** RTL reveal — elements enter from the right and settle left */
+export const RevealRTL: React.FC<{
   delay?: number;
-  scaleFrom?: number;
-  scaleTo?: number;
-  panX?: number;
-  panY?: number;
-  duration?: number;
+  children: React.ReactNode;
   style?: React.CSSProperties;
-  overlay?: string;
-}> = ({ src, delay = 0, scaleFrom = 1.05, scaleTo = 1.18, panX = 0, panY = 0, duration = 240, style, overlay }) => {
+  x?: number;
+  scaleFrom?: number;
+}> = ({ delay = 0, children, style, x = 140, scaleFrom = 0.96 }) => {
   const frame = useCurrentFrame();
-  const t = Math.max(0, Math.min(1, (frame - delay) / duration));
-  const scale = scaleFrom + (scaleTo - scaleFrom) * t;
-  const tx = panX * t;
-  const ty = panY * t;
-  const reveal = interpolate(frame, [delay, delay + 25], [0, 100], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const { fps } = useVideoConfig();
+  const sp = spring({ frame: frame - delay, fps, config: { damping: 180, stiffness: 80, mass: 0.7 } });
+  const tx = interpolate(sp, [0, 1], [x, 0]);
+  const scale = interpolate(sp, [0, 1], [scaleFrom, 1]);
   return (
-    <div style={{ position: "relative", overflow: "hidden", clipPath: `inset(0 ${100 - reveal}% 0 0)`, ...style }}>
-      <img
-        src={src}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: `scale(${scale}) translate(${tx}px, ${ty}px)`,
-          transformOrigin: "center",
-        }}
-      />
-      {overlay && <div style={{ position: "absolute", inset: 0, background: overlay }} />}
+    <div
+      style={{
+        opacity: sp,
+        transform: `translateX(${tx}px) scale(${scale})`,
+        ...style,
+      }}
+    >
+      {children}
     </div>
   );
 };
