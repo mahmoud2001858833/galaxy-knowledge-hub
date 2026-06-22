@@ -21,22 +21,38 @@ export const SlideBody: React.FC<{ slide: Slide }> = ({ slide }) => {
   }
 };
 
-// ---------- Cover ----------
+// ---------- Cover (enhanced creative intro) ----------
 const Cover: React.FC<{ slide: Slide }> = ({ slide }) => (
-  <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 22, textAlign: "center" }}>
-    <RevealRTL delay={4}>
-      <div style={{ fontFamily: manrope, fontWeight: 700, color: slide.accent, fontSize: 14, letterSpacing: 10 }}>{slide.kicker}</div>
+  <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 18, textAlign: "center" }}>
+    <RevealRTL delay={2}>
+      <div style={{ fontFamily: manrope, fontWeight: 700, color: slide.accent, fontSize: 13, letterSpacing: 12 }}>{slide.kicker}</div>
     </RevealRTL>
-    <RevealRTL delay={12} x={180}>
-      <h1 style={{ fontFamily: cairo, fontSize: 210, fontWeight: 900, color: D.primary, margin: 0, letterSpacing: -3, lineHeight: 1 }}>
+    {slide.tagline && (
+      <RevealRTL delay={8}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <div style={{ height: 1, width: 60, background: slide.accent, opacity: 0.6 }} />
+          <div style={{ fontFamily: cairo, fontWeight: 700, fontSize: 22, color: slide.accent, letterSpacing: 4 }}>{slide.tagline}</div>
+          <div style={{ height: 1, width: 60, background: slide.accent, opacity: 0.6 }} />
+        </div>
+      </RevealRTL>
+    )}
+    <RevealRTL delay={16} x={200}>
+      <h1 style={{ fontFamily: cairo, fontSize: 230, fontWeight: 900, color: D.primary, margin: 0, letterSpacing: -4, lineHeight: 1, textShadow: "0 8px 28px rgba(26,55,102,0.12)" }}>
         {slide.title}
       </h1>
     </RevealRTL>
-    <RevealRTL delay={28}>
-      <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-        <div style={{ height: 1, width: 100, background: D.muted }} />
-        <div style={{ fontFamily: cairo, fontWeight: 400, fontSize: 26, color: D.fade }}>{slide.subtitle}</div>
-        <div style={{ height: 1, width: 100, background: D.muted }} />
+    {slide.lead && (
+      <RevealRTL delay={32}>
+        <div style={{ fontFamily: cairo, fontWeight: 700, fontSize: 22, color: D.primary, letterSpacing: 2, marginTop: 6 }}>
+          {slide.lead}
+        </div>
+      </RevealRTL>
+    )}
+    <RevealRTL delay={42}>
+      <div style={{ display: "flex", alignItems: "center", gap: 22, marginTop: 4 }}>
+        <div style={{ height: 1, width: 90, background: D.muted }} />
+        <div style={{ fontFamily: cairo, fontWeight: 400, fontSize: 22, color: D.fade }}>{slide.subtitle}</div>
+        <div style={{ height: 1, width: 90, background: D.muted }} />
       </div>
     </RevealRTL>
   </div>
@@ -98,31 +114,38 @@ const FeatureBullets: React.FC<{ slide: Slide }> = ({ slide }) => {
   );
 };
 
-// ---------- BigNumber ----------
+// ---------- BigNumber (RTL: number sits on the right, Arabic caption below) ----------
 const BigNumber: React.FC<{ slide: Slide }> = ({ slide }) => (
-  <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-end", textAlign: "right" }}>
+  <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-end", textAlign: "right", direction: "rtl" }}>
     <RevealRTL delay={6}>
-      <h1 style={{ fontFamily: cairo, fontSize: 52, fontWeight: 900, color: D.primary, margin: 0, lineHeight: 1.2 }}>{slide.title}</h1>
+      <h1 style={{ fontFamily: cairo, fontSize: 50, fontWeight: 900, color: D.primary, margin: 0, lineHeight: 1.2, textAlign: "right" }}>{slide.title}</h1>
     </RevealRTL>
     <RevealRTL delay={16} x={200}>
-      <div style={{ marginTop: 22, direction: "ltr" }}>
-        <div style={{ fontFamily: manrope, fontWeight: 800, fontSize: 220, color: slide.accent, lineHeight: 0.95, letterSpacing: -6 }}>
+      <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end", width: "100%" }}>
+        <div style={{ fontFamily: manrope, fontWeight: 800, fontSize: 210, color: slide.accent, lineHeight: 0.95, letterSpacing: -6, unicodeBidi: "plaintext" }}>
           <CountUp target={slide.big!} delay={20} />
         </div>
       </div>
     </RevealRTL>
-    <RevealRTL delay={50}>
-      <div style={{ fontFamily: manrope, fontWeight: 700, fontSize: 22, color: D.fade, letterSpacing: 2, marginTop: 8, direction: "ltr", textAlign: "right" }}>
+    {slide.bigCaptionAr && (
+      <RevealRTL delay={46}>
+        <div style={{ fontFamily: cairo, fontWeight: 800, fontSize: 26, color: D.primary, marginTop: 6, textAlign: "right", lineHeight: 1.4 }}>
+          {slide.bigCaptionAr}
+        </div>
+      </RevealRTL>
+    )}
+    <RevealRTL delay={54}>
+      <div style={{ fontFamily: manrope, fontWeight: 600, fontSize: 16, color: D.muted, letterSpacing: 2, marginTop: 4, direction: "ltr", textAlign: "right" }}>
         {slide.bigCaption}
       </div>
     </RevealRTL>
     {slide.bullets && (
-      <div style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
+      <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
         {slide.bullets.map((b, i) => (
-          <RevealRTL key={i} delay={60 + i * 8}>
+          <RevealRTL key={i} delay={64 + i * 8}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <div style={{ fontFamily: cairo, fontSize: 20, color: D.ink, fontWeight: 700 }}>{b.ar}</div>
               <span style={{ color: slide.accent, fontSize: 12 }}>◆</span>
+              <div style={{ fontFamily: cairo, fontSize: 20, color: D.ink, fontWeight: 700 }}>{b.ar}</div>
             </div>
           </RevealRTL>
         ))}
@@ -353,7 +376,7 @@ const Closing: React.FC<{ slide: Slide }> = ({ slide }) => (
     </RevealRTL>
     <RevealRTL delay={50}>
       <div style={{ marginTop: 18, fontFamily: cairo, fontSize: 18, color: D.muted, letterSpacing: 3, fontWeight: 700 }}>
-        مدرسة عنبة
+        مدرسة عنبة الثانوية الشاملة للبنين
       </div>
     </RevealRTL>
   </div>
