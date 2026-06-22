@@ -1,12 +1,9 @@
 import { AbsoluteFill, Series, Audio, staticFile } from "remotion";
 import { Bg } from "./damij/components/Bg";
-import { SceneCover } from "./damij/scenes/SceneCover";
-import { Scene1What } from "./damij/scenes/Scene1What";
-import { Scene2Inspire } from "./damij/scenes/Scene2Inspire";
-import { Scene3Sustain } from "./damij/scenes/Scene3Sustain";
-import { Scene4Deserve } from "./damij/scenes/Scene4Deserve";
-import { SceneCTA } from "./damij/scenes/SceneCTA";
-import { DUR, TOTAL } from "./damij/theme";
+import { SlideFrame } from "./damij/components/SlideFrame";
+import { SlideBody } from "./damij/components/SlideBody";
+import { SLIDES } from "./damij/script";
+import { SLIDE_FRAMES, TOTAL } from "./damij/theme";
 
 export { TOTAL as DAMIJ_TOTAL };
 
@@ -14,15 +11,22 @@ export const DamijZayedVideo: React.FC = () => {
   return (
     <AbsoluteFill>
       <Bg />
-      {/* Music only — no narration. Light volume so on-screen Arabic reads. */}
-      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.22} loop />
+      <Audio src={staticFile("audio/bg-music.mp3")} volume={0.32} loop />
       <Series>
-        <Series.Sequence durationInFrames={DUR.cover}><SceneCover /></Series.Sequence>
-        <Series.Sequence durationInFrames={DUR.s1}><Scene1What /></Series.Sequence>
-        <Series.Sequence durationInFrames={DUR.s2}><Scene2Inspire /></Series.Sequence>
-        <Series.Sequence durationInFrames={DUR.s3}><Scene3Sustain /></Series.Sequence>
-        <Series.Sequence durationInFrames={DUR.s4}><Scene4Deserve /></Series.Sequence>
-        <Series.Sequence durationInFrames={DUR.cta}><SceneCTA /></Series.Sequence>
+        {SLIDES.map((slide, i) => (
+          <Series.Sequence key={slide.n} durationInFrames={SLIDE_FRAMES[i]}>
+            <SlideFrame
+              slideIndex={i}
+              total={SLIDES.length}
+              kicker={slide.kicker}
+              accent={slide.accent}
+              speakerNotes={slide.speakerNotes}
+              durationFrames={SLIDE_FRAMES[i]}
+            >
+              <SlideBody slide={slide} />
+            </SlideFrame>
+          </Series.Sequence>
+        ))}
       </Series>
     </AbsoluteFill>
   );
