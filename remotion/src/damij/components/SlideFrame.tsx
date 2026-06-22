@@ -65,8 +65,8 @@ export const SlideFrame: React.FC<{
         position: "absolute", bottom: 22, right: 80, left: 80,
         display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 9,
       }}>
-        <div style={{ fontFamily: cairo.fontFamily, fontSize: 11, color: D.muted, letterSpacing: 2 }}>
-          مدرسة عنبه الثانية الشاملة للبنين  ·  إربد  ·  الأردن
+        <div style={{ fontFamily: cairo.fontFamily, fontSize: 12, color: D.muted, letterSpacing: 3, fontWeight: 700 }}>
+          مدرسة عنبة
         </div>
         <div style={{ fontFamily: manrope.fontFamily, fontWeight: 700, fontSize: 12, color: D.primary, letterSpacing: 2 }}>
           damij-jo.life
