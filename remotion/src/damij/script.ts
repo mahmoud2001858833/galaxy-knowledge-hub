@@ -2,12 +2,14 @@ import { D } from "./theme";
 
 export type SlideLayout =
   | "cover"
-  | "section" // section feature with image + title + 2-3 bullets
-  | "sectionsGrid" // 8 systems
-  | "innovation" // why innovative
-  | "qHeader" // question header
-  | "bigNumber" // huge number + caption
-  | "endorse" // royal/ministerial endorsement
+  | "featureBullets"      // title + distributed bullet cards (RTL)
+  | "sectionsGrid"
+  | "innovation"
+  | "qHeader"
+  | "bigNumber"
+  | "fundingList"          // list of funding methods
+  | "credibility"          // 500 surveys + 30 doctors + institutions
+  | "endorseList"          // merged royal/ministerial endorsements
   | "closing";
 
 export type Slide = {
@@ -17,11 +19,10 @@ export type Slide = {
   accent: string;
   title?: string;
   subtitle?: string;
-  big?: string; // big english number
+  big?: string;
   bigCaption?: string;
   bullets?: { ar: string; en?: string }[];
-  image?: string;
-  icon?: string; // emoji
+  groups?: { heading: string; items: string[] }[]; // for credibility
   sfx?: ("whoosh" | "chime" | "tick")[];
 };
 
@@ -33,102 +34,122 @@ const W = D.warm;
 const B = D.primary2;
 
 export const SLIDES: Slide[] = [
-  // ===== A — INTRO (10) =====
+  // 1 — Cover
   {
-    n: 1, layout: "cover", kicker: "DAMIJ  ·  2026",
-    accent: G,
+    n: 1, layout: "cover", kicker: "DAMIJ  ·  2026", accent: G,
     title: "دامِج",
     subtitle: "جسر العدالة الرقمية لكل الفئات المهمشة",
-    image: "images/damij-jordan.jpg",
     sfx: ["whoosh"],
   },
+
+  // 2 — Blind Eye
   {
-    n: 2, layout: "section", kicker: "01  ·  VISION", accent: B, icon: "👁",
+    n: 2, layout: "featureBullets", kicker: "01  ·  BLIND EYE", accent: B,
     title: "العين الإعمى",
     subtitle: "Blind Eye  ·  بصرٌ بالذكاء الاصطناعي",
     bullets: [
       { ar: "وصف فوري للمشهد بالعربية", en: "Real-time scene captioning" },
-      { ar: "قراءة النصوص للمكفوفين", en: "OCR + voice output" },
+      { ar: "قراءة النصوص المكتوبة بالكاميرا", en: "Live OCR for printed text" },
+      { ar: "صوت عربي طبيعي للمكفوفين", en: "Natural Arabic voice output" },
     ],
-    image: "images/damij-coding.jpg",
-    sfx: ["whoosh"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 3 — Clinical Lab (1,200 cases)
   {
     n: 3, layout: "bigNumber", kicker: "02  ·  CLINICAL LAB", accent: W,
     title: "المختبر السريري الافتراضي",
     big: "1,200",
-    bigCaption: "Verified Clinical Cases  ·  حالة سريرية موثّقة",
+    bigCaption: "Verified Clinical Cases",
     bullets: [
       { ar: "تدريب الطلاب على التشخيص" },
       { ar: "بحوث جامعية معتمدة" },
+      { ar: "بيئة آمنة لتجربة القرارات الطبية" },
     ],
-    sfx: ["chime"],
+    sfx: ["whoosh", "chime"],
   },
+
+  // 4 — Sign Language (expanded features)
   {
-    n: 4, layout: "bigNumber", kicker: "03  ·  SIGN LANGUAGE", accent: T,
+    n: 4, layout: "featureBullets", kicker: "03  ·  SIGN LANGUAGE", accent: T,
     title: "مترجم لغة الإشارة",
-    big: "120",
-    bigCaption: "Sign Languages  ·  لغة إشارة عبر MediaPipe",
+    subtitle: "120 Sign Languages  ·  MediaPipe Hand Tracking",
     bullets: [
-      { ar: "تتبّع مفاصل اليد بدقة" },
-      { ar: "ترجمة فورية ثنائية الاتجاه" },
+      { ar: "تتبّع مفاصل اليد بدقة عالية", en: "Precise joint tracking" },
+      { ar: "ترجمة فورية ثنائية الاتجاه", en: "Two-way live translation" },
+      { ar: "قاموس قابل للتوسعة والتحديث", en: "Expandable dictionary" },
+      { ar: "دعم اللهجات الإقليمية", en: "Regional dialect support" },
+      { ar: "يعمل دون اتصال بالإنترنت", en: "Full offline support" },
     ],
-    image: "images/damij-sign.jpg",
-    sfx: ["chime"],
+    sfx: ["whoosh", "tick", "tick", "tick", "tick", "tick"],
   },
+
+  // 5 — Braille
   {
-    n: 5, layout: "section", kicker: "04  ·  BRAILLE", accent: G, icon: "⠃",
+    n: 5, layout: "featureBullets", kicker: "04  ·  BRAILLE", accent: G,
     title: "تعليم برايل التفاعلي",
-    subtitle: "Tactile Learning  ·  منهج كامل للمكفوفين",
+    subtitle: "Tactile Learning Curriculum",
     bullets: [
-      { ar: "لوحة مفاتيح برايل افتراضية" },
-      { ar: "اختبارات سرعة ودقة" },
+      { ar: "لوحة مفاتيح برايل افتراضية", en: "Virtual braille keyboard" },
+      { ar: "اختبارات سرعة ودقة فورية", en: "Speed & accuracy meters" },
+      { ar: "تصدير PDF لمسي قابل للطباعة", en: "Tactile PDF export" },
     ],
-    image: "images/damij-braille.jpg",
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 6 — Autism
   {
-    n: 6, layout: "section", kicker: "05  ·  AUTISM", accent: GR, icon: "🧩",
+    n: 6, layout: "featureBullets", kicker: "05  ·  AUTISM", accent: GR,
     title: "أطفال طيف التوحد",
-    subtitle: "Autism Screening  ·  ألعاب تشخيصية ذكية",
+    subtitle: "Autism Screening & Therapy Games",
     bullets: [
-      { ar: "تقييم اللعب والانتباه" },
-      { ar: "خطة علاج فردية بالـ AI" },
+      { ar: "تقييم اللعب والانتباه المشترك", en: "Joint attention assessment" },
+      { ar: "خطط علاج فردية بالذكاء الاصطناعي", en: "AI individualized plans" },
+      { ar: "تقارير تطوّر للأهل والمختصين", en: "Progress reports" },
     ],
-    image: "images/damij-students.jpg",
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 7 — ADHD
   {
-    n: 7, layout: "section", kicker: "06  ·  ADHD", accent: W, icon: "⚡",
-    title: "اضطراب فرط الحركة",
-    subtitle: "ADHD Engine  ·  ألعاب تركيز معيارية",
+    n: 7, layout: "featureBullets", kicker: "06  ·  ADHD", accent: W,
+    title: "اضطراب فرط الحركة وتشتّت الانتباه",
+    subtitle: "ADHD Engine  ·  Research-Based Games",
     bullets: [
-      { ar: "أدوات قياس مستندة للأبحاث" },
-      { ar: "تقارير قابلة للطباعة للأهل" },
+      { ar: "أدوات قياس مستندة للأبحاث المعيارية", en: "Standardized instruments" },
+      { ar: "ألعاب تدريب تركيز تفاعلية", en: "Focus training games" },
+      { ar: "تقارير قابلة للطباعة للأهل", en: "Printable parent reports" },
     ],
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 8 — Sensory
   {
-    n: 8, layout: "section", kicker: "07  ·  SENSORY", accent: B, icon: "🎯",
+    n: 8, layout: "featureBullets", kicker: "07  ·  SENSORY", accent: B,
     title: "النظام الحسّي التكيّفي",
-    subtitle: "Adaptive UI + Haptic",
+    subtitle: "Adaptive UI + Haptic Feedback",
     bullets: [
-      { ar: "واجهة تتكيف مع كل طفل" },
-      { ar: "اهتزاز ولمس وتنبيهات" },
+      { ar: "واجهة تتكيف مع كل طفل تلقائياً", en: "Per-child adaptive UI" },
+      { ar: "تنبيهات لمسية واهتزاز ذكي", en: "Smart haptic alerts" },
+      { ar: "تسجيل سلوكي مستمر", en: "Continuous interaction log" },
     ],
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 9 — Library
   {
-    n: 9, layout: "section", kicker: "08  ·  LIBRARY", accent: T, icon: "📚",
+    n: 9, layout: "featureBullets", kicker: "08  ·  LIBRARY", accent: T,
     title: "مكتبة المصادر العلمية",
     subtitle: "Verified Knowledge Base",
     bullets: [
-      { ar: "مرجعيات طبية وأكاديمية" },
-      { ar: "محرّك بحث ذكي بالعربية" },
+      { ar: "مرجعيات طبية وأكاديمية موثّقة", en: "Verified medical refs" },
+      { ar: "محرّك بحث ذكي بالعربية", en: "Smart Arabic search" },
+      { ar: "تحديث مستمر بإشراف مختصين", en: "Expert-curated updates" },
     ],
-    image: "images/damij-legacy.jpg",
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 10 — 8 systems grid
   {
     n: 10, layout: "sectionsGrid", kicker: "ALL  ·  IN  ·  ONE", accent: G,
     title: "ثمانية أنظمة موحّدة في منصة واحدة",
@@ -145,7 +166,7 @@ export const SLIDES: Slide[] = [
     sfx: ["whoosh"],
   },
 
-  // ===== B — WHY INNOVATIVE (4) =====
+  // 11 — Why innovative: unified
   {
     n: 11, layout: "innovation", kicker: "WHY  ·  INNOVATIVE", accent: G,
     title: "منصة موحّدة بدلاً من أدوات متفرقة",
@@ -155,6 +176,8 @@ export const SLIDES: Slide[] = [
     ],
     sfx: ["whoosh"],
   },
+
+  // 12 — Why innovative: multimodal
   {
     n: 12, layout: "innovation", kicker: "MULTIMODAL  ·  AI", accent: T,
     title: "ذكاء اصطناعي متعدد الوسائط",
@@ -162,207 +185,218 @@ export const SLIDES: Slide[] = [
     bullets: [
       { ar: "نموذج واحد يفهم الصوت والصورة والإشارة" },
     ],
-    sfx: ["chime"],
-  },
-  {
-    n: 13, layout: "innovation", kicker: "BY  ·  STUDENTS", accent: GR,
-    title: "مصمّمة بالكامل بأيدي الطلاب",
-    subtitle: "Built by Students  ·  Free for Families",
-    bullets: [
-      { ar: "مجانية للأسر · مبنية بالنفقة الشخصية" },
-    ],
-    sfx: ["tick"],
-  },
-  {
-    n: 14, layout: "bigNumber", kicker: "8  ·  IN  ·  1", accent: G,
-    title: "ثمانية أنظمة بسعر صفر للأسرة",
-    big: "$200",
-    bigCaption: "Monthly Cost Replaced  ·  بديل عن أدوات بـ $200 شهرياً",
-    sfx: ["chime"],
-  },
-
-  // ===== C — Q2: INSPIRE STUDENTS (5) =====
-  {
-    n: 15, layout: "qHeader", kicker: "QUESTION  ·  02", accent: B,
-    title: "كيف يُلهم المشروع الطلاب؟",
-    subtitle: "How does Damij inspire future innovators?",
     sfx: ["whoosh"],
   },
+
+  // 13 — Q2 header
   {
-    n: 16, layout: "bigNumber", kicker: "STUDENT  ·  ENGINEERS", accent: N,
+    n: 13, layout: "qHeader", kicker: "QUESTION  ·  02", accent: B,
+    title: "كيف يُلهم المشروع الطلاب؟",
+    subtitle: "How Damij inspires future innovators",
+    sfx: ["whoosh"],
+  },
+
+  // 14 — 15 student devs
+  {
+    n: 14, layout: "bigNumber", kicker: "STUDENT  ·  ENGINEERS", accent: N,
     title: "طلاب مبرمجون يقودون كود دامج",
     big: "15",
     bigCaption: "Professional Student Developers",
     bullets: [
       { ar: "يتقنون لغات الحوسبة وقواعد البيانات" },
     ],
-    sfx: ["chime"],
+    sfx: ["whoosh", "chime"],
   },
+
+  // 15 — +30 trainees
   {
-    n: 17, layout: "bigNumber", kicker: "GRANT  ·  IMPACT", accent: GR,
-    title: "تأهيل دفعة جديدة من الكوادر",
+    n: 15, layout: "bigNumber", kicker: "ANNUAL  ·  TRAINEES", accent: GR,
+    title: "تأهيل دفعة جديدة كل عام",
     big: "+30",
-    bigCaption: "New Trainees per Year  ·  بحصص الأنشطة المدرسية",
-    sfx: ["chime"],
+    bigCaption: "New Trainees per Year via School Activities",
+    sfx: ["whoosh", "chime"],
   },
+
+  // 16 — Inspiration idea (expanded bullets)
   {
-    n: 18, layout: "section", kicker: "LEAD  ·  STUDENT", accent: G, icon: "🎓",
-    title: "محمود جوارنة  ·  القدوة الرقمية",
-    subtitle: "11 Languages  ·  10 Certificates  ·  AI Masters",
+    n: 16, layout: "featureBullets", kicker: "THE  ·  IDEA", accent: B,
+    title: "كيف يُلهم دامِج جيلاً من المبتكرين؟",
+    subtitle: "Students Building for Students",
     bullets: [
-      { ar: "تأييد البروفيسور عرفات نيابةً عن الأميرة سمية بنت الحسن" },
-      { ar: "اختبار أكواد دامج رسمياً داخل المدرسة" },
+      { ar: "الكود قبل الشهادة · تعلّم بالممارسة الحقيقية" },
+      { ar: "تجربة ميدانية على مستخدمين حقيقيين" },
+      { ar: "فرق بحثية طلابية مع جامعات وأطباء" },
+      { ar: "نموذج «طلاب يصنعون لطلاب» يكسر الحاجز النفسي" },
+      { ar: "انتقال المعرفة بين الدفعات كإرث متراكم" },
     ],
-    image: "images/damij-students.jpg",
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick", "tick", "tick"],
   },
+
+  // 17 — Impact bullets
   {
-    n: 19, layout: "bigNumber", kicker: "RESEARCH  ·  CATALYST", accent: W,
-    title: "محرّك بحوث للجامعات",
+    n: 17, layout: "featureBullets", kicker: "THE  ·  IMPACT", accent: GR,
+    title: "الأثر الذي نتركه على الطلاب",
+    subtitle: "Long-term Generational Impact",
+    bullets: [
+      { ar: "نشر ثقافة البرمجة في مدارس الأطراف والريف" },
+      { ar: "خفض الفجوة الرقمية بين المدارس الحكومية والخاصة" },
+      { ar: "تحويل الطالب من مستهلك للتقنية إلى صانع لها" },
+      { ar: "بناء سيرة ذاتية حقيقية قبل التخرّج" },
+    ],
+    sfx: ["whoosh", "tick", "tick", "tick", "tick"],
+  },
+
+  // 18 — Clinical Simulation (renamed)
+  {
+    n: 18, layout: "bigNumber", kicker: "CLINICAL  ·  SIMULATION", accent: W,
+    title: "محاكاة التجارب السريرية",
     big: "1,200",
     bigCaption: "Clinical Cases for Academic Research",
     bullets: [
       { ar: "تجارب سريرية افتراضية للدكاترة والبروفيسورات" },
     ],
-    sfx: ["chime"],
+    sfx: ["whoosh", "chime"],
   },
 
-  // ===== D — Q3: SUSTAINABILITY (5) =====
+  // 19 — Q3 header
   {
-    n: 20, layout: "qHeader", kicker: "QUESTION  ·  03", accent: GR,
+    n: 19, layout: "qHeader", kicker: "QUESTION  ·  03", accent: GR,
     title: "كيف يستمر المشروع طويل الأمد؟",
     subtitle: "Long-term sustainability & impact",
     sfx: ["whoosh"],
   },
+
+  // 20 — $150,000 grant
   {
-    n: 21, layout: "bigNumber", kicker: "PRIZE  ·  GRANT", accent: G,
+    n: 20, layout: "bigNumber", kicker: "PRIZE  ·  GRANT", accent: G,
     title: "منحة الجائزة تُشغّل المنصة 5 سنوات كاملة",
     big: "$150,000",
-    bigCaption: "Covers  5  Years of Full Operations",
-    sfx: ["chime"],
+    bigCaption: "Covers 5 Years of Full Operations",
+    sfx: ["whoosh", "chime"],
   },
+
+  // 21 — $550 monthly
   {
-    n: 22, layout: "bigNumber", kicker: "OPERATING  ·  COST", accent: T,
-    title: "كلفة الصيانة المستقبلية",
+    n: 21, layout: "bigNumber", kicker: "OPERATING  ·  COST", accent: T,
+    title: "كلفة الصيانة المستقبلية منخفضة",
     big: "$550",
-    bigCaption: "Per Month Only  ·  فقط شهرياً",
-    sfx: ["chime"],
+    bigCaption: "Per Month Only",
+    sfx: ["whoosh", "chime"],
   },
+
+  // 22 — Funding methods (full list, no image)
   {
-    n: 23, layout: "section", kicker: "B2B  ·  SAAS", accent: B, icon: "💼",
-    title: "تمويل ذاتي تبادلي",
-    subtitle: "Self-Sustaining Revenue Model",
+    n: 22, layout: "fundingList", kicker: "FUNDING  ·  MODEL", accent: B,
+    title: "نموذج تمويل متعدّد المصادر",
+    subtitle: "Self-Sustaining Revenue Streams",
     bullets: [
-      { ar: "اشتراكات المدارس الخاصة والجامعات" },
-      { ar: "بيع تراخيص خوارزميات الـ AI لشركات التقنية" },
+      { ar: "اشتراكات المدارس الخاصة والدولية", en: "Private school subscriptions" },
+      { ar: "تراخيص خوارزميات الذكاء الاصطناعي لشركات التقنية", en: "AI algorithm licensing" },
+      { ar: "شراكات بحثية مع الجامعات الأردنية والإقليمية", en: "University research partnerships" },
+      { ar: "عقود مؤسسية مع وزارة التربية والتعليم", en: "Ministry of Education contracts" },
+      { ar: "رعايات المسؤولية المجتمعية للشركات الكبرى", en: "Corporate CSR sponsorships" },
     ],
-    image: "images/damij-economy.jpg",
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick", "tick", "tick"],
   },
+
+  // 23 — Government adoption (no image)
   {
-    n: 24, layout: "section", kicker: "GOV  ·  ADOPTION", accent: N, icon: "🏛",
-    title: "التبني والتعميم الحكومي",
+    n: 23, layout: "featureBullets", kicker: "GOV  ·  ADOPTION", accent: N,
+    title: "التبنّي والتعميم الحكومي",
     subtitle: "Ministry of Education  ·  Jordan",
     bullets: [
       { ar: "اجتماع رسمي مع معالي وزير التربية والتعليم" },
-      { ar: "إرث “ذروة العلم” المدمج في منصة “أجيال” السيادية" },
+      { ar: "إرث «ذروة العلم» مُدمج في منصة «أجيال» السيادية" },
+      { ar: "خارطة طريق لتعميم دامج على مدارس المملكة" },
     ],
-    image: "images/damij-architecture.jpg",
-    sfx: ["whoosh"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
 
-  // ===== E — Q4: WHY DESERVE (5) =====
+  // 24 — Q4 header
   {
-    n: 25, layout: "qHeader", kicker: "QUESTION  ·  04", accent: G,
+    n: 24, layout: "qHeader", kicker: "QUESTION  ·  04", accent: G,
     title: "لماذا نستحق جائزة زايد للاستدامة؟",
     subtitle: "Why Anaba School deserves the Zayed Prize",
     sfx: ["whoosh"],
   },
+
+  // 25 — Track record
   {
-    n: 26, layout: "section", kicker: "TRACK  ·  RECORD", accent: B, icon: "🏆",
+    n: 25, layout: "featureBullets", kicker: "TRACK  ·  RECORD", accent: B,
     title: "سجلّ نجاح حكومي مثبت",
     subtitle: "Proven Government-Adopted Project",
     bullets: [
-      { ar: "“ذروة العلم” تبنّته الدولة وأُدمج في منصة “أجيال”" },
+      { ar: "«ذروة العلم» تبنّته الدولة وأُدمج في منصة «أجيال»" },
+      { ar: "المركز الأول في البحث العلمي بالمملكة لعام 2026" },
       { ar: "كفاءة إدارية ومالية موثّقة" },
     ],
-    image: "images/damij-legacy.jpg",
-    sfx: ["tick"],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 26 — 15% self-funded
   {
-    n: 27, layout: "bigNumber", kicker: "SELF  ·  FUNDED", accent: W,
+    n: 26, layout: "bigNumber", kicker: "SELF  ·  FUNDED", accent: W,
     title: "بُنينا قبل أن يأتي التمويل",
     big: "15%",
     bigCaption: "of MVP Self-Funded by Students",
-    bullets: [
-      { ar: "المركز الأول في البحث العلمي بالمملكة 2026" },
-    ],
-    sfx: ["chime"],
-  },
-  {
-    n: 28, layout: "bigNumber", kicker: "MEDICAL  ·  CERTIFIED", accent: T,
-    title: "موثوقية علمية وطبية شاملة",
-    big: "500",
-    bigCaption: "Specialists Surveyed  ·  Ministry of Health Approved",
-    bullets: [
-      { ar: "اعتماد مستشفى الملك المؤسس الجامعي" },
-    ],
-    sfx: ["chime"],
-  },
-  {
-    n: 29, layout: "bigNumber", kicker: "HUMAN  ·  CAPITAL", accent: GR,
-    title: "ترسانة بشرية جاهزة لقيادة التغيير",
-    big: "45",
-    bigCaption: "Student Developers Ready to Scale",
-    sfx: ["chime"],
+    sfx: ["whoosh", "chime"],
   },
 
-  // ===== F — ENDORSEMENTS & CLOSING (7) =====
+  // 27 — Credibility (500 surveys + 30 doctors + institutions)
   {
-    n: 30, layout: "endorse", kicker: "ROYAL  ·  ENDORSEMENT", accent: G,
-    title: "إشادة سامية من سمو الأمير الحسن بن طلال",
-    subtitle: "HRH Prince El Hassan bin Talal",
-    image: "images/damij-royal.jpg",
-    sfx: ["chime"],
+    n: 27, layout: "credibility", kicker: "MEDICAL  ·  CREDIBILITY", accent: T,
+    title: "موثوقية علمية وطبية شاملة",
+    subtitle: "Validated by Surveys, Doctors & Institutions",
+    groups: [
+      {
+        heading: "استبيان ميداني",
+        items: ["500 مشارك من المتخصصين والمستخدمين"],
+      },
+      {
+        heading: "فريق طبي مشارك",
+        items: ["أكثر من 30 طبيباً ضمن فريق العمل"],
+      },
+      {
+        heading: "مؤسسات مؤيِّدة للفكرة",
+        items: [
+          "مستشفى الملك عبدالله الجامعي",
+          "مستشفى الرحمة",
+          "مستشفى بسمة",
+          "وزارة الصحة الأردنية",
+        ],
+      },
+    ],
+    sfx: ["whoosh", "tick", "tick", "tick"],
   },
+
+  // 28 — Merged endorsements (no images)
   {
-    n: 31, layout: "endorse", kicker: "ROYAL  ·  SUPPORT", accent: G,
-    title: "تأييد سمو الأميرة سمية بنت الحسن",
-    subtitle: "via Prof. Arafat  ·  بعد اختبار أكواد دامج",
-    image: "images/damij-royal.jpg",
-    sfx: ["chime"],
+    n: 28, layout: "endorseList", kicker: "OFFICIAL  ·  ENDORSEMENTS", accent: G,
+    title: "تأييدات سامية ومؤسسية",
+    subtitle: "Royal · Ministerial · Field Partners",
+    bullets: [
+      { ar: "إشادة سامية من سمو الأمير الحسن بن طلال", en: "HRH Prince El Hassan bin Talal" },
+      { ar: "تأييد نائب سمو الأميرة سمية بنت الحسن", en: "Deputy of HRH Princess Sumaya bint El Hassan" },
+      { ar: "دعم معالي وزير التربية والتعليم الأردني", en: "Jordanian Minister of Education" },
+      { ar: "مديريات الإعاقة + مدارس الملكة علياء للصم", en: "Disability Directorates & Queen Alia Schools" },
+    ],
+    sfx: ["whoosh", "chime", "chime", "chime", "chime"],
   },
+
+  // 29 — 500,000+ served
   {
-    n: 32, layout: "endorse", kicker: "MINISTERIAL", accent: B,
-    title: "دعم وزير التربية والتعليم الأردني",
-    subtitle: "Full Support for National Rollout",
-    image: "images/damij-architecture.jpg",
-    sfx: ["chime"],
+    n: 29, layout: "bigNumber", kicker: "TARGET  ·  IMPACT", accent: G,
+    title: "أثر يخدم أكثر من نصف مليون شخص",
+    big: "500,000+",
+    bigCaption: "People Served Across Jordan & Region",
+    sfx: ["whoosh", "chime"],
   },
+
+  // 30 — Closing
   {
-    n: 33, layout: "endorse", kicker: "FIELD  ·  PARTNERS", accent: T,
-    title: "مديريات الإعاقة + مدارس الملكة علياء للصم",
-    subtitle: "Disability Directorates  ·  Queen Alia Schools",
-    image: "images/damij-village.jpg",
-    sfx: ["tick"],
-  },
-  {
-    n: 34, layout: "bigNumber", kicker: "TARGET  ·  IMPACT", accent: G,
-    title: "أثر يخدم خُمس المجتمع",
-    big: "50,000",
-    bigCaption: "Active Users  ·  Targeting 20% of Society",
-    sfx: ["chime"],
-  },
-  {
-    n: 35, layout: "qHeader", kicker: "OUR  ·  PROMISE", accent: N,
-    title: "جسور العدالة والدمج الإنساني الرقمي",
-    subtitle: "Bridges of Justice for Every Marginalized Group",
-    sfx: ["whoosh"],
-  },
-  {
-    n: 36, layout: "closing", kicker: "DAMIJ  ·  2026", accent: G,
+    n: 30, layout: "closing", kicker: "DAMIJ  ·  2026", accent: G,
     title: "دامِج",
     subtitle: "damij-jo.life",
-    sfx: ["chime"],
+    sfx: ["whoosh", "chime"],
   },
 ];

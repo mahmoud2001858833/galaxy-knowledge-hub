@@ -21,5 +21,5 @@ export const D = {
 export const FPS = 30;
 export const SLIDE_SEC = 5;
 export const SLIDE_FRAMES_EACH = SLIDE_SEC * FPS; // 150
-export const TOTAL_SLIDES = 36;
-export const TOTAL = SLIDE_FRAMES_EACH * TOTAL_SLIDES; // 5400 = 180s = 3min
+export const TOTAL_SLIDES = 30;
+export const TOTAL = SLIDE_FRAMES_EACH * TOTAL_SLIDES; // 4500 = 150s = 2:30
