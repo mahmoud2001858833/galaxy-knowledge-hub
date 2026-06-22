@@ -72,7 +72,7 @@ const FPS = composition.fps;
 // We embed timing per-slide based on script.ts structure.
 
 // Read script to extract sfx
-const scriptPath = path.resolve("remotion/src/damij/script.ts");
+const scriptPath = path.resolve(__dirname, "../src/damij/script.ts");
 const scriptSrc = fs.readFileSync(scriptPath, "utf8");
 // crude parse: split by "n: " markers
 const slideBlocks = scriptSrc.split(/\n\s*\{\s*\n?\s*n:\s*/).slice(1);
