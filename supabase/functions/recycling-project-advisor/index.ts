@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
 
 const SYSTEM_PROMPT = `أنت خبير عالمي ومتميز في الاستدامة البيئية، وإعادة التدوير، والهندسة البسيطة، وصناعة المشاريع العلمية والفنية الإبداعية باستخدام المواد المستعملة.
 
