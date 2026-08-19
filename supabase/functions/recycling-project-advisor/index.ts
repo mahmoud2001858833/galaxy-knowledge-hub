@@ -144,78 +144,94 @@ serve(async (req) => {
 الرجاء اقتراح مشاريع إعادة تدوير مبتكرة ومفصلة لهذه المواد. كن إبداعياً واقترح مشاريع متنوعة!`;
     }
 
-    // Build messages array for Lovable AI
-    const messages: any[] = [
-      { role: "system", content: SYSTEM_PROMPT }
-    ];
+    // Build Gemini contents (direct Google AI — no Lovable gateway)
+    const contents: any[] = [];
 
-    // Add conversation history if exists
     if (conversationHistory && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
+        contents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: String(msg.content ?? '') }],
         });
       }
     }
 
-    // Add current message with image if provided
+    const currentParts: any[] = [{ text: userMessage }];
     if (imageBase64) {
-      messages.push({
-        role: "user",
-        content: [
-          { type: "text", text: userMessage },
-          {
-            type: "image_url",
-            image_url: {
-              url: imageBase64
-            }
-          }
-        ]
-      });
-    } else {
-      messages.push({
-        role: "user",
-        content: userMessage
-      });
-    }
-
-    console.log("Calling Lovable AI for recycling advice...");
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: messages,
-        max_tokens: 16384,
-        temperature: 0.85
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI Error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'تم تجاوز حد الطلبات، يرجى المحاولة بعد قليل'
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      const m = String(imageBase64).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+      if (m) {
+        currentParts.push({ inlineData: { mimeType: m[1], data: m[2] } });
       }
-      
-      throw new Error(`AI API error: ${response.status}`);
+    }
+    contents.push({ role: 'user', parts: currentParts });
+
+    const keys = [
+      Deno.env.get('GEMINI_API_KEY'),
+      Deno.env.get('GEMINI_API_KEY_NEW'),
+      Deno.env.get('GOOGLE_AI_API_KEY'),
+      Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
+      Deno.env.get('AUTISM_GEMINI_API_KEY'),
+    ].filter(Boolean) as string[];
+
+    if (keys.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'خدمة الذكاء الاصطناعي غير مهيأة حالياً'
+      }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || "عذراً، لم أتمكن من معالجة الطلب.";
-    
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    let aiResponse = '';
+    let lastErr = '';
+    let rateLimited = false;
+
+    outer:
+    for (const model of models) {
+      for (const key of keys) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 55000);
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents,
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                generationConfig: { temperature: 0.85, maxOutputTokens: 8192 },
+              }),
+              signal: ctrl.signal,
+            }
+          );
+          clearTimeout(timer);
+          if (!resp.ok) {
+            const t = await resp.text();
+            if (resp.status === 429) rateLimited = true;
+            lastErr = `${model} ${resp.status}: ${t.slice(0, 200)}`;
+            console.warn(lastErr);
+            continue;
+          }
+          const data = await resp.json();
+          const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join('\n') ?? '';
+          if (text.trim()) { aiResponse = text; break outer; }
+          lastErr = `${model}: empty response`;
+        } catch (e) {
+          lastErr = `${model}: ${(e as Error).message}`;
+          console.warn(lastErr);
+        }
+      }
+    }
+
+    if (!aiResponse) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: rateLimited
+          ? 'تم تجاوز حد الطلبات، يرجى المحاولة بعد قليل'
+          : 'تعذّر توليد المشاريع حالياً، حاول مرة أخرى'
+      }), { status: rateLimited ? 429 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     console.log("AI Response length:", aiResponse.length);
 
     // Parse the response to extract projects
