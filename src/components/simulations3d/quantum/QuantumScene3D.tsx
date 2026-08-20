@@ -351,15 +351,15 @@ const WellScene = ({
               color={l.n === params.stateN || l.n === params.stateM ? '#fbbf24' : '#475569'}
               lineWidth={l.n === params.stateN || l.n === params.stateM ? 3 : 1.5}
             />
-            <SimLabel3D position={[7.4, 0.35 + i * 1.35, -1.6]}
-              : ${l.e.toFixed(3)}>{`n=${l.n} eV`}</SimLabel3D>
+            <SimLabel3D position={[7.4, 0.35 + i * 1.35, -1.6]}>{`n=${l.n} : ${l.e.toFixed(3)} eV`}</SimLabel3D>
           </group>
         ))}
 
-      <SimLabel3D position={[0, -0.7, 1.6]}
-        مع n=${params.stateM} (زمن النبض ${
+      <SimLabel3D position={[0, -0.7, 1.6]}>
+        {`|ψ|² — خلط n=${params.stateN} مع n=${params.stateM} (زمن النبض ${
           isFinite(stats.beatPeriod) ? stats.beatPeriod.toFixed(2) : '∞'
-        }>{`|ψ|² — خلط n=${params.stateN} fs)`}</SimLabel3D>
+        } fs)`}
+      </SimLabel3D>
     </group>
   );
 };
