@@ -163,7 +163,14 @@ export const CircularScene3D = ({
         rulerUnit={mode === 'orbit' ? 'كم' : 'م'}
         showGrid={mode !== 'orbit'}
       />
-      <SimControls view={view} autoRotate={autoRotate} target={[0, 1, 0]} minDistance={4} maxDistance={45} />
+      <SimControls
+        view={view}
+        autoRotate={autoRotate}
+        target={[0, mode === 'conical' ? coneHeight * 0.4 : 0.6, 0]}
+        scale={Math.max(0.35, (worldRadius + 2.5) / 16)}
+        minDistance={3}
+        maxDistance={45}
+      />
 
       {/* Central body */}
       {mode === 'orbit' ? (
