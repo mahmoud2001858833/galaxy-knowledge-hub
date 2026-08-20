@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line, Sphere, Cylinder, Box } from '@react-three/drei';
+import { Line, Cylinder, Box } from '@react-three/drei';
 import * as THREE from 'three';
 import { SimControls, SimLabel3D, SimStage, useSimQuality } from '@/components/sim3d';
 import type { SimView } from '@/components/sim3d';
@@ -103,9 +103,10 @@ const Electrons = ({
   return (
     <group ref={group}>
       {Array.from({ length: count }, (_, i) => (
-        <Sphere key={i} args={[0.16, 12, 12]}>
+        <mesh key={i}>
+          <sphereGeometry args={[0.16, 12, 12]} />
           <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={1.4} toneMapped={false} />
-        </Sphere>
+        </mesh>
       ))}
     </group>
   );
@@ -125,13 +126,10 @@ const Bubbles = ({ x, active, count, color }: { x: number; active: boolean; coun
   return (
     <group ref={group} position={[x, 0, 0]}>
       {Array.from({ length: count }, (_, i) => (
-        <Sphere
-          key={i}
-          args={[0.1 + (i % 3) * 0.04, 10, 10]}
-          position={[(i % 5) * 0.18 - 0.36, 0.4 + (i / count) * 3.1, ((i % 4) - 1.5) * 0.25]}
-        >
+        <mesh key={i} position={[(i % 5) * 0.18 - 0.36, 0.4 + (i / count) * 3.1, ((i % 4) - 1.5) * 0.25]}>
+          <sphereGeometry args={[0.1 + (i % 3) * 0.04, 10, 10]} />
           <meshPhysicalMaterial color={color} transparent opacity={0.6} roughness={0.05} transmission={0.7} />
-        </Sphere>
+        </mesh>
       ))}
     </group>
   );
@@ -362,9 +360,10 @@ const CorrosionScene = ({ params, stats, playing, timeScale, resetKey }: Sub) =>
           const ang = (i / rustCount) * Math.PI * 2;
           const y = 0.6 + (i / rustCount) * 2.6;
           return (
-            <Sphere key={i} args={[0.35, 12, 12]} position={[Math.cos(ang) * 0.9, y, Math.sin(ang) * 0.9]}>
+            <mesh key={i} position={[Math.cos(ang) * 0.9, y, Math.sin(ang) * 0.9]}>
+              <sphereGeometry args={[0.35, 12, 12]} />
               <meshStandardMaterial color="#b45309" roughness={0.95} />
-            </Sphere>
+            </mesh>
           );
         })}
       </group>
