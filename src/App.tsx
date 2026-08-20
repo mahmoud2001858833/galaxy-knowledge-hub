@@ -851,8 +851,13 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/acids-bases',
+        element: <AuthGuard><AcidsBases3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/acids-bases-classic',
         element: <AuthGuard><AcidsBasesSimulation /></AuthGuard>,
       },
+
       {
         path: 'simulation/nuclear-applications',
         element: <AuthGuard><NuclearApplicationsSimulation /></AuthGuard>,
