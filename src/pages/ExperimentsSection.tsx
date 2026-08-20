@@ -94,7 +94,7 @@ const ExperimentsSection = () => {
     { id: 'spatial-geometry', title: 'الهندسة الفراغية', description: 'أشكال ثلاثية الأبعاد وحساب المساحات والحجوم', icon: <Shapes className="w-7 h-7" />, color: 'from-indigo-500 to-purple-600', route: '/simulation/spatial-geometry', features: ['تدوير الأشكال', 'حساب الحجوم', 'المقاطع'], category: 'math' },
     { id: 'probability', title: 'نظرية الاحتمالات', description: 'رمي النرد والعملات والتوزيع الطبيعي', icon: <Dice1 className="w-7 h-7" />, color: 'from-green-500 to-cyan-500', route: '/simulation/probability', features: ['رمي النرد', 'التوزيع الطبيعي', 'الأعداد الكبيرة'], category: 'math' },
     { id: 'robotics', title: 'الروبوتات والتحكم', description: 'برمجة روبوت افتراضي لتنفيذ مهام', icon: <Bot className="w-7 h-7" />, color: 'from-cyan-500 to-blue-500', route: '/simulation/robotics', features: ['تحكم يدوي', 'برمجة أوامر', 'خوارزميات'], category: 'engineering' },
-    { id: 'mechanical-engineering', title: 'الهندسة الميكانيكية', description: 'التروس والرافعات والبكرات والآلات البسيطة', icon: <Wrench className="w-7 h-7" />, color: 'from-amber-500 to-orange-600', route: '/simulation/mechanical-engineering', features: ['الرافعات', 'البكرات', 'التروس'], category: 'engineering' },
+    { id: 'mechanical-engineering', title: 'الهندسة الميكانيكية ثلاثية الأبعاد', description: 'مختبر 3D: روافع بأنواعها الثلاثة، أنظمة بكرات مركّبة، وقطار تروس متعاشق بنسب حقيقية', icon: <Wrench className="w-7 h-7" />, color: 'from-amber-500 to-orange-600', route: '/simulation/mechanical-engineering', features: ['مشهد ثلاثي الأبعاد', 'الفائدة الآلية والعزوم', 'نِسب التروس والكفاءة'], category: 'engineering' },
   ];
 
   const filteredSimulations = useMemo(() => {
