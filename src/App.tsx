@@ -97,6 +97,7 @@ import AdvancedOpticsSimulation from './pages/AdvancedOpticsSimulation';
 import MaterialsScienceSimulation from './pages/MaterialsScienceSimulation';
 import ThermodynamicsSimulation from './pages/ThermodynamicsSimulation';
 import Thermodynamics3D from './pages/Thermodynamics3D';
+import RocketScience3D from './pages/RocketScience3D';
 import FluidMechanicsSimulation from './pages/FluidMechanicsSimulation';
 import FluidMechanics3D from './pages/FluidMechanics3D';
 import CircularMotionSimulation from './pages/CircularMotionSimulation';
@@ -739,6 +740,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/rocket-science',
+        element: <AuthGuard><RocketScience3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/rocket-science-classic',
         element: <AuthGuard><RocketScienceSimulation /></AuthGuard>,
       },
       {
