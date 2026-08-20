@@ -723,6 +723,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/quantum-mechanics',
+        element: <AuthGuard><QuantumMechanics3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/quantum-mechanics-classic',
         element: <AuthGuard><QuantumMechanicsSimulation /></AuthGuard>,
       },
       {
