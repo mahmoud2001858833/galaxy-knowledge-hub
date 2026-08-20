@@ -711,6 +711,10 @@ const router = createBrowserRouter([
 
       {
         path: 'simulation/static-electricity',
+        element: <AuthGuard><StaticElectricity3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/static-electricity-classic',
         element: <AuthGuard><StaticElectricitySimulation /></AuthGuard>,
       },
       {
