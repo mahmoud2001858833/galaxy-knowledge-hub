@@ -97,6 +97,7 @@ import AdvancedOpticsSimulation from './pages/AdvancedOpticsSimulation';
 import MaterialsScienceSimulation from './pages/MaterialsScienceSimulation';
 import ThermodynamicsSimulation from './pages/ThermodynamicsSimulation';
 import FluidMechanicsSimulation from './pages/FluidMechanicsSimulation';
+import FluidMechanics3D from './pages/FluidMechanics3D';
 import CircularMotionSimulation from './pages/CircularMotionSimulation';
 import CircularMotion3D from './pages/CircularMotion3D';
 import SpecialRelativitySimulation from './pages/SpecialRelativitySimulation';
@@ -753,6 +754,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/fluid-mechanics',
+        element: <AuthGuard><FluidMechanics3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/fluid-mechanics-classic',
         element: <AuthGuard><FluidMechanicsSimulation /></AuthGuard>,
       },
       {
