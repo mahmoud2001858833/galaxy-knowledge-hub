@@ -650,6 +650,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/optics-lab',
+        element: <AuthGuard><OpticsLab3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/optics-lab-classic',
         element: <AuthGuard><OpticsLabSimulation /></AuthGuard>,
       },
       {
