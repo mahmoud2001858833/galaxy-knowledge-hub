@@ -753,6 +753,10 @@ const router = createBrowserRouter([
         element: <AuthGuard><AnalyticalChemistrySimulation /></AuthGuard>,
       },
       {
+        path: '__echem-test',
+        element: <Electrochemistry3D />,
+      },
+      {
         path: 'simulation/electrochemistry',
         element: <AuthGuard><Electrochemistry3D /></AuthGuard>,
       },
