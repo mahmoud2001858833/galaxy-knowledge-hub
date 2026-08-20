@@ -23,7 +23,7 @@ import {
   Circle, Clock, Aperture, Orbit, TestTubes,
   Hexagon, Snowflake, FlaskRound, Radiation,
   Scissors, Wind, Shield, Bug, Shapes, Dice1,
-  Wrench, ScanFace, ShoppingBag, Download, FileText, X
+  Wrench, ScanFace, ShoppingBag, Download, FileText, X, Magnet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -100,6 +100,16 @@ const simulationTools = [
   { title: 'نظرية الاحتمالات', description: 'رمي النرد والعملات والتوزيع الطبيعي', icon: Dice1, gradient: 'from-green-500 to-cyan-500', link: '/simulation/probability' },
   { title: 'الروبوتات والتحكم', description: 'برمجة روبوت افتراضي لتنفيذ مهام', icon: Bot, gradient: 'from-cyan-500 to-blue-500', link: '/simulation/robotics' },
   { title: 'الهندسة الميكانيكية', description: 'التروس والرافعات والبكرات والآلات البسيطة', icon: Wrench, gradient: 'from-amber-500 to-orange-600', link: '/simulation/mechanical-engineering' },
+  { title: 'الظاهرة الكهروضوئية وثابت بلانك', description: 'تحرير الإلكترونات بالضوء وقياس جهد الإيقاف واستنتاج ثابت بلانك', icon: Sun, gradient: 'from-amber-500 to-indigo-600', link: '/simulation/photoelectric-effect' },
+  { title: 'تجربة قطرة الزيت لميليكان', description: 'موازنة قطرات الزيت المشحونة واكتشاف تكميم الشحنة الكهربائية', icon: Droplets, gradient: 'from-amber-600 to-orange-600', link: '/simulation/millikan-oil-drop' },
+  { title: 'الثقوب السوداء وتمدد الزمن الثقالي', description: 'استكشاف أفق الحدث وقرص التراكم وتبلد الزمن وساعات المسبار النسبية', icon: Globe, gradient: 'from-purple-600 to-pink-600', link: '/simulation/black-hole-relativity' },
+  { title: 'تشتت رذرفورد واكتشاف النواة', description: 'إطلاق جسيمات ألفا نحو رقائق المعادن وكشف النواة الذرية الصلبة', icon: Target, gradient: 'from-yellow-500 to-red-600', link: '/simulation/rutherford-scattering' },
+  { title: 'الاتزان الكيميائي ومبدأ لوشاتيليه', description: 'محاكاة ديناميكية لاستجابة التفاعلات للحرارة والضغط والتركيز', icon: Beaker, gradient: 'from-emerald-500 to-teal-600', link: '/simulation/chemical-equilibrium' },
+  { title: 'مختبر كريسبر وتعديل الجينات', description: 'المقص الجيني Cas9 لتصميم مرشد RNA وقص وإصلاح الطفرات الوراثية', icon: Scissors, gradient: 'from-pink-500 to-rose-600', link: '/simulation/crispr-gene-editing' },
+  { title: 'حيود الأشعة السينية وقانون براغ', description: 'تداخل الأشعة السينية على المستويات الذرية وقياس أبعاد الشبكة البلورية', icon: Layers, gradient: 'from-cyan-500 to-blue-600', link: '/simulation/xray-diffraction' },
+  { title: 'نفق الرياح والديناميكا الهوائية', description: 'محاكاة قوى الرفع والسحب ومبدأ برنولي وظاهرة الانهيار الهوائي', icon: Wind, gradient: 'from-sky-500 to-indigo-600', link: '/simulation/aerodynamics-wind-tunnel' },
+  { title: 'الموصلية الفائقة وتأثير مايسنر', description: 'انعدام المقاومة تماماً R=0 وطرد المجال المغناطيسي والطفو الكمي', icon: Magnet, gradient: 'from-cyan-500 to-blue-700', link: '/simulation/superconductivity' },
+  { title: 'ميكانيكا المدارات ومناورة هوهمان', description: 'تخطيط مناورات الدفع الصاروخي والانتقال الإهليلجي بين الكواكب والمدارات', icon: Rocket, gradient: 'from-sky-500 to-amber-500', link: '/simulation/orbital-mechanics' },
 ];
 
 /* ─────────────── Track 3: Sustainability ─────────────── */
