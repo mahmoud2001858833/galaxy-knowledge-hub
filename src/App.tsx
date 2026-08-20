@@ -68,6 +68,7 @@ import LHCSimulation from './pages/LHCSimulation';
 import ElectromagneticWavesSimulation from './pages/ElectromagneticWavesSimulation';
 import ElectromagneticWaves3D from './pages/ElectromagneticWaves3D';
 import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
+import NuclearReactions3D from './pages/NuclearReactions3D';
 import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
 import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
 import Function3DVisualization from './pages/Function3DVisualization';
@@ -642,6 +643,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'nuclear-reactions',
+        element: <AuthGuard><NuclearReactions3D /></AuthGuard>,
+      },
+      {
+        path: 'nuclear-reactions-classic',
         element: <AuthGuard><NuclearReactionsSimulation /></AuthGuard>,
       },
       {
