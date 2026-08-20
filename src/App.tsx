@@ -633,6 +633,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'electromagnetic-waves',
+        element: <AuthGuard><ElectromagneticWaves3D /></AuthGuard>,
+      },
+      {
+        path: 'electromagnetic-waves-classic',
         element: <AuthGuard><ElectromagneticWavesSimulation /></AuthGuard>,
       },
       {
