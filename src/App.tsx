@@ -98,6 +98,7 @@ import MaterialsScienceSimulation from './pages/MaterialsScienceSimulation';
 import ThermodynamicsSimulation from './pages/ThermodynamicsSimulation';
 import FluidMechanicsSimulation from './pages/FluidMechanicsSimulation';
 import CircularMotionSimulation from './pages/CircularMotionSimulation';
+import CircularMotion3D from './pages/CircularMotion3D';
 import SpecialRelativitySimulation from './pages/SpecialRelativitySimulation';
 import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSimulation';
 import PlasmaPhysicsSimulation from './pages/PlasmaPhysicsSimulation';
@@ -746,6 +747,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/circular-motion',
+        element: <AuthGuard><CircularMotion3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/circular-motion-classic',
         element: <AuthGuard><CircularMotionSimulation /></AuthGuard>,
       },
       {
