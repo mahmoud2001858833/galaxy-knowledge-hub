@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line, Sphere, Cylinder, Box } from '@react-three/drei';
+import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { SimControls, SimLabel3D, SimStage, useSimQuality } from '@/components/sim3d';
 import type { SimView } from '@/components/sim3d';
@@ -23,7 +23,8 @@ type Sub = Pick<ElectroScene3DProps, 'params' | 'stats' | 'playing' | 'timeScale
 /** Glass beaker filled with electrolyte. */
 const Beaker = ({ x, color, label }: { x: number; color: string; label: string }) => (
   <group position={[x, 0, 0]}>
-    <Cylinder args={[3, 3, 5, 40, 1, true]} position={[0, 2.5, 0]}>
+    <mesh  position={[0, 2.5, 0]}>
+      <cylinderGeometry args={[3, 3, 5, 40, 1, true]} />
       <meshPhysicalMaterial
         color="#cbd5e1"
         transparent
@@ -33,13 +34,15 @@ const Beaker = ({ x, color, label }: { x: number; color: string; label: string }
         thickness={0.4}
         side={THREE.DoubleSide}
       />
-    </Cylinder>
-    <Cylinder args={[2.9, 2.9, 3.6, 40]} position={[0, 1.9, 0]}>
+    </mesh>
+    <mesh  position={[0, 1.9, 0]}>
+      <cylinderGeometry args={[2.9, 2.9, 3.6, 40]} />
       <meshPhysicalMaterial color={color} transparent opacity={0.42} roughness={0.2} transmission={0.5} />
-    </Cylinder>
-    <Cylinder args={[3, 3, 0.2, 40]} position={[0, 0.1, 0]}>
+    </mesh>
+    <mesh  position={[0, 0.1, 0]}>
+      <cylinderGeometry args={[3, 3, 0.2, 40]} />
       <meshStandardMaterial color="#94a3b8" roughness={0.6} />
-    </Cylinder>
+    </mesh>
     <SimLabel3D position={[0, -0.6, 0]} variant="muted" distanceFactor={34}>
       {label}
     </SimLabel3D>
@@ -59,9 +62,10 @@ const Plate = ({
   label: string;
 }) => (
   <group position={[x, 0, 0]}>
-    <Box args={[0.5, 5.2 * scaleY, 1.8]} position={[0, 2.6 * scaleY + 0.3, 0]} castShadow>
+    <mesh  position={[0, 2.6 * scaleY + 0.3, 0]} castShadow>
+      <boxGeometry args={[0.5, 5.2 * scaleY, 1.8]} />
       <meshStandardMaterial color={color} metalness={0.85} roughness={0.28} />
-    </Box>
+    </mesh>
     <SimLabel3D position={[0, 6.4, 0]} distanceFactor={34}>
       {label}
     </SimLabel3D>
@@ -103,9 +107,10 @@ const Electrons = ({
   return (
     <group ref={group}>
       {Array.from({ length: count }, (_, i) => (
-        <Sphere key={i} args={[0.16, 12, 12]}>
+        <mesh key={i}>
+          <sphereGeometry args={[0.16, 12, 12]} />
           <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={1.4} toneMapped={false} />
-        </Sphere>
+        </mesh>
       ))}
     </group>
   );
@@ -125,13 +130,10 @@ const Bubbles = ({ x, active, count, color }: { x: number; active: boolean; coun
   return (
     <group ref={group} position={[x, 0, 0]}>
       {Array.from({ length: count }, (_, i) => (
-        <Sphere
-          key={i}
-          args={[0.1 + (i % 3) * 0.04, 10, 10]}
-          position={[(i % 5) * 0.18 - 0.36, 0.4 + (i / count) * 3.1, ((i % 4) - 1.5) * 0.25]}
-        >
+        <mesh key={i} position={[(i % 5) * 0.18 - 0.36, 0.4 + (i / count) * 3.1, ((i % 4) - 1.5) * 0.25]}>
+          <sphereGeometry args={[0.1 + (i % 3) * 0.04, 10, 10]} />
           <meshPhysicalMaterial color={color} transparent opacity={0.6} roughness={0.05} transmission={0.7} />
-        </Sphere>
+        </mesh>
       ))}
     </group>
   );
@@ -194,9 +196,10 @@ const GalvanicScene = ({ params, stats, playing, timeScale, showVectors, resetKe
 
       {/* Voltmeter */}
       <group position={[0, 10.2, 0]}>
-        <Box args={[3.4, 1.9, 0.6]}>
+        <mesh >
+      <boxGeometry args={[3.4, 1.9, 0.6]} />
           <meshStandardMaterial color="#0f172a" metalness={0.4} roughness={0.5} />
-        </Box>
+        </mesh>
         <SimLabel3D position={[0, 0, 0.5]} variant={stats.spontaneous ? 'accent' : 'muted'} distanceFactor={30}>
           {stats.eCell.toFixed(3)} V
         </SimLabel3D>
@@ -242,7 +245,8 @@ const ElectrolysisScene = ({ params, stats, playing, timeScale, resetKey }: Sub)
       <SimStage size={40} ruler={false} />
 
       <group>
-        <Cylinder args={[5.4, 5.4, 5.2, 48, 1, true]} position={[0, 2.6, 0]}>
+        <mesh  position={[0, 2.6, 0]}>
+      <cylinderGeometry args={[5.4, 5.4, 5.2, 48, 1, true]} />
           <meshPhysicalMaterial
             color="#cbd5e1"
             transparent
@@ -251,20 +255,23 @@ const ElectrolysisScene = ({ params, stats, playing, timeScale, resetKey }: Sub)
             transmission={0.85}
             side={THREE.DoubleSide}
           />
-        </Cylinder>
-        <Cylinder args={[5.3, 5.3, 3.8, 48]} position={[0, 2, 0]}>
+        </mesh>
+        <mesh  position={[0, 2, 0]}>
+      <cylinderGeometry args={[5.3, 5.3, 3.8, 48]} />
           <meshPhysicalMaterial color="#0ea5e9" transparent opacity={0.35} transmission={0.5} roughness={0.2} />
-        </Cylinder>
-        <Cylinder args={[5.4, 5.4, 0.24, 48]} position={[0, 0.12, 0]}>
+        </mesh>
+        <mesh  position={[0, 0.12, 0]}>
+      <cylinderGeometry args={[5.4, 5.4, 0.24, 48]} />
           <meshStandardMaterial color="#94a3b8" roughness={0.6} />
-        </Cylinder>
+        </mesh>
       </group>
 
       <Plate x={-3.5} color={anode.color} scaleY={0.85} label={`المصعد (+) ${anode.name}`} />
       <group position={[3.5, 0, 0]}>
-        <Box args={[0.5 + deposit * 0.9, 4.6, 1.8 + deposit * 0.7]} position={[0, 2.6, 0]} castShadow>
+        <mesh  position={[0, 2.6, 0]} castShadow>
+      <boxGeometry args={[0.5 + deposit * 0.9, 4.6, 1.8 + deposit * 0.7]} />
           <meshStandardMaterial color={cathode.color} metalness={0.85} roughness={0.25} />
-        </Box>
+        </mesh>
         <SimLabel3D position={[0, 6.4, 0]} distanceFactor={34}>
           المهبط (−) {cathode.name}
         </SimLabel3D>
@@ -274,9 +281,10 @@ const ElectrolysisScene = ({ params, stats, playing, timeScale, resetKey }: Sub)
 
       {/* Power supply */}
       <group position={[0, 10.6, 0]}>
-        <Box args={[3.8, 2, 0.7]}>
+        <mesh >
+      <boxGeometry args={[3.8, 2, 0.7]} />
           <meshStandardMaterial color="#1e293b" metalness={0.5} roughness={0.4} />
-        </Box>
+        </mesh>
         <SimLabel3D position={[0, 0, 0.6]} variant={active ? 'accent' : 'muted'} distanceFactor={30}>
           {params.appliedVoltage.toFixed(2)} V / {params.current.toFixed(2)} A
         </SimLabel3D>
@@ -331,7 +339,8 @@ const CorrosionScene = ({ params, stats, playing, timeScale, resetKey }: Sub) =>
     <group>
       <SimStage size={40} ruler={false} />
 
-      <Cylinder args={[6, 6, 4, 48, 1, true]} position={[0, 2, 0]}>
+      <mesh  position={[0, 2, 0]}>
+      <cylinderGeometry args={[6, 6, 4, 48, 1, true]} />
         <meshPhysicalMaterial
           color="#cbd5e1"
           transparent
@@ -340,15 +349,16 @@ const CorrosionScene = ({ params, stats, playing, timeScale, resetKey }: Sub) =>
           transmission={0.85}
           side={THREE.DoubleSide}
         />
-      </Cylinder>
-      <Cylinder args={[5.9, 5.9, 3, 48]} position={[0, 1.6, 0]}>
+      </mesh>
+      <mesh  position={[0, 1.6, 0]}>
+      <cylinderGeometry args={[5.9, 5.9, 3, 48]} />
         <meshPhysicalMaterial
           color={params.salinity > 0.5 ? '#0891b2' : '#38bdf8'}
           transparent
           opacity={0.32}
           transmission={0.55}
         />
-      </Cylinder>
+      </mesh>
 
       {/* Iron bar */}
       <mesh ref={bar} position={[0, 2, 0]} castShadow>
@@ -362,9 +372,10 @@ const CorrosionScene = ({ params, stats, playing, timeScale, resetKey }: Sub) =>
           const ang = (i / rustCount) * Math.PI * 2;
           const y = 0.6 + (i / rustCount) * 2.6;
           return (
-            <Sphere key={i} args={[0.35, 12, 12]} position={[Math.cos(ang) * 0.9, y, Math.sin(ang) * 0.9]}>
+            <mesh key={i} position={[Math.cos(ang) * 0.9, y, Math.sin(ang) * 0.9]}>
+              <sphereGeometry args={[0.35, 12, 12]} />
               <meshStandardMaterial color="#b45309" roughness={0.95} />
-            </Sphere>
+            </mesh>
           );
         })}
       </group>
@@ -372,9 +383,10 @@ const CorrosionScene = ({ params, stats, playing, timeScale, resetKey }: Sub) =>
       {/* Sacrificial anode / protection */}
       {params.protection > 0.05 && (
         <group position={[3.6, 0, 0]}>
-          <Cylinder args={[0.55, 0.55, 3.4, 20]} position={[0, 1.9, 0]}>
+          <mesh  position={[0, 1.9, 0]}>
+      <cylinderGeometry args={[0.55, 0.55, 3.4, 20]} />
             <meshStandardMaterial color="#a3a3a3" metalness={0.85} roughness={0.3} />
-          </Cylinder>
+          </mesh>
           <SimLabel3D position={[0, 4.4, 0]} variant="accent" distanceFactor={34}>
             مصعد تضحوي / حماية {(params.protection * 100).toFixed(0)}%
           </SimLabel3D>
