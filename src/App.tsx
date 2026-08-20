@@ -801,6 +801,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/special-relativity',
+        element: <AuthGuard><SpecialRelativity3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/special-relativity-classic',
         element: <AuthGuard><SpecialRelativitySimulation /></AuthGuard>,
       },
       {
