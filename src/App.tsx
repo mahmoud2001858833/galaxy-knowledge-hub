@@ -119,6 +119,7 @@ import SpatialGeometrySimulation from './pages/SpatialGeometrySimulation';
 import ProbabilitySimulation from './pages/ProbabilitySimulation';
 import RoboticsSimulation from './pages/RoboticsSimulation';
 import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
+import MechanicalEngineering3D from './pages/MechanicalEngineering3D';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -834,6 +835,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/mechanical-engineering',
+        element: <AuthGuard><MechanicalEngineering3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/mechanical-engineering-classic',
         element: <AuthGuard><MechanicalEngineeringSimulation /></AuthGuard>,
       },
       {
