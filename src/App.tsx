@@ -754,10 +754,6 @@ const router = createBrowserRouter([
         element: <AuthGuard><CircularMotionSimulation /></AuthGuard>,
       },
       {
-        path: 'tmp-circ3d',
-        element: <CircularMotion3D />,
-      },
-      {
         path: 'simulation/special-relativity',
         element: <AuthGuard><SpecialRelativitySimulation /></AuthGuard>,
       },
