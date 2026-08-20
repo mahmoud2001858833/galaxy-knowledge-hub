@@ -66,6 +66,7 @@ import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
 import BuildAtomSimulation from './pages/BuildAtomSimulation';
 import LHCSimulation from './pages/LHCSimulation';
 import ElectromagneticWavesSimulation from './pages/ElectromagneticWavesSimulation';
+import ElectromagneticWaves3D from './pages/ElectromagneticWaves3D';
 import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
 import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
 import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
