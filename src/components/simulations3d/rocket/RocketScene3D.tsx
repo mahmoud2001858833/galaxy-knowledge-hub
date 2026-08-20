@@ -300,9 +300,7 @@ const LandingScene = ({
     if (playing) {
       const dt = Math.min(delta, 0.05) * timeScale * 2;
       const burning = h.current <= stats.suicideBurnAlt;
-      const acc = burning ? stats.landingDecel : -9.80665;
-      v.current = Math.max(v.current - acc * dt * -1 * -1 + (burning ? 0 : 0), 0);
-      // v decreases while burning, increases while free-falling
+      // speed drops while the engine burns, grows during free fall
       v.current = burning
         ? Math.max(v.current - stats.landingDecel * dt, 0)
         : v.current + 9.80665 * dt;
