@@ -835,6 +835,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/mechanical-engineering',
+        element: <AuthGuard><MechanicalEngineering3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/mechanical-engineering-classic',
         element: <AuthGuard><MechanicalEngineeringSimulation /></AuthGuard>,
       },
       {
