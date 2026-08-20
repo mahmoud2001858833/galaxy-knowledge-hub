@@ -113,6 +113,16 @@ import SpatialGeometrySimulation from './pages/SpatialGeometrySimulation';
 import ProbabilitySimulation from './pages/ProbabilitySimulation';
 import RoboticsSimulation from './pages/RoboticsSimulation';
 import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
+import PhotoelectricEffectSimulation from './pages/PhotoelectricEffectSimulation';
+import MillikanOilDropSimulation from './pages/MillikanOilDropSimulation';
+import BlackHoleSimulation from './pages/BlackHoleSimulation';
+import RutherfordScatteringSimulation from './pages/RutherfordScatteringSimulation';
+import ChemicalEquilibriumSimulation from './pages/ChemicalEquilibriumSimulation';
+import CrisprGeneEditingSimulation from './pages/CrisprGeneEditingSimulation';
+import XRayDiffractionSimulation from './pages/XRayDiffractionSimulation';
+import AerodynamicsWindTunnelSimulation from './pages/AerodynamicsWindTunnelSimulation';
+import SuperconductivitySimulation from './pages/SuperconductivitySimulation';
+import OrbitalMechanicsSimulation from './pages/OrbitalMechanicsSimulation';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -807,6 +817,46 @@ const router = createBrowserRouter([
       {
         path: 'simulation/mechanical-engineering',
         element: <AuthGuard><MechanicalEngineeringSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/photoelectric-effect',
+        element: <AuthGuard><PhotoelectricEffectSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/millikan-oil-drop',
+        element: <AuthGuard><MillikanOilDropSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/black-hole-relativity',
+        element: <AuthGuard><BlackHoleSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/rutherford-scattering',
+        element: <AuthGuard><RutherfordScatteringSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/chemical-equilibrium',
+        element: <AuthGuard><ChemicalEquilibriumSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/crispr-gene-editing',
+        element: <AuthGuard><CrisprGeneEditingSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/xray-diffraction',
+        element: <AuthGuard><XRayDiffractionSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/aerodynamics-wind-tunnel',
+        element: <AuthGuard><AerodynamicsWindTunnelSimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/superconductivity',
+        element: <AuthGuard><SuperconductivitySimulation /></AuthGuard>,
+      },
+      {
+        path: 'simulation/orbital-mechanics',
+        element: <AuthGuard><OrbitalMechanicsSimulation /></AuthGuard>,
       },
       {
         path: 'environmental-sustainability',

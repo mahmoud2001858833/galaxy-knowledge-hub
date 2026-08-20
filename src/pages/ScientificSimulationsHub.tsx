@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Mountain, X } from 'lucide-react';
+import { ArrowLeft, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Mountain, X, Wind, Magnet, Scissors, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
@@ -283,6 +283,106 @@ const ScientificSimulationsHub = () => {
       route: '/simulation/rocket-science',
       category: 'astronomy',
       features: ['إطلاق الصواريخ', 'المدارات', 'الهبوط']
+    },
+    {
+      id: 'photoelectric-effect',
+      title: 'الظاهرة الكهروضوئية وثابت بلانك',
+      description: 'تحرير الإلكترونات بالضوء وقياس جهد الإيقاف واستنتاج ثابت بلانك',
+      icon: <Sun className="w-8 h-8" />,
+      color: 'from-amber-500 to-indigo-600',
+      route: '/simulation/photoelectric-effect',
+      category: 'physics',
+      features: ['تغيير المعادن', 'منحنى I-V', 'حساب ثابت بلانك h']
+    },
+    {
+      id: 'millikan-oil-drop',
+      title: 'تجربة قطرة الزيت لميليكان',
+      description: 'موازنة قطرات الزيت المشحونة واكتشاف تكميم الشحنة الكهربائية',
+      icon: <Droplets className="w-8 h-8" />,
+      color: 'from-amber-600 to-orange-600',
+      route: '/simulation/millikan-oil-drop',
+      category: 'physics',
+      features: ['مجهر افتراضي', 'ومضات أشعة سينية', 'استنتاج شحنة الإلكترون e']
+    },
+    {
+      id: 'black-hole-relativity',
+      title: 'الثقوب السوداء وتمدد الزمن الثقالي',
+      description: 'استكشاف أفق الحدث، قرص التراكم، وتبلد الزمن وساعات المسبار النسبية',
+      icon: <Globe className="w-8 h-8" />,
+      color: 'from-purple-600 to-pink-600',
+      route: '/simulation/black-hole-relativity',
+      category: 'astronomy',
+      features: ['نصف قطر شفارتزشيلد', 'ساعتان نسبيتان', 'انحناء الزمكان']
+    },
+    {
+      id: 'rutherford-scattering',
+      title: 'تشتت رذرفورد واكتشاف النواة',
+      description: 'إطلاق جسيمات ألفا نحو رقائق المعادن وكشف النواة الذرية الصلبة',
+      icon: <Target className="w-8 h-8" />,
+      color: 'from-yellow-500 to-red-600',
+      route: '/simulation/rutherford-scattering',
+      category: 'physics',
+      features: ['مقارنة مع طومسون', 'مدرج زوايا التشتت', 'ارتداد خلفي نادر']
+    },
+    {
+      id: 'chemical-equilibrium',
+      title: 'الاتزان الكيميائي ومبدأ لوشاتيليه',
+      description: 'محاكاة ديناميكية لاستجابة التفاعلات للحرارة والضغط والتركيز',
+      icon: <Beaker className="w-8 h-8" />,
+      color: 'from-emerald-500 to-teal-600',
+      route: '/simulation/chemical-equilibrium',
+      category: 'chemistry',
+      features: ['تخليق الأمونيا', 'تفاعل NO2 الملون', 'منحنيات التراكيز الحية']
+    },
+    {
+      id: 'crispr-gene-editing',
+      title: 'مختبر كريسبر وتعديل الجينات',
+      description: 'المقص الجيني Cas9 لتصميم مرشد RNA وقص وإصلاح الطفرات الوراثية',
+      icon: <Scissors className="w-8 h-8" />,
+      color: 'from-pink-500 to-rose-600',
+      route: '/simulation/crispr-gene-editing',
+      category: 'biology',
+      features: ['تصميم gRNA', 'علاج الأنيميا المنجلية', 'الترحيل الكهربائي']
+    },
+    {
+      id: 'xray-diffraction',
+      title: 'حيود الأشعة السينية وقانون براغ',
+      description: 'تداخل الأشعة السينية على المستويات الذرية وقياس أبعاد الشبكة البلورية',
+      icon: <Layers className="w-8 h-8" />,
+      color: 'from-cyan-500 to-blue-600',
+      route: '/simulation/xray-diffraction',
+      category: 'chemistry',
+      features: ['قانون براغ nλ=2dsinθ', 'مخطط الحيود XRD', 'بلورات NaCl والسيليكون']
+    },
+    {
+      id: 'aerodynamics-wind-tunnel',
+      title: 'نفق الرياح والديناميكا الهوائية',
+      description: 'محاكاة قوى الرفع والسحب ومبدأ برنولي وظاهرة الانهيار الهوائي (Stall)',
+      icon: <Wind className="w-8 h-8" />,
+      color: 'from-sky-500 to-indigo-600',
+      route: '/simulation/aerodynamics-wind-tunnel',
+      category: 'physics',
+      features: ['خطوط دخان انسيابية', 'زاوية الهجوم α', 'منحنى الرفع والسحب']
+    },
+    {
+      id: 'superconductivity',
+      title: 'الموصلية الفائقة وتأثير مايسنر',
+      description: 'انعدام المقاومة تماماً R=0 وطرد المجال المغناطيسي والطفو الكمي',
+      icon: <Magnet className="w-8 h-8" />,
+      color: 'from-cyan-500 to-blue-700',
+      route: '/simulation/superconductivity',
+      category: 'physics',
+      features: ['تبريد نيتروجين سائل 77K', 'طرد المجال B=0', 'طفو مغناطيسي ثابت']
+    },
+    {
+      id: 'orbital-mechanics',
+      title: 'ميكانيكا المدارات ومناورة هوهمان',
+      description: 'تخطيط مناورات الدفع الصاروخي والانتقال الإهليلجي بين الكواكب والمدارات',
+      icon: <Rocket className="w-8 h-8" />,
+      color: 'from-sky-500 to-amber-500',
+      route: '/simulation/orbital-mechanics',
+      category: 'astronomy',
+      features: ['مناورة هوهمان Δv', 'معادلة فيس-فيفا', 'مدارات LEO إلى GEO']
     },
   ];
 
