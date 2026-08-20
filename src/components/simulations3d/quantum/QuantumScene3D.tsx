@@ -161,7 +161,7 @@ const DoubleSlitScene = ({
             <meshStandardMaterial color="#475569" metalness={0.5} roughness={0.4} />
           </Box>
         ))}
-        <SimLabel3D position={[0, 4.4, 0]} nm`}>{`شقّان — d = ${params.slitSeparation}</SimLabel3D>
+        <SimLabel3D position={[0, 4.4, 0]}>{`شقّان — d = ${params.slitSeparation} nm`}</SimLabel3D>
         {params.observed && (
           <>
             <Torus args={[0.5, 0.06, 10, 28]} position={[0.5, sep, 0]} rotation={[0, Math.PI / 2, 0]}>
@@ -199,8 +199,7 @@ const DoubleSlitScene = ({
           </Box>
         ))}
 
-      <SimLabel3D position={[SCREEN_X + 2.6, 1.2, 3.6]}
-        µm`}>{`منحنى الشدة — تباعد الأهداب ${stats.fringeSpacing.toFixed(2)}</SimLabel3D>
+      <SimLabel3D position={[SCREEN_X + 2.6, 1.2, 3.6]}>{`منحنى الشدة — تباعد الأهداب ${stats.fringeSpacing.toFixed(2)} µm`}</SimLabel3D>
     </group>
   );
 };
@@ -254,8 +253,8 @@ const TunnelScene = ({
       <Box args={[barrierW, barrierH, 3]} position={[0, barrierH / 2, 0]}>
         <meshStandardMaterial color="#7c3aed" transparent opacity={0.35} emissive="#7c3aed" emissiveIntensity={0.3} />
       </Box>
-      <SimLabel3D position={[0, barrierH + 0.6, 0]} eV`}>{`V₀ = ${params.barrierHeight}</SimLabel3D>
-      <SimLabel3D position={[0, -0.5, 1.8]} nm`}>{`a = ${params.barrierWidth}</SimLabel3D>
+      <SimLabel3D position={[0, barrierH + 0.6, 0]}>{`V₀ = ${params.barrierHeight} eV`}</SimLabel3D>
+      <SimLabel3D position={[0, -0.5, 1.8]}>{`a = ${params.barrierWidth} nm`}</SimLabel3D>
 
       {/* energy level */}
       <Line
@@ -269,8 +268,7 @@ const TunnelScene = ({
         dashSize={0.3}
         gapSize={0.2}
       />
-      <SimLabel3D position={[-7.5, energyY + 0.5, 0]}
-        eV`}>{`E = ${params.energy.toFixed(2)}</SimLabel3D>
+      <SimLabel3D position={[-7.5, energyY + 0.5, 0]}>{`E = ${params.energy.toFixed(2)} eV`}</SimLabel3D>
 
       {showVectors && <Line points={wave} color="#38bdf8" lineWidth={2.5} />}
 
@@ -283,10 +281,8 @@ const TunnelScene = ({
         </Torus>
       </group>
 
-      <SimLabel3D position={[5.5, energyY + 2, 0]}
-        %`}>{`احتمال النفاذ T = ${(stats.transmission * 100).toFixed(2)}</SimLabel3D>
-      <SimLabel3D position={[-5.5, energyY + 2, 0]}
-        %`}>{`الانعكاس R = ${(stats.reflection * 100).toFixed(2)}</SimLabel3D>
+      <SimLabel3D position={[5.5, energyY + 2, 0]}>{`احتمال النفاذ T = ${(stats.transmission * 100).toFixed(2)} %`}</SimLabel3D>
+      <SimLabel3D position={[-5.5, energyY + 2, 0]}>{`الانعكاس R = ${(stats.reflection * 100).toFixed(2)} %`}</SimLabel3D>
     </group>
   );
 };
@@ -337,7 +333,7 @@ const WellScene = ({
           <meshStandardMaterial color="#64748b" metalness={0.6} roughness={0.35} />
         </Box>
       ))}
-      <SimLabel3D position={[0, 6.2, 0]} nm`}>{`بئر جهد لانهائي L = ${params.wellWidth}</SimLabel3D>
+      <SimLabel3D position={[0, 6.2, 0]}>{`بئر جهد لانهائي L = ${params.wellWidth} nm`}</SimLabel3D>
 
       <instancedMesh ref={barsRef} args={[undefined, undefined, N + 1]}>
         <boxGeometry args={[1, 1, 1]} />
@@ -356,14 +352,14 @@ const WellScene = ({
               lineWidth={l.n === params.stateN || l.n === params.stateM ? 3 : 1.5}
             />
             <SimLabel3D position={[7.4, 0.35 + i * 1.35, -1.6]}
-              : ${l.e.toFixed(3)} eV`}>{`n=${l.n}</SimLabel3D>
+              : ${l.e.toFixed(3)}>{`n=${l.n} eV`}</SimLabel3D>
           </group>
         ))}
 
       <SimLabel3D position={[0, -0.7, 1.6]}
         مع n=${params.stateM} (زمن النبض ${
           isFinite(stats.beatPeriod) ? stats.beatPeriod.toFixed(2) : '∞'
-        } fs)`}>{`|ψ|² — خلط n=${params.stateN}</SimLabel3D>
+        }>{`|ψ|² — خلط n=${params.stateN} fs)`}</SimLabel3D>
     </group>
   );
 };
