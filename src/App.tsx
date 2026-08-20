@@ -643,6 +643,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'nuclear-reactions',
+        element: <AuthGuard><NuclearReactions3D /></AuthGuard>,
+      },
+      {
+        path: 'nuclear-reactions-classic',
         element: <AuthGuard><NuclearReactionsSimulation /></AuthGuard>,
       },
       {
