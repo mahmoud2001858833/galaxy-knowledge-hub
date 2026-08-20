@@ -1,0 +1,16 @@
+export { SimCanvas, SimCanvasFallback } from './SimCanvas';
+export { SimControls, viewPositions } from './SimControls';
+export type { SimView } from './SimControls';
+export { SimViewButtons } from './SimViewButtons';
+export { SimStage } from './SimStage';
+export { SimHUD } from './SimHUD';
+export type { SimReading } from './SimHUD';
+export { SimLabel3D } from './SimLabel3D';
+export { SimQualityGate, useSimQuality } from './SimQualityGate';
+export { SimLessonShell } from './SimLessonShell';
+export { SimQuiz } from './SimQuiz';
+export type { SimQuizQuestion } from './SimQuiz';
+export { SimNotebook, useSimNotebook } from './SimNotebook';
+export type { NotebookEntry } from './SimNotebook';
+export { detectQuality, detectWebGL, qualitySettings } from './quality';
+export type { SimQuality } from './quality';
