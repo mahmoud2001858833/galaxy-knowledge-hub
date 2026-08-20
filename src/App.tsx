@@ -120,6 +120,8 @@ import ProbabilitySimulation from './pages/ProbabilitySimulation';
 import RoboticsSimulation from './pages/RoboticsSimulation';
 import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
 import MechanicalEngineering3D from './pages/MechanicalEngineering3D';
+import WavesSound3D from './pages/WavesSound3D';
+
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
@@ -687,8 +689,13 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/waves-sound',
+        element: <AuthGuard><WavesSound3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/waves-sound-classic',
         element: <AuthGuard><WavesAndSoundSimulation /></AuthGuard>,
       },
+
       {
         path: 'simulation/static-electricity',
         element: <AuthGuard><StaticElectricitySimulation /></AuthGuard>,
