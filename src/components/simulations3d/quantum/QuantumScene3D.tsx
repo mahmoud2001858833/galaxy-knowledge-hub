@@ -147,7 +147,7 @@ const DoubleSlitScene = ({
         <Sphere args={[0.22, 16, 16]} position={[0.8, 0, 0]}>
           <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={1.4} />
         </Sphere>
-        <SimLabel3D position={[0, 1.4, 0]} text="مدفع إلكترونات" color="#22d3ee" />
+        <SimLabel3D position={[0, 1.4, 0]}>مدفع إلكترونات</SimLabel3D>
       </group>
 
       {/* barrier with two slits */}
@@ -161,13 +161,13 @@ const DoubleSlitScene = ({
             <meshStandardMaterial color="#475569" metalness={0.5} roughness={0.4} />
           </Box>
         ))}
-        <SimLabel3D position={[0, 4.4, 0]} text={`شقّان — d = ${params.slitSeparation} nm`} color="#a78bfa" />
+        <SimLabel3D position={[0, 4.4, 0]} nm`}>{`شقّان — d = ${params.slitSeparation}</SimLabel3D>
         {params.observed && (
           <>
             <Torus args={[0.5, 0.06, 10, 28]} position={[0.5, sep, 0]} rotation={[0, Math.PI / 2, 0]}>
               <meshStandardMaterial color="#f43f5e" emissive="#f43f5e" emissiveIntensity={0.9} />
             </Torus>
-            <SimLabel3D position={[1.4, sep + 0.9, 0]} text="كاشف المسار (يُلغي التداخل)" color="#f43f5e" />
+            <SimLabel3D position={[1.4, sep + 0.9, 0]}>كاشف المسار (يُلغي التداخل)</SimLabel3D>
           </>
         )}
       </group>
@@ -186,7 +186,7 @@ const DoubleSlitScene = ({
       <Box args={[0.2, 10, 7]} position={[SCREEN_X, 1.2, 0]}>
         <meshStandardMaterial color="#0f172a" roughness={0.9} />
       </Box>
-      <SimLabel3D position={[SCREEN_X, 6.6, 0]} text="شاشة الكشف" color="#e2e8f0" />
+      <SimLabel3D position={[SCREEN_X, 6.6, 0]}>شاشة الكشف</SimLabel3D>
 
       {showVectors &&
         bars.map((b, i) => (
@@ -199,11 +199,8 @@ const DoubleSlitScene = ({
           </Box>
         ))}
 
-      <SimLabel3D
-        position={[SCREEN_X + 2.6, 1.2, 3.6]}
-        text={`منحنى الشدة — تباعد الأهداب ${stats.fringeSpacing.toFixed(2)} µm`}
-        color="#a3e635"
-      />
+      <SimLabel3D position={[SCREEN_X + 2.6, 1.2, 3.6]}
+        µm`}>{`منحنى الشدة — تباعد الأهداب ${stats.fringeSpacing.toFixed(2)}</SimLabel3D>
     </group>
   );
 };
@@ -257,8 +254,8 @@ const TunnelScene = ({
       <Box args={[barrierW, barrierH, 3]} position={[0, barrierH / 2, 0]}>
         <meshStandardMaterial color="#7c3aed" transparent opacity={0.35} emissive="#7c3aed" emissiveIntensity={0.3} />
       </Box>
-      <SimLabel3D position={[0, barrierH + 0.6, 0]} text={`V₀ = ${params.barrierHeight} eV`} color="#c4b5fd" />
-      <SimLabel3D position={[0, -0.5, 1.8]} text={`a = ${params.barrierWidth} nm`} color="#c4b5fd" />
+      <SimLabel3D position={[0, barrierH + 0.6, 0]} eV`}>{`V₀ = ${params.barrierHeight}</SimLabel3D>
+      <SimLabel3D position={[0, -0.5, 1.8]} nm`}>{`a = ${params.barrierWidth}</SimLabel3D>
 
       {/* energy level */}
       <Line
@@ -272,11 +269,8 @@ const TunnelScene = ({
         dashSize={0.3}
         gapSize={0.2}
       />
-      <SimLabel3D
-        position={[-7.5, energyY + 0.5, 0]}
-        text={`E = ${params.energy.toFixed(2)} eV`}
-        color={stats.classicallyAllowed ? '#22c55e' : '#f97316'}
-      />
+      <SimLabel3D position={[-7.5, energyY + 0.5, 0]}
+        eV`}>{`E = ${params.energy.toFixed(2)}</SimLabel3D>
 
       {showVectors && <Line points={wave} color="#38bdf8" lineWidth={2.5} />}
 
@@ -289,16 +283,10 @@ const TunnelScene = ({
         </Torus>
       </group>
 
-      <SimLabel3D
-        position={[5.5, energyY + 2, 0]}
-        text={`احتمال النفاذ T = ${(stats.transmission * 100).toFixed(2)}%`}
-        color="#22c55e"
-      />
-      <SimLabel3D
-        position={[-5.5, energyY + 2, 0]}
-        text={`الانعكاس R = ${(stats.reflection * 100).toFixed(2)}%`}
-        color="#f43f5e"
-      />
+      <SimLabel3D position={[5.5, energyY + 2, 0]}
+        %`}>{`احتمال النفاذ T = ${(stats.transmission * 100).toFixed(2)}</SimLabel3D>
+      <SimLabel3D position={[-5.5, energyY + 2, 0]}
+        %`}>{`الانعكاس R = ${(stats.reflection * 100).toFixed(2)}</SimLabel3D>
     </group>
   );
 };
@@ -349,7 +337,7 @@ const WellScene = ({
           <meshStandardMaterial color="#64748b" metalness={0.6} roughness={0.35} />
         </Box>
       ))}
-      <SimLabel3D position={[0, 6.2, 0]} text={`بئر جهد لانهائي L = ${params.wellWidth} nm`} color="#e2e8f0" />
+      <SimLabel3D position={[0, 6.2, 0]} nm`}>{`بئر جهد لانهائي L = ${params.wellWidth}</SimLabel3D>
 
       <instancedMesh ref={barsRef} args={[undefined, undefined, N + 1]}>
         <boxGeometry args={[1, 1, 1]} />
@@ -367,21 +355,15 @@ const WellScene = ({
               color={l.n === params.stateN || l.n === params.stateM ? '#fbbf24' : '#475569'}
               lineWidth={l.n === params.stateN || l.n === params.stateM ? 3 : 1.5}
             />
-            <SimLabel3D
-              position={[7.4, 0.35 + i * 1.35, -1.6]}
-              text={`n=${l.n} : ${l.e.toFixed(3)} eV`}
-              color={l.n === params.stateN || l.n === params.stateM ? '#fbbf24' : '#94a3b8'}
-            />
+            <SimLabel3D position={[7.4, 0.35 + i * 1.35, -1.6]}
+              : ${l.e.toFixed(3)} eV`}>{`n=${l.n}</SimLabel3D>
           </group>
         ))}
 
-      <SimLabel3D
-        position={[0, -0.7, 1.6]}
-        text={`|ψ|² — خلط n=${params.stateN} مع n=${params.stateM} (زمن النبض ${
+      <SimLabel3D position={[0, -0.7, 1.6]}
+        مع n=${params.stateM} (زمن النبض ${
           isFinite(stats.beatPeriod) ? stats.beatPeriod.toFixed(2) : '∞'
-        } fs)`}
-        color="#c4b5fd"
-      />
+        } fs)`}>{`|ψ|² — خلط n=${params.stateN}</SimLabel3D>
     </group>
   );
 };
