@@ -121,6 +121,8 @@ import RoboticsSimulation from './pages/RoboticsSimulation';
 import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
 import MechanicalEngineering3D from './pages/MechanicalEngineering3D';
 import WavesSound3D from './pages/WavesSound3D';
+import Electromagnetism3D from './pages/Electromagnetism3D';
+
 
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
@@ -685,8 +687,13 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/electromagnetism',
+        element: <AuthGuard><Electromagnetism3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/electromagnetism-classic',
         element: <AuthGuard><ElectromagnetismLabSimulation /></AuthGuard>,
       },
+
       {
         path: 'simulation/waves-sound',
         element: <AuthGuard><WavesSound3D /></AuthGuard>,
