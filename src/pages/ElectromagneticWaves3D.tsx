@@ -103,7 +103,7 @@ const ElectromagneticWaves3D = () => {
   const [playing, setPlaying] = useState(true);
   const [timeScale, setTimeScale] = useState(1);
   const [showVectors, setShowVectors] = useState(true);
-  const [view, setView] = useState<SimView>('iso');
+  const [view, setView] = useState<SimView>('default');
   const [autoRotate, setAutoRotate] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [challenge, setChallenge] = useState<number | null>(null);
