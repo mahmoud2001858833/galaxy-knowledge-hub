@@ -156,7 +156,7 @@ export const CircularScene3D = ({
     <>
       <SimStage
         size={30}
-        ruler={mode !== 'orbit'}
+        ruler={false}
         rulerLength={Math.ceil(worldRadius)}
         rulerStep={Math.max(1, Math.round(worldRadius / 4))}
         unitScale={mode === 'orbit' ? 1 : 1 / 1.6}
@@ -253,20 +253,20 @@ export const CircularScene3D = ({
       )}
 
       {/* Labels */}
-      <SimLabel3D position={[0, mode === 'orbit' ? 2.8 : bodyY + 1.1, 0]} variant="muted" distanceFactor={12}>
+      <SimLabel3D position={[0, mode === 'orbit' ? 3.2 : bodyY + 1.6, 0]} variant="muted" distanceFactor={8}>
         {mode === 'orbit' ? 'الأرض' : mode === 'conical' ? 'نقطة التعليق' : 'مركز الدوران'}
       </SimLabel3D>
 
       <SimLabel3D
-        position={[worldRadius * 0.55, bodyY + 0.45, 0]}
+        position={[worldRadius * 0.5, bodyY + 0.9, worldRadius * 0.5]}
         variant="accent"
-        distanceFactor={12}
+        distanceFactor={8}
       >
         {mode === 'orbit' ? `r = ${stats.stringLength.toFixed(0)} كم` : `r = ${(worldRadius / 1.6).toFixed(2)} م`}
       </SimLabel3D>
 
       {mode === 'conical' && (
-        <SimLabel3D position={[0.6, bodyY + coneHeight - 0.5, 0]} distanceFactor={12}>
+        <SimLabel3D position={[0.7, bodyY + coneHeight - 0.6, 0]} distanceFactor={8}>
           θ = {stats.coneAngle.toFixed(1)}°
         </SimLabel3D>
       )}
