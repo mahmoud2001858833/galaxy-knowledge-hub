@@ -119,6 +119,7 @@ import SpatialGeometrySimulation from './pages/SpatialGeometrySimulation';
 import ProbabilitySimulation from './pages/ProbabilitySimulation';
 import RoboticsSimulation from './pages/RoboticsSimulation';
 import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
+import MechanicalEngineering3D from './pages/MechanicalEngineering3D';
 import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
 import CarbonCalculator from './pages/CarbonCalculator';
 import SchoolProjects from './pages/SchoolProjects';
