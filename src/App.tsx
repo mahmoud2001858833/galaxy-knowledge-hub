@@ -74,6 +74,8 @@ import OpticsLabSimulation from './pages/OpticsLabSimulation';
 import CircuitBuilderSimulation from './pages/CircuitBuilderSimulation';
 import CircuitBuilderAdvanced from './pages/CircuitBuilderAdvanced';
 import ProjectileMotionSimulation from './pages/ProjectileMotionSimulation';
+import ProjectileMotion3D from './pages/ProjectileMotion3D';
+
 import SolarSystemSimulation from './pages/SolarSystemSimulation';
 import SolarSystem3D from './pages/SolarSystem3D';
 import GeneticsLabSimulation from './pages/GeneticsLabSimulation';
@@ -650,8 +652,14 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/projectile-motion',
+        element: <AuthGuard><ProjectileMotion3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/projectile-motion-classic',
         element: <AuthGuard><ProjectileMotionSimulation /></AuthGuard>,
       },
+
+
       {
         path: 'simulation/solar-system',
         element: <AuthGuard><SolarSystemSimulation /></AuthGuard>,
