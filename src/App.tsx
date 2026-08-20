@@ -106,6 +106,7 @@ import FluidMechanics3D from './pages/FluidMechanics3D';
 import CircularMotionSimulation from './pages/CircularMotionSimulation';
 import CircularMotion3D from './pages/CircularMotion3D';
 import SpecialRelativitySimulation from './pages/SpecialRelativitySimulation';
+import SpecialRelativity3D from './pages/SpecialRelativity3D';
 import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSimulation';
 import PlasmaPhysicsSimulation from './pages/PlasmaPhysicsSimulation';
 import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
@@ -800,6 +801,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/special-relativity',
+        element: <AuthGuard><SpecialRelativity3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/special-relativity-classic',
         element: <AuthGuard><SpecialRelativitySimulation /></AuthGuard>,
       },
       {
