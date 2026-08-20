@@ -85,6 +85,7 @@ import ElectromagnetismLabSimulation from './pages/ElectromagnetismLabSimulation
 import WavesAndSoundSimulation from './pages/WavesAndSoundSimulation';
 import StaticElectricitySimulation from './pages/StaticElectricitySimulation';
 import StaticElectricity3D from './pages/StaticElectricity3D';
+import QuantumMechanics3D from './pages/QuantumMechanics3D';
 import AdvancedAstronomySimulation from './pages/AdvancedAstronomySimulation';
 import QuantumMechanicsSimulation from './pages/QuantumMechanicsSimulation';
 import AnalyticalChemistrySimulation from './pages/AnalyticalChemistrySimulation';
@@ -723,6 +724,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/quantum-mechanics',
+        element: <AuthGuard><QuantumMechanics3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/quantum-mechanics-classic',
         element: <AuthGuard><QuantumMechanicsSimulation /></AuthGuard>,
       },
       {
