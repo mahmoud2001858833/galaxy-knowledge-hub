@@ -71,6 +71,7 @@ import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
 import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
 import Function3DVisualization from './pages/Function3DVisualization';
 import OpticsLabSimulation from './pages/OpticsLabSimulation';
+import OpticsLab3D from './pages/OpticsLab3D';
 import CircuitBuilderSimulation from './pages/CircuitBuilderSimulation';
 import CircuitBuilderAdvanced from './pages/CircuitBuilderAdvanced';
 import ProjectileMotionSimulation from './pages/ProjectileMotionSimulation';
@@ -649,6 +650,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/optics-lab',
+        element: <AuthGuard><OpticsLab3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/optics-lab-classic',
         element: <AuthGuard><OpticsLabSimulation /></AuthGuard>,
       },
       {
