@@ -90,6 +90,8 @@ import StaticElectricity3D from './pages/StaticElectricity3D';
 import QuantumMechanics3D from './pages/QuantumMechanics3D';
 import AdvancedAstronomySimulation from './pages/AdvancedAstronomySimulation';
 import AdvancedAstronomy3D from './pages/AdvancedAstronomy3D';
+import Electrochemistry3D from './pages/Electrochemistry3D';
+
 import QuantumMechanicsSimulation from './pages/QuantumMechanicsSimulation';
 import AnalyticalChemistrySimulation from './pages/AnalyticalChemistrySimulation';
 import ElectrochemistrySimulation from './pages/ElectrochemistrySimulation';
