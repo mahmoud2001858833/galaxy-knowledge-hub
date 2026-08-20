@@ -168,8 +168,9 @@ const ScientificSimulations = () => {
     },
     {
       id: 'projectile-motion',
-      title: 'حركة المقذوفات والبندول',
-      description: 'محاكاة شاملة لحركة المقذوفات والبندول والسقوط الحر مع رسوم بيانية حية',
+      title: 'حركة المقذوفات ثلاثية الأبعاد',
+      description: 'مختبر 3D تفاعلي: متجهات السرعة، مقاومة الهواء، جاذبية الكواكب، تحدٍّ ودفتر تجربة',
+
       icon: <Target className="w-12 h-12" />,
       color: 'from-green-500 via-emerald-500 to-teal-500',
       route: '/simulation/projectile-motion',
