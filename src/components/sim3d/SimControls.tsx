@@ -15,6 +15,10 @@ export const viewPositions: Record<SimView, [number, number, number]> = {
 
 interface SimControlsProps {
   view?: SimView;
+  /** Override the camera preset positions (useful for small-scale scenes). */
+  positions?: Partial<Record<SimView, [number, number, number]>>;
+  /** Uniform multiplier applied to the default presets. */
+  scale?: number;
   target?: [number, number, number];
   autoRotate?: boolean;
   enableZoom?: boolean;
@@ -27,6 +31,8 @@ interface SimControlsProps {
 /** Orbit controls + smooth camera preset transitions. Must live inside <SimCanvas>. */
 export const SimControls = ({
   view = 'default',
+  positions,
+  scale = 1,
   target = [0, 0, 0],
   autoRotate = false,
   enableZoom = true,
@@ -36,13 +42,18 @@ export const SimControls = ({
 }: SimControlsProps) => {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
-  const desired = useRef(new THREE.Vector3(...viewPositions[view]));
+  const resolve = (v: SimView): [number, number, number] => {
+    const base = positions?.[v] ?? viewPositions[v];
+    return [base[0] * scale, base[1] * scale, base[2] * scale];
+  };
+  const desired = useRef(new THREE.Vector3(...resolve(view)));
   const animating = useRef(false);
 
   useEffect(() => {
-    desired.current.set(...viewPositions[view]);
+    desired.current.set(...resolve(view));
     animating.current = true;
-  }, [view]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, scale, positions]);
 
   useFrame(() => {
     if (animating.current) {
