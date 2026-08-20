@@ -118,6 +118,8 @@ import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
 import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
+import AcidsBases3D from './pages/AcidsBases3D';
+
 import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
 import LivingCellSimulation from './pages/LivingCellSimulation';
 import CellDivisionSimulation from './pages/CellDivisionSimulation';
