@@ -66,6 +66,7 @@ import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
 import BuildAtomSimulation from './pages/BuildAtomSimulation';
 import LHCSimulation from './pages/LHCSimulation';
 import ElectromagneticWavesSimulation from './pages/ElectromagneticWavesSimulation';
+import ElectromagneticWaves3D from './pages/ElectromagneticWaves3D';
 import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
 import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
 import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
@@ -633,6 +634,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'electromagnetic-waves',
+        element: <AuthGuard><ElectromagneticWaves3D /></AuthGuard>,
+      },
+      {
+        path: 'electromagnetic-waves-classic',
         element: <AuthGuard><ElectromagneticWavesSimulation /></AuthGuard>,
       },
       {
