@@ -118,6 +118,8 @@ import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
 import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
+import AcidsBases3D from './pages/AcidsBases3D';
+
 import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
 import LivingCellSimulation from './pages/LivingCellSimulation';
 import CellDivisionSimulation from './pages/CellDivisionSimulation';
@@ -851,8 +853,13 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/acids-bases',
+        element: <AuthGuard><AcidsBases3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/acids-bases-classic',
         element: <AuthGuard><AcidsBasesSimulation /></AuthGuard>,
       },
+
       {
         path: 'simulation/nuclear-applications',
         element: <AuthGuard><NuclearApplicationsSimulation /></AuthGuard>,
