@@ -84,6 +84,7 @@ import EcosystemSimulation from './pages/EcosystemSimulation';
 import ElectromagnetismLabSimulation from './pages/ElectromagnetismLabSimulation';
 import WavesAndSoundSimulation from './pages/WavesAndSoundSimulation';
 import StaticElectricitySimulation from './pages/StaticElectricitySimulation';
+import StaticElectricity3D from './pages/StaticElectricity3D';
 import AdvancedAstronomySimulation from './pages/AdvancedAstronomySimulation';
 import QuantumMechanicsSimulation from './pages/QuantumMechanicsSimulation';
 import AnalyticalChemistrySimulation from './pages/AnalyticalChemistrySimulation';
@@ -710,6 +711,10 @@ const router = createBrowserRouter([
 
       {
         path: 'simulation/static-electricity',
+        element: <AuthGuard><StaticElectricity3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/static-electricity-classic',
         element: <AuthGuard><StaticElectricitySimulation /></AuthGuard>,
       },
       {
