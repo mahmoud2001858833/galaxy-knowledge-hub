@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, Suspense } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, Sphere, Ring, Torus } from '@react-three/drei';
+import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Orbit, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, Activity, Sparkles, BookOpen, Layers, ShieldAlert, Eye, Timer, Globe } from 'lucide-react';
+import { 
+  ArrowLeft, Globe, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
+  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, Timer, ShieldAlert 
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -19,21 +25,161 @@ interface BlackHolePreset {
   solarMasses: number;
   typeAr: string;
   description: string;
+  color: string;
 }
 
 const PRESETS: BlackHolePreset[] = [
-  { id: 'cygnus-x1', nameAr: 'الدجاجة X-1 (نجمي)', nameEn: 'Cygnus X-1', solarMasses: 21.2, typeAr: 'ثقب أسود نجمي', description: 'أول ثقب أسود تم تأكيد وجوده رصدياً في مجرتنا' },
-  { id: 'sagittarius-a', nameAr: 'الرامي A* (مركز المجرة)', nameEn: 'Sagittarius A*', solarMasses: 4.15e6, typeAr: 'فائق الكتلة (SMBH)', description: 'الثقب الأسود الهائل في مركز مجرة درب التبانة' },
-  { id: 'm87', nameAr: 'مسييه 87* (M87*)', nameEn: 'M87*', solarMasses: 6.5e9, typeAr: 'عملاق فائق الكتلة', description: 'أول ثقب أسود التقط له تلسكوب أفق الحدث EHT صورة مباشرة' },
+  { id: 'cygnus-x1', nameAr: 'الدجاجة X-1 (نجمي)', nameEn: 'Cygnus X-1', solarMasses: 21.2, typeAr: 'ثقب أسود نجمي', description: 'أول ثقب أسود تم تأكيد وجوده رصدياً في مجرتنا', color: '#38bdf8' },
+  { id: 'sagittarius-a', nameAr: 'الرامي A* (مركز المجرة)', nameEn: 'Sagittarius A*', solarMasses: 4.15e6, typeAr: 'فائق الكتلة (SMBH)', description: 'الثقب الأسود الهائل في مركز مجرة درب التبانة', color: '#fbbf24' },
+  { id: 'm87', nameAr: 'مسييه 87* (M87*)', nameEn: 'M87*', solarMasses: 6.5e9, typeAr: 'عملاق فائق الكتلة', description: 'أول ثقب أسود التقط له تلسكوب أفق الحدث EHT صورة مباشرة', color: '#f97316' },
 ];
 
 const G = 6.67430e-11;
 const C = 299792458;
 const SOLAR_MASS_KG = 1.989e30;
 
+// 3D Black Hole Scene
+interface BlackHole3DProps {
+  probeDistanceMultiplier: number;
+  isPlaying: boolean;
+  isFalling: boolean;
+  selectedPreset: BlackHolePreset;
+  timeDilationFactor: number;
+}
+
+function BlackHole3DScene({
+  probeDistanceMultiplier,
+  isPlaying,
+  selectedPreset,
+  timeDilationFactor,
+}: BlackHole3DProps) {
+  const diskRef = useRef<THREE.Group>(null);
+  const probeRef = useRef<THREE.Group>(null);
+  const angleRef = useRef<number>(0);
+
+  // Scaled 3D scene units (Event Horizon = 1.0 unit radius)
+  const eventHorizonRadius = 1.2;
+  const photonSphereRadius = eventHorizonRadius * 1.5;
+  const iscoRadius = eventHorizonRadius * 3.0;
+
+  useFrame((state, delta) => {
+    if (!isPlaying) return;
+
+    // Rotate Accretion Disk
+    if (diskRef.current) {
+      diskRef.current.rotation.z += 0.008;
+    }
+
+    // Orbit Probe
+    if (probeRef.current) {
+      // Slower orbital rate at larger distances (Keplerian)
+      const orbitalSpeed = (0.02 * Math.sqrt(eventHorizonRadius / Math.max(1.1, probeDistanceMultiplier)));
+      angleRef.current += orbitalSpeed;
+
+      const r3D = probeDistanceMultiplier * eventHorizonRadius;
+      const px = Math.cos(angleRef.current) * r3D;
+      const pz = Math.sin(angleRef.current) * r3D;
+      probeRef.current.position.set(px, 0.15, pz);
+    }
+  });
+
+  return (
+    <group>
+      {/* 3D EVENT HORIZON (Absolute Black Sphere) */}
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[eventHorizonRadius, 48, 48]} />
+        <meshBasicMaterial color="#000000" />
+      </mesh>
+
+      {/* Relativistic Gravitational Glow Rim */}
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[eventHorizonRadius * 1.03, 32, 32]} />
+        <meshBasicMaterial color="#f59e0b" opacity={0.25} transparent side={THREE.BackSide} />
+      </mesh>
+
+      {/* 3D PHOTON SPHERE (1.5 rs) */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[photonSphereRadius - 0.03, photonSphereRadius + 0.03, 64]} />
+        <meshBasicMaterial color="#fde047" opacity={0.6} transparent side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* 3D ACCRETION DISK (Multi-layered Glowing Rings) */}
+      <group ref={diskRef} rotation={[Math.PI / 3, 0, 0]}>
+        {/* Inner high-energy disk (Blueshifted / hotter) */}
+        <mesh>
+          <ringGeometry args={[iscoRadius * 0.7, iscoRadius * 1.4, 64]} />
+          <meshBasicMaterial
+            color="#38bdf8"
+            opacity={0.7}
+            transparent
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Main glowing thermal disk */}
+        <mesh>
+          <ringGeometry args={[iscoRadius * 1.35, iscoRadius * 2.2, 64]} />
+          <meshBasicMaterial
+            color={selectedPreset.color}
+            opacity={0.55}
+            transparent
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Outer cooler dust ring */}
+        <mesh>
+          <ringGeometry args={[iscoRadius * 2.15, iscoRadius * 3.2, 64]} />
+          <meshBasicMaterial
+            color="#ef4444"
+            opacity={0.3}
+            transparent
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
+
+      {/* 3D SPACETIME CURVATURE FUNNEL (Gravitational Well Grid) */}
+      <group position={[0, -0.2, 0]}>
+        {[-0.2, -0.6, -1.2, -2.0].map((depth, idx) => {
+          const rad = 5.5 - idx * 1.1;
+          return (
+            <mesh key={`grid-${idx}`} position={[0, depth, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[rad - 0.02, rad + 0.02, 32]} />
+              <meshBasicMaterial color="#475569" opacity={0.25} transparent side={THREE.DoubleSide} />
+            </mesh>
+          );
+        })}
+      </group>
+
+      {/* 3D SPACE PROBE (Flying on Geodesic) */}
+      <group ref={probeRef}>
+        <mesh>
+          <boxGeometry args={[0.25, 0.15, 0.25]} />
+          <meshStandardMaterial color="#f8fafc" metalness={0.9} roughness={0.1} />
+        </mesh>
+        {/* Solar Panels */}
+        <mesh position={[0.35, 0, 0]}>
+          <boxGeometry args={[0.4, 0.02, 0.2]} />
+          <meshStandardMaterial color="#0284c7" metalness={0.8} roughness={0.2} />
+        </mesh>
+        <mesh position={[-0.35, 0, 0]}>
+          <boxGeometry args={[0.4, 0.02, 0.2]} />
+          <meshStandardMaterial color="#0284c7" metalness={0.8} roughness={0.2} />
+        </mesh>
+        {/* Probe Beacon */}
+        <pointLight color="#38bdf8" intensity={1.5} distance={2} />
+        <Html position={[0, 0.45, 0]} center>
+          <div className="bg-slate-900/90 text-sky-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            المسبار ({probeDistanceMultiplier.toFixed(2)} rs)
+          </div>
+        </Html>
+      </group>
+    </group>
+  );
+}
+
 export default function BlackHoleSimulation() {
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const controlsRef = useRef<any>(null);
 
   // States
   const [selectedPreset, setSelectedPreset] = useState<BlackHolePreset>(PRESETS[1]);
@@ -73,8 +219,8 @@ export default function BlackHoleSimulation() {
     return +( (1 / timeDilationFactor) - 1 ).toFixed(3);
   }, [probeDistanceMultiplier, timeDilationFactor]);
 
-  // Simulation loop for Falling probe and clocks
-  useEffect(() => {
+  // Simulation loop for falling probe and clocks
+  React.useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setCoordinateTimeSec((t) => t + 0.1);
@@ -95,107 +241,14 @@ export default function BlackHoleSimulation() {
     return () => clearInterval(interval);
   }, [isPlaying, isFalling, timeDilationFactor]);
 
-  // Canvas 2D Accretion Disk & Lensing Renderer
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    let angle = 0;
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-
-      // Dark space background
-      ctx.fillStyle = '#05070f';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Draw Accretion Disk Back Lensed Arc
-      ctx.save();
-      const diskGradBack = ctx.createLinearGradient(centerX - 180, centerY, centerX + 180, centerY);
-      diskGradBack.addColorStop(0, 'rgba(56, 189, 248, 0.7)');
-      diskGradBack.addColorStop(0.5, 'rgba(251, 191, 36, 0.8)');
-      diskGradBack.addColorStop(1, 'rgba(239, 68, 68, 0.3)');
-
-      ctx.strokeStyle = diskGradBack;
-      ctx.lineWidth = 18;
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY - 15, 130, 75, 0, Math.PI, 0);
-      ctx.stroke();
-      ctx.restore();
-
-      // Photon Sphere ring
-      ctx.save();
-      ctx.strokeStyle = 'rgba(253, 224, 71, 0.4)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 52, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-
-      // Black Hole Shadow / Event Horizon (rs)
-      ctx.save();
-      ctx.fillStyle = '#000000';
-      ctx.shadowColor = 'rgba(251, 191, 36, 0.7)';
-      ctx.shadowBlur = 35;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // Accretion Disk Front Ring
-      ctx.save();
-      const diskGradFront = ctx.createLinearGradient(centerX - 180, centerY, centerX + 180, centerY);
-      diskGradFront.addColorStop(0, 'rgba(56, 189, 248, 0.95)');
-      diskGradFront.addColorStop(0.5, 'rgba(245, 158, 11, 0.9)');
-      diskGradFront.addColorStop(1, 'rgba(220, 38, 38, 0.3)');
-
-      ctx.strokeStyle = diskGradFront;
-      ctx.lineWidth = 16;
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, 140, 32, 0, 0, Math.PI);
-      ctx.stroke();
-      ctx.restore();
-
-      // Draw Probe Position
-      const pixelDistance = probeDistanceMultiplier * 38;
-      angle += 0.015 * (3 / Math.max(1, probeDistanceMultiplier));
-      const probeX = centerX + Math.cos(angle) * pixelDistance;
-      const probeY = centerY + Math.sin(angle) * (pixelDistance * 0.35);
-
-      // Probe Dot & Beacon
-      ctx.save();
-      ctx.fillStyle = '#38bdf8';
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.arc(probeX, probeY, 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Probe Label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '10px Cairo, sans-serif';
-      ctx.fillText('المسبار', probeX + 8, probeY - 4);
-      ctx.restore();
-
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => cancelAnimationFrame(animId);
-  }, [probeDistanceMultiplier]);
-
   const handleReset = () => {
     setProbeDistanceMultiplier(3.0);
     setIsFalling(false);
     setCoordinateTimeSec(0);
     setProbeProperTimeSec(0);
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
   };
 
   const handleQuizSubmit = (selected: number) => {
@@ -218,11 +271,11 @@ export default function BlackHoleSimulation() {
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate('/scientific-simulations-hub')}
+              onClick={() => navigate('/experiments')}
               className="text-slate-400 hover:text-white mb-2 p-0 h-auto font-normal flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4 ml-1" />
-              العودة إلى مركز التجارب العلمية
+              العودة إلى مختبر التجارب العلمية
             </Button>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-black rounded-2xl shadow-lg shadow-purple-500/20 border border-purple-500/30">
@@ -230,7 +283,7 @@ export default function BlackHoleSimulation() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-300 via-pink-200 to-amber-200 bg-clip-text text-transparent">
-                  الثقوب السوداء وتمدد الزمن الثقالي
+                  الثقوب السوداء وتمدد الزمن الثقالي ثلاثية الأبعاد (3D)
                 </h1>
                 <p className="text-sm text-slate-400">
                   استكشاف متريّة شفارتزشيلد، أفق الحدث، وتجمد ساعات المسبار عند حافة الزمكان
@@ -257,7 +310,7 @@ export default function BlackHoleSimulation() {
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط المسبار
+              إعادة ضبط المسبار والكاميرا
             </Button>
           </div>
         </div>
@@ -313,7 +366,7 @@ export default function BlackHoleSimulation() {
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
               <Activity className="w-4 h-4" />
-              أفق الحدث والمسبار النسبي
+              أفق الحدث والمسبار ثلاثي الأبعاد (3D Space)
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
@@ -325,41 +378,46 @@ export default function BlackHoleSimulation() {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Main Simulation */}
+          {/* TAB 1: 3D Simulation */}
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Canvas Viewport */}
+              {/* 3D WebGL Canvas */}
               <div className="lg:col-span-2 space-y-4">
-                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl">
+                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Eye className="w-4 h-4 text-purple-400" />
-                      محاكاة قرص التراكم وعدسة الجاذبية لثقب أسود
+                      محاكاة الثقب الأسود وقرص التراكم ثلاثية الأبعاد (3D Scene)
                     </CardTitle>
                     <Badge variant="outline" className="border-purple-500/50 text-purple-300 bg-purple-500/10">
                       {selectedPreset.nameAr}
                     </Badge>
                   </CardHeader>
-                  <CardContent className="p-4 flex flex-col items-center justify-center bg-slate-950/70">
-                    <canvas
-                      ref={canvasRef}
-                      width={560}
-                      height={340}
-                      className="w-full max-w-[560px] h-auto rounded-2xl border border-slate-800/80 bg-slate-950 shadow-inner"
-                    />
-                    <div className="w-full flex items-center justify-between text-xs text-slate-400 mt-3 px-2">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full bg-black border border-amber-400" />
-                        أفق الحدث (rs)
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full bg-yellow-400" />
-                        كرة الفوتونات (1.5 rs)
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full bg-sky-400" />
-                        المسبار الاستكشافي
-                      </span>
+                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                    <Canvas camera={{ position: [0, 4.5, 9.0], fov: 45 }}>
+                      <ambientLight intensity={0.4} />
+                      <pointLight position={[10, 10, 10]} intensity={1.5} color="#ffffff" />
+                      <pointLight position={[-10, -10, -10]} intensity={0.5} color="#38bdf8" />
+                      <BlackHole3DScene
+                        probeDistanceMultiplier={probeDistanceMultiplier}
+                        isPlaying={isPlaying}
+                        isFalling={isFalling}
+                        selectedPreset={selectedPreset}
+                        timeDilationFactor={timeDilationFactor}
+                      />
+                      <OrbitControls
+                        ref={controlsRef}
+                        enablePan={true}
+                        enableZoom={true}
+                        minDistance={3.5}
+                        maxDistance={18}
+                      />
+                    </Canvas>
+
+                    {/* 3D Controls Helper */}
+                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
+                      <Compass className="w-3.5 h-3.5 text-sky-400" />
+                      <span>اسحب للتدوير 360° حول الثقب الأسود • قرّب وبعّد للمعاينة</span>
                     </div>
                   </CardContent>
                 </Card>

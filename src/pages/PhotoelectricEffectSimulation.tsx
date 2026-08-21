@@ -1,397 +1,409 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, Suspense } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, Sphere, Cylinder, Box, Ring } from '@react-three/drei';
+import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap, Sun, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, Activity, Sparkles, BookOpen, Layers } from 'lucide-react';
+import { 
+  ArrowLeft, Atom, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
+  Activity, Sparkles, BookOpen, Layers, Sun, Zap, Compass, View, Eye, Maximize2, ShieldAlert
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 
-interface Metal {
+// Physical Constants
+const H_EV_S = 4.135667696e-15; // Planck's constant in eV·s
+const C = 299792458; // Speed of light in m/s
+const H_J_S = 6.62607015e-34; // Planck's constant in J·s
+const E_CHARGE = 1.602176634e-19; // Elementary charge in C
+
+interface MetalTarget {
   id: string;
   nameAr: string;
   nameEn: string;
-  workFunction: number; // in eV
-  symbol: string;
+  workFunctionEV: number; // Work function Φ in eV
+  thresholdWlNm: number; // Threshold wavelength in nm
   color: string;
+  metalness: number;
+  roughness: number;
 }
 
-const METALS: Metal[] = [
-  { id: 'cesium', nameAr: 'سيزيوم (Cs)', nameEn: 'Cesium', workFunction: 2.14, symbol: 'Cs', color: '#f59e0b' },
-  { id: 'potassium', nameAr: 'بوتاسيوم (K)', nameEn: 'Potassium', workFunction: 2.30, symbol: 'K', color: '#eab308' },
-  { id: 'sodium', nameAr: 'صوديوم (Na)', nameEn: 'Sodium', workFunction: 2.36, symbol: 'Na', color: '#84cc16' },
-  { id: 'zinc', nameAr: 'خارصين / زنك (Zn)', nameEn: 'Zinc', workFunction: 4.30, symbol: 'Zn', color: '#06b6d4' },
-  { id: 'copper', nameAr: 'نحاس (Cu)', nameEn: 'Copper', workFunction: 4.70, symbol: 'Cu', color: '#f97316' },
-  { id: 'platinum', nameAr: 'بلاتين (Pt)', nameEn: 'Platinum', workFunction: 5.65, symbol: 'Pt', color: '#a855f7' },
+const METALS: MetalTarget[] = [
+  { id: 'cesium', nameAr: 'السيزيوم (Cs)', nameEn: 'Cesium', workFunctionEV: 2.14, thresholdWlNm: 579, color: '#fef08a', metalness: 0.9, roughness: 0.2 },
+  { id: 'potassium', nameAr: 'البوتاسيوم (K)', nameEn: 'Potassium', workFunctionEV: 2.30, thresholdWlNm: 539, color: '#e2e8f0', metalness: 0.85, roughness: 0.25 },
+  { id: 'sodium', nameAr: 'الصوديوم (Na)', nameEn: 'Sodium', workFunctionEV: 2.75, thresholdWlNm: 451, color: '#cbd5e1', metalness: 0.8, roughness: 0.3 },
+  { id: 'zinc', nameAr: 'الزنك (Zn)', nameEn: 'Zinc', workFunctionEV: 4.31, thresholdWlNm: 288, color: '#94a3b8', metalness: 0.95, roughness: 0.15 },
+  { id: 'copper', nameAr: 'النحاس (Cu)', nameEn: 'Copper', workFunctionEV: 4.65, thresholdWlNm: 267, color: '#f97316', metalness: 0.9, roughness: 0.2 },
+  { id: 'platinum', nameAr: 'البلاتين (Pt)', nameEn: 'Platinum', workFunctionEV: 5.65, thresholdWlNm: 219, color: '#e2e8f0', metalness: 0.98, roughness: 0.1 },
 ];
 
-const PLANCK_CONSTANT_EV_S = 4.135667696e-15; // eV·s
-const SPEED_OF_LIGHT = 299792458; // m/s
-const ELEMENTARY_CHARGE = 1.602176634e-19; // Coulombs
+function getWavelengthColor(wl: number): string {
+  if (wl < 380) return '#a855f7'; // UV purple
+  if (wl < 440) return '#6366f1'; // Violet
+  if (wl < 490) return '#3b82f6'; // Blue
+  if (wl < 530) return '#10b981'; // Green
+  if (wl < 580) return '#eab308'; // Yellow
+  if (wl < 640) return '#f97316'; // Orange
+  return '#ef4444'; // Red
+}
+
+// 3D Scene Components
+interface Phototube3DProps {
+  wavelengthNm: number;
+  intensity: number;
+  voltage: number;
+  selectedMetal: MetalTarget;
+  isPlaying: boolean;
+  isEmitting: boolean;
+  stoppingVoltage: number;
+  maxKineticEnergyEV: number;
+}
+
+function PhotocellChamber3D({
+  wavelengthNm,
+  intensity,
+  voltage,
+  selectedMetal,
+  isPlaying,
+  isEmitting,
+  stoppingVoltage,
+  maxKineticEnergyEV,
+}: Phototube3DProps) {
+  const beamColor = getWavelengthColor(wavelengthNm);
+  const electronsRef = useRef<THREE.Group>(null);
+  const photonsRef = useRef<THREE.Group>(null);
+
+  // Particles pools
+  const electronCount = 45;
+  const photonCount = 35;
+
+  const electronData = useMemo(() => {
+    return Array.from({ length: electronCount }, () => ({
+      x: -2.8,
+      y: (Math.random() - 0.5) * 1.6,
+      z: (Math.random() - 0.5) * 1.6,
+      vx: 0.05 + Math.random() * 0.06,
+      vy: (Math.random() - 0.5) * 0.02,
+      vz: (Math.random() - 0.5) * 0.02,
+      active: false,
+      age: Math.random() * 100,
+    }));
+  }, [electronCount]);
+
+  const photonData = useMemo(() => {
+    return Array.from({ length: photonCount }, () => ({
+      x: 0,
+      y: 4.5,
+      z: (Math.random() - 0.5) * 1.2,
+      targetX: -2.8,
+      targetY: (Math.random() - 0.5) * 1.5,
+      progress: Math.random(),
+      speed: 0.02 + Math.random() * 0.015,
+    }));
+  }, [photonCount]);
+
+  // Frame animation loop
+  useFrame((state, delta) => {
+    if (!isPlaying) return;
+
+    // Animate Photons (Light Beam)
+    if (photonsRef.current && intensity > 0) {
+      const activePhotons = Math.min(photonCount, Math.ceil((intensity / 100) * photonCount));
+      for (let i = 0; i < photonCount; i++) {
+        const child = photonsRef.current.children[i] as THREE.Mesh;
+        if (!child) continue;
+
+        if (i < activePhotons) {
+          child.visible = true;
+          const p = photonData[i];
+          p.progress += p.speed;
+          if (p.progress >= 1) {
+            p.progress = 0;
+            p.z = (Math.random() - 0.5) * 1.2;
+            p.targetY = (Math.random() - 0.5) * 1.5;
+          }
+          // Lerp from light source (x=0, y=3.8, z=0) to cathode plate (x=-2.8, y=p.targetY, z=0)
+          child.position.x = THREE.MathUtils.lerp(0, -2.8, p.progress);
+          child.position.y = THREE.MathUtils.lerp(3.8, p.targetY, p.progress);
+          child.position.z = THREE.MathUtils.lerp(p.z, 0, p.progress);
+        } else {
+          child.visible = false;
+        }
+      }
+    }
+
+    // Animate Photoelectrons
+    if (electronsRef.current) {
+      const maxAllowed = isEmitting ? Math.ceil((intensity / 100) * electronCount) : 0;
+      const initialVelocityBase = Math.sqrt(Math.max(0.01, maxKineticEnergyEV)) * 0.06;
+      // Electric field acceleration: a = q * E = q * (V / d)
+      const fieldAccel = (voltage / 5.6) * 0.003;
+
+      for (let i = 0; i < electronCount; i++) {
+        const child = electronsRef.current.children[i] as THREE.Mesh;
+        if (!child) continue;
+
+        if (i < maxAllowed && isEmitting) {
+          child.visible = true;
+          const e = electronData[i];
+
+          // Update physics motion
+          e.vx += fieldAccel;
+          e.x += e.vx;
+          e.y += e.vy;
+          e.z += e.vz;
+
+          // Check if reached anode (x >= 2.8) or repelled back to cathode (x < -2.8)
+          if (e.x >= 2.8 || (e.vx <= 0 && e.x <= -2.8) || Math.abs(e.y) > 1.8 || Math.abs(e.z) > 1.8) {
+            // Respawn electron at cathode surface
+            e.x = -2.8 + Math.random() * 0.05;
+            e.y = (Math.random() - 0.5) * 1.5;
+            e.z = (Math.random() - 0.5) * 1.5;
+            e.vx = initialVelocityBase * (0.6 + Math.random() * 0.8);
+            e.vy = (Math.random() - 0.5) * 0.015;
+            e.vz = (Math.random() - 0.5) * 0.015;
+          }
+
+          child.position.set(e.x, e.y, e.z);
+        } else {
+          child.visible = false;
+        }
+      }
+    }
+  });
+
+  return (
+    <group>
+      {/* 3D Glass Phototube Envelope */}
+      <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[2.2, 2.2, 7.2, 32, 1, true]} />
+        <meshPhysicalMaterial
+          color="#a5f3fc"
+          transmission={0.92}
+          opacity={0.35}
+          transparent
+          roughness={0.05}
+          ior={1.45}
+          reflectivity={0.9}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Tube End Caps */}
+      <mesh position={[-3.65, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[2.22, 2.22, 0.25, 32]} />
+        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+      </mesh>
+      <mesh position={[3.65, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[2.22, 2.22, 0.25, 32]} />
+        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+      </mesh>
+
+      {/* CATHODE (Emitter Metal Plate) */}
+      <group position={[-2.8, 0, 0]}>
+        <mesh rotation={[0, Math.PI / 2, 0]}>
+          <cylinderGeometry args={[1.7, 1.7, 0.15, 32]} />
+          <meshStandardMaterial
+            color={selectedMetal.color}
+            metalness={selectedMetal.metalness}
+            roughness={selectedMetal.roughness}
+          />
+        </mesh>
+        {/* Cathode Terminal Rod */}
+        <mesh position={[-0.45, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.9, 16]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+        </mesh>
+        <Html position={[0, -2.1, 0]} center>
+          <div className="bg-slate-900/90 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            مهبط الكاثود ({selectedMetal.nameAr})
+          </div>
+        </Html>
+      </group>
+
+      {/* ANODE (Collector Wire Mesh / Plate) */}
+      <group position={[2.8, 0, 0]}>
+        <mesh rotation={[0, Math.PI / 2, 0]}>
+          <ringGeometry args={[0.6, 1.7, 32]} />
+          <meshStandardMaterial color="#38bdf8" metalness={0.9} roughness={0.2} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh rotation={[0, Math.PI / 2, 0]}>
+          <circleGeometry args={[0.6, 16]} />
+          <meshBasicMaterial color="#38bdf8" wireframe opacity={0.5} transparent />
+        </mesh>
+        {/* Anode Terminal Rod */}
+        <mesh position={[0.45, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.9, 16]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+        </mesh>
+        <Html position={[0, -2.1, 0]} center>
+          <div className="bg-slate-900/90 text-sky-300 text-[10px] font-bold px-2 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            مصعد الأنود (المجمّع)
+          </div>
+        </Html>
+      </group>
+
+      {/* LASER / LIGHT SOURCE PROJECTOR */}
+      <group position={[0, 3.8, 0]} rotation={[0, 0, -Math.PI / 4]}>
+        <mesh>
+          <cylinderGeometry args={[0.35, 0.45, 1.2, 24]} />
+          <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.3} />
+        </mesh>
+        {/* Laser Lens Glow */}
+        <mesh position={[0, -0.62, 0]}>
+          <sphereGeometry args={[0.32, 16, 16]} />
+          <meshBasicMaterial color={beamColor} />
+        </mesh>
+        {/* Point light shining on cathode */}
+        {intensity > 0 && (
+          <pointLight color={beamColor} intensity={(intensity / 100) * 4} distance={7} decay={1.5} />
+        )}
+      </group>
+
+      {/* 3D Light Cone Beam */}
+      {intensity > 0 && (
+        <mesh position={[-1.4, 1.9, 0]} rotation={[0, 0, -Math.PI / 4]}>
+          <cylinderGeometry args={[0.3, 1.8, 4.0, 32, 1, true]} />
+          <meshBasicMaterial color={beamColor} opacity={(intensity / 100) * 0.25} transparent side={THREE.DoubleSide} />
+        </mesh>
+      )}
+
+      {/* PHOTON PARTICLES (Stream of energy packets) */}
+      <group ref={photonsRef}>
+        {Array.from({ length: photonCount }).map((_, i) => (
+          <mesh key={`photon-${i}`} visible={false}>
+            <sphereGeometry args={[0.08, 12, 12]} />
+            <meshBasicMaterial color={beamColor} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* PHOTOELECTRONS (Flying charged particles) */}
+      <group ref={electronsRef}>
+        {Array.from({ length: electronCount }).map((_, i) => (
+          <mesh key={`electron-${i}`} visible={false}>
+            <sphereGeometry args={[0.07, 12, 12]} />
+            <meshBasicMaterial color="#38bdf8" />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Electric Field Indicator Grid */}
+      {Math.abs(voltage) > 0.5 && (
+        <group position={[0, 0, 0]}>
+          {[-1.2, 0, 1.2].map((y, idx) => (
+            <mesh key={`field-${idx}`} position={[0, y, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.015, 0.015, 4.8, 8]} />
+              <meshBasicMaterial color={voltage > 0 ? '#10b981' : '#ef4444'} opacity={0.35} transparent />
+            </mesh>
+          ))}
+        </group>
+      )}
+    </group>
+  );
+}
 
 export default function PhotoelectricEffectSimulation() {
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const controlsRef = useRef<any>(null);
 
-  // Experiment Parameters
-  const [wavelength, setWavelength] = useState<number>(350); // in nm (100 to 800)
-  const [intensity, setIntensity] = useState<number>(75); // 0 to 100%
-  const [voltage, setVoltage] = useState<number>(0.0); // in Volts (-5.0 to +5.0)
-  const [selectedMetal, setSelectedMetal] = useState<Metal>(METALS[0]);
+  // Simulation Controls State
+  const [selectedMetal, setSelectedMetal] = useState<MetalTarget>(METALS[0]);
+  const [wavelengthNm, setWavelengthNm] = useState<number>(400); // 400 nm default
+  const [intensity, setIntensity] = useState<number>(75); // 75% light intensity
+  const [voltage, setVoltage] = useState<number>(0.0); // 0.0 V default
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
 
-  // Quiz state
+  // Quiz State
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
   // Physics Calculations
-  const frequencyHz = useMemo(() => {
-    return (SPEED_OF_LIGHT / (wavelength * 1e-9));
-  }, [wavelength]);
+  const photonFrequencyHz = (C / (wavelengthNm * 1e-9));
+  const photonEnergyEV = (H_EV_S * photonFrequencyHz);
+  const photonEnergyJoules = (H_J_S * photonFrequencyHz);
+  const maxKineticEnergyEV = Math.max(0, photonEnergyEV - selectedMetal.workFunctionEV);
+  const isEmitting = photonEnergyEV >= selectedMetal.workFunctionEV && intensity > 0;
+  const stoppingVoltage = maxKineticEnergyEV; // in Volts (V0 = Ek,max / e)
+  const thresholdFrequencyHz = (selectedMetal.workFunctionEV / H_EV_S);
 
-  const photonEnergyEv = useMemo(() => {
-    return PLANCK_CONSTANT_EV_S * frequencyHz;
-  }, [frequencyHz]);
-
-  const thresholdFrequencyHz = useMemo(() => {
-    return selectedMetal.workFunction / PLANCK_CONSTANT_EV_S;
-  }, [selectedMetal]);
-
-  const thresholdWavelengthNm = useMemo(() => {
-    return (SPEED_OF_LIGHT / thresholdFrequencyHz) * 1e9;
-  }, [thresholdFrequencyHz]);
-
-  // Max Kinetic Energy: Ek = hf - Phi
-  const maxKineticEnergyEv = useMemo(() => {
-    const ek = photonEnergyEv - selectedMetal.workFunction;
-    return ek > 0 ? ek : 0;
-  }, [photonEnergyEv, selectedMetal]);
-
-  // Stopping voltage: V0 = Ek,max / e
-  const stoppingVoltage = useMemo(() => {
-    return maxKineticEnergyEv; // since Ek is in eV, stopping voltage in V is numerically equal to Ek
-  }, [maxKineticEnergyEv]);
-
-  // Can electrons be emitted?
-  const isEmitting = maxKineticEnergyEv > 0 && intensity > 0;
-
-  // Photocurrent calculation (in microamperes)
-  const photocurrentMicroAmps = useMemo(() => {
+  // Saturation current (µA) proportional to intensity
+  const saturationCurrent = useMemo(() => {
     if (!isEmitting) return 0;
-    // Current drops to 0 when opposing voltage is >= stopping potential
+    return (intensity / 100) * 12.5; // Max 12.5 µA at 100% intensity
+  }, [isEmitting, intensity]);
+
+  // Current calculation with applied voltage
+  const currentMicroAmps = useMemo(() => {
+    if (!isEmitting) return 0;
     if (voltage <= -stoppingVoltage) return 0;
-    
-    // Saturation current depends on intensity
-    const iSat = (intensity / 100) * 12.5; // uA
-    
-    if (voltage >= 0) {
-      // Forward bias: asymptotically reaches saturation
-      return +(iSat * (1 - 0.15 * Math.exp(-voltage / 1.5))).toFixed(2);
-    } else {
-      // Reverse bias: drops smoothly to 0 at -stoppingVoltage
-      const diff = stoppingVoltage + voltage; // voltage is negative
-      const ratio = Math.max(0, diff / stoppingVoltage);
-      return +(iSat * Math.pow(ratio, 1.5)).toFixed(2);
-    }
-  }, [isEmitting, voltage, stoppingVoltage, intensity]);
+    if (voltage >= 2.0) return saturationCurrent;
+    // Gradual transition curve towards saturation
+    const vDiff = voltage + stoppingVoltage;
+    const factor = 1 - Math.exp(-vDiff / 1.2);
+    return Math.min(saturationCurrent, Math.max(0, saturationCurrent * factor));
+  }, [isEmitting, voltage, stoppingVoltage, saturationCurrent]);
 
-  // Helper: Wavelength to RGB color
-  const wavelengthToColor = (wl: number) => {
-    if (wl < 380) return 'rgb(147, 51, 234)'; // UV purple
-    if (wl < 440) return 'rgb(99, 102, 241)'; // Violet
-    if (wl < 490) return 'rgb(59, 130, 246)'; // Blue
-    if (wl < 530) return 'rgb(16, 185, 129)'; // Cyan/Green
-    if (wl < 580) return 'rgb(234, 179, 8)'; // Yellow
-    if (wl < 640) return 'rgb(249, 115, 22)'; // Orange
-    if (wl <= 750) return 'rgb(239, 68, 68)'; // Red
-    return 'rgb(185, 28, 28)'; // Near IR
-  };
-
-  // Particles animation in Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    let photons: Array<{ x: number; y: number; vx: number; vy: number; wl: number }> = [];
-    let electrons: Array<{ x: number; y: number; vx: number; vy: number; alpha: number }> = [];
-
-    const lightColor = wavelengthToColor(wavelength);
-    const emitterX = 140;
-    const collectorX = 460;
-    const plateTop = 80;
-    const plateBottom = 280;
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw Vacuum Tube Chamber
-      ctx.save();
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
-      ctx.lineWidth = 3;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.beginPath();
-      ctx.roundRect(80, 50, 440, 260, 30);
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw Grid lines inside chamber
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
-      ctx.lineWidth = 1;
-      for (let x = 100; x < 500; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 50);
-        ctx.lineTo(x, 310);
-        ctx.stroke();
-      }
-      ctx.restore();
-
-      // Draw Light Source (Lamp)
-      ctx.save();
-      ctx.fillStyle = '#334155';
-      ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(40, 180, 30, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Lamp Glow
-      if (intensity > 0) {
-        const glowGrad = ctx.createRadialGradient(40, 180, 5, 40, 180, 45);
-        glowGrad.addColorStop(0, lightColor);
-        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = glowGrad;
-        ctx.beginPath();
-        ctx.arc(40, 180, 45, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      // Draw Emitter Plate (Cathode)
-      ctx.save();
-      ctx.fillStyle = selectedMetal.color;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.fillRect(emitterX - 10, plateTop, 16, plateBottom - plateTop);
-      ctx.strokeRect(emitterX - 10, plateTop, 16, plateBottom - plateTop);
-      
-      // Emitter Label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 12px Cairo, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`لوح ${selectedMetal.symbol}`, emitterX - 2, plateTop - 10);
-      ctx.fillText(`(مهبط -)`, emitterX - 2, plateBottom + 20);
-      ctx.restore();
-
-      // Draw Collector Plate (Anode)
-      ctx.save();
-      ctx.fillStyle = '#94a3b8';
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 1.5;
-      ctx.fillRect(collectorX, plateTop, 16, plateBottom - plateTop);
-      ctx.strokeRect(collectorX, plateTop, 16, plateBottom - plateTop);
-      
-      // Collector Label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 12px Cairo, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('لوح المجمع', collectorX + 8, plateTop - 10);
-      ctx.fillText(`(مصعد +)`, collectorX + 8, plateBottom + 20);
-      ctx.restore();
-
-      // Spawn Photons
-      if (isPlaying && intensity > 0 && Math.random() < (intensity / 100) * 0.45) {
-        photons.push({
-          x: 40,
-          y: 150 + Math.random() * 60,
-          vx: 4.5 + Math.random() * 1.5,
-          vy: (Math.random() - 0.5) * 2,
-          wl: wavelength,
-        });
-      }
-
-      // Update & Draw Photons
-      ctx.save();
-      ctx.fillStyle = lightColor;
-      ctx.shadowColor = lightColor;
-      ctx.shadowBlur = 8;
-      for (let i = photons.length - 1; i >= 0; i--) {
-        const p = photons[i];
-        if (isPlaying) {
-          p.x += p.vx;
-          p.y += p.vy;
-        }
-
-        // Draw photon as oscillating wave packet
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Hit emitter plate
-        if (p.x >= emitterX - 10) {
-          if (isEmitting && Math.random() < 0.8) {
-            // Eject electron!
-            const speed = Math.min(6, 1.2 + Math.sqrt(maxKineticEnergyEv) * 1.8);
-            electrons.push({
-              x: emitterX + 8,
-              y: Math.max(plateTop + 10, Math.min(plateBottom - 10, p.y + (Math.random() - 0.5) * 20)),
-              vx: speed * (0.8 + Math.random() * 0.4),
-              vy: (Math.random() - 0.5) * 1.8,
-              alpha: 1,
-            });
-          }
-          photons.splice(i, 1);
-        } else if (p.x > 500 || p.y < 40 || p.y > 320) {
-          photons.splice(i, 1);
-        }
-      }
-      ctx.restore();
-
-      // Electric Field Acceleration: a = q * V / (d * m)
-      const eAcc = (voltage * 0.08);
-
-      // Update & Draw Electrons
-      ctx.save();
-      for (let i = electrons.length - 1; i >= 0; i--) {
-        const e = electrons[i];
-        if (isPlaying) {
-          e.vx += eAcc;
-          e.x += e.vx;
-          e.y += e.vy;
-        }
-
-        // Color based on velocity
-        ctx.fillStyle = `rgba(56, 189, 248, ${e.alpha})`;
-        ctx.shadowColor = '#0284c7';
-        ctx.shadowBlur = 6;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Electron hits collector plate
-        if (e.x >= collectorX) {
-          electrons.splice(i, 1);
-        } else if (e.vx <= 0 && voltage < 0 && e.x < emitterX + 5) {
-          // Turned back to emitter due to stopping potential
-          electrons.splice(i, 1);
-        } else if (e.y < plateTop - 20 || e.y > plateBottom + 20 || e.x < 70) {
-          electrons.splice(i, 1);
-        }
-      }
-      ctx.restore();
-
-      // Draw Circuit Wires & Ammeter / Voltmeter at bottom
-      ctx.save();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-
-      // Cathode wire down
-      ctx.beginPath();
-      ctx.moveTo(emitterX, plateBottom);
-      ctx.lineTo(emitterX, 350);
-      ctx.lineTo(240, 350);
-      ctx.stroke();
-
-      // Anode wire down
-      ctx.beginPath();
-      ctx.moveTo(collectorX + 8, plateBottom);
-      ctx.lineTo(collectorX + 8, 350);
-      ctx.lineTo(360, 350);
-      ctx.stroke();
-
-      // Ammeter Gauge
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(300, 350, 28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 12px Cairo, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('A', 300, 345);
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = '10px Cairo, sans-serif';
-      ctx.fillText(`${photocurrentMicroAmps} µA`, 300, 362);
-
-      ctx.restore();
-
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      cancelAnimationFrame(animId);
-    };
-  }, [wavelength, intensity, voltage, selectedMetal, isPlaying, isEmitting, maxKineticEnergyEv, photocurrentMicroAmps]);
-
-  // Generate Data for IV Characteristic Curve
+  // Generate IV Curve Data for Recharts
   const ivData = useMemo(() => {
     const data = [];
-    const minV = -Math.max(5, Math.ceil(stoppingVoltage + 1));
-    const maxV = 5;
-    const steps = 60;
-    const iSat = isEmitting ? (intensity / 100) * 12.5 : 0;
-
+    const minV = Math.min(-3.0, -stoppingVoltage - 1.0);
+    const maxV = 4.0;
+    const steps = 40;
     for (let i = 0; i <= steps; i++) {
-      const v = minV + (i / steps) * (maxV - minV);
-      let current = 0;
+      const v = +(minV + (i / steps) * (maxV - minV)).toFixed(2);
+      let cur = 0;
       if (isEmitting) {
         if (v <= -stoppingVoltage) {
-          current = 0;
-        } else if (v >= 0) {
-          current = iSat * (1 - 0.15 * Math.exp(-v / 1.5));
+          cur = 0;
+        } else if (v >= 2.0) {
+          cur = saturationCurrent;
         } else {
-          const ratio = (stoppingVoltage + v) / stoppingVoltage;
-          current = iSat * Math.pow(Math.max(0, ratio), 1.5);
+          const vDiff = v + stoppingVoltage;
+          cur = saturationCurrent * (1 - Math.exp(-vDiff / 1.2));
         }
       }
       data.push({
-        voltage: +v.toFixed(2),
-        current: +current.toFixed(2),
+        voltage: v,
+        current: +cur.toFixed(2),
       });
     }
     return data;
-  }, [stoppingVoltage, intensity, isEmitting]);
+  }, [isEmitting, stoppingVoltage, saturationCurrent]);
 
-  // Generate Data for Ek vs Frequency Graph
+  // Generate Kinetic Energy vs Frequency Graph Data
   const ekFreqData = useMemo(() => {
     const data = [];
-    const minF = 0.5e15; // 0.5 PHz
-    const maxF = 2.5e15; // 2.5 PHz
-    const steps = 40;
-
+    const minF = 0.3e15; // 0.3 PHz
+    const maxF = 1.8e15; // 1.8 PHz
+    const steps = 30;
     for (let i = 0; i <= steps; i++) {
       const f = minF + (i / steps) * (maxF - minF);
-      const ek = Math.max(0, PLANCK_CONSTANT_EV_S * f - selectedMetal.workFunction);
+      const ePhoton = H_EV_S * f;
+      const ek = Math.max(0, ePhoton - selectedMetal.workFunctionEV);
       data.push({
         frequencyPHz: +(f * 1e-15).toFixed(2),
         kineticEnergy: +ek.toFixed(2),
+        photonEnergy: +ePhoton.toFixed(2),
       });
     }
     return data;
   }, [selectedMetal]);
 
-  const handleReset = () => {
-    setWavelength(350);
-    setIntensity(75);
-    setVoltage(0);
-    setSelectedMetal(METALS[0]);
-    setIsPlaying(true);
+  const handleResetCamera = () => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
   };
 
   const handleQuizSubmit = (selected: number) => {
@@ -414,22 +426,22 @@ export default function PhotoelectricEffectSimulation() {
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate('/scientific-simulations-hub')}
+              onClick={() => navigate('/experiments')}
               className="text-slate-400 hover:text-white mb-2 p-0 h-auto font-normal flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4 ml-1" />
-              العودة إلى مركز التجارب العلمية
+              العودة إلى مختبر التجارب العلمية
             </Button>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-br from-amber-500 to-indigo-600 rounded-2xl shadow-lg shadow-amber-500/20">
                 <Sun className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-amber-300 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
-                  الظاهرة الكهروضوئية وثابت بلانك
+                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-amber-300 via-yellow-200 to-indigo-300 bg-clip-text text-transparent">
+                  الظاهرة الكهروضوئية وتكميم الضوء ثلاثية الأبعاد (3D)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  تجربة أينشتاين لتحرير الإلكترونات بالضوء، قياس جهد الإيقاف واستنتاج ثابت بلانك \(h\) بدقة
+                  تجربة أينشتاين وماكس بلانك لتحرير الإلكترونات بالضوء وقياس جهد الإيقاف واستنتاج ثابت بلانك
                 </p>
               </div>
             </div>
@@ -449,116 +461,143 @@ export default function PhotoelectricEffectSimulation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleReset}
+              onClick={handleResetCamera}
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط
+              إعادة ضبط الكاميرا
             </Button>
           </div>
         </div>
 
-        {/* Live Gauges / Readouts Banner */}
+        {/* Live Gauges Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <Card className="bg-slate-900/70 border-slate-800">
+          <Card className="bg-slate-900/70 border-slate-800 backdrop-blur-sm">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">طاقة الفوتون (\(E\))</span>
-              <p className="text-lg font-bold text-amber-400">{photonEnergyEv.toFixed(2)} eV</p>
-              <span className="text-[10px] text-slate-500">{(photonEnergyEv * ELEMENTARY_CHARGE * 1e19).toFixed(2)} × 10⁻¹⁹ J</span>
+              <span className="text-xs text-slate-400">طاقة الفوتون الساقط (E)</span>
+              <p className="text-lg font-bold text-amber-400 font-mono">{photonEnergyEV.toFixed(2)} eV</p>
+              <span className="text-[10px] text-slate-500 font-mono">{(photonEnergyJoules * 1e19).toFixed(2)} × 10⁻¹⁹ J</span>
             </CardContent>
           </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
+          <Card className="bg-slate-900/70 border-slate-800 backdrop-blur-sm">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">دالة الشغل (\(\Phi\))</span>
-              <p className="text-lg font-bold text-orange-400">{selectedMetal.workFunction.toFixed(2)} eV</p>
+              <span className="text-xs text-slate-400">دالة شغل المعدن (Φ)</span>
+              <p className="text-lg font-bold text-sky-400 font-mono">{selectedMetal.workFunctionEV.toFixed(2)} eV</p>
               <span className="text-[10px] text-slate-500">{selectedMetal.nameAr}</span>
             </CardContent>
           </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
+          <Card className="bg-slate-900/70 border-slate-800 backdrop-blur-sm">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">أقصى طاقة حركية (\(E_k\))</span>
-              <p className="text-lg font-bold text-sky-400">{maxKineticEnergyEv.toFixed(2)} eV</p>
-              <span className="text-[10px] text-slate-500">{isEmitting ? 'انبعاث نشط' : 'لا يوجد انبعاث'}</span>
+              <span className="text-xs text-slate-400">طاقة الحركة العظمى (Ek)</span>
+              <p className={`text-lg font-bold font-mono ${isEmitting ? 'text-emerald-400' : 'text-slate-500'}`}>
+                {maxKineticEnergyEV.toFixed(2)} eV
+              </p>
+              <span className="text-[10px] text-slate-500">{isEmitting ? 'إلكترونات محررة' : 'دون حد التحرير'}</span>
             </CardContent>
           </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
+          <Card className="bg-slate-900/70 border-slate-800 backdrop-blur-sm">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">جهد الإيقاف (\(V_0\))</span>
-              <p className="text-lg font-bold text-purple-400">{stoppingVoltage.toFixed(2)} V</p>
-              <span className="text-[10px] text-slate-500">جهد التثبيط</span>
+              <span className="text-xs text-slate-400">جهد الإيقاف الحرج (V₀)</span>
+              <p className="text-lg font-bold text-purple-400 font-mono">-{stoppingVoltage.toFixed(2)} V</p>
+              <span className="text-[10px] text-slate-500">ينعدم عنده التيار</span>
             </CardContent>
           </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
+          <Card className="bg-slate-900/70 border-slate-800 backdrop-blur-sm">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">التردد الحرج (\(f_0\))</span>
-              <p className="text-lg font-bold text-emerald-400">{(thresholdFrequencyHz * 1e-14).toFixed(2)} × 10¹⁴ Hz</p>
-              <span className="text-[10px] text-slate-500">\(\lambda_0 = {thresholdWavelengthNm.toFixed(0)}\) nm</span>
+              <span className="text-xs text-slate-400">التيار الكهروضوئي (I)</span>
+              <p className={`text-lg font-bold font-mono ${currentMicroAmps > 0 ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`}>
+                {currentMicroAmps.toFixed(2)} µA
+              </p>
+              <span className="text-[10px] text-slate-500">مقياس الأميتر</span>
             </CardContent>
           </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
+          <Card className="bg-slate-900/70 border-slate-800 backdrop-blur-sm">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">التيار الكهروضوئي (\(I\))</span>
-              <p className="text-lg font-bold text-cyan-400">{photocurrentMicroAmps} µA</p>
-              <span className="text-[10px] text-slate-500">{voltage >= 0 ? 'انحياز أمامي' : 'انحياز عكسي'}</span>
+              <span className="text-xs text-slate-400">التردد والطول الموجي</span>
+              <p className="text-lg font-bold text-slate-200 font-mono">{wavelengthNm} nm</p>
+              <span className="text-[10px] text-slate-500 font-mono">{(photonFrequencyHz * 1e-14).toFixed(2)} × 10¹⁴ Hz</span>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content Tabs */}
+        {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">
               <Activity className="w-4 h-4" />
-              المختبر الافتراضي
+              المختبر الافتراضي ثلاثي الأبعاد (3D Lab)
             </TabsTrigger>
-            <TabsTrigger value="graphs" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
-              <Sparkles className="w-4 h-4" />
+            <TabsTrigger value="curves" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
+              <Layers className="w-4 h-4" />
               المنحنيات البيانية وثابت بلانك
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
-              الأساس النظري والمعادلات
+              النظرية والمعادلات الرياضية
             </TabsTrigger>
             <TabsTrigger value="quiz" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
               <Award className="w-4 h-4" />
-              اختبار المفاهيم والتحدي
+              اختبار الفهم
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Main Interactive Simulation */}
+          {/* TAB 1: 3D Simulation & Interactive Chamber */}
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Simulation Canvas & Vacuum Tube */}
+              {/* 3D WebGL Canvas */}
               <div className="lg:col-span-2 space-y-4">
-                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl">
+                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
-                      <Layers className="w-4 h-4 text-amber-400" />
-                      أنبوبة التفريغ الكهروضوئية (Photocell Chamber)
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      أنبوبة التفريغ الكهروضوئية ثلاثية الأبعاد (3D Photocell Chamber)
                     </CardTitle>
-                    <Badge variant="outline" className={`${isEmitting ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-red-500/50 text-red-400 bg-red-500/10'}`}>
-                      {isEmitting ? 'انبعاث كهروضوئي نشط' : 'لا تنبعث إلكترونات (hf < Φ)'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`${isEmitting ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-red-500/50 text-red-400 bg-red-500/10'}`}>
+                        {isEmitting ? 'انبعاث نشط' : 'hf < Φ (لا يوجد انبعاث)'}
+                      </Badge>
+                      <Badge variant="outline" className="border-sky-500/50 text-sky-400 bg-sky-500/10">
+                        3D تفاعلي
+                      </Badge>
+                    </div>
                   </CardHeader>
-                  <CardContent className="p-4 flex flex-col items-center justify-center bg-slate-950/70">
-                    <canvas
-                      ref={canvasRef}
-                      width={600}
-                      height={400}
-                      className="w-full max-w-[600px] h-auto rounded-2xl border border-slate-800/80 bg-slate-950 shadow-inner"
-                    />
-                    <div className="w-full flex items-center justify-between text-xs text-slate-400 mt-3 px-2">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: wavelengthToColor(wavelength) }} />
-                        فوتونات ساقطة ({wavelength} nm)
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full bg-sky-400" />
-                        إلكترونات منبعثة (Photoelectrons)
-                      </span>
-                      <span className="text-slate-400">
-                        الجهد المطبق: <strong className={voltage > 0 ? 'text-emerald-400' : voltage < 0 ? 'text-red-400' : 'text-slate-200'}>{voltage > 0 ? `+${voltage}` : voltage} V</strong>
-                      </span>
+                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                    <Canvas camera={{ position: [0, 2.5, 8.5], fov: 45 }}>
+                      <ambientLight intensity={0.6} />
+                      <directionalLight position={[10, 10, 10]} intensity={1.2} />
+                      <directionalLight position={[-10, -5, -10]} intensity={0.5} color="#38bdf8" />
+                      <PhotocellChamber3D
+                        wavelengthNm={wavelengthNm}
+                        intensity={intensity}
+                        voltage={voltage}
+                        selectedMetal={selectedMetal}
+                        isPlaying={isPlaying}
+                        isEmitting={isEmitting}
+                        stoppingVoltage={stoppingVoltage}
+                        maxKineticEnergyEV={maxKineticEnergyEV}
+                      />
+                      <OrbitControls
+                        ref={controlsRef}
+                        enablePan={true}
+                        enableZoom={true}
+                        minDistance={4}
+                        maxDistance={15}
+                        maxPolarAngle={Math.PI / 2 + 0.2}
+                      />
+                    </Canvas>
+
+                    {/* 3D Scene Controls Overlay */}
+                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
+                      <Compass className="w-3.5 h-3.5 text-sky-400" />
+                      <span>اسحب للتدوير 360° • مرّر للتقريب والتبعيد</span>
+                    </div>
+
+                    {/* Applied Voltage Indicator */}
+                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+                      الجهد بين اللوحين:{' '}
+                      <strong className={voltage > 0 ? 'text-emerald-400' : voltage < 0 ? 'text-red-400' : 'text-slate-200'}>
+                        {voltage > 0 ? `+${voltage.toFixed(1)}` : voltage.toFixed(1)} V
+                      </strong>
                     </div>
                   </CardContent>
                 </Card>
@@ -569,60 +608,60 @@ export default function PhotoelectricEffectSimulation() {
                 <Card className="bg-slate-900/90 border-slate-800 shadow-xl">
                   <CardHeader className="py-3 px-4 border-b border-slate-800">
                     <CardTitle className="text-base font-bold text-slate-200 flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-sky-400" />
-                      لوحة التحكم بالتجربة
+                      <Sun className="w-4 h-4 text-amber-400" />
+                      لوحة التحكم التجريبية
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-5">
                     {/* Metal Selector */}
                     <div>
-                      <label className="text-xs font-semibold text-slate-300 block mb-2">معدن المهبط (Target Metal)</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر معدن المهبط (الكاثود)</label>
+                      <div className="grid grid-cols-2 gap-1.5">
                         {METALS.map((metal) => (
                           <button
                             key={metal.id}
                             onClick={() => setSelectedMetal(metal)}
-                            className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all text-right flex flex-col justify-between ${
+                            className={`p-2 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedMetal.id === metal.id
-                                ? 'bg-amber-500/20 border-amber-500/80 text-amber-300 shadow-sm'
+                                ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md shadow-amber-500/10'
                                 : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                             }`}
                           >
-                            <span>{metal.nameAr}</span>
-                            <span className="text-[10px] opacity-75 font-mono">Φ = {metal.workFunction} eV</span>
+                            <div className="font-bold">{metal.nameAr}</div>
+                            <div className="text-[10px] opacity-75 font-mono">Φ = {metal.workFunctionEV} eV</div>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Wavelength Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">طول موجة الضوء (\(\lambda\))</span>
-                        <span className="font-mono font-bold" style={{ color: wavelengthToColor(wavelength) }}>
-                          {wavelength} nm
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">الطول الموجي للضوء (λ)</label>
+                        <span className="text-xs font-mono font-bold" style={{ color: getWavelengthColor(wavelengthNm) }}>
+                          {wavelengthNm} nm
                         </span>
                       </div>
                       <Slider
-                        value={[wavelength]}
-                        min={150}
-                        max={750}
+                        value={[wavelengthNm]}
+                        min={100}
+                        max={800}
                         step={5}
-                        onValueChange={(val) => setWavelength(val[0])}
+                        onValueChange={(val) => setWavelengthNm(val[0])}
                         className="py-1"
                       />
-                      <div className="flex justify-between text-[10px] text-slate-500">
-                        <span>أشعة فوق بنفسجية (150nm)</span>
-                        <span>طيف مرئي</span>
-                        <span>أشعة تحت حمراء (750nm)</span>
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span className="text-purple-400">فوق بنفسجي (100nm)</span>
+                        <span className="text-emerald-400">مرئي (500nm)</span>
+                        <span className="text-red-400">تحت أحمر (800nm)</span>
                       </div>
                     </div>
 
                     {/* Light Intensity Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">شدة الإضاءة (Intensity)</span>
-                        <span className="font-mono font-bold text-amber-400">{intensity}%</span>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">شدة الإضاءة (Intensity)</label>
+                        <span className="text-xs font-mono text-amber-400 font-bold">{intensity}%</span>
                       </div>
                       <Slider
                         value={[intensity]}
@@ -632,31 +671,31 @@ export default function PhotoelectricEffectSimulation() {
                         onValueChange={(val) => setIntensity(val[0])}
                         className="py-1"
                       />
-                      <span className="text-[10px] text-slate-500 block">
-                        الشدة تزيد عدد الفوتونات المنطلقة ولا تؤثر على طاقة الفوتون الواحد!
-                      </span>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        زيادة الشدة تزيد من عدد الفوتونات والتيار الكهروضوئي دون تغيير طاقة الحركة.
+                      </p>
                     </div>
 
                     {/* Voltage Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">فرق الجهد المطبق (\(V\))</span>
-                        <span className={`font-mono font-bold ${voltage >= 0 ? 'text-emerald-400' : 'text-purple-400'}`}>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">الجهد الكهربائي المطبق (Voltage)</label>
+                        <span className={`text-xs font-mono font-bold ${voltage > 0 ? 'text-emerald-400' : voltage < 0 ? 'text-red-400' : 'text-slate-300'}`}>
                           {voltage > 0 ? `+${voltage.toFixed(1)}` : voltage.toFixed(1)} V
                         </span>
                       </div>
                       <Slider
                         value={[voltage]}
-                        min={-6}
-                        max={6}
+                        min={-6.0}
+                        max={6.0}
                         step={0.1}
-                        onValueChange={(val) => setVoltage(+val[0].toFixed(1))}
+                        onValueChange={(val) => setVoltage(val[0])}
                         className="py-1"
                       />
-                      <div className="flex justify-between text-[10px] text-slate-500">
-                        <span>جهد عكسي (-6V)</span>
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span className="text-red-400">جهد عكسي معيق (-6V)</span>
                         <span>0V</span>
-                        <span>جهد طرد (+6V)</span>
+                        <span className="text-emerald-400">جهد طردي مسرع (+6V)</span>
                       </div>
                     </div>
                   </CardContent>
@@ -665,8 +704,8 @@ export default function PhotoelectricEffectSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Live Graphs & Planck Calculation */}
-          <TabsContent value="graphs" className="space-y-6">
+          {/* TAB 2: Curves & Planck Constant Calculation */}
+          <TabsContent value="curves" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* I vs V Curve */}
               <Card className="bg-slate-900/90 border-slate-800 shadow-xl">
@@ -778,7 +817,7 @@ export default function PhotoelectricEffectSimulation() {
                     { id: 0, text: 'تتضاعف طاقة الحركة العظمى ويبقى التيار ثابتاً.' },
                     { id: 1, text: 'تتضاعف طاقة الحركة ويتضاعف التيار معاً.' },
                     { id: 2, text: 'تبقى طاقة الحركة العظمى ثابتة ويتضاعف تيار الإشباع.' },
-                    { id: 3, text: 'يقل جهد الإيقاف للنصف ويزداد التيار.' },
+                    { id: 3, text: 'ينعدم التيار تماماً.' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -804,10 +843,10 @@ export default function PhotoelectricEffectSimulation() {
                     {quizAnswer === 2 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة وممتازة! شدة الضوء تحدد عدد الفوتونات (التيار)، بينما تردد الفوتون يحدد طاقة حركته.</span>
+                        <span>إجابة صحيحة! شدة الضوء تمثل معدل تدفق الفوتونات، ومضاعفتها يضاعف عدد الإلكترونات المنبعثة وتيار الإشباع، بينما طاقة حركة كل إلكترون تعتمد فقط على تردد الضوء ودالة الشغل.</span>
                       </div>
                     ) : (
-                      <span>إجابة غير صحيحة. زيادة الشدة تزيد عدد الفوتونات المتدفقة فقط، وبالتالي يتضاعف عدد الإلكترونات المنبعثة (التيار) مع بقاء طاقة كل إلكترون ثابتة لأن تردد الفوتون لم يتغير.</span>
+                      <span>إجابة غير صحيحة. طاقة الحركة العظمى تعتمد فقط على تردد الضوء (Ek = hf - Φ) ولا تتأثر بالشدة.</span>
                     )}
                   </div>
                 )}

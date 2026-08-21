@@ -1,290 +1,272 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wind, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, Activity, Sparkles, BookOpen, Layers, Gauge, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { 
+  ArrowLeft, Wind, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
+  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Gauge 
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 
-interface AeroModel {
+interface AirfoilModel {
   id: string;
   nameAr: string;
   nameEn: string;
-  baseCl: number;
-  baseCd: number;
+  clMax: number;
   stallAngleDeg: number;
+  description: string;
 }
 
-const MODELS: AeroModel[] = [
-  { id: 'naca-airfoil', nameAr: 'جناح طائرة انسيابي (NACA 2412 Airfoil)', nameEn: 'NACA 2412 Airfoil', baseCl: 0.25, baseCd: 0.02, stallAngleDeg: 15 },
-  { id: 'sports-car', nameAr: 'سيارة رياضية انسيابية (Sports Car)', nameEn: 'Sports Car', baseCl: -0.15, baseCd: 0.28, stallAngleDeg: 25 },
-  { id: 'cylinder', nameAr: 'أسطوانة دائرية (Cylinder)', nameEn: 'Cylinder', baseCl: 0.0, baseCd: 0.45, stallAngleDeg: 90 },
-  { id: 'flat-plate', nameAr: 'لوح مسطح (Flat Plate)', nameEn: 'Flat Plate', baseCl: 0.0, baseCd: 1.10, stallAngleDeg: 10 },
+const AIRFOILS: AirfoilModel[] = [
+  { id: 'naca-2412', nameAr: 'جناح طيران عام (NACA 2412)', nameEn: 'NACA 2412', clMax: 1.6, stallAngleDeg: 16, description: 'المقطع التقليدي لطائرات سيسنا والطيران المدني' },
+  { id: 'naca-0012', nameAr: 'مقطع متماثل (NACA 0012)', nameEn: 'NACA 0012', clMax: 1.4, stallAngleDeg: 14, description: 'مقطع متماثل تماماً لدفات التوجيه ومراوح المروحيات' },
+  { id: 'supercritical', nameAr: 'مقطع فوق حرج (Supercritical)', nameEn: 'Supercritical', clMax: 1.8, stallAngleDeg: 18, description: 'مقطع طائرات الركاب النفاثة للسرعات العالية' },
 ];
+
+const AIR_DENSITY = 1.225; // kg/m^3 (sea level)
+const WING_AREA_M2 = 1.5; // m^2
+
+// 3D Wind Tunnel Scene
+interface WindTunnel3DProps {
+  alphaDeg: number;
+  windSpeedMs: number;
+  selectedAirfoil: AirfoilModel;
+  isStalled: boolean;
+  liftForceN: number;
+  dragForceN: number;
+  isPlaying: boolean;
+}
+
+function WindTunnel3DScene({
+  alphaDeg,
+  windSpeedMs,
+  selectedAirfoil,
+  isStalled,
+  liftForceN,
+  dragForceN,
+  isPlaying,
+}: WindTunnel3DProps) {
+  const streamlinesRef = useRef<THREE.Group>(null);
+  const smokeParticleCount = 80;
+
+  const smokeData = useMemo(() => {
+    return Array.from({ length: smokeParticleCount }, () => ({
+      x: -5.0 + Math.random() * 0.5,
+      y: (Math.random() - 0.5) * 2.8,
+      z: (Math.random() - 0.5) * 2.5,
+      speed: 0.08 + Math.random() * 0.04,
+      turbulent: false,
+    }));
+  }, [smokeParticleCount]);
+
+  const alphaRad = (-alphaDeg * Math.PI) / 180;
+
+  useFrame((state, delta) => {
+    if (!isPlaying) return;
+
+    const speedFactor = (windSpeedMs / 50);
+
+    for (let i = 0; i < smokeParticleCount; i++) {
+      const p = smokeData[i];
+      const mesh = streamlinesRef.current?.children[i] as THREE.Mesh;
+      if (!mesh) continue;
+
+      p.x += p.speed * speedFactor;
+
+      // Airfoil deflection dynamics near x ≈ 0
+      if (p.x > -1.5 && p.x < 1.5) {
+        const isUpper = p.y > 0;
+        if (isUpper) {
+          // Upper surface curve
+          p.y += (alphaDeg * 0.002);
+        } else {
+          // Lower surface compression
+          p.y -= (alphaDeg * 0.001);
+        }
+      }
+
+      // Turbulent vortex shedding if stalled and past trailing edge (x > 1.0)
+      if (isStalled && p.x > 0.8 && p.y > 0) {
+        p.y += (Math.random() - 0.5) * 0.06;
+        p.z += (Math.random() - 0.5) * 0.06;
+      }
+
+      // Recycle smoke particle
+      if (p.x > 5.0) {
+        p.x = -5.0;
+        p.y = (Math.random() - 0.5) * 2.8;
+        p.z = (Math.random() - 0.5) * 2.5;
+      }
+
+      mesh.position.set(p.x, p.y, p.z);
+    }
+  });
+
+  return (
+    <group>
+      {/* 3D TRANSPARENT WIND TUNNEL TEST DUCT */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[10.5, 3.8, 3.8]} />
+        <meshPhysicalMaterial
+          color="#94a3b8"
+          transmission={0.92}
+          opacity={0.25}
+          transparent
+          roughness={0.05}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* TUNNEL STRUCTURAL FRAMES */}
+      {[-5.2, -2.6, 0, 2.6, 5.2].map((x, idx) => (
+        <group key={`frame-${idx}`} position={[x, 0, 0]}>
+          <mesh>
+            <boxGeometry args={[0.15, 3.9, 3.9]} />
+            <meshStandardMaterial color="#334155" metalness={0.8} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* 3D AIRFOIL WING (Mounted at center) */}
+      <group position={[0, 0, 0]} rotation={[0, 0, alphaRad]}>
+        {/* Main Wing Body */}
+        <mesh>
+          <boxGeometry args={[2.4, 0.35, 2.8]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.7} roughness={0.2} />
+        </mesh>
+        {/* Leading Edge Rounded Nose */}
+        <mesh position={[-1.2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.175, 0.175, 2.8, 16]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.8} />
+        </mesh>
+        {/* Trailing Edge Wedge */}
+        <mesh position={[1.35, 0, 0]}>
+          <boxGeometry args={[0.3, 0.06, 2.8]} />
+          <meshStandardMaterial color="#64748b" />
+        </mesh>
+
+        {/* Pivot Mount Shaft */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 3.6, 16]} />
+          <meshStandardMaterial color="#f59e0b" metalness={0.9} />
+        </mesh>
+      </group>
+
+      {/* 3D AERODYNAMIC FORCE VECTORS */}
+      {/* Lift Vector (Upwards) */}
+      {liftForceN > 10 && (
+        <group position={[0, 0.2, 0]}>
+          <mesh position={[0, Math.min(2.0, liftForceN / 1200), 0]}>
+            <cylinderGeometry args={[0.04, 0.04, Math.min(2.0, liftForceN / 600), 8]} />
+            <meshBasicMaterial color="#10b981" />
+          </mesh>
+          <Html position={[0, Math.min(2.4, liftForceN / 600 + 0.4), 0]} center>
+            <div className="bg-emerald-900/90 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 whitespace-nowrap shadow-lg">
+              قوة الرفع L = {liftForceN.toFixed(0)} N
+            </div>
+          </Html>
+        </group>
+      )}
+
+      {/* Drag Vector (Backwards) */}
+      {dragForceN > 5 && (
+        <group position={[0, 0, 0]}>
+          <mesh position={[Math.min(1.8, dragForceN / 400), 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <cylinderGeometry args={[0.035, 0.035, Math.min(1.8, dragForceN / 200), 8]} />
+            <meshBasicMaterial color="#ef4444" />
+          </mesh>
+          <Html position={[Math.min(2.2, dragForceN / 200 + 0.4), 0, 0]} center>
+            <div className="bg-red-900/90 text-red-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-red-500/40 whitespace-nowrap shadow-lg">
+              قوة السحب D = {dragForceN.toFixed(0)} N
+            </div>
+          </Html>
+        </group>
+      )}
+
+      {/* 3D SMOKE STREAMLINE PARTICLES */}
+      <group ref={streamlinesRef}>
+        {smokeData.map((_, i) => (
+          <mesh key={`smoke-${i}`}>
+            <sphereGeometry args={[0.06, 8, 8]} />
+            <meshBasicMaterial
+              color={isStalled && smokeData[i].x > 0.5 ? '#f87171' : '#38bdf8'}
+              opacity={0.8}
+              transparent
+            />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
 
 export default function AerodynamicsWindTunnelSimulation() {
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const controlsRef = useRef<any>(null);
 
-  // Experiment Parameters
-  const [selectedModel, setSelectedModel] = useState<AeroModel>(MODELS[0]);
-  const [airspeedMs, setAirspeedMs] = useState<number>(60); // 0 to 120 m/s (216 km/h)
-  const [angleOfAttackDeg, setAngleOfAttackDeg] = useState<number>(6); // -10 to +25 degrees
-  const [altitudeMeters, setAltitudeMeters] = useState<number>(0); // 0 to 10000 m
-  const [smokeStreams, setSmokeStreams] = useState<boolean>(true);
+  // States
+  const [selectedAirfoil, setSelectedAirfoil] = useState<AirfoilModel>(AIRFOILS[0]);
+  const [alphaDeg, setAlphaDeg] = useState<number>(6.0); // Angle of Attack
+  const [windSpeedMs, setWindSpeedMs] = useState<number>(45); // 45 m/s (162 km/h)
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
 
-  // Quiz state
+  // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Air density rho at altitude h: rho = rho0 * exp(-h / 8500)
-  const airDensityKgM3 = useMemo(() => {
-    return +(1.225 * Math.exp(-altitudeMeters / 8500)).toFixed(3);
-  }, [altitudeMeters]);
+  // Aerodynamic Coefficients Calculation
+  const isStalled = alphaDeg >= selectedAirfoil.stallAngleDeg;
 
-  // Is Aerodynamic Stall active?
-  const isStalled = useMemo(() => {
-    return Math.abs(angleOfAttackDeg) >= selectedModel.stallAngleDeg;
-  }, [angleOfAttackDeg, selectedModel]);
-
-  // Dynamic Lift Coefficient Cl & Drag Coefficient Cd
-  const { Cl, Cd } = useMemo(() => {
-    const alphaRad = (angleOfAttackDeg * Math.PI) / 180;
-    let cl = 0;
-    let cd = selectedModel.baseCd;
-
-    if (selectedModel.id === 'naca-airfoil') {
-      if (!isStalled) {
-        cl = selectedModel.baseCl + 2 * Math.PI * alphaRad * 0.9;
-        cd = selectedModel.baseCd + 0.04 * Math.pow(alphaRad, 2);
-      } else {
-        // Post-stall drop in lift, massive drag
-        cl = Math.max(0.2, (selectedModel.baseCl + 2 * Math.PI * (selectedModel.stallAngleDeg * Math.PI / 180)) * 0.5);
-        cd = 0.35 + 0.6 * Math.sin(Math.abs(alphaRad));
-      }
-    } else if (selectedModel.id === 'sports-car') {
-      cl = selectedModel.baseCl - 0.2 * Math.sin(alphaRad); // downforce
-      cd = selectedModel.baseCd + 0.1 * Math.abs(alphaRad);
-    } else if (selectedModel.id === 'flat-plate') {
-      cl = Math.sin(2 * alphaRad);
-      cd = 0.1 + 1.2 * Math.pow(Math.sin(alphaRad), 2);
-    } else {
-      cl = 0;
-      cd = selectedModel.baseCd;
+  // Lift Coefficient Cl
+  const Cl = useMemo(() => {
+    if (alphaDeg < -8) return -0.4;
+    if (isStalled) {
+      // Sudden drop during aerodynamic stall
+      return +(selectedAirfoil.clMax * 0.45 * Math.cos((alphaDeg * Math.PI) / 180)).toFixed(2);
     }
+    // Linear lift slope 2*pi per radian ≈ 0.11 per degree
+    const cl = 0.2 + alphaDeg * 0.105;
+    return +Math.min(selectedAirfoil.clMax, cl).toFixed(2);
+  }, [alphaDeg, isStalled, selectedAirfoil]);
 
-    return { Cl: +cl.toFixed(2), Cd: +cd.toFixed(3) };
-  }, [selectedModel, angleOfAttackDeg, isStalled]);
-
-  // Lift & Drag Forces in Newtons: F = 0.5 * rho * v^2 * A * C
-  const wingAreaM2 = 2.5; // m^2 reference area
-  const liftForceN = useMemo(() => {
-    return +(0.5 * airDensityKgM3 * Math.pow(airspeedMs, 2) * wingAreaM2 * Cl).toFixed(1);
-  }, [airDensityKgM3, airspeedMs, Cl]);
-
-  const dragForceN = useMemo(() => {
-    return +(0.5 * airDensityKgM3 * Math.pow(airspeedMs, 2) * wingAreaM2 * Cd).toFixed(1);
-  }, [airDensityKgM3, airspeedMs, Cd]);
-
-  // Lift to Drag Ratio
-  const liftToDragRatio = useMemo(() => {
-    if (Cd === 0) return 0;
-    return +(Cl / Cd).toFixed(1);
-  }, [Cl, Cd]);
-
-  // Polar Curve Data for NACA Airfoil (Cl vs Alpha)
-  const polarData = useMemo(() => {
-    const data = [];
-    for (let a = -8; a <= 22; a += 1) {
-      const aRad = (a * Math.PI) / 180;
-      let clVal = 0;
-      if (Math.abs(a) < 15) {
-        clVal = 0.25 + 2 * Math.PI * aRad * 0.9;
-      } else {
-        clVal = Math.max(0.2, (0.25 + 2 * Math.PI * (15 * Math.PI / 180)) * 0.55);
-      }
-      data.push({
-        alpha: a,
-        Cl: +clVal.toFixed(2),
-      });
+  // Drag Coefficient Cd
+  const Cd = useMemo(() => {
+    const cd0 = 0.015; // parasitic drag
+    if (isStalled) {
+      return +(0.25 + Math.pow((alphaDeg - selectedAirfoil.stallAngleDeg) / 10, 2) * 0.2).toFixed(3);
     }
-    return data;
-  }, []);
+    const cdInduced = (Cl * Cl) / (Math.PI * 6.0); // Induced drag
+    return +(cd0 + cdInduced).toFixed(3);
+  }, [alphaDeg, isStalled, Cl, selectedAirfoil]);
 
-  // Canvas visualizer
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // Forces: L = 1/2 * rho * v^2 * S * Cl
+  const dynamicPressure = 0.5 * AIR_DENSITY * Math.pow(windSpeedMs, 2);
+  const liftForceN = Math.max(0, +(dynamicPressure * WING_AREA_M2 * Cl).toFixed(0));
+  const dragForceN = Math.max(0, +(dynamicPressure * WING_AREA_M2 * Cd).toFixed(0));
+  const liftToDragRatio = Cd > 0 ? +(Cl / Cd).toFixed(1) : 0;
 
-    let animId: number;
-    let particles: Array<{ x: number; y: number; streamId: number }> = [];
-
-    // Initialize streamline particles
-    for (let i = 0; i < 70; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: 40 + (i % 12) * 22,
-        streamId: i % 12,
-      });
+  const handleResetCamera = () => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
     }
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Tunnel Background & Walls
-      ctx.fillStyle = '#090d16';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Top and Bottom Tunnel Grid
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, 25);
-      ctx.lineTo(canvas.width, 25);
-      ctx.moveTo(0, canvas.height - 25);
-      ctx.lineTo(canvas.width, canvas.height - 25);
-      ctx.stroke();
-
-      // Draw Airfoil / Test Model
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate((-angleOfAttackDeg * Math.PI) / 180);
-
-      if (selectedModel.id === 'naca-airfoil') {
-        // Draw Airfoil shape
-        ctx.fillStyle = '#38bdf8';
-        ctx.shadowColor = '#0284c7';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.moveTo(-60, 0);
-        ctx.bezierCurveTo(-40, -25, 20, -20, 70, 0);
-        ctx.bezierCurveTo(20, 8, -40, 10, -60, 0);
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      } else if (selectedModel.id === 'sports-car') {
-        // Draw Car profile
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.roundRect(-50, -10, 100, 20, 6);
-        ctx.fill();
-        ctx.fillStyle = '#eab308';
-        ctx.beginPath();
-        ctx.roundRect(-20, -24, 45, 15, 4);
-        ctx.fill();
-      } else if (selectedModel.id === 'flat-plate') {
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(-6, -45, 12, 90);
-      } else {
-        // Cylinder
-        ctx.fillStyle = '#10b981';
-        ctx.beginPath();
-        ctx.arc(0, 0, 25, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      // Update & Draw Smoke Streamlines
-      ctx.save();
-      const speedPx = Math.max(1, (airspeedMs / 60) * 5.5);
-
-      for (const p of particles) {
-        if (isPlaying) {
-          p.x += speedPx;
-          if (p.x > canvas.width) {
-            p.x = 10;
-            p.y = 40 + p.streamId * 22;
-          }
-
-          // Flow deflection around body
-          const dx = p.x - centerX;
-          const dy = p.y - centerY;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist < 60) {
-            // Deflect over or under
-            if (dy < 0) {
-              p.y -= 1.8; // accelerated over upper camber
-            } else {
-              p.y += 1.2;
-            }
-
-            // Stall turbulence if applicable
-            if (isStalled && dx > 0) {
-              p.y += (Math.random() - 0.5) * 6;
-            }
-          }
-        }
-
-        // Draw smoke particle
-        ctx.fillStyle = isStalled && p.x > centerX ? 'rgba(239, 68, 68, 0.7)' : 'rgba(224, 242, 254, 0.6)';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, smokeStreams ? 2.5 : 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      // Draw Force Vectors on Airfoil
-      ctx.save();
-      // Lift Vector (Upwards)
-      if (Math.abs(liftForceN) > 10) {
-        const liftLen = Math.min(60, (liftForceN / 1500) * 45);
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(centerX, centerY - liftLen);
-        ctx.stroke();
-
-        ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 11px Cairo, sans-serif';
-        ctx.fillText(`الرفع: ${liftForceN} N`, centerX + 10, centerY - liftLen - 4);
-      }
-
-      // Drag Vector (Backwards)
-      if (dragForceN > 10) {
-        const dragLen = Math.min(60, (dragForceN / 1000) * 40);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(centerX + dragLen, centerY);
-        ctx.stroke();
-
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 11px Cairo, sans-serif';
-        ctx.fillText(`السحب: ${dragForceN} N`, centerX + dragLen + 6, centerY + 4);
-      }
-      ctx.restore();
-
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => cancelAnimationFrame(animId);
-  }, [airspeedMs, angleOfAttackDeg, selectedModel, isStalled, smokeStreams, isPlaying, liftForceN, dragForceN]);
+  };
 
   const handleQuizSubmit = (selected: number) => {
     setQuizAnswer(selected);
     setQuizSubmitted(true);
-    if (selected === 1) {
+    if (selected === 2) {
       setQuizScore((prev) => prev + 1);
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
@@ -296,27 +278,27 @@ export default function AerodynamicsWindTunnelSimulation() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 pt-24 pb-16 relative z-10">
-        {/* Top Header */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate('/scientific-simulations-hub')}
+              onClick={() => navigate('/experiments')}
               className="text-slate-400 hover:text-white mb-2 p-0 h-auto font-normal flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4 ml-1" />
-              العودة إلى مركز التجارب العلمية
+              العودة إلى مختبر التجارب العلمية
             </Button>
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-sky-500 to-indigo-700 rounded-2xl shadow-lg shadow-sky-500/20">
+              <div className="p-3 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-2xl shadow-lg shadow-sky-500/20">
                 <Wind className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-sky-300 via-cyan-200 to-indigo-300 bg-clip-text text-transparent">
-                  نفق الرياح والديناميكا الهوائية (Aerodynamics Wind Tunnel)
+                  نفق الرياح والديناميكا الهوائية ثلاثي الأبعاد (3D Wind Tunnel)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  محاكاة قوى الرفع والسحب، مبدأ برنولي، وزاوية الهجوم وظاهرة الانهيار الهوائي (Stall)
+                  محاكاة قوى الرفع والسحب ومبدأ برنولي وظاهرة الانهيار الهوائي (Aerodynamic Stall)
                 </p>
               </div>
             </div>
@@ -336,62 +318,59 @@ export default function AerodynamicsWindTunnelSimulation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setAngleOfAttackDeg(6);
-                setAirspeedMs(60);
-              }}
+              onClick={handleResetCamera}
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط زاوية الطيران
+              إعادة ضبط الكاميرا
             </Button>
           </div>
         </div>
 
-        {/* Live Status Summary */}
+        {/* Live Flight Telemetry */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">قوة الرفع (\(L\))</span>
-              <p className="text-lg font-bold text-emerald-400">{liftForceN} N</p>
-              <span className="text-[10px] text-slate-500 font-mono">\(C_L = {Cl}\)</span>
+              <span className="text-xs text-slate-400">قوة الرفع الإجمالية (L)</span>
+              <p className="text-lg font-bold text-emerald-400 font-mono">{liftForceN} N</p>
+              <span className="text-[10px] text-slate-500">نيوتن</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">قوة السحب / الإعاقة (\(D\))</span>
-              <p className="text-lg font-bold text-rose-400">{dragForceN} N</p>
-              <span className="text-[10px] text-slate-500 font-mono">\(C_D = {Cd}\)</span>
+              <span className="text-xs text-slate-400">قوة السحب الإجمالية (D)</span>
+              <p className="text-lg font-bold text-red-400 font-mono">{dragForceN} N</p>
+              <span className="text-[10px] text-slate-500">مقاومة الهواء</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">كفاءة الرفع للسحب (\(L/D\))</span>
-              <p className="text-lg font-bold text-sky-400">{liftToDragRatio}</p>
-              <span className="text-[10px] text-slate-500">الأداء الانسيابي</span>
+              <span className="text-xs text-slate-400">معامل الرفع (Cl)</span>
+              <p className="text-lg font-bold text-sky-400 font-mono">{Cl}</p>
+              <span className="text-[10px] text-slate-500">كفاءة المقطع</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">سرعة تدفق الهواء (\(v\))</span>
-              <p className="text-lg font-bold text-cyan-400">{airspeedMs} m/s</p>
-              <span className="text-[10px] text-slate-500 font-mono">{(airspeedMs * 3.6).toFixed(0)} km/h</span>
+              <span className="text-xs text-slate-400">نسبة الرفع للسحب (L/D)</span>
+              <p className="text-lg font-bold text-amber-400 font-mono">{liftToDragRatio}</p>
+              <span className="text-[10px] text-slate-500">الكفاءة الديناميكية</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">زاوية الهجوم (\(\alpha\))</span>
-              <p className="text-lg font-bold text-amber-400">{angleOfAttackDeg}°</p>
-              <span className="text-[10px] text-slate-500">زاوية الميل</span>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
-            <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">حالة الجريان الهوائي</span>
-              <p className={`text-xs font-bold mt-1 ${isStalled ? 'text-red-400' : 'text-emerald-400'}`}>
-                {isStalled ? '⚠️ انهيار هوائي (Stall)' : '✓ جريان انسيابي صفائحي'}
+              <span className="text-xs text-slate-400">حالة تدفق الهواء</span>
+              <p className={`text-xs font-bold mt-1 ${isStalled ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+                {isStalled ? '⚠️ انهيار هوائي (Stall)' : '✓ جريان انسيابي طبقي'}
               </p>
-              <span className="text-[10px] text-slate-500">حالة الجناح</span>
+              <span className="text-[10px] text-slate-500">{isStalled ? 'انفصال الدوامات' : 'متزن'}</span>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/70 border-slate-800">
+            <CardContent className="p-3 text-center">
+              <span className="text-xs text-slate-400">سرعة الهواء في النفق</span>
+              <p className="text-lg font-bold text-slate-200 font-mono">{windSpeedMs} m/s</p>
+              <span className="text-[10px] text-slate-500 font-mono">{(windSpeedMs * 3.6).toFixed(0)} km/h</span>
             </CardContent>
           </Card>
         </div>
@@ -401,15 +380,11 @@ export default function AerodynamicsWindTunnelSimulation() {
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
               <Activity className="w-4 h-4" />
-              نفق الرياح الافتراضي
-            </TabsTrigger>
-            <TabsTrigger value="curves" className="flex items-center gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
-              <Sparkles className="w-4 h-4" />
-              منحنى الرفع مع زاوية الهجوم
+              نفق الرياح ثلاثي الأبعاد (3D Wind Tunnel)
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
-              مبدأ برنولي وديناميكا الطيران
+              مبدأ برنولي ومعادلات نافيير-ستوكس
             </TabsTrigger>
             <TabsTrigger value="quiz" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
               <Award className="w-4 h-4" />
@@ -417,31 +392,49 @@ export default function AerodynamicsWindTunnelSimulation() {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Main Simulation */}
+          {/* TAB 1: 3D Simulation */}
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Canvas View */}
+              {/* 3D WebGL Canvas */}
               <div className="lg:col-span-2 space-y-4">
-                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl">
+                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Wind className="w-4 h-4 text-sky-400" />
-                      غرفة الاختبار ونفق الدخان (Smoke Streamlines Flow)
+                      غرفة الاختبار وخطوط الدخان ثلاثية الأبعاد (3D Streamlines)
                     </CardTitle>
-                    {isStalled && (
-                      <Badge variant="destructive" className="flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        تحذير: انفصال الطبقة الجدارية وانهيار الرفع
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className={`${isStalled ? 'border-red-500/50 text-red-400 bg-red-500/10' : 'border-sky-500/50 text-sky-300 bg-sky-500/10'}`}>
+                      {selectedAirfoil.nameAr.split(' ')[0]}
+                    </Badge>
                   </CardHeader>
-                  <CardContent className="p-4 flex flex-col items-center justify-center bg-slate-950/70">
-                    <canvas
-                      ref={canvasRef}
-                      width={560}
-                      height={340}
-                      className="w-full max-w-[560px] h-auto rounded-2xl border border-slate-800/80 bg-slate-950 shadow-inner"
-                    />
+                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                    <Canvas camera={{ position: [0, 2.5, 8.5], fov: 45 }}>
+                      <ambientLight intensity={0.6} />
+                      <directionalLight position={[10, 10, 10]} intensity={1.2} />
+                      <directionalLight position={[-10, -5, -10]} intensity={0.4} color="#38bdf8" />
+                      <WindTunnel3DScene
+                        alphaDeg={alphaDeg}
+                        windSpeedMs={windSpeedMs}
+                        selectedAirfoil={selectedAirfoil}
+                        isStalled={isStalled}
+                        liftForceN={liftForceN}
+                        dragForceN={dragForceN}
+                        isPlaying={isPlaying}
+                      />
+                      <OrbitControls
+                        ref={controlsRef}
+                        enablePan={true}
+                        enableZoom={true}
+                        minDistance={4}
+                        maxDistance={16}
+                      />
+                    </Canvas>
+
+                    {/* 3D Controls Helper */}
+                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
+                      <Compass className="w-3.5 h-3.5 text-sky-400" />
+                      <span>اسحب للتدوير 360° حول الجناح • راقب انفصال خطوط الدخان عند الانهيار</span>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -452,85 +445,68 @@ export default function AerodynamicsWindTunnelSimulation() {
                   <CardHeader className="py-3 px-4 border-b border-slate-800">
                     <CardTitle className="text-base font-bold text-slate-200 flex items-center gap-2">
                       <Gauge className="w-4 h-4 text-sky-400" />
-                      التحكم بالنفق الهوائي
+                      التحكم بزاوية الهجوم وسرعة الرياح
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-5">
-                    {/* Model Selector */}
+                    {/* Airfoil Selector */}
                     <div>
-                      <label className="text-xs font-semibold text-slate-300 block mb-2">شكل الجسم المختبر (Test Body)</label>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {MODELS.map((m) => (
+                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر مقطع الجناح</label>
+                      <div className="space-y-1.5">
+                        {AIRFOILS.map((foil) => (
                           <button
-                            key={m.id}
-                            onClick={() => setSelectedModel(m)}
-                            className={`p-2 rounded-xl text-xs font-medium border transition-all text-right flex justify-between items-center ${
-                              selectedModel.id === m.id
+                            key={foil.id}
+                            onClick={() => setSelectedAirfoil(foil)}
+                            className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
+                              selectedAirfoil.id === foil.id
                                 ? 'bg-sky-500/20 border-sky-500 text-sky-300'
                                 : 'bg-slate-800/60 border-slate-700 text-slate-400'
                             }`}
                           >
-                            <span className="font-bold">{m.nameAr}</span>
+                            <div className="font-bold text-slate-200">{foil.nameAr}</div>
+                            <div className="text-[10px] opacity-75">زاوية الانهيار: {foil.stallAngleDeg}° • {foil.description}</div>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Airspeed Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">سرعة الرياح (\(v\))</span>
-                        <span className="font-mono font-bold text-sky-400">{airspeedMs} m/s</span>
-                      </div>
-                      <Slider
-                        value={[airspeedMs]}
-                        min={0}
-                        max={120}
-                        step={5}
-                        onValueChange={(val) => setAirspeedMs(val[0])}
-                        className="py-1"
-                      />
-                    </div>
-
                     {/* Angle of Attack Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">زاوية الهجوم (\(\alpha\))</span>
-                        <span className="font-mono font-bold text-amber-400">{angleOfAttackDeg}°</span>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">زاوية الهجوم (Angle of Attack α)</label>
+                        <span className={`text-xs font-mono font-bold ${isStalled ? 'text-red-400' : 'text-emerald-400'}`}>
+                          {alphaDeg > 0 ? `+${alphaDeg.toFixed(1)}` : alphaDeg.toFixed(1)}°
+                        </span>
                       </div>
                       <Slider
-                        value={[angleOfAttackDeg]}
-                        min={-10}
+                        value={[alphaDeg]}
+                        min={-5}
                         max={25}
-                        step={1}
-                        onValueChange={(val) => setAngleOfAttackDeg(val[0])}
+                        step={0.5}
+                        onValueChange={(val) => setAlphaDeg(val[0])}
                         className="py-1"
                       />
-                      <div className="flex justify-between text-[10px] text-slate-500">
-                        <span>هبوط (-10°)</span>
-                        <span>0°</span>
-                        <span>انهيار (+25°)</span>
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>-5°</span>
+                        <span className="text-amber-400 font-bold">الانهيار ≈ {selectedAirfoil.stallAngleDeg}°</span>
+                        <span>+25°</span>
                       </div>
                     </div>
 
-                    {/* Altitude Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">الارتفاع عن سطح البحر (كثافة الهواء)</span>
-                        <span className="font-mono font-bold text-indigo-300">{altitudeMeters} m</span>
+                    {/* Wind Speed Slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">سرعة الهواء (Airspeed)</label>
+                        <span className="text-xs font-mono text-sky-400 font-bold">{windSpeedMs} m/s</span>
                       </div>
                       <Slider
-                        value={[altitudeMeters]}
-                        min={0}
-                        max={10000}
-                        step={500}
-                        onValueChange={(val) => setAltitudeMeters(val[0])}
+                        value={[windSpeedMs]}
+                        min={10}
+                        max={100}
+                        step={1}
+                        onValueChange={(val) => setWindSpeedMs(val[0])}
                         className="py-1"
                       />
-                      <div className="flex justify-between text-[10px] text-slate-500">
-                        <span>سطح البحر (1.22 kg/m³)</span>
-                        <span>10,000m (0.37 kg/m³)</span>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -538,55 +514,33 @@ export default function AerodynamicsWindTunnelSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Polar Curves */}
-          <TabsContent value="curves" className="space-y-4">
-            <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4">
-              <h3 className="text-base font-bold text-sky-300">منحنى معامل الرفع مع زاوية الهجوم (Cl vs α)</h3>
-              <p className="text-xs text-slate-400">
-                لاحظ التزايد الخطي لمعامل الرفع حتى زاوية الانهيار (α ≈ 15°)، حيث ينفصل تيار الهواء العلوي ويهبط الرفع بشكل حاد.
-              </p>
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={polarData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="alpha" stroke="#94a3b8" label={{ value: 'زاوية الهجوم (°)', position: 'bottom', fill: '#94a3b8', fontSize: 12 }} />
-                    <YAxis stroke="#94a3b8" label={{ value: 'معامل الرفع Cl', angle: -90, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8 }} />
-                    <ReferenceLine x={15} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'زاوية الانهيار Stall', fill: '#ef4444', fontSize: 10 }} />
-                    <Line type="monotone" dataKey="Cl" stroke="#38bdf8" strokeWidth={2.5} dot={false} name="معامل الرفع Cl" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* TAB 3: Theory */}
+          {/* TAB 2: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
-              <h3 className="text-xl font-bold text-sky-300">الديناميكا الهوائية وتوليد قوى الرفع للطائرات</h3>
+              <h3 className="text-xl font-bold text-sky-300">فيزياء الطيران وميكانيكا الموائع الديناميكية</h3>
               <p>
-                تنشأ قوة الرفع بشكل أساسي نتيجة انحناء تيار الهواء حول الجناح، مما يُحدث فرقاً في الضغط بين السطح العلوي والسفلي للجناح وفقاً لمبدأ برنولي وقوانين نيوتن للحركة.
+                تتولد قوة الرفع (Lift) على أجنحة الطائرات بتكامل مبدأ برنولي (تفاضل الضغط بين السطحين العلوي والسفلي) وقانون نيوتن الثالث للحركة (دفع كتلة الهواء للأسفل Downwash).
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">1. معادلة قوة الرفع (Lift Equation)</h4>
-                  <p className="text-sm font-mono text-sky-300">L = ½ · CL · ρ · v² · A</p>
+                  <h4 className="font-bold text-amber-300">1. معادلة الرفع والسحب الديناميكي</h4>
+                  <p className="text-sm font-mono text-sky-300">L = ½ · ρ · v² · S · Cl</p>
                   <p className="text-xs text-slate-400">
-                    تعتمد قوة الرفع على مربع سرعة الطائرة (\(v^2\)) وكثافة الهواء (\(\rho\)) ومساحة الجناح (\(A\)).
+                    تعتمد قوة الرفع طردياً على مربع السرعة (v²)، وكثافة الهواء (ρ)، ومساحة الجناح (S)، ومعامل الرفع (Cl).
                   </p>
                 </div>
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">2. ظاهرة الانهيار الهوائي (Aerodynamic Stall)</h4>
+                  <h4 className="font-bold text-amber-300">2. ظاهرة الانهيار الهوائي (Stall)</h4>
                   <p className="text-xs text-slate-400">
-                    عند زيادة زاوية الهجوم أكثر من اللازم، يعجز تدفق الهواء عن تتبع انحناء السطح العلوي، فتتكون دوامات هوائية مضطربة تؤدي إلى فقدان فوري ومفاجئ لقوة الرفع.
+                    عند تجاوز زاوية الهجوم الحرجة (Critical α)، تعجز الطبقة المتاخمة (Boundary layer) عن البقاء ملتصقة بالسطح العلوي للجناح، فتنفصل مكونة دوامات هوائية مضطربة تؤدي لانهيار الرفع وارتفاع السحب بشكل كارثي.
                   </p>
                 </div>
               </div>
             </Card>
           </TabsContent>
 
-          {/* TAB 4: Quiz */}
+          {/* TAB 3: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">
@@ -601,15 +555,15 @@ export default function AerodynamicsWindTunnelSimulation() {
 
               <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-4">
                 <p className="font-semibold text-slate-200">
-                  سؤال: إذا تضاعفت سرعة الطائرة في الجو إلى الضعف (\(2v\)) مع بقاء باقي العوامل ثابتة، فكم مرة تتضاعف قوة الرفع (\(L\)) المتولدة على الأجنحة؟
+                  سؤال: ماذا يحدث لتدفق الهواء وقوة الرفع عندما تزيد زاوية الهجوم (α) عن زاوية الانهيار الحرجة للجناح؟
                 </p>
 
                 <div className="space-y-2">
                   {[
-                    { id: 0, text: 'تتضاعف مرتين فقط (2L).' },
-                    { id: 1, text: 'تتضاعف 4 مرات (4L) لأن قوة الرفع تتناسب مع مربع السرعة.' },
-                    { id: 2, text: 'تبقى ثابتة دون تغيير.' },
-                    { id: 3, text: 'تتضاعف 8 مرات.' },
+                    { id: 0, text: 'تتضاعف قوة الرفع وتصل الطائرة لأعلى سرعة.' },
+                    { id: 1, text: 'ينعدم السحب تماماً.' },
+                    { id: 2, text: 'ينفصل تدفق الهواء عن السطح العلوي للجناح مشكلاً دوامات مضطربة، فتهبط قوة الرفع فجأة ويزداد السحب بشدة (Stall).' },
+                    { id: 3, text: 'تتحول الطائرة إلى طائرة عمودية.' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -617,7 +571,7 @@ export default function AerodynamicsWindTunnelSimulation() {
                       onClick={() => handleQuizSubmit(option.id)}
                       className={`w-full text-right p-3 rounded-xl border text-sm transition-all ${
                         quizSubmitted
-                          ? option.id === 1
+                          ? option.id === 2
                             ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
                             : quizAnswer === option.id
                             ? 'bg-red-500/20 border-red-500 text-red-300'
@@ -631,14 +585,14 @@ export default function AerodynamicsWindTunnelSimulation() {
                 </div>
 
                 {quizSubmitted && (
-                  <div className={`p-3 rounded-xl text-xs ${quizAnswer === 1 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
-                    {quizAnswer === 1 ? (
+                  <div className={`p-3 rounded-xl text-xs ${quizAnswer === 2 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
+                    {quizAnswer === 2 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة وممتازة! معادلة الرفع توضح أن \(L \propto v^2\)، وبالتالي مضاعفة السرعة تضاعف قوة الرفع 4 مرات (\((2)^2 = 4\)).</span>
+                        <span>إجابة صحيحة ورائعة! الانهيار الهوائي (Stall) يحدث بسبب انفصال تدفق الهواء عن السطح العلوي عند الزوايا العالية، مما يفقد الجناح قدرته على توليد الرفع.</span>
                       </div>
                     ) : (
-                      <span>إجابة غير صحيحة. قوة الرفع تتناسب طردياً مع مربع السرعة (\(v^2\))، فعند مضاعفة السرعة تصبح قوة الرفع أربعة أضعاف.</span>
+                      <span>إجابة غير صحيحة. تجاوز الزاوية الحرجة يؤدي إلى انفصال الهواء وانهيار الرفع (Stall).</span>
                     )}
                   </div>
                 )}

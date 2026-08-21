@@ -1,237 +1,229 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, Activity, Sparkles, BookOpen, Layers, Radio, Sun } from 'lucide-react';
+import { 
+  ArrowLeft, Layers, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
+  Activity, Sparkles, BookOpen, Zap, Compass, Eye, ShieldAlert 
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 
-interface Crystal {
+interface CrystalSample {
   id: string;
   nameAr: string;
   nameEn: string;
-  dSpacingNm: number; // Interplanar spacing d in nm
-  latticeType: string;
-  atomColor: string;
+  dSpacingAngstrom: number; // d in Å (1 Å = 0.1 nm)
+  crystalSystemAr: string;
+  color: string;
 }
 
-const CRYSTALS: Crystal[] = [
-  { id: 'nacl', nameAr: 'ملح الطعام (NaCl - كلوريد الصوديوم)', nameEn: 'Sodium Chloride', dSpacingNm: 0.282, latticeType: 'مكعب مركزي الأوجه (FCC)', atomColor: '#84cc16' },
-  { id: 'silicon', nameAr: 'السيليكون البلوري (Silicon)', nameEn: 'Silicon', dSpacingNm: 0.314, latticeType: 'بنية الألماس المكعبة', atomColor: '#38bdf8' },
-  { id: 'gold', nameAr: 'الذهب النقي (Gold - Au)', nameEn: 'Gold', dSpacingNm: 0.235, latticeType: 'مكعب مركزي الأوجه', atomColor: '#eab308' },
-  { id: 'graphene', nameAr: 'الجرافيت / الجرافين (Graphite)', nameEn: 'Graphite', dSpacingNm: 0.335, latticeType: 'طبقات سداسية', atomColor: '#94a3b8' },
+const CRYSTALS: CrystalSample[] = [
+  { id: 'nacl', nameAr: 'ملح الطعام (NaCl)', nameEn: 'Sodium Chloride', dSpacingAngstrom: 2.82, crystalSystemAr: 'مكعب مركزي الوجه (FCC)', color: '#38bdf8' },
+  { id: 'silicon', nameAr: 'السيليكون (Si)', nameEn: 'Silicon (111)', dSpacingAngstrom: 3.13, crystalSystemAr: 'بنية الألماس المكعبة', color: '#cbd5e1' },
+  { id: 'aluminum', nameAr: 'الألمنيوم (Al)', nameEn: 'Aluminum (200)', dSpacingAngstrom: 2.02, crystalSystemAr: 'مكعب مركزي الأوجه', color: '#94a3b8' },
+  { id: 'gold', nameAr: 'الذهب (Au)', nameEn: 'Gold (111)', dSpacingAngstrom: 2.35, crystalSystemAr: 'مكعب مركزي الأوجه', color: '#fbbf24' },
 ];
 
-interface XRaySource {
-  id: string;
-  nameAr: string;
-  wavelengthNm: number; // lambda in nm
+const XRAY_WAVELENGTH_ANGSTROM = 1.5406; // Cu K-alpha in Å
+
+// 3D XRD Goniometer Scene
+interface XRD3DProps {
+  thetaDeg: number;
+  selectedCrystal: CrystalSample;
+  isConstructive: boolean;
+  isPlaying: boolean;
 }
 
-const SOURCES: XRaySource[] = [
-  { id: 'cu-ka', nameAr: 'نحاس Cu-Kα (0.1542 nm)', wavelengthNm: 0.1542 },
-  { id: 'mo-ka', nameAr: 'موليبدينوم Mo-Kα (0.0711 nm)', wavelengthNm: 0.0711 },
-  { id: 'co-ka', nameAr: 'كوبالت Co-Kα (0.1789 nm)', wavelengthNm: 0.1789 },
-];
+function Goniometer3DScene({
+  thetaDeg,
+  selectedCrystal,
+  isConstructive,
+  isPlaying,
+}: XRD3DProps) {
+  const thetaRad = (thetaDeg * Math.PI) / 180;
+  const detectorAngleRad = ((2 * thetaDeg) * Math.PI) / 180;
+
+  // 3D Atomic Lattice Grid
+  const latticePoints = useMemo(() => {
+    const points: Array<[number, number, number, boolean]> = [];
+    for (let x = -2; x <= 2; x++) {
+      for (let y = -1; y <= 1; y++) {
+        for (let z = -2; z <= 2; z++) {
+          const isIonA = (x + y + z) % 2 === 0;
+          points.push([x * 0.45, y * 0.45, z * 0.45, isIonA]);
+        }
+      }
+    }
+    return points;
+  }, []);
+
+  return (
+    <group>
+      {/* BASE GONIOMETER PLATTER */}
+      <mesh position={[0, -1.6, 0]}>
+        <cylinderGeometry args={[3.8, 4.0, 0.4, 48]} />
+        <meshStandardMaterial color="#1e293b" metalness={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* 3D ROTATING CRYSTAL SAMPLE (At Center x=0, y=0, z=0) */}
+      <group rotation={[0, -thetaRad, 0]}>
+        {/* Crystal Atomic Lattice */}
+        {latticePoints.map((pt, idx) => (
+          <mesh key={`atom-${idx}`} position={[pt[0], pt[1], pt[2]]}>
+            <sphereGeometry args={[pt[3] ? 0.09 : 0.06, 12, 12]} />
+            <meshStandardMaterial
+              color={pt[3] ? selectedCrystal.color : '#f1f5f9'}
+              metalness={0.7}
+              roughness={0.2}
+            />
+          </mesh>
+        ))}
+        {/* Crystal Sample Mount Post */}
+        <mesh position={[0, -0.9, 0]}>
+          <cylinderGeometry args={[0.12, 0.12, 1.0, 16]} />
+          <meshStandardMaterial color="#64748b" metalness={0.9} />
+        </mesh>
+      </group>
+
+      {/* FIXED X-RAY TUBE COLLIMATOR (Left Side at θ angle) */}
+      <group position={[-3.5, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <mesh>
+          <cylinderGeometry args={[0.3, 0.45, 1.5, 24]} />
+          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+        </mesh>
+        {/* Incident X-ray Beam Tube */}
+        <mesh position={[0, 1.0, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.8, 16]} />
+          <meshStandardMaterial color="#e2e8f0" metalness={0.9} />
+        </mesh>
+        <Html position={[0, 1.8, 0]} center>
+          <div className="bg-slate-900/90 text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            أنبوب الأشعة السينية (Cu Kα)
+          </div>
+        </Html>
+      </group>
+
+      {/* 3D INCIDENT BEAM (Cyan Line to Crystal) */}
+      <mesh position={[-1.75, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.03, 0.03, 3.5, 8]} />
+        <meshBasicMaterial color="#38bdf8" />
+      </mesh>
+
+      {/* 3D ROTATING DETECTOR ARM (At 2θ angle) */}
+      <group rotation={[0, detectorAngleRad, 0]}>
+        {/* Arm Rod */}
+        <mesh position={[2.2, -1.2, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.06, 0.06, 3.2, 16]} />
+          <meshStandardMaterial color="#475569" metalness={0.8} />
+        </mesh>
+        {/* Scintillation Detector Cylinder */}
+        <mesh position={[3.6, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.4, 0.5, 1.4, 24]} />
+          <meshStandardMaterial color="#1e293b" metalness={0.8} />
+        </mesh>
+
+        {/* 3D DIFFRACTED / REFLECTED BEAM */}
+        <mesh position={[1.8, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.03, 0.03, 3.6, 8]} />
+          <meshBasicMaterial
+            color={isConstructive ? '#22c55e' : '#64748b'}
+            opacity={isConstructive ? 0.9 : 0.25}
+            transparent
+          />
+        </mesh>
+
+        {/* Detector Flash on Constructive Interference */}
+        {isConstructive && (
+          <pointLight position={[3.6, 0, 0]} color="#22c55e" intensity={4} distance={4} />
+        )}
+
+        <Html position={[3.6, 1.0, 0]} center>
+          <div className="bg-slate-900/90 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            كاشف الحيود (2θ = {(2 * thetaDeg).toFixed(1)}°)
+          </div>
+        </Html>
+      </group>
+    </group>
+  );
+}
 
 export default function XRayDiffractionSimulation() {
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const controlsRef = useRef<any>(null);
 
-  // Experiment Parameters
-  const [selectedCrystal, setSelectedCrystal] = useState<Crystal>(CRYSTALS[0]);
-  const [selectedSource, setSelectedSource] = useState<XRaySource>(SOURCES[0]);
-  const [thetaDeg, setThetaDeg] = useState<number>(15.8); // incident angle in degrees (5 to 65)
-  const [diffractionOrder, setDiffractionOrder] = useState<number>(1); // n = 1, 2
+  // States
+  const [selectedCrystal, setSelectedCrystal] = useState<CrystalSample>(CRYSTALS[0]);
+  const [thetaDeg, setThetaDeg] = useState<number>(15.8); // Bragg peak for NaCl
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
 
-  // Quiz state
+  // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Bragg's Law: n * lambda = 2 * d * sin(theta)
-  // Optimal Bragg Angle for n=1: theta_bragg = asin(n * lambda / (2 * d))
-  const braggAngleDeg = useMemo(() => {
-    const ratio = (diffractionOrder * selectedSource.wavelengthNm) / (2 * selectedCrystal.dSpacingNm);
-    if (ratio > 1) return null;
-    return +((Math.asin(ratio) * 180) / Math.PI).toFixed(2);
-  }, [diffractionOrder, selectedSource, selectedCrystal]);
+  // Bragg's condition: lambda = 2 * d * sin(theta) => sin(theta) = lambda / (2d)
+  const theoreticalPeakTheta = useMemo(() => {
+    const sinTheta = XRAY_WAVELENGTH_ANGSTROM / (2 * selectedCrystal.dSpacingAngstrom);
+    const rad = Math.asin(sinTheta);
+    return +(rad * (180 / Math.PI)).toFixed(1);
+  }, [selectedCrystal]);
 
-  // Path Difference: Delta = 2 * d * sin(theta)
-  const pathDifferenceNm = useMemo(() => {
-    const thetaRad = (thetaDeg * Math.PI) / 180;
-    return +(2 * selectedCrystal.dSpacingNm * Math.sin(thetaRad)).toFixed(4);
-  }, [thetaDeg, selectedCrystal]);
+  // Is currently at constructive interference peak?
+  const isConstructive = Math.abs(thetaDeg - theoreticalPeakTheta) < 0.6;
 
-  // Relative Interference Intensity (diffraction peak sinc/gaussian function)
-  const intensity = useMemo(() => {
-    if (!braggAngleDeg) return 0;
-    const diff = thetaDeg - braggAngleDeg;
-    // Gaussian peak with FWHM of 1.2 degrees
-    const val = Math.exp(-Math.pow(diff / 1.0, 2));
-    return +(val * 100).toFixed(1);
-  }, [thetaDeg, braggAngleDeg]);
+  // Diffracted intensity calculation (Lorentzian line profile)
+  const relativeIntensity = useMemo(() => {
+    const diff = thetaDeg - theoreticalPeakTheta;
+    const peak = 100 / (1 + Math.pow(diff / 0.5, 2));
+    return +peak.toFixed(1);
+  }, [thetaDeg, theoreticalPeakTheta]);
 
-  const isConstructive = intensity > 80;
-
-  // Generate Diffractogram curve (Intensity vs 2*Theta)
-  const diffractogramData = useMemo(() => {
+  // Generate 2Theta Diffractogram for Recharts
+  const xrdData = useMemo(() => {
     const data = [];
-    for (let t = 10; t <= 120; t += 0.5) {
-      const theta = t / 2;
-      let peak = 5; // background noise
-      if (braggAngleDeg) {
-        const peak1 = 95 * Math.exp(-Math.pow((theta - braggAngleDeg) / 1.0, 2));
-        peak += peak1;
+    for (let t = 8; t <= 45; t += 0.5) {
+      const diff1 = t - theoreticalPeakTheta;
+      const peak1 = 100 / (1 + Math.pow(diff1 / 0.4, 2));
+      // Second order peak n=2
+      const sinTheta2 = (2 * XRAY_WAVELENGTH_ANGSTROM) / (2 * selectedCrystal.dSpacingAngstrom);
+      let peak2 = 0;
+      if (sinTheta2 <= 1) {
+        const theta2 = Math.asin(sinTheta2) * (180 / Math.PI);
+        const diff2 = t - theta2;
+        peak2 = 45 / (1 + Math.pow(diff2 / 0.4, 2));
       }
+
       data.push({
-        twoTheta: +t.toFixed(1),
-        intensity: +peak.toFixed(1),
+        twoTheta: +(2 * t).toFixed(1),
+        theta: t,
+        intensity: +(peak1 + peak2 + (Math.random() * 2)).toFixed(1),
       });
     }
     return data;
-  }, [braggAngleDeg]);
+  }, [theoreticalPeakTheta, selectedCrystal]);
 
-  // Canvas visualizer
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    let waveOffset = 0;
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      waveOffset = (waveOffset + 0.08) % 1;
-
-      // Dark Chamber Background
-      ctx.fillStyle = '#090d16';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const centerX = canvas.width / 2;
-      const crystalTopY = 170;
-      const dPixel = 50; // pixel distance between atomic layers
-
-      // Draw Atomic Lattice Layers (Top plane & Bottom plane)
-      for (let layer = 0; layer < 3; layer++) {
-        const py = crystalTopY + layer * dPixel;
-
-        // Draw crystal plane line
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(60, py);
-        ctx.lineTo(canvas.width - 60, py);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Draw Lattice Atoms
-        for (let x = 80; x <= canvas.width - 80; x += 40) {
-          ctx.save();
-          ctx.fillStyle = selectedCrystal.atomColor;
-          ctx.shadowColor = selectedCrystal.atomColor;
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(x, py, 7, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
-      }
-
-      // Draw Interplanar Spacing 'd' Dimension line
-      ctx.save();
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(50, crystalTopY);
-      ctx.lineTo(50, crystalTopY + dPixel);
-      ctx.stroke();
-
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = 'bold 11px Cairo, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`d = ${selectedCrystal.dSpacingNm} nm`, 42, crystalTopY + dPixel / 2 + 4);
-      ctx.restore();
-
-      // Incoming & Reflected X-Rays
-      const thetaRad = (thetaDeg * Math.PI) / 180;
-      const rayLength = 180;
-      const hitX = centerX;
-      const hitY1 = crystalTopY;
-      const hitY2 = crystalTopY + dPixel;
-
-      // Incident ray 1 (hits top plane)
-      const srcX1 = hitX - Math.cos(thetaRad) * rayLength;
-      const srcY1 = hitY1 - Math.sin(thetaRad) * rayLength;
-      // Reflected ray 1
-      const refX1 = hitX + Math.cos(thetaRad) * rayLength;
-      const refY1 = hitY1 - Math.sin(thetaRad) * rayLength;
-
-      // Incident ray 2 (hits bottom plane)
-      const srcX2 = hitX - Math.cos(thetaRad) * (rayLength + dPixel / Math.sin(thetaRad || 0.1));
-      const srcY2 = hitY2 - Math.sin(thetaRad) * (rayLength + dPixel / Math.sin(thetaRad || 0.1));
-      // Reflected ray 2
-      const refX2 = hitX + Math.cos(thetaRad) * (rayLength + dPixel / Math.sin(thetaRad || 0.1));
-      const refY2 = hitY2 - Math.sin(thetaRad) * (rayLength + dPixel / Math.sin(thetaRad || 0.1));
-
-      // Draw X-ray beams
-      ctx.save();
-      const beamColor = isConstructive ? '#22c55e' : '#38bdf8';
-      ctx.strokeStyle = beamColor;
-      ctx.shadowColor = beamColor;
-      ctx.shadowBlur = isConstructive ? 14 : 6;
-      ctx.lineWidth = isConstructive ? 3.5 : 2;
-
-      // Ray 1 path
-      ctx.beginPath();
-      ctx.moveTo(srcX1, srcY1);
-      ctx.lineTo(hitX, hitY1);
-      ctx.lineTo(refX1, refY1);
-      ctx.stroke();
-
-      // Ray 2 path
-      ctx.beginPath();
-      ctx.moveTo(srcX2, srcY2);
-      ctx.lineTo(hitX, hitY2);
-      ctx.lineTo(refX2, refY2);
-      ctx.stroke();
-
-      // Draw Angle Arc θ
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(hitX - 60, hitY1, 30, Math.PI, Math.PI - thetaRad, true);
-      ctx.stroke();
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = '11px Cairo, sans-serif';
-      ctx.fillText(`θ = ${thetaDeg}°`, hitX - 100, hitY1 - 8);
-
-      ctx.restore();
-
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => cancelAnimationFrame(animId);
-  }, [thetaDeg, selectedCrystal, isConstructive]);
+  const handleResetCamera = () => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  };
 
   const handleQuizSubmit = (selected: number) => {
     setQuizAnswer(selected);
     setQuizSubmitted(true);
-    if (selected === 0) {
+    if (selected === 1) {
       setQuizScore((prev) => prev + 1);
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
@@ -243,27 +235,27 @@ export default function XRayDiffractionSimulation() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 pt-24 pb-16 relative z-10">
-        {/* Top Header */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate('/scientific-simulations-hub')}
+              onClick={() => navigate('/experiments')}
               className="text-slate-400 hover:text-white mb-2 p-0 h-auto font-normal flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4 ml-1" />
-              العودة إلى مركز التجارب العلمية
+              العودة إلى مختبر التجارب العلمية
             </Button>
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-700 rounded-2xl shadow-lg shadow-cyan-500/20">
-                <Sun className="w-8 h-8 text-white" />
+              <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl shadow-lg shadow-cyan-500/20">
+                <Layers className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-cyan-300 via-sky-200 to-indigo-400 bg-clip-text text-transparent">
-                  حيود الأشعة السينية وبنية البلورات (قانون براغ)
+                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-cyan-300 via-sky-200 to-blue-400 bg-clip-text text-transparent">
+                  حيود الأشعة السينية وقانون براغ ثلاثية الأبعاد (3D XRD)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  استكشاف التداخل البناء للأشعة السينية وقياس المسافات البينية للشبكات البلورية
+                  تداخل الأشعة السينية على المستويات الذرية وقياس أبعاد الشبكة البلورية بدقة الأنغستروم
                 </p>
               </div>
             </div>
@@ -283,11 +275,11 @@ export default function XRayDiffractionSimulation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setThetaDeg(braggAngleDeg || 15.8)}
+              onClick={handleResetCamera}
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              ضبط زاوية براغ الدقيقة
+              إعادة ضبط الكاميرا
             </Button>
           </div>
         </div>
@@ -296,48 +288,46 @@ export default function XRayDiffractionSimulation() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">زاوية السقوط (\(\theta\))</span>
-              <p className="text-lg font-bold text-sky-400">{thetaDeg}°</p>
-              <span className="text-[10px] text-slate-500">\(2\theta = {(thetaDeg * 2).toFixed(1)}^\circ\)</span>
+              <span className="text-xs text-slate-400">زاوية الحيود (θ)</span>
+              <p className="text-lg font-bold text-cyan-400 font-mono">{thetaDeg.toFixed(1)}°</p>
+              <span className="text-[10px] text-slate-500">زاوية السقوط</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">زاوية براغ النظرية (\(\theta_B\))</span>
-              <p className="text-lg font-bold text-emerald-400">{braggAngleDeg ? `${braggAngleDeg}°` : 'غير ممكنة'}</p>
-              <span className="text-[10px] text-slate-500">رتبة الحيود n = {diffractionOrder}</span>
+              <span className="text-xs text-slate-400">زاوية الكاشف (2θ)</span>
+              <p className="text-lg font-bold text-sky-400 font-mono">{(2 * thetaDeg).toFixed(1)}°</p>
+              <span className="text-[10px] text-slate-500">ذراع مقياس الزوايا</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">المسافة البينية (\(d\))</span>
-              <p className="text-lg font-bold text-amber-400">{selectedCrystal.dSpacingNm} nm</p>
-              <span className="text-[10px] text-slate-500 font-mono">{(selectedCrystal.dSpacingNm * 10).toFixed(2)} Å</span>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
-            <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">طول موجة الأشعة (\(\lambda\))</span>
-              <p className="text-lg font-bold text-cyan-400">{selectedSource.wavelengthNm} nm</p>
-              <span className="text-[10px] text-slate-500 font-mono">{(selectedSource.wavelengthNm * 10).toFixed(2)} Å</span>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
-            <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">فرق المسار (\(2d\sin\theta\))</span>
-              <p className="text-lg font-bold text-purple-400">{pathDifferenceNm} nm</p>
-              <span className="text-[10px] text-slate-500">
-                {(pathDifferenceNm / selectedSource.wavelengthNm).toFixed(2)} \(\lambda\)
-              </span>
+              <span className="text-xs text-slate-400">المسافة البينية (d)</span>
+              <p className="text-lg font-bold text-amber-400 font-mono">{selectedCrystal.dSpacingAngstrom} Å</p>
+              <span className="text-[10px] text-slate-500">{selectedCrystal.nameAr.split(' ')[0]}</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
               <span className="text-xs text-slate-400">شدة إشارة الحيود</span>
-              <p className="text-lg font-bold text-emerald-400">{intensity}%</p>
-              <span className="text-[10px] text-slate-500">
-                {isConstructive ? '✨ تداخل بناء تام' : 'تداخل هدام'}
-              </span>
+              <p className={`text-lg font-bold font-mono ${isConstructive ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`}>
+                {relativeIntensity}%
+              </p>
+              <span className="text-[10px] text-slate-500">{isConstructive ? 'قمة تداخل بناء' : 'تداخل هدام'}</span>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/70 border-slate-800">
+            <CardContent className="p-3 text-center">
+              <span className="text-xs text-slate-400">زاوية القمة النظرية</span>
+              <p className="text-lg font-bold text-purple-400 font-mono">{theoreticalPeakTheta}°</p>
+              <span className="text-[10px] text-slate-500">2θ = {(2 * theoreticalPeakTheta).toFixed(1)}°</span>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/70 border-slate-800">
+            <CardContent className="p-3 text-center">
+              <span className="text-xs text-slate-400">الطول الموجي للأشعة</span>
+              <p className="text-lg font-bold text-slate-200 font-mono">1.5406 Å</p>
+              <span className="text-[10px] text-slate-500">نحاس Cu Kα</span>
             </CardContent>
           </Card>
         </div>
@@ -347,15 +337,15 @@ export default function XRayDiffractionSimulation() {
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
               <Activity className="w-4 h-4" />
-              الشبكة البلورية ومقياس الزوايا
+              مقياس الزوايا البلوري ثلاثي الأبعاد (3D Goniometer)
             </TabsTrigger>
             <TabsTrigger value="diffractogram" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
-              <Sparkles className="w-4 h-4" />
-              مخطط الحيود (Diffractogram)
+              <Layers className="w-4 h-4" />
+              مخطط الحيود (XRD Diffractogram)
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
-              قانون براغ وعلم البلورات
+              قانون براغ والشبكات البلورية
             </TabsTrigger>
             <TabsTrigger value="quiz" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
               <Award className="w-4 h-4" />
@@ -363,28 +353,46 @@ export default function XRayDiffractionSimulation() {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Main Simulation */}
+          {/* TAB 1: 3D Simulation */}
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Canvas View */}
+              {/* 3D WebGL Canvas */}
               <div className="lg:col-span-2 space-y-4">
-                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl">
+                <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Layers className="w-4 h-4 text-cyan-400" />
-                      انعكاس وتداخل حزم الأشعة السينية على المستويات الذرية
+                      جهاز حيود الأشعة السينية ثلاثي الأبعاد (3D XRD)
                     </CardTitle>
-                    <Badge variant="outline" className={`${isConstructive ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-400'}`}>
-                      {isConstructive ? '✓ تداخل بناء (ذروة حيود براغ)' : 'تداخل هدام (إلغاء الموجات)'}
+                    <Badge variant="outline" className={`${isConstructive ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-400'}`}>
+                      {isConstructive ? '✓ تداخل بناء (nλ = 2d sinθ)' : 'تداخل هدام'}
                     </Badge>
                   </CardHeader>
-                  <CardContent className="p-4 flex flex-col items-center justify-center bg-slate-950/70">
-                    <canvas
-                      ref={canvasRef}
-                      width={560}
-                      height={340}
-                      className="w-full max-w-[560px] h-auto rounded-2xl border border-slate-800/80 bg-slate-950 shadow-inner"
-                    />
+                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                    <Canvas camera={{ position: [0, 5.5, 8.5], fov: 45 }}>
+                      <ambientLight intensity={0.6} />
+                      <directionalLight position={[10, 10, 10]} intensity={1.2} />
+                      <directionalLight position={[-10, -5, -10]} intensity={0.4} color="#38bdf8" />
+                      <Goniometer3DScene
+                        thetaDeg={thetaDeg}
+                        selectedCrystal={selectedCrystal}
+                        isConstructive={isConstructive}
+                        isPlaying={isPlaying}
+                      />
+                      <OrbitControls
+                        ref={controlsRef}
+                        enablePan={true}
+                        enableZoom={true}
+                        minDistance={4}
+                        maxDistance={16}
+                      />
+                    </Canvas>
+
+                    {/* 3D Controls Helper */}
+                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
+                      <Compass className="w-3.5 h-3.5 text-sky-400" />
+                      <span>اسحب للتدوير 360° حول البلورة والذراع الدوار</span>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -394,66 +402,61 @@ export default function XRayDiffractionSimulation() {
                 <Card className="bg-slate-900/90 border-slate-800 shadow-xl">
                   <CardHeader className="py-3 px-4 border-b border-slate-800">
                     <CardTitle className="text-base font-bold text-slate-200 flex items-center gap-2">
-                      <Radio className="w-4 h-4 text-cyan-400" />
-                      التحكم بالمصدر والبلورة
+                      <Zap className="w-4 h-4 text-cyan-400" />
+                      التحكم بزاوية السقوط والبلورة
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-5">
-                    {/* Angle Slider */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">زاوية السقوط (\(\theta\))</span>
-                        <span className="font-mono font-bold text-cyan-400">{thetaDeg}°</span>
-                      </div>
-                      <Slider
-                        value={[thetaDeg]}
-                        min={5}
-                        max={60}
-                        step={0.1}
-                        onValueChange={(val) => setThetaDeg(+val[0].toFixed(1))}
-                        className="py-1"
-                      />
-                    </div>
-
-                    {/* Crystal Selection */}
+                    {/* Crystal Selector */}
                     <div>
-                      <label className="text-xs font-semibold text-slate-300 block mb-2">نوع البلورة (Crystal Sample)</label>
-                      <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر العينة البلورية</label>
+                      <div className="grid grid-cols-2 gap-1.5">
                         {CRYSTALS.map((c) => (
                           <button
                             key={c.id}
                             onClick={() => setSelectedCrystal(c)}
-                            className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
+                            className={`p-2 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedCrystal.id === c.id
                                 ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
                                 : 'bg-slate-800/60 border-slate-700 text-slate-400'
                             }`}
                           >
                             <div className="font-bold text-slate-200">{c.nameAr}</div>
-                            <div className="text-[10px] opacity-75 font-mono">d = {c.dSpacingNm} nm ({c.latticeType})</div>
+                            <div className="text-[10px] opacity-75 font-mono">d = {c.dSpacingAngstrom} Å</div>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Source Selection */}
+                    {/* Theta Angle Slider */}
                     <div>
-                      <label className="text-xs font-semibold text-slate-300 block mb-2">أنبوب الأشعة السينية (X-Ray Anode)</label>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {SOURCES.map((s) => (
-                          <button
-                            key={s.id}
-                            onClick={() => setSelectedSource(s)}
-                            className={`p-2 rounded-xl text-xs font-medium border transition-all text-right ${
-                              selectedSource.id === s.id
-                                ? 'bg-sky-500/20 border-sky-500 text-sky-300'
-                                : 'bg-slate-800/60 border-slate-700 text-slate-400'
-                            }`}
-                          >
-                            <span className="font-bold">{s.nameAr}</span>
-                          </button>
-                        ))}
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">زاوية السقوط (θ)</label>
+                        <span className="text-xs font-mono text-cyan-400 font-bold">{thetaDeg.toFixed(1)}° (2θ = {(2 * thetaDeg).toFixed(1)}°)</span>
                       </div>
+                      <Slider
+                        value={[thetaDeg]}
+                        min={5}
+                        max={45}
+                        step={0.1}
+                        onValueChange={(val) => setThetaDeg(val[0])}
+                        className="py-1"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>5°</span>
+                        <span className="text-cyan-400 font-bold">القمة ≈ {theoreticalPeakTheta}°</span>
+                        <span>45°</span>
+                      </div>
+                    </div>
+
+                    {/* Snap to Peak Button */}
+                    <div className="pt-2">
+                      <Button
+                        onClick={() => setThetaDeg(theoreticalPeakTheta)}
+                        className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                      >
+                        الانتقال التلقائي لقمة الحيود ({theoreticalPeakTheta}°)
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -463,18 +466,19 @@ export default function XRayDiffractionSimulation() {
 
           {/* TAB 2: Diffractogram */}
           <TabsContent value="diffractogram" className="space-y-4">
-            <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4">
-              <h3 className="text-base font-bold text-sky-300">مخطط حيود الأشعة السينية (XRD Pattern: Intensity vs 2θ)</h3>
-              <p className="text-xs text-slate-400">
-                تظهر القمم الحادة (Bragg Peaks) عند الزوايا التي تحقق شرط التداخل البناء بدقة، ومنها يتم استنتاج البنية البلورية والمكونات المجهرية للمادة.
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
+              <CardTitle className="text-base font-bold text-sky-300 mb-2">مخطط شدة الحيود مع زاوية الكاشف (XRD Diffractogram)</CardTitle>
+              <p className="text-xs text-slate-400 mb-4">
+                تظهر القمم الحادة عند الزوايا التي تحقق تداخلاً بناءً لأشعة X المنعكسة من مستويات الشبكة البلورية.
               </p>
-              <div className="h-[280px]">
+              <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={diffractogramData}>
+                  <LineChart data={xrdData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="twoTheta" stroke="#94a3b8" label={{ value: '2θ (degrees)', position: 'bottom', fill: '#94a3b8', fontSize: 12 }} />
-                    <YAxis stroke="#94a3b8" label={{ value: 'الشدة (Counts/s)', angle: -90, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
+                    <XAxis dataKey="twoTheta" stroke="#94a3b8" label={{ value: '2θ (درجات)', position: 'bottom', fill: '#94a3b8', fontSize: 12 }} />
+                    <YAxis stroke="#94a3b8" label={{ value: 'الشدة النسبية (a.u.)', angle: -90, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
                     <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8 }} />
+                    <ReferenceLine x={+(2 * theoreticalPeakTheta).toFixed(1)} stroke="#22c55e" strokeDasharray="4 4" label={{ value: 'قمة الحيود n=1', fill: '#22c55e', fontSize: 10 }} />
                     <Line type="monotone" dataKey="intensity" stroke="#38bdf8" strokeWidth={2} dot={false} name="الشدة" />
                   </LineChart>
                 </ResponsiveContainer>
@@ -485,15 +489,15 @@ export default function XRayDiffractionSimulation() {
           {/* TAB 3: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
-              <h3 className="text-xl font-bold text-cyan-300">قانون براغ لحيود الأشعة السينية (William Lawrence Bragg - 1913)</h3>
+              <h3 className="text-xl font-bold text-cyan-300">قانون براغ وحيود الأشعة السينية (جائزة نوبل 1915)</h3>
               <p>
-                نال ويليام براغ وابنه لورنس براغ جائزة نوبل في الفيزياء عام 1915 لتطويرهما هذه الطريقة الثورية التي مكّنت البشرية من "رؤية" ترتيب الذرات داخل المادة لأول مرة، ومن خلالها تم اكتشاف البنية الحلزونية المزدوجة للحمض النووي (DNA) على يد روزاليند فرانكلين وواتسون وكريك.
+                استنتج ويليام هنري براغ وابنه ويليام لورنس براغ القانون الأساسي لحيود الأشعة السينية على البلورات، والذي مكّن العلماء من معرفة التركيب الذري ثلاثي الأبعاد للمواد والمركبات الحيوية بما فيها الـ DNA.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">1. معادلة براغ للحيود</h4>
-                  <p className="text-sm font-mono text-cyan-300">\(n\lambda = 2d \sin\theta\)</p>
+                  <p className="text-sm font-mono text-cyan-300">n · λ = 2 · d · sin(θ)</p>
                   <p className="text-xs text-slate-400">
                     يحدث التداخل البناء عندما يكون فرق المسار بين شعاعين منعكسين من مستويين بلوريين متتاليين مساوياً لعدد صحيح من الأطوال الموجية.
                   </p>
@@ -514,7 +518,7 @@ export default function XRayDiffractionSimulation() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-emerald-300 flex items-center gap-2">
                   <HelpCircle className="w-5 h-5" />
-                  اختبار فهم قانون براغ
+                  اختبار مفاهيم حيود براغ
                 </h3>
                 <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">
                   النقاط: {quizScore}
@@ -523,15 +527,15 @@ export default function XRayDiffractionSimulation() {
 
               <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-4">
                 <p className="font-semibold text-slate-200">
-                  سؤال: لماذا نستخدم الأشعة السينية (X-Rays) لدراسة التركيب البلوري للبلورات وليس الضوء المرئي؟
+                  سؤال: لماذا تستخدم الأشعة السينية تحديداً (وليس الضوء المرئي) لدراسة التركيب الذري والشبكة البلورية للمعادن؟
                 </p>
 
                 <div className="space-y-2">
                   {[
-                    { id: 0, text: 'لأن الطول الموجي للأشعة السينية (حوالي 0.1 nm) يقارب المسافات البينية بين الذرات في البلورة.' },
-                    { id: 1, text: 'لأن الأشعة السينية لا تتفاعل مع الإلكترونات.' },
-                    { id: 2, text: 'لأن الضوء المرئي يحرق البلورات دائماً.' },
-                    { id: 3, text: 'لأن الأشعة السينية موجات طولية وليست مستعرضة.' },
+                    { id: 0, text: 'لأن الأشعة السينية لا تتأثر بالحرارة.' },
+                    { id: 1, text: 'لأن طولها الموجي (حوالي 1 أنغستروم) يماثل تقريباً المسافات البينية الفاصلة بين الذرات في البلورة.' },
+                    { id: 2, text: 'لأن الأشعة السينية غير مرئية للعين.' },
+                    { id: 3, text: 'لأن سرعة الأشعة السينية تفوق سرعة الضوء.' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -539,7 +543,7 @@ export default function XRayDiffractionSimulation() {
                       onClick={() => handleQuizSubmit(option.id)}
                       className={`w-full text-right p-3 rounded-xl border text-sm transition-all ${
                         quizSubmitted
-                          ? option.id === 0
+                          ? option.id === 1
                             ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
                             : quizAnswer === option.id
                             ? 'bg-red-500/20 border-red-500 text-red-300'
@@ -553,14 +557,14 @@ export default function XRayDiffractionSimulation() {
                 </div>
 
                 {quizSubmitted && (
-                  <div className={`p-3 rounded-xl text-xs ${quizAnswer === 0 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
-                    {quizAnswer === 0 ? (
+                  <div className={`p-3 rounded-xl text-xs ${quizAnswer === 1 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
+                    {quizAnswer === 1 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة ودقيقة! لكي يحدث حيود واضح، يجب أن يكون الطول الموجي للموجة المستخدمة من نفس رتبة أبعاد الحواجز أو الشقوق (المسافات البينية الذرية).</span>
+                        <span>إجابة صحيحة ورائعة! لكي يحدث حيود قابل للقياس يجب أن يكون الطول الموجي مقاربًا لأبعاد الفجوات والمستويات البلورية (في حدود 0.1 نانومتر أو 1 أنغستروم).</span>
                       </div>
                     ) : (
-                      <span>إجابة غير صحيحة. السبب الرئيسي هو أن طول موجة الضوء المرئي (400-700 nm) كبير جداً مقارنة بالأبعاد الذرية، بينما الأشعة السينية (0.1 nm) تماثل تماماً أبعاد الشبكة البلورية.</span>
+                      <span>إجابة غير صحيحة. شرط حدوث الحيود هو توافق الطول الموجي للموجة مع أبعاد المسافات الذرية في البلورة.</span>
                     )}
                   </div>
                 )}
