@@ -128,6 +128,7 @@ import StatesOfMatter3D from './pages/StatesOfMatter3D';
 import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
 import LivingCellSimulation from './pages/LivingCellSimulation';
 import CellDivisionSimulation from './pages/CellDivisionSimulation';
+import CellDivision3D from './pages/CellDivision3D';
 import PhotosynthesisRespirationSimulation from './pages/PhotosynthesisRespirationSimulation';
 import ImmuneSystemSimulation from './pages/ImmuneSystemSimulation';
 import EvolutionSimulation from './pages/EvolutionSimulation';
