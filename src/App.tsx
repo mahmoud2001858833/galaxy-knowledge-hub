@@ -121,6 +121,7 @@ import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
 import AcidsBases3D from './pages/AcidsBases3D';
+import AnalyticalChemistry3D from './pages/AnalyticalChemistry3D';
 import StatesOfMatter3D from './pages/StatesOfMatter3D';
 
 import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
