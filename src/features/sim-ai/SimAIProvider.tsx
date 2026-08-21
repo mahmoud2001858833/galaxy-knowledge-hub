@@ -17,7 +17,7 @@ import type {
   SimTrackedEvent,
 } from './types';
 
-interface SimAIContextValue {
+export interface SimAIContextValue {
   enabled: boolean;
   setEnabled: (v: boolean) => void;
   thinking: boolean;
