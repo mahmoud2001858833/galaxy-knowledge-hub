@@ -53,9 +53,11 @@ interface Props {
   state: Record<string, unknown>;
   children: ReactNode;
   defaultEnabled?: boolean;
+  /** imperative handle so the page above the provider can call track() */
+  apiRef?: { current: SimAIContextValue | null };
 }
 
-export const SimAIProvider = ({ sim, state, children, defaultEnabled = true }: Props) => {
+export const SimAIProvider = ({ sim, state, children, defaultEnabled = true, apiRef }: Props) => {
   const storageKey = `sim-ai-enabled:${sim.id}`;
   const [enabled, setEnabledState] = useState<boolean>(() => {
     if (typeof window === 'undefined') return defaultEnabled;
