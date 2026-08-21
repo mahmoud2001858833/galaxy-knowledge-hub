@@ -170,7 +170,7 @@ const Photosynthesis3D = () => {
 
   const scene = (
     <SimQualityGate>
-      <SimCanvas cameraPosition={[16, 11, 22]} environment="forest">
+      <SimCanvas cameraPosition={[16, 11, 22]} environment="sunset">
         <Suspense fallback={null}>
           <PhotoScene3D
             mode={mode}
