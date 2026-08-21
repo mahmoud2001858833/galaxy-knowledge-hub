@@ -161,6 +161,14 @@ const ProjectileMotion3D = () => {
             ? `أحسنت! أصبت الهدف بفارق ${err.toFixed(2)} م فقط.`
             : `المدى ${stats.range.toFixed(1)} م — الفارق ${err.toFixed(1)} م. عدّل الزاوية أو السرعة وحاول مجدداً.`
         );
+        track(err <= 2 ? 'success' : 'mistake', err <= 2 ? 'إصابة الهدف' : 'إخفاق في إصابة الهدف', {
+          target: challengeTarget,
+          range: Number(stats.range.toFixed(2)),
+          error: Number(err.toFixed(2)),
+          angle,
+          speed,
+          drag,
+        });
       }
     }
   };
@@ -169,11 +177,14 @@ const ProjectileMotion3D = () => {
     setResetKey((k) => k + 1);
     setPlaying(true);
     setChallengeResult(null);
+    track('action', 'إعادة الإطلاق', { angle, speed, drag, planet });
   };
 
   const newChallenge = () => {
-    setChallengeTarget(Math.round(20 + Math.random() * 80));
+    const target = Math.round(20 + Math.random() * 80);
+    setChallengeTarget(target);
     setChallengeResult(null);
+    track('action', 'بدء تحدٍّ جديد', { target });
   };
 
   const scene = (
@@ -227,7 +238,15 @@ const ProjectileMotion3D = () => {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="flex gap-2">
-            <Button className="flex-1 gap-2" onClick={() => setPlaying((p) => !p)}>
+            <Button
+              className="flex-1 gap-2"
+              onClick={() =>
+                setPlaying((p) => {
+                  track('action', p ? 'إيقاف المحاكاة' : 'إطلاق المقذوف', { angle, speed, drag, planet });
+                  return !p;
+                })
+              }
+            >
               {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {playing ? 'إيقاف' : 'إطلاق'}
             </Button>
