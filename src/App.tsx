@@ -895,6 +895,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/cell-division',
+        element: <AuthGuard><CellDivision3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/cell-division-classic',
         element: <AuthGuard><CellDivisionSimulation /></AuthGuard>,
       },
       {
