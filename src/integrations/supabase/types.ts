@@ -3857,6 +3857,98 @@ export type Database = {
         }
         Relationships: []
       }
+      sim_ai_events: {
+        Row: {
+          at_seconds: number
+          created_at: string
+          id: string
+          kind: string
+          label: string | null
+          payload: Json
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          at_seconds?: number
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string | null
+          payload?: Json
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          at_seconds?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          payload?: Json
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sim_ai_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sim_ai_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sim_ai_sessions: {
+        Row: {
+          ai_summary: string | null
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          events_count: number
+          hints_count: number
+          id: string
+          metrics: Json
+          mistakes_count: number
+          score: number | null
+          sim_id: string
+          sim_title: string | null
+          started_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          events_count?: number
+          hints_count?: number
+          id?: string
+          metrics?: Json
+          mistakes_count?: number
+          score?: number | null
+          sim_id: string
+          sim_title?: string | null
+          started_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          events_count?: number
+          hints_count?: number
+          id?: string
+          metrics?: Json
+          mistakes_count?: number
+          score?: number | null
+          sim_id?: string
+          sim_title?: string | null
+          started_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       spaced_lessons: {
         Row: {
           created_at: string | null

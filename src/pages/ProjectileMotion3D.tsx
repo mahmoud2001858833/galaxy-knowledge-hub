@@ -1,4 +1,5 @@
-import { Suspense, lazy, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { SimAICursor, SimAIProvider, type SimAIContextValue } from '@/features/sim-ai';
 import { Target, Play, Pause, RotateCcw, Trophy, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -104,6 +105,19 @@ const ProjectileMotion3D = () => {
   const [challengeResult, setChallengeResult] = useState<string | null>(null);
   const liveRef = useRef<ProjectileSample | null>(null);
 
+  // ----- AI coach wiring -------------------------------------------------
+  const aiRef = useRef<SimAIContextValue | null>(null);
+  const track = (
+    kind: Parameters<NonNullable<SimAIContextValue['track']>>[0],
+    label: string,
+    payload?: Record<string, unknown>
+  ) => aiRef.current?.track(kind, label, payload);
+
+  useEffect(() => {
+    track('start', 'فتح التجربة');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const gravity = GRAVITY_PRESETS[planet].g;
 
   const samples = useMemo(
@@ -147,6 +161,14 @@ const ProjectileMotion3D = () => {
             ? `أحسنت! أصبت الهدف بفارق ${err.toFixed(2)} م فقط.`
             : `المدى ${stats.range.toFixed(1)} م — الفارق ${err.toFixed(1)} م. عدّل الزاوية أو السرعة وحاول مجدداً.`
         );
+        track(err <= 2 ? 'success' : 'mistake', err <= 2 ? 'إصابة الهدف' : 'إخفاق في إصابة الهدف', {
+          target: challengeTarget,
+          range: Number(stats.range.toFixed(2)),
+          error: Number(err.toFixed(2)),
+          angle,
+          speed,
+          drag,
+        });
       }
     }
   };
@@ -155,11 +177,14 @@ const ProjectileMotion3D = () => {
     setResetKey((k) => k + 1);
     setPlaying(true);
     setChallengeResult(null);
+    track('action', 'إعادة الإطلاق', { angle, speed, drag, planet });
   };
 
   const newChallenge = () => {
-    setChallengeTarget(Math.round(20 + Math.random() * 80));
+    const target = Math.round(20 + Math.random() * 80);
+    setChallengeTarget(target);
     setChallengeResult(null);
+    track('action', 'بدء تحدٍّ جديد', { target });
   };
 
   const scene = (
@@ -213,7 +238,15 @@ const ProjectileMotion3D = () => {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="flex gap-2">
-            <Button className="flex-1 gap-2" onClick={() => setPlaying((p) => !p)}>
+            <Button
+              className="flex-1 gap-2"
+              onClick={() =>
+                setPlaying((p) => {
+                  track('action', p ? 'إيقاف المحاكاة' : 'إطلاق المقذوف', { angle, speed, drag, planet });
+                  return !p;
+                })
+              }
+            >
               {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {playing ? 'إيقاف' : 'إطلاق'}
             </Button>
@@ -227,7 +260,7 @@ const ProjectileMotion3D = () => {
               <span>السرعة الابتدائية</span>
               <span className="font-mono text-primary">{speed} م/ث</span>
             </Label>
-            <Slider value={[speed]} min={5} max={90} step={1} onValueChange={([v]) => setSpeed(v)} />
+            <Slider value={[speed]} min={5} max={90} step={1} onValueChange={([v]) => { setSpeed(v); track('param', 'السرعة الابتدائية', { value: v, unit: 'م/ث' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -235,7 +268,7 @@ const ProjectileMotion3D = () => {
               <span>زاوية الإطلاق</span>
               <span className="font-mono text-primary">{angle}°</span>
             </Label>
-            <Slider value={[angle]} min={5} max={85} step={1} onValueChange={([v]) => setAngle(v)} />
+            <Slider value={[angle]} min={5} max={85} step={1} onValueChange={([v]) => { setAngle(v); track('param', 'زاوية الإطلاق', { value: v, unit: '°' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -251,7 +284,7 @@ const ProjectileMotion3D = () => {
               <span>ارتفاع نقطة الإطلاق</span>
               <span className="font-mono text-primary">{height} م</span>
             </Label>
-            <Slider value={[height]} min={0} max={40} step={1} onValueChange={([v]) => setHeight(v)} />
+            <Slider value={[height]} min={0} max={40} step={1} onValueChange={([v]) => { setHeight(v); track('param', 'ارتفاع الإطلاق', { value: v, unit: 'م' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -259,7 +292,7 @@ const ProjectileMotion3D = () => {
               <span>كتلة الجسم</span>
               <span className="font-mono text-primary">{mass} كغم</span>
             </Label>
-            <Slider value={[mass]} min={0.1} max={10} step={0.1} onValueChange={([v]) => setMass(v)} />
+            <Slider value={[mass]} min={0.1} max={10} step={0.1} onValueChange={([v]) => { setMass(v); track('param', 'الكتلة', { value: v, unit: 'كغم' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -267,12 +300,12 @@ const ProjectileMotion3D = () => {
               <span>مقاومة الهواء (k)</span>
               <span className="font-mono text-primary">{drag.toFixed(2)}</span>
             </Label>
-            <Slider value={[drag]} min={0} max={0.6} step={0.01} onValueChange={([v]) => setDrag(v)} />
+            <Slider value={[drag]} min={0} max={0.6} step={0.01} onValueChange={([v]) => { setDrag(v); track('param', 'معامل مقاومة الهواء', { value: v }); }} />
           </div>
 
           <div className="space-y-2">
             <Label className="text-xs">الجاذبية</Label>
-            <Select value={planet} onValueChange={setPlanet}>
+            <Select value={planet} onValueChange={(v) => { setPlanet(v); track('param', 'الجاذبية', { planet: v, g: GRAVITY_PRESETS[v].g }); }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -449,7 +482,48 @@ const ProjectileMotion3D = () => {
     </Card>
   );
 
+  const aiState = {
+    السرعة: speed,
+    الزاوية: angle,
+    'الاتجاه الأفقي': azimuth,
+    'ارتفاع الإطلاق': height,
+    الكتلة: mass,
+    'معامل المقاومة': drag,
+    الجاذبية: `${GRAVITY_PRESETS[planet].label} (${gravity} م/ث²)`,
+    'المدى المحسوب': Number(stats.range.toFixed(2)),
+    'أقصى ارتفاع': Number(stats.maxHeight.toFixed(2)),
+    'زمن التحليق': Number(stats.flightTime.toFixed(2)),
+    'المدى النظري (بدون مقاومة)': Number.isFinite(ideal) ? Number(ideal.toFixed(2)) : null,
+    'هدف التحدي': challengeTarget,
+    'حالة التشغيل': playing ? 'قيد التشغيل' : 'متوقف',
+  };
+
   return (
+    <SimAIProvider
+      apiRef={aiRef}
+      state={aiState}
+      sim={{
+        id: 'projectile-3d',
+        title: 'حركة المقذوفات ثلاثية الأبعاد',
+        description:
+          'مختبر ثلاثي الأبعاد لحركة المقذوفات مع متجهات السرعة ومقاومة الهواء وجاذبية كواكب مختلفة، وتحدٍّ لإصابة هدف على مسافة محددة.',
+        objectives: [
+          'تحليل حركة المقذوف إلى مركبتين مستقلتين',
+          'استنتاج علاقة الزاوية بالمدى وأقصى ارتفاع',
+          'مقارنة المسار الحقيقي بالمثالي عند وجود مقاومة',
+          'تتبّع تحوّل الطاقة خلال الطيران',
+        ],
+        rules: [
+          'أقصى مدى في الفراغ يتحقق عند زاوية 45°؛ الابتعاد الكبير عنها مع محاولة زيادة المدى خطأ شائع.',
+          'زيادة الكتلة وحدها لا تغيّر المسار في الفراغ (بدون مقاومة) — الاعتقاد بعكس ذلك خطأ مفاهيمي.',
+          'زيادة معامل المقاومة تقصّر المدى وتكسر تماثل المسار.',
+          'خفض الجاذبية (القمر/المريخ) يزيد زمن التحليق والمدى.',
+          'إن كرر الطالب الإطلاق بنفس القيم دون تغيير أي متغيّر فهو يجرّب عشوائياً ويحتاج توجيهاً منهجياً.',
+          'في وضع التحدي: إن كان المدى أقل من الهدف فالحل رفع السرعة أو الاقتراب من 45°، وإن كان أكبر فالعكس.',
+        ],
+      }}
+    >
+      <SimAICursor />
     <SimLessonShell
       title="حركة المقذوفات ثلاثية الأبعاد"
       subtitle="Projectile Motion 3D — مختبر تفاعلي بمتجهات وقياسات حيّة"
@@ -495,6 +569,7 @@ const ProjectileMotion3D = () => {
         />
       }
     />
+    </SimAIProvider>
   );
 };
 
