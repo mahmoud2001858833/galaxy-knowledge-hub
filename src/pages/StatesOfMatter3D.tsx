@@ -437,8 +437,8 @@ const StatesOfMatter3D = () => {
       explanation={explanation}
       charts={charts}
       challenge={challengeCard}
-      quiz={<SimQuiz questions={QUIZ} storageKey="states-of-matter-3d" />}
-      notebook={<SimNotebook entries={entries} onClear={clear} title="دفتر حالات المادة" />}
+      quiz={<SimQuiz questions={QUIZ} />}
+      notebook={<SimNotebook entries={entries} onClear={clear} fileName="states-of-matter" />}
     />
   );
 };
