@@ -1,13 +1,13 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Wind, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Gauge,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Activity, BookOpen, Gauge, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare, BarChart3 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,7 @@ function WindTunnel3DScene({
 
   const alphaRad = (-alphaDeg * Math.PI) / 180;
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!isPlaying) return;
 
     const speedFactor = (windSpeedMs / 50);
@@ -213,6 +213,11 @@ export default function AerodynamicsWindTunnelSimulation() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
+
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
@@ -242,6 +247,24 @@ export default function AerodynamicsWindTunnelSimulation() {
   const liftForceN = Math.max(0, +(dynamicPressure * WING_AREA_M2 * Cl).toFixed(0));
   const dragForceN = Math.max(0, +(dynamicPressure * WING_AREA_M2 * Cd).toFixed(0));
   const liftToDragRatio = Cd > 0 ? +(Cl / Cd).toFixed(1) : 0;
+
+  useEffect(() => {
+    // Mission 1: Generate high lift (> 800 N)
+    if (liftForceN >= 800 && !isStalled && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Trigger aerodynamic stall (> critical alpha)
+    if (isStalled && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Test Supercritical airfoil at high airspeed (> 70 m/s)
+    if (selectedAirfoil.id === 'supercritical' && windSpeedMs >= 70 && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [liftForceN, isStalled, selectedAirfoil, windSpeedMs, mission1Completed, mission2Completed, mission3Completed]);
 
   const setCameraView = (view: 'default' | 'top' | 'airfoil' | 'side') => {
     if (!controlsRef.current) return;
@@ -427,6 +450,10 @@ export default function AerodynamicsWindTunnelSimulation() {
               <Activity className="w-4 h-4" />
               نفق الرياح ثلاثي الأبعاد (3D Wind Tunnel)
             </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام الديناميكا الهوائية ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
               مبدأ برنولي ومعادلات نافيير-ستوكس
@@ -598,7 +625,78 @@ export default function AerodynamicsWindTunnelSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Theory */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات نفق الرياح (Aerodynamic Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام لاكتشاف ديناميكا الطيران وتوليد الرفع وظاهرة الانهيار الهوائي.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: توليد قوة رفع كافية للإقلاع (&gt; 800 N)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اضبط زاوية الهجوم (بين 6° و 12°) وزد سرعة الهواء في النفق لتوليد قوة رفع تفوق 800 نيوتن.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: اختبار الانهيار الهوائي (Aerodynamic Stall)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        زد زاوية الهجوم لتتجاوز زاوية الانهيار الحرجة للجناح وراقب انفصال خطوط الدخان الحمراء وانهيار قوة الرفع.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: اختبار الجناح فوق الحرج (Supercritical Airfoil)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر المقطع فوق الحرج وارفع سرعة الرياح إلى أكثر من 70 m/s لملاحظة تحسن كفاءة الرفع عند السرعات العالية.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-sky-300">فيزياء الطيران وميكانيكا الموائع الديناميكية</h3>
@@ -620,7 +718,7 @@ export default function AerodynamicsWindTunnelSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Quiz */}
+          {/* TAB 4: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">

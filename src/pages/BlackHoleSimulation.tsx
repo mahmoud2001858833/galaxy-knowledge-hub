@@ -1,13 +1,13 @@
-import React, { useState, useRef, useMemo, Suspense } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Sphere, Ring, Torus } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Globe, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, Timer, ShieldAlert,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb
+  Activity, BookOpen, Timer, Eye, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare, BarChart3
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,16 +43,13 @@ const SOLAR_MASS_KG = 1.989e30;
 interface BlackHole3DProps {
   probeDistanceMultiplier: number;
   isPlaying: boolean;
-  isFalling: boolean;
   selectedPreset: BlackHolePreset;
-  timeDilationFactor: number;
 }
 
 function BlackHole3DScene({
   probeDistanceMultiplier,
   isPlaying,
   selectedPreset,
-  timeDilationFactor,
 }: BlackHole3DProps) {
   const diskRef = useRef<THREE.Group>(null);
   const probeRef = useRef<THREE.Group>(null);
@@ -62,7 +59,7 @@ function BlackHole3DScene({
   const photonSphereRadius = eventHorizonRadius * 1.5;
   const iscoRadius = eventHorizonRadius * 3.0;
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!isPlaying) return;
 
     if (diskRef.current) {
@@ -168,6 +165,11 @@ export default function BlackHoleSimulation() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
+
   // Relative Clocks
   const [coordinateTimeSec, setCoordinateTimeSec] = useState<number>(0);
   const [probeProperTimeSec, setProbeProperTimeSec] = useState<number>(0);
@@ -181,7 +183,6 @@ export default function BlackHoleSimulation() {
   const massKg = selectedPreset.solarMasses * SOLAR_MASS_KG;
   const schwarzschildRadiusM = (2 * G * massKg) / (C * C);
   const schwarzschildRadiusKm = +(schwarzschildRadiusM / 1000).toFixed(2);
-  const photonSphereKm = +(schwarzschildRadiusKm * 1.5).toFixed(2);
 
   const currentRadiusM = probeDistanceMultiplier * schwarzschildRadiusM;
   const currentRadiusKm = +(currentRadiusM / 1000).toFixed(2);
@@ -196,7 +197,7 @@ export default function BlackHoleSimulation() {
     return +( (1 / timeDilationFactor) - 1 ).toFixed(3);
   }, [probeDistanceMultiplier, timeDilationFactor]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setCoordinateTimeSec((t) => t + 0.1);
@@ -216,6 +217,25 @@ export default function BlackHoleSimulation() {
 
     return () => clearInterval(interval);
   }, [isPlaying, isFalling, timeDilationFactor]);
+
+  // Mission check
+  useEffect(() => {
+    // Mission 1: Probe at 3.0 rs
+    if (Math.abs(probeDistanceMultiplier - 3.0) <= 0.2 && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Probe at Photon sphere (1.5 rs)
+    if (Math.abs(probeDistanceMultiplier - 1.5) <= 0.15 && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Probe near horizon (< 1.15 rs)
+    if (probeDistanceMultiplier <= 1.15 && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [probeDistanceMultiplier, mission1Completed, mission2Completed, mission3Completed]);
 
   const setCameraView = (view: 'default' | 'top' | 'event_horizon' | 'accretion_disk') => {
     if (!controlsRef.current) return;
@@ -409,6 +429,10 @@ export default function BlackHoleSimulation() {
               <Activity className="w-4 h-4" />
               أفق الحدث والمسبار ثلاثي الأبعاد (3D Space)
             </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام النسبية العامة ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
               النسبية العامة ومتريّة شفارتزشيلد
@@ -451,9 +475,7 @@ export default function BlackHoleSimulation() {
                       <BlackHole3DScene
                         probeDistanceMultiplier={probeDistanceMultiplier}
                         isPlaying={isPlaying}
-                        isFalling={isFalling}
                         selectedPreset={selectedPreset}
-                        timeDilationFactor={timeDilationFactor}
                       />
                       <OrbitControls
                         ref={controlsRef}
@@ -580,7 +602,78 @@ export default function BlackHoleSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Theory */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام استكشاف الزمكان والنسبية العامة (Relativistic Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام الاستكشافية لمراقبة سلوك الزمن والضوء بالقرب من الثقوب السوداء.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: وضع المسبار عند المدار المستقر الأخير (ISCO = 3.0 rs)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اضبط مسافة المسبار عند 3.0 أضعاف نصف قطر شفارتزشيلد لمراقبة دوران المسبار عند الحافة الداخلية لقرص التراكم.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: دخول كرة الفوتونات الدائرية (Photon Sphere = 1.5 rs)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        حرك المسبار إلى مسافة 1.5 rs حيث تدور أشعة الضوء نفسها في مدارات دائرية مغلقة حول الثقب الأسود.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: الاقتراب الحرج من أفق الحدث ومراقبة تجمد ساعة المسبار (&lt; 1.15 rs)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        قم بتفعيل السقوط الحر للمسبار نحو أفق الحدث وملاحظة تراجع سرعة سريان الزمن إلى أقل من 35% وقفز الانزياح الأحمر نحو ما لا نهاية.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-purple-300">الفيزياء النسبية للثقوب السوداء (النسبية العامة 1915)</h3>
@@ -600,7 +693,7 @@ export default function BlackHoleSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Quiz */}
+          {/* TAB 4: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">

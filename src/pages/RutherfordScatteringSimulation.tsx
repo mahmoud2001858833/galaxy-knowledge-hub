@@ -2,11 +2,12 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Target, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, BookOpen, Atom,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Activity, BookOpen, Atom, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, CheckSquare
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,10 +64,8 @@ function RutherfordChamber3D({
   onRecordStats,
 }: Rutherford3DProps) {
   const particlesRef = useRef<THREE.Group>(null);
-  const flashRingRef = useRef<THREE.Mesh>(null);
   const maxParticles = 40;
 
-  // Internal counters to throttle stats updates to parent
   const statsRef = useRef({ forward: 0, medium: 0, back: 0, lastReport: 0 });
 
   const particles = useRef<AlphaParticle[]>([]);
@@ -82,7 +81,7 @@ function RutherfordChamber3D({
     }));
   }
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!isPlaying) return;
 
     const activeCountTarget = Math.max(5, Math.round((beamIntensity / 100) * maxParticles));
@@ -124,7 +123,7 @@ function RutherfordChamber3D({
             }
           }
 
-          // Check if reached detector screen radius (4.0)
+          // Reach detector screen radius
           const radFromCenter = Math.sqrt(p.x * p.x + p.z * p.z);
           if (radFromCenter >= 3.8 || p.x > 4.2 || Math.abs(p.y) > 2.5) {
             const angleRad = Math.atan2(Math.sqrt(p.y * p.y + p.z * p.z), p.x);
@@ -148,7 +147,6 @@ function RutherfordChamber3D({
       }
     }
 
-    // Periodically report stats every 250ms (prevents 60fps re-render overhead)
     const now = performance.now();
     if (now - statsRef.current.lastReport > 250) {
       statsRef.current.lastReport = now;
@@ -199,7 +197,6 @@ function RutherfordChamber3D({
 
       {/* TARGET FOIL AND NUCLEUS */}
       <group position={[0, 0, 0]}>
-        {/* Metal Foil */}
         <mesh>
           <boxGeometry args={[0.06, 2.6, 2.6]} />
           <meshStandardMaterial
@@ -213,12 +210,10 @@ function RutherfordChamber3D({
 
         {modelType === 'rutherford' ? (
           <group>
-            {/* Rutherford Concentrated Positive Nucleus */}
             <mesh>
               <sphereGeometry args={[0.26, 24, 24]} />
               <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.9} />
             </mesh>
-            {/* Positive Electric Field Aura */}
             <mesh>
               <sphereGeometry args={[0.85, 16, 16]} />
               <meshBasicMaterial color="#f87171" opacity={0.2} transparent wireframe />
@@ -231,7 +226,6 @@ function RutherfordChamber3D({
           </group>
         ) : (
           <group>
-            {/* Thomson Pudding Model */}
             <mesh>
               <sphereGeometry args={[1.2, 24, 24]} />
               <meshBasicMaterial color="#38bdf8" opacity={0.25} transparent />
@@ -283,6 +277,11 @@ export default function RutherfordScatteringSimulation() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
+
   // Scattering Counters
   const [forwardDeflected, setForwardDeflected] = useState<number>(0);
   const [mediumDeflected, setMediumDeflected] = useState<number>(0);
@@ -305,6 +304,24 @@ export default function RutherfordScatteringSimulation() {
     setMediumDeflected(medium);
     setBackScattered(back);
   };
+
+  useEffect(() => {
+    // Mission 1: Fire beam and observe forward deflection
+    if (forwardDeflected > 30 && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Observe rare backscattering in Rutherford model
+    if (modelType === 'rutherford' && backScattered >= 1 && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Test low atomic number foil (Aluminum)
+    if (selectedFoil.id === 'aluminum' && totalFired > 40 && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [forwardDeflected, backScattered, modelType, selectedFoil, totalFired, mission1Completed, mission2Completed, mission3Completed]);
 
   const handleResetCounters = () => {
     setForwardDeflected(0);
@@ -501,6 +518,10 @@ export default function RutherfordScatteringSimulation() {
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-300">
               <Activity className="w-4 h-4" />
               المختبر والغرفة الاسطوانية ثلاثية الأبعاد (3D Chamber)
+            </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              المهام والتحديات ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
@@ -717,7 +738,78 @@ export default function RutherfordScatteringSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Theory */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات استكشاف النواة الذرية (Rutherford Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام لتكرار التجربة التاريخية التي أثبتت وجود النواة المركزية للذرة عام 1911.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: رصد العبور المباشر لغالبية جسيمات ألفا (&gt; 98%)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        أطلق حزمة ألفا ولاحظ كيف أن الغالبية الساحقة من الجسيمات تعبر دون انحراف، مما يثبت أن معظم حجم الذرة فراغ.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: رصد الارتداد الخلفي الحاسم بزاوية منفرجة (&gt; 90°)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر رقيقة الذهب (Z=79) ونموذج رذرفورد وراقب تسجيل ارتداد خلفي للجسيمات التي تواجه النواة مباشرة.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: مقارنة قوة التنافر الكولومي مع تغير العدد الذري (Z)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        غير مادة الرقيقة إلى الألمنيوم (Z=13) ولاحظ انخفاض قوة التنافر مقارنة بالذهب بسبب صغر شحنة النواة.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-yellow-300">تشتت جسيمات ألفا واكتشاف النواة الذرية (1911)</h3>
@@ -737,7 +829,7 @@ export default function RutherfordScatteringSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Quiz */}
+          {/* TAB 4: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">

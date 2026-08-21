@@ -1,13 +1,13 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box, Ring } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Rocket, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Globe,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Activity, BookOpen, Globe2, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare, Zap 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,155 +20,119 @@ import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
 
-interface MissionProfile {
+const MU_EARTH = 3.986004418e14; // m³/s² (G * M_earth)
+const R_EARTH_KM = 6371; // Earth radius in km
+
+interface OrbitPreset {
   id: string;
   nameAr: string;
   nameEn: string;
-  r1Km: number;
-  r2Km: number;
-  targetNameAr: string;
-  targetColor: string;
+  perigeeAltKm: number;
+  apogeeAltKm: number;
+  description: string;
 }
 
-const MISSIONS: MissionProfile[] = [
-  { id: 'leo-to-geo', nameAr: 'من المدار المنخفض إلى المدار الثابت (LEO ➔ GEO)', nameEn: 'LEO to GEO', r1Km: 6700, r2Km: 42164, targetNameAr: 'المدار الثابت GEO', targetColor: '#38bdf8' },
-  { id: 'earth-to-moon', nameAr: 'رحلة مدار القمر (Apollo Earth-Moon)', nameEn: 'Earth to Moon', r1Km: 6700, r2Km: 384400, targetNameAr: 'القمر (Moon)', targetColor: '#e2e8f0' },
-  { id: 'earth-to-mars', nameAr: 'الانتقال بين الكواكب (Earth ➔ Mars)', nameEn: 'Earth to Mars', r1Km: 149.6e6, r2Km: 227.9e6, targetNameAr: 'المريخ (Mars)', targetColor: '#f97316' },
+const PRESETS: OrbitPreset[] = [
+  { id: 'leo', nameAr: 'مدار أرضي منخفض (LEO - محطة ISS)', nameEn: 'LEO', perigeeAltKm: 420, apogeeAltKm: 420, description: 'مدار المحطة الفضائية الدولية ومقر معظم الأقمار' },
+  { id: 'geo', nameAr: 'مدار جغرافي ثابت (GEO)', nameEn: 'GEO', perigeeAltKm: 35786, apogeeAltKm: 35786, description: 'مدار أقمار الاتصالات والطقس الثابتة فوق خط الاستواء' },
+  { id: 'gto', nameAr: 'مدار النقل الثابت (GTO Transfer)', nameEn: 'GTO', perigeeAltKm: 420, apogeeAltKm: 35786, description: 'مسار هوهمان الإهليلجي للانتقال من LEO إلى GEO' },
+  { id: 'molniya', nameAr: 'مدار مولنيا عالي الإهليلجية', nameEn: 'Molniya', perigeeAltKm: 600, apogeeAltKm: 39800, description: 'مدار روسي لتغطية المناطق القطبية الشمالية' },
 ];
 
-const G = 6.67430e-11;
-const EARTH_MASS_KG = 5.972e24;
-const MU_EARTH = G * EARTH_MASS_KG;
-
-type FlightPhase = 'orbit_1' | 'transfer' | 'orbit_2';
-
 interface Orbital3DProps {
-  mission: MissionProfile;
-  phase: FlightPhase;
+  currentR_Km: number;
+  semiMajorAxisKm: number;
+  eccentricity: number;
+  trueAnomalyRad: number;
   isPlaying: boolean;
 }
 
-function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) {
+function Orbital3DScene({
+  currentR_Km,
+  semiMajorAxisKm,
+  eccentricity,
+  trueAnomalyRad,
+  isPlaying,
+}: Orbital3DProps) {
   const earthRef = useRef<THREE.Group>(null);
-  const probeRef = useRef<THREE.Group>(null);
-  const angleRef = useRef<number>(0);
+  const satelliteRef = useRef<THREE.Group>(null);
 
-  const r1_3D = 2.0;
-  const r2_3D = 4.8;
-  const a_transfer_3D = (r1_3D + r2_3D) / 2;
-  const c_focus = a_transfer_3D - r1_3D;
+  const scaleDistance = (km: number) => {
+    return 1.4 + (km / 42000) * 4.5;
+  };
 
-  useFrame((state, delta) => {
+  const currentR3D = scaleDistance(currentR_Km);
+
+  // Orbit path vertices
+  const orbitPoints = useMemo(() => {
+    const pts = [];
+    const pKm = semiMajorAxisKm * (1 - eccentricity * eccentricity);
+    for (let angle = 0; angle <= Math.PI * 2; angle += 0.05) {
+      const r = pKm / (1 + eccentricity * Math.cos(angle));
+      const r3D = scaleDistance(r);
+      pts.push(new THREE.Vector3(Math.cos(angle) * r3D, 0, Math.sin(angle) * r3D));
+    }
+    return pts;
+  }, [semiMajorAxisKm, eccentricity]);
+
+  const orbitLineGeometry = useMemo(() => {
+    return new THREE.BufferGeometry().setFromPoints(orbitPoints);
+  }, [orbitPoints]);
+
+  useFrame(() => {
     if (!isPlaying) return;
 
     if (earthRef.current) {
-      earthRef.current.rotation.y += 0.005;
+      earthRef.current.rotation.y += 0.002;
     }
 
-    if (probeRef.current) {
-      if (phase === 'orbit_1') {
-        angleRef.current += 0.03;
-        const px = Math.cos(angleRef.current) * r1_3D;
-        const pz = Math.sin(angleRef.current) * r1_3D;
-        probeRef.current.position.set(px, 0, pz);
-      } else if (phase === 'transfer') {
-        angleRef.current += 0.015;
-        const e = (r2_3D - r1_3D) / (r2_3D + r1_3D);
-        const r = (a_transfer_3D * (1 - e * e)) / (1 + e * Math.cos(angleRef.current));
-        const px = Math.cos(angleRef.current) * r;
-        const pz = Math.sin(angleRef.current) * r;
-        probeRef.current.position.set(px, 0, pz);
-      } else if (phase === 'orbit_2') {
-        angleRef.current += 0.012;
-        const px = Math.cos(angleRef.current) * r2_3D;
-        const pz = Math.sin(angleRef.current) * r2_3D;
-        probeRef.current.position.set(px, 0, pz);
-      }
+    if (satelliteRef.current) {
+      const sx = Math.cos(trueAnomalyRad) * currentR3D;
+      const sz = Math.sin(trueAnomalyRad) * currentR3D;
+      satelliteRef.current.position.set(sx, 0, sz);
+      satelliteRef.current.rotation.y = -trueAnomalyRad;
     }
   });
 
   return (
     <group>
-      {/* 3D PLANET EARTH */}
+      {/* 3D EARTH GLOBE */}
       <group ref={earthRef}>
-        <mesh>
-          <sphereGeometry args={[1.0, 32, 32]} />
-          <meshStandardMaterial color="#2563eb" roughness={0.6} metalness={0.1} />
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[1.2, 36, 36]} />
+          <meshStandardMaterial color="#0284c7" roughness={0.6} metalness={0.1} />
         </mesh>
-        <mesh>
-          <sphereGeometry args={[1.01, 16, 16]} />
-          <meshStandardMaterial color="#16a34a" wireframe opacity={0.3} transparent />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[1.12, 32, 32]} />
-          <meshBasicMaterial color="#38bdf8" opacity={0.2} transparent side={THREE.BackSide} />
-        </mesh>
-        <Html position={[0, -1.3, 0]} center>
-          <div className="bg-slate-900/90 text-sky-300 text-[10px] font-bold px-2 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            كوكب الأرض
-          </div>
-        </Html>
-      </group>
-
-      {/* LEO ORBIT */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[r1_3D - 0.02, r1_3D + 0.02, 64]} />
-        <meshBasicMaterial color="#38bdf8" opacity={0.6} transparent side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* HOHMANN TRANSFER ORBIT */}
-      <group position={[-c_focus, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <mesh>
-          <ringGeometry args={[a_transfer_3D - 0.025, a_transfer_3D + 0.025, 64]} />
-          <meshBasicMaterial color="#f59e0b" opacity={phase === 'transfer' ? 0.9 : 0.4} transparent side={THREE.DoubleSide} />
+        {/* Continents overlay ring */}
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[1.22, 16, 16]} />
+          <meshBasicMaterial color="#10b981" wireframe opacity={0.25} transparent />
         </mesh>
       </group>
 
-      {/* TARGET ORBIT */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[r2_3D - 0.02, r2_3D + 0.02, 64]} />
-        <meshBasicMaterial color="#a855f7" opacity={0.6} transparent side={THREE.DoubleSide} />
-      </mesh>
+      {/* ORBITAL PATH TRAJECTORY */}
+      <line geometry={orbitLineGeometry}>
+        <lineBasicMaterial color="#38bdf8" opacity={0.8} transparent />
+      </line>
 
-      {/* DESTINATION NODE */}
-      <group position={[-r2_3D, 0, 0]}>
+      {/* 3D SATELLITE */}
+      <group ref={satelliteRef}>
         <mesh>
-          <sphereGeometry args={[0.3, 16, 16]} />
-          <meshStandardMaterial color={mission.targetColor} metalness={0.5} roughness={0.3} />
-        </mesh>
-        <Html position={[0, 0.5, 0]} center>
-          <div className="bg-slate-900/90 text-purple-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-purple-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            {mission.targetNameAr}
-          </div>
-        </Html>
-      </group>
-
-      {/* 3D SPACECRAFT */}
-      <group ref={probeRef} position={[r1_3D, 0, 0]}>
-        <mesh>
-          <boxGeometry args={[0.2, 0.2, 0.35]} />
+          <boxGeometry args={[0.2, 0.12, 0.12]} />
           <meshStandardMaterial color="#f8fafc" metalness={0.9} roughness={0.1} />
         </mesh>
-        <mesh position={[0.3, 0, 0]}>
-          <boxGeometry args={[0.35, 0.02, 0.2]} />
-          <meshStandardMaterial color="#0284c7" />
+        {/* Solar Panels */}
+        <mesh position={[0.25, 0, 0]}>
+          <boxGeometry args={[0.3, 0.02, 0.16]} />
+          <meshStandardMaterial color="#3b82f6" metalness={0.8} />
         </mesh>
-        <mesh position={[-0.3, 0, 0]}>
-          <boxGeometry args={[0.35, 0.02, 0.2]} />
-          <meshStandardMaterial color="#0284c7" />
+        <mesh position={[-0.25, 0, 0]}>
+          <boxGeometry args={[0.3, 0.02, 0.16]} />
+          <meshStandardMaterial color="#3b82f6" metalness={0.8} />
         </mesh>
-        {phase === 'transfer' && (
-          <group position={[0, 0, -0.3]}>
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <coneGeometry args={[0.1, 0.4, 12]} />
-              <meshBasicMaterial color="#f97316" />
-            </mesh>
-            <pointLight color="#f97316" intensity={3} distance={2} />
-          </group>
-        )}
+        <pointLight color="#38bdf8" intensity={1.5} distance={2} />
         <Html position={[0, 0.45, 0]} center>
-          <div className="bg-slate-900/90 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            مركبة الفضاء 🚀
+          <div className="bg-slate-900/90 text-sky-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            القمر الصناعي ({currentR_Km.toLocaleString()} كم)
           </div>
         </Html>
       </group>
@@ -182,65 +146,120 @@ export default function OrbitalMechanicsSimulation() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // States
-  const [selectedMission, setSelectedMission] = useState<MissionProfile>(MISSIONS[0]);
-  const [phase, setPhase] = useState<FlightPhase>('orbit_1');
+  const [selectedPreset, setSelectedPreset] = useState<OrbitPreset>(PRESETS[0]);
+  const [perigeeAltKm, setPerigeeAltKm] = useState<number>(420);
+  const [apogeeAltKm, setApogeeAltKm] = useState<number>(420);
+  const [trueAnomalyDeg, setTrueAnomalyDeg] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
 
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Calculations
-  const r1_m = selectedMission.r1Km * 1000;
-  const r2_m = selectedMission.r2Km * 1000;
-  const a_transfer_m = (r1_m + r2_m) / 2;
+  // Orbital Calculations
+  const rPerigeeKm = R_EARTH_KM + perigeeAltKm;
+  const rApogeeKm = R_EARTH_KM + apogeeAltKm;
+  const semiMajorAxisKm = (rPerigeeKm + rApogeeKm) / 2;
+  const eccentricity = Math.max(0, (rApogeeKm - rPerigeeKm) / (rApogeeKm + rPerigeeKm));
 
-  const v1 = Math.sqrt(MU_EARTH / r1_m);
-  const v2 = Math.sqrt(MU_EARTH / r2_m);
-  const v_transfer_periapsis = Math.sqrt(MU_EARTH * (2 / r1_m - 1 / a_transfer_m));
-  const v_transfer_apoapsis = Math.sqrt(MU_EARTH * (2 / r2_m - 1 / a_transfer_m));
+  const orbitalPeriodMin = useMemo(() => {
+    const aMeters = semiMajorAxisKm * 1000;
+    const periodSec = 2 * Math.PI * Math.sqrt(Math.pow(aMeters, 3) / MU_EARTH);
+    return +(periodSec / 60).toFixed(1);
+  }, [semiMajorAxisKm]);
 
-  const deltaV1 = +(v_transfer_periapsis - v1).toFixed(1);
-  const deltaV2 = +(v2 - v_transfer_apoapsis).toFixed(1);
-  const totalDeltaV = +(deltaV1 + deltaV2).toFixed(1);
+  const trueAnomalyRad = (trueAnomalyDeg * Math.PI) / 180;
+  const pKm = semiMajorAxisKm * (1 - eccentricity * eccentricity);
+  const currentR_Km = pKm / (1 + eccentricity * Math.cos(trueAnomalyRad));
+  const currentAltKm = +(currentR_Km - R_EARTH_KM).toFixed(0);
 
-  const transferTimeHours = +( (Math.PI * Math.sqrt(Math.pow(a_transfer_m, 3) / MU_EARTH)) / 3600 ).toFixed(1);
+  const currentVelocityKms = useMemo(() => {
+    const rMeters = currentR_Km * 1000;
+    const aMeters = semiMajorAxisKm * 1000;
+    const vMs = Math.sqrt(MU_EARTH * (2 / rMeters - 1 / aMeters));
+    return +(vMs / 1000).toFixed(2);
+  }, [currentR_Km, semiMajorAxisKm]);
 
-  const handleExecuteBurn1 = () => {
-    setPhase('transfer');
+  // Hohmann Delta-V from LEO (420km) to GEO (35786km)
+  const deltaV_LEO_to_GTO = useMemo(() => {
+    const r1 = (R_EARTH_KM + 420) * 1000;
+    const r2 = (R_EARTH_KM + 35786) * 1000;
+    const vLEO = Math.sqrt(MU_EARTH / r1);
+    const vTransferPerigee = Math.sqrt(MU_EARTH * (2 / r1 - 2 / (r1 + r2)));
+    return +((vTransferPerigee - vLEO) / 1000).toFixed(2); // km/s ≈ 2.45 km/s
+  }, []);
+
+  const deltaV_GTO_to_GEO = useMemo(() => {
+    const r1 = (R_EARTH_KM + 420) * 1000;
+    const r2 = (R_EARTH_KM + 35786) * 1000;
+    const vGEO = Math.sqrt(MU_EARTH / r2);
+    const vTransferApogee = Math.sqrt(MU_EARTH * (2 / r2 - 2 / (r1 + r2)));
+    return +((vGEO - vTransferApogee) / 1000).toFixed(2); // km/s ≈ 1.47 km/s
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      const meanMotionDegPerSec = (360 / (orbitalPeriodMin * 60)) * 40;
+      setTrueAnomalyDeg((a) => (a + meanMotionDegPerSec) % 360);
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, orbitalPeriodMin]);
+
+  // Mission check
+  useEffect(() => {
+    // Mission 1: Circular LEO (< 500 km, ecc < 0.02)
+    if (perigeeAltKm <= 500 && apogeeAltKm <= 500 && eccentricity < 0.02 && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Hohmann Transfer GTO
+    if (perigeeAltKm <= 600 && apogeeAltKm >= 34000 && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Circular GEO (35786 km, ecc < 0.02)
+    if (Math.abs(perigeeAltKm - 35786) < 1000 && Math.abs(apogeeAltKm - 35786) < 1000 && eccentricity < 0.02 && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [perigeeAltKm, apogeeAltKm, eccentricity, mission1Completed, mission2Completed, mission3Completed]);
+
+  const handleApplyPreset = (p: OrbitPreset) => {
+    setSelectedPreset(p);
+    setPerigeeAltKm(p.perigeeAltKm);
+    setApogeeAltKm(p.apogeeAltKm);
     labSound.playRocketBurst();
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
   };
 
-  const handleExecuteBurn2 = () => {
-    setPhase('orbit_2');
-    labSound.playRocketBurst();
-    labSound.playSuccessChime();
-    confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
-  };
-
-  const setCameraView = (view: 'default' | 'top' | 'probe' | 'earth' | 'target') => {
+  const setCameraView = (view: 'default' | 'top' | 'satellite' | 'earth') => {
     if (!controlsRef.current) return;
     const controls = controlsRef.current;
     if (view === 'default') {
-      controls.object.position.set(0, 8.5, 9.5);
+      controls.object.position.set(0, 6.0, 10.0);
       controls.target.set(0, 0, 0);
     } else if (view === 'top') {
-      controls.object.position.set(0, 14.0, 0.1);
+      controls.object.position.set(0, 13.0, 0.1);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'satellite') {
+      controls.object.position.set(2.5, 1.5, 3.5);
       controls.target.set(0, 0, 0);
     } else if (view === 'earth') {
-      controls.object.position.set(0, 1.5, 3.0);
+      controls.object.position.set(0, 1.0, 3.2);
       controls.target.set(0, 0, 0);
-    } else if (view === 'target') {
-      controls.object.position.set(-4.8, 1.5, 2.5);
-      controls.target.set(-4.8, 0, 0);
     }
     controls.update();
-    labSound.playLaserPulse(600);
+    labSound.playLaserPulse(650);
   };
 
   const toggleSound = () => {
@@ -249,13 +268,13 @@ export default function OrbitalMechanicsSimulation() {
   };
 
   const handleExportDataCSV = () => {
-    const headers = 'Mission,R1_km,R2_km,V1_LEO(m/s),V2_Target(m/s),DeltaV1(m/s),DeltaV2(m/s),TotalDeltaV(m/s),TransferTime(hours)\n';
-    const row = `${selectedMission.nameEn},${selectedMission.r1Km},${selectedMission.r2Km},${v1.toFixed(1)},${v2.toFixed(1)},${deltaV1},${deltaV2},${totalDeltaV},${transferTimeHours}\n`;
+    const headers = 'Orbit,PerigeeAlt(km),ApogeeAlt(km),Eccentricity,Period(min),CurrentAlt(km),Velocity(km/s),DeltaV_Hohmann1(km/s),DeltaV_Hohmann2(km/s)\n';
+    const row = `${selectedPreset.nameEn},${perigeeAltKm},${apogeeAltKm},${eccentricity.toFixed(3)},${orbitalPeriodMin},${currentAltKm},${currentVelocityKms},${deltaV_LEO_to_GTO},${deltaV_GTO_to_GEO}\n`;
     const blob = new Blob([headers + row], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `orbital_hohmann_${selectedMission.id}.csv`;
+    link.download = `orbital_telemetry_${selectedPreset.id}.csv`;
     link.click();
     labSound.playSuccessChime();
   };
@@ -267,13 +286,6 @@ export default function OrbitalMechanicsSimulation() {
     } else {
       document.exitFullscreen();
       setIsFullscreen(false);
-    }
-  };
-
-  const handleResetFlight = () => {
-    setPhase('orbit_1');
-    if (controlsRef.current) {
-      controlsRef.current.reset();
     }
   };
 
@@ -305,15 +317,15 @@ export default function OrbitalMechanicsSimulation() {
               العودة إلى مختبر التجارب العلمية
             </Button>
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-sky-500 via-indigo-600 to-amber-500 rounded-2xl shadow-lg shadow-sky-500/20">
+              <div className="p-3 bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 rounded-2xl shadow-lg shadow-blue-500/20">
                 <Rocket className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-sky-300 via-amber-200 to-purple-300 bg-clip-text text-transparent">
-                  ميكانيكا المدارات ومناورة هوهمان ثلاثية الأبعاد (3D Pro)
+                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-blue-300 via-sky-200 to-indigo-300 bg-clip-text text-transparent">
+                  ميكانيكا المدارات الفضائية ومناورات هوهمان ثلاثية الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  تخطيط مناورات الدفع الصاروخي والانتقال الإهليلجي بين المدارات ومعادلة فيس-فيفا
+                  حسابات كبلر، مناورات الدفع الصاروخي \(\Delta v\)، والانتقال بين المدارات الأرضية LEO و GEO
                 </p>
               </div>
             </div>
@@ -336,7 +348,7 @@ export default function OrbitalMechanicsSimulation() {
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-cyan-400" />
-              تصدير الخطة المدارية (CSV)
+              تصدير الملاحة (CSV)
             </Button>
             <Button
               variant="outline"
@@ -350,61 +362,57 @@ export default function OrbitalMechanicsSimulation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleResetFlight}
+              onClick={() => setCameraView('default')}
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط المسار
+              إعادة الكاميرا
             </Button>
           </div>
         </div>
 
-        {/* Live Astrodynamics Gauges */}
+        {/* Live Orbit Telemetry */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">دفع الحقن الأول (Δv₁)</span>
-              <p className="text-lg font-bold text-amber-400 font-mono">+{deltaV1} m/s</p>
-              <span className="text-[10px] text-slate-500">عند الحضيض (LEO)</span>
+              <span className="text-xs text-slate-400">الارتفاع اللحظي (Alt)</span>
+              <p className="text-lg font-bold text-sky-400 font-mono">{Number(currentAltKm).toLocaleString()} km</p>
+              <span className="text-[10px] text-slate-500">فوق سطح الأرض</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">دفع الاستقرار الثاني (Δv₂)</span>
-              <p className="text-lg font-bold text-purple-400 font-mono">+{deltaV2} m/s</p>
-              <span className="text-[10px] text-slate-500">عند الأوج (GEO)</span>
+              <span className="text-xs text-slate-400">السرعة المدارية (v)</span>
+              <p className="text-lg font-bold text-emerald-400 font-mono">{currentVelocityKms} km/s</p>
+              <span className="text-[10px] text-slate-500 font-mono">{(currentVelocityKms * 3600).toFixed(0)} km/h</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">مجموع الدفع الكلي (Δv_total)</span>
-              <p className="text-lg font-bold text-cyan-400 font-mono">{totalDeltaV} m/s</p>
-              <span className="text-[10px] text-slate-500 font-mono">{(totalDeltaV / 1000).toFixed(2)} km/s</span>
+              <span className="text-xs text-slate-400">الزمن الدوري للمدار (T)</span>
+              <p className="text-lg font-bold text-amber-400 font-mono">{orbitalPeriodMin} min</p>
+              <span className="text-[10px] text-slate-500">{(orbitalPeriodMin / 60).toFixed(2)} ساعة للدورة</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">زمن الرحلة الإهليلجية</span>
-              <p className="text-lg font-bold text-emerald-400 font-mono">{transferTimeHours} h</p>
-              <span className="text-[10px] text-slate-500">نصف الزمن الدوري</span>
+              <span className="text-xs text-slate-400">اللامركزية المدارية (e)</span>
+              <p className="text-lg font-bold text-purple-400 font-mono">{eccentricity.toFixed(3)}</p>
+              <span className="text-[10px] text-slate-500">{eccentricity === 0 ? 'مدار دائري تام' : 'مدار إهليلجي'}</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">مرحلة الرحلة الحالية</span>
-              <p className="text-xs font-bold text-slate-200 mt-1">
-                {phase === 'orbit_1' && '1. المدار المنخفض LEO'}
-                {phase === 'transfer' && '2. مسار هوهمان الإهليلجي'}
-                {phase === 'orbit_2' && '3. المدار المستهدف النهائي ✓'}
-              </p>
-              <span className="text-[10px] text-slate-500">{selectedMission.nameEn}</span>
+              <span className="text-xs text-slate-400">حضيض / أوج (Rp / Ra)</span>
+              <p className="text-xs font-bold text-slate-200 mt-1 font-mono">{perigeeAltKm} / {apogeeAltKm} km</p>
+              <span className="text-[10px] text-slate-500">نقاط المدار القصوى</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">السرعة المدارية الابتدائية</span>
-              <p className="text-lg font-bold text-sky-400 font-mono">{v1.toFixed(0)} m/s</p>
-              <span className="text-[10px] text-slate-500 font-mono">{(v1 * 3.6).toFixed(0)} km/h</span>
+              <span className="text-xs text-slate-400">دفع هوهمان (LEO ⟶ GEO)</span>
+              <p className="text-sm font-bold text-cyan-400 mt-1 font-mono">{(deltaV_LEO_to_GTO + deltaV_GTO_to_GEO).toFixed(2)} km/s</p>
+              <span className="text-[10px] text-slate-500">إجمالي الدفع المطلوب</span>
             </CardContent>
           </Card>
         </div>
@@ -412,13 +420,21 @@ export default function OrbitalMechanicsSimulation() {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
-            <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
+            <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300">
               <Activity className="w-4 h-4" />
-              مسارات الفضاء المدارية ثلاثية الأبعاد (3D View)
+              المدار الفضائي ثلاثي الأبعاد (3D Orbit)
+            </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام الملاحة الفضائية ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
+            <TabsTrigger value="hohmann" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
+              <Rocket className="w-4 h-4" />
+              مناورات النقل المداري هوهمان
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
-              معادلة فيس-فيفا وقوانين كبلر
+              قوانين كبلر وميكانيكا الأجرام
             </TabsTrigger>
             <TabsTrigger value="quiz" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
               <Award className="w-4 h-4" />
@@ -434,12 +450,12 @@ export default function OrbitalMechanicsSimulation() {
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
-                      <Globe className="w-4 h-4 text-sky-400" />
-                      محاكي مدارات الفضاء ثلاثي الأبعاد (3D Space Flight Simulation)
+                      <Globe2 className="w-4 h-4 text-blue-400" />
+                      الأرض والمدار الفضائي ثلاثي الأبعاد (3D Space Environment)
                     </CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="border-sky-500/50 text-sky-300 bg-sky-500/10">
-                        {selectedMission.nameAr.split(' ')[0]}
+                      <Badge variant="outline" className="border-blue-500/50 text-blue-300 bg-blue-500/10">
+                        {selectedPreset.nameAr.split('(')[0]}
                       </Badge>
                       <button
                         onClick={toggleFullscreen}
@@ -451,20 +467,22 @@ export default function OrbitalMechanicsSimulation() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0 h-[460px] bg-slate-950 relative">
-                    <Canvas camera={{ position: [0, 8.5, 9.5], fov: 45 }}>
+                    <Canvas camera={{ position: [0, 6.0, 10.0], fov: 45 }}>
                       <ambientLight intensity={0.5} />
-                      <directionalLight position={[12, 10, 10]} intensity={1.2} />
-                      <directionalLight position={[-12, -5, -10]} intensity={0.3} color="#38bdf8" />
-                      <OrbitalMechanics3DScene
-                        mission={selectedMission}
-                        phase={phase}
+                      <directionalLight position={[10, 10, 10]} intensity={1.5} />
+                      <directionalLight position={[-10, -5, -10]} intensity={0.3} color="#38bdf8" />
+                      <Orbital3DScene
+                        currentR_Km={currentR_Km}
+                        semiMajorAxisKm={semiMajorAxisKm}
+                        eccentricity={eccentricity}
+                        trueAnomalyRad={trueAnomalyRad}
                         isPlaying={isPlaying}
                       />
                       <OrbitControls
                         ref={controlsRef}
                         enablePan={true}
                         enableZoom={true}
-                        minDistance={4}
+                        minDistance={3.5}
                         maxDistance={22}
                       />
                     </Canvas>
@@ -478,34 +496,30 @@ export default function OrbitalMechanicsSimulation() {
                         المنظور العام
                       </button>
                       <button
+                        onClick={() => setCameraView('satellite')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        القمر الصناعي
+                      </button>
+                      <button
                         onClick={() => setCameraView('earth')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
                       >
                         الأرض
                       </button>
                       <button
-                        onClick={() => setCameraView('target')}
-                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
-                      >
-                        المدار النهائي
-                      </button>
-                      <button
                         onClick={() => setCameraView('top')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
                       >
-                        قطبي
+                        علوي
                       </button>
                     </div>
 
                     {/* Live Assistant Hint */}
                     <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-sky-400 shrink-0" />
+                      <Lightbulb className="w-4 h-4 text-blue-400 shrink-0" />
                       <span>
-                        {phase === 'orbit_1'
-                          ? `💡 المركبة تدور في المدار المنخفض LEO بسرعة ${(v1 * 3.6).toFixed(0)} km/h. اضغط "إشعال المحرك الأول" للانطلاق في مسار هوهمان الإهليلجي.`
-                          : phase === 'transfer'
-                          ? `💡 المركبة تعبر مسار هوهمان الإهليلجي الذهبي. اضغط "إشعال المحرك الثاني" عند الوصول للأوج الدائري لتثبيت المدار النهائي.`
-                          : `💡 مبروك! المركبة الآن مستقرة بنجاح في ${selectedMission.targetNameAr} بسرعة مدارية ${(v2 * 3.6).toFixed(0)} km/h.`}
+                        💡 وفق قانون كبلر الثاني: سرعة القمر الصناعي تبلغ ذروتها عند الحضيض ({perigeeAltKm} كم) وتصل إلى أدناها عند الأوج ({apogeeAltKm} كم).
                       </span>
                     </div>
                   </CardContent>
@@ -517,67 +531,62 @@ export default function OrbitalMechanicsSimulation() {
                 <Card className="bg-slate-900/90 border-slate-800 shadow-xl">
                   <CardHeader className="py-3 px-4 border-b border-slate-800">
                     <CardTitle className="text-base font-bold text-slate-200 flex items-center gap-2">
-                      <Rocket className="w-4 h-4 text-sky-400" />
-                      لوحة قيادة المهمة الفضائية
+                      <Rocket className="w-4 h-4 text-blue-400" />
+                      إعدادات المدار ومناورات الدفع
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-5">
-                    {/* Mission Selector */}
+                    {/* Orbit Presets */}
                     <div>
-                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر ملف المهمة الفضائية</label>
+                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر مداراً قياسياً</label>
                       <div className="space-y-1.5">
-                        {MISSIONS.map((m) => (
+                        {PRESETS.map((p) => (
                           <button
-                            key={m.id}
-                            onClick={() => {
-                              setSelectedMission(m);
-                              handleResetFlight();
-                              labSound.playLaserPulse(500);
-                            }}
+                            key={p.id}
+                            onClick={() => handleApplyPreset(p)}
                             className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
-                              selectedMission.id === m.id
-                                ? 'bg-sky-500/20 border-sky-500 text-sky-300'
+                              selectedPreset.id === p.id
+                                ? 'bg-blue-500/20 border-blue-500 text-blue-300'
                                 : 'bg-slate-800/60 border-slate-700 text-slate-400'
                             }`}
                           >
-                            <div className="font-bold text-slate-200">{m.nameAr}</div>
-                            <div className="text-[10px] opacity-75">نصف القطر: {m.r1Km.toLocaleString()} ➔ {m.r2Km.toLocaleString()} km</div>
+                            <div className="font-bold text-slate-200">{p.nameAr}</div>
+                            <div className="text-[10px] opacity-75">{p.perigeeAltKm}x{p.apogeeAltKm} كم • {p.description}</div>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Flight Maneuver Execution Buttons */}
-                    <div className="space-y-2 pt-2">
-                      <Button
-                        disabled={phase !== 'orbit_1'}
-                        onClick={handleExecuteBurn1}
-                        className={`w-full font-bold text-xs ${
-                          phase === 'orbit_1'
-                            ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                            : 'bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        1. إشعال المحرك الأول (Burn 1: +{deltaV1} m/s) 🚀
-                      </Button>
+                    {/* Perigee Slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">ارتفاع نقطة الحضيض (Perigee Alt)</label>
+                        <span className="text-xs font-mono text-cyan-400 font-bold">{perigeeAltKm.toLocaleString()} km</span>
+                      </div>
+                      <Slider
+                        value={[perigeeAltKm]}
+                        min={200}
+                        max={36000}
+                        step={100}
+                        onValueChange={(val) => setPerigeeAltKm(Math.min(val[0], apogeeAltKm))}
+                        className="py-1"
+                      />
+                    </div>
 
-                      <Button
-                        disabled={phase !== 'transfer'}
-                        onClick={handleExecuteBurn2}
-                        className={`w-full font-bold text-xs ${
-                          phase === 'transfer'
-                            ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                            : 'bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        2. إشعال المحرك الثاني (Burn 2: +{deltaV2} m/s) ✨
-                      </Button>
-
-                      {phase === 'orbit_2' && (
-                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center text-xs text-emerald-300 font-bold">
-                          ✓ وصلت المركبة بنجاح إلى المدار المستهدف!
-                        </div>
-                      )}
+                    {/* Apogee Slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold text-slate-300">ارتفاع نقطة الأوج (Apogee Alt)</label>
+                        <span className="text-xs font-mono text-amber-400 font-bold">{apogeeAltKm.toLocaleString()} km</span>
+                      </div>
+                      <Slider
+                        value={[apogeeAltKm]}
+                        min={200}
+                        max={40000}
+                        step={100}
+                        onValueChange={(val) => setApogeeAltKm(Math.max(val[0], perigeeAltKm))}
+                        className="py-1"
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -585,35 +594,126 @@ export default function OrbitalMechanicsSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Theory */}
-          <TabsContent value="theory" className="space-y-4">
-            <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
-              <h3 className="text-xl font-bold text-sky-300">ميكانيكا المدارات الفضائية ومناورة هوهمان (1925)</h3>
-              <p>
-                ابتكر المهندس الألماني والتر هوهمان أكثر الطرق كفاءة واقتصاداً في استهلاك وقود الصواريخ للانتقال بين مدارين دائريين متحدي المركز حول جسم مركزي، باستخدام مدار بيضاوي انتقالي (Hohmann Transfer Orbit).
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-                <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">1. معادلة فيس-فيفا (Vis-Viva Equation)</h4>
-                  <p className="text-sm font-mono text-sky-300">v² = GM · (2/r - 1/a)</p>
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات الملاحة الفضائية (Orbital Navigation Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام الفضائية لقيادة القمر الصناعي عبر المدارات المختلفة وتطبيق مناورات هوهمان.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: وضع القمر في مدار أرضي منخفض LEO دائري ومستقر (&lt; 500 كم)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر مدار LEO أو اجعل الحضيض والأوج متساويين عند حوالي 420 كم للحفاظ على سرعة مدارية تقارب 7.7 km/s وزمن دوري 90 دقيقة.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">2. شرط الكفاءة القصوى</h4>
-                  <p className="text-xs text-slate-400">
-                    تتم عمليتا الدفع الصاروخي مماستين لاتجاه الحركة (Tangent) عند نقطتي الحضيض والأوج، مما يعظم تأثير أوبرث (Oberth Effect).
-                  </p>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: إشعال مناورة النقل الأولى والانتقال إلى مدار GTO الإهليلجي
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر مدار النقل GTO أو ارفع نقطة الأوج إلى 35,786 كم مع إبقاء الحضيض عند 420 كم لملاحظة مسار النقل الإهليلجي.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: تدوير المدار في المدار الجغرافي الثابت GEO (35,786 كم)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اضبط الحضيض والأوج معاً عند 35,786 كم ليصبح زمن الدورة 24 ساعة تماماً ويثبت القمر فوق نقطة جغرافية واحدة على الأرض.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Quiz */}
+          {/* TAB 3: Hohmann */}
+          <TabsContent value="hohmann" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4">
+              <CardTitle className="text-base font-bold text-cyan-300">تفاصيل مناورة هوهمان (Hohmann Transfer Trajectory)</CardTitle>
+              <p className="text-xs text-slate-300">
+                مناورة هوهمان هي المسار الأكثر كفاءة طاقياً للانتقال بين مدارين دائريين متحدي المركز حول جسم مركزي، وتتطلب إشعالين صاروخيين فقط:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-2">
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-amber-300 text-sm">الإشعال الأول (Δv1) عند الحضيض في LEO</h4>
+                  <p className="text-lg font-bold text-sky-400 font-mono">Δv₁ = +{deltaV_LEO_to_GTO} km/s</p>
+                  <p className="text-xs text-slate-400">يرفع نقطة الأوج من 420 كم إلى 35,786 كم للدخول في مدار النقل GTO.</p>
+                </div>
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-amber-300 text-sm">الإشعال الثاني (Δv2) عند الأوج في GEO</h4>
+                  <p className="text-lg font-bold text-emerald-400 font-mono">Δv₂ = +{deltaV_GTO_to_GEO} km/s</p>
+                  <p className="text-xs text-slate-400">يرفع الحضيض إلى 35,786 كم لتدوير المدار وتثبيته في GEO.</p>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 4: Theory */}
+          <TabsContent value="theory" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
+              <h3 className="text-xl font-bold text-blue-300">قوانين كبلر والميكانيكا المدارية لنيوتن</h3>
+              <p>
+                تتحرك جميع الأقمار الصناعية والأجرام الفضائية وفق قوانين كبلر الثلاثة للحركة الكوكبية المدعومة بقانون الجاذبية الكونية لنيوتن.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+                <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
+                  <h4 className="font-bold text-amber-300">1. قانون كبلر الثالث (الزمن الدوري)</h4>
+                  <p className="text-sm font-mono text-cyan-300">T² = (4π² / GM) · a³</p>
+                </div>
+                <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
+                  <h4 className="font-bold text-amber-300">2. معادلة السرعة الحية (Vis-Viva Equation)</h4>
+                  <p className="text-sm font-mono text-cyan-300">v² = GM · (2/r - 1/a)</p>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 5: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-emerald-300 flex items-center gap-2">
                   <HelpCircle className="w-5 h-5" />
-                  اختبار مفاهيم ديناميكا الفضاء
+                  اختبار مفاهيم الميكانيكا المدارية
                 </h3>
                 <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">
                   النقاط: {quizScore}
@@ -622,14 +722,14 @@ export default function OrbitalMechanicsSimulation() {
 
               <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-4">
                 <p className="font-semibold text-slate-200">
-                  سؤال: لماذا تعتبر مناورة هوهمان (Hohmann Transfer) هي الخيار القياسي لرحلات الفضاء بين الكواكب والمدارات؟
+                  سؤال: لماذا يستغرق القمر الصناعي في المدار الأرضي المنخفض LEO (400 كم) حوالي 90 دقيقة فقط لإكمال دورة حول الأرض، بينما يستغرق القمر في المدار الثابت GEO (35,786 كم) 24 ساعة كاملة؟
                 </p>
                 <div className="space-y-2">
                   {[
-                    { id: 0, text: 'لأنها أسرع مناورة في زمن الوصول.' },
-                    { id: 1, text: 'لأنها تستهلك أقل كمية ممكنة من الوقود وتوفر أدنى قيمة للتغير في السرعة (Δv).' },
-                    { id: 2, text: 'لأنها لا تحتاج إلى أي توجيه أو حواسيب.' },
-                    { id: 3, text: 'لأنها تسير في خط مستقيم نحو الهدف.' },
+                    { id: 0, text: 'بسبب قوة محركات القمر الصناعي في LEO.' },
+                    { id: 1, text: 'وفق قانون كبلر الثالث، يتناسب مربع الزمن الدوري طردياً مع مكعب نصف المحور الأكبر للمدار (T² ∝ a³).' },
+                    { id: 2, text: 'لأن الغلاف الجوي يدفع القمر في LEO بشكل أسرع.' },
+                    { id: 3, text: 'لأن كتلة القمر في GEO أكبر بكثير.' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -655,10 +755,10 @@ export default function OrbitalMechanicsSimulation() {
                     {quizAnswer === 1 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة ومثالية! مناورة هوهمان هي الحل الأمثل لاقتصاد الوقود والـ Δv لنقل الأقمار الصناعية والمركبات الفضائية بين المدارات الدائرية.</span>
+                        <span>إجابة صحيحة ورائعة! قانون كبلر الثالث يحدد أن المدارات الأبعد تمتلك مسافات أطول وسرعات مدارية أبطأ، مما يجعل الزمن الدوري في GEO يعادل 24 ساعة ليتطابق مع دوران الأرض.</span>
                       </div>
                     ) : (
-                      <span>إجابة غير صحيحة. ميزة مناورة هوهمان الأساسية هي الاقتصاد الفائق في استهلاك الوقود ودفع الصاروخ.</span>
+                      <span>إجابة غير صحيحة. السبب هو قانون كبلر الثالث الذي يربط نصف قطر المدار بالزمن الدوري المداري.</span>
                     )}
                   </div>
                 )}

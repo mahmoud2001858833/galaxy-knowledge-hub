@@ -1,13 +1,13 @@
-import React, { useState, useRef, useMemo, Suspense } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Droplets, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb
+  Activity, Sparkles, BookOpen, Layers, Zap, Eye, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare, BarChart3
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,6 @@ interface Droplet3D {
   z: number;
   vy: number;
   color: string;
-  isFocused: boolean;
 }
 
 interface Millikan3DProps {
@@ -63,7 +62,7 @@ function MillikanChamber3D({
   const dropletsRef = useRef<THREE.Group>(null);
   const electricField = voltage / PLATE_DISTANCE_M;
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!isPlaying) return;
 
     droplets.forEach((d) => {
@@ -79,11 +78,11 @@ function MillikanChamber3D({
       d.vy += accel * 0.0005;
       d.y += d.vy * 0.04;
 
-      if (d.y > 1.7) {
-        d.y = 1.7;
+      if (d.y > 1.65) {
+        d.y = 1.65;
         d.vy = 0;
-      } else if (d.y < -1.7) {
-        d.y = -1.7;
+      } else if (d.y < -1.65) {
+        d.y = -1.65;
         d.vy = 0;
       }
     });
@@ -119,10 +118,6 @@ function MillikanChamber3D({
           <cylinderGeometry args={[3.0, 3.0, 0.25, 32]} />
           <meshStandardMaterial color={voltage > 0 ? '#ef4444' : '#475569'} metalness={0.9} roughness={0.2} />
         </mesh>
-        <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.3, 0.3, 0.28, 16]} />
-          <meshStandardMaterial color="#0f172a" />
-        </mesh>
         <Html position={[0, 0.5, 0]} center>
           <div className="bg-slate-900/90 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded border border-red-500/40 pointer-events-none whitespace-nowrap shadow-lg">
             لوح علوي (+ موجب)
@@ -143,26 +138,6 @@ function MillikanChamber3D({
         </Html>
       </group>
 
-      {/* ATOMIZER NOZZLE */}
-      <group position={[-2.8, 2.6, 0]} rotation={[0, 0, -Math.PI / 4]}>
-        <mesh>
-          <cylinderGeometry args={[0.2, 0.35, 1.2, 16]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.8} roughness={0.3} />
-        </mesh>
-      </group>
-
-      {/* MICROSCOPE VIEWING TUBE */}
-      <group position={[0, 0, 3.5]} rotation={[Math.PI / 2, 0, 0]}>
-        <mesh>
-          <cylinderGeometry args={[0.6, 0.7, 2.2, 24]} />
-          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
-        </mesh>
-        <mesh position={[0, -1.0, 0]}>
-          <cylinderGeometry args={[0.72, 0.72, 0.2, 24]} />
-          <meshStandardMaterial color="#eab308" metalness={0.95} roughness={0.1} />
-        </mesh>
-      </group>
-
       {/* X-RAY TUBE */}
       <group position={[3.6, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <mesh>
@@ -174,7 +149,7 @@ function MillikanChamber3D({
         )}
       </group>
 
-      {/* X-Ray Cone */}
+      {/* X-Ray Ionizing Beam */}
       {isXRayOn && (
         <mesh position={[1.8, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
           <coneGeometry args={[1.5, 3.2, 24, 1, true]} />
@@ -201,9 +176,9 @@ function MillikanChamber3D({
                 metalness={0.3}
               />
               {isSelected && (
-                <Html position={[0, 0.35, 0]} center>
+                <Html position={[0, 0.4, 0]} center>
                   <div className="bg-sky-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap pointer-events-none">
-                    القطرة المختارة ({d.numCharges}e)
+                    القطرة {d.id} ({d.numCharges}e)
                   </div>
                 </Html>
               )}
@@ -230,20 +205,24 @@ export default function MillikanOilDropSimulation() {
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [calculationLog, setCalculationLog] = useState<Array<{ id: number; radiusUm: number; vBalance: number; qExp: number; nEstimated: number; eCalculated: number }>>([]);
 
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
+
   // Quiz states
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
   const [droplets, setDroplets] = useState<Droplet3D[]>(() => {
-    const initialDrops: Droplet3D[] = [
-      { id: 1, radiusUm: 1.25, radiusM: 1.25e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.25e-6, 3) * OIL_DENSITY, numCharges: 3, chargeC: 3 * E_TRUE, x: 0, y: 0.2, z: 0, vy: 0, color: '#fbbf24', isFocused: true },
-      { id: 2, radiusUm: 1.05, radiusM: 1.05e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.05e-6, 3) * OIL_DENSITY, numCharges: 2, chargeC: 2 * E_TRUE, x: -0.9, y: 0.6, z: 0.4, vy: 0, color: '#f59e0b', isFocused: false },
-      { id: 3, radiusUm: 1.45, radiusM: 1.45e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.45e-6, 3) * OIL_DENSITY, numCharges: 5, chargeC: 5 * E_TRUE, x: 0.8, y: -0.4, z: -0.3, vy: 0, color: '#f97316', isFocused: false },
-      { id: 4, radiusUm: 0.95, radiusM: 0.95e-6, massKg: (4 / 3) * Math.PI * Math.pow(0.95e-6, 3) * OIL_DENSITY, numCharges: 1, chargeC: 1 * E_TRUE, x: 0.3, y: -0.8, z: 0.6, vy: 0, color: '#fbbf24', isFocused: false },
-      { id: 5, radiusUm: 1.35, radiusM: 1.35e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.35e-6, 3) * OIL_DENSITY, numCharges: 4, chargeC: 4 * E_TRUE, x: -0.6, y: -0.1, z: -0.5, vy: 0, color: '#f59e0b', isFocused: false },
+    return [
+      { id: 1, radiusUm: 1.25, radiusM: 1.25e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.25e-6, 3) * OIL_DENSITY, numCharges: 3, chargeC: 3 * E_TRUE, x: 0, y: 0.2, z: 0, vy: 0, color: '#fbbf24' },
+      { id: 2, radiusUm: 1.05, radiusM: 1.05e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.05e-6, 3) * OIL_DENSITY, numCharges: 2, chargeC: 2 * E_TRUE, x: -0.9, y: 0.6, z: 0.4, vy: 0, color: '#f59e0b' },
+      { id: 3, radiusUm: 1.45, radiusM: 1.45e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.45e-6, 3) * OIL_DENSITY, numCharges: 5, chargeC: 5 * E_TRUE, x: 0.8, y: -0.4, z: -0.3, vy: 0, color: '#f97316' },
+      { id: 4, radiusUm: 0.95, radiusM: 0.95e-6, massKg: (4 / 3) * Math.PI * Math.pow(0.95e-6, 3) * OIL_DENSITY, numCharges: 1, chargeC: 1 * E_TRUE, x: 0.3, y: -0.8, z: 0.6, vy: 0, color: '#fbbf24' },
+      { id: 5, radiusUm: 1.35, radiusM: 1.35e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.35e-6, 3) * OIL_DENSITY, numCharges: 4, chargeC: 4 * E_TRUE, x: -0.6, y: -0.1, z: -0.5, vy: 0, color: '#f59e0b' },
     ];
-    return initialDrops;
   });
 
   const selectedDroplet = useMemo(() => {
@@ -260,9 +239,25 @@ export default function MillikanOilDropSimulation() {
 
   const isBalanced = Math.abs(voltage - balanceVoltage) < 4;
 
+  useEffect(() => {
+    // Mission 1: Balance any droplet
+    if (isBalanced && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Record 3 balanced droplet readings
+    if (calculationLog.length >= 3 && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [isBalanced, calculationLog, mission1Completed, mission3Completed]);
+
   const handleXRayPulse = () => {
     setIsXRayOn(true);
     labSound.playElectricZap();
+    if (!mission2Completed) {
+      setMission2Completed(true);
+    }
     setTimeout(() => setIsXRayOn(false), 1200);
 
     setDroplets((prev) =>
@@ -296,7 +291,7 @@ export default function MillikanOilDropSimulation() {
     ]);
 
     labSound.playSuccessChime();
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
   };
 
   const setCameraView = (view: 'default' | 'top' | 'microscope') => {
@@ -439,7 +434,7 @@ export default function MillikanOilDropSimulation() {
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">شدة المجال الكهربائي (E)</span>
+              <span className="text-xs text-slate-400">شدة المجال (E)</span>
               <p className="text-lg font-bold text-sky-400 font-mono">{(voltage / PLATE_DISTANCE_M).toFixed(0)} V/m</p>
               <span className="text-[10px] text-slate-500">d = 16 mm</span>
             </CardContent>
@@ -453,18 +448,18 @@ export default function MillikanOilDropSimulation() {
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">شحنة القطرة الحقيقية (q)</span>
+              <span className="text-xs text-slate-400">شحنة القطرة (q)</span>
               <p className="text-lg font-bold text-purple-400 font-mono">{(selectedDroplet.chargeC * 1e19).toFixed(2)} × 10⁻¹⁹ C</p>
-              <span className="text-[10px] text-slate-500">{selectedDroplet.numCharges} شحنات أساسية ({selectedDroplet.numCharges}e)</span>
+              <span className="text-[10px] text-slate-500">{selectedDroplet.numCharges} شحنات ({selectedDroplet.numCharges}e)</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
               <span className="text-xs text-slate-400">حالة اتزان القطرة</span>
               <p className={`text-sm font-bold mt-1 ${isBalanced ? 'text-emerald-400' : 'text-amber-400'}`}>
-                {isBalanced ? '✓ متزنة تماماً (Fe = Fg)' : 'حركة رأسية غير متزنة'}
+                {isBalanced ? '✓ متزنة تماماً (Fe = Fg)' : 'حركة غير متزنة'}
               </p>
-              <span className="text-[10px] text-slate-500">{isBalanced ? 'جاهزة للحساب' : 'اضبط الجهد'}</span>
+              <span className="text-[10px] text-slate-500">{isBalanced ? 'جاهزة للتسجيل' : 'اضبط الجهد'}</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
@@ -482,6 +477,10 @@ export default function MillikanOilDropSimulation() {
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">
               <Activity className="w-4 h-4" />
               المجهر والمكثف ثلاثي الأبعاد (3D Chamber)
+            </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام التحدي المعملي ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
             </TabsTrigger>
             <TabsTrigger value="logbook" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
               <Layers className="w-4 h-4" />
@@ -573,10 +572,10 @@ export default function MillikanOilDropSimulation() {
                       <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>
                         {isBalanced
-                          ? `💡 أحسنت! قطرة ${selectedDroplet.id} متزنة تماماً الآن عند ${voltage}V. اضغط على "تسجيل قراءة الاتزان" لحساب شحنتها.`
+                          ? `💡 أحسنت! قطرة ${selectedDroplet.id} متزنة تماماً عند ${voltage}V. اضغط على "تسجيل قراءة الاتزان" لحساب شحنتها.`
                           : voltage < balanceVoltage
-                          ? `💡 الجهد المطبق (${voltage}V) ضعيف؛ قوة الجاذبية للأسفل تفوق القوة الكهربائية الصاعدة. ارفع الجهد نحو ${balanceVoltage}V.`
-                          : `💡 الجهد المطبق (${voltage}V) قوي جداً؛ القوة الكهربائية الصاعدة تدفع القطرة نحو اللوح العلوي. خفّض الجهد نحو ${balanceVoltage}V.`}
+                          ? `💡 الجهد (${voltage}V) ضعيف. قوة الجاذبية للأسفل تفوق القوة الكهربائية. ارفع الجهد نحو ${balanceVoltage}V.`
+                          : `💡 الجهد (${voltage}V) مرتفع جداً. القوة الكهربائية تدفع القطرة للأعلى. خفّض الجهد نحو ${balanceVoltage}V.`}
                       </span>
                     </div>
                   </CardContent>
@@ -593,7 +592,7 @@ export default function MillikanOilDropSimulation() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-5">
-                    {/* Droplet Selection Buttons */}
+                    {/* Droplet Selection */}
                     <div>
                       <label className="text-xs font-semibold text-slate-300 block mb-2">اختر القطرة المستهدفة</label>
                       <div className="grid grid-cols-5 gap-1">
@@ -666,7 +665,78 @@ export default function MillikanOilDropSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Logbook */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات الاكتشاف المعملي لميليكان (Lab Challenges)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه التحديات العملية داخل المختبر ثلاثي الأبعاد لاكتشاف شحنة الإلكترون وتكميم الكهرباء.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: موازنة إحدى قطرات الزيت في الهواء (Fe = Fg)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر أي قطرة واضبط منزلق الجهد بدقة حتى تتوقف القطرة عن الصعود أو الهبوط وتصبح متزنة تماماً.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: تأيين هواء الغرفة بواسطة الأشعة السينية (X-Ray Ionization)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اضغط على زر &quot;إطلاق ومضة أشعة سينية&quot; لمشاهدة اكتساب أو فقدان القطرة لإلكترونات وتغير عدد شحناتها.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: تسجيل 3 قراءات اتزان مختلفة في السجل واستنتاج قيمة e
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        سجل 3 قطرات متزنة على الأقل في السجل المعملي وملاحظة كيف أن كل الشحنات هي مضاعفات صحيحة لـ \(1.6 \times 10^{-19}\) كولوم.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Logbook */}
           <TabsContent value="logbook" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
               <div className="flex items-center justify-between mb-4">
@@ -718,14 +788,13 @@ export default function MillikanOilDropSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Theory */}
+          {/* TAB 4: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-amber-300">الأسس الفيزيائية لتجربة قطرة الزيت لروبيرت ميليكان (1909)</h3>
               <p>
                 نال الفيزيائي الأمريكي روبرت ميليكان جائزة نوبل في الفيزياء عام 1923 لقياسه الدقيق لشحنة الإلكترون وإثباته أن الشحنة الكهربائية كمية مكممة ومضاعفة صحيحة للشحنة الأساسية \(e\).
               </p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-sky-400">1. معادلة اتزان القطرة في المجال الكهربائي</h4>
@@ -739,7 +808,7 @@ export default function MillikanOilDropSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 4: Quiz */}
+          {/* TAB 5: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">

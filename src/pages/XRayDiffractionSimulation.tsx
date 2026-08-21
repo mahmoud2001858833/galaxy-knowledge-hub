@@ -1,13 +1,13 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Layers, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Zap, Compass, Eye, ShieldAlert,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Activity, BookOpen, Zap, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -164,6 +164,11 @@ export default function XRayDiffractionSimulation() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
+
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
@@ -182,6 +187,25 @@ export default function XRayDiffractionSimulation() {
     const peak = 100 / (1 + Math.pow(diff / 0.5, 2));
     return +peak.toFixed(1);
   }, [thetaDeg, theoreticalPeakTheta]);
+
+  // Mission check
+  useEffect(() => {
+    // Mission 1: Find Bragg peak of NaCl (approx 15.8°)
+    if (selectedCrystal.id === 'nacl' && isConstructive && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Find Silicon (111) peak
+    if (selectedCrystal.id === 'silicon' && isConstructive && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Test Aluminum or Gold
+    if ((selectedCrystal.id === 'aluminum' || selectedCrystal.id === 'gold') && isConstructive && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [selectedCrystal, isConstructive, mission1Completed, mission2Completed, mission3Completed]);
 
   const xrdData = useMemo(() => {
     const data = [];
@@ -389,6 +413,10 @@ export default function XRayDiffractionSimulation() {
               <Activity className="w-4 h-4" />
               مقياس الزوايا البلوري ثلاثي الأبعاد (3D Goniometer)
             </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام وتحديات براغ ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
             <TabsTrigger value="diffractogram" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
               <Layers className="w-4 h-4" />
               مخطط الحيود (XRD Diffractogram)
@@ -561,7 +589,78 @@ export default function XRayDiffractionSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Diffractogram */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات حيود براغ المعملية (Bragg XRD Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام لتحديد أبعاد الشبكات البلورية المختلفة باستخدام الأشعة السينية.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: رصد قمة حيود ملح الطعام NaCl عند زاوية 15.8°
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        حرك ذراع مقياس الزوايا حتى تصل زاوية السقوط إلى 15.8° (2θ = 31.6°) لملاحظة حدوث التداخل البناء وإضاءة الكاشف بالأخضر.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: قياس أبعاد بلورة السيليكون Si (111)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر عينة السيليكون (d = 3.13 Å) واضبط الزاوية عند 14.2° لرصد قمة الحيود الرئيسية.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: فحص عينة معدنية (الألمنيوم أو الذهب)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر عينة الألمنيوم أو الذهب وحقق شرط براغ لرصد انعكاس المستويات الذرية المعدنية.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Diffractogram */}
           <TabsContent value="diffractogram" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
               <CardTitle className="text-base font-bold text-sky-300 mb-2">مخطط شدة الحيود مع زاوية الكاشف (XRD Diffractogram)</CardTitle>
@@ -580,7 +679,7 @@ export default function XRayDiffractionSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Theory */}
+          {/* TAB 4: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-cyan-300">قانون براغ وحيود الأشعة السينية (جائزة نوبل 1915)</h3>
@@ -602,7 +701,7 @@ export default function XRayDiffractionSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 4: Quiz */}
+          {/* TAB 5: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">

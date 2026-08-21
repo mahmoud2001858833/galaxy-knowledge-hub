@@ -2,11 +2,12 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Beaker, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
   Activity, BookOpen, Layers, Gauge, Thermometer,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb, Target, CheckSquare 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,15 +102,12 @@ function ReactorChamber3D({
   const cylinderRadius = 2.0;
   const maxMolecules = 50;
 
-  // Chamber geometry based on pressure
-  // At 1 atm: height = 3.6, at 5 atm: height = 1.6
   const chamberHeight = 4.2 / (1 + (pressureAtm - 0.5) * 0.35);
   const halfH = chamberHeight / 2;
   const pistonY = halfH;
   const effectiveRadius = cylinderRadius - 0.22;
   const effectiveHalfH = halfH - 0.22;
 
-  // Stable list of molecule positions and velocities
   const molecules = useRef<MoleculeState[]>([]);
   if (molecules.current.length === 0) {
     molecules.current = Array.from({ length: maxMolecules }, (_, i) => {
@@ -127,7 +125,6 @@ function ReactorChamber3D({
     });
   }
 
-  // Update molecule types when ratio changes
   molecules.current.forEach((m, idx) => {
     m.isProduct = idx < Math.round(ratioProducts * maxMolecules);
   });
@@ -142,10 +139,8 @@ function ReactorChamber3D({
       m.y += m.vy * speedScale;
       m.z += m.vz * speedScale;
 
-      // 1. STRICT CYLINDER RADIAL BOUNDARY (Never escape walls)
       const currentR = Math.sqrt(m.x * m.x + m.z * m.z);
       if (currentR > effectiveRadius) {
-        // Push back inside
         const angle = Math.atan2(m.z, m.x);
         m.x = Math.cos(angle) * (effectiveRadius - 0.02);
         m.z = Math.sin(angle) * (effectiveRadius - 0.02);
@@ -153,7 +148,6 @@ function ReactorChamber3D({
         m.vz = -m.vz * (0.8 + Math.random() * 0.4);
       }
 
-      // 2. STRICT VERTICAL BOUNDARY (Never escape Piston or Base)
       if (m.y > effectiveHalfH) {
         m.y = effectiveHalfH - 0.02;
         m.vy = -Math.abs(m.vy);
@@ -162,7 +156,6 @@ function ReactorChamber3D({
         m.vy = Math.abs(m.vy);
       }
 
-      // Update 3D mesh
       const mesh = moleculesRef.current?.children[i] as THREE.Mesh;
       if (mesh) {
         mesh.position.set(m.x, m.y, m.z);
@@ -193,12 +186,10 @@ function ReactorChamber3D({
 
       {/* MOVING PISTON */}
       <group position={[0, pistonY, 0]}>
-        {/* Piston Disc */}
         <mesh position={[0, 0.1, 0]}>
           <cylinderGeometry args={[cylinderRadius - 0.02, cylinderRadius - 0.02, 0.22, 32]} />
           <meshStandardMaterial color="#475569" metalness={0.9} roughness={0.2} />
         </mesh>
-        {/* Piston Rod */}
         <mesh position={[0, 1.3, 0]}>
           <cylinderGeometry args={[0.22, 0.22, 2.2, 16]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.95} roughness={0.1} />
@@ -242,6 +233,11 @@ export default function ChemicalEquilibriumSimulation() {
   const [activeTab, setActiveTab] = useState<string>('simulation');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
 
   // Concentrations
   const [concA, setConcA] = useState<number>(2.0);
@@ -296,6 +292,25 @@ export default function ChemicalEquilibriumSimulation() {
 
     return () => clearInterval(timer);
   }, [isPlaying, currentKc, Q, concA, concB, concC]);
+
+  // Mission checks
+  useEffect(() => {
+    // Mission 1: Increase pressure on Haber process (Δn = -2)
+    if (selectedReaction.id === 'haber' && pressureAtm >= 3.5 && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Cool exothermic reaction to increase products
+    if (selectedReaction.deltaH < 0 && temperatureK <= 320 && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Reach steady equilibrium state (Q ≈ Kc)
+    if (Math.abs(Q - currentKc) < 0.08 && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [selectedReaction, pressureAtm, temperatureK, Q, currentKc, mission1Completed, mission2Completed, mission3Completed]);
 
   const setCameraView = (view: 'default' | 'top' | 'piston' | 'side') => {
     if (!controlsRef.current) return;
@@ -495,6 +510,10 @@ export default function ChemicalEquilibriumSimulation() {
               <Activity className="w-4 h-4" />
               المفاعل الكيميائي ثلاثي الأبعاد (3D Reactor)
             </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-teal-500/20 data-[state=active]:text-teal-300">
+              <Target className="w-4 h-4" />
+              مهام لوشاتيليه ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
             <TabsTrigger value="curves" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
               <Layers className="w-4 h-4" />
               منحنيات التراكيز الحية
@@ -675,7 +694,78 @@ export default function ChemicalEquilibriumSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Live Curves */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-teal-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  تحديات ومهام مبدأ لوشاتيليه المعملية (Le Chatelier Challenges)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  طبق مبدأ لوشاتيليه للتحكم في موضع الاتزان الكيميائي وزيادة إنتاج النواتج أو المتفاعلات.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: زيادة إنتاج الأمونيا عبر رفع الضغط (&gt; 3.5 atm)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر تفاعل هابر (Δn = -2) وارفع الضغط إلى أكثر من 3.5 atm لمشاهدة إزاحة الاتزان نحو الطرف ذي المولات الأقل (الأمونيا).
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: تبريد التفاعل الطارد للحرارة لزيادة ثابت الاتزان Kc (&lt; 320 K)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر تفاعلاً طارداً للحرارة (ΔH &lt; 0) وخفض درجة الحرارة تحت 320 K لملاحظة قفزة ثابت الاتزان وتكوين النواتج.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: الوصول لحالة الاتزان الديناميكي المستقر (Q ≈ Kc)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        انتظر استقرار النظام حتى يتطابق حاصل التفاعل Q مع ثابت الاتزان Kc وتثبت تركيزات النواتج والمتفاعلات.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Live Curves */}
           <TabsContent value="curves" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
               <CardTitle className="text-base font-bold text-sky-300 mb-2">تغير التراكيز الحية مع الزمن واستقرار الاتزان</CardTitle>
@@ -695,7 +785,7 @@ export default function ChemicalEquilibriumSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Theory */}
+          {/* TAB 4: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-emerald-300">مبدأ لوشاتيليه والاتزان الكيميائي الديناميكي (1884)</h3>
@@ -720,7 +810,7 @@ export default function ChemicalEquilibriumSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 4: Quiz */}
+          {/* TAB 5: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">

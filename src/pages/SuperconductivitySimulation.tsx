@@ -1,19 +1,20 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box, Torus } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Magnet, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Snowflake, Thermometer,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Activity, BookOpen, Thermometer, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare, Zap 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -24,17 +25,17 @@ interface SuperconductorMaterial {
   id: string;
   nameAr: string;
   nameEn: string;
-  criticalTempK: number;
-  type: 'Type I' | 'Type II';
+  tcKelvin: number;
+  typeAr: string;
   description: string;
   color: string;
 }
 
 const MATERIALS: SuperconductorMaterial[] = [
-  { id: 'ybco', nameAr: 'خزف YBCO الفائق (YBa₂Cu₃O₇)', nameEn: 'YBCO', criticalTempK: 93, type: 'Type II', description: 'موصل فائق فائق الحرارة يبرد بالنيتروجين السائل (77K)', color: '#334155' },
-  { id: 'bscco', nameAr: 'مركب BSCCO (Bi-2223)', nameEn: 'BSCCO', criticalTempK: 108, type: 'Type II', description: 'يستخدم في كابلات نقل الطاقة فائقة الكفاءة', color: '#1e293b' },
-  { id: 'mgb2', nameAr: 'ثنائي بوريد المغنيسيوم (MgB₂)', nameEn: 'MgB2', criticalTempK: 39, type: 'Type II', description: 'معدن فائق التوصيل منخفض التكلفة', color: '#475569' },
-  { id: 'mercury', nameAr: 'الزئبق الصلب (كامرلنغ أونس 1911)', nameEn: 'Mercury', criticalTempK: 4.2, type: 'Type I', description: 'أول موصل فائق تم اكتشافه بالهيليوم السائل', color: '#94a3b8' },
+  { id: 'ybco', nameAr: 'مركب YBCO (YBa₂Cu₃O₇)', nameEn: 'YBCO', tcKelvin: 93.0, typeAr: 'فائق توصيل عالي الحرارة (HTS)', description: 'يعمل بالنيتروجين السائل (77 K)', color: '#38bdf8' },
+  { id: 'bscco', nameAr: 'مركب BSCCO', nameEn: 'BSCCO', tcKelvin: 108.0, typeAr: 'فائق توصيل فائق القدرة', description: 'يستخدم في كابلات نقل الطاقة الخارقة', color: '#a855f7' },
+  { id: 'nb3sn', nameAr: 'سبيكة النيوبيوم والقصدير (Nb₃Sn)', nameEn: 'Nb3Sn', tcKelvin: 18.3, typeAr: 'فائق توصيل تقليدي (LTS)', description: 'مغناطيسات مصادم الهادرونات الكبير LHC ومفاعلات ITER', color: '#fbbf24' },
+  { id: 'mercury', nameAr: 'الزئبق (Hg) - أونيس 1911', nameEn: 'Mercury', tcKelvin: 4.2, typeAr: 'أول فائق توصيل مكتشف', description: 'اكتشفه كامرلنغ أونس في الهيليوم السائل', color: '#94a3b8' },
 ];
 
 interface Superconductor3DProps {
@@ -44,147 +45,95 @@ interface Superconductor3DProps {
   isPlaying: boolean;
 }
 
-function Superconductivity3DScene({
+function Meissner3DScene({
   temperatureK,
   selectedMaterial,
   isSuperconducting,
   isPlaying,
 }: Superconductor3DProps) {
   const magnetRef = useRef<THREE.Group>(null);
-  const fogRef = useRef<THREE.Group>(null);
+  const diskRef = useRef<THREE.Group>(null);
 
-  const fogCount = 40;
-  const fogData = useMemo(() => {
-    return Array.from({ length: fogCount }, () => ({
-      x: (Math.random() - 0.5) * 3.5,
-      y: -0.6 + Math.random() * 0.4,
-      z: (Math.random() - 0.5) * 3.5,
-      vy: 0.008 + Math.random() * 0.012,
-    }));
-  }, [fogCount]);
+  const levitationHeight = isSuperconducting ? 1.4 : 0.25;
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (!isPlaying) return;
 
     if (magnetRef.current) {
+      magnetRef.current.position.y = THREE.MathUtils.lerp(
+        magnetRef.current.position.y,
+        levitationHeight,
+        0.05
+      );
+
       if (isSuperconducting) {
-        magnetRef.current.position.y = THREE.MathUtils.lerp(
-          magnetRef.current.position.y,
-          1.2 + Math.sin(state.clock.elapsedTime * 2) * 0.08,
-          0.05
-        );
-        magnetRef.current.rotation.y += 0.02;
-        magnetRef.current.rotation.x = Math.sin(state.clock.elapsedTime) * 0.05;
-      } else {
-        magnetRef.current.position.y = THREE.MathUtils.lerp(magnetRef.current.position.y, 0.25, 0.08);
-        magnetRef.current.rotation.y = 0;
-        magnetRef.current.rotation.x = 0;
-      }
-    }
-
-    if (fogRef.current && temperatureK <= 120) {
-      for (let i = 0; i < fogCount; i++) {
-        const p = fogData[i];
-        const mesh = fogRef.current.children[i] as THREE.Mesh;
-        if (!mesh) continue;
-
-        p.y += p.vy;
-        if (p.y > 1.8) {
-          p.y = -0.6;
-          p.x = (Math.random() - 0.5) * 3.5;
-          p.z = (Math.random() - 0.5) * 3.5;
-        }
-        mesh.position.set(p.x, p.y, p.z);
+        magnetRef.current.rotation.y += 0.015;
+        magnetRef.current.position.y += Math.sin(state.clock.elapsedTime * 4) * 0.003;
       }
     }
   });
 
   return (
     <group>
-      {/* CRYOGENIC DISH */}
+      {/* CRYOSTAT CONTAINER / DISH */}
       <mesh position={[0, -0.6, 0]}>
-        <cylinderGeometry args={[3.2, 3.5, 0.5, 32]} />
-        <meshStandardMaterial color="#0f172a" metalness={0.8} roughness={0.3} />
+        <cylinderGeometry args={[3.2, 3.0, 0.8, 32]} />
+        <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.3} />
       </mesh>
 
-      {/* LIQUID NITROGEN POOL */}
-      {temperatureK <= 100 && (
-        <mesh position={[0, -0.32, 0]}>
-          <cylinderGeometry args={[3.0, 3.0, 0.1, 32]} />
-          <meshPhysicalMaterial
-            color="#38bdf8"
-            transmission={0.8}
-            opacity={0.6}
-            transparent
-            roughness={0.1}
-          />
-        </mesh>
-      )}
+      {/* LIQUID NITROGEN / HELIUM POOL */}
+      <mesh position={[0, -0.25, 0]}>
+        <cylinderGeometry args={[2.9, 2.9, 0.15, 32]} />
+        <meshPhysicalMaterial
+          color="#93c5fd"
+          transmission={0.8}
+          opacity={0.6}
+          transparent
+          roughness={0.1}
+        />
+      </mesh>
 
-      {/* SUPERCONDUCTOR DISK */}
-      <group position={[0, 0, 0]}>
+      {/* SUPERCONDUCTING CERAMIC PELLET */}
+      <group ref={diskRef} position={[0, 0, 0]}>
         <mesh>
           <cylinderGeometry args={[1.8, 1.8, 0.35, 32]} />
           <meshStandardMaterial
             color={selectedMaterial.color}
-            metalness={0.9}
+            metalness={0.8}
             roughness={0.2}
           />
         </mesh>
-        <Html position={[0, -0.45, 0]} center>
-          <div className="bg-slate-900/90 text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            قرص التوصيل الفائق ({selectedMaterial.nameAr})
+        <Html position={[0, -0.4, 1.9]} center>
+          <div className="bg-slate-900/90 text-sky-300 text-[10px] font-bold px-2 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            قرص: {selectedMaterial.nameAr} (Tc = {selectedMaterial.tcKelvin} K)
           </div>
         </Html>
       </group>
 
-      {/* FLOATING MAGNET */}
+      {/* LEVITATING NEODYMIUM MAGNET */}
       <group ref={magnetRef} position={[0, 0.25, 0]}>
-        <mesh position={[0, 0.12, 0]}>
-          <boxGeometry args={[0.7, 0.24, 0.7]} />
-          <meshStandardMaterial color="#ef4444" metalness={0.8} roughness={0.2} />
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.7, 0.7, 0.2, 24]} />
+          <meshStandardMaterial color="#ef4444" metalness={0.9} roughness={0.1} />
         </mesh>
-        <mesh position={[0, -0.12, 0]}>
-          <boxGeometry args={[0.7, 0.24, 0.7]} />
-          <meshStandardMaterial color="#3b82f6" metalness={0.8} roughness={0.2} />
+        <mesh position={[0, -0.1, 0]}>
+          <cylinderGeometry args={[0.7, 0.7, 0.2, 24]} />
+          <meshStandardMaterial color="#3b82f6" metalness={0.9} roughness={0.1} />
         </mesh>
-        <Html position={[0, 0.45, 0]} center>
-          <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg pointer-events-none whitespace-nowrap ${
-            isSuperconducting ? 'bg-cyan-500 text-slate-950 font-extrabold animate-bounce' : 'bg-slate-800 text-slate-400'
-          }`}>
-            {isSuperconducting ? 'طفو كمي حر (Meissner) ⚡' : 'مغناطيس نيوديميوم (مستقر)'}
+        <Html position={[0, 0.55, 0]} center>
+          <div className="bg-slate-900/90 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-500/40 pointer-events-none whitespace-nowrap shadow-lg">
+            مغناطيس نيوديميوم (N/S)
           </div>
         </Html>
       </group>
 
-      {/* EXPELLED MAGNETIC FLUX */}
-      {isSuperconducting ? (
-        <group position={[0, 0.5, 0]}>
-          {[-1.4, 0, 1.4].map((z, idx) => (
-            <mesh key={`flux-${idx}`} position={[0, 0, z]} rotation={[0, 0, Math.PI / 2]}>
-              <torusGeometry args={[1.6, 0.02, 16, 32, Math.PI]} />
+      {/* MAGNETIC EXPULSION FIELD LINES */}
+      {isSuperconducting && (
+        <group position={[0, 0.6, 0]}>
+          {[-1.5, -0.9, 0.9, 1.5].map((x, idx) => (
+            <mesh key={`field-${idx}`} position={[x, 0.2, 0]} rotation={[0, 0, x > 0 ? -Math.PI / 4 : Math.PI / 4]}>
+              <cylinderGeometry args={[0.02, 0.02, 1.4, 8]} />
               <meshBasicMaterial color="#38bdf8" opacity={0.6} transparent />
-            </mesh>
-          ))}
-        </group>
-      ) : (
-        <group position={[0, 0, 0]}>
-          {[-0.8, 0, 0.8].map((x, idx) => (
-            <mesh key={`norm-flux-${idx}`} position={[x, 0, 0]}>
-              <cylinderGeometry args={[0.015, 0.015, 2.4, 8]} />
-              <meshBasicMaterial color="#ef4444" opacity={0.35} transparent />
-            </mesh>
-          ))}
-        </group>
-      )}
-
-      {/* NITROGEN VAPOR FOG */}
-      {temperatureK <= 100 && (
-        <group ref={fogRef}>
-          {fogData.map((_, i) => (
-            <mesh key={`fog-${i}`}>
-              <sphereGeometry args={[0.18, 8, 8]} />
-              <meshBasicMaterial color="#e0f2fe" opacity={0.3} transparent />
             </mesh>
           ))}
         </group>
@@ -200,44 +149,76 @@ export default function SuperconductivitySimulation() {
 
   // States
   const [selectedMaterial, setSelectedMaterial] = useState<SuperconductorMaterial>(MATERIALS[0]);
-  const [temperatureK, setTemperatureK] = useState<number>(77);
+  const [temperatureK, setTemperatureK] = useState<number>(77.0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
 
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  const isSuperconducting = temperatureK < selectedMaterial.criticalTempK;
+  const isSuperconducting = temperatureK < selectedMaterial.tcKelvin;
 
   const electricalResistanceOhms = useMemo(() => {
     if (isSuperconducting) return 0.0;
-    const deltaT = temperatureK - selectedMaterial.criticalTempK;
-    return +(0.5 + deltaT * 0.04).toFixed(3);
-  }, [temperatureK, selectedMaterial, isSuperconducting]);
+    const diff = temperatureK - selectedMaterial.tcKelvin;
+    return +(0.05 + diff * 0.008).toFixed(4);
+  }, [temperatureK, isSuperconducting, selectedMaterial]);
 
-  const handleCoolWithNitrogen = () => {
-    setTemperatureK(77);
-    labSound.playCryoHiss();
-  };
+  // Mission check
+  useEffect(() => {
+    // Mission 1: Cool YBCO below 93K with liquid nitrogen
+    if (selectedMaterial.id === 'ybco' && isSuperconducting && !mission1Completed) {
+      setMission1Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 2: Observe resistance drop to exact 0.0000 Ω
+    if (electricalResistanceOhms === 0 && !mission2Completed) {
+      setMission2Completed(true);
+      labSound.playSuccessChime();
+    }
+    // Mission 3: Test low temperature superconductor (Mercury or Nb3Sn) below 18K
+    if ((selectedMaterial.id === 'nb3sn' || selectedMaterial.id === 'mercury') && isSuperconducting && !mission3Completed) {
+      setMission3Completed(true);
+      labSound.playSuccessChime();
+    }
+  }, [selectedMaterial, isSuperconducting, electricalResistanceOhms, mission1Completed, mission2Completed, mission3Completed]);
 
-  const setCameraView = (view: 'default' | 'top' | 'magnet' | 'disk') => {
+  const resistanceCurveData = useMemo(() => {
+    const data = [];
+    for (let t = 2; t <= 150; t += 4) {
+      const isSC = t < selectedMaterial.tcKelvin;
+      const res = isSC ? 0 : 0.05 + (t - selectedMaterial.tcKelvin) * 0.008;
+      data.push({
+        temperature: t,
+        resistance: +res.toFixed(4),
+      });
+    }
+    return data;
+  }, [selectedMaterial]);
+
+  const setCameraView = (view: 'default' | 'top' | 'levitation' | 'side') => {
     if (!controlsRef.current) return;
     const controls = controlsRef.current;
     if (view === 'default') {
-      controls.object.position.set(0, 2.5, 7.5);
+      controls.object.position.set(0, 3.5, 7.5);
       controls.target.set(0, 0, 0);
     } else if (view === 'top') {
-      controls.object.position.set(0, 9.0, 0.1);
+      controls.object.position.set(0, 8.5, 0.1);
       controls.target.set(0, 0, 0);
-    } else if (view === 'magnet') {
-      controls.object.position.set(0, 1.2, 3.2);
-      controls.target.set(0, 1.0, 0);
-    } else if (view === 'disk') {
-      controls.object.position.set(3.5, 0.5, 3.5);
+    } else if (view === 'levitation') {
+      controls.object.position.set(0, 0.8, 3.2);
+      controls.target.set(0, 0.6, 0);
+    } else if (view === 'side') {
+      controls.object.position.set(7.5, 0, 0);
       controls.target.set(0, 0, 0);
     }
     controls.update();
@@ -250,13 +231,13 @@ export default function SuperconductivitySimulation() {
   };
 
   const handleExportDataCSV = () => {
-    const headers = 'Material,CriticalTemp(K),CurrentTemp(K),Resistance(Ohm),IsSuperconducting,MagneticFieldInternal(T)\n';
-    const row = `${selectedMaterial.nameEn},${selectedMaterial.criticalTempK},${temperatureK},${electricalResistanceOhms},${isSuperconducting},${isSuperconducting ? 0 : 0.85}\n`;
+    const headers = 'Material,CriticalTemp(K),CurrentTemp(K),Resistance(Ohms),IsSuperconducting,MagneticState\n';
+    const row = `${selectedMaterial.nameEn},${selectedMaterial.tcKelvin},${temperatureK},${electricalResistanceOhms},${isSuperconducting},${isSuperconducting ? 'Meissner Levitation' : 'Normal State'}\n`;
     const blob = new Blob([headers + row], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `superconductivity_${selectedMaterial.id}_data.csv`;
+    link.download = `superconductivity_${selectedMaterial.id}.csv`;
     link.click();
     labSound.playSuccessChime();
   };
@@ -274,7 +255,7 @@ export default function SuperconductivitySimulation() {
   const handleQuizSubmit = (selected: number) => {
     setQuizAnswer(selected);
     setQuizSubmitted(true);
-    if (selected === 0) {
+    if (selected === 1) {
       setQuizScore((prev) => prev + 1);
       labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
@@ -299,15 +280,15 @@ export default function SuperconductivitySimulation() {
               العودة إلى مختبر التجارب العلمية
             </Button>
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-700 rounded-2xl shadow-lg shadow-cyan-500/20">
+              <div className="p-3 bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 rounded-2xl shadow-lg shadow-cyan-500/20">
                 <Magnet className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-cyan-300 via-sky-200 to-blue-300 bg-clip-text text-transparent">
-                  الموصلية الفائقة وتأثير مايسنر ثلاثية الأبعاد (3D Pro)
+                <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-cyan-300 via-sky-200 to-blue-400 bg-clip-text text-transparent">
+                  الموصلية الفائقة وتأثير مايسنر ثلاثي الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  انعدام المقاومة تماماً R=0، طرد المجال المغناطيسي B=0، والطفو الكمي (Quantum Levitation)
+                  انعدام المقاومة الكهربائية، طرد خطوط المجال المغناطيسي، وظاهرة الطفو المغناطيسي الكمي
                 </p>
               </div>
             </div>
@@ -353,52 +334,56 @@ export default function SuperconductivitySimulation() {
           </div>
         </div>
 
-        {/* Live Gauges */}
+        {/* Live Cryo Telemetry */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
               <span className="text-xs text-slate-400">درجة الحرارة (T)</span>
-              <p className="text-lg font-bold text-cyan-400 font-mono">{temperatureK} K</p>
-              <span className="text-[10px] text-slate-500 font-mono">{(temperatureK - 273.15).toFixed(1)}°C</span>
+              <p className="text-lg font-bold text-cyan-400 font-mono">{temperatureK.toFixed(1)} K</p>
+              <span className="text-[10px] text-slate-500">{(temperatureK - 273.15).toFixed(1)} °C</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
               <span className="text-xs text-slate-400">الحرارة الحرجة (Tc)</span>
-              <p className="text-lg font-bold text-amber-400 font-mono">{selectedMaterial.criticalTempK} K</p>
-              <span className="text-[10px] text-slate-500">{selectedMaterial.nameEn}</span>
+              <p className="text-lg font-bold text-amber-400 font-mono">{selectedMaterial.tcKelvin} K</p>
+              <span className="text-[10px] text-slate-500">عتبة الموصلية الفائقة</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">المقاومة الكهربائية (R)</span>
-              <p className={`text-lg font-bold font-mono ${isSuperconducting ? 'text-emerald-400 animate-pulse' : 'text-red-400'}`}>
-                {isSuperconducting ? '0.0000 Ω' : `${electricalResistanceOhms} Ω`}
+              <span className="text-xs text-slate-400">المقاومة النوعية (R)</span>
+              <p className={`text-lg font-bold font-mono ${isSuperconducting ? 'text-emerald-400' : 'text-slate-300'}`}>
+                {electricalResistanceOhms.toFixed(4)} Ω
               </p>
-              <span className="text-[10px] text-slate-500">{isSuperconducting ? 'موصل فائق مثالي' : 'مقاومة عادية'}</span>
+              <span className="text-[10px] text-slate-500">{isSuperconducting ? 'صفر مطلق (0.0000)' : 'مقاومة عادية'}</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">المجال الداخلي (B_in)</span>
-              <p className="text-lg font-bold text-purple-400 font-mono">{isSuperconducting ? '0.00 Tesla' : 'مخترق'}</p>
-              <span className="text-[10px] text-slate-500">{isSuperconducting ? 'طرد تام (مايسنر)' : 'نفاذ مغناطيسي'}</span>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/70 border-slate-800">
-            <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">حالة الطفو الكمي</span>
-              <p className={`text-xs font-bold mt-1 ${isSuperconducting ? 'text-emerald-400' : 'text-slate-500'}`}>
-                {isSuperconducting ? '⚡ طفو وتثبيت كمي' : 'لا يوجد طفو'}
+              <span className="text-xs text-slate-400">تأثير مايسنر (Meissner)</span>
+              <p className={`text-sm font-bold mt-1 ${isSuperconducting ? 'text-emerald-400' : 'text-slate-500'}`}>
+                {isSuperconducting ? '✓ طرد كامل للمجال B=0' : 'نفاذ المجال المغناطيسي'}
               </p>
-              <span className="text-[10px] text-slate-500">{isSuperconducting ? 'مستقر في الهواء' : 'مستقر على السطح'}</span>
+              <span className="text-[10px] text-slate-500">{isSuperconducting ? 'طفو مغناطيسي نشط' : 'استقرار على السطح'}</span>
             </CardContent>
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">نوع الموصل الفائق</span>
-              <p className="text-sm font-bold text-sky-300 mt-1">{selectedMaterial.type}</p>
+              <span className="text-xs text-slate-400">الحالة الكمية للمادة</span>
+              <p className={`text-xs font-bold mt-1 ${isSuperconducting ? 'text-cyan-400' : 'text-slate-400'}`}>
+                {isSuperconducting ? 'أزواج كوبر (Cooper Pairs)' : 'إلكترونات حرة عادية'}
+              </p>
               <span className="text-[10px] text-slate-500">{selectedMaterial.nameAr.split(' ')[0]}</span>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/70 border-slate-800">
+            <CardContent className="p-3 text-center">
+              <span className="text-xs text-slate-400">سائل التبريد المستعمل</span>
+              <p className="text-xs font-bold text-sky-400 mt-1">
+                {selectedMaterial.tcKelvin > 77 ? 'نيتروجين سائل (77 K)' : 'هيليوم سائل (4.2 K)'}
+              </p>
+              <span className="text-[10px] text-slate-500">حمام التبريد الفائق</span>
             </CardContent>
           </Card>
         </div>
@@ -408,11 +393,19 @@ export default function SuperconductivitySimulation() {
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
             <TabsTrigger value="simulation" className="flex items-center gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
               <Activity className="w-4 h-4" />
-              حوض التبريد والطفو ثلاثي الأبعاد (3D View)
+              الطفو المغناطيسي ثلاثي الأبعاد (3D Levitation)
+            </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام وتحديات مايسنر ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
+            <TabsTrigger value="curve" className="flex items-center gap-2 data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
+              <Zap className="w-4 h-4" />
+              منحنى هبوط المقاومة لصفر
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
-              تأثير مايسنر ونظرية BCS
+              نظرية BCS وأزواج كوبر
             </TabsTrigger>
             <TabsTrigger value="quiz" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
               <Award className="w-4 h-4" />
@@ -429,11 +422,11 @@ export default function SuperconductivitySimulation() {
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Magnet className="w-4 h-4 text-cyan-400" />
-                      الطفو المغناطيسي الكمي وطرد الفيض ثلاثي الأبعاد (3D Scene)
+                      وعاء التبريد والطفو المغناطيسي ثلاثي الأبعاد (3D Meissner Effect)
                     </CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={`${isSuperconducting ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-400'}`}>
-                        {isSuperconducting ? '✓ موصلية فائقة (T < Tc)' : 'حالة طبيعية (T > Tc)'}
+                        {isSuperconducting ? '✓ حالة موصلية فائقة (R = 0)' : 'حالة توصيل عادية'}
                       </Badge>
                       <button
                         onClick={toggleFullscreen}
@@ -445,11 +438,11 @@ export default function SuperconductivitySimulation() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0 h-[460px] bg-slate-950 relative">
-                    <Canvas camera={{ position: [0, 2.5, 7.5], fov: 45 }}>
+                    <Canvas camera={{ position: [0, 3.5, 7.5], fov: 45 }}>
                       <ambientLight intensity={0.6} />
                       <directionalLight position={[10, 10, 10]} intensity={1.2} />
                       <directionalLight position={[-10, -5, -10]} intensity={0.4} color="#38bdf8" />
-                      <Superconductivity3DScene
+                      <Meissner3DScene
                         temperatureK={temperatureK}
                         selectedMaterial={selectedMaterial}
                         isSuperconducting={isSuperconducting}
@@ -473,16 +466,16 @@ export default function SuperconductivitySimulation() {
                         المنظور العام
                       </button>
                       <button
-                        onClick={() => setCameraView('magnet')}
+                        onClick={() => setCameraView('levitation')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
                       >
-                        المغناطيس
+                        الطفو
                       </button>
                       <button
-                        onClick={() => setCameraView('disk')}
+                        onClick={() => setCameraView('side')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
                       >
-                        القرص الفائق
+                        جانبي
                       </button>
                       <button
                         onClick={() => setCameraView('top')}
@@ -497,8 +490,8 @@ export default function SuperconductivitySimulation() {
                       <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>
                         {isSuperconducting
-                          ? `💡 الموصلية الفائقة نشطة (${temperatureK}K < ${selectedMaterial.criticalTempK}K): المقاومة R = 0 تماماً، وطرد خطوط الفيض المغناطيسي (تأثير مايسنر B=0) يجعل المغناطيس يطفو بثبات.`
-                          : `💡 درجة الحرارة (${temperatureK}K) أعلى من الحرارة الحرجة Tc (${selectedMaterial.criticalTempK}K). اضغط على "سكب النيتروجين السائل" لتبريد القرص وبدء الطفو.`}
+                          ? `💡 تأثير مايسنر نشط (T = ${temperatureK}K < Tc = ${selectedMaterial.tcKelvin}K): تم طرد جميع خطوط المجال المغناطيسي بالكامل (B=0)، ويطفو المغناطيس في الهواء بلا أي احتكاك.`
+                          : `💡 المادة في الحالة العادية (T = ${temperatureK}K > Tc = ${selectedMaterial.tcKelvin}K): خفض درجة الحرارة بواسطة المنزلق لتفعيل ظاهرة التوصيل الفائق.`}
                       </span>
                     </div>
                   </CardContent>
@@ -511,20 +504,20 @@ export default function SuperconductivitySimulation() {
                   <CardHeader className="py-3 px-4 border-b border-slate-800">
                     <CardTitle className="text-base font-bold text-slate-200 flex items-center gap-2">
                       <Thermometer className="w-4 h-4 text-cyan-400" />
-                      التحكم بالحرارة ونوع المادة
+                      التحكم بدرجة الحرارة ومادة الفائق
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-5">
                     {/* Material Selector */}
                     <div>
-                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر مادة الموصل الفائق</label>
+                      <label className="text-xs font-semibold text-slate-300 block mb-2">اختر مادة فائق التوصيل</label>
                       <div className="space-y-1.5">
                         {MATERIALS.map((mat) => (
                           <button
                             key={mat.id}
                             onClick={() => {
                               setSelectedMaterial(mat);
-                              labSound.playLaserPulse(500);
+                              labSound.playLaserPulse(450);
                             }}
                             className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedMaterial.id === mat.id
@@ -533,7 +526,7 @@ export default function SuperconductivitySimulation() {
                             }`}
                           >
                             <div className="font-bold text-slate-200">{mat.nameAr}</div>
-                            <div className="text-[10px] opacity-75">Tc = {mat.criticalTempK} K ({mat.criticalTempK - 273}°C) • {mat.type}</div>
+                            <div className="text-[10px] opacity-75 font-mono">الحرارة الحرجة Tc = {mat.tcKelvin} K</div>
                           </button>
                         ))}
                       </div>
@@ -542,8 +535,10 @@ export default function SuperconductivitySimulation() {
                     {/* Temperature Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-semibold text-slate-300">درجة الحرارة (Temperature)</label>
-                        <span className="text-xs font-mono text-cyan-400 font-bold">{temperatureK} K</span>
+                        <label className="text-xs font-semibold text-slate-300">درجة حرارة العينة (Temperature)</label>
+                        <span className={`text-xs font-mono font-bold ${isSuperconducting ? 'text-cyan-400' : 'text-orange-400'}`}>
+                          {temperatureK.toFixed(1)} K ({(temperatureK - 273.15).toFixed(1)} °C)
+                        </span>
                       </div>
                       <Slider
                         value={[temperatureK]}
@@ -555,14 +550,25 @@ export default function SuperconductivitySimulation() {
                       />
                     </div>
 
-                    {/* Liquid Nitrogen Quick Cool Button */}
-                    <div className="pt-2">
+                    {/* Quick Cool Buttons */}
+                    <div className="grid grid-cols-2 gap-2 pt-2">
                       <Button
-                        onClick={handleCoolWithNitrogen}
-                        className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2"
+                        onClick={() => {
+                          setTemperatureK(77);
+                          labSound.playSuccessChime();
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
                       >
-                        <Snowflake className="w-4 h-4" />
-                        سكب النيتروجين السائل (تبريد فوري 77K)
+                        نيتروجين سائل (77 K)
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setTemperatureK(4.2);
+                          labSound.playSuccessChime();
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                      >
+                        هيليوم سائل (4.2 K)
                       </Button>
                     </div>
                   </CardContent>
@@ -571,31 +577,121 @@ export default function SuperconductivitySimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Theory */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات الموصلية الفائقة (Superconductivity Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام لاكتشاف أسرار الطفو الكمي وانعدام المقاومة الكهربائية.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: تبريد مركب YBCO بالنيتروجين السائل (77 K) وتفعيل الطفو
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر مركب YBCO (حرارته الحرجة 93K) واضبط الحرارة عند 77K لمشاهدة طفو المغناطيس الدائم في الهواء.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: رصد هبوط المقاومة الكهربائية إلى الصفر المطلق (0.0000 Ω)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        راقب مؤشر المقاومة الكهربائية عند النزول تحت الحرارة الحرجة Tc لتأكيد انتقال التيار بدون أي فقد طاقي.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: اختبار فائقات التوصيل التقليدية بالهيليوم السائل (4.2 K)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اختر عينة الزئبق أو النيوبيوم-قصدير وقم بتبريدها بالهيليوم السائل لدراسة فائقات التوصيل الكلاسيكية.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Curve */}
+          <TabsContent value="curve" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
+              <CardTitle className="text-base font-bold text-sky-300 mb-2">منحنى المقاومة الكهربائية مقابل درجة الحرارة (R vs T)</CardTitle>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={resistanceCurveData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="temperature" stroke="#94a3b8" label={{ value: 'درجة الحرارة (K)', position: 'bottom', fill: '#94a3b8', fontSize: 12 }} />
+                    <YAxis stroke="#94a3b8" label={{ value: 'المقاومة (Ω)', angle: -90, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8 }} />
+                    <ReferenceLine x={selectedMaterial.tcKelvin} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: `Tc = ${selectedMaterial.tcKelvin} K`, fill: '#f59e0b', fontSize: 11 }} />
+                    <Line type="monotone" dataKey="resistance" stroke="#38bdf8" strokeWidth={2.5} dot={false} name="المقاومة" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 4: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
-              <h3 className="text-xl font-bold text-cyan-300">فيزياء الموصلية الفائقة وتأثير مايسنر (1933)</h3>
+              <h3 className="text-xl font-bold text-cyan-300">الفيزياء الكمية للموصلية الفائقة وتأثير مايسنر</h3>
               <p>
-                اكتشف فالتر مايسنر وروبرت أوشنفلد أن الموصل الفائق ليس مجرد مادة ذات مقاومة صفرية (R=0)، بل هو <strong>دايامغناطيسي مثالي</strong> يقوم بطرد جميع خطوط المجال المغناطيسي من داخله تماماً (B=0) عند تبريده تحت درجة الحرارة الحرجة Tc.
+                تحدث الموصلية الفائقة عندما تترابط الإلكترونات في أزواج تسمى <strong>أزواج كوبر (Cooper Pairs)</strong> عبر التفاعل مع اهتزازات الشبكة البلورية (الفونونات)، فتسري في المادة كحالة كمية واحدة دون أي تصادم أو مقاومة أومية.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">1. نظرية أزواج كوبر (BCS Theory)</h4>
+                  <h4 className="font-bold text-amber-300">1. تأثير مايسنر-أوكسنفيلد (1933)</h4>
                   <p className="text-xs text-slate-400">
-                    عند درجات الحرارة المنخفضة، تترابط الإلكترونات في أزواج تسمى &quot;أزواج كوبر&quot; بفضل التفاعل مع اهتزازات الشبكة البلورية، وتتحرك دون أي تصادم أو فقدان للطاقة.
+                    طرد فائق التوصيل لجميع خطوط المجال المغناطيسي من داخله (B = 0) عبر توليد تيارات سطحية مستمرة تعاكس المجال الخارجي وتسبب الطفو.
                   </p>
                 </div>
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">2. ظاهرة التثبيت الكمي (Flux Pinning)</h4>
+                  <h4 className="font-bold text-amber-300">2. نظرية BCS (جائزة نوبل 1972)</h4>
                   <p className="text-xs text-slate-400">
-                    في الموصلات الفائقة من النوع الثاني، تخترق خطوط مغناطيسية دقيقة الشوائب وتُحبس كمياً، مما يثبت المغناطيس في الفضاء بشكل مستقر ومذهل ثلاثي الأبعاد.
+                    باردين، كوبر، وشريفر فسروا الآلية المجهرية لتشكل الفجوة الطاقية الكمية التي تحمي أزواج كوبر من التبعثر.
                   </p>
                 </div>
               </div>
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Quiz */}
+          {/* TAB 5: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">
@@ -610,14 +706,14 @@ export default function SuperconductivitySimulation() {
 
               <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-4">
                 <p className="font-semibold text-slate-200">
-                  سؤال: ما هو الفارق الجوهري بين موصل كهربائي مثالي ذي مقاومة صفرية (R=0) وبين موصل فائق حقيقي يخضع لتأثير مايسنر؟
+                  سؤال: ما الذي يميز فائق التوصيل الحقيقي عن موصل مثالي ذي مقاومة صفرية فقط؟
                 </p>
                 <div className="space-y-2">
                   {[
-                    { id: 0, text: 'الموصل الفائق الحقيقي يطرد المجال المغناطيسي من داخله تماماً (B = 0) ليصبح دايامغناطيسياً مثالياً.' },
-                    { id: 1, text: 'الموصل الفائق يسخن عند مرور التيار.' },
-                    { id: 2, text: 'الموصل المثالي لا ينقل التيار المستمر.' },
-                    { id: 3, text: 'لا يوجد أي فارق على الإطلاق.' },
+                    { id: 0, text: 'أنه يوصل الحرارة بسرعة الضوء.' },
+                    { id: 1, text: 'طرد خطوط المجال المغناطيسي النشط من داخله (تأثير مايسنر B = 0) بغض النظر عن ترتيب تطبيق المجال والتبريد.' },
+                    { id: 2, text: 'أنه يفقد كتلته عند التبريد.' },
+                    { id: 3, text: 'أنه يعمل فقط في الفضاء الخارجي.' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -625,7 +721,7 @@ export default function SuperconductivitySimulation() {
                       onClick={() => handleQuizSubmit(option.id)}
                       className={`w-full text-right p-3 rounded-xl border text-sm transition-all ${
                         quizSubmitted
-                          ? option.id === 0
+                          ? option.id === 1
                             ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
                             : quizAnswer === option.id
                             ? 'bg-red-500/20 border-red-500 text-red-300'
@@ -639,14 +735,14 @@ export default function SuperconductivitySimulation() {
                 </div>
 
                 {quizSubmitted && (
-                  <div className={`p-3 rounded-xl text-xs ${quizAnswer === 0 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
-                    {quizAnswer === 0 ? (
+                  <div className={`p-3 rounded-xl text-xs ${quizAnswer === 1 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
+                    {quizAnswer === 1 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة وممتازة! تأثير مايسنر (B = 0 داخل الموصل الفائق) هو السمة الكمية الفريدة التي تميز الموصل الفائق عن أي موصل تقليدي ذي مقاومة منعدمة.</span>
+                        <span>إجابة صحيحة ورائعة! تأثير مايسنر (طرد المجال المغناطيسي التلقائي) هو السمة الجوهرية المميزة لفائق التوصيل الحقيقي عن أي موصل كلاسيكي مثالي.</span>
                       </div>
                     ) : (
-                      <span>إجابة غير صحيحة. طرد المجال المغناطيسي (تأثير مايسنر B=0) هو الخاصية الجوهرية الإضافية للموصل الفائق.</span>
+                      <span>إجابة غير صحيحة. تأثير مايسنر وطرد خطوط الفيض المغناطيسي هو الخاصية المميزة للموصلية الفائقة.</span>
                     )}
                   </div>
                 )}

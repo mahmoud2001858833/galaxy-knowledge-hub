@@ -1,13 +1,13 @@
-import React, { useState, useRef, useMemo, Suspense } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Scissors, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, Dna, ShieldAlert,
-  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
+  Activity, BookOpen, Dna, Maximize2, Minimize2, 
+  Volume2, VolumeX, Download, Lightbulb, Target, CheckSquare 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import { labSound } from '@/utils/labAudio';
 interface TargetGene {
   id: string;
   nameAr: string;
+  nameEn: string;
   diseaseAr: string;
   targetSequence: string;
   pamSequence: string;
@@ -33,6 +34,7 @@ const TARGET_GENES: TargetGene[] = [
   {
     id: 'hbb',
     nameAr: 'جين بيتا غلوبين (HBB)',
+    nameEn: 'HBB Gene',
     diseaseAr: 'أنيميا الخلايا المنجلية (Sickle Cell Anemia)',
     targetSequence: 'CACCTGACTCCTGAGGAGAA',
     pamSequence: 'TGG',
@@ -42,6 +44,7 @@ const TARGET_GENES: TargetGene[] = [
   {
     id: 'cftr',
     nameAr: 'جين قناة الكلوريد (CFTR)',
+    nameEn: 'CFTR Gene',
     diseaseAr: 'التليف الكيسي (Cystic Fibrosis - ΔF508)',
     targetSequence: 'ATCATCTTTGGTGTTTCCTA',
     pamSequence: 'CGG',
@@ -77,7 +80,7 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
     });
   }, [basePairCount]);
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (!isPlaying) return;
 
     if (dnaGroupRef.current && step !== 'cleave') {
@@ -216,6 +219,11 @@ export default function CrisprGeneEditingSimulation() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
+  // Missions
+  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
+  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
+  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
+
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
@@ -225,15 +233,18 @@ export default function CrisprGeneEditingSimulation() {
     if (step === 'inspect') {
       setStep('hybridize');
       labSound.playLaserPulse(600);
+      setMission1Completed(true);
     } else if (step === 'hybridize') {
       setStep('cleave');
       labSound.playElectricZap();
+      setMission2Completed(true);
     } else if (step === 'cleave') {
       setStep('repair_hdr');
       labSound.playLaserPulse(800);
     } else if (step === 'repair_hdr') {
       setStep('repaired');
       labSound.playSuccessChime();
+      setMission3Completed(true);
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -433,6 +444,10 @@ export default function CrisprGeneEditingSimulation() {
               <Activity className="w-4 h-4" />
               مجمع Cas9 الجزيئي ثلاثي الأبعاد (3D Lab)
             </TabsTrigger>
+            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+              <Target className="w-4 h-4" />
+              مهام التعديل الجيني ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+            </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
               البيولوجيا الجزيئية وآلية كريسبر
@@ -595,7 +610,78 @@ export default function CrisprGeneEditingSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Theory */}
+          {/* TAB 2: Guided Missions */}
+          <TabsContent value="missions" className="space-y-4">
+            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
+              <div>
+                <CardTitle className="text-lg font-bold text-pink-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  مهام وتحديات التعديل الجيني الموجه (CRISPR Missions)
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  أكمل هذه المهام بالترتيب لعلاج الأمراض الوراثية وتصحيح الشيفرة الجينية بدقة.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mission 1 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 1: تحديد موقع الطفرة الجينية وتوجيه مرشد gRNA و Cas9
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        اضغط على زر إرسال مرشد gRNA للارتباط مع شريط DNA المستهدف بعد مطابقة تسلسل الـ PAM.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 2 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 2: تفعيل النطاقات النووية وقص شريطي DNA (Double-Strand Break)
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        قم بتنفيذ القطع المزدوج بواسطة نطاقي RuvC و HNH لقطع الطفرة الوراثية بدقة.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Mission 3 */}
+                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        المهمة 3: إدخال قالب الإصلاح المتماثل HDR واستعادة التسلسل الطبيعي
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        أدخل قالب الـ DNA السليم لإصلاح الشق الوراثي واستبدال النيوكليوتيد المصاب بالتسلسل الصحيح بنسبة 100%.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
+                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
               <h3 className="text-xl font-bold text-pink-300">نظام كريسبر-كاس9 والتعديل الجيني الثوري (جائزة نوبل 2020)</h3>
@@ -620,7 +706,7 @@ export default function CrisprGeneEditingSimulation() {
             </Card>
           </TabsContent>
 
-          {/* TAB 3: Quiz */}
+          {/* TAB 4: Quiz */}
           <TabsContent value="quiz" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-6">
               <div className="flex items-center justify-between">
