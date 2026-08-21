@@ -1,12 +1,11 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Beaker, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Flame, Gauge, Thermometer,
+  Activity, BookOpen, Layers, Gauge, Thermometer,
   Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +29,8 @@ interface ReactionSystem {
   deltaH: number;
   deltaMolesGas: number;
   kcStandard: number;
+  reactantColor: string;
+  productColor: string;
 }
 
 const REACTIONS: ReactionSystem[] = [
@@ -42,45 +43,50 @@ const REACTIONS: ReactionSystem[] = [
     deltaH: -92.4,
     deltaMolesGas: -2,
     kcStandard: 0.5,
+    reactantColor: '#fbbf24',
+    productColor: '#38bdf8',
   },
   {
     id: 'no2-dimer',
     nameAr: 'توازن ثاني أكسيد النيتروجين الملون',
     equationAr: '2NO₂(g) [بني محمر] ⇌ N₂O₄(g) [عديم اللون]',
     reactantsAr: 'ثاني أكسيد النيتروجين NO₂ (بني محمر)',
-    productsAr: 'رباعي أكسيد ثنائي النيتروجين N₂O₄ (عديم اللون)',
+    productsAr: 'رباعي أكسيد ثنائي النيتروجين N₂O₄ (شفاف)',
     deltaH: -57.2,
     deltaMolesGas: -1,
     kcStandard: 1.2,
+    reactantColor: '#ef4444',
+    productColor: '#93c5fd',
   },
   {
     id: 'hi-synthesis',
     nameAr: 'تكوين يوديد الهيدروجين',
     equationAr: 'H₂(g) + I₂(g) ⇌ 2HI(g)',
     reactantsAr: 'هيدروجين H₂ + بخار يود I₂ (بنفسجي)',
-    productsAr: 'يوديد الهيدروجين HI',
+    productsAr: 'يوديد الهيدروجين HI (عديم اللون)',
     deltaH: +53.0,
     deltaMolesGas: 0,
     kcStandard: 50.0,
+    reactantColor: '#a855f7',
+    productColor: '#34d399',
   },
 ];
 
-interface Molecule3D {
-  type: 'reactant' | 'product';
+interface MoleculeState {
   x: number;
   y: number;
   z: number;
   vx: number;
   vy: number;
   vz: number;
+  isProduct: boolean;
 }
 
-interface Equilibrium3DProps {
+interface ReactorProps {
   temperatureK: number;
   pressureAtm: number;
   selectedReaction: ReactionSystem;
-  concReactants: number;
-  concProducts: number;
+  ratioProducts: number;
   isPlaying: boolean;
 }
 
@@ -88,59 +94,75 @@ function ReactorChamber3D({
   temperatureK,
   pressureAtm,
   selectedReaction,
-  concReactants,
-  concProducts,
+  ratioProducts,
   isPlaying,
-}: Equilibrium3DProps) {
+}: ReactorProps) {
   const moleculesRef = useRef<THREE.Group>(null);
+  const cylinderRadius = 2.0;
+  const maxMolecules = 50;
 
-  const chamberHeight = 4.2 / Math.sqrt(pressureAtm);
-  const pistonY = (chamberHeight / 2);
+  // Chamber geometry based on pressure
+  // At 1 atm: height = 3.6, at 5 atm: height = 1.6
+  const chamberHeight = 4.2 / (1 + (pressureAtm - 0.5) * 0.35);
+  const halfH = chamberHeight / 2;
+  const pistonY = halfH;
+  const effectiveRadius = cylinderRadius - 0.22;
+  const effectiveHalfH = halfH - 0.22;
 
-  const gasColor = useMemo(() => {
-    if (selectedReaction.id === 'no2-dimer') {
-      return `rgba(239, 68, 68, ${Math.min(0.7, concReactants * 0.4)})`;
-    }
-    if (temperatureK > 500) return '#ea580c';
-    if (temperatureK < 350) return '#38bdf8';
-    return '#10b981';
-  }, [temperatureK, selectedReaction, concReactants]);
+  // Stable list of molecule positions and velocities
+  const molecules = useRef<MoleculeState[]>([]);
+  if (molecules.current.length === 0) {
+    molecules.current = Array.from({ length: maxMolecules }, (_, i) => {
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.random() * effectiveRadius * 0.85;
+      return {
+        x: Math.cos(angle) * r,
+        y: (Math.random() - 0.5) * (effectiveHalfH * 1.5),
+        z: Math.sin(angle) * r,
+        vx: (Math.random() - 0.5) * 0.04,
+        vy: (Math.random() - 0.5) * 0.04,
+        vz: (Math.random() - 0.5) * 0.04,
+        isProduct: i < Math.round(ratioProducts * maxMolecules),
+      };
+    });
+  }
 
-  const moleculeCount = 45;
-  const molecules = useMemo<Molecule3D[]>(() => {
-    return Array.from({ length: moleculeCount }, (_, i) => ({
-      type: i % 2 === 0 ? 'reactant' : 'product',
-      x: (Math.random() - 0.5) * 2.8,
-      y: (Math.random() - 0.5) * 2.0,
-      z: (Math.random() - 0.5) * 2.8,
-      vx: (Math.random() - 0.5) * 0.04,
-      vy: (Math.random() - 0.5) * 0.04,
-      vz: (Math.random() - 0.5) * 0.04,
-    }));
-  }, [moleculeCount]);
+  // Update molecule types when ratio changes
+  molecules.current.forEach((m, idx) => {
+    m.isProduct = idx < Math.round(ratioProducts * maxMolecules);
+  });
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!isPlaying) return;
 
     const speedScale = Math.sqrt(temperatureK / 300);
-    const radLimit = 1.8;
-    const halfH = chamberHeight / 2 - 0.2;
 
-    molecules.forEach((m, i) => {
+    molecules.current.forEach((m, i) => {
       m.x += m.vx * speedScale;
       m.y += m.vy * speedScale;
       m.z += m.vz * speedScale;
 
-      const r = Math.sqrt(m.x * m.x + m.z * m.z);
-      if (r > radLimit) {
-        m.vx *= -1;
-        m.vz *= -1;
+      // 1. STRICT CYLINDER RADIAL BOUNDARY (Never escape walls)
+      const currentR = Math.sqrt(m.x * m.x + m.z * m.z);
+      if (currentR > effectiveRadius) {
+        // Push back inside
+        const angle = Math.atan2(m.z, m.x);
+        m.x = Math.cos(angle) * (effectiveRadius - 0.02);
+        m.z = Math.sin(angle) * (effectiveRadius - 0.02);
+        m.vx = -m.vx * (0.8 + Math.random() * 0.4);
+        m.vz = -m.vz * (0.8 + Math.random() * 0.4);
       }
 
-      if (m.y > halfH || m.y < -halfH) {
-        m.vy *= -1;
+      // 2. STRICT VERTICAL BOUNDARY (Never escape Piston or Base)
+      if (m.y > effectiveHalfH) {
+        m.y = effectiveHalfH - 0.02;
+        m.vy = -Math.abs(m.vy);
+      } else if (m.y < -effectiveHalfH) {
+        m.y = -effectiveHalfH + 0.02;
+        m.vy = Math.abs(m.vy);
       }
 
+      // Update 3D mesh
       const mesh = moleculesRef.current?.children[i] as THREE.Mesh;
       if (mesh) {
         mesh.position.set(m.x, m.y, m.z);
@@ -150,65 +172,58 @@ function ReactorChamber3D({
 
   return (
     <group>
-      {/* 3D REACTION CYLINDER */}
+      {/* 3D TRANSPARENT GLASS CYLINDER */}
       <mesh position={[0, 0, 0]}>
-        <cylinderGeometry args={[2.0, 2.0, chamberHeight, 32, 1, true]} />
+        <cylinderGeometry args={[cylinderRadius, cylinderRadius, chamberHeight, 32, 1, true]} />
         <meshPhysicalMaterial
           color="#94a3b8"
-          transmission={0.88}
-          opacity={0.35}
+          transmission={0.92}
+          opacity={0.3}
           transparent
-          roughness={0.1}
+          roughness={0.08}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* GAS GLOW */}
-      <mesh position={[0, 0, 0]}>
-        <cylinderGeometry args={[1.95, 1.95, chamberHeight - 0.05, 32]} />
-        <meshBasicMaterial color={gasColor} opacity={0.25} transparent />
+      {/* SOLID BASE */}
+      <mesh position={[0, -halfH - 0.15, 0]}>
+        <cylinderGeometry args={[cylinderRadius + 0.15, cylinderRadius + 0.15, 0.3, 32]} />
+        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
       </mesh>
 
-      {/* PISTON */}
+      {/* MOVING PISTON */}
       <group position={[0, pistonY, 0]}>
-        <mesh>
-          <cylinderGeometry args={[2.02, 2.02, 0.35, 32]} />
+        {/* Piston Disc */}
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[cylinderRadius - 0.02, cylinderRadius - 0.02, 0.22, 32]} />
           <meshStandardMaterial color="#475569" metalness={0.9} roughness={0.2} />
         </mesh>
-        <mesh position={[0, 1.2, 0]}>
-          <cylinderGeometry args={[0.25, 0.25, 2.2, 16]} />
+        {/* Piston Rod */}
+        <mesh position={[0, 1.3, 0]}>
+          <cylinderGeometry args={[0.22, 0.22, 2.2, 16]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.95} roughness={0.1} />
         </mesh>
-        <Html position={[0, 0.6, 0]} center>
+        <Html position={[0, 0.45, 0]} center>
           <div className="bg-slate-900/90 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            مكبس الضغط ({pressureAtm.toFixed(1)} atm)
+            المكبس ({pressureAtm.toFixed(1)} atm)
           </div>
         </Html>
       </group>
 
-      {/* SOLID BASE */}
-      <mesh position={[0, -pistonY - 0.2, 0]}>
-        <cylinderGeometry args={[2.1, 2.1, 0.4, 32]} />
-        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
-      </mesh>
-
-      {/* MOLECULES */}
+      {/* INTERNAL GAS MOLECULES */}
       <group ref={moleculesRef}>
-        {molecules.map((m, idx) => {
-          const isProduct = idx < Math.round((concProducts / (concReactants + concProducts)) * moleculeCount);
-          return (
-            <mesh key={`mol-${idx}`} position={[m.x, m.y, m.z]}>
-              <sphereGeometry args={[isProduct ? 0.14 : 0.1, 14, 14]} />
-              <meshStandardMaterial
-                color={isProduct ? '#38bdf8' : '#fbbf24'}
-                emissive={isProduct ? '#0284c7' : '#d97706'}
-                emissiveIntensity={0.4}
-                metalness={0.3}
-                roughness={0.2}
-              />
-            </mesh>
-          );
-        })}
+        {molecules.current.map((m, idx) => (
+          <mesh key={`mol-${idx}`} position={[m.x, m.y, m.z]}>
+            <sphereGeometry args={[m.isProduct ? 0.13 : 0.1, 14, 14]} />
+            <meshStandardMaterial
+              color={m.isProduct ? selectedReaction.productColor : selectedReaction.reactantColor}
+              emissive={m.isProduct ? selectedReaction.productColor : selectedReaction.reactantColor}
+              emissiveIntensity={0.5}
+              metalness={0.2}
+              roughness={0.3}
+            />
+          </mesh>
+        ))}
       </group>
     </group>
   );
@@ -250,6 +265,11 @@ export default function ChemicalEquilibriumSimulation() {
   const Q = useMemo(() => {
     const q = concC / (concA * Math.max(0.1, concB));
     return +q.toFixed(3);
+  }, [concA, concB, concC]);
+
+  const ratioProducts = useMemo(() => {
+    const total = concA + concB + concC;
+    return total > 0 ? concC / total : 0.5;
   }, [concA, concB, concC]);
 
   useEffect(() => {
@@ -372,7 +392,7 @@ export default function ChemicalEquilibriumSimulation() {
                   الاتزان الكيميائي ومبدأ لوشاتيليه ثلاثي الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  محاكاة استجابة التفاعلات الكيميائية المتزنة لتغيرات الحرارة والضغط والتركيز في مفاعل حقيقي
+                  محاكاة استجابة التفاعلات الكيميائية المتزنة لتغيرات الحرارة والضغط والتركيز في مفاعل حقيقي محكم
                 </p>
               </div>
             </div>
@@ -498,7 +518,7 @@ export default function ChemicalEquilibriumSimulation() {
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Beaker className="w-4 h-4 text-emerald-400" />
-                      مفاعل الغازات ثلاثي الأبعاد مع مكبس الحجم المتغير (3D View)
+                      مفاعل الغازات ثلاثي الأبعاد مع مكبس محكم (3D View)
                     </CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="border-emerald-500/50 text-emerald-300 bg-emerald-500/10">
@@ -522,8 +542,7 @@ export default function ChemicalEquilibriumSimulation() {
                         temperatureK={temperatureK}
                         pressureAtm={pressureAtm}
                         selectedReaction={selectedReaction}
-                        concReactants={concA + concB}
-                        concProducts={concC}
+                        ratioProducts={ratioProducts}
                         isPlaying={isPlaying}
                       />
                       <OrbitControls
@@ -568,9 +587,9 @@ export default function ChemicalEquilibriumSimulation() {
                       <Lightbulb className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>
                         {Math.abs(Q - currentKc) < 0.1
-                          ? `💡 النظام مستقر في حالة اتزان ديناميكي (Q ≈ Kc = ${currentKc}). معدل التفاعل الطردي يساوي معدل التفاعل العكسي تماماً.`
+                          ? `💡 النظام مستقر في حالة اتزان ديناميكي (Q ≈ Kc = ${currentKc}). الجزيئات محصورة بدقة داخل المفاعل.`
                           : Q < currentKc
-                          ? `💡 التفاعل يزاح طردياً نحو تكوين النواتج (Q < Kc). جرب زيادة الضغط لتقليل الحجم.`
+                          ? `💡 التفاعل يزاح طردياً نحو تكوين النواتج (Q < Kc).`
                           : `💡 التفاعل يزاح عكسياً نحو المتفاعلات (Q > Kc).`}
                       </span>
                     </div>
@@ -749,7 +768,7 @@ export default function ChemicalEquilibriumSimulation() {
                     {quizAnswer === 0 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة ورائعة! زيادة الضغط تزيح التفاعل نحو المولات الأقل (2 مول أمونيا بدلاً من 4 مولات متفاعلات)، وخفض الحرارة يزيح التفاعل الطارد للأمام.</span>
+                        <span>إجابة صحيحة ورائعة! زيادة الضغط تزيح التفاعل نحو المولات الأقل، وخفض الحرارة يزيح التفاعل الطارد للأمام.</span>
                       </div>
                     ) : (
                       <span>إجابة غير صحيحة. لزيادة إنتاج تفاعل طارد بمولات ناتجة أقل يجب زيادة الضغط وخفض درجة الحرارة.</span>

@@ -1,12 +1,11 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Cylinder, Sphere, Box } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Target, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Atom,
+  Activity, BookOpen, Atom,
   Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,7 @@ const FOIL_MATERIALS: FoilMaterial[] = [
   { id: 'aluminum', nameAr: 'الألمنيوم (Al - Z=13)', nameEn: 'Aluminum', atomicNumberZ: 13, symbol: 'Al', color: '#94a3b8' },
 ];
 
-interface Particle3D {
+interface AlphaParticle {
   x: number;
   y: number;
   z: number;
@@ -44,7 +43,6 @@ interface Particle3D {
   vy: number;
   vz: number;
   active: boolean;
-  angleDeg: number;
 }
 
 interface Rutherford3DProps {
@@ -53,7 +51,7 @@ interface Rutherford3DProps {
   beamEnergyMeV: number;
   beamIntensity: number;
   isPlaying: boolean;
-  onParticleScattered: (angleDeg: number) => void;
+  onRecordStats: (forward: number, medium: number, back: number) => void;
 }
 
 function RutherfordChamber3D({
@@ -62,46 +60,50 @@ function RutherfordChamber3D({
   beamEnergyMeV,
   beamIntensity,
   isPlaying,
-  onParticleScattered,
+  onRecordStats,
 }: Rutherford3DProps) {
   const particlesRef = useRef<THREE.Group>(null);
+  const flashRingRef = useRef<THREE.Mesh>(null);
+  const maxParticles = 40;
 
-  const particleCount = 60;
-  const particles = useMemo<Particle3D[]>(() => {
-    return Array.from({ length: particleCount }, () => ({
-      x: -4.5,
-      y: (Math.random() - 0.5) * 1.6,
-      z: (Math.random() - 0.5) * 1.6,
-      vx: 0.12,
+  // Internal counters to throttle stats updates to parent
+  const statsRef = useRef({ forward: 0, medium: 0, back: 0, lastReport: 0 });
+
+  const particles = useRef<AlphaParticle[]>([]);
+  if (particles.current.length === 0) {
+    particles.current = Array.from({ length: maxParticles }, () => ({
+      x: -4.8,
+      y: (Math.random() - 0.5) * 1.2,
+      z: (Math.random() - 0.5) * 1.2,
+      vx: 0.14,
       vy: 0,
       vz: 0,
       active: false,
-      angleDeg: 0,
     }));
-  }, [particleCount]);
+  }
 
   useFrame((state, delta) => {
     if (!isPlaying) return;
 
-    const maxAllowed = Math.ceil((beamIntensity / 100) * particleCount);
+    const activeCountTarget = Math.max(5, Math.round((beamIntensity / 100) * maxParticles));
+    const speed = 0.12 + (beamEnergyMeV / 10) * 0.08;
 
-    for (let i = 0; i < particleCount; i++) {
-      const p = particles[i];
+    for (let i = 0; i < maxParticles; i++) {
+      const p = particles.current[i];
       const mesh = particlesRef.current?.children[i] as THREE.Mesh;
       if (!mesh) continue;
 
-      if (i < maxAllowed) {
+      if (i < activeCountTarget) {
         mesh.visible = true;
 
         if (!p.active) {
-          p.x = -4.5;
-          p.y = (Math.random() - 0.5) * 1.6;
-          p.z = (Math.random() - 0.5) * 1.6;
-          p.vx = 0.12 + (beamEnergyMeV / 10) * 0.05;
+          p.x = -4.8;
+          p.y = (Math.random() - 0.5) * 1.2;
+          p.z = (Math.random() - 0.5) * 1.2;
+          p.vx = speed;
           p.vy = 0;
           p.vz = 0;
           p.active = true;
-          p.angleDeg = 0;
         }
 
         if (p.active) {
@@ -109,22 +111,33 @@ function RutherfordChamber3D({
           p.y += p.vy;
           p.z += p.vz;
 
+          // Coulomb scattering near the nucleus
           if (modelType === 'rutherford') {
             const distSq = p.x * p.x + p.y * p.y + p.z * p.z;
             const dist = Math.sqrt(distSq);
 
-            if (dist < 1.2 && p.x < 0.6) {
-              const force = (selectedFoil.atomicNumberZ * 0.002) / (distSq + 0.04);
-              p.vx += (p.x / dist) * force;
-              p.vy += (p.y / dist) * force;
-              p.vz += (p.z / dist) * force;
+            if (dist < 1.4 && p.x < 0.6) {
+              const coulombForce = (selectedFoil.atomicNumberZ * 0.0028) / (distSq + 0.02);
+              p.vx += (p.x / dist) * coulombForce;
+              p.vy += (p.y / dist) * coulombForce;
+              p.vz += (p.z / dist) * coulombForce;
             }
           }
 
+          // Check if reached detector screen radius (4.0)
           const radFromCenter = Math.sqrt(p.x * p.x + p.z * p.z);
-          if (radFromCenter >= 4.0 || p.x > 4.5 || Math.abs(p.y) > 3.0) {
-            const angle = Math.atan2(Math.sqrt(p.y * p.y + p.z * p.z), p.x) * (180 / Math.PI);
-            onParticleScattered(angle);
+          if (radFromCenter >= 3.8 || p.x > 4.2 || Math.abs(p.y) > 2.5) {
+            const angleRad = Math.atan2(Math.sqrt(p.y * p.y + p.z * p.z), p.x);
+            const angleDeg = angleRad * (180 / Math.PI);
+
+            if (angleDeg < 45) {
+              statsRef.current.forward++;
+            } else if (angleDeg <= 90) {
+              statsRef.current.medium++;
+            } else {
+              statsRef.current.back++;
+            }
+
             p.active = false;
           }
 
@@ -134,92 +147,104 @@ function RutherfordChamber3D({
         mesh.visible = false;
       }
     }
+
+    // Periodically report stats every 250ms (prevents 60fps re-render overhead)
+    const now = performance.now();
+    if (now - statsRef.current.lastReport > 250) {
+      statsRef.current.lastReport = now;
+      onRecordStats(statsRef.current.forward, statsRef.current.medium, statsRef.current.back);
+    }
   });
 
   return (
     <group>
-      {/* CYLINDRICAL DETECTOR SCREEN */}
+      {/* CYLINDRICAL ZINC SULFIDE DETECTOR SCREEN */}
       <mesh rotation={[0, 0, 0]}>
-        <cylinderGeometry args={[4.2, 4.2, 3.2, 48, 1, true]} />
+        <cylinderGeometry args={[4.0, 4.0, 3.2, 48, 1, true]} />
         <meshStandardMaterial
           color="#15803d"
           emissive="#166534"
-          emissiveIntensity={0.2}
+          emissiveIntensity={0.3}
           side={THREE.DoubleSide}
-          roughness={0.6}
+          roughness={0.5}
         />
       </mesh>
 
-      <mesh position={[0, -1.8, 0]}>
-        <cylinderGeometry args={[4.3, 4.3, 0.2, 48]} />
+      {/* Screen Rings */}
+      <mesh position={[0, -1.65, 0]}>
+        <cylinderGeometry args={[4.08, 4.08, 0.15, 48]} />
         <meshStandardMaterial color="#334155" metalness={0.8} />
       </mesh>
-      <mesh position={[0, 1.8, 0]}>
-        <cylinderGeometry args={[4.3, 4.3, 0.2, 48]} />
+      <mesh position={[0, 1.65, 0]}>
+        <cylinderGeometry args={[4.08, 4.08, 0.15, 48]} />
         <meshStandardMaterial color="#334155" metalness={0.8} />
       </mesh>
 
-      {/* ALPHA GUN */}
+      {/* ALPHA EMITTER GUN */}
       <group position={[-5.2, 0, 0]}>
         <mesh>
-          <boxGeometry args={[1.5, 1.2, 1.2]} />
+          <boxGeometry args={[1.4, 1.1, 1.1]} />
           <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.3} />
         </mesh>
-        <mesh position={[0.9, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.8, 16]} />
+        <mesh position={[0.8, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+          <cylinderGeometry args={[0.18, 0.18, 0.7, 16]} />
           <meshStandardMaterial color="#64748b" metalness={0.9} roughness={0.2} />
         </mesh>
-        <Html position={[0, 1.0, 0]} center>
+        <Html position={[0, 0.9, 0]} center>
           <div className="bg-slate-900/90 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            مدفع جسيمات ألفا
+            مدفع ألفا α
           </div>
         </Html>
       </group>
 
-      {/* TARGET FOIL */}
+      {/* TARGET FOIL AND NUCLEUS */}
       <group position={[0, 0, 0]}>
+        {/* Metal Foil */}
         <mesh>
-          <boxGeometry args={[0.08, 2.8, 2.8]} />
+          <boxGeometry args={[0.06, 2.6, 2.6]} />
           <meshStandardMaterial
             color={selectedFoil.color}
             metalness={0.9}
             roughness={0.15}
-            opacity={0.75}
+            opacity={0.65}
             transparent
           />
         </mesh>
 
         {modelType === 'rutherford' ? (
           <group>
+            {/* Rutherford Concentrated Positive Nucleus */}
             <mesh>
-              <sphereGeometry args={[0.28, 24, 24]} />
-              <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.8} />
+              <sphereGeometry args={[0.26, 24, 24]} />
+              <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.9} />
             </mesh>
+            {/* Positive Electric Field Aura */}
             <mesh>
-              <sphereGeometry args={[0.9, 16, 16]} />
-              <meshBasicMaterial color="#f87171" opacity={0.18} transparent wireframe />
+              <sphereGeometry args={[0.85, 16, 16]} />
+              <meshBasicMaterial color="#f87171" opacity={0.2} transparent wireframe />
             </mesh>
-            <Html position={[0, 0.6, 0]} center>
+            <Html position={[0, 0.55, 0]} center>
               <div className="bg-slate-900/90 text-red-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-                نواة موجبة (Z={selectedFoil.atomicNumberZ})
+                النواة (Z={selectedFoil.atomicNumberZ}+)
               </div>
             </Html>
           </group>
         ) : (
           <group>
+            {/* Thomson Pudding Model */}
             <mesh>
               <sphereGeometry args={[1.2, 24, 24]} />
               <meshBasicMaterial color="#38bdf8" opacity={0.25} transparent />
             </mesh>
-            {[-0.5, 0, 0.5].map((off, idx) => (
+            {[-0.4, 0, 0.4].map((off, idx) => (
               <mesh key={`elec-${idx}`} position={[off * 0.7, off * 0.5, off * 0.3]}>
-                <sphereGeometry args={[0.08, 12, 12]} />
+                <sphereGeometry args={[0.07, 12, 12]} />
                 <meshStandardMaterial color="#eab308" emissive="#ca8a04" emissiveIntensity={0.5} />
               </mesh>
             ))}
             <Html position={[0, 0.7, 0]} center>
               <div className="bg-slate-900/90 text-sky-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-                نموذج طومسون
+                نموذج طومسون (شحنة موزعة)
               </div>
             </Html>
           </group>
@@ -228,10 +253,14 @@ function RutherfordChamber3D({
 
       {/* ALPHA PARTICLES */}
       <group ref={particlesRef}>
-        {Array.from({ length: particleCount }).map((_, i) => (
+        {particles.current.map((_, i) => (
           <mesh key={`alpha-${i}`} visible={false}>
-            <sphereGeometry args={[0.07, 12, 12]} />
-            <meshBasicMaterial color="#fde047" />
+            <sphereGeometry args={[0.08, 12, 12]} />
+            <meshStandardMaterial
+              color="#fde047"
+              emissive="#eab308"
+              emissiveIntensity={0.8}
+            />
           </mesh>
         ))}
       </group>
@@ -255,7 +284,6 @@ export default function RutherfordScatteringSimulation() {
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Scattering Counters
-  const [totalFired, setTotalFired] = useState<number>(0);
   const [forwardDeflected, setForwardDeflected] = useState<number>(0);
   const [mediumDeflected, setMediumDeflected] = useState<number>(0);
   const [backScattered, setBackScattered] = useState<number>(0);
@@ -265,27 +293,20 @@ export default function RutherfordScatteringSimulation() {
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
+  const totalFired = forwardDeflected + mediumDeflected + backScattered;
+
   const closestApproachFm = useMemo(() => {
     const dmin = (1.44 * 2 * selectedFoil.atomicNumberZ) / beamEnergyMeV;
     return +dmin.toFixed(2);
   }, [selectedFoil, beamEnergyMeV]);
 
-  const handleParticleScattered = (angleDeg: number) => {
-    setTotalFired((prev) => prev + 1);
-    if (angleDeg < 45) {
-      setForwardDeflected((prev) => prev + 1);
-    } else if (angleDeg <= 90) {
-      setMediumDeflected((prev) => prev + 1);
-      labSound.playGeigerClick();
-    } else {
-      setBackScattered((prev) => prev + 1);
-      labSound.playGeigerClick();
-      confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
-    }
+  const handleRecordStats = (forward: number, medium: number, back: number) => {
+    setForwardDeflected(forward);
+    setMediumDeflected(medium);
+    setBackScattered(back);
   };
 
   const handleResetCounters = () => {
-    setTotalFired(0);
     setForwardDeflected(0);
     setMediumDeflected(0);
     setBackScattered(0);
@@ -374,7 +395,7 @@ export default function RutherfordScatteringSimulation() {
                   تشتت رذرفورد واكتشاف النواة الذرية ثلاثية الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
-                  إطلاق جسيمات ألفا \(\alpha\) نحو رقائق المعادن وكشف النواة الذرية ذات الكثافة الهائلة
+                  إطلاق جسيمات ألفا \(\alpha\) نحو رقائق المعادن وكشف النواة الذرية ذات الكثافة والشحنة المركزة
                 </p>
               </div>
             </div>
@@ -449,7 +470,7 @@ export default function RutherfordScatteringSimulation() {
           </Card>
           <Card className="bg-slate-900/70 border-slate-800">
             <CardContent className="p-3 text-center">
-              <span className="text-xs text-slate-400">ارتداد خلفي نادراً (&gt; 90°)</span>
+              <span className="text-xs text-slate-400">ارتداد خلفي (&gt; 90°)</span>
               <p className="text-lg font-bold text-red-400 font-mono">{backScattered}</p>
               <span className="text-[10px] text-slate-500">
                 {totalFired > 0 ? `${((backScattered / totalFired) * 100).toFixed(2)}%` : '0%'} (دليل النواة)
@@ -526,7 +547,7 @@ export default function RutherfordScatteringSimulation() {
                         beamEnergyMeV={beamEnergyMeV}
                         beamIntensity={beamIntensity}
                         isPlaying={isPlaying}
-                        onParticleScattered={handleParticleScattered}
+                        onRecordStats={handleRecordStats}
                       />
                       <OrbitControls
                         ref={controlsRef}
@@ -570,7 +591,7 @@ export default function RutherfordScatteringSimulation() {
                       <Lightbulb className="w-4 h-4 text-yellow-400 shrink-0" />
                       <span>
                         {modelType === 'rutherford'
-                          ? `💡 رذرفورد: ترتد جسيمات ألفا بزوايا حادة (${backScattered} ارتداد) عند مواجهتها للنواة الموجبة المركزة مباشرة (Z=${selectedFoil.atomicNumberZ}).`
+                          ? `💡 رذرفورد: ترتد جسيمات ألفا بزوايا حادة نادرة (${backScattered} ارتداد) عند مواجهتها للنواة الموجبة المركزة مباشرة (Z=${selectedFoil.atomicNumberZ}).`
                           : `💡 طومسون: تعبر جميع جسيمات ألفا في خطوط مستقيمة دون أي ارتداد خلفي بسبب انتشار الشحنة الموجبة في كامل الحجم.`}
                       </span>
                     </div>
