@@ -97,6 +97,7 @@ import AnalyticalChemistrySimulation from './pages/AnalyticalChemistrySimulation
 import ElectrochemistrySimulation from './pages/ElectrochemistrySimulation';
 import MolecularBiologySimulation from './pages/MolecularBiologySimulation';
 import HumanBodySimulation from './pages/HumanBodySimulation';
+import HumanBody3D from './pages/HumanBody3D';
 import AdvancedNuclearSimulation from './pages/AdvancedNuclearSimulation';
 import DigitalElectronicsSimulation from './pages/DigitalElectronicsSimulation';
 import EarthSciencesSimulation from './pages/EarthSciencesSimulation';
@@ -780,6 +781,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/human-body',
+        element: <AuthGuard><HumanBody3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/human-body-classic',
         element: <AuthGuard><HumanBodySimulation /></AuthGuard>,
       },
       {
