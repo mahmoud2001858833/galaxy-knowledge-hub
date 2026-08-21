@@ -755,6 +755,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/analytical-chemistry',
+        element: <AuthGuard><AnalyticalChemistry3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/analytical-chemistry-classic',
         element: <AuthGuard><AnalyticalChemistrySimulation /></AuthGuard>,
       },
       {
