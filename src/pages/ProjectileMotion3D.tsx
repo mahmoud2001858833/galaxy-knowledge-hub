@@ -105,6 +105,19 @@ const ProjectileMotion3D = () => {
   const [challengeResult, setChallengeResult] = useState<string | null>(null);
   const liveRef = useRef<ProjectileSample | null>(null);
 
+  // ----- AI coach wiring -------------------------------------------------
+  const aiRef = useRef<SimAIContextValue | null>(null);
+  const track = (
+    kind: Parameters<NonNullable<SimAIContextValue['track']>>[0],
+    label: string,
+    payload?: Record<string, unknown>
+  ) => aiRef.current?.track(kind, label, payload);
+
+  useEffect(() => {
+    track('start', 'فتح التجربة');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const gravity = GRAVITY_PRESETS[planet].g;
 
   const samples = useMemo(
