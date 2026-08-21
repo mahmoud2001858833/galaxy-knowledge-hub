@@ -904,6 +904,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/photosynthesis-respiration',
+        element: <AuthGuard><Photosynthesis3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/photosynthesis-respiration-classic',
         element: <AuthGuard><PhotosynthesisRespirationSimulation /></AuthGuard>,
       },
       {
