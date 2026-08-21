@@ -269,3 +269,6 @@ verify_jwt = false
 
 [functions.damij-carbon-advisor]
 verify_jwt = false
+
+[functions.sim-ai-coach]
+verify_jwt = false
