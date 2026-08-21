@@ -116,6 +116,7 @@ import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSi
 import PlasmaPhysicsSimulation from './pages/PlasmaPhysicsSimulation';
 import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
 import ChemicalKinetics3D from './pages/ChemicalKinetics3D';
+import OrganicChemistry3D from './pages/OrganicChemistry3D';
 import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
@@ -851,6 +852,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/organic-chemistry',
+        element: <AuthGuard><OrganicChemistry3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/organic-chemistry-classic',
         element: <AuthGuard><OrganicChemistrySimulation /></AuthGuard>,
       },
       {
