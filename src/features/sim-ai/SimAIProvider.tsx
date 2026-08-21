@@ -333,5 +333,7 @@ export const SimAIProvider = ({ sim, state, children, defaultEnabled = true, api
     ]
   );
 
+  if (apiRef) apiRef.current = value;
+
   return <SimAIContext.Provider value={value}>{children}</SimAIContext.Provider>;
 };
