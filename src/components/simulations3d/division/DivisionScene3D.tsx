@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import * as THREE from 'three';
-import { SimControls, SimLabel3D, SimStage, useSimQuality } from '@/components/sim3d';
+import { SimControls, SimLabel3D, SimStage } from '@/components/sim3d';
 import type { SimView } from '@/components/sim3d';
 import {
   CYCLE_CHECKPOINTS,
@@ -340,7 +340,6 @@ export const DivisionScene3D = ({
   autoRotate,
   resetKey,
 }: DivisionScene3DProps) => {
-  const { settings } = useSimQuality();
   const cells = stats.phase.cells;
   const id = stats.phase.id;
   const p = stats.phaseProgress;
