@@ -115,6 +115,7 @@ import SpecialRelativity3D from './pages/SpecialRelativity3D';
 import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSimulation';
 import PlasmaPhysicsSimulation from './pages/PlasmaPhysicsSimulation';
 import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
+import ChemicalKinetics3D from './pages/ChemicalKinetics3D';
 import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
@@ -842,6 +843,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/chemical-kinetics',
+        element: <AuthGuard><ChemicalKinetics3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/chemical-kinetics-classic',
         element: <AuthGuard><ChemicalKineticsSimulation /></AuthGuard>,
       },
       {
