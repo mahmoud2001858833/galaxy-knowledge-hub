@@ -405,7 +405,7 @@ export const DivisionScene3D = ({
                 />
               );
             })}
-            {showLabels && settings.labels !== false && (
+            {showLabels && (
               <SimLabel3D position={[0, CELL_R * scale + 1.1, 0]} distanceFactor={40}>
                 {stats.phase.ploidy}
               </SimLabel3D>
