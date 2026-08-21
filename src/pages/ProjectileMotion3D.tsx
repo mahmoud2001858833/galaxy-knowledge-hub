@@ -1,4 +1,5 @@
-import { Suspense, lazy, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { SimAICursor, SimAIProvider, type SimAIContextValue } from '@/features/sim-ai';
 import { Target, Play, Pause, RotateCcw, Trophy, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
