@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line, Tube } from '@react-three/drei';
+import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { SimControls, SimLabel3D, SimStage } from '@/components/sim3d';
 import type { SimView } from '@/components/sim3d';
@@ -118,13 +118,13 @@ const Circulatory = ({ stats, params, playing, timeScale, showLabels, onSelect, 
   return (
     <group position={[0, 0.5, 0]}>
       {/* pulmonary (blue) loop tube */}
-      <Tube args={[pulmonaryLoop, 64, 0.28, 12, true]}>
+      <mesh><tubeGeometry args={[pulmonaryLoop, 64, 0.28, 12, true]} />
         <meshStandardMaterial color="#1d4ed8" transparent opacity={0.35} emissive="#3b82f6" emissiveIntensity={0.2} />
-      </Tube>
+      </mesh>
       {/* systemic (red) loop tube */}
-      <Tube args={[systemicLoop, 64, 0.3, 12, true]}>
+      <mesh><tubeGeometry args={[systemicLoop, 64, 0.3, 12, true]} />
         <meshStandardMaterial color="#b91c1c" transparent opacity={0.35} emissive="#ef4444" emissiveIntensity={0.2} />
-      </Tube>
+      </mesh>
 
       {/* lungs on the pulmonary side */}
       {[-1, 1].map((s) => (
@@ -682,9 +682,9 @@ const Digestive = ({ stats, playing, timeScale, showLabels, onSelect, selected }
 
   return (
     <group>
-      <Tube args={[tract, 200, 0.42, 12, false]}>
+      <mesh><tubeGeometry args={[tract, 200, 0.42, 12, false]} />
         <meshStandardMaterial color="#fbbf24" transparent opacity={0.32} emissive="#f59e0b" emissiveIntensity={0.14} />
-      </Tube>
+      </mesh>
 
       {organ(
         'mouth',
@@ -860,9 +860,9 @@ const Urinary = ({ stats, playing, timeScale, showLabels, onSelect, selected }: 
         </mesh>
       </group>
 
-      <Tube args={[nephron, 220, 0.26, 10, false]}>
+      <mesh><tubeGeometry args={[nephron, 220, 0.26, 10, false]} />
         <meshStandardMaterial color="#0ea5e9" transparent opacity={0.4} emissive="#0284c7" emissiveIntensity={0.2} />
-      </Tube>
+      </mesh>
 
       {/* segment highlights */}
       {([['pct', 0.22, '#22d3ee'], ['loop', 0.5, '#0ea5e9'], ['collect', 0.9, '#6366f1']] as const).map(([id, u, color]) => {
