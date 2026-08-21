@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Beaker, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Flame, Gauge, Thermometer 
+  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Flame, Gauge, Thermometer,
+  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
+import { labSound } from '@/utils/labAudio';
 
 interface ReactionSystem {
   id: string;
@@ -25,8 +27,8 @@ interface ReactionSystem {
   equationAr: string;
   reactantsAr: string;
   productsAr: string;
-  deltaH: number; // kJ/mol (negative = exothermic, positive = endothermic)
-  deltaMolesGas: number; // delta n_g = n_products - n_reactants
+  deltaH: number;
+  deltaMolesGas: number;
   kcStandard: number;
 }
 
@@ -37,8 +39,8 @@ const REACTIONS: ReactionSystem[] = [
     equationAr: 'N₂(g) + 3H₂(g) ⇌ 2NH₃(g)',
     reactantsAr: 'نيتروجين N₂ + هيدروجين H₂',
     productsAr: 'أمونيا NH₃',
-    deltaH: -92.4, // Exothermic
-    deltaMolesGas: -2, // 4 moles -> 2 moles
+    deltaH: -92.4,
+    deltaMolesGas: -2,
     kcStandard: 0.5,
   },
   {
@@ -47,8 +49,8 @@ const REACTIONS: ReactionSystem[] = [
     equationAr: '2NO₂(g) [بني محمر] ⇌ N₂O₄(g) [عديم اللون]',
     reactantsAr: 'ثاني أكسيد النيتروجين NO₂ (بني محمر)',
     productsAr: 'رباعي أكسيد ثنائي النيتروجين N₂O₄ (عديم اللون)',
-    deltaH: -57.2, // Exothermic
-    deltaMolesGas: -1, // 2 moles -> 1 mole
+    deltaH: -57.2,
+    deltaMolesGas: -1,
     kcStandard: 1.2,
   },
   {
@@ -57,8 +59,8 @@ const REACTIONS: ReactionSystem[] = [
     equationAr: 'H₂(g) + I₂(g) ⇌ 2HI(g)',
     reactantsAr: 'هيدروجين H₂ + بخار يود I₂ (بنفسجي)',
     productsAr: 'يوديد الهيدروجين HI',
-    deltaH: +53.0, // Endothermic
-    deltaMolesGas: 0, // No pressure effect
+    deltaH: +53.0,
+    deltaMolesGas: 0,
     kcStandard: 50.0,
   },
 ];
@@ -73,7 +75,6 @@ interface Molecule3D {
   vz: number;
 }
 
-// 3D Reactor Scene
 interface Equilibrium3DProps {
   temperatureK: number;
   pressureAtm: number;
@@ -93,22 +94,18 @@ function ReactorChamber3D({
 }: Equilibrium3DProps) {
   const moleculesRef = useRef<THREE.Group>(null);
 
-  // Height of chamber compressed by piston: higher pressure -> lower piston
   const chamberHeight = 4.2 / Math.sqrt(pressureAtm);
   const pistonY = (chamberHeight / 2);
 
-  // Temperature glow color
   const gasColor = useMemo(() => {
     if (selectedReaction.id === 'no2-dimer') {
-      // Color depends on NO2 concentration (brownish-red)
       return `rgba(239, 68, 68, ${Math.min(0.7, concReactants * 0.4)})`;
     }
-    if (temperatureK > 500) return '#ea580c'; // hot orange
-    if (temperatureK < 350) return '#38bdf8'; // cold blue
-    return '#10b981'; // moderate emerald
+    if (temperatureK > 500) return '#ea580c';
+    if (temperatureK < 350) return '#38bdf8';
+    return '#10b981';
   }, [temperatureK, selectedReaction, concReactants]);
 
-  // Molecules pool
   const moleculeCount = 45;
   const molecules = useMemo<Molecule3D[]>(() => {
     return Array.from({ length: moleculeCount }, (_, i) => ({
@@ -134,14 +131,12 @@ function ReactorChamber3D({
       m.y += m.vy * speedScale;
       m.z += m.vz * speedScale;
 
-      // Radial cylinder boundary
       const r = Math.sqrt(m.x * m.x + m.z * m.z);
       if (r > radLimit) {
         m.vx *= -1;
         m.vz *= -1;
       }
 
-      // Vertical piston / bottom boundary
       if (m.y > halfH || m.y < -halfH) {
         m.vy *= -1;
       }
@@ -155,7 +150,7 @@ function ReactorChamber3D({
 
   return (
     <group>
-      {/* 3D TRANSPARENT REACTION CYLINDER */}
+      {/* 3D REACTION CYLINDER */}
       <mesh position={[0, 0, 0]}>
         <cylinderGeometry args={[2.0, 2.0, chamberHeight, 32, 1, true]} />
         <meshPhysicalMaterial
@@ -168,19 +163,18 @@ function ReactorChamber3D({
         />
       </mesh>
 
-      {/* REACTION GAS GLOW INSIDE */}
+      {/* GAS GLOW */}
       <mesh position={[0, 0, 0]}>
         <cylinderGeometry args={[1.95, 1.95, chamberHeight - 0.05, 32]} />
         <meshBasicMaterial color={gasColor} opacity={0.25} transparent />
       </mesh>
 
-      {/* MOVABLE HYDRAULIC PISTON (Top Lid) */}
+      {/* PISTON */}
       <group position={[0, pistonY, 0]}>
         <mesh>
           <cylinderGeometry args={[2.02, 2.02, 0.35, 32]} />
           <meshStandardMaterial color="#475569" metalness={0.9} roughness={0.2} />
         </mesh>
-        {/* Piston Rod */}
         <mesh position={[0, 1.2, 0]}>
           <cylinderGeometry args={[0.25, 0.25, 2.2, 16]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.95} roughness={0.1} />
@@ -192,13 +186,13 @@ function ReactorChamber3D({
         </Html>
       </group>
 
-      {/* SOLID BASE (Chamber Bottom) */}
+      {/* SOLID BASE */}
       <mesh position={[0, -pistonY - 0.2, 0]}>
         <cylinderGeometry args={[2.1, 2.1, 0.4, 32]} />
         <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
       </mesh>
 
-      {/* 3D MOLECULES */}
+      {/* MOLECULES */}
       <group ref={moleculesRef}>
         {molecules.map((m, idx) => {
           const isProduct = idx < Math.round((concProducts / (concReactants + concProducts)) * moleculeCount);
@@ -223,18 +217,21 @@ function ReactorChamber3D({
 export default function ChemicalEquilibriumSimulation() {
   const navigate = useNavigate();
   const controlsRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // States
   const [selectedReaction, setSelectedReaction] = useState<ReactionSystem>(REACTIONS[0]);
-  const [temperatureK, setTemperatureK] = useState<number>(450); // Kelvin
-  const [pressureAtm, setPressureAtm] = useState<number>(1.0); // Atmospheres
+  const [temperatureK, setTemperatureK] = useState<number>(450);
+  const [pressureAtm, setPressureAtm] = useState<number>(1.0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Concentrations
-  const [concA, setConcA] = useState<number>(2.0); // M
-  const [concB, setConcB] = useState<number>(3.0); // M
-  const [concC, setConcC] = useState<number>(1.5); // M
+  const [concA, setConcA] = useState<number>(2.0);
+  const [concB, setConcB] = useState<number>(3.0);
+  const [concC, setConcC] = useState<number>(1.5);
   const [historyData, setHistoryData] = useState<Array<{ time: number; reactants: number; products: number }>>([]);
 
   // Quiz States
@@ -242,28 +239,23 @@ export default function ChemicalEquilibriumSimulation() {
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Calculate dynamic Kc from Van 't Hoff Equation
   const currentKc = useMemo(() => {
-    // ln(Kc2 / Kc1) = - (deltaH / R) * (1/T2 - 1/T1)
-    const R_GAS = 8.314; // J/(mol·K)
+    const R_GAS = 8.314;
     const deltaH_J = selectedReaction.deltaH * 1000;
     const exponent = -(deltaH_J / R_GAS) * (1 / temperatureK - 1 / 298.15);
     const kc = selectedReaction.kcStandard * Math.exp(exponent);
     return Math.max(0.001, Math.min(999, +kc.toFixed(3)));
   }, [selectedReaction, temperatureK]);
 
-  // Reaction Quotient Q = [Products] / [Reactants]
   const Q = useMemo(() => {
     const q = concC / (concA * Math.max(0.1, concB));
     return +q.toFixed(3);
   }, [concA, concB, concC]);
 
-  // Dynamic Equilibrium Shift Simulator
   useEffect(() => {
     if (!isPlaying) return;
 
     const timer = setInterval(() => {
-      // Approach equilibrium dynamically
       const rate = 0.05;
       const difference = currentKc - Q;
 
@@ -285,6 +277,53 @@ export default function ChemicalEquilibriumSimulation() {
     return () => clearInterval(timer);
   }, [isPlaying, currentKc, Q, concA, concB, concC]);
 
+  const setCameraView = (view: 'default' | 'top' | 'piston' | 'side') => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (view === 'default') {
+      controls.object.position.set(0, 2.5, 7.5);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'top') {
+      controls.object.position.set(0, 8.5, 0.1);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'piston') {
+      controls.object.position.set(0, 3.5, 3.5);
+      controls.target.set(0, 1.5, 0);
+    } else if (view === 'side') {
+      controls.object.position.set(7.5, 0, 0);
+      controls.target.set(0, 0, 0);
+    }
+    controls.update();
+    labSound.playLaserPulse(550);
+  };
+
+  const toggleSound = () => {
+    const muted = labSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const handleExportDataCSV = () => {
+    const headers = 'Reaction,Temperature(K),Pressure(atm),Kc,Q,ReactantsConc(M),ProductsConc(M)\n';
+    const row = `${selectedReaction.id},${temperatureK},${pressureAtm},${currentKc},${Q},${(concA + concB).toFixed(3)},${concC.toFixed(3)}\n`;
+    const blob = new Blob([headers + row], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chemical_equilibrium_${selectedReaction.id}.csv`;
+    link.click();
+    labSound.playSuccessChime();
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   const handleReset = () => {
     setTemperatureK(450);
     setPressureAtm(1.0);
@@ -302,6 +341,7 @@ export default function ChemicalEquilibriumSimulation() {
     setQuizSubmitted(true);
     if (selected === 0) {
       setQuizScore((prev) => prev + 1);
+      labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -329,7 +369,7 @@ export default function ChemicalEquilibriumSimulation() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-400 bg-clip-text text-transparent">
-                  الاتزان الكيميائي ومبدأ لوشاتيليه ثلاثي الأبعاد (3D)
+                  الاتزان الكيميائي ومبدأ لوشاتيليه ثلاثي الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
                   محاكاة استجابة التفاعلات الكيميائية المتزنة لتغيرات الحرارة والضغط والتركيز في مفاعل حقيقي
@@ -339,7 +379,24 @@ export default function ChemicalEquilibriumSimulation() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSound}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportDataCSV}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              تصدير البيانات (CSV)
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -356,7 +413,7 @@ export default function ChemicalEquilibriumSimulation() {
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط المفاعل
+              إعادة الضبط
             </Button>
           </div>
         </div>
@@ -436,18 +493,27 @@ export default function ChemicalEquilibriumSimulation() {
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 3D WebGL Canvas */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className="lg:col-span-2 space-y-3" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Beaker className="w-4 h-4 text-emerald-400" />
                       مفاعل الغازات ثلاثي الأبعاد مع مكبس الحجم المتغير (3D View)
                     </CardTitle>
-                    <Badge variant="outline" className="border-emerald-500/50 text-emerald-300 bg-emerald-500/10">
-                      {selectedReaction.nameAr}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-emerald-500/50 text-emerald-300 bg-emerald-500/10">
+                        {selectedReaction.nameAr}
+                      </Badge>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        title="ملء الشاشة"
+                      >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                  <CardContent className="p-0 h-[460px] bg-slate-950 relative">
                     <Canvas camera={{ position: [0, 2.5, 7.5], fov: 45 }}>
                       <ambientLight intensity={0.6} />
                       <directionalLight position={[8, 10, 8]} intensity={1.2} />
@@ -469,10 +535,44 @@ export default function ChemicalEquilibriumSimulation() {
                       />
                     </Canvas>
 
-                    {/* 3D Controls Helper */}
-                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-                      <Compass className="w-3.5 h-3.5 text-sky-400" />
-                      <span>اسحب للتدوير 360° حول المفاعل • لاحظ حركة المكبس مع تغير الضغط</span>
+                    {/* Camera Angle Presets */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                      <button
+                        onClick={() => setCameraView('default')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المنظور العام
+                      </button>
+                      <button
+                        onClick={() => setCameraView('piston')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المكبس
+                      </button>
+                      <button
+                        onClick={() => setCameraView('side')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        جانبي
+                      </button>
+                      <button
+                        onClick={() => setCameraView('top')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        علوي
+                      </button>
+                    </div>
+
+                    {/* Live Assistant Hint */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>
+                        {Math.abs(Q - currentKc) < 0.1
+                          ? `💡 النظام مستقر في حالة اتزان ديناميكي (Q ≈ Kc = ${currentKc}). معدل التفاعل الطردي يساوي معدل التفاعل العكسي تماماً.`
+                          : Q < currentKc
+                          ? `💡 التفاعل يزاح طردياً نحو تكوين النواتج (Q < Kc). جرب زيادة الضغط لتقليل الحجم.`
+                          : `💡 التفاعل يزاح عكسياً نحو المتفاعلات (Q > Kc).`}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -498,6 +598,7 @@ export default function ChemicalEquilibriumSimulation() {
                             onClick={() => {
                               setSelectedReaction(rxn);
                               handleReset();
+                              labSound.playLaserPulse(450);
                             }}
                             className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedReaction.id === rxn.id
@@ -555,13 +656,10 @@ export default function ChemicalEquilibriumSimulation() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: Live Concentration Curves */}
+          {/* TAB 2: Live Curves */}
           <TabsContent value="curves" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
               <CardTitle className="text-base font-bold text-sky-300 mb-2">تغير التراكيز الحية مع الزمن واستقرار الاتزان</CardTitle>
-              <p className="text-xs text-slate-400 mb-4">
-                لاحظ كيف تعيد التراكيز ضبط نفسها تلقائياً للوصول إلى حالة الاتزان الجديدة عند تغيير الحرارة أو الضغط.
-              </p>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={historyData}>
@@ -585,7 +683,6 @@ export default function ChemicalEquilibriumSimulation() {
               <p>
                 ينص مبدأ لوشاتيليه على أنه: <em>&quot;إذا حدث تغير في أحد العوامل المؤثرة على نظام كيميائي في حالة اتزان (مثل التركيز أو الضغط أو درجة الحرارة)، فإن النظام يعدل من موضعه في الاتجاه الذي يقلل من تأثير هذا التغير&quot;</em>.
               </p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-sky-400">1. تأثير درجة الحرارة على Kc</h4>
@@ -621,7 +718,6 @@ export default function ChemicalEquilibriumSimulation() {
                 <p className="font-semibold text-slate-200">
                   سؤال: في تفاعل تكوين الأمونيا الطارد للحرارة (N₂ + 3H₂ ⇌ 2NH₃ + حرارة)، ما هي الظروف التي تزيد من إنتاج غاز الأمونيا (NH₃)؟
                 </p>
-
                 <div className="space-y-2">
                   {[
                     { id: 0, text: 'زيادة الضغط وخفض درجة الحرارة.' },

@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Rocket, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Globe 
+  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert, Globe,
+  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,13 +18,14 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
+import { labSound } from '@/utils/labAudio';
 
 interface MissionProfile {
   id: string;
   nameAr: string;
   nameEn: string;
-  r1Km: number; // LEO radius (km)
-  r2Km: number; // Target radius (km)
+  r1Km: number;
+  r2Km: number;
   targetNameAr: string;
   targetColor: string;
 }
@@ -36,11 +38,10 @@ const MISSIONS: MissionProfile[] = [
 
 const G = 6.67430e-11;
 const EARTH_MASS_KG = 5.972e24;
-const MU_EARTH = G * EARTH_MASS_KG; // Standard gravitational parameter ~ 3.986e14 m^3/s^2
+const MU_EARTH = G * EARTH_MASS_KG;
 
 type FlightPhase = 'orbit_1' | 'transfer' | 'orbit_2';
 
-// 3D Orbital Scene
 interface Orbital3DProps {
   mission: MissionProfile;
   phase: FlightPhase;
@@ -52,21 +53,18 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
   const probeRef = useRef<THREE.Group>(null);
   const angleRef = useRef<number>(0);
 
-  // Scaled radii for 3D visualization
   const r1_3D = 2.0;
   const r2_3D = 4.8;
   const a_transfer_3D = (r1_3D + r2_3D) / 2;
-  const c_focus = a_transfer_3D - r1_3D; // ellipse offset
+  const c_focus = a_transfer_3D - r1_3D;
 
   useFrame((state, delta) => {
     if (!isPlaying) return;
 
-    // Rotate Earth
     if (earthRef.current) {
       earthRef.current.rotation.y += 0.005;
     }
 
-    // Spacecraft Trajectory Animation
     if (probeRef.current) {
       if (phase === 'orbit_1') {
         angleRef.current += 0.03;
@@ -74,7 +72,6 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
         const pz = Math.sin(angleRef.current) * r1_3D;
         probeRef.current.position.set(px, 0, pz);
       } else if (phase === 'transfer') {
-        // Elliptical trajectory from angle 0 to PI
         angleRef.current += 0.015;
         const e = (r2_3D - r1_3D) / (r2_3D + r1_3D);
         const r = (a_transfer_3D * (1 - e * e)) / (1 + e * Math.cos(angleRef.current));
@@ -92,18 +89,16 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
 
   return (
     <group>
-      {/* 3D CENTRAL BODY: PLANET EARTH */}
+      {/* 3D PLANET EARTH */}
       <group ref={earthRef}>
         <mesh>
           <sphereGeometry args={[1.0, 32, 32]} />
           <meshStandardMaterial color="#2563eb" roughness={0.6} metalness={0.1} />
         </mesh>
-        {/* Continents / Landmass Highlights */}
         <mesh>
           <sphereGeometry args={[1.01, 16, 16]} />
           <meshStandardMaterial color="#16a34a" wireframe opacity={0.3} transparent />
         </mesh>
-        {/* Blue Atmosphere Glow */}
         <mesh>
           <sphereGeometry args={[1.12, 32, 32]} />
           <meshBasicMaterial color="#38bdf8" opacity={0.2} transparent side={THREE.BackSide} />
@@ -115,13 +110,13 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
         </Html>
       </group>
 
-      {/* ORBIT 1 TRAJECTORY (Inner Circle LEO) */}
+      {/* LEO ORBIT */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[r1_3D - 0.02, r1_3D + 0.02, 64]} />
         <meshBasicMaterial color="#38bdf8" opacity={0.6} transparent side={THREE.DoubleSide} />
       </mesh>
 
-      {/* HOHMANN TRANSFER ORBIT (Elliptical Path in Gold) */}
+      {/* HOHMANN TRANSFER ORBIT */}
       <group position={[-c_focus, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <mesh>
           <ringGeometry args={[a_transfer_3D - 0.025, a_transfer_3D + 0.025, 64]} />
@@ -129,13 +124,13 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
         </mesh>
       </group>
 
-      {/* ORBIT 2 TRAJECTORY (Outer Target Orbit) */}
+      {/* TARGET ORBIT */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[r2_3D - 0.02, r2_3D + 0.02, 64]} />
         <meshBasicMaterial color="#a855f7" opacity={0.6} transparent side={THREE.DoubleSide} />
       </mesh>
 
-      {/* DESTINATION TARGET NODE */}
+      {/* DESTINATION NODE */}
       <group position={[-r2_3D, 0, 0]}>
         <mesh>
           <sphereGeometry args={[0.3, 16, 16]} />
@@ -148,13 +143,12 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
         </Html>
       </group>
 
-      {/* 3D SPACECRAFT PROBE WITH THRUSTER */}
+      {/* 3D SPACECRAFT */}
       <group ref={probeRef} position={[r1_3D, 0, 0]}>
         <mesh>
           <boxGeometry args={[0.2, 0.2, 0.35]} />
           <meshStandardMaterial color="#f8fafc" metalness={0.9} roughness={0.1} />
         </mesh>
-        {/* Solar Panels */}
         <mesh position={[0.3, 0, 0]}>
           <boxGeometry args={[0.35, 0.02, 0.2]} />
           <meshStandardMaterial color="#0284c7" />
@@ -163,7 +157,6 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
           <boxGeometry args={[0.35, 0.02, 0.2]} />
           <meshStandardMaterial color="#0284c7" />
         </mesh>
-        {/* Rocket Plume during Maneuver */}
         {phase === 'transfer' && (
           <group position={[0, 0, -0.3]}>
             <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -186,45 +179,95 @@ function OrbitalMechanics3DScene({ mission, phase, isPlaying }: Orbital3DProps) 
 export default function OrbitalMechanicsSimulation() {
   const navigate = useNavigate();
   const controlsRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // States
   const [selectedMission, setSelectedMission] = useState<MissionProfile>(MISSIONS[0]);
   const [phase, setPhase] = useState<FlightPhase>('orbit_1');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Hohmann Transfer Astrodynamics Calculations
+  // Calculations
   const r1_m = selectedMission.r1Km * 1000;
   const r2_m = selectedMission.r2Km * 1000;
   const a_transfer_m = (r1_m + r2_m) / 2;
 
-  // Orbital velocities in m/s (Vis-Viva equation: v^2 = mu * (2/r - 1/a))
-  const v1 = Math.sqrt(MU_EARTH / r1_m); // Circular LEO velocity
-  const v2 = Math.sqrt(MU_EARTH / r2_m); // Circular Target velocity
+  const v1 = Math.sqrt(MU_EARTH / r1_m);
+  const v2 = Math.sqrt(MU_EARTH / r2_m);
   const v_transfer_periapsis = Math.sqrt(MU_EARTH * (2 / r1_m - 1 / a_transfer_m));
   const v_transfer_apoapsis = Math.sqrt(MU_EARTH * (2 / r2_m - 1 / a_transfer_m));
 
-  // Required Delta-V (Δv) for the 2 burns
-  const deltaV1 = +(v_transfer_periapsis - v1).toFixed(1); // Injection burn at periapsis
-  const deltaV2 = +(v2 - v_transfer_apoapsis).toFixed(1); // Circularization burn at apoapsis
+  const deltaV1 = +(v_transfer_periapsis - v1).toFixed(1);
+  const deltaV2 = +(v2 - v_transfer_apoapsis).toFixed(1);
   const totalDeltaV = +(deltaV1 + deltaV2).toFixed(1);
 
-  // Transfer Time: T_transfer = pi * sqrt(a^3 / mu)
   const transferTimeHours = +( (Math.PI * Math.sqrt(Math.pow(a_transfer_m, 3) / MU_EARTH)) / 3600 ).toFixed(1);
 
   const handleExecuteBurn1 = () => {
     setPhase('transfer');
+    labSound.playRocketBurst();
     confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
   };
 
   const handleExecuteBurn2 = () => {
     setPhase('orbit_2');
+    labSound.playRocketBurst();
+    labSound.playSuccessChime();
     confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+  };
+
+  const setCameraView = (view: 'default' | 'top' | 'probe' | 'earth' | 'target') => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (view === 'default') {
+      controls.object.position.set(0, 8.5, 9.5);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'top') {
+      controls.object.position.set(0, 14.0, 0.1);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'earth') {
+      controls.object.position.set(0, 1.5, 3.0);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'target') {
+      controls.object.position.set(-4.8, 1.5, 2.5);
+      controls.target.set(-4.8, 0, 0);
+    }
+    controls.update();
+    labSound.playLaserPulse(600);
+  };
+
+  const toggleSound = () => {
+    const muted = labSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const handleExportDataCSV = () => {
+    const headers = 'Mission,R1_km,R2_km,V1_LEO(m/s),V2_Target(m/s),DeltaV1(m/s),DeltaV2(m/s),TotalDeltaV(m/s),TransferTime(hours)\n';
+    const row = `${selectedMission.nameEn},${selectedMission.r1Km},${selectedMission.r2Km},${v1.toFixed(1)},${v2.toFixed(1)},${deltaV1},${deltaV2},${totalDeltaV},${transferTimeHours}\n`;
+    const blob = new Blob([headers + row], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orbital_hohmann_${selectedMission.id}.csv`;
+    link.click();
+    labSound.playSuccessChime();
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
   };
 
   const handleResetFlight = () => {
@@ -239,6 +282,7 @@ export default function OrbitalMechanicsSimulation() {
     setQuizSubmitted(true);
     if (selected === 1) {
       setQuizScore((prev) => prev + 1);
+      labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -266,7 +310,7 @@ export default function OrbitalMechanicsSimulation() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-sky-300 via-amber-200 to-purple-300 bg-clip-text text-transparent">
-                  ميكانيكا المدارات ومناورة هوهمان ثلاثية الأبعاد (3D Orbital)
+                  ميكانيكا المدارات ومناورة هوهمان ثلاثية الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
                   تخطيط مناورات الدفع الصاروخي والانتقال الإهليلجي بين المدارات ومعادلة فيس-فيفا
@@ -276,7 +320,24 @@ export default function OrbitalMechanicsSimulation() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSound}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportDataCSV}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              تصدير الخطة المدارية (CSV)
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -369,18 +430,27 @@ export default function OrbitalMechanicsSimulation() {
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 3D WebGL Canvas */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className="lg:col-span-2 space-y-3" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Globe className="w-4 h-4 text-sky-400" />
                       محاكي مدارات الفضاء ثلاثي الأبعاد (3D Space Flight Simulation)
                     </CardTitle>
-                    <Badge variant="outline" className="border-sky-500/50 text-sky-300 bg-sky-500/10">
-                      {selectedMission.nameAr.split(' ')[0]}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-sky-500/50 text-sky-300 bg-sky-500/10">
+                        {selectedMission.nameAr.split(' ')[0]}
+                      </Badge>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        title="ملء الشاشة"
+                      >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                  <CardContent className="p-0 h-[460px] bg-slate-950 relative">
                     <Canvas camera={{ position: [0, 8.5, 9.5], fov: 45 }}>
                       <ambientLight intensity={0.5} />
                       <directionalLight position={[12, 10, 10]} intensity={1.2} />
@@ -399,10 +469,44 @@ export default function OrbitalMechanicsSimulation() {
                       />
                     </Canvas>
 
-                    {/* 3D Controls Helper */}
-                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-                      <Compass className="w-3.5 h-3.5 text-sky-400" />
-                      <span>اسحب للتدوير 360° في الفضاء المداري • قرّب لمعاينة المركبة والأرض</span>
+                    {/* Camera Angle Presets */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                      <button
+                        onClick={() => setCameraView('default')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المنظور العام
+                      </button>
+                      <button
+                        onClick={() => setCameraView('earth')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        الأرض
+                      </button>
+                      <button
+                        onClick={() => setCameraView('target')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المدار النهائي
+                      </button>
+                      <button
+                        onClick={() => setCameraView('top')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        قطبي
+                      </button>
+                    </div>
+
+                    {/* Live Assistant Hint */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-sky-400 shrink-0" />
+                      <span>
+                        {phase === 'orbit_1'
+                          ? `💡 المركبة تدور في المدار المنخفض LEO بسرعة ${(v1 * 3.6).toFixed(0)} km/h. اضغط "إشعال المحرك الأول" للانطلاق في مسار هوهمان الإهليلجي.`
+                          : phase === 'transfer'
+                          ? `💡 المركبة تعبر مسار هوهمان الإهليلجي الذهبي. اضغط "إشعال المحرك الثاني" عند الوصول للأوج الدائري لتثبيت المدار النهائي.`
+                          : `💡 مبروك! المركبة الآن مستقرة بنجاح في ${selectedMission.targetNameAr} بسرعة مدارية ${(v2 * 3.6).toFixed(0)} km/h.`}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -428,6 +532,7 @@ export default function OrbitalMechanicsSimulation() {
                             onClick={() => {
                               setSelectedMission(m);
                               handleResetFlight();
+                              labSound.playLaserPulse(500);
                             }}
                             className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedMission.id === m.id
@@ -487,14 +592,10 @@ export default function OrbitalMechanicsSimulation() {
               <p>
                 ابتكر المهندس الألماني والتر هوهمان أكثر الطرق كفاءة واقتصاداً في استهلاك وقود الصواريخ للانتقال بين مدارين دائريين متحدي المركز حول جسم مركزي، باستخدام مدار بيضاوي انتقالي (Hohmann Transfer Orbit).
               </p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">1. معادلة فيس-فيفا (Vis-Viva Equation)</h4>
                   <p className="text-sm font-mono text-sky-300">v² = GM · (2/r - 1/a)</p>
-                  <p className="text-xs text-slate-400">
-                    تحدد السرعة المدارية للمركبة عند أي بعد r عن المركز بالاعتماد على نصف المحور الأكبر a للمدار.
-                  </p>
                 </div>
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">2. شرط الكفاءة القصوى</h4>
@@ -523,7 +624,6 @@ export default function OrbitalMechanicsSimulation() {
                 <p className="font-semibold text-slate-200">
                   سؤال: لماذا تعتبر مناورة هوهمان (Hohmann Transfer) هي الخيار القياسي لرحلات الفضاء بين الكواكب والمدارات؟
                 </p>
-
                 <div className="space-y-2">
                   {[
                     { id: 0, text: 'لأنها أسرع مناورة في زمن الوصول.' },

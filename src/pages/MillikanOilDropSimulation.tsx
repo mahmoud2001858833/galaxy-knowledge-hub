@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Droplets, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert 
+  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, ShieldAlert,
+  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
+import { labSound } from '@/utils/labAudio';
 
 // Physical Constants
 const E_TRUE = 1.602176634e-19; // Elementary charge in Coulombs
@@ -31,7 +33,7 @@ interface Droplet3D {
   radiusM: number;
   radiusUm: number;
   massKg: number;
-  numCharges: number; // integer multiple n of e
+  numCharges: number;
   chargeC: number;
   x: number;
   y: number;
@@ -41,7 +43,6 @@ interface Droplet3D {
   isFocused: boolean;
 }
 
-// 3D Chamber Scene
 interface Millikan3DProps {
   voltage: number;
   isPlaying: boolean;
@@ -60,32 +61,24 @@ function MillikanChamber3D({
   onSelectDroplet,
 }: Millikan3DProps) {
   const dropletsRef = useRef<THREE.Group>(null);
-  const electricField = voltage / PLATE_DISTANCE_M; // V/m
+  const electricField = voltage / PLATE_DISTANCE_M;
 
   useFrame((state, delta) => {
     if (!isPlaying) return;
 
     droplets.forEach((d) => {
-      // Net Gravity force with buoyancy
       const effectiveDensity = OIL_DENSITY - AIR_DENSITY;
       const volume = (4 / 3) * Math.PI * Math.pow(d.radiusM, 3);
-      const fg = volume * effectiveDensity * G_CONST; // downward
-
-      // Electric force Fe = q * E (upward if voltage > 0 and q < 0)
-      const fe = d.chargeC * electricField; // positive voltage pushes negatively charged drops up
-
-      // Stokes drag force: Fd = 6 * pi * eta * r * v
+      const fg = volume * effectiveDensity * G_CONST;
+      const fe = d.chargeC * electricField;
       const stokesFactor = 6 * Math.PI * AIR_VISCOSITY * d.radiusM;
 
-      // Net upward force = Fe - Fg - F_drag
-      // Terminal acceleration
       const netForce = fe - fg - (d.vy * stokesFactor);
       const accel = netForce / d.massKg;
 
       d.vy += accel * 0.0005;
       d.y += d.vy * 0.04;
 
-      // Boundary collision with top and bottom plates (y between -1.8 and +1.8 in 3D scene)
       if (d.y > 1.7) {
         d.y = 1.7;
         d.vy = 0;
@@ -126,14 +119,13 @@ function MillikanChamber3D({
           <cylinderGeometry args={[3.0, 3.0, 0.25, 32]} />
           <meshStandardMaterial color={voltage > 0 ? '#ef4444' : '#475569'} metalness={0.9} roughness={0.2} />
         </mesh>
-        {/* Central pinhole for oil mist injection */}
         <mesh position={[0, 0, 0]}>
           <cylinderGeometry args={[0.3, 0.3, 0.28, 16]} />
           <meshStandardMaterial color="#0f172a" />
         </mesh>
         <Html position={[0, 0.5, 0]} center>
           <div className="bg-slate-900/90 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded border border-red-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            لوح علوي ({voltage > 0 ? '+ موجب' : 'مستوي'})
+            لوح علوي (+ موجب)
           </div>
         </Html>
       </group>
@@ -146,12 +138,12 @@ function MillikanChamber3D({
         </mesh>
         <Html position={[0, -0.5, 0]} center>
           <div className="bg-slate-900/90 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            لوح سفلي ({voltage > 0 ? '- سالب' : 'مستوي'})
+            لوح سفلي (- سالب)
           </div>
         </Html>
       </group>
 
-      {/* ATOMIZER SPRAY NOZZLE */}
+      {/* ATOMIZER NOZZLE */}
       <group position={[-2.8, 2.6, 0]} rotation={[0, 0, -Math.PI / 4]}>
         <mesh>
           <cylinderGeometry args={[0.2, 0.35, 1.2, 16]} />
@@ -165,14 +157,13 @@ function MillikanChamber3D({
           <cylinderGeometry args={[0.6, 0.7, 2.2, 24]} />
           <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
         </mesh>
-        {/* Brass Lens Ring */}
         <mesh position={[0, -1.0, 0]}>
           <cylinderGeometry args={[0.72, 0.72, 0.2, 24]} />
           <meshStandardMaterial color="#eab308" metalness={0.95} roughness={0.1} />
         </mesh>
       </group>
 
-      {/* X-RAY IONIZATION SOURCE */}
+      {/* X-RAY TUBE */}
       <group position={[3.6, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <mesh>
           <cylinderGeometry args={[0.4, 0.55, 1.4, 16]} />
@@ -183,7 +174,7 @@ function MillikanChamber3D({
         )}
       </group>
 
-      {/* X-Ray Ionization Beam Cone */}
+      {/* X-Ray Cone */}
       {isXRayOn && (
         <mesh position={[1.8, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
           <coneGeometry args={[1.5, 3.2, 24, 1, true]} />
@@ -227,13 +218,16 @@ function MillikanChamber3D({
 export default function MillikanOilDropSimulation() {
   const navigate = useNavigate();
   const controlsRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // States
-  const [voltage, setVoltage] = useState<number>(380); // Volts
+  const [voltage, setVoltage] = useState<number>(380);
   const [isXRayOn, setIsXRayOn] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
   const [selectedDropletId, setSelectedDropletId] = useState<number>(1);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [calculationLog, setCalculationLog] = useState<Array<{ id: number; radiusUm: number; vBalance: number; qExp: number; nEstimated: number; eCalculated: number }>>([]);
 
   // Quiz states
@@ -241,7 +235,6 @@ export default function MillikanOilDropSimulation() {
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Initialize randomized 3D Droplets with true integer charge quantization n * e
   const [droplets, setDroplets] = useState<Droplet3D[]>(() => {
     const initialDrops: Droplet3D[] = [
       { id: 1, radiusUm: 1.25, radiusM: 1.25e-6, massKg: (4 / 3) * Math.PI * Math.pow(1.25e-6, 3) * OIL_DENSITY, numCharges: 3, chargeC: 3 * E_TRUE, x: 0, y: 0.2, z: 0, vy: 0, color: '#fbbf24', isFocused: true },
@@ -257,7 +250,6 @@ export default function MillikanOilDropSimulation() {
     return droplets.find((d) => d.id === selectedDropletId) || droplets[0];
   }, [droplets, selectedDropletId]);
 
-  // Exact balance voltage for selected droplet: q * (V / d) = m * g  => V_balance = (m * g * d) / q
   const balanceVoltage = useMemo(() => {
     const effectiveDensity = OIL_DENSITY - AIR_DENSITY;
     const vol = (4 / 3) * Math.PI * Math.pow(selectedDroplet.radiusM, 3);
@@ -268,14 +260,14 @@ export default function MillikanOilDropSimulation() {
 
   const isBalanced = Math.abs(voltage - balanceVoltage) < 4;
 
-  // Trigger X-Ray ionization pulse (changes droplet charges randomly by +-1 or +-2 electrons)
   const handleXRayPulse = () => {
     setIsXRayOn(true);
+    labSound.playElectricZap();
     setTimeout(() => setIsXRayOn(false), 1200);
 
     setDroplets((prev) =>
       prev.map((d) => {
-        const deltaN = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+        const deltaN = Math.floor(Math.random() * 3) - 1;
         const newN = Math.max(1, Math.min(8, d.numCharges + deltaN));
         return {
           ...d,
@@ -286,7 +278,6 @@ export default function MillikanOilDropSimulation() {
     );
   };
 
-  // Log calculation result when balanced
   const handleRecordMeasurement = () => {
     const qExp = (selectedDroplet.massKg * G_CONST * PLATE_DISTANCE_M) / voltage;
     const nEst = Math.max(1, Math.round(qExp / E_TRUE));
@@ -304,12 +295,53 @@ export default function MillikanOilDropSimulation() {
       },
     ]);
 
+    labSound.playSuccessChime();
     confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
   };
 
-  const handleResetCamera = () => {
-    if (controlsRef.current) {
-      controlsRef.current.reset();
+  const setCameraView = (view: 'default' | 'top' | 'microscope') => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (view === 'default') {
+      controls.object.position.set(0, 0, 7.5);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'top') {
+      controls.object.position.set(0, 8.5, 0.1);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'microscope') {
+      controls.object.position.set(0, 0, 4.2);
+      controls.target.set(0, 0, 0);
+    }
+    controls.update();
+    labSound.playGeigerClick();
+  };
+
+  const toggleSound = () => {
+    const muted = labSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const handleExportDataCSV = () => {
+    const headers = 'DropletID,Radius(um),BalanceVoltage(V),CalculatedCharge(C),NumCharges(n),Estimated_e(C)\n';
+    const rows = calculationLog
+      .map((l) => `${l.id},${l.radiusUm},${l.vBalance},${l.qExp.toExponential(3)},${l.nEstimated},${l.eCalculated.toExponential(3)}`)
+      .join('\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `millikan_oil_drop_measurements.csv`;
+    link.click();
+    labSound.playSuccessChime();
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
 
@@ -318,6 +350,7 @@ export default function MillikanOilDropSimulation() {
     setQuizSubmitted(true);
     if (selected === 1) {
       setQuizScore((prev) => prev + 1);
+      labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -345,7 +378,7 @@ export default function MillikanOilDropSimulation() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-amber-300 via-yellow-200 to-orange-400 bg-clip-text text-transparent">
-                  تجربة قطرة الزيت لميليكان وتكميم الشحنة (3D)
+                  تجربة قطرة الزيت لميليكان وتكميم الشحنة (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
                   موازنة قطرات الزيت في المجال الكهربائي واستنتاج شحنة الإلكترون الأساسية e = 1.602 × 10⁻¹⁹ C
@@ -355,7 +388,25 @@ export default function MillikanOilDropSimulation() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSound}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportDataCSV}
+              disabled={calculationLog.length === 0}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              تصدير السجل (CSV)
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -368,11 +419,11 @@ export default function MillikanOilDropSimulation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleResetCamera}
+              onClick={() => setCameraView('default')}
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط الكاميرا
+              إعادة الكاميرا
             </Button>
           </div>
         </div>
@@ -450,18 +501,27 @@ export default function MillikanOilDropSimulation() {
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 3D WebGL Canvas */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className="lg:col-span-2 space-y-3" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Droplets className="w-4 h-4 text-amber-400" />
                       غرفة قطرات الزيت ومجال ميليكان ثلاثي الأبعاد (3D View)
                     </CardTitle>
-                    <Badge variant="outline" className="border-amber-500/50 text-amber-400 bg-amber-500/10">
-                      قطرة {selectedDroplet.id} مختارة
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-400 bg-amber-500/10">
+                        قطرة {selectedDroplet.id} مختارة
+                      </Badge>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        title="ملء الشاشة"
+                      >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                  <CardContent className="p-0 h-[460px] bg-slate-950 relative">
                     <Canvas camera={{ position: [0, 0, 7.5], fov: 45 }}>
                       <ambientLight intensity={0.7} />
                       <directionalLight position={[8, 10, 8]} intensity={1.2} />
@@ -472,21 +532,52 @@ export default function MillikanOilDropSimulation() {
                         isXRayOn={isXRayOn}
                         droplets={droplets}
                         selectedDropletId={selectedDropletId}
-                        onSelectDroplet={setSelectedDropletId}
+                        onSelectDroplet={(id) => {
+                          setSelectedDropletId(id);
+                          labSound.playGeigerClick();
+                        }}
                       />
                       <OrbitControls
                         ref={controlsRef}
                         enablePan={true}
                         enableZoom={true}
-                        minDistance={4}
+                        minDistance={3.5}
                         maxDistance={14}
                       />
                     </Canvas>
 
-                    {/* 3D OrbitControls Helper Badge */}
-                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-                      <Compass className="w-3.5 h-3.5 text-sky-400" />
-                      <span>اسحب للتدوير 360° • انقر على أي قطرة لتحديدها</span>
+                    {/* Camera Angle Presets */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                      <button
+                        onClick={() => setCameraView('default')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المنظور العام
+                      </button>
+                      <button
+                        onClick={() => setCameraView('microscope')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المجهر
+                      </button>
+                      <button
+                        onClick={() => setCameraView('top')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        علوي
+                      </button>
+                    </div>
+
+                    {/* Live Assistant Hint */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>
+                        {isBalanced
+                          ? `💡 أحسنت! قطرة ${selectedDroplet.id} متزنة تماماً الآن عند ${voltage}V. اضغط على "تسجيل قراءة الاتزان" لحساب شحنتها.`
+                          : voltage < balanceVoltage
+                          ? `💡 الجهد المطبق (${voltage}V) ضعيف؛ قوة الجاذبية للأسفل تفوق القوة الكهربائية الصاعدة. ارفع الجهد نحو ${balanceVoltage}V.`
+                          : `💡 الجهد المطبق (${voltage}V) قوي جداً؛ القوة الكهربائية الصاعدة تدفع القطرة نحو اللوح العلوي. خفّض الجهد نحو ${balanceVoltage}V.`}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -509,7 +600,10 @@ export default function MillikanOilDropSimulation() {
                         {droplets.map((d) => (
                           <button
                             key={d.id}
-                            onClick={() => setSelectedDropletId(d.id)}
+                            onClick={() => {
+                              setSelectedDropletId(d.id);
+                              labSound.playGeigerClick();
+                            }}
                             className={`p-2 rounded-xl text-xs font-bold border transition-all text-center ${
                               selectedDropletId === d.id
                                 ? 'bg-amber-500/20 border-amber-500 text-amber-300'
@@ -575,7 +669,20 @@ export default function MillikanOilDropSimulation() {
           {/* TAB 2: Logbook */}
           <TabsContent value="logbook" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
-              <CardTitle className="text-lg font-bold mb-4 text-sky-300">سجل قياسات الشحنة واستنتاج شحنة الإلكترون e</CardTitle>
+              <div className="flex items-center justify-between mb-4">
+                <CardTitle className="text-lg font-bold text-sky-300">سجل قياسات الشحنة واستنتاج شحنة الإلكترون e</CardTitle>
+                {calculationLog.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleExportDataCSV}
+                    className="border-slate-700 text-xs flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    تصدير CSV
+                  </Button>
+                )}
+              </div>
               {calculationLog.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-8">
                   لم تقم بتسجيل أي قراءة بعد. قم بموازنة إحدى القطرات في المختبر ثلاثي الأبعاد واضغط على زر &quot;تسجيل قراءة الاتزان&quot;.
@@ -623,16 +730,10 @@ export default function MillikanOilDropSimulation() {
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-sky-400">1. معادلة اتزان القطرة في المجال الكهربائي</h4>
                   <p className="text-sm font-mono text-amber-300">Fe = Fg  ⟹  q · (V / d) = m · g</p>
-                  <p className="text-xs text-slate-400">
-                    عندما تتزن القطرة وتتوقف تماماً في الهواء، تتساوى القوة الكهربائية الصاعدة للأعلى مع قوة الجاذبية الهابطة للأسفل.
-                  </p>
                 </div>
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-sky-400">2. مبدأ تكميم الشحنة الكهربائية</h4>
                   <p className="text-sm font-mono text-amber-300">q = n · e    (n = ±1, ±2, ±3, ...)</p>
-                  <p className="text-xs text-slate-400">
-                    حيث e = 1.602 × 10⁻¹⁹ C هي أصغر وحدة شحنة حرة في الطبيعة.
-                  </p>
                 </div>
               </div>
             </Card>

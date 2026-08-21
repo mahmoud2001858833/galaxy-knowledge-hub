@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Scissors, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, Dna, ShieldAlert 
+  Activity, Sparkles, BookOpen, Layers, Zap, Compass, Eye, Dna, ShieldAlert,
+  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,13 +17,14 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
+import { labSound } from '@/utils/labAudio';
 
 interface TargetGene {
   id: string;
   nameAr: string;
   diseaseAr: string;
-  targetSequence: string; // 20 nt
-  pamSequence: string; // 3 nt NGG
+  targetSequence: string;
+  pamSequence: string;
   mutantBaseIndex: number;
   correctSequence: string;
 }
@@ -34,7 +36,7 @@ const TARGET_GENES: TargetGene[] = [
     diseaseAr: 'أنيميا الخلايا المنجلية (Sickle Cell Anemia)',
     targetSequence: 'CACCTGACTCCTGAGGAGAA',
     pamSequence: 'TGG',
-    mutantBaseIndex: 11, // T instead of A (Glu -> Val)
+    mutantBaseIndex: 11,
     correctSequence: 'CACCTGACTCCTGTGGAGAA',
   },
   {
@@ -50,7 +52,6 @@ const TARGET_GENES: TargetGene[] = [
 
 type EditingStep = 'inspect' | 'hybridize' | 'cleave' | 'repair_hdr' | 'repaired';
 
-// 3D CRISPR Scene
 interface Crispr3DProps {
   step: EditingStep;
   selectedGene: TargetGene;
@@ -62,7 +63,6 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
   const cas9Ref = useRef<THREE.Group>(null);
   const rnaRef = useRef<THREE.Group>(null);
 
-  // Generate 3D Double Helix Base Pairs
   const basePairCount = 28;
   const basePairs = useMemo(() => {
     return Array.from({ length: basePairCount }, (_, i) => {
@@ -84,7 +84,6 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
       dnaGroupRef.current.rotation.x += 0.003;
     }
 
-    // Cas9 enzyme positioning and breathing motion
     if (cas9Ref.current) {
       if (step === 'hybridize' || step === 'cleave') {
         cas9Ref.current.position.y = THREE.MathUtils.lerp(cas9Ref.current.position.y, 0, 0.05);
@@ -105,19 +104,15 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
 
           return (
             <group key={`bp-${bp.id}`} position={[bp.x, 0, 0]}>
-              {/* Strand 1 Backbone Sphere */}
               <mesh position={[0, bp.y1, bp.z1]}>
                 <sphereGeometry args={[0.12, 12, 12]} />
                 <meshStandardMaterial color={isRepaired ? '#10b981' : '#38bdf8'} metalness={0.5} roughness={0.2} />
               </mesh>
-
-              {/* Strand 2 Backbone Sphere */}
               <mesh position={[0, bp.y2, bp.z2]}>
                 <sphereGeometry args={[0.12, 12, 12]} />
                 <meshStandardMaterial color={isRepaired ? '#10b981' : '#ec4899'} metalness={0.5} roughness={0.2} />
               </mesh>
 
-              {/* Rung / Hydrogen Bond Bar */}
               {!isBroken && (
                 <mesh position={[0, 0, 0]} rotation={[0, 0, bp.angle]}>
                   <cylinderGeometry args={[0.035, 0.035, 1.8, 8]} />
@@ -133,9 +128,8 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
         })}
       </group>
 
-      {/* 3D CAS9 ENDONUCLEASE PROTEIN COMPLEX */}
+      {/* 3D CAS9 PROTEIN */}
       <group ref={cas9Ref} position={[0, 3.2, 0]}>
-        {/* REC Lobe (Recognition Lobe) */}
         <mesh position={[-0.8, 0, 0]}>
           <sphereGeometry args={[1.35, 24, 24]} />
           <meshPhysicalMaterial
@@ -147,7 +141,6 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
             opacity={0.85}
           />
         </mesh>
-        {/* NUC Lobe (Nuclease Catalytic Lobe - RuvC & HNH) */}
         <mesh position={[0.8, 0, 0]}>
           <sphereGeometry args={[1.2, 24, 24]} />
           <meshPhysicalMaterial
@@ -159,7 +152,6 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
             opacity={0.85}
           />
         </mesh>
-        {/* Catalytic Cleavage Blades (Active Sites) */}
         {step === 'cleave' && (
           <group position={[0, -0.4, 0]}>
             <mesh position={[0, 0, 0.3]}>
@@ -176,7 +168,7 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
         </Html>
       </group>
 
-      {/* 3D GUIDE RNA (gRNA Single Strand) */}
+      {/* 3D GUIDE RNA */}
       {(step === 'hybridize' || step === 'cleave' || step === 'repair_hdr') && (
         <group ref={rnaRef} position={[0, 0.45, 0]}>
           {[-1.2, -0.8, -0.4, 0, 0.4, 0.8, 1.2].map((x, idx) => (
@@ -193,7 +185,7 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
         </group>
       )}
 
-      {/* HDR REPAIR TEMPLATE DNA STRAND */}
+      {/* HDR REPAIR TEMPLATE */}
       {step === 'repair_hdr' && (
         <group position={[0, -1.8, 0]}>
           <mesh>
@@ -214,12 +206,15 @@ function CrisprComplex3D({ step, selectedGene, isPlaying }: Crispr3DProps) {
 export default function CrisprGeneEditingSimulation() {
   const navigate = useNavigate();
   const controlsRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // States
   const [selectedGene, setSelectedGene] = useState<TargetGene>(TARGET_GENES[0]);
   const [step, setStep] = useState<EditingStep>('inspect');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
@@ -227,12 +222,66 @@ export default function CrisprGeneEditingSimulation() {
   const [quizScore, setQuizScore] = useState<number>(0);
 
   const handleNextStep = () => {
-    if (step === 'inspect') setStep('hybridize');
-    else if (step === 'hybridize') setStep('cleave');
-    else if (step === 'cleave') setStep('repair_hdr');
-    else if (step === 'repair_hdr') {
+    if (step === 'inspect') {
+      setStep('hybridize');
+      labSound.playLaserPulse(600);
+    } else if (step === 'hybridize') {
+      setStep('cleave');
+      labSound.playElectricZap();
+    } else if (step === 'cleave') {
+      setStep('repair_hdr');
+      labSound.playLaserPulse(800);
+    } else if (step === 'repair_hdr') {
       setStep('repaired');
+      labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    }
+  };
+
+  const setCameraView = (view: 'default' | 'top' | 'mutation' | 'cas9') => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (view === 'default') {
+      controls.object.position.set(0, 2.0, 7.5);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'top') {
+      controls.object.position.set(0, 8.5, 0.1);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'mutation') {
+      controls.object.position.set(0, 0.5, 3.2);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'cas9') {
+      controls.object.position.set(0, 3.0, 5.0);
+      controls.target.set(0, 2.0, 0);
+    }
+    controls.update();
+    labSound.playLaserPulse(700);
+  };
+
+  const toggleSound = () => {
+    const muted = labSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const handleExportDataCSV = () => {
+    const headers = 'Gene,Disease,TargetSequence,PAM,MutantIndex,RepairedSequence,Status\n';
+    const row = `${selectedGene.nameEn},${selectedGene.diseaseAr.split('(')[0].trim()},${selectedGene.targetSequence},${selectedGene.pamSequence},${selectedGene.mutantBaseIndex},${selectedGene.correctSequence},${step}\n`;
+    const blob = new Blob([headers + row], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `crispr_protocol_${selectedGene.id}.csv`;
+    link.click();
+    labSound.playSuccessChime();
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
 
@@ -248,6 +297,7 @@ export default function CrisprGeneEditingSimulation() {
     setQuizSubmitted(true);
     if (selected === 2) {
       setQuizScore((prev) => prev + 1);
+      labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -275,7 +325,7 @@ export default function CrisprGeneEditingSimulation() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-pink-300 via-purple-200 to-indigo-300 bg-clip-text text-transparent">
-                  مختبر كريسبر والمقص الجيني Cas9 ثلاثي الأبعاد (3D)
+                  مختبر كريسبر والمقص الجيني Cas9 ثلاثي الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
                   تصميم المرشد gRNA، التعرف على تسلسل PAM، والقطع المزدوج والإصلاح الجيني فائق الدقة
@@ -285,7 +335,24 @@ export default function CrisprGeneEditingSimulation() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSound}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportDataCSV}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              تصدير البروتوكول (CSV)
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -302,7 +369,7 @@ export default function CrisprGeneEditingSimulation() {
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة التجربة للبداية
+              إعادة التجربة
             </Button>
           </div>
         </div>
@@ -380,18 +447,27 @@ export default function CrisprGeneEditingSimulation() {
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 3D WebGL Canvas */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className="lg:col-span-2 space-y-3" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Dna className="w-4 h-4 text-pink-400" />
                       محاكاة المجمع الجزيئي ثلاثي الأبعاد (3D CRISPR-Cas9 Complex)
                     </CardTitle>
-                    <Badge variant="outline" className="border-pink-500/50 text-pink-300 bg-pink-500/10">
-                      {selectedGene.nameAr}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-pink-500/50 text-pink-300 bg-pink-500/10">
+                        {selectedGene.nameAr}
+                      </Badge>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        title="ملء الشاشة"
+                      >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                  <CardContent className="p-0 h-[460px] bg-slate-950 relative">
                     <Canvas camera={{ position: [0, 2.0, 7.5], fov: 45 }}>
                       <ambientLight intensity={0.7} />
                       <directionalLight position={[10, 10, 10]} intensity={1.2} />
@@ -410,10 +486,44 @@ export default function CrisprGeneEditingSimulation() {
                       />
                     </Canvas>
 
-                    {/* 3D Controls Helper */}
-                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-                      <Compass className="w-3.5 h-3.5 text-sky-400" />
-                      <span>اسحب للتدوير 360° حول شريط الـ DNA وإنزيم Cas9</span>
+                    {/* Camera Angle Presets */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                      <button
+                        onClick={() => setCameraView('default')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المنظور العام
+                      </button>
+                      <button
+                        onClick={() => setCameraView('mutation')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        الطفرة
+                      </button>
+                      <button
+                        onClick={() => setCameraView('cas9')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        إنزيم Cas9
+                      </button>
+                      <button
+                        onClick={() => setCameraView('top')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        علوي
+                      </button>
+                    </div>
+
+                    {/* Live Assistant Hint */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-pink-400 shrink-0" />
+                      <span>
+                        {step === 'inspect' && `💡 المرحلة 1: تم تحديد طفرة ${selectedGene.diseaseAr.split('(')[0]} عند النيوكليوتيد ${selectedGene.mutantBaseIndex}. اضغط الزر بالأسفل لتوجيه مرشد gRNA.`}
+                        {step === 'hybridize' && `💡 المرحلة 2: ارتبط مرشد gRNA مع شريط DNA المستهدف بعد التعرف على تسلسل PAM (${selectedGene.pamSequence}).`}
+                        {step === 'cleave' && `💡 المرحلة 3: قام إنزيم Cas9 بإحداث قطع مزدوج DSB في شريطي الـ DNA.`}
+                        {step === 'repair_hdr' && `💡 المرحلة 4: تم إدخال قالب الإصلاح HDR المتماثل لتصحيح التسلسل الجيني.`}
+                        {step === 'repaired' && `💡 مبروك! تم تصحيح الطفرة الجينية بدقة متناهية واستعادة التسلسل الوراثي السليم.`}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -439,6 +549,7 @@ export default function CrisprGeneEditingSimulation() {
                             onClick={() => {
                               setSelectedGene(gene);
                               handleReset();
+                              labSound.playLaserPulse(550);
                             }}
                             className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedGene.id === gene.id
@@ -464,7 +575,7 @@ export default function CrisprGeneEditingSimulation() {
                       </div>
                     </div>
 
-                    {/* Step-by-Step Action Button */}
+                    {/* Action Button */}
                     <div className="pt-2">
                       <Button
                         onClick={handleNextStep}
@@ -491,7 +602,6 @@ export default function CrisprGeneEditingSimulation() {
               <p>
                 نالت العالمتان إيمانويل شاربنتييه وجينيفر داودنا جائزة نوبل في الكيمياء لعام 2020 لاكتشافهما إعادة برمجة نظام المناعة البكتيري CRISPR-Cas9 واستخدامه كأدق مقص جزيئي في تاريخ البشرية لتعديل الشيفرة الوراثية بدقة النيوكليوتيد الواحد.
               </p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">1. تسلسل PAM (Protospacer Adjacent Motif)</h4>
@@ -527,7 +637,6 @@ export default function CrisprGeneEditingSimulation() {
                 <p className="font-semibold text-slate-200">
                   سؤال: ما هو الدور الحيوي لتسلسل PAM (NGG) في آلية عمل نظام CRISPR-Cas9؟
                 </p>
-
                 <div className="space-y-2">
                   {[
                     { id: 0, text: 'يعمل كجسر لنقل البروتينات إلى خارج النواة.' },

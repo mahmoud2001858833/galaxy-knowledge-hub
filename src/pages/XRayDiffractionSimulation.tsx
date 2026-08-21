@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Layers, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
-  Activity, Sparkles, BookOpen, Zap, Compass, Eye, ShieldAlert 
+  Activity, Sparkles, BookOpen, Zap, Compass, Eye, ShieldAlert,
+  Volume2, VolumeX, Download, Maximize2, Minimize2, Lightbulb 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,12 +19,13 @@ import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
+import { labSound } from '@/utils/labAudio';
 
 interface CrystalSample {
   id: string;
   nameAr: string;
   nameEn: string;
-  dSpacingAngstrom: number; // d in Å (1 Å = 0.1 nm)
+  dSpacingAngstrom: number;
   crystalSystemAr: string;
   color: string;
 }
@@ -35,9 +37,8 @@ const CRYSTALS: CrystalSample[] = [
   { id: 'gold', nameAr: 'الذهب (Au)', nameEn: 'Gold (111)', dSpacingAngstrom: 2.35, crystalSystemAr: 'مكعب مركزي الأوجه', color: '#fbbf24' },
 ];
 
-const XRAY_WAVELENGTH_ANGSTROM = 1.5406; // Cu K-alpha in Å
+const XRAY_WAVELENGTH_ANGSTROM = 1.5406;
 
-// 3D XRD Goniometer Scene
 interface XRD3DProps {
   thetaDeg: number;
   selectedCrystal: CrystalSample;
@@ -54,7 +55,6 @@ function Goniometer3DScene({
   const thetaRad = (thetaDeg * Math.PI) / 180;
   const detectorAngleRad = ((2 * thetaDeg) * Math.PI) / 180;
 
-  // 3D Atomic Lattice Grid
   const latticePoints = useMemo(() => {
     const points: Array<[number, number, number, boolean]> = [];
     for (let x = -2; x <= 2; x++) {
@@ -76,9 +76,8 @@ function Goniometer3DScene({
         <meshStandardMaterial color="#1e293b" metalness={0.8} roughness={0.2} />
       </mesh>
 
-      {/* 3D ROTATING CRYSTAL SAMPLE (At Center x=0, y=0, z=0) */}
+      {/* ROTATING CRYSTAL SAMPLE */}
       <group rotation={[0, -thetaRad, 0]}>
-        {/* Crystal Atomic Lattice */}
         {latticePoints.map((pt, idx) => (
           <mesh key={`atom-${idx}`} position={[pt[0], pt[1], pt[2]]}>
             <sphereGeometry args={[pt[3] ? 0.09 : 0.06, 12, 12]} />
@@ -89,20 +88,18 @@ function Goniometer3DScene({
             />
           </mesh>
         ))}
-        {/* Crystal Sample Mount Post */}
         <mesh position={[0, -0.9, 0]}>
           <cylinderGeometry args={[0.12, 0.12, 1.0, 16]} />
           <meshStandardMaterial color="#64748b" metalness={0.9} />
         </mesh>
       </group>
 
-      {/* FIXED X-RAY TUBE COLLIMATOR (Left Side at θ angle) */}
+      {/* X-RAY TUBE */}
       <group position={[-3.5, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <mesh>
           <cylinderGeometry args={[0.3, 0.45, 1.5, 24]} />
           <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
         </mesh>
-        {/* Incident X-ray Beam Tube */}
         <mesh position={[0, 1.0, 0]}>
           <cylinderGeometry args={[0.08, 0.08, 0.8, 16]} />
           <meshStandardMaterial color="#e2e8f0" metalness={0.9} />
@@ -114,26 +111,23 @@ function Goniometer3DScene({
         </Html>
       </group>
 
-      {/* 3D INCIDENT BEAM (Cyan Line to Crystal) */}
+      {/* INCIDENT BEAM */}
       <mesh position={[-1.75, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.03, 0.03, 3.5, 8]} />
         <meshBasicMaterial color="#38bdf8" />
       </mesh>
 
-      {/* 3D ROTATING DETECTOR ARM (At 2θ angle) */}
+      {/* ROTATING DETECTOR ARM */}
       <group rotation={[0, detectorAngleRad, 0]}>
-        {/* Arm Rod */}
         <mesh position={[2.2, -1.2, 0]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.06, 0.06, 3.2, 16]} />
           <meshStandardMaterial color="#475569" metalness={0.8} />
         </mesh>
-        {/* Scintillation Detector Cylinder */}
         <mesh position={[3.6, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.4, 0.5, 1.4, 24]} />
           <meshStandardMaterial color="#1e293b" metalness={0.8} />
         </mesh>
 
-        {/* 3D DIFFRACTED / REFLECTED BEAM */}
         <mesh position={[1.8, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.03, 0.03, 3.6, 8]} />
           <meshBasicMaterial
@@ -143,7 +137,6 @@ function Goniometer3DScene({
           />
         </mesh>
 
-        {/* Detector Flash on Constructive Interference */}
         {isConstructive && (
           <pointLight position={[3.6, 0, 0]} color="#22c55e" intensity={4} distance={4} />
         )}
@@ -161,42 +154,40 @@ function Goniometer3DScene({
 export default function XRayDiffractionSimulation() {
   const navigate = useNavigate();
   const controlsRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // States
   const [selectedCrystal, setSelectedCrystal] = useState<CrystalSample>(CRYSTALS[0]);
-  const [thetaDeg, setThetaDeg] = useState<number>(15.8); // Bragg peak for NaCl
+  const [thetaDeg, setThetaDeg] = useState<number>(15.8);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('simulation');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Quiz States
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
 
-  // Bragg's condition: lambda = 2 * d * sin(theta) => sin(theta) = lambda / (2d)
   const theoreticalPeakTheta = useMemo(() => {
     const sinTheta = XRAY_WAVELENGTH_ANGSTROM / (2 * selectedCrystal.dSpacingAngstrom);
     const rad = Math.asin(sinTheta);
     return +(rad * (180 / Math.PI)).toFixed(1);
   }, [selectedCrystal]);
 
-  // Is currently at constructive interference peak?
   const isConstructive = Math.abs(thetaDeg - theoreticalPeakTheta) < 0.6;
 
-  // Diffracted intensity calculation (Lorentzian line profile)
   const relativeIntensity = useMemo(() => {
     const diff = thetaDeg - theoreticalPeakTheta;
     const peak = 100 / (1 + Math.pow(diff / 0.5, 2));
     return +peak.toFixed(1);
   }, [thetaDeg, theoreticalPeakTheta]);
 
-  // Generate 2Theta Diffractogram for Recharts
   const xrdData = useMemo(() => {
     const data = [];
     for (let t = 8; t <= 45; t += 0.5) {
       const diff1 = t - theoreticalPeakTheta;
       const peak1 = 100 / (1 + Math.pow(diff1 / 0.4, 2));
-      // Second order peak n=2
       const sinTheta2 = (2 * XRAY_WAVELENGTH_ANGSTROM) / (2 * selectedCrystal.dSpacingAngstrom);
       let peak2 = 0;
       if (sinTheta2 <= 1) {
@@ -214,9 +205,50 @@ export default function XRayDiffractionSimulation() {
     return data;
   }, [theoreticalPeakTheta, selectedCrystal]);
 
-  const handleResetCamera = () => {
-    if (controlsRef.current) {
-      controlsRef.current.reset();
+  const setCameraView = (view: 'default' | 'top' | 'crystal' | 'detector') => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (view === 'default') {
+      controls.object.position.set(0, 5.5, 8.5);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'top') {
+      controls.object.position.set(0, 9.5, 0.1);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'crystal') {
+      controls.object.position.set(0, 1.2, 3.2);
+      controls.target.set(0, 0, 0);
+    } else if (view === 'detector') {
+      controls.object.position.set(5.5, 2.0, 3.5);
+      controls.target.set(3.6, 0, 0);
+    }
+    controls.update();
+    labSound.playLaserPulse(650);
+  };
+
+  const toggleSound = () => {
+    const muted = labSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const handleExportDataCSV = () => {
+    const headers = 'Crystal,dSpacing(Angstrom),Theta(deg),TwoTheta(deg),RelativeIntensity(%),IsBraggPeak\n';
+    const row = `${selectedCrystal.nameEn},${selectedCrystal.dSpacingAngstrom},${thetaDeg.toFixed(1)},${(2 * thetaDeg).toFixed(1)},${relativeIntensity},${isConstructive}\n`;
+    const blob = new Blob([headers + row], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `xrd_diffraction_${selectedCrystal.id}.csv`;
+    link.click();
+    labSound.playSuccessChime();
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
 
@@ -225,6 +257,7 @@ export default function XRayDiffractionSimulation() {
     setQuizSubmitted(true);
     if (selected === 1) {
       setQuizScore((prev) => prev + 1);
+      labSound.playSuccessChime();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
   };
@@ -252,7 +285,7 @@ export default function XRayDiffractionSimulation() {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-cyan-300 via-sky-200 to-blue-400 bg-clip-text text-transparent">
-                  حيود الأشعة السينية وقانون براغ ثلاثية الأبعاد (3D XRD)
+                  حيود الأشعة السينية وقانون براغ ثلاثية الأبعاد (3D Pro)
                 </h1>
                 <p className="text-sm text-slate-400">
                   تداخل الأشعة السينية على المستويات الذرية وقياس أبعاد الشبكة البلورية بدقة الأنغستروم
@@ -262,7 +295,24 @@ export default function XRayDiffractionSimulation() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSound}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportDataCSV}
+              className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-xs flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              تصدير البيانات (CSV)
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -275,11 +325,11 @@ export default function XRayDiffractionSimulation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleResetCamera}
+              onClick={() => setCameraView('default')}
               className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200"
             >
               <RotateCcw className="w-4 h-4 ml-1 text-sky-400" />
-              إعادة ضبط الكاميرا
+              إعادة الكاميرا
             </Button>
           </div>
         </div>
@@ -357,18 +407,27 @@ export default function XRayDiffractionSimulation() {
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 3D WebGL Canvas */}
-              <div className="lg:col-span-2 space-y-4">
+              <div className="lg:col-span-2 space-y-3" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
                       <Layers className="w-4 h-4 text-cyan-400" />
                       جهاز حيود الأشعة السينية ثلاثي الأبعاد (3D XRD)
                     </CardTitle>
-                    <Badge variant="outline" className={`${isConstructive ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-400'}`}>
-                      {isConstructive ? '✓ تداخل بناء (nλ = 2d sinθ)' : 'تداخل هدام'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`${isConstructive ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 text-slate-400'}`}>
+                        {isConstructive ? '✓ تداخل بناء (nλ = 2d sinθ)' : 'تداخل هدام'}
+                      </Badge>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        title="ملء الشاشة"
+                      >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[440px] bg-slate-950 relative">
+                  <CardContent className="p-0 h-[460px] bg-slate-950 relative">
                     <Canvas camera={{ position: [0, 5.5, 8.5], fov: 45 }}>
                       <ambientLight intensity={0.6} />
                       <directionalLight position={[10, 10, 10]} intensity={1.2} />
@@ -388,10 +447,42 @@ export default function XRayDiffractionSimulation() {
                       />
                     </Canvas>
 
-                    {/* 3D Controls Helper */}
-                    <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-                      <Compass className="w-3.5 h-3.5 text-sky-400" />
-                      <span>اسحب للتدوير 360° حول البلورة والذراع الدوار</span>
+                    {/* Camera Angle Presets */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                      <button
+                        onClick={() => setCameraView('default')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        المنظور العام
+                      </button>
+                      <button
+                        onClick={() => setCameraView('crystal')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        البلورة
+                      </button>
+                      <button
+                        onClick={() => setCameraView('detector')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        الكاشف
+                      </button>
+                      <button
+                        onClick={() => setCameraView('top')}
+                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+                      >
+                        علوي
+                      </button>
+                    </div>
+
+                    {/* Live Assistant Hint */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>
+                        {isConstructive
+                          ? `💡 تحقق شرط براغ (2d sinθ = λ): عند الزاوية θ = ${thetaDeg.toFixed(1)}° تتطابق قمم الموجات المنعكسة فيحدث تداخل بناء وشدة عظمى.`
+                          : `💡 الزاوية الحالية (${thetaDeg.toFixed(1)}°) لا تحقق شرط التداخل البناء. حرك المنزلق أو اضغط على زر "الانتقال لقمة الحيود".`}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -414,7 +505,10 @@ export default function XRayDiffractionSimulation() {
                         {CRYSTALS.map((c) => (
                           <button
                             key={c.id}
-                            onClick={() => setSelectedCrystal(c)}
+                            onClick={() => {
+                              setSelectedCrystal(c);
+                              labSound.playLaserPulse(500);
+                            }}
                             className={`p-2 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedCrystal.id === c.id
                                 ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
@@ -428,7 +522,7 @@ export default function XRayDiffractionSimulation() {
                       </div>
                     </div>
 
-                    {/* Theta Angle Slider */}
+                    {/* Theta Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-xs font-semibold text-slate-300">زاوية السقوط (θ)</label>
@@ -439,20 +533,23 @@ export default function XRayDiffractionSimulation() {
                         min={5}
                         max={45}
                         step={0.1}
-                        onValueChange={(val) => setThetaDeg(val[0])}
+                        onValueChange={(val) => {
+                          setThetaDeg(val[0]);
+                          if (Math.abs(val[0] - theoreticalPeakTheta) < 0.6) {
+                            labSound.playGeigerClick();
+                          }
+                        }}
                         className="py-1"
                       />
-                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                        <span>5°</span>
-                        <span className="text-cyan-400 font-bold">القمة ≈ {theoreticalPeakTheta}°</span>
-                        <span>45°</span>
-                      </div>
                     </div>
 
-                    {/* Snap to Peak Button */}
+                    {/* Snap to Peak */}
                     <div className="pt-2">
                       <Button
-                        onClick={() => setThetaDeg(theoreticalPeakTheta)}
+                        onClick={() => {
+                          setThetaDeg(theoreticalPeakTheta);
+                          labSound.playSuccessChime();
+                        }}
                         className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
                       >
                         الانتقال التلقائي لقمة الحيود ({theoreticalPeakTheta}°)
@@ -468,9 +565,6 @@ export default function XRayDiffractionSimulation() {
           <TabsContent value="diffractogram" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl">
               <CardTitle className="text-base font-bold text-sky-300 mb-2">مخطط شدة الحيود مع زاوية الكاشف (XRD Diffractogram)</CardTitle>
-              <p className="text-xs text-slate-400 mb-4">
-                تظهر القمم الحادة عند الزوايا التي تحقق تداخلاً بناءً لأشعة X المنعكسة من مستويات الشبكة البلورية.
-              </p>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={xrdData}>
@@ -493,14 +587,10 @@ export default function XRayDiffractionSimulation() {
               <p>
                 استنتج ويليام هنري براغ وابنه ويليام لورنس براغ القانون الأساسي لحيود الأشعة السينية على البلورات، والذي مكّن العلماء من معرفة التركيب الذري ثلاثي الأبعاد للمواد والمركبات الحيوية بما فيها الـ DNA.
               </p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">1. معادلة براغ للحيود</h4>
                   <p className="text-sm font-mono text-cyan-300">n · λ = 2 · d · sin(θ)</p>
-                  <p className="text-xs text-slate-400">
-                    يحدث التداخل البناء عندما يكون فرق المسار بين شعاعين منعكسين من مستويين بلوريين متتاليين مساوياً لعدد صحيح من الأطوال الموجية.
-                  </p>
                 </div>
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">2. شرط تطبيق القانون</h4>
@@ -529,7 +619,6 @@ export default function XRayDiffractionSimulation() {
                 <p className="font-semibold text-slate-200">
                   سؤال: لماذا تستخدم الأشعة السينية تحديداً (وليس الضوء المرئي) لدراسة التركيب الذري والشبكة البلورية للمعادن؟
                 </p>
-
                 <div className="space-y-2">
                   {[
                     { id: 0, text: 'لأن الأشعة السينية لا تتأثر بالحرارة.' },
