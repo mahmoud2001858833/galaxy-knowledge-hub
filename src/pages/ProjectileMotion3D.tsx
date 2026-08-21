@@ -241,7 +241,7 @@ const ProjectileMotion3D = () => {
               <span>السرعة الابتدائية</span>
               <span className="font-mono text-primary">{speed} م/ث</span>
             </Label>
-            <Slider value={[speed]} min={5} max={90} step={1} onValueChange={([v]) => setSpeed(v)} />
+            <Slider value={[speed]} min={5} max={90} step={1} onValueChange={([v]) => { setSpeed(v); track('param', 'السرعة الابتدائية', { value: v, unit: 'م/ث' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -249,7 +249,7 @@ const ProjectileMotion3D = () => {
               <span>زاوية الإطلاق</span>
               <span className="font-mono text-primary">{angle}°</span>
             </Label>
-            <Slider value={[angle]} min={5} max={85} step={1} onValueChange={([v]) => setAngle(v)} />
+            <Slider value={[angle]} min={5} max={85} step={1} onValueChange={([v]) => { setAngle(v); track('param', 'زاوية الإطلاق', { value: v, unit: '°' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -265,7 +265,7 @@ const ProjectileMotion3D = () => {
               <span>ارتفاع نقطة الإطلاق</span>
               <span className="font-mono text-primary">{height} م</span>
             </Label>
-            <Slider value={[height]} min={0} max={40} step={1} onValueChange={([v]) => setHeight(v)} />
+            <Slider value={[height]} min={0} max={40} step={1} onValueChange={([v]) => { setHeight(v); track('param', 'ارتفاع الإطلاق', { value: v, unit: 'م' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -273,7 +273,7 @@ const ProjectileMotion3D = () => {
               <span>كتلة الجسم</span>
               <span className="font-mono text-primary">{mass} كغم</span>
             </Label>
-            <Slider value={[mass]} min={0.1} max={10} step={0.1} onValueChange={([v]) => setMass(v)} />
+            <Slider value={[mass]} min={0.1} max={10} step={0.1} onValueChange={([v]) => { setMass(v); track('param', 'الكتلة', { value: v, unit: 'كغم' }); }} />
           </div>
 
           <div className="space-y-2">
@@ -281,12 +281,12 @@ const ProjectileMotion3D = () => {
               <span>مقاومة الهواء (k)</span>
               <span className="font-mono text-primary">{drag.toFixed(2)}</span>
             </Label>
-            <Slider value={[drag]} min={0} max={0.6} step={0.01} onValueChange={([v]) => setDrag(v)} />
+            <Slider value={[drag]} min={0} max={0.6} step={0.01} onValueChange={([v]) => { setDrag(v); track('param', 'معامل مقاومة الهواء', { value: v }); }} />
           </div>
 
           <div className="space-y-2">
             <Label className="text-xs">الجاذبية</Label>
-            <Select value={planet} onValueChange={setPlanet}>
+            <Select value={planet} onValueChange={(v) => { setPlanet(v); track('param', 'الجاذبية', { planet: v, g: GRAVITY_PRESETS[v].g }); }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
