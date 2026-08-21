@@ -130,6 +130,7 @@ import LivingCellSimulation from './pages/LivingCellSimulation';
 import CellDivisionSimulation from './pages/CellDivisionSimulation';
 import CellDivision3D from './pages/CellDivision3D';
 import PhotosynthesisRespirationSimulation from './pages/PhotosynthesisRespirationSimulation';
+import Photosynthesis3D from './pages/Photosynthesis3D';
 import ImmuneSystemSimulation from './pages/ImmuneSystemSimulation';
 import EvolutionSimulation from './pages/EvolutionSimulation';
 import SpatialGeometrySimulation from './pages/SpatialGeometrySimulation';
