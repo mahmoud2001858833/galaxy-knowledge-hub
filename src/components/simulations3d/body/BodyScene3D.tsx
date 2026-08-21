@@ -3,6 +3,18 @@ import { useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { SimControls, SimLabel3D, SimStage } from '@/components/sim3d';
+import {
+  heartGeometry,
+  lungGeometry,
+  brainGeometry,
+  cerebellumGeometry,
+  kidneyGeometry,
+  stomachGeometry,
+  liverGeometry,
+  muscleGeometry,
+  boneGeometry,
+  tissueMaterial,
+} from './anatomy';
 import type { SimView } from '@/components/sim3d';
 import type { BodyParams, BodyStats, BodySystem } from '@/lib/sim-physics/humanbody';
 
@@ -19,6 +31,22 @@ interface BodyScene3DProps {
   onSelectOrgan?: (id: string) => void;
   selectedOrgan?: string;
 }
+
+/** Built once and shared by every organ mesh. */
+const GEO = {
+  heart: heartGeometry(),
+  lungL: lungGeometry(-1),
+  lungR: lungGeometry(1),
+  brain: brainGeometry(),
+  cerebellum: cerebellumGeometry(),
+  kidney: kidneyGeometry(),
+  stomach: stomachGeometry(),
+  liver: liverGeometry(),
+  muscleBelly: muscleGeometry(1, 3.4),
+  muscleLong: muscleGeometry(0.78, 3.6),
+  humerus: boneGeometry(5),
+  radius: boneGeometry(4.2),
+};
 
 const rand = (s: number) => {
   const x = Math.sin(s * 91.7) * 43758.5453;
@@ -105,13 +133,8 @@ const Circulatory = ({ stats, params, playing, timeScale, showLabels, onSelect, 
         onSelect?.(id);
       }}
     >
-      <sphereGeometry args={[1, 32, 24]} />
-      <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={selected === id ? 0.75 : emissive}
-        roughness={0.4}
-      />
+      <sphereGeometry args={[1, 40, 30]} />
+      <meshPhysicalMaterial {...tissueMaterial(color, color, selected === id ? 0.75 : emissive)} />
     </mesh>
   );
 
@@ -128,9 +151,13 @@ const Circulatory = ({ stats, params, playing, timeScale, showLabels, onSelect, 
 
       {/* lungs on the pulmonary side */}
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[-6.2 + s * 2.1, 10.5, 0]} scale={[1.5, 2.1, 1.3]}>
-          <sphereGeometry args={[1, 24, 18]} />
-          <meshPhysicalMaterial color="#f9a8d4" transparent opacity={0.35} transmission={0.6} thickness={0.5} />
+        <mesh key={s} geometry={s > 0 ? GEO.lungR : GEO.lungL} position={[-6.2 + s * 2.1, 10.5, 0]} scale={[1.4, 1.5, 1.25]}>
+          <meshPhysicalMaterial
+            {...tissueMaterial('#f9a8d4', '#fb7185', 0.1, 0.38)}
+            transmission={0.6}
+            thickness={0.5}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       ))}
       {/* body tissue block on the systemic side */}
@@ -146,6 +173,15 @@ const Circulatory = ({ stats, params, playing, timeScale, showLabels, onSelect, 
           {chamber('la', [1.35, 1.75, 0], [1.25, 0.95, 1.1], '#ef4444', 0.3)}
         </group>
         <group ref={ventricles}>
+          {/* myocardium shell */}
+          <mesh geometry={GEO.heart} position={[0, -0.1, 0]} scale={[2.5, 2.2, 2.1]} castShadow>
+            <meshPhysicalMaterial
+              {...tissueMaterial('#9f1239', '#ef4444', 0.12, 0.34)}
+              transmission={0.35}
+              thickness={0.9}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
           {chamber('rv', [-1.5, -0.55, 0], [1.5, 1.7, 1.35], '#2563eb', 0.32)}
           {chamber('lv', [1.5, -0.6, 0], [1.75, 1.95, 1.5], '#dc2626', 0.36)}
         </group>
@@ -343,12 +379,9 @@ const Respiratory = ({ stats, params, playing, timeScale, showLabels, onSelect, 
       {/* lungs */}
       <group ref={lungs} position={[0, 7.4, 0]}>
         {[-1, 1].map((s) => (
-          <mesh key={s} position={[s * 3.4, 0, 0]} scale={[2.1, 3.1, 1.9]}>
-            <sphereGeometry args={[1, 30, 22]} />
+          <mesh key={s} geometry={s > 0 ? GEO.lungR : GEO.lungL} position={[s * 3.4, 0, 0]} scale={[2.0, 2.1, 1.85]}>
             <meshPhysicalMaterial
-              color="#fb7185"
-              transparent
-              opacity={0.22}
+              {...tissueMaterial('#fb7185', '#f43f5e', 0.08, 0.26)}
               transmission={0.7}
               thickness={0.6}
               side={THREE.DoubleSide}
@@ -489,20 +522,12 @@ const Nervous = ({ stats, playing, timeScale, showLabels, onSelect, selected }: 
           onSelect?.('brain');
         }}
       >
-        <mesh scale={[2.6, 2.1, 2.2]}>
-          <icosahedronGeometry args={[1.6, 3]} />
-          <meshStandardMaterial
-            color="#c4b5fd"
-            roughness={0.75}
-            emissive="#8b5cf6"
-            emissiveIntensity={selected === 'brain' ? 0.55 : 0.18}
-            flatShading
-          />
+        <mesh geometry={GEO.brain} scale={[2.5, 2.2, 2.1]} castShadow>
+          <meshPhysicalMaterial {...tissueMaterial('#c4b5fd', '#8b5cf6', selected === 'brain' ? 0.55 : 0.16)} />
         </mesh>
         {/* cerebellum */}
-        <mesh position={[0, -1.9, -2.1]} scale={[1.3, 0.8, 0.9]}>
-          <sphereGeometry args={[1.2, 24, 18]} />
-          <meshStandardMaterial color="#a78bfa" roughness={0.7} />
+        <mesh geometry={GEO.cerebellum} position={[0, -1.7, -2.0]} scale={[1.35, 1.3, 1.0]}>
+          <meshPhysicalMaterial {...tissueMaterial('#a78bfa', '#7c3aed', 0.12)} />
         </mesh>
       </group>
 
@@ -695,17 +720,15 @@ const Digestive = ({ stats, playing, timeScale, showLabels, onSelect, selected }
       )}
       {organ(
         'stomach',
-        <mesh position={[-2.1, 7.6, 0]} rotation={[0, 0, 0.4]} scale={[1.5, 1.9, 1.2]}>
-          <sphereGeometry args={[1, 26, 20]} />
-          <meshStandardMaterial color="#f97316" emissive="#ea580c" emissiveIntensity={selected === 'stomach' ? 0.6 : 0.2} roughness={0.5} />
+        <mesh geometry={GEO.stomach} position={[-2.1, 7.6, 0]} rotation={[0, 0, 0.35]} scale={[1.25, 1.25, 1.05]} castShadow>
+          <meshPhysicalMaterial {...tissueMaterial('#f97316', '#ea580c', selected === 'stomach' ? 0.6 : 0.18)} side={THREE.DoubleSide} />
         </mesh>
       )}
       {organ(
         'liver',
         <group>
-          <mesh position={[2.9, 8.4, 0]} scale={[2.1, 1.1, 1.4]}>
-            <sphereGeometry args={[1, 22, 16]} />
-            <meshStandardMaterial color="#84cc16" emissive="#65a30d" emissiveIntensity={selected === 'liver' ? 0.55 : 0.15} />
+          <mesh geometry={GEO.liver} position={[2.9, 8.4, 0]} rotation={[0, 0, -0.12]} scale={[1.25, 1.5, 1.25]} castShadow>
+            <meshPhysicalMaterial {...tissueMaterial('#84cc16', '#65a30d', selected === 'liver' ? 0.55 : 0.14)} />
           </mesh>
           <mesh position={[0.9, 6.9, 0]} rotation={[0, 0, -0.5]} scale={[1.6, 0.45, 0.6]}>
             <sphereGeometry args={[1, 18, 14]} />
@@ -832,9 +855,13 @@ const Urinary = ({ stats, playing, timeScale, showLabels, onSelect, selected }: 
   return (
     <group>
       {/* kidney silhouette */}
-      <mesh position={[0, 6, -2.6]} scale={[4.6, 6.2, 2.4]}>
-        <sphereGeometry args={[1, 28, 20]} />
-        <meshPhysicalMaterial color="#7f1d1d" transparent opacity={0.16} transmission={0.7} thickness={0.6} side={THREE.DoubleSide} />
+      <mesh geometry={GEO.kidney} position={[0, 6, -2.6]} rotation={[0, Math.PI, 0]} scale={[4.4, 4.4, 3.2]}>
+        <meshPhysicalMaterial
+          {...tissueMaterial('#7f1d1d', '#b91c1c', 0.08, 0.18)}
+          transmission={0.7}
+          thickness={0.6}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       {/* glomerulus */}
@@ -971,8 +998,8 @@ const Muscular = ({ stats, params, playing, timeScale, showLabels, onSelect, sel
             onSelect?.('bone');
           }}
         >
-          <capsuleGeometry args={[0.5, 4.2, 8, 16]} />
-          <meshStandardMaterial color="#e2e8f0" roughness={0.6} emissive="#94a3b8" emissiveIntensity={selected === 'bone' ? 0.4 : 0.05} />
+          <primitive object={GEO.humerus} attach="geometry" />
+          <meshPhysicalMaterial color="#e8edf3" roughness={0.5} clearcoat={0.3} emissive="#94a3b8" emissiveIntensity={selected === 'bone' ? 0.4 : 0.05} />
         </mesh>
 
         <mesh
@@ -984,8 +1011,8 @@ const Muscular = ({ stats, params, playing, timeScale, showLabels, onSelect, sel
             onSelect?.('biceps');
           }}
         >
-          <capsuleGeometry args={[0.75, 2.4, 8, 16]} />
-          <meshStandardMaterial color="#ef4444" roughness={0.5} emissive="#dc2626" emissiveIntensity={selected === 'biceps' ? 0.6 : 0.22} />
+          <primitive object={GEO.muscleBelly} attach="geometry" />
+          <meshPhysicalMaterial {...tissueMaterial('#ef4444', '#dc2626', selected === 'biceps' ? 0.6 : 0.2)} />
         </mesh>
         <mesh
           ref={triceps}
@@ -995,8 +1022,8 @@ const Muscular = ({ stats, params, playing, timeScale, showLabels, onSelect, sel
             onSelect?.('triceps');
           }}
         >
-          <capsuleGeometry args={[0.62, 2.6, 8, 16]} />
-          <meshStandardMaterial color="#f97316" roughness={0.5} emissive="#ea580c" emissiveIntensity={selected === 'triceps' ? 0.6 : 0.18} />
+          <primitive object={GEO.muscleLong} attach="geometry" />
+          <meshPhysicalMaterial {...tissueMaterial('#f97316', '#ea580c', selected === 'triceps' ? 0.6 : 0.16)} />
         </mesh>
 
         {/* elbow joint + forearm */}
@@ -1006,8 +1033,8 @@ const Muscular = ({ stats, params, playing, timeScale, showLabels, onSelect, sel
         </mesh>
         <group ref={forearm} position={[0, -4.7, 0]}>
           <mesh position={[2.1, -0.2, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <capsuleGeometry args={[0.42, 3.6, 8, 16]} />
-            <meshStandardMaterial color="#cbd5e1" roughness={0.6} />
+            <primitive object={GEO.radius} attach="geometry" />
+            <meshPhysicalMaterial color="#dbe3ec" roughness={0.5} clearcoat={0.3} />
           </mesh>
           <mesh position={[4.4, -0.2, 0]}>
             <sphereGeometry args={[0.55, 16, 12]} />
