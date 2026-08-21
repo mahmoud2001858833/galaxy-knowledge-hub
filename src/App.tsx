@@ -119,6 +119,7 @@ import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
 import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
 import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
 import AcidsBases3D from './pages/AcidsBases3D';
+import StatesOfMatter3D from './pages/StatesOfMatter3D';
 
 import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
 import LivingCellSimulation from './pages/LivingCellSimulation';
@@ -849,6 +850,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/states-of-matter',
+        element: <AuthGuard><StatesOfMatter3D /></AuthGuard>,
+      },
+      {
+        path: 'simulation/states-of-matter-classic',
         element: <AuthGuard><StatesOfMatterSimulation /></AuthGuard>,
       },
       {
