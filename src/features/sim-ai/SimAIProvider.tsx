@@ -43,9 +43,10 @@ export const useSimAI = () => {
 /** Safe version for components that may render outside a provider. */
 export const useSimAIOptional = () => useContext(SimAIContext);
 
-const MIN_GAP_MS = 14000; // never call the model more often than this
-const DEBOUNCE_MS = 1400; // settle time after the student stops fiddling
-const IDLE_MS = 45000; // nudge after this much inactivity
+const MIN_GAP_MS = 8000; // never call the model more often than this
+const DEBOUNCE_MS = 900; // settle time after the student stops fiddling
+const IDLE_MS = 18000; // nudge after this much inactivity
+const HEARTBEAT_MS = 22000; // proactive observation cadence while the student works
 
 interface Props {
   sim: SimAIDescriptor;
