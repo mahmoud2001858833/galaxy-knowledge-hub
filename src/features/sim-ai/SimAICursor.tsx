@@ -121,6 +121,21 @@ export const SimAICursor = () => {
                 )}
               </motion.div>
             )}
+
+            {/* idle status pill so the student always sees it is watching */}
+            {!latest && (
+              <motion.div
+                key="watching"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className={`pointer-events-none absolute top-10 whitespace-nowrap rounded-full border border-border bg-popover/85 px-2.5 py-1 text-[10px] text-muted-foreground shadow backdrop-blur ${
+                  flipped ? 'right-6' : 'left-6'
+                }`}
+              >
+                {thinking ? 'أحلّل تفاعلك…' : 'أراقب تجربتك…'}
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </motion.div>
