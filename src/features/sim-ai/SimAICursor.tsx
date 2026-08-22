@@ -46,10 +46,11 @@ export const SimAICursor = () => {
     };
   }, [x, y]);
 
-  // auto-hide a message after a while
+  // auto-hide a message after a while (longer for errors/warnings)
   useEffect(() => {
     if (!latest) return;
-    const t = setTimeout(() => dismissLatest(), 14000);
+    const ms = latest.tone === 'error' || latest.tone === 'warning' ? 26000 : 18000;
+    const t = setTimeout(() => dismissLatest(), ms);
     return () => clearTimeout(t);
   }, [latest, dismissLatest]);
 
@@ -118,6 +119,21 @@ export const SimAICursor = () => {
                     الخطوة التالية: {latest.action}
                   </p>
                 )}
+              </motion.div>
+            )}
+
+            {/* idle status pill so the student always sees it is watching */}
+            {!latest && (
+              <motion.div
+                key="watching"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className={`pointer-events-none absolute top-10 whitespace-nowrap rounded-full border border-border bg-popover/85 px-2.5 py-1 text-[10px] text-muted-foreground shadow backdrop-blur ${
+                  flipped ? 'right-6' : 'left-6'
+                }`}
+              >
+                {thinking ? 'أحلّل تفاعلك…' : 'أراقب تجربتك…'}
               </motion.div>
             )}
           </AnimatePresence>

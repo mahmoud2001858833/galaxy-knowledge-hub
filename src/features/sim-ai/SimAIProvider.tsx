@@ -43,9 +43,10 @@ export const useSimAI = () => {
 /** Safe version for components that may render outside a provider. */
 export const useSimAIOptional = () => useContext(SimAIContext);
 
-const MIN_GAP_MS = 14000; // never call the model more often than this
-const DEBOUNCE_MS = 1400; // settle time after the student stops fiddling
-const IDLE_MS = 45000; // nudge after this much inactivity
+const MIN_GAP_MS = 8000; // never call the model more often than this
+const DEBOUNCE_MS = 900; // settle time after the student stops fiddling
+const IDLE_MS = 18000; // nudge after this much inactivity
+const HEARTBEAT_MS = 22000; // proactive observation cadence while the student works
 
 interface Props {
   sim: SimAIDescriptor;
@@ -227,15 +228,38 @@ export const SimAIProvider = ({ sim, state, children, defaultEnabled = true, api
     [callCoach]
   );
 
-  // greet + idle watch
+  // greet + idle watch + proactive heartbeat
+  const greetedRef = useRef(false);
   useEffect(() => {
     if (!enabled) return;
     scheduleIdle();
+
+    // immediate welcome / first observation without any click
+    let greetTimer: ReturnType<typeof setTimeout> | null = null;
+    if (!greetedRef.current) {
+      greetedRef.current = true;
+      greetTimer = setTimeout(() => {
+        void callCoach({ reason: 'session_start' }, true);
+      }, 1200);
+    }
+
+    // keeps observing the student continuously and comments on its own
+    const beat = setInterval(() => {
+      void callCoach({
+        reason: 'observation',
+        secondsElapsed: Math.round((Date.now() - startedAtRef.current) / 1000),
+        eventsSoFar: eventsRef.current.length,
+        mistakesSoFar: statsRef.current.mistakes,
+      });
+    }, HEARTBEAT_MS);
+
     return () => {
+      if (greetTimer) clearTimeout(greetTimer);
+      clearInterval(beat);
       if (idleRef.current) clearTimeout(idleRef.current);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [enabled, scheduleIdle]);
+  }, [enabled, scheduleIdle, callCoach]);
 
   const requestReport = useCallback(async () => {
     setReportLoading(true);
