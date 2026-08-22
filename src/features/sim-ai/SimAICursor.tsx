@@ -46,10 +46,11 @@ export const SimAICursor = () => {
     };
   }, [x, y]);
 
-  // auto-hide a message after a while
+  // auto-hide a message after a while (longer for errors/warnings)
   useEffect(() => {
     if (!latest) return;
-    const t = setTimeout(() => dismissLatest(), 14000);
+    const ms = latest.tone === 'error' || latest.tone === 'warning' ? 26000 : 18000;
+    const t = setTimeout(() => dismissLatest(), ms);
     return () => clearTimeout(t);
   }, [latest, dismissLatest]);
 
