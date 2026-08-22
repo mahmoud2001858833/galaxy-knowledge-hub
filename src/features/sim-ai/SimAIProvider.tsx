@@ -228,15 +228,38 @@ export const SimAIProvider = ({ sim, state, children, defaultEnabled = true, api
     [callCoach]
   );
 
-  // greet + idle watch
+  // greet + idle watch + proactive heartbeat
+  const greetedRef = useRef(false);
   useEffect(() => {
     if (!enabled) return;
     scheduleIdle();
+
+    // immediate welcome / first observation without any click
+    let greetTimer: ReturnType<typeof setTimeout> | null = null;
+    if (!greetedRef.current) {
+      greetedRef.current = true;
+      greetTimer = setTimeout(() => {
+        void callCoach({ reason: 'session_start' }, true);
+      }, 1200);
+    }
+
+    // keeps observing the student continuously and comments on its own
+    const beat = setInterval(() => {
+      void callCoach({
+        reason: 'observation',
+        secondsElapsed: Math.round((Date.now() - startedAtRef.current) / 1000),
+        eventsSoFar: eventsRef.current.length,
+        mistakesSoFar: statsRef.current.mistakes,
+      });
+    }, HEARTBEAT_MS);
+
     return () => {
+      if (greetTimer) clearTimeout(greetTimer);
+      clearInterval(beat);
       if (idleRef.current) clearTimeout(idleRef.current);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [enabled, scheduleIdle]);
+  }, [enabled, scheduleIdle, callCoach]);
 
   const requestReport = useCallback(async () => {
     setReportLoading(true);
