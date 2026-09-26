@@ -6,6 +6,26 @@ import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import InfoSection from '@/components/simulations/InfoSection';
 import QuizSection from '@/components/simulations/QuizSection';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine from '@/components/simulations/LabChallengeEngine';
+
+const EVOLUTION_CHALLENGES = [
+  {
+    id: 'adaptation-streak',
+    title: 'تحدي استمرار التكيف وبلوغ الجيل الخامس',
+    description: 'حافظ على استمرار أجيال الكائنات الحية حتى بلوغ الجيل 5 بنجاح.',
+    targetCondition: (params: Record<string, any>) => params.generation >= 5 && params.aliveCount > 5,
+    hint: 'اترك المحاكاة تعمل ليقوم الانتخاب الطبيعي باختيار الكائنات الأكثر ملاءمة للبيئة.'
+  },
+  {
+    id: 'mutation-control',
+    title: 'تحدي معايرة الطفرات الجينية',
+    description: 'اضبط معدل الطفرات بين 20% و 40% لزيادة التنوع الجيني مع بقاء الأفراد على قيد الحياة.',
+    targetCondition: (params: Record<string, any>) => params.mutationRate >= 20 && params.mutationRate <= 40,
+    hint: 'حرك شريط معدل الطفرات إلى قيمة بين 20% و 40%.'
+  }
+];
 
 interface Organism { x: number; y: number; color: string; fitness: number; size: number; speed: number; alive: boolean; }
 
@@ -253,10 +273,24 @@ const EvolutionSimulation = () => {
     { question: 'ما الانتواع (Speciation)؟', options: ['تكوّن أنواع جديدة من نوع واحد', 'انقراض الأنواع', 'هجرة الحيوانات', 'تكاثر الأنواع'], correctIndex: 0, explanation: 'الانتواع يحدث عندما تنعزل مجموعة عن النوع الأصلي وتتراكم اختلافات وراثية كافية لتكوين نوع جديد.' },
   ];
 
+  const aliveCount = organismsRef.current.filter(o => o.alive).length;
+  const avgFitness = (organismsRef.current.filter(o => o.alive).reduce((s, o) => s + o.fitness, 0) / Math.max(aliveCount, 1)).toFixed(2);
+
   return (
     <SimulationLayout title="التطور والانتخاب الطبيعي" titleGradient="from-amber-400 to-green-400" backgroundGradient="from-slate-900 via-amber-900 to-slate-900">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
+          {/* CyberLabHUD Telemetry */}
+          <CyberLabHUD
+            title="مؤشرات الانتخاب الطبيعي والتكيف"
+            metrics={[
+              { label: 'الجيل الحالي', value: `الجيل ${generation}`, status: 'optimal' },
+              { label: 'متوسط اللياقة (Fitness)', value: `${avgFitness}`, status: Number(avgFitness) > 0.5 ? 'optimal' : 'warning' },
+              { label: 'الأفراد الأحياء', value: `${aliveCount}`, status: aliveCount > 10 ? 'optimal' : 'warning' },
+              { label: 'معدل الطفرات', value: `${mutationRate}%`, status: 'normal' }
+            ]}
+          />
+
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-slate-800/50 w-full">
               <TabsTrigger value="natural-selection" className="flex-1 text-xs">الانتخاب الطبيعي</TabsTrigger>
@@ -281,6 +315,31 @@ const EvolutionSimulation = () => {
           )}
         </div>
         <div className="space-y-4">
+          <LiveAILabCoPilot
+            simName="التطور والانتخاب الطبيعي"
+            currentParameters={{
+              "الجيل": `الجيل ${generation}`,
+              "اللياقة المتوسطة": `${avgFitness}`,
+              "الأحياء": `${aliveCount}`,
+              "الطفرات": `${mutationRate}%`
+            }}
+            subject="biology"
+            liveHint={
+              Number(avgFitness) > 0.6
+                ? "تراكم الصفات المفيدة أدى إلى زيادة لياقة المجموعة وتكيفها مع خلفية البيئة!"
+                : "الانتخاب الطبيعي يغربل الأفراد ذوي التمويه الأضعف لتمرير جينات الأكثر تكيفاً."
+            }
+          />
+
+          <LabChallengeEngine
+            challenges={EVOLUTION_CHALLENGES}
+            currentParams={{
+              generation,
+              aliveCount,
+              mutationRate
+            }}
+          />
+
           <InfoSection
             data={[
               { label: 'الجيل', value: generation, color: 'text-amber-300' },
