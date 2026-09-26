@@ -166,12 +166,12 @@ const FalakKnowledgeAI = () => {
       sendMessage();
     }
   };
-  return <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-indigo-950 via-purple-900 to-black" dir="rtl">
+  return <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <SEO title="ذروة العلم الذكي - AI Assistant" description="مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات الذكاء الاصطناعي - تحليل الصور، إجابات شاملة، واقتراحات تعليمية متطورة في جميع المواد" keywords="ذروة العلم الذكي, مساعد ذكي, ذكاء اصطناعي, AI, المنهاج الأردني, تحليل الصور, مساعد تعليمي, chatbot, روبوت محادثة تعليمي" />
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={400} />
         {/* Cosmic nebula effects */}
-        <div className="absolute top-0 left-0 w-full h-full">
+        <div className="absolute top-0 left-0 w-full h-full opacity-30 dark:opacity-100 transition-opacity">
           <div className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full bg-purple-500/10 blur-3xl animate-pulse" />
           <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl animate-pulse" style={{
           animationDelay: '1s'
@@ -195,7 +195,7 @@ const FalakKnowledgeAI = () => {
           <Button onClick={() => {
             const isGJU = sessionStorage.getItem('gju_mode') === 'true';
             navigate(isGJU ? '/gju-competition' : '/');
-          }} variant="ghost" className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 mb-4">
+          }} variant="ghost" className="text-purple-600 dark:text-indigo-400 hover:text-purple-700 dark:hover:text-indigo-300 hover:bg-purple-50 dark:hover:bg-indigo-900/30 mb-4 font-medium">
             <ArrowRight className="w-4 h-4 ml-2" />
             {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للرئيسية'}
           </Button>
@@ -207,13 +207,13 @@ const FalakKnowledgeAI = () => {
           }} animate={{
             scale: 1,
             opacity: 1
-          }} className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-sm border border-indigo-400/30 mb-4">
+          }} className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-purple-500/10 dark:bg-gradient-to-r dark:from-indigo-500/20 dark:to-purple-500/20 backdrop-blur-sm border border-purple-400/30 mb-4 shadow-sm dark:shadow-none">
               <span className="text-4xl">🌌</span>
             </motion.div>
-            <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 mb-4">
+            <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-indigo-600 to-cyan-600 dark:from-indigo-400 dark:via-purple-300 dark:to-indigo-500 mb-4">
               ذروة العلم الذكي
             </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto mb-6">
+            <p className="text-xl text-slate-600 dark:text-white/80 max-w-2xl mx-auto mb-6">
               مساعد ذكي متقدم يدعم المنهاج الأردني بتقنيات فضائية حديثة
             </p>
             
@@ -232,7 +232,7 @@ const FalakKnowledgeAI = () => {
       }} animate={{
         opacity: 1,
         y: 0
-      }} className="flex-1 mb-6 bg-black/20 backdrop-blur-sm rounded-2xl border border-indigo-500/20 p-6 shadow-2xl shadow-indigo-500/10">
+      }} className="flex-1 mb-6 bg-white/95 dark:bg-black/20 backdrop-blur-sm rounded-2xl border border-slate-200/80 dark:border-indigo-500/20 p-6 shadow-xl dark:shadow-2xl shadow-indigo-500/5 dark:shadow-indigo-500/10">
           <div className="h-96 overflow-y-auto space-y-4 mb-4 scrollbar-thin scrollbar-thumb-indigo-500/50 scrollbar-track-transparent">
             <AnimatePresence>
               {messages.map(message => <motion.div key={message.id} initial={{
@@ -245,10 +245,10 @@ const FalakKnowledgeAI = () => {
               opacity: 0,
               y: -20
             }} className={`flex ${message.type === 'user' ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`max-w-[80%] p-4 rounded-2xl relative ${message.type === 'user' ? 'bg-indigo-600/30 border border-indigo-500/50 text-white' : message.type === 'system' ? 'bg-purple-900/40 border border-purple-500/50 text-purple-100' : 'bg-gray-800/50 border border-gray-600/50 text-gray-100'}`}>
+                  <div className={`max-w-[80%] p-4 rounded-2xl relative shadow-sm ${message.type === 'user' ? 'bg-indigo-600 text-white' : message.type === 'system' ? 'bg-purple-50 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-500/50 text-purple-900 dark:text-purple-100' : 'bg-slate-100 dark:bg-gray-800/50 border border-slate-200 dark:border-gray-600/50 text-slate-900 dark:text-gray-100'}`}>
                     {message.type === 'user' && currentUser && <div className="flex items-center mb-2">
-                        <User className="w-4 h-4 ml-2 text-indigo-300" />
-                        <span className="text-sm text-indigo-300">{currentUser.username}</span>
+                        <User className="w-4 h-4 ml-2 text-indigo-200" />
+                        <span className="text-sm text-indigo-200 font-medium">{currentUser.username}</span>
                       </div>}
                     
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">
@@ -261,28 +261,28 @@ const FalakKnowledgeAI = () => {
                       </div>}
 
                     {message.imageUrl && <div className="mt-4 text-center">
-                        <img src={message.imageUrl} alt="Generated" className="max-w-full h-auto rounded-lg border border-indigo-500/30" />
+                        <img src={message.imageUrl} alt="Generated" className="max-w-full h-auto rounded-lg border border-indigo-500/30 shadow-md" />
                       </div>}
                     
-                    {message.videoSuggestions && message.videoSuggestions.length > 0 && <div className="mt-4 p-3 bg-purple-900/30 rounded-lg border border-purple-500/30">
+                    {message.videoSuggestions && message.videoSuggestions.length > 0 && <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg border border-purple-200 dark:border-purple-500/30">
                         <div className="flex items-center mb-2">
-                          <Video className="w-4 h-4 ml-2 text-purple-300" />
-                          <span className="text-sm font-semibold text-purple-300">فيديوهات مقترحة:</span>
+                          <Video className="w-4 h-4 ml-2 text-purple-600 dark:text-purple-300" />
+                          <span className="text-sm font-semibold text-purple-800 dark:text-purple-300">فيديوهات مقترحة:</span>
                         </div>
                         <div className="space-y-1">
-                          {message.videoSuggestions.map((video, idx) => <a key={idx} href={video.url} target="_blank" rel="noopener noreferrer" className="block text-xs text-purple-200 hover:text-purple-100 hover:underline">
+                          {message.videoSuggestions.map((video, idx) => <a key={idx} href={video.url} target="_blank" rel="noopener noreferrer" className="block text-xs text-purple-700 dark:text-purple-200 hover:text-purple-900 dark:hover:text-purple-100 hover:underline">
                               • {video.title}
                             </a>)}
                         </div>
                       </div>}
                     
-                    {message.relatedQuestions && message.relatedQuestions.length > 0 && <div className="mt-4 p-3 bg-indigo-900/30 rounded-lg border border-indigo-500/30">
+                    {message.relatedQuestions && message.relatedQuestions.length > 0 && <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-500/30">
                         <div className="flex items-center mb-2">
-                          <BookOpen className="w-4 h-4 ml-2 text-indigo-300" />
-                          <span className="text-sm font-semibold text-indigo-300">أسئلة ذات صلة:</span>
+                          <BookOpen className="w-4 h-4 ml-2 text-indigo-600 dark:text-indigo-300" />
+                          <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">أسئلة ذات صلة:</span>
                         </div>
                         <div className="space-y-1">
-                          {message.relatedQuestions.map((question, idx) => <button key={idx} onClick={() => setInputText(question)} className="block text-xs text-indigo-200 hover:text-indigo-100 hover:underline text-right w-full">
+                          {message.relatedQuestions.map((question, idx) => <button key={idx} onClick={() => setInputText(question)} className="block text-xs text-indigo-700 dark:text-indigo-200 hover:text-indigo-900 dark:hover:text-indigo-100 hover:underline text-right w-full">
                               • {question}
                             </button>)}
                         </div>
@@ -296,9 +296,9 @@ const FalakKnowledgeAI = () => {
           }} animate={{
             opacity: 1
           }} className="flex justify-end">
-                <div className="max-w-[80%] p-4 rounded-2xl bg-gray-800/50 border border-gray-600/50 flex items-center">
-                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                  <span className="text-sm text-gray-300">جاري التفكير...</span>
+                <div className="max-w-[80%] p-4 rounded-2xl bg-slate-100 dark:bg-gray-800/50 border border-slate-200 dark:border-gray-600/50 flex items-center">
+                  <Loader2 className="w-4 h-4 animate-spin ml-2 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-sm text-slate-700 dark:text-gray-300 font-medium">جاري التفكير...</span>
                 </div>
               </motion.div>}
             <div ref={messagesEndRef} />
@@ -322,7 +322,7 @@ const FalakKnowledgeAI = () => {
           <div className="mb-3">
             <Button
               onClick={() => setInkOpen(true)}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-indigo-700 text-white font-bold gap-2 shadow-lg shadow-purple-500/30 border border-purple-400/40"
+              className="w-full h-12 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-indigo-700 text-white font-bold gap-2 shadow-lg shadow-purple-500/20 border border-purple-400/40"
               title="INK TO TEXT AI - تحويل الكتابة إلى نص"
             >
               <ScanText className="w-5 h-5" />
@@ -342,11 +342,11 @@ const FalakKnowledgeAI = () => {
               size="md"
             />
             
-            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/30" title="رفع صورة">
+            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="border-slate-300 dark:border-indigo-500/50 text-slate-700 dark:text-indigo-300 hover:bg-slate-100 dark:hover:bg-indigo-900/30" title="رفع صورة">
               <Upload className="w-4 h-4" />
             </Button>
             
-            <Textarea value={inputText} onChange={e => setInputText(e.target.value)} onKeyPress={handleKeyPress} placeholder="اسأل أي سؤال عن المنهاج الأردني أو ارفع صورة للتحليل..." className="flex-1 min-h-[50px] bg-gray-900/50 border-indigo-500/30 text-white placeholder:text-gray-400 resize-none" rows={2} />
+            <Textarea value={inputText} onChange={e => setInputText(e.target.value)} onKeyPress={handleKeyPress} placeholder="اسأل أي سؤال عن المنهاج الأردني أو ارفع صورة للتحليل..." className="flex-1 min-h-[50px] bg-slate-50 dark:bg-gray-900/50 border-slate-300 dark:border-indigo-500/30 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-400 resize-none rounded-xl focus:bg-white dark:focus:bg-gray-900" rows={2} />
           </div>
           
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
@@ -360,24 +360,24 @@ const FalakKnowledgeAI = () => {
         opacity: 1,
         y: 0
       }} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Card className="p-6 bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border-purple-500/30 backdrop-blur-sm">
+          <Card className="p-6 bg-white/95 dark:bg-gradient-to-br dark:from-purple-900/30 dark:to-indigo-900/30 border border-slate-200/80 dark:border-purple-500/30 backdrop-blur-sm shadow-md dark:shadow-none">
             <div className="flex items-center mb-4">
-              <Target className="w-6 h-6 text-purple-400 ml-3" />
-              <h3 className="text-xl font-bold text-white">تتبع تقدم الطالب</h3>
+              <Target className="w-6 h-6 text-purple-600 dark:text-purple-400 ml-3" />
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">تتبع تقدم الطالب</h3>
             </div>
-            <p className="text-purple-100 mb-4">اكتشف نقاط القوة والضعف واحصل على خطط تدريب مخصصة</p>
-            <Button onClick={() => navigate('/student-progress')} className="w-full bg-purple-600 hover:bg-purple-700">
+            <p className="text-slate-600 dark:text-purple-100 mb-4">اكتشف نقاط القوة والضعف واحصل على خطط تدريب مخصصة</p>
+            <Button onClick={() => navigate('/student-progress')} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium">
               ابدأ التقييم
             </Button>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-indigo-900/30 to-cyan-900/30 border-indigo-500/30 backdrop-blur-sm">
+          <Card className="p-6 bg-white/95 dark:bg-gradient-to-br dark:from-indigo-900/30 dark:to-cyan-900/30 border border-slate-200/80 dark:border-indigo-500/30 backdrop-blur-sm shadow-md dark:shadow-none">
             <div className="flex items-center mb-4">
-              <GraduationCap className="w-6 h-6 text-indigo-400 ml-3" />
-              <h3 className="text-xl font-bold text-white">جدولة الدراسة</h3>
+              <GraduationCap className="w-6 h-6 text-indigo-600 dark:text-indigo-400 ml-3" />
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">جدولة الدراسة</h3>
             </div>
-            <p className="text-indigo-100 mb-4">أنشئ جدولاً دراسياً احترافياً مخصصاً لاحتياجاتك</p>
-            <Button onClick={() => navigate('/study-schedule')} className="w-full bg-indigo-600 hover:bg-indigo-700">
+            <p className="text-slate-600 dark:text-indigo-100 mb-4">أنشئ جدولاً دراسياً احترافياً مخصصاً لاحتياجاتك</p>
+            <Button onClick={() => navigate('/study-schedule')} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium">
               إنشاء الجدول
             </Button>
           </Card>

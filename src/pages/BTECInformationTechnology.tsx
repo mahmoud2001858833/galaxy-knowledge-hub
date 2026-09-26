@@ -59,7 +59,7 @@ const BTECInformationTechnology = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <SEO 
         title="تكنولوجيا المعلومات - بتك BTEC"
         description="قسم تكنولوجيا المعلومات في منصة بتك - البرمجة، مشاريع الطلبة، تصليح الكودات، نصائح التطوير"
@@ -81,7 +81,7 @@ const BTECInformationTechnology = () => {
               const isGJU = sessionStorage.getItem('gju_mode') === 'true';
               navigate(isGJU ? '/gju-competition' : '/');
             }}
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8"
+            className="flex items-center gap-2 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white font-medium transition-colors mb-8"
           >
             <ArrowRight size={20} />
             {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة لذروة العلم'}
@@ -94,11 +94,11 @@ const BTECInformationTechnology = () => {
             transition={{ duration: 0.7 }}
             className="mb-16 text-center"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-700 dark:from-blue-400 dark:via-cyan-400 dark:to-blue-500">
               تكنولوجيا المعلومات
             </h1>
-            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 mx-auto mb-6"></div>
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto">
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 mx-auto mb-6 rounded-full"></div>
+            <p className="text-xl md:text-2xl text-slate-600 dark:text-white/80 max-w-3xl mx-auto">
               اختر القسم الذي تريد استكشافه وتعلم البرمجة بطريقة احترافية
             </p>
           </motion.div>

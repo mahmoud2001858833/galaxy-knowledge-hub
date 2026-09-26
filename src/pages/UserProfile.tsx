@@ -350,7 +350,7 @@ const UserProfile = () => {
   const progressPercentage = (level.progress / level.nextLevel) * 100;
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <StarField starCount={100} speed={0.1} />
       <Navbar />
       
@@ -358,14 +358,14 @@ const UserProfile = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-96">
             <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
-            <div className="text-white text-lg">جاري تحميل الملف الشخصي...</div>
-            <div className="text-white/60 text-sm mt-2">يرجى الانتظار قليلاً</div>
+            <div className="text-slate-800 dark:text-white text-lg">جاري تحميل الملف الشخصي...</div>
+            <div className="text-slate-500 dark:text-white/60 text-sm mt-2">يرجى الانتظار قليلاً</div>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-96">
-            <Alert className="bg-red-900/30 border-red-500/50 max-w-md">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-white">
+            <Alert className="bg-red-500/10 border-red-500/30 max-w-md">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertDescription className="text-slate-800 dark:text-white">
                 {error}
               </AlertDescription>
             </Alert>
@@ -392,40 +392,40 @@ const UserProfile = () => {
               animate={{ opacity: 1, y: 0 }}
             >
               <div className="relative inline-block">
-                <Avatar className="w-32 h-32 border-4 border-blue-500/30">
+                <Avatar className="w-32 h-32 border-4 border-blue-500/30 shadow-md">
                   <AvatarImage src={profile.avatar_url || ''} />
                   <AvatarFallback className="bg-blue-700/50">
                     <User className="w-16 h-16 text-white/70" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-full">
+                <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-full shadow-sm">
                   <Award className="w-6 h-6" />
                 </div>
               </div>
               
-              <h1 className="text-3xl font-bold text-white mt-4">{profile.username}</h1>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mt-4">{profile.username}</h1>
               
               <div className="flex flex-col items-center justify-center mt-2">
-                <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 border-none text-lg mb-2">
+                <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-none text-lg mb-2 shadow-sm">
                   المستوى {level.level} - {level.title}
                 </Badge>
                 
                 {level.level > 0 && (
                   <div className="w-80 max-w-full space-y-1">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-white/70">التقدم للمستوى التالي</span>
-                      <span className="text-blue-300">{Math.round(level.progress)}/{level.nextLevel} دقيقة</span>
+                      <span className="text-slate-600 dark:text-white/70">التقدم للمستوى التالي</span>
+                      <span className="text-blue-600 dark:text-blue-300 font-semibold">{Math.round(level.progress)}/{level.nextLevel} دقيقة</span>
                     </div>
                     <Progress 
                       value={progressPercentage} 
-                      className="h-2 bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
+                      className="h-2 bg-slate-200 dark:bg-blue-950 [&>*]:bg-gradient-to-r [&>*]:from-blue-500 [&>*]:to-purple-500" 
                     />
                   </div>
                 )}
               </div>
               
               {isAdmin && (
-                <div className="mt-2 inline-block bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-1 rounded-full text-white text-sm font-medium">
+                <div className="mt-2 inline-block bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-1 rounded-full text-white text-sm font-medium shadow-sm">
                   مشرف
                 </div>
               )}
@@ -437,35 +437,35 @@ const UserProfile = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-none">
                 <CardContent className="p-4 text-center">
-                  <Award className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                  <p className="text-2xl font-bold text-white">{profile.score || 0}</p>
-                  <p className="text-sm text-white/70">النقاط</p>
+                  <Award className="w-8 h-8 mx-auto mb-2 text-amber-500 dark:text-yellow-400" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{profile.score || 0}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-white/70">النقاط</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-none">
                 <CardContent className="p-4 text-center">
-                  <Trophy className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                  <p className="text-2xl font-bold text-white">{puzzles.length}</p>
-                  <p className="text-sm text-white/70">ألغاز محلولة</p>
+                  <Trophy className="w-8 h-8 mx-auto mb-2 text-emerald-600 dark:text-green-400" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{puzzles.length}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-white/70">ألغاز محلولة</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-none">
                 <CardContent className="p-4 text-center">
-                  <Video className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                  <p className="text-2xl font-bold text-white">{watchedVideos.length}</p>
-                  <p className="text-sm text-white/70">فيديوهات مشاهدة</p>
+                  <Video className="w-8 h-8 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{watchedVideos.length}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-white/70">فيديوهات مشاهدة</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-none">
                 <CardContent className="p-4 text-center">
-                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-                  <p className="text-2xl font-bold text-white">{messagesCount}</p>
-                  <p className="text-sm text-white/70">رسائل مرسلة</p>
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-blue-600 dark:text-blue-400" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{messagesCount}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-white/70">رسائل مرسلة</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -476,27 +476,27 @@ const UserProfile = () => {
               </div>
             )}
             
-            <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+            <Card className="bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-md dark:shadow-none">
               <CardContent className="p-6">
                 <Tabs defaultValue="puzzles">
-                  <TabsList className="grid grid-cols-5 mb-6">
-                    <TabsTrigger value="puzzles" className="flex items-center gap-1">
+                  <TabsList className="grid grid-cols-5 mb-6 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-1 rounded-xl">
+                    <TabsTrigger value="puzzles" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-blue-600 dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
                       <Trophy className="h-4 w-4" />
                       <span>الألغاز</span>
                     </TabsTrigger>
-                    <TabsTrigger value="videos" className="flex items-center gap-1">
+                    <TabsTrigger value="videos" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-purple-600 dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
                       <Video className="h-4 w-4" />
                       <span>الفيديوهات</span>
                     </TabsTrigger>
-                    <TabsTrigger value="images" className="flex items-center gap-1">
+                    <TabsTrigger value="images" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-cyan-600 dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
                       <FileImage className="h-4 w-4" />
                       <span>الصور</span>
                     </TabsTrigger>
-                    <TabsTrigger value="journals" className="flex items-center gap-1">
+                    <TabsTrigger value="journals" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
                       <Book className="h-4 w-4" />
                       <span>المجلات</span>
                     </TabsTrigger>
-                    <TabsTrigger value="stats" className="flex items-center gap-1">
+                    <TabsTrigger value="stats" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-amber-600 dark:data-[state=active]:text-white data-[state=active]:shadow-sm">
                       <Star className="h-4 w-4" />
                       <span>الإحصائيات</span>
                     </TabsTrigger>
@@ -506,7 +506,7 @@ const UserProfile = () => {
                     {puzzles.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {puzzles.map((puzzle) => (
-                          <Card key={puzzle.id} className="bg-white/5 border-white/10 hover:border-white/30 transition-all">
+                          <Card key={puzzle.id} className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-blue-400 dark:hover:border-white/30 transition-all shadow-sm dark:shadow-none">
                             <CardContent className="p-4">
                               <div className="flex items-center justify-between mb-2">
                                 <span className={`px-2 py-1 rounded text-xs ${getSubjectColor(puzzle.subject)}`}>
@@ -518,12 +518,12 @@ const UserProfile = () => {
                                   </span>
                                 )}
                               </div>
-                              <h3 className="text-lg font-medium text-white mb-1">{puzzle.title || "لغز"}</h3>
+                              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{puzzle.title || "لغز"}</h3>
                               <div className="flex justify-between items-center">
-                                <p className="text-xs text-white/50">
+                                <p className="text-xs text-slate-500 dark:text-white/50">
                                   حل في {new Date(puzzle.solved_at).toLocaleDateString('ar-SA')}
                                 </p>
-                                <Badge variant="outline" className="bg-blue-900/30 text-blue-300">
+                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                                   {puzzle.points} نقطة
                                 </Badge>
                               </div>
@@ -532,7 +532,7 @@ const UserProfile = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10 text-white/70">
+                      <div className="text-center py-10 text-slate-500 dark:text-white/70">
                         لم تقم بحل أي لغز بعد
                       </div>
                     )}
@@ -542,20 +542,20 @@ const UserProfile = () => {
                     {watchedVideos.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {watchedVideos.map((video) => (
-                          <Card key={video.id} className="bg-white/5 border-white/10 hover:border-white/30 transition-all">
+                          <Card key={video.id} className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-purple-400 dark:hover:border-white/30 transition-all shadow-sm dark:shadow-none">
                             <CardContent className="p-4">
                               <div className="flex items-center mb-2">
-                                <Video className="w-4 h-4 ml-2 text-purple-400" />
+                                <Video className="w-4 h-4 ml-2 text-purple-600 dark:text-purple-400" />
                                 <span className={`px-2 py-1 rounded text-xs ${getSubjectColor(video.subject)}`}>
                                   {getSubjectName(video.subject)}
                                 </span>
                               </div>
-                              <h3 className="text-lg font-medium text-white mb-1">{video.video_title}</h3>
+                              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{video.video_title}</h3>
                               <div className="flex justify-between items-center">
-                                <p className="text-xs text-white/50">
+                                <p className="text-xs text-slate-500 dark:text-white/50">
                                   شوهد في {new Date(video.watched_at).toLocaleDateString('ar-SA')}
                                 </p>
-                                <span className="text-xs text-purple-300">
+                                <span className="text-xs font-semibold text-purple-600 dark:text-purple-300">
                                   {Math.floor(video.duration_watched / 60)} دقيقة
                                 </span>
                               </div>
@@ -564,7 +564,7 @@ const UserProfile = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10 text-white/70">
+                      <div className="text-center py-10 text-slate-500 dark:text-white/70">
                         لم تشاهد أي فيديوهات بعد
                       </div>
                     )}
@@ -574,8 +574,8 @@ const UserProfile = () => {
                     {images.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {images.map((image) => (
-                          <Card key={image.id} className="overflow-hidden bg-white/5 border-white/10 hover:border-white/30 transition-all">
-                            <div className="h-40 overflow-hidden">
+                          <Card key={image.id} className="overflow-hidden bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-cyan-400 dark:hover:border-white/30 transition-all shadow-sm dark:shadow-none">
+                            <div className="h-40 overflow-hidden bg-slate-100 dark:bg-slate-900">
                               <img 
                                 src={image.image_url} 
                                 alt={image.title}
@@ -588,8 +588,8 @@ const UserProfile = () => {
                                   {getSubjectName(image.subject)}
                                 </span>
                               </div>
-                              <h3 className="text-lg font-medium text-white mb-1">{image.title}</h3>
-                              <p className="text-xs text-white/50">
+                              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{image.title}</h3>
+                              <p className="text-xs text-slate-500 dark:text-white/50">
                                 تم الرفع في {new Date(image.created_at).toLocaleDateString('ar-SA')}
                               </p>
                             </CardContent>
@@ -597,7 +597,7 @@ const UserProfile = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10 text-white/70">
+                      <div className="text-center py-10 text-slate-500 dark:text-white/70">
                         لم تقم برفع أي صور بعد
                       </div>
                     )}
@@ -607,8 +607,8 @@ const UserProfile = () => {
                     {journals.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {journals.map((journal) => (
-                          <Card key={journal.id} className="overflow-hidden bg-white/5 border-white/10 hover:border-white/30 transition-all">
-                            <div className="h-40 overflow-hidden">
+                          <Card key={journal.id} className="overflow-hidden bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-emerald-400 dark:hover:border-white/30 transition-all shadow-sm dark:shadow-none">
+                            <div className="h-40 overflow-hidden bg-slate-100 dark:bg-slate-900">
                               <img 
                                 src={journal.cover_image_url} 
                                 alt={journal.title}
@@ -621,12 +621,12 @@ const UserProfile = () => {
                                   {getSubjectName(journal.subject)}
                                 </span>
                               </div>
-                              <h3 className="text-lg font-medium text-white mb-1">{journal.title}</h3>
+                              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{journal.title}</h3>
                               <a 
                                 href={journal.pdf_url}
                                 target="_blank"
                                 rel="noopener noreferrer" 
-                                className="text-blue-400 hover:text-blue-300 text-sm flex items-center"
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-semibold flex items-center"
                               >
                                 <FileText className="w-3 h-3 ml-1" />
                                 عرض PDF
@@ -636,7 +636,7 @@ const UserProfile = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10 text-white/70">
+                      <div className="text-center py-10 text-slate-500 dark:text-white/70">
                         لم تقم برفع أي مجلات علمية بعد
                       </div>
                     )}
@@ -644,42 +644,42 @@ const UserProfile = () => {
 
                   <TabsContent value="stats" className="mt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Card className="bg-white/5 border-white/10">
+                      <Card className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
                         <CardHeader>
-                          <CardTitle className="text-white text-center">وقت الاستخدام</CardTitle>
+                          <CardTitle className="text-slate-900 dark:text-white text-center font-bold">وقت الاستخدام</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="text-center">
-                            <Clock className="w-12 h-12 mx-auto mb-4 text-blue-400" />
-                            <p className="text-3xl font-bold text-white mb-2">
+                            <Clock className="w-12 h-12 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+                            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
                               {Math.floor((profile.usage_time || 0) / 60)} ساعة {Math.round((profile.usage_time || 0) % 60)} دقيقة
                             </p>
-                            <p className="text-white/70">إجمالي وقت الاستخدام</p>
+                            <p className="text-slate-600 dark:text-white/70">إجمالي وقت الاستخدام</p>
                           </div>
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-white/5 border-white/10">
+                      <Card className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
                         <CardHeader>
-                          <CardTitle className="text-white text-center">توزيع النشاطات</CardTitle>
+                          <CardTitle className="text-slate-900 dark:text-white text-center font-bold">توزيع النشاطات</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                              <span className="text-white/70">الألغاز المحلولة</span>
-                              <Badge className="bg-green-500/20 text-green-300">{puzzles.length}</Badge>
+                              <span className="text-slate-600 dark:text-white/70 font-medium">الألغاز المحلولة</span>
+                              <Badge className="bg-emerald-100 dark:bg-green-500/20 text-emerald-800 dark:text-green-300 font-bold">{puzzles.length}</Badge>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-white/70">الفيديوهات المشاهدة</span>
-                              <Badge className="bg-purple-500/20 text-purple-300">{watchedVideos.length}</Badge>
+                              <span className="text-slate-600 dark:text-white/70 font-medium">الفيديوهات المشاهدة</span>
+                              <Badge className="bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 font-bold">{watchedVideos.length}</Badge>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-white/70">الصور المرفوعة</span>
-                              <Badge className="bg-blue-500/20 text-blue-300">{images.length}</Badge>
+                              <span className="text-slate-600 dark:text-white/70 font-medium">الصور المرفوعة</span>
+                              <Badge className="bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 font-bold">{images.length}</Badge>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-white/70">المجلات المرفوعة</span>
-                              <Badge className="bg-orange-500/20 text-orange-300">{journals.length}</Badge>
+                              <span className="text-slate-600 dark:text-white/70 font-medium">المجلات المرفوعة</span>
+                              <Badge className="bg-amber-100 dark:bg-orange-500/20 text-amber-800 dark:text-orange-300 font-bold">{journals.length}</Badge>
                             </div>
                           </div>
                         </CardContent>

@@ -39,7 +39,7 @@ const IslamicEducation = () => {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col bg-gradient-to-b from-emerald-950/60 to-slate-950`} dir={dir}>
+    <div className={`min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300`} dir={dir}>
       <StarField />
       <Navbar />
       
@@ -59,7 +59,7 @@ const IslamicEducation = () => {
           >
             <button
               onClick={() => navigate('/literary-platforms')}
-              className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-6"
+              className="flex items-center gap-2 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-colors mb-6 font-medium"
             >
               {dir === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
               {t.common.back}
@@ -67,7 +67,7 @@ const IslamicEducation = () => {
             
             <div className="text-center relative">
               {/* Islamic decorative pattern */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-10">
+              <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-20 pointer-events-none">
                 <div className="w-96 h-96 border-4 border-emerald-400 rotate-45 rounded-3xl"></div>
                 <div className="absolute w-80 h-80 border-4 border-amber-400 rotate-12 rounded-3xl"></div>
               </div>
@@ -78,16 +78,16 @@ const IslamicEducation = () => {
                 transition={{ delay: 0.2, type: "spring" }}
                 className="inline-block mb-6"
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-emerald-500/30 to-teal-600/30 rounded-2xl flex items-center justify-center border border-emerald-400/30 backdrop-blur-sm">
-                  <Book className="w-12 h-12 text-emerald-300" />
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-emerald-500/20 to-teal-600/20 dark:from-emerald-500/30 dark:to-teal-600/30 rounded-2xl flex items-center justify-center border border-emerald-400/40 shadow-sm dark:shadow-none backdrop-blur-sm">
+                  <Book className="w-12 h-12 text-emerald-600 dark:text-emerald-300" />
                 </div>
               </motion.div>
               
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 via-white to-amber-300">
+              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 via-slate-900 to-teal-800 dark:from-emerald-300 dark:via-white dark:to-amber-300">
                 التربية الإسلامية
               </h1>
               <div className="w-24 h-1 bg-gradient-to-r from-emerald-500/50 to-amber-500/50 mx-auto mb-4 rounded-full"></div>
-              <p className="text-xl text-white/70 max-w-2xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-white/70 max-w-2xl mx-auto">
                 استكشف التاريخ الإسلامي وأحداثه العظيمة عبر العصور
               </p>
             </div>

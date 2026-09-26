@@ -50,7 +50,7 @@ const BTEC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <SEO 
         title="بتك BTEC - منصة التعليم المهني"
         description="منصة بتك BTEC للتعليم المهني - تكنولوجيا المعلومات، الفن والتصميم، إدارة الأعمال، والهندسة"
@@ -73,11 +73,11 @@ const BTEC = () => {
             transition={{ duration: 0.7 }}
             className="mb-16 text-center"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-purple-400">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-700 to-purple-800 dark:from-blue-400 dark:via-white dark:to-purple-400">
               بتك الأردني
             </h1>
-            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-6"></div>
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto">
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-6 rounded-full"></div>
+            <p className="text-xl md:text-2xl text-slate-600 dark:text-white/80 max-w-3xl mx-auto">
               منصة التعليم المهني المتقدمة - اختر مجالك وابدأ رحلتك التعليمية
             </p>
           </motion.div>

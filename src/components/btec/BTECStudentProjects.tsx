@@ -150,7 +150,7 @@ const BTECStudentProjects = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <SEO 
         title="مشاريع الطلبة - بتك BTEC"
         description="عرض مشاريع طلبة بتك البرمجية مع إمكانية رفع مشروعك والإعجاب بمشاريع الآخرين"
@@ -168,77 +168,77 @@ const BTECStudentProjects = () => {
         >
           <button
             onClick={() => navigate('/btec/information-technology')}
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8"
+            className="flex items-center gap-2 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white font-medium transition-colors mb-8"
           >
             <ArrowRight size={20} />
             العودة
           </button>
 
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+            <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
               مشاريع الطلبة
             </h1>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2">
+                <Button className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md">
                   <Upload className="w-4 h-4" />
                   رفع مشروع
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl bg-slate-900 text-white">
+              <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-xl">
                 <DialogHeader>
-                  <DialogTitle>رفع مشروع جديد</DialogTitle>
-                  <DialogDescription>املأ المعلومات التالية لرفع مشروعك</DialogDescription>
+                  <DialogTitle className="text-slate-900 dark:text-white text-xl font-bold">رفع مشروع جديد</DialogTitle>
+                  <DialogDescription className="text-slate-600 dark:text-slate-400">املأ المعلومات التالية لرفع مشروعك</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label>اسم الطالب</Label>
+                    <Label className="text-slate-700 dark:text-slate-300">اسم الطالب</Label>
                     <Input
                       value={formData.student_name}
                       onChange={(e) => setFormData({...formData, student_name: e.target.value})}
                       required
-                      className="bg-white/10"
+                      className="bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <Label>اسم المشروع</Label>
+                    <Label className="text-slate-700 dark:text-slate-300">اسم المشروع</Label>
                     <Input
                       value={formData.project_name}
                       onChange={(e) => setFormData({...formData, project_name: e.target.value})}
                       required
-                      className="bg-white/10"
+                      className="bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <Label>فكرة المشروع</Label>
+                    <Label className="text-slate-700 dark:text-slate-300">فكرة المشروع</Label>
                     <Input
                       value={formData.project_idea}
                       onChange={(e) => setFormData({...formData, project_idea: e.target.value})}
                       required
-                      className="bg-white/10"
+                      className="bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <Label>لغات البرمجة المستخدمة (مفصولة بفواصل)</Label>
+                    <Label className="text-slate-700 dark:text-slate-300">لغات البرمجة المستخدمة (مفصولة بفواصل)</Label>
                     <Input
                       value={formData.programming_languages}
                       onChange={(e) => setFormData({...formData, programming_languages: e.target.value})}
                       placeholder="مثال: Python, JavaScript, HTML"
                       required
-                      className="bg-white/10"
+                      className="bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <Label>وصف المشروع</Label>
+                    <Label className="text-slate-700 dark:text-slate-300">وصف المشروع</Label>
                     <Textarea
                       value={formData.project_description}
                       onChange={(e) => setFormData({...formData, project_description: e.target.value})}
                       required
-                      className="bg-white/10 min-h-[120px]"
+                      className="bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white min-h-[120px]"
                     />
                   </div>
-                  <Button type="submit" className="w-full">رفع المشروع</Button>
+                  <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium">رفع المشروع</Button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -246,18 +246,18 @@ const BTECStudentProjects = () => {
 
           <div className="mb-6">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-white/50" />
               <Input
                 placeholder="ابحث عن مشروع..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 bg-white/10 text-white"
+                className="pr-10 bg-white dark:bg-white/10 text-slate-900 dark:text-white border-slate-200 dark:border-white/10 shadow-sm"
               />
             </div>
           </div>
 
           {loading ? (
-            <p className="text-center text-white">جاري التحميل...</p>
+            <p className="text-center text-slate-600 dark:text-white">جاري التحميل...</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProjects.map((project) => (
@@ -267,31 +267,31 @@ const BTECStudentProjects = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-white/5 border-purple-500/30 hover:bg-white/10 transition-all h-full">
+                  <Card className="bg-white/95 dark:bg-white/5 border border-slate-200/80 dark:border-purple-500/30 hover:border-purple-400 dark:hover:border-purple-500/60 shadow-sm dark:shadow-none hover:shadow-md transition-all h-full">
                     <CardHeader>
-                      <CardTitle className="text-white">{project.project_name}</CardTitle>
-                      <CardDescription className="text-white/70">
+                      <CardTitle className="text-slate-900 dark:text-white font-bold">{project.project_name}</CardTitle>
+                      <CardDescription className="text-slate-600 dark:text-white/70">
                         بواسطة: {project.student_name}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm text-cyan-300">
+                      <p className="text-sm text-purple-700 dark:text-cyan-300 font-semibold">
                         <strong>الفكرة:</strong> {project.project_idea}
                       </p>
-                      <p className="text-sm text-white/80">
+                      <p className="text-sm text-slate-700 dark:text-white/80 leading-relaxed">
                         {project.project_description}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {project.programming_languages.map((lang, i) => (
-                          <Badge key={i} variant="secondary">{lang}</Badge>
+                          <Badge key={i} variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">{lang}</Badge>
                         ))}
                       </div>
                       <Button
                         variant="outline"
-                        className="w-full gap-2"
+                        className="w-full gap-2 border-slate-200 dark:border-white/20 text-slate-700 dark:text-white hover:text-rose-600 hover:border-rose-300 dark:hover:border-rose-500/50"
                         onClick={() => handleLike(project.id)}
                       >
-                        <Heart className="w-4 h-4" />
+                        <Heart className="w-4 h-4 text-rose-500" />
                         إعجاب ({project.likes_count})
                       </Button>
                     </CardContent>

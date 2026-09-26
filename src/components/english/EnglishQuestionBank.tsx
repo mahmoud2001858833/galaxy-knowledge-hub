@@ -211,43 +211,43 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+      <Card className="bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-sm dark:shadow-none">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <FileQuestion className="h-6 w-6" />
+          <CardTitle className="text-slate-900 dark:text-white flex items-center gap-2">
+            <FileQuestion className="h-6 w-6 text-primary" />
             {content.title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-white mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
               {content.description}
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={content.descriptionPlaceholder}
-              className="min-h-[120px] bg-white/5 border-white/20 text-white"
+              className="min-h-[120px] bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900"
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
               {content.grammarRules}
             </label>
             <Textarea
               value={grammarRules}
               onChange={(e) => setGrammarRules(e.target.value)}
               placeholder={content.grammarPlaceholder}
-              className="min-h-[100px] bg-white/5 border-white/20 text-white"
+              className="min-h-[100px] bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900"
               disabled={loading}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                 {content.questionCount}
               </label>
               <Input
@@ -256,24 +256,24 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
                 max={50}
                 value={questionCount}
                 onChange={(e) => setQuestionCount(parseInt(e.target.value))}
-                className="bg-white/5 border-white/20 text-white"
+                className="bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                 disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                 {content.difficulty}
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                className="w-full px-4 py-2 rounded-md bg-white/5 border border-white/20 text-white"
+                className="w-full px-4 py-2 rounded-md bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                 disabled={loading}
               >
-                <option value="easy">{content.easy}</option>
-                <option value="medium">{content.medium}</option>
-                <option value="hard">{content.hard}</option>
+                <option value="easy" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{content.easy}</option>
+                <option value="medium" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{content.medium}</option>
+                <option value="hard" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{content.hard}</option>
               </select>
             </div>
           </div>
@@ -281,7 +281,7 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
           <Button
             onClick={generateQuestions}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium shadow-sm"
           >
             {loading ? (
               <>
@@ -305,13 +305,13 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
           className="space-y-4"
         >
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-white">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
               {content.generatedQuestions} ({questions.length})
             </h3>
             <Button
               onClick={exportQuestions}
               variant="outline"
-              className="gap-2"
+              className="gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <Download className="h-4 w-4" />
               {content.export}
@@ -319,12 +319,12 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
           </div>
 
           {questions.map((q, index) => (
-            <Card key={index} className="bg-white/5 backdrop-blur-sm border-white/10">
+            <Card key={index} className="bg-white/95 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-sm dark:shadow-none">
               <CardHeader>
-                <CardTitle className="text-white text-lg flex items-center justify-between">
+                <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center justify-between">
                   <span>
                     {content.question} {index + 1}
-                    <span className="text-sm font-normal text-white/70 mr-2">
+                    <span className="text-sm font-normal text-slate-500 dark:text-slate-400 mr-2">
                       ({q.difficulty === 'easy' ? content.easy : q.difficulty === 'medium' ? content.medium : content.hard})
                     </span>
                   </span>
@@ -333,7 +333,7 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
                     disabled={translatingIndex === index}
                     variant="outline"
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     {translatingIndex === index ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -345,24 +345,24 @@ const EnglishQuestionBank: React.FC<EnglishQuestionBankProps> = ({ language }) =
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  <p className="font-medium text-blue-300 mb-1">{content.question}:</p>
-                  <p className="text-white">{q.question}</p>
+                <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
+                  <p className="font-medium text-blue-700 dark:text-blue-300 mb-1">{content.question}:</p>
+                  <p className="text-slate-800 dark:text-slate-100">{q.question}</p>
                   {translatedQuestions[index] && (
-                    <p className="text-white/70 mt-2 pr-4 border-r-2 border-blue-300">{translatedQuestions[index].question}</p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-2 pr-4 border-r-2 border-blue-400">{translatedQuestions[index].question}</p>
                   )}
                 </div>
-                <div>
-                  <p className="font-medium text-green-300 mb-1">{content.answer}:</p>
-                  <p className="text-white whitespace-pre-wrap">{q.answer}</p>
+                <div className="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+                  <p className="font-medium text-emerald-700 dark:text-emerald-300 mb-1">{content.answer}:</p>
+                  <p className="text-slate-800 dark:text-slate-100 whitespace-pre-wrap">{q.answer}</p>
                   {translatedQuestions[index] && (
-                    <p className="text-white/70 mt-2 pr-4 border-r-2 border-green-300 whitespace-pre-wrap">{translatedQuestions[index].answer}</p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-2 pr-4 border-r-2 border-emerald-400 whitespace-pre-wrap">{translatedQuestions[index].answer}</p>
                   )}
                 </div>
                 {q.grammarRule && (
-                  <div>
-                    <p className="font-medium text-purple-300 mb-1">{content.grammarRule}:</p>
-                    <p className="text-white">{q.grammarRule}</p>
+                  <div className="p-3 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30">
+                    <p className="font-medium text-purple-700 dark:text-purple-300 mb-1">{content.grammarRule}:</p>
+                    <p className="text-slate-800 dark:text-slate-100">{q.grammarRule}</p>
                   </div>
                 )}
               </CardContent>

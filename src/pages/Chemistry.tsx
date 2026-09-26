@@ -79,7 +79,7 @@ const Chemistry = () => {
   ];
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950 bg-fixed" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <SEO 
         title="منصة الكيمياء"
         description="اكتشف عالم الكيمياء مع منصة ذروة العلم - الجدول الدوري التفاعلي، حسابات كيميائية، علماء الكيمياء، والمساعد الذكي للمنهاج الأردني"
@@ -94,7 +94,7 @@ const Chemistry = () => {
       {chemistrySymbols.map((symbol, index) => (
         <div 
           key={index}
-          className={`absolute text-cyan-500/30 ${symbol.size} math-symbol pointer-events-none`}
+          className={`absolute text-cyan-600/20 dark:text-cyan-500/30 ${symbol.size} math-symbol pointer-events-none`}
           style={{ 
             top: symbol.top, 
             left: symbol.left, 
@@ -116,7 +116,7 @@ const Chemistry = () => {
             transition={{ duration: 0.5 }}
           >
             <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-16 text-center text-glow-cyan bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-white to-blue-500"
+              className="text-5xl md:text-7xl font-bold mb-16 text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 dark:from-cyan-400 dark:via-white dark:to-blue-500"
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.7 }}
@@ -221,8 +221,8 @@ const Chemistry = () => {
                 transition={{ duration: 0.5 }}
               >
                 <div className="text-center mb-12">
-                  <h2 className="text-4xl font-bold text-cyan-400 mb-4 text-glow-cyan">اختر الخدمة</h2>
-                  <p className="text-xl text-white/80">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
+                  <h2 className="text-4xl font-bold text-slate-900 dark:text-cyan-400 mb-4">اختر الخدمة</h2>
+                  <p className="text-xl text-slate-600 dark:text-slate-300">استكشف عالم الكيمياء من خلال خدماتنا المتنوعة</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
@@ -234,17 +234,17 @@ const Chemistry = () => {
                       transition={{ delay: index * 0.1, duration: 0.5 }}
                       onClick={() => setSelectedTab(card.tab)}
                     >
-                      <Card className={`h-64 cursor-pointer overflow-hidden relative bg-gradient-to-br ${card.color} border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-1 shadow-glow-sm shadow-cyan-500/10`}>
-                        <div className="absolute inset-0 opacity-20">
-                          <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                      <Card className="h-64 cursor-pointer overflow-hidden relative bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-cyan-500/20 hover:border-cyan-500 transition-all duration-300 hover:-translate-y-1 shadow-sm dark:shadow-none hover:shadow-md">
+                        <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none">
+                          <div className={`absolute inset-0 bg-gradient-to-br ${card.color}`} />
                         </div>
-                        <CardContent className="flex flex-col items-center justify-center h-full text-center p-6">
-                          <div className="mb-6 p-4 rounded-full bg-blue-900/30 backdrop-blur-sm shadow-glow-sm shadow-cyan-500/20">
+                        <CardContent className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10">
+                          <div className="mb-6 p-4 rounded-full bg-cyan-50 dark:bg-blue-900/30 backdrop-blur-sm shadow-sm dark:shadow-none">
                             {card.icon}
                           </div>
-                          <h3 className="text-2xl font-bold text-white mb-2 text-glow-cyan">{card.title}</h3>
+                          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{card.title}</h3>
                           <div className="mt-auto">
-                            <span className="inline-block px-4 py-1 bg-cyan-500/20 text-cyan-300 text-sm rounded-full">
+                            <span className="inline-block px-4 py-1 bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-sm font-medium rounded-full">
                               استكشف الآن
                             </span>
                           </div>
@@ -264,7 +264,7 @@ const Chemistry = () => {
                   <Button
                     onClick={() => setSelectedTab("")}
                     variant="ghost"
-                    className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30"
+                    className="text-cyan-700 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 hover:bg-cyan-100/50 dark:hover:bg-blue-900/30"
                   >
                     &larr; العودة للخيارات
                   </Button>
@@ -274,7 +274,7 @@ const Chemistry = () => {
                   key={selectedTab}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-cyan-500/30 p-6 shadow-glow-sm shadow-cyan-500/10"
+                  className="bg-white/95 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-cyan-500/30 p-6 shadow-sm dark:shadow-none"
                 >
                   {selectedTab === "periodic-table" && <EnhancedPeriodicTable />}
                   {selectedTab === "calculations" && <ChemistryCalculations />}

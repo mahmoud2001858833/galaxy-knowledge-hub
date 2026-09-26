@@ -31,7 +31,7 @@ const Biology = () => {
   
   if (!showMainContent) {
     return (
-      <div className="min-h-screen flex flex-col text-right bg-space-cosmic-black" dir="rtl">
+      <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
         <StarField starCount={200} speed={0.2} />
         <Navbar />
         
@@ -42,7 +42,7 @@ const Biology = () => {
             transition={{ duration: 1 }}
             className="text-center mb-12 max-w-4xl"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 text-glow-green">
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 dark:from-emerald-400 dark:via-white dark:to-green-400">
               عالم الأحياء
             </h1>
             
@@ -133,14 +133,14 @@ const Biology = () => {
   }
   
   return (
-    <div className="min-h-screen flex flex-col text-right" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <StarField starCount={150} speed={0.2} />
       
       {/* Floating Biology Symbols */}
       {biologySymbols.map((symbol, index) => (
         <div 
           key={index}
-          className={`absolute ${symbol.size} text-subject-biology-primary/30 math-symbol pointer-events-none`}
+          className={`absolute ${symbol.size} text-emerald-600/20 dark:text-subject-biology-primary/30 math-symbol pointer-events-none`}
           style={{ 
             top: symbol.top, 
             left: symbol.left, 
@@ -159,10 +159,10 @@ const Biology = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-glow-green">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 dark:from-emerald-400 dark:via-white dark:to-green-400">
             منصة الأحياء المتطورة
           </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
             استكشف عالم الأحياء من خلال الحسابات الحيوية والمساعد الذكي وموسوعة علمية وطبية شاملة
           </p>
         </motion.div>
@@ -175,14 +175,14 @@ const Biology = () => {
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
           >
-            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
+            <Card className="h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-subject-biology-primary/30 hover:border-emerald-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Calculator className="h-16 w-16 text-subject-biology-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-green">الحسابات الحيوية</h3>
-                <p className="text-white/70 mb-4">20+ حساب حيوي وطبي مع شرح مفصل</p>
+                <Calculator className="h-16 w-16 text-emerald-600 dark:text-subject-biology-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">الحسابات الحيوية</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">20+ حساب حيوي وطبي مع شرح مفصل</p>
                 <Button 
                   onClick={() => setSelectedTab("calculations")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-subject-biology-primary dark:hover:bg-subject-biology-secondary text-white shadow-sm transition-all duration-300"
                 >
                   ابدأ الحسابات
                 </Button>
@@ -197,14 +197,14 @@ const Biology = () => {
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
           >
-            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
+            <Card className="h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-subject-biology-primary/30 hover:border-emerald-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <TestTube className="h-16 w-16 text-subject-biology-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-green">المساعد الذكي</h3>
-                <p className="text-white/70 mb-4">اسأل المساعد الذكي أي سؤال عن الأحياء</p>
+                <TestTube className="h-16 w-16 text-emerald-600 dark:text-subject-biology-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">المساعد الذكي</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">اسأل المساعد الذكي أي سؤال عن الأحياء</p>
                 <Button 
                   onClick={() => setSelectedTab("assistant")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-subject-biology-primary dark:hover:bg-subject-biology-secondary text-white shadow-sm transition-all duration-300"
                 >
                   تحدث مع المساعد
                 </Button>
@@ -219,14 +219,14 @@ const Biology = () => {
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
           >
-            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
+            <Card className="h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-subject-biology-primary/30 hover:border-emerald-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Microscope className="h-16 w-16 text-subject-biology-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-green">علماء الأحياء</h3>
-                <p className="text-white/70 mb-4">تعرف على أبرز علماء الأحياء عبر التاريخ</p>
+                <Microscope className="h-16 w-16 text-emerald-600 dark:text-subject-biology-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">علماء الأحياء</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">تعرف على أبرز علماء الأحياء عبر التاريخ</p>
                 <Button 
                   onClick={() => setSelectedTab("scientists")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-subject-biology-primary dark:hover:bg-subject-biology-secondary text-white shadow-sm transition-all duration-300"
                 >
                   استكشف العلماء
                 </Button>
@@ -241,14 +241,14 @@ const Biology = () => {
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
           >
-            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
+            <Card className="h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-subject-biology-primary/30 hover:border-emerald-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Heart className="h-16 w-16 text-subject-biology-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-green">موسوعة الأمراض</h3>
-                <p className="text-white/70 mb-4">دليل شامل للأمراض وأعراضها وعلاجها</p>
+                <Heart className="h-16 w-16 text-emerald-600 dark:text-subject-biology-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">موسوعة الأمراض</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">دليل شامل للأمراض وأعراضها وعلاجها</p>
                 <Button 
                   onClick={() => setSelectedTab("diseases")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-subject-biology-primary dark:hover:bg-subject-biology-secondary text-white shadow-sm transition-all duration-300"
                 >
                   استكشف الموسوعة
                 </Button>
@@ -263,14 +263,14 @@ const Biology = () => {
             whileHover={{ scale: 1.03 }}
             className="col-span-1"
           >
-            <Card className="h-full glass-card border-subject-biology-primary/30 hover:shadow-glow-green transition-all duration-300">
+            <Card className="h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-subject-biology-primary/30 hover:border-emerald-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <FileQuestion className="h-16 w-16 text-subject-biology-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-green">بنك الأسئلة</h3>
-                <p className="text-white/70 mb-4">أنشئ أسئلة مخصصة مع إجاباتها النموذجية</p>
+                <FileQuestion className="h-16 w-16 text-emerald-600 dark:text-subject-biology-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">بنك الأسئلة</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">أنشئ أسئلة مخصصة مع إجاباتها النموذجية</p>
                 <Button 
                   onClick={() => setSelectedTab("questionbank")}
-                  className="bg-subject-biology-primary hover:bg-subject-biology-secondary transition-all duration-300"
+                  className="bg-emerald-600 hover:bg-emerald-700 dark:bg-subject-biology-primary dark:hover:bg-subject-biology-secondary text-white shadow-sm transition-all duration-300"
                 >
                   أنشئ الأسئلة
                 </Button>

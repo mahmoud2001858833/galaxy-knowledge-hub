@@ -148,7 +148,7 @@ const EnglishLanguage = () => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${textAlign} bg-gradient-to-b from-indigo-900/40 to-indigo-950`} dir={dir}>
+    <div className={`min-h-screen flex flex-col ${textAlign} bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300`} dir={dir}>
       <SEO 
         title="منصة اللغة الإنجليزية - Learn English"
         description="تعلم الإنجليزية مع منصة ذروة العلم - مساعد ذكي، مترجم ذكي، تدريب النطق، وموسوعة علماء اللغة الإنجليزية"
@@ -174,7 +174,7 @@ const EnglishLanguage = () => {
             <div className={`flex items-center gap-4 mb-6 ${language === 'ar' ? 'flex-row-reverse' : ''}`}>
               <button
                 onClick={() => navigate('/literary-platforms')}
-                className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 {dir === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
                 {currentLang.backToLiterary}
@@ -182,12 +182,12 @@ const EnglishLanguage = () => {
               
               {/* Language Toggle */}
               <div className="flex items-center gap-2 ml-auto">
-                <Globe className="w-5 h-5 text-white/70" />
+                <Globe className="w-5 h-5 text-slate-500 dark:text-white/70" />
                 <Button
                   onClick={toggleLanguage}
                   variant="outline"
                   size="sm"
-                  className="bg-white/10 border-indigo-500/30 text-white hover:bg-white/20"
+                  className="bg-slate-100 dark:bg-white/10 border-slate-300 dark:border-indigo-500/30 text-slate-800 dark:text-white hover:bg-slate-200 dark:hover:bg-white/20"
                 >
                   {language === 'ar' ? currentLang.switchToEnglish : currentLang.switchToArabic}
                 </Button>
@@ -195,11 +195,11 @@ const EnglishLanguage = () => {
             </div>
             
             <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-white to-indigo-500">
+              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 dark:from-indigo-400 dark:via-white dark:to-indigo-500">
                 {currentLang.title}
               </h1>
               <div className="w-16 h-1 bg-indigo-500/50 mx-auto mb-4"></div>
-              <p className="text-xl text-white/70 max-w-2xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-white/70 max-w-2xl mx-auto">
                 {currentLang.subtitle}
               </p>
             </div>
@@ -215,35 +215,28 @@ const EnglishLanguage = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 + index * 0.2, duration: 0.5 }}
                   onClick={() => setActiveComponent(feature.component)}
-                  className={`group relative h-[300px] md:h-[350px] rounded-xl overflow-hidden cursor-pointer ${feature.borderColor} ${feature.hoverBorderColor} border transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10 hover:scale-105`}
+                  className={`group relative h-[300px] md:h-[350px] rounded-xl overflow-hidden cursor-pointer bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-indigo-500/30 hover:border-indigo-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300 hover:scale-105`}
                 >
-                  {/* Background */}
-                  <div className="absolute inset-0">
-                    <div className={`absolute inset-0 bg-gradient-radial ${feature.color} opacity-90`}></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-950/90 to-transparent"></div>
+                  {/* Background overlay */}
+                  <div className="absolute inset-0 opacity-10 dark:opacity-30 pointer-events-none">
+                    <div className={`absolute inset-0 bg-gradient-radial ${feature.color}`}></div>
                   </div>
                   
                   <div className="absolute inset-0 p-6 z-10 flex flex-col justify-center items-center text-center">
-                    <div className="text-indigo-300 mb-4 group-hover:scale-110 transition-transform">
+                    <div className="text-indigo-600 dark:text-indigo-300 mb-4 group-hover:scale-110 transition-transform">
                       {feature.icon}
                     </div>
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4 group-hover:text-indigo-300 transition-colors">
+                    <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-4 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
                       {feature.title}
                     </h3>
-                    <p className="text-white/80 text-sm md:text-base mb-6 leading-relaxed">
+                    <p className="text-slate-600 dark:text-white/80 text-sm md:text-base mb-6 leading-relaxed">
                       {feature.description}
                     </p>
                     <button 
-                      className="px-6 py-2 bg-indigo-600/30 border border-indigo-500/50 rounded-full text-indigo-300 hover:bg-indigo-600/50 transition-all duration-300 hover:scale-105"
+                      className="px-6 py-2 bg-indigo-50 dark:bg-indigo-600/30 border border-indigo-200 dark:border-indigo-500/50 rounded-full text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-600/50 transition-all duration-300 hover:scale-105 font-medium"
                     >
                       {language === 'ar' ? 'استكشف' : 'Explore'}
                     </button>
-                  </div>
-                  
-                  {/* Hover Glow Effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/0 via-indigo-400/10 to-indigo-500/0"></div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-indigo-400/20 to-transparent"></div>
                   </div>
                 </motion.div>
               ))}
@@ -255,7 +248,7 @@ const EnglishLanguage = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 onClick={() => setActiveComponent(null)}
-                className="mb-6 px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-lg text-indigo-300 hover:bg-indigo-600/30 transition-colors"
+                className="mb-6 px-4 py-2 bg-indigo-50 dark:bg-indigo-600/20 border border-indigo-200 dark:border-indigo-500/30 rounded-lg text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 transition-colors"
               >
                 {dir === 'rtl' ? '←' : '←'} {currentLang.backToMain}
               </motion.button>

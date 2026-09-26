@@ -53,7 +53,7 @@ const Mathematics = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-purple-900/40 to-blue-950 bg-fixed" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={300} />
       </div>
@@ -66,10 +66,10 @@ const Mathematics = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-6xl font-bold text-glow-purple mb-4">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 dark:from-purple-400 dark:via-white dark:to-purple-300">
             عالم الرياضيات
           </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
             استكشف جمال وقوة الرياضيات من خلال أدوات تفاعلية ومساعد ذكي
           </p>
         </motion.div>
@@ -78,7 +78,7 @@ const Mathematics = () => {
           {cards.map((card, index) => (
             <motion.div
               key={index}
-              className="glass-card overflow-hidden relative cursor-pointer group transition-all duration-300 hover:-translate-y-1 border border-purple-500/20 hover:border-purple-400 hover:shadow-glow-purple"
+              className="overflow-hidden relative cursor-pointer group transition-all duration-300 hover:-translate-y-1 bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-purple-500/20 hover:border-purple-500 shadow-sm dark:shadow-none hover:shadow-md rounded-2xl"
               onClick={() => handleCardClick(card.path)}
               whileHover={{ scale: 1.02 }}
               initial={{ opacity: 0, y: 20 }}
@@ -86,13 +86,13 @@ const Mathematics = () => {
               transition={{ delay: index * 0.1, duration: 0.5 }}
             >
               <div className="p-6 flex flex-col items-center text-center h-full">
-                <div className="mb-4 p-3 rounded-full bg-purple-900/30 backdrop-blur-sm">
+                <div className="mb-4 p-3 rounded-full bg-purple-50 dark:bg-purple-900/30 backdrop-blur-sm">
                   {card.icon}
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{card.title}</h3>
-                <p className="text-sm text-white/70 mb-4">{card.description}</p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{card.title}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{card.description}</p>
                 <div className="mt-auto">
-                  <span className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-full">
+                  <span className="inline-block px-3 py-1 bg-purple-500/10 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-sm font-medium rounded-full">
                     استكشف
                   </span>
                 </div>

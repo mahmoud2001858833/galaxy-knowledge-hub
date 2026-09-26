@@ -333,7 +333,7 @@ const StudentProgress = () => {
     const progress = ((currentQuestion + 1) / questions.length) * 100;
 
     return (
-      <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-indigo-950 via-purple-900 to-black" dir="rtl">
+      <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
         <div className="fixed inset-0 z-0 pointer-events-none">
           <StarField starCount={200} />
         </div>
@@ -344,7 +344,7 @@ const StudentProgress = () => {
           <Button
             onClick={() => navigate('/falak-knowledge-ai')}
             variant="ghost"
-            className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 mb-4 w-fit"
+            className="text-purple-600 dark:text-indigo-400 hover:text-purple-700 dark:hover:text-indigo-300 hover:bg-purple-50 dark:hover:bg-indigo-900/30 mb-4 w-fit font-medium"
           >
             <ArrowRight className="w-4 h-4 ml-2" />
             العودة للمساعد الذكي
@@ -355,39 +355,39 @@ const StudentProgress = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-8"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-sm border border-purple-400/30 mb-4">
-              <Target className="w-10 h-10 text-purple-400" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-purple-500/10 dark:bg-gradient-to-r dark:from-purple-500/20 dark:to-indigo-500/20 backdrop-blur-sm border border-purple-400/30 mb-4 shadow-sm dark:shadow-none">
+              <Target className="w-10 h-10 text-purple-600 dark:text-purple-400" />
             </div>
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400 mb-2">
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-indigo-700 dark:from-purple-400 dark:to-indigo-400 mb-2">
               تقييم مستوى الطالب
             </h1>
-            <p className="text-white/80">السؤال {currentQuestion + 1} من {questions.length}</p>
+            <p className="text-slate-600 dark:text-white/80">السؤال {currentQuestion + 1} من {questions.length}</p>
           </motion.div>
 
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-white/60">التقدم</span>
-              <span className="text-sm text-white/80">{Math.round(progress)}%</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-white/60">التقدم</span>
+              <span className="text-sm font-semibold text-slate-700 dark:text-white/80">{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
 
-          <Card className="p-8 bg-black/20 backdrop-blur-sm border-purple-500/20">
+          <Card className="p-8 bg-white/95 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-purple-500/20 shadow-md dark:shadow-none">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="px-3 py-1 bg-purple-600/30 text-purple-200 rounded-full text-sm">
+                <span className="px-3 py-1 bg-purple-100 dark:bg-purple-600/30 text-purple-700 dark:text-purple-200 rounded-full text-sm font-medium">
                   {question.subject}
                 </span>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  question.level === 'easy' ? 'bg-green-600/30 text-green-200' :
-                  question.level === 'medium' ? 'bg-yellow-600/30 text-yellow-200' :
-                  'bg-red-600/30 text-red-200'
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                  question.level === 'easy' ? 'bg-emerald-100 text-emerald-700 dark:bg-green-600/30 dark:text-green-200' :
+                  question.level === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-yellow-600/30 dark:text-yellow-200' :
+                  'bg-rose-100 text-rose-700 dark:bg-red-600/30 dark:text-red-200'
                 }`}>
                   {question.level === 'easy' ? 'سهل' : 
                    question.level === 'medium' ? 'متوسط' : 'صعب'}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-6">{question.text}</h2>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{question.text}</h2>
             </div>
 
             <div className="grid gap-4">
@@ -395,11 +395,11 @@ const StudentProgress = () => {
                 <motion.button
                   key={index}
                   onClick={() => handleAnswer(index)}
-                  className="p-4 text-right bg-gray-800/50 hover:bg-purple-600/30 border border-gray-600/50 hover:border-purple-500/50 rounded-lg text-white transition-all duration-200"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className="p-4 text-right bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 text-slate-800 dark:bg-gray-800/50 dark:hover:bg-purple-600/30 dark:border-gray-600/50 dark:hover:border-purple-500/50 dark:text-white rounded-xl transition-all duration-200 font-medium shadow-sm dark:shadow-none"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                 >
-                  <span className="ml-3 text-purple-300">{String.fromCharCode(65 + index)})</span>
+                  <span className="ml-3 text-purple-600 dark:text-purple-300 font-bold">{String.fromCharCode(65 + index)})</span>
                   {option}
                 </motion.button>
               ))}
@@ -413,7 +413,7 @@ const StudentProgress = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-indigo-950 via-purple-900 to-black" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <StarField starCount={200} />
       </div>
@@ -424,7 +424,7 @@ const StudentProgress = () => {
         <Button
           onClick={() => navigate('/falak-knowledge-ai')}
           variant="ghost"
-          className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/30 mb-4 w-fit"
+          className="text-purple-600 dark:text-indigo-400 hover:text-purple-700 dark:hover:text-indigo-300 hover:bg-purple-50 dark:hover:bg-indigo-900/30 mb-4 w-fit font-medium"
         >
           <ArrowRight className="w-4 h-4 ml-2" />
           العودة للمساعد الذكي
@@ -435,29 +435,29 @@ const StudentProgress = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-sm border border-green-400/30 mb-4">
-            <Award className="w-10 h-10 text-green-400" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 dark:bg-gradient-to-r dark:from-green-500/20 dark:to-blue-500/20 backdrop-blur-sm border border-emerald-400/30 mb-4 shadow-sm dark:shadow-none">
+            <Award className="w-10 h-10 text-emerald-600 dark:text-green-400" />
           </div>
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400 mb-2">
+          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-green-400 dark:to-blue-400 mb-2">
             نتائج التقييم
           </h1>
-          <p className="text-white/80">تحليل شامل لمستواك الأكاديمي</p>
+          <p className="text-slate-600 dark:text-white/80">تحليل شامل لمستواك الأكاديمي</p>
         </motion.div>
 
         {analysis && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Overall Score */}
-            <Card className="lg:col-span-1 p-6 bg-gradient-to-br from-green-900/30 to-blue-900/30 border-green-500/30">
+            <Card className="lg:col-span-1 p-6 bg-white/95 dark:bg-gradient-to-br dark:from-green-900/30 dark:to-blue-900/30 border border-slate-200/80 dark:border-green-500/30 shadow-md dark:shadow-none">
               <div className="text-center">
-                <TrendingUp className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">الدرجة الإجمالية</h3>
-                <div className="text-5xl font-bold text-green-400 mb-4">
+                <TrendingUp className="w-12 h-12 text-emerald-600 dark:text-green-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">الدرجة الإجمالية</h3>
+                <div className="text-5xl font-bold text-emerald-600 dark:text-green-400 mb-4">
                   {analysis.overallScore}%
                 </div>
-                <div className={`px-4 py-2 rounded-full text-sm ${
-                  analysis.overallScore >= 80 ? 'bg-green-600/30 text-green-200' :
-                  analysis.overallScore >= 60 ? 'bg-yellow-600/30 text-yellow-200' :
-                  'bg-red-600/30 text-red-200'
+                <div className={`px-4 py-2 rounded-full text-sm font-semibold inline-block ${
+                  analysis.overallScore >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-green-600/30 dark:text-green-200' :
+                  analysis.overallScore >= 60 ? 'bg-amber-100 text-amber-700 dark:bg-yellow-600/30 dark:text-yellow-200' :
+                  'bg-rose-100 text-rose-700 dark:bg-red-600/30 dark:text-red-200'
                 }`}>
                   {analysis.overallScore >= 80 ? 'ممتاز' :
                    analysis.overallScore >= 60 ? 'جيد' : 'يحتاج تحسين'}
@@ -466,19 +466,19 @@ const StudentProgress = () => {
             </Card>
 
             {/* Subject Scores */}
-            <Card className="lg:col-span-2 p-6 bg-black/20 backdrop-blur-sm border-purple-500/20">
-              <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                <BookOpen className="w-5 h-5 ml-2" />
+            <Card className="lg:col-span-2 p-6 bg-white/95 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-purple-500/20 shadow-md dark:shadow-none">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+                <BookOpen className="w-5 h-5 ml-2 text-purple-600 dark:text-purple-400" />
                 الدرجات حسب المادة
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {Object.entries(analysis.subjectScores).map(([subject, score]) => (
-                  <div key={subject} className="p-4 bg-gray-800/30 rounded-lg">
+                  <div key={subject} className="p-4 bg-slate-50 dark:bg-gray-800/30 border border-slate-100 dark:border-transparent rounded-xl">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-white font-medium">{subject}</span>
+                      <span className="text-slate-800 dark:text-white font-medium">{subject}</span>
                       <span className={`font-bold ${
-                        score >= 75 ? 'text-green-400' :
-                        score >= 50 ? 'text-yellow-400' : 'text-red-400'
+                        score >= 75 ? 'text-emerald-600 dark:text-green-400' :
+                        score >= 50 ? 'text-amber-600 dark:text-yellow-400' : 'text-rose-600 dark:text-red-400'
                       }`}>
                         {score}%
                       </span>
@@ -486,8 +486,8 @@ const StudentProgress = () => {
                     <Progress 
                       value={score} 
                       className={`h-2 ${
-                        score >= 75 ? '[&>div]:bg-green-500' :
-                        score >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500'
+                        score >= 75 ? '[&>div]:bg-emerald-500 dark:[&>div]:bg-green-500' :
+                        score >= 50 ? '[&>div]:bg-amber-500 dark:[&>div]:bg-yellow-500' : '[&>div]:bg-rose-500 dark:[&>div]:bg-red-500'
                       }`}
                     />
                   </div>
@@ -497,15 +497,15 @@ const StudentProgress = () => {
 
             {/* Strengths */}
             {analysis.strengths.length > 0 && (
-              <Card className="p-6 bg-gradient-to-br from-green-900/30 to-emerald-900/30 border-green-500/30">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                  <CheckCircle className="w-5 h-5 ml-2 text-green-400" />
+              <Card className="p-6 bg-emerald-50/80 dark:bg-gradient-to-br dark:from-green-900/30 dark:to-emerald-900/30 border border-emerald-200 dark:border-green-500/30 shadow-sm dark:shadow-none">
+                <h3 className="text-xl font-bold text-emerald-900 dark:text-white mb-4 flex items-center">
+                  <CheckCircle className="w-5 h-5 ml-2 text-emerald-600 dark:text-green-400" />
                   نقاط القوة
                 </h3>
                 <ul className="space-y-2">
                   {analysis.strengths.map((strength, index) => (
-                    <li key={index} className="flex items-center text-green-200">
-                      <CheckCircle className="w-4 h-4 ml-2 text-green-400" />
+                    <li key={index} className="flex items-center text-emerald-800 dark:text-green-200 font-medium">
+                      <CheckCircle className="w-4 h-4 ml-2 text-emerald-600 dark:text-green-400" />
                       {strength}
                     </li>
                   ))}
@@ -515,15 +515,15 @@ const StudentProgress = () => {
 
             {/* Weaknesses */}
             {analysis.weaknesses.length > 0 && (
-              <Card className="p-6 bg-gradient-to-br from-red-900/30 to-orange-900/30 border-red-500/30">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                  <AlertCircle className="w-5 h-5 ml-2 text-red-400" />
+              <Card className="p-6 bg-rose-50/80 dark:bg-gradient-to-br dark:from-red-900/30 dark:to-orange-900/30 border border-rose-200 dark:border-red-500/30 shadow-sm dark:shadow-none">
+                <h3 className="text-xl font-bold text-rose-900 dark:text-white mb-4 flex items-center">
+                  <AlertCircle className="w-5 h-5 ml-2 text-rose-600 dark:text-red-400" />
                   نقاط تحتاج تحسين
                 </h3>
                 <ul className="space-y-2">
                   {analysis.weaknesses.map((weakness, index) => (
-                    <li key={index} className="flex items-center text-red-200">
-                      <AlertCircle className="w-4 h-4 ml-2 text-red-400" />
+                    <li key={index} className="flex items-center text-rose-800 dark:text-red-200 font-medium">
+                      <AlertCircle className="w-4 h-4 ml-2 text-rose-600 dark:text-red-400" />
                       {weakness}
                     </li>
                   ))}
@@ -532,14 +532,14 @@ const StudentProgress = () => {
             )}
 
             {/* Recommendations */}
-            <Card className="p-6 bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-blue-500/30">
-              <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                <Brain className="w-5 h-5 ml-2 text-blue-400" />
+            <Card className="p-6 bg-indigo-50/80 dark:bg-gradient-to-br dark:from-blue-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-blue-500/30 shadow-sm dark:shadow-none">
+              <h3 className="text-xl font-bold text-indigo-900 dark:text-white mb-4 flex items-center">
+                <Brain className="w-5 h-5 ml-2 text-indigo-600 dark:text-blue-400" />
                 توصيات للتحسين
               </h3>
               <ul className="space-y-3">
                 {analysis.recommendations.map((recommendation, index) => (
-                  <li key={index} className="text-blue-200 text-sm leading-relaxed">
+                  <li key={index} className="text-indigo-950 dark:text-blue-200 text-sm leading-relaxed font-medium">
                     • {recommendation}
                   </li>
                 ))}

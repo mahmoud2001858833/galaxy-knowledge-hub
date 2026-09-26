@@ -177,7 +177,7 @@ const PomodoroTimer = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* مؤقت بومودورو */}
-        <Card className={`bg-white/5 backdrop-blur-sm border-white/10 transition-all duration-300 ${isAlarmPlaying ? 'animate-pulse ring-4 ring-red-500' : ''}`}>
+        <Card className={`bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-md dark:shadow-none transition-all duration-300 ${isAlarmPlaying ? 'animate-pulse ring-4 ring-red-500' : ''}`}>
           <CardContent className="pt-6 flex flex-col items-center justify-center space-y-6">
             {/* حالة المؤقت */}
             <motion.div 
@@ -185,10 +185,10 @@ const PomodoroTimer = () => {
               animate={isAlarmPlaying ? { scale: [1, 1.1, 1] } : {}}
               transition={{ repeat: isAlarmPlaying ? Infinity : 0, duration: 0.5 }}
             >
-              <span className={`inline-flex items-center gap-2 px-4 py-1 rounded-full text-sm font-medium
-                ${phase === 'work' ? 'bg-green-900/50 text-green-300' : 
-                 phase === 'shortBreak' ? 'bg-blue-900/50 text-blue-300' : 
-                 'bg-purple-900/50 text-purple-300'}`}
+              <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold
+                ${phase === 'work' ? 'bg-emerald-100 text-emerald-800 dark:bg-green-900/50 dark:text-green-300' : 
+                 phase === 'shortBreak' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' : 
+                 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'}`}
               >
                 {isAlarmPlaying && <Volume2 className="h-4 w-4 animate-bounce" />}
                 {getPhaseLabel(phase)} - دورة {cycle}/{settings.cycles}
@@ -213,11 +213,11 @@ const PomodoroTimer = () => {
                   }}
                   className={`w-56 h-56 rounded-full flex items-center justify-center bg-gradient-to-br ${getPhaseColor()} p-1 shadow-2xl ${getPhaseGlow()}`}
                 >
-                  <div className="w-full h-full rounded-full bg-green-950 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-slate-50 dark:bg-green-950 flex items-center justify-center">
                     <motion.div 
-                      className="text-5xl font-bold"
+                      className="text-5xl font-bold text-slate-900 dark:text-white"
                       animate={isAlarmPlaying ? { 
-                        color: ['#ffffff', '#ef4444', '#ffffff'],
+                        color: ['#1e293b', '#ef4444', '#1e293b'],
                         scale: [1, 1.1, 1]
                       } : {}}
                       transition={{ repeat: isAlarmPlaying ? Infinity : 0, duration: 0.5 }}
@@ -231,9 +231,9 @@ const PomodoroTimer = () => {
               <Progress 
                 value={getProgressPercentage()} 
                 className={`w-56 h-3 absolute -bottom-2 left-0 right-0 mx-auto rounded-full
-                  ${phase === 'work' ? 'bg-green-900/50' : 
-                   phase === 'shortBreak' ? 'bg-blue-900/50' : 
-                   'bg-purple-900/50'}`}
+                  ${phase === 'work' ? 'bg-emerald-100 dark:bg-green-900/50' : 
+                   phase === 'shortBreak' ? 'bg-blue-100 dark:bg-blue-900/50' : 
+                   'bg-purple-100 dark:bg-purple-900/50'}`}
               />
             </div>
             
@@ -243,7 +243,7 @@ const PomodoroTimer = () => {
                 variant="ghost"
                 size="icon"
                 onClick={resetTimer}
-                className="text-white/70 hover:text-white hover:bg-white/10 h-12 w-12"
+                className="text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 h-12 w-12"
               >
                 <RotateCcw className="h-6 w-6" />
               </Button>
@@ -255,8 +255,8 @@ const PomodoroTimer = () => {
                   onClick={toggleTimer}
                   className={`w-16 h-16 rounded-full transition-all duration-300
                     ${isActive 
-                      ? 'bg-red-600/20 hover:bg-red-600/30 text-red-300 border-red-500/50' 
-                      : 'bg-green-600/20 hover:bg-green-600/30 text-green-300 border-green-500/50'}`}
+                      ? 'bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-300 border-red-500/50 shadow-sm' 
+                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-green-300 border-emerald-500/50 shadow-sm'}`}
                 >
                   {isActive ? (
                     <PauseCircle className="h-10 w-10" />
@@ -270,7 +270,7 @@ const PomodoroTimer = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowSettings(!showSettings)}
-                className={`text-white/70 hover:text-white hover:bg-white/10 h-12 w-12 ${showSettings ? 'bg-white/10' : ''}`}
+                className={`text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 h-12 w-12 ${showSettings ? 'bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white' : ''}`}
               >
                 <Settings className="h-6 w-6" />
               </Button>
@@ -281,28 +281,28 @@ const PomodoroTimer = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 rounded-lg px-4 py-2"
+                className="bg-slate-100 dark:bg-white/5 rounded-xl px-5 py-3 border border-slate-200/60 dark:border-transparent shadow-sm dark:shadow-none"
               >
-                <div className="text-2xl font-bold text-green-300">{completedSessions}</div>
-                <div className="text-sm text-white/70">جلسات مكتملة</div>
+                <div className="text-2xl font-bold text-emerald-600 dark:text-green-300">{completedSessions}</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-white/70">جلسات مكتملة</div>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/5 rounded-lg px-4 py-2"
+                className="bg-slate-100 dark:bg-white/5 rounded-xl px-5 py-3 border border-slate-200/60 dark:border-transparent shadow-sm dark:shadow-none"
               >
-                <div className="text-2xl font-bold text-green-300">
+                <div className="text-2xl font-bold text-emerald-600 dark:text-green-300">
                   {Math.round(completedSessions * settings.work / 60 * 10) / 10}
                 </div>
-                <div className="text-sm text-white/70">ساعات العمل</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-white/70">ساعات العمل</div>
               </motion.div>
             </div>
           </CardContent>
         </Card>
         
         {/* الإعدادات أو المعلومات */}
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+        <Card className="bg-white/95 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-md dark:shadow-none">
           <CardContent className="pt-6">
             <AnimatePresence mode="wait">
               {showSettings ? (
@@ -313,8 +313,8 @@ const PomodoroTimer = () => {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
+                    <Settings className="h-5 w-5 text-emerald-600 dark:text-green-400" />
                     إعدادات المؤقت
                   </h3>
                   

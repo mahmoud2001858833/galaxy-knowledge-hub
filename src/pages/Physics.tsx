@@ -46,7 +46,7 @@ const Physics = () => {
   
   if (!showMainContent) {
     return (
-      <div className="min-h-screen flex flex-col text-right bg-space-cosmic-black" dir="rtl">
+      <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
         <SEO 
           title="منصة الفيزياء"
           description="استكشف عالم الفيزياء مع منصة ذروة العلم التفاعلية - حسابات فيزيائية، مساعد ذكي، علماء الفيزياء، وأدوات تعليمية متطورة للمنهاج الأردني"
@@ -62,7 +62,7 @@ const Physics = () => {
             transition={{ duration: 1 }}
             className="text-center mb-12 max-w-4xl"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 text-glow-purple">
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 dark:from-purple-400 dark:via-white dark:to-purple-300">
               عالم الفيزياء
             </h1>
             
@@ -155,7 +155,7 @@ const Physics = () => {
   }
   
   return (
-    <div className="min-h-screen flex flex-col text-right" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       <SEO 
         title="منصة الفيزياء"
         description="استكشف عالم الفيزياء مع منصة ذروة العلم التفاعلية - حسابات فيزيائية، مساعد ذكي، علماء الفيزياء، وأدوات تعليمية متطورة للمنهاج الأردني"
@@ -167,7 +167,7 @@ const Physics = () => {
       {physicsSymbols.slice(0, 3).map((symbol, index) => (
         <div 
           key={index}
-          className={`absolute ${symbol.size} text-subject-physics-primary/30 math-symbol pointer-events-none`}
+          className={`absolute ${symbol.size} text-purple-600/20 dark:text-subject-physics-primary/30 math-symbol pointer-events-none`}
           style={{ 
             top: symbol.top, 
             left: symbol.left, 
@@ -186,10 +186,10 @@ const Physics = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-glow-purple">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 dark:from-purple-400 dark:via-white dark:to-purple-300">
             منصة الفيزياء
           </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
             استكشف عالم الفيزياء من خلال الحسابات التفاعلية، مساعد ذكي، وموسوعة علمية
           </p>
         </motion.div>
@@ -203,13 +203,13 @@ const Physics = () => {
             className="col-span-1"
             onClick={() => setActiveComponent('calculations')}
           >
-            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'calculations' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
+            <Card className={`h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-purple-500/30 hover:border-purple-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300 cursor-pointer ${activeComponent === 'calculations' ? 'ring-2 ring-purple-500 border-purple-500' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Calculator className="h-16 w-16 text-subject-physics-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-purple">الحسابات الفيزيائية</h3>
-                <p className="text-white/70 mb-4">احسب جميع المعادلات الفيزيائية مع شرح تفصيلي</p>
+                <Calculator className="h-16 w-16 text-purple-600 dark:text-subject-physics-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">الحسابات الفيزيائية</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">احسب جميع المعادلات الفيزيائية مع شرح تفصيلي</p>
                 <Button 
-                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+                  className="bg-purple-600 hover:bg-purple-700 dark:bg-subject-physics-primary dark:hover:bg-subject-physics-secondary text-white shadow-sm"
                 >
                   ابدأ الحسابات
                 </Button>
@@ -225,13 +225,13 @@ const Physics = () => {
             className="col-span-1"
             onClick={() => setActiveComponent('assistant')}
           >
-            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'assistant' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
+            <Card className={`h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-purple-500/30 hover:border-purple-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300 cursor-pointer ${activeComponent === 'assistant' ? 'ring-2 ring-purple-500 border-purple-500' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <FlaskConical className="h-16 w-16 text-subject-physics-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-purple">المساعد الذكي</h3>
-                <p className="text-white/70 mb-4">اسأل المساعد الذكي أي سؤال عن الفيزياء</p>
+                <FlaskConical className="h-16 w-16 text-purple-600 dark:text-subject-physics-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">المساعد الذكي</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">اسأل المساعد الذكي أي سؤال عن الفيزياء</p>
                 <Button 
-                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+                  className="bg-purple-600 hover:bg-purple-700 dark:bg-subject-physics-primary dark:hover:bg-subject-physics-secondary text-white shadow-sm"
                 >
                   تحدث مع المساعد
                 </Button>
@@ -247,13 +247,13 @@ const Physics = () => {
             className="col-span-1"
             onClick={() => setActiveComponent('scientists')}
           >
-            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'scientists' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
+            <Card className={`h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-purple-500/30 hover:border-purple-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300 cursor-pointer ${activeComponent === 'scientists' ? 'ring-2 ring-purple-500 border-purple-500' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <Microscope className="h-16 w-16 text-subject-physics-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-purple">علماء الفيزياء</h3>
-                <p className="text-white/70 mb-4">تعرف على أبرز علماء الفيزياء عبر التاريخ</p>
+                <Microscope className="h-16 w-16 text-purple-600 dark:text-subject-physics-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">علماء الفيزياء</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">تعرف على أبرز علماء الفيزياء عبر التاريخ</p>
                 <Button 
-                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+                  className="bg-purple-600 hover:bg-purple-700 dark:bg-subject-physics-primary dark:hover:bg-subject-physics-secondary text-white shadow-sm"
                 >
                   استكشف العلماء
                 </Button>
@@ -269,13 +269,13 @@ const Physics = () => {
             className="col-span-1"
             onClick={() => setActiveComponent('questionbank')}
           >
-            <Card className={`h-full glass-card border-subject-physics-primary/30 hover:shadow-glow-purple transition-all duration-300 cursor-pointer ${activeComponent === 'questionbank' ? 'border-subject-physics-primary shadow-glow-sm shadow-subject-physics-primary/30' : ''}`}>
+            <Card className={`h-full bg-white/95 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-purple-500/30 hover:border-purple-500 shadow-sm dark:shadow-none hover:shadow-md transition-all duration-300 cursor-pointer ${activeComponent === 'questionbank' ? 'ring-2 ring-purple-500 border-purple-500' : ''}`}>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-                <FileQuestion className="h-16 w-16 text-subject-physics-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-2 text-glow-purple">بنك الأسئلة</h3>
-                <p className="text-white/70 mb-4">أنشئ أسئلة مخصصة مع إجاباتها النموذجية</p>
+                <FileQuestion className="h-16 w-16 text-purple-600 dark:text-subject-physics-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">بنك الأسئلة</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">أنشئ أسئلة مخصصة مع إجاباتها النموذجية</p>
                 <Button 
-                  className="bg-subject-physics-primary hover:bg-subject-physics-secondary"
+                  className="bg-purple-600 hover:bg-purple-700 dark:bg-subject-physics-primary dark:hover:bg-subject-physics-secondary text-white shadow-sm"
                 >
                   أنشئ الأسئلة
                 </Button>
