@@ -18,6 +18,7 @@ import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
 import WelcomeGuide from '@/components/WelcomeGuide';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LiveSupportCornerWidget } from '@/components/support/LiveSupportCornerWidget';
+import SafeBoundary from '@/components/common/SafeBoundary';
 import Index from './pages/Index';
 
 // Removed: UploadTextbooks, UploadJordanianContent, ManageJordanianContent
@@ -327,11 +328,11 @@ const RootLayout = () => {
     <AutoReadWrapper>
       <ScrollToTop />
       <Outlet />
-      {!isGJUMode && <WelcomeGuide />}
-      {!isGJUMode && <PlatformGuideAssistant />}
-      {!isGJUMode && <LiveSupportCornerWidget />}
-      {!isGJUMode && <AccessibilityPanel />}
-      {isGJUMode && !isDamijRoute && <GJUFloatingNav />}
+      {!isGJUMode && <SafeBoundary name="WelcomeGuide"><WelcomeGuide /></SafeBoundary>}
+      {!isGJUMode && <SafeBoundary name="PlatformGuideAssistant"><PlatformGuideAssistant /></SafeBoundary>}
+      {!isGJUMode && <SafeBoundary name="LiveSupportCornerWidget"><LiveSupportCornerWidget /></SafeBoundary>}
+      {!isGJUMode && <SafeBoundary name="AccessibilityPanel"><AccessibilityPanel /></SafeBoundary>}
+      {isGJUMode && !isDamijRoute && <SafeBoundary name="GJUFloatingNav"><GJUFloatingNav /></SafeBoundary>}
     </AutoReadWrapper>
   );
 };

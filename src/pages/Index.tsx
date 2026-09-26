@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { SEO } from '@/components/SEO';
+import SafeBoundary from '@/components/common/SafeBoundary';
 
 // Executive Product Tour 5-Section Architecture
 import ProductTourHero from '@/components/home/ProductTourHero';
@@ -13,7 +14,13 @@ import StrategicRoadmapSection from '@/components/home/StrategicRoadmapSection';
 import EducationalResources from '@/components/EducationalResources';
 
 const Index = () => {
-  const { dir } = useLanguage();
+  let dir = 'rtl';
+  try {
+    const lang = useLanguage();
+    if (lang && lang.dir) dir = lang.dir;
+  } catch {
+    dir = 'rtl';
+  }
   
   return (
     <div 
@@ -27,31 +34,47 @@ const Index = () => {
         canonicalUrl="https://yoursite.lovable.app/"
       />
 
-      <Navbar />
+      <SafeBoundary name="Navbar">
+        <Navbar />
+      </SafeBoundary>
       
       <main className="flex-1 relative z-10 space-y-4">
         {/* Section 1: Hero & Vision (المقدمة والترحيب المؤسسي) */}
-        <ProductTourHero />
+        <SafeBoundary name="ProductTourHero">
+          <ProductTourHero />
+        </SafeBoundary>
         
         {/* Section 2: Mission & Core Value (هدف المنصة ورسالتها الأكاديمية) */}
-        <PlatformMissionSection />
+        <SafeBoundary name="PlatformMissionSection">
+          <PlatformMissionSection />
+        </SafeBoundary>
         
         {/* Section 3: Educational Ecosystem & Platforms (منظومة المنصات التعليمية - Bento Grid) */}
-        <EcosystemBentoGrid />
+        <SafeBoundary name="EcosystemBentoGrid">
+          <EcosystemBentoGrid />
+        </SafeBoundary>
         
         {/* Section 4: Interactive Demos & Capabilities (المختبرات والتجارب العملية الحية) */}
-        <InteractiveCapabilitiesDemo />
+        <SafeBoundary name="InteractiveCapabilitiesDemo">
+          <InteractiveCapabilitiesDemo />
+        </SafeBoundary>
         
         {/* Section 5: Future Strategic Initiatives (المشاريع المستقبلية - مبادرة "دمج" الاستراتيجية) */}
-        <StrategicRoadmapSection />
+        <SafeBoundary name="StrategicRoadmapSection">
+          <StrategicRoadmapSection />
+        </SafeBoundary>
 
         {/* Auxiliary Learning Tools & Resources */}
-        <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-8">
-          <EducationalResources />
-        </div>
+        <SafeBoundary name="EducationalResources">
+          <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-8">
+            <EducationalResources />
+          </div>
+        </SafeBoundary>
       </main>
       
-      <Footer />
+      <SafeBoundary name="Footer">
+        <Footer />
+      </SafeBoundary>
     </div>
   );
 };
