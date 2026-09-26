@@ -1,609 +1,600 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Cylinder, Sphere, Ring, Float, Tube } from '@react-three/drei';
+import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Battery, Zap, Droplet, Flame, RotateCcw, Lightbulb, Activity, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Play, Pause, RotateCcw, Zap, Battery, Settings, Lightbulb, HelpCircle } from 'lucide-react';
-import StarField from '@/components/StarField';
-import SimulationCard from '@/components/simulations/SimulationCard';
-import SimulationControls from '@/components/simulations/SimulationControls';
+import { Badge } from '@/components/ui/badge';
+import { CyberLabHUD } from '@/components/simulations/CyberLabHUD';
+import { LiveAILabCoPilot } from '@/components/simulations/LiveAILabCoPilot';
+import { CinematicCameraController, CameraPreset } from '@/components/simulations/CinematicCameraController';
+import { LabChallengeEngine } from '@/components/simulations/LabChallengeEngine';
 import InfoSection from '@/components/simulations/InfoSection';
 import QuizSection from '@/components/simulations/QuizSection';
+import { labSound } from '@/utils/labAudio';
 
+// ====================================================
+// 3D DANIELL CELL (GALVANIC)
+// ====================================================
+const GalvanicCell3D: React.FC<{
+  voltage: number;
+  isPlaying: boolean;
+}> = ({ voltage, isPlaying }) => {
+  const electronStreamRef = useRef<THREE.Group>(null);
+  const ionsGroupRef = useRef<THREE.Group>(null);
+
+  useFrame((state, delta) => {
+    if (electronStreamRef.current && isPlaying) {
+      electronStreamRef.current.children.forEach((child, i) => {
+        const t = (state.clock.elapsedTime * 1.5 + i * 0.15) % 1;
+        // Move from Zinc (left: -2) to Copper (right: 2) along arch wire
+        const x = -2.0 + t * 4.0;
+        const y = 2.4 + Math.sin(t * Math.PI) * 0.8;
+        child.position.set(x, y, 0);
+      });
+    }
+
+    if (ionsGroupRef.current && isPlaying) {
+      ionsGroupRef.current.children.forEach((child, i) => {
+        const t = (state.clock.elapsedTime * 0.8 + i * 0.18) % 1;
+        // Ions in salt bridge arc
+        const x = -1.3 + t * 2.6;
+        const y = 1.3 + Math.sin(t * Math.PI) * 0.7;
+        child.position.set(x, y, 0);
+      });
+    }
+  });
+
+  return (
+    <group position={[0, -0.6, 0]}>
+      {/* 1. Left Beaker: Zinc Half-Cell (Zn in ZnSO4) */}
+      <group position={[-2.0, 0, 0]}>
+        {/* Glass beaker */}
+        <Cylinder args={[1.1, 1.05, 2.5, 32, 1, true]} position={[0, 1.25, 0]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.92} opacity={0.3} transparent roughness={0.05} />
+        </Cylinder>
+        {/* Colorless / light ZnSO4 solution */}
+        <Cylinder args={[1.04, 1.0, 1.8, 32]} position={[0, 0.9, 0]}>
+          <meshStandardMaterial color="#93c5fd" emissive="#60a5fa" emissiveIntensity={0.2} transparent opacity={0.55} roughness={0.1} />
+        </Cylinder>
+        {/* Zinc Electrode (Grey Metal Strip Anode) */}
+        <mesh position={[0, 1.5, 0]}>
+          <boxGeometry args={[0.35, 2.4, 0.08]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.3} />
+        </mesh>
+      </group>
+
+      {/* 2. Right Beaker: Copper Half-Cell (Cu in CuSO4) */}
+      <group position={[2.0, 0, 0]}>
+        {/* Glass beaker */}
+        <Cylinder args={[1.1, 1.05, 2.5, 32, 1, true]} position={[0, 1.25, 0]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.92} opacity={0.3} transparent roughness={0.05} />
+        </Cylinder>
+        {/* Deep blue CuSO4 solution */}
+        <Cylinder args={[1.04, 1.0, 1.8, 32]} position={[0, 0.9, 0]}>
+          <meshStandardMaterial color="#0284c7" emissive="#0369a1" emissiveIntensity={0.5} transparent opacity={0.8} roughness={0.1} />
+        </Cylinder>
+        {/* Copper Electrode (Bronze/Copper Strip Cathode) */}
+        <mesh position={[0, 1.5, 0]}>
+          <boxGeometry args={[0.35, 2.4, 0.08]} />
+          <meshStandardMaterial color="#ea580c" metalness={0.7} roughness={0.25} />
+        </mesh>
+      </group>
+
+      {/* 3. Inverted U-Tube Salt Bridge (الجسر الملحي) */}
+      <group position={[0, 0.9, 0]}>
+        {/* Left arm */}
+        <Cylinder args={[0.18, 0.18, 1.2, 16]} position={[-1.3, 0.2, 0]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={0.4} transparent />
+        </Cylinder>
+        {/* Right arm */}
+        <Cylinder args={[0.18, 0.18, 1.2, 16]} position={[1.3, 0.2, 0]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={0.4} transparent />
+        </Cylinder>
+        {/* Horizontal top bridge */}
+        <Cylinder args={[0.18, 0.18, 2.6, 16]} position={[0, 0.8, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={0.4} transparent />
+        </Cylinder>
+        {/* Agar gel electrolyte inside bridge */}
+        <Cylinder args={[0.14, 0.14, 2.5, 16]} position={[0, 0.8, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <meshStandardMaterial color="#fef08a" emissive="#eab308" emissiveIntensity={0.4} transparent opacity={0.6} />
+        </Cylinder>
+
+        {/* Migrating Ions inside salt bridge */}
+        <group ref={ionsGroupRef}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Sphere key={i} args={[0.07, 12, 12]}>
+              <meshStandardMaterial
+                color={i % 2 === 0 ? "#f43f5e" : "#38bdf8"}
+                emissive={i % 2 === 0 ? "#e11d48" : "#0284c7"}
+                emissiveIntensity={0.8}
+              />
+            </Sphere>
+          ))}
+        </group>
+      </group>
+
+      {/* 4. External Electrical Circuit with Digital Voltmeter & Light Bulb */}
+      <group position={[0, 3.2, 0]}>
+        {/* Voltmeter Box */}
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[1.4, 0.9, 0.4]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.3} metalness={0.6} />
+        </mesh>
+        {/* Voltmeter Screen */}
+        <mesh position={[0, 0.05, 0.21]}>
+          <planeGeometry args={[1.1, 0.55]} />
+          <meshStandardMaterial color="#000000" emissive="#059669" emissiveIntensity={0.3} />
+        </mesh>
+        {/* Voltmeter Value Display Glow */}
+        <pointLight color="#10b981" intensity={0.8} distance={1.5} position={[0, 0.1, 0.4]} />
+
+        {/* External connecting wires */}
+        <mesh position={[-1.0, -0.4, 0]} rotation={[0, 0, -0.4]}>
+          <cylinderGeometry args={[0.04, 0.04, 2.2, 12]} />
+          <meshStandardMaterial color="#334155" metalness={0.5} />
+        </mesh>
+        <mesh position={[1.0, -0.4, 0]} rotation={[0, 0, 0.4]}>
+          <cylinderGeometry args={[0.04, 0.04, 2.2, 12]} />
+          <meshStandardMaterial color="#334155" metalness={0.5} />
+        </mesh>
+
+        {/* Flowing Electrons Stream along wire */}
+        <group ref={electronStreamRef}>
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <Sphere key={i} args={[0.05, 10, 10]}>
+              <meshBasicMaterial color="#38bdf8" />
+            </Sphere>
+          ))}
+        </group>
+      </group>
+    </group>
+  );
+};
+
+// ====================================================
+// 3D WATER ELECTROLYSIS APPARATUS (التحليل الكهربائي)
+// ====================================================
+const ElectrolysisCell3D: React.FC<{
+  voltage: number;
+  isPlaying: boolean;
+}> = ({ voltage, isPlaying }) => {
+  const h2BubblesRef = useRef<THREE.Group>(null);
+  const o2BubblesRef = useRef<THREE.Group>(null);
+
+  useFrame((state, delta) => {
+    if (h2BubblesRef.current && isPlaying) {
+      h2BubblesRef.current.children.forEach((b, i) => {
+        const speed = 1.2 * (voltage / 1.5);
+        const y = 0.4 + ((state.clock.elapsedTime * speed + i * 0.25) % 2.2);
+        b.position.y = y;
+      });
+    }
+
+    if (o2BubblesRef.current && isPlaying) {
+      o2BubblesRef.current.children.forEach((b, i) => {
+        const speed = 0.7 * (voltage / 1.5);
+        const y = 0.4 + ((state.clock.elapsedTime * speed + i * 0.4) % 2.2);
+        b.position.y = y;
+      });
+    }
+  });
+
+  return (
+    <group position={[0, -0.5, 0]}>
+      {/* Glass Tank */}
+      <Cylinder args={[2.0, 1.9, 2.6, 32, 1, true]} position={[0, 1.3, 0]}>
+        <meshPhysicalMaterial color="#ffffff" transmission={0.92} opacity={0.35} transparent roughness={0.05} />
+      </Cylinder>
+      {/* Water electrolyte */}
+      <Cylinder args={[1.9, 1.85, 2.0, 32]} position={[0, 1.0, 0]}>
+        <meshStandardMaterial color="#38bdf8" emissive="#0284c7" emissiveIntensity={0.25} transparent opacity={0.65} roughness={0.1} />
+      </Cylinder>
+
+      {/* Left Cathode: Inverted Tube for H2 (Double volume) */}
+      <group position={[-0.9, 1.6, 0]}>
+        <Cylinder args={[0.35, 0.35, 2.8, 20, 1, true]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={0.4} transparent />
+        </Cylinder>
+        {/* Platinum electrode */}
+        <Cylinder args={[0.06, 0.06, 1.8, 12]} position={[0, -0.5, 0]}>
+          <meshStandardMaterial color="#e2e8f0" metalness={0.9} roughness={0.1} />
+        </Cylinder>
+        {/* Rising Hydrogen bubbles (2x volume) */}
+        <group ref={h2BubblesRef}>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <Sphere key={i} args={[0.05, 8, 8]} position={[Math.sin(i * 1.5) * 0.12, 0, Math.cos(i * 1.5) * 0.12]}>
+              <meshStandardMaterial color="#ffffff" transparent opacity={0.8} />
+            </Sphere>
+          ))}
+        </group>
+      </group>
+
+      {/* Right Anode: Inverted Tube for O2 (1x volume) */}
+      <group position={[0.9, 1.6, 0]}>
+        <Cylinder args={[0.35, 0.35, 2.8, 20, 1, true]}>
+          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={0.4} transparent />
+        </Cylinder>
+        {/* Platinum electrode */}
+        <Cylinder args={[0.06, 0.06, 1.8, 12]} position={[0, -0.5, 0]}>
+          <meshStandardMaterial color="#e2e8f0" metalness={0.9} roughness={0.1} />
+        </Cylinder>
+        {/* Rising Oxygen bubbles (1x volume) */}
+        <group ref={o2BubblesRef}>
+          {[0, 1, 2, 3].map((i) => (
+            <Sphere key={i} args={[0.06, 8, 8]} position={[Math.sin(i * 1.8) * 0.1, 0, Math.cos(i * 1.8) * 0.1]}>
+              <meshStandardMaterial color="#ffffff" transparent opacity={0.8} />
+            </Sphere>
+          ))}
+        </group>
+      </group>
+
+      {/* DC Power Supply at top */}
+      <group position={[0, 3.4, 0]}>
+        <mesh>
+          <boxGeometry args={[1.5, 0.8, 0.5]} />
+          <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <pointLight color="#f59e0b" intensity={0.9} distance={2} />
+      </group>
+    </group>
+  );
+};
+
+// ====================================================
+// 3D HYDROGEN FUEL CELL (خلية وقود الهيدروجين)
+// ====================================================
+const FuelCell3D: React.FC<{
+  isPlaying: boolean;
+}> = ({ isPlaying }) => {
+  const membraneRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (membraneRef.current) {
+      const pulse = 0.8 + Math.sin(state.clock.elapsedTime * 4) * 0.2;
+      (membraneRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse;
+    }
+  });
+
+  return (
+    <group position={[0, 0.2, 0]}>
+      {/* Fuel Cell Sandwich Stack */}
+      {/* 1. Anode Gas Channel (H2 in) */}
+      <mesh position={[-1.2, 0, 0]}>
+        <boxGeometry args={[0.6, 2.8, 2.8]} />
+        <meshStandardMaterial color="#0284c7" metalness={0.5} roughness={0.4} transparent opacity={0.8} />
+      </mesh>
+
+      {/* 2. Proton Exchange Membrane (PEM) in the middle */}
+      <mesh ref={membraneRef} position={[0, 0, 0]}>
+        <boxGeometry args={[0.15, 3.0, 3.0]} />
+        <meshStandardMaterial color="#10b981" emissive="#059669" emissiveIntensity={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* 3. Cathode Gas Channel (O2 in & H2O out) */}
+      <mesh position={[1.2, 0, 0]}>
+        <boxGeometry args={[0.6, 2.8, 2.8]} />
+        <meshStandardMaterial color="#ef4444" metalness={0.5} roughness={0.4} transparent opacity={0.8} />
+      </mesh>
+
+      {/* Clean Exhaust Water Drops (H2O) */}
+      {isPlaying && (
+        <Float speed={2} rotationIntensity={0.1} floatIntensity={0.5}>
+          <Sphere args={[0.14, 16, 16]} position={[1.8, -1.2, 0]}>
+            <meshStandardMaterial color="#38bdf8" roughness={0.1} transparent opacity={0.9} />
+          </Sphere>
+        </Float>
+      )}
+
+      {/* Electric Power Bulb lit above */}
+      <group position={[0, 2.4, 0]}>
+        <Sphere args={[0.4, 24, 24]}>
+          <meshStandardMaterial color="#fef08a" emissive="#eab308" emissiveIntensity={isPlaying ? 1.2 : 0.2} />
+        </Sphere>
+        <pointLight color="#f59e0b" intensity={isPlaying ? 1.5 : 0.1} distance={4} />
+      </group>
+    </group>
+  );
+};
+
+// ====================================================
+// MAIN ELECTROCHEMISTRY SIMULATION PAGE
+// ====================================================
 const ElectrochemistrySimulation = () => {
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [simulationType, setSimulationType] = useState<'galvanic' | 'electrolysis' | 'corrosion' | 'fuel'>('galvanic');
-  const [voltage, setVoltage] = useState(1.1);
-  const [time, setTime] = useState(0);
+  const [simulationType, setSimulationType] = useState<'galvanic' | 'electrolysis' | 'fuel'>('galvanic');
+  const [voltage, setVoltage] = useState<number>(1.1);
+  const [currentMilliAmps, setCurrentMilliAmps] = useState<number>(45);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('overview');
 
-  const quizQuestions = [
+  // Physical calculations
+  const faradayConstant = 96485; // C/mol
+  const gibbsFreeEnergy = -2 * faradayConstant * (voltage / 1000); // kJ/mol roughly
+
+  const hudMetrics = [
     {
-      question: 'في الخلية الجلفانية، أين يحدث الأكسدة؟',
-      options: ['الكاثود', 'الأنود', 'الجسر الملحي', 'المحلول'],
-      correctIndex: 1,
-      explanation: 'الأكسدة تحدث عند الأنود (القطب السالب) حيث تفقد الذرات إلكترونات'
+      id: 'voltage',
+      label: 'القوة الدافعة الكهربائية (E°)',
+      value: voltage.toFixed(2),
+      unit: 'V',
+      color: 'text-amber-400',
+      progressPercent: (voltage / 2.5) * 100,
+      trend: 'stable' as const
     },
     {
-      question: 'ما هو ناتج التحليل الكهربائي للماء؟',
-      options: ['أكسجين فقط', 'هيدروجين فقط', 'أكسجين وهيدروجين', 'بخار ماء'],
-      correctIndex: 2,
-      explanation: 'التحليل الكهربائي للماء ينتج غاز الهيدروجين عند الكاثود والأكسجين عند الأنود'
+      id: 'current',
+      label: 'شدة التيار الكهربائي',
+      value: isPlaying ? currentMilliAmps : 0,
+      unit: 'mA',
+      color: 'text-cyan-400',
+      progressPercent: (currentMilliAmps / 100) * 100,
+      trend: isPlaying ? 'up' as const : 'down' as const
     },
     {
-      question: 'ما هي المادة الناتجة من صدأ الحديد؟',
-      options: ['Fe₂O₃', 'FeO', 'Fe₃O₄', 'Fe(OH)₂'],
-      correctIndex: 0,
-      explanation: 'الصدأ هو أكسيد الحديد الثلاثي Fe₂O₃ المائي (الصدأ الأحمر)'
+      id: 'gibbs',
+      label: 'طاقة غيبس الحرة (ΔG°)',
+      value: (gibbsFreeEnergy).toFixed(1),
+      unit: 'kJ',
+      color: gibbsFreeEnergy < 0 ? 'text-emerald-400' : 'text-rose-400',
+      progressPercent: 80,
+      trend: 'stable' as const
+    },
+    {
+      id: 'reaction',
+      label: 'تلقائية التفاعل',
+      value: simulationType === 'galvanic' ? 'تلقائي (Spontaneous)' : simulationType === 'electrolysis' ? 'غير تلقائي (Electrolytic)' : 'وقود نظيف (Fuel)',
+      unit: '',
+      color: simulationType === 'galvanic' ? 'text-emerald-400' : 'text-purple-400',
+      progressPercent: 100,
+      trend: 'stable' as const
     }
   ];
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationId: number;
-
-    const animate = () => {
-      // Enhanced background
-      const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      bgGradient.addColorStop(0, '#0a1628');
-      bgGradient.addColorStop(1, '#1a2a4a');
-      ctx.fillStyle = bgGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      if (simulationType === 'galvanic') {
-        drawGalvanicCell(ctx, canvas);
-      } else if (simulationType === 'electrolysis') {
-        drawElectrolysis(ctx, canvas);
-      } else if (simulationType === 'corrosion') {
-        drawCorrosion(ctx, canvas);
-      } else if (simulationType === 'fuel') {
-        drawFuelCell(ctx, canvas);
-      }
-
-      if (isPlaying) setTime(prev => prev + 0.02);
-      animationId = requestAnimationFrame(animate);
-    };
-
-    const drawGalvanicCell = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const leftX = canvas.width / 4;
-      const rightX = (canvas.width * 3) / 4;
-      const cellY = 130;
-      const cellH = 220;
-
-      // Enhanced beakers with gradient
-      const leftBeakerGradient = ctx.createLinearGradient(leftX - 85, 0, leftX + 85, 0);
-      leftBeakerGradient.addColorStop(0, 'rgba(100, 150, 255, 0.2)');
-      leftBeakerGradient.addColorStop(0.5, 'rgba(100, 150, 255, 0.4)');
-      leftBeakerGradient.addColorStop(1, 'rgba(100, 150, 255, 0.2)');
-
-      ctx.strokeStyle = 'rgba(200, 220, 255, 0.5)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(leftX - 85, cellY, 170, cellH);
-      ctx.fillStyle = leftBeakerGradient;
-      ctx.fillRect(leftX - 82, cellY + 3, 164, cellH - 6);
-
-      const rightBeakerGradient = ctx.createLinearGradient(rightX - 85, 0, rightX + 85, 0);
-      rightBeakerGradient.addColorStop(0, 'rgba(100, 200, 255, 0.2)');
-      rightBeakerGradient.addColorStop(0.5, 'rgba(100, 200, 255, 0.4)');
-      rightBeakerGradient.addColorStop(1, 'rgba(100, 200, 255, 0.2)');
-
-      ctx.strokeRect(rightX - 85, cellY, 170, cellH);
-      ctx.fillStyle = rightBeakerGradient;
-      ctx.fillRect(rightX - 82, cellY + 3, 164, cellH - 6);
-
-      // Enhanced electrodes with 3D effect
-      const zincGradient = ctx.createLinearGradient(leftX - 18, 0, leftX + 18, 0);
-      zincGradient.addColorStop(0, '#666');
-      zincGradient.addColorStop(0.5, '#999');
-      zincGradient.addColorStop(1, '#666');
-      ctx.fillStyle = zincGradient;
-      ctx.fillRect(leftX - 18, cellY - 35, 36, cellH + 25);
-
-      const copperGradient = ctx.createLinearGradient(rightX - 18, 0, rightX + 18, 0);
-      copperGradient.addColorStop(0, '#a05a2c');
-      copperGradient.addColorStop(0.5, '#cd7f32');
-      copperGradient.addColorStop(1, '#a05a2c');
-      ctx.fillStyle = copperGradient;
-      ctx.fillRect(rightX - 18, cellY - 35, 36, cellH + 25);
-
-      // Enhanced salt bridge
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.lineWidth = 18;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(leftX + 65, cellY + 50);
-      ctx.quadraticCurveTo(canvas.width / 2, cellY - 60, rightX - 65, cellY + 50);
-      ctx.stroke();
-
-      ctx.strokeStyle = 'rgba(150, 180, 255, 0.4)';
-      ctx.lineWidth = 12;
-      ctx.stroke();
-
-      // Moving ions with glow
-      if (isPlaying) {
-        for (let i = 0; i < 12; i++) {
-          const progress = ((time * 0.5 + i * 0.08) % 1);
-          const ionX = leftX + 65 + progress * (rightX - leftX - 130);
-          const ionY = cellY + 50 - Math.sin(progress * Math.PI) * 90;
-
-          ctx.shadowColor = i % 2 === 0 ? '#ff6b6b' : '#4ecdc4';
-          ctx.shadowBlur = 8;
-          ctx.fillStyle = i % 2 === 0 ? '#ff6b6b' : '#4ecdc4';
-          ctx.beginPath();
-          ctx.arc(ionX, ionY, 7, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 8px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(i % 2 === 0 ? '+' : '-', ionX, ionY + 3);
-        }
-      }
-
-      // Enhanced wire
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(leftX, cellY - 35);
-      ctx.lineTo(leftX, cellY - 90);
-      ctx.lineTo(rightX, cellY - 90);
-      ctx.lineTo(rightX, cellY - 35);
-      ctx.stroke();
-
-      // Enhanced moving electrons
-      if (isPlaying) {
-        for (let i = 0; i < 8; i++) {
-          const progress = ((time + i * 0.12) % 1);
-          const electronX = leftX + progress * (rightX - leftX);
-
-          ctx.shadowColor = '#ffeb3b';
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = '#ffeb3b';
-          ctx.beginPath();
-          ctx.arc(electronX, cellY - 90, 6, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          ctx.fillStyle = '#000';
-          ctx.font = 'bold 8px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('e⁻', electronX, cellY - 87);
-        }
-      }
-
-      // Enhanced voltmeter
-      ctx.fillStyle = '#111';
-      ctx.beginPath();
-      ctx.arc(canvas.width / 2, cellY - 90, 42, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 20px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${voltage.toFixed(2)}V`, canvas.width / 2, cellY - 85);
-
-      // Labels
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText('Zn (أنود)', leftX, cellY + cellH + 30);
-      ctx.fillText('Cu (كاثود)', rightX, cellY + cellH + 30);
-
-      // Reactions
-      ctx.font = '14px monospace';
-      ctx.fillStyle = '#ef4444';
-      ctx.fillText('Zn → Zn²⁺ + 2e⁻', leftX, cellY + cellH + 55);
-      ctx.fillStyle = '#22c55e';
-      ctx.fillText('Cu²⁺ + 2e⁻ → Cu', rightX, cellY + cellH + 55);
-    };
-
-    const drawElectrolysis = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const cellY = 120;
-      const cellH = 260;
-
-      // Container with gradient
-      ctx.strokeStyle = 'rgba(200, 220, 255, 0.5)';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(centerX - 160, cellY, 320, cellH);
-
-      const solutionGradient = ctx.createLinearGradient(0, cellY, 0, cellY + cellH);
-      solutionGradient.addColorStop(0, 'rgba(150, 200, 255, 0.3)');
-      solutionGradient.addColorStop(1, 'rgba(150, 200, 255, 0.5)');
-      ctx.fillStyle = solutionGradient;
-      ctx.fillRect(centerX - 157, cellY + 3, 314, cellH - 6);
-
-      // Electrodes
-      ctx.fillStyle = '#444';
-      ctx.fillRect(centerX - 110, cellY - 50, 25, cellH + 40);
-      ctx.fillRect(centerX + 85, cellY - 50, 25, cellH + 40);
-
-      // Power source
-      ctx.fillStyle = '#222';
-      ctx.beginPath();
-      ctx.roundRect(centerX - 50, 25, 100, 60, 8);
-      ctx.fill();
-
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(centerX - 42, 32, 35, 46);
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillRect(centerX + 7, 32, 35, 46);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('+', centerX - 25, 62);
-      ctx.fillText('-', centerX + 25, 62);
-
-      // Wires
-      ctx.strokeStyle = '#555';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(centerX - 97, cellY - 50);
-      ctx.lineTo(centerX - 97, 55);
-      ctx.lineTo(centerX - 42, 55);
-      ctx.moveTo(centerX + 97, cellY - 50);
-      ctx.lineTo(centerX + 97, 55);
-      ctx.lineTo(centerX + 42, 55);
-      ctx.stroke();
-
-      // Enhanced bubbles
-      if (isPlaying) {
-        // H2 bubbles (cathode - left)
-        for (let i = 0; i < 15; i++) {
-          const x = centerX - 97 + Math.sin(time * 2 + i) * 12;
-          const y = cellY + cellH - 25 - ((time * 60 + i * 25) % (cellH - 50));
-          const size = 4 + Math.random() * 5;
-
-          ctx.fillStyle = 'rgba(100, 200, 255, 0.6)';
-          ctx.beginPath();
-          ctx.arc(x, y, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // O2 bubbles (anode - right)
-        for (let i = 0; i < 10; i++) {
-          const x = centerX + 97 + Math.sin(time * 2 + i) * 12;
-          const y = cellY + cellH - 25 - ((time * 40 + i * 30) % (cellH - 50));
-          const size = 5 + Math.random() * 6;
-
-          ctx.fillStyle = 'rgba(255, 100, 100, 0.6)';
-          ctx.beginPath();
-          ctx.arc(x, y, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      // Labels
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('كاثود (−)', centerX - 97, cellY + cellH + 30);
-      ctx.fillText('أنود (+)', centerX + 97, cellY + cellH + 30);
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillText('H₂ ↑', centerX - 97, cellY + cellH + 55);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillText('O₂ ↑', centerX + 97, cellY + cellH + 55);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px monospace';
-      ctx.fillText('2H₂O → 2H₂ + O₂', centerX, cellY + cellH + 80);
-    };
-
-    const drawCorrosion = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-
-      // Iron bar with gradient
-      const ironGradient = ctx.createLinearGradient(centerX - 130, centerY - 45, centerX + 130, centerY + 45);
-      ironGradient.addColorStop(0, '#555');
-      ironGradient.addColorStop(0.5, '#777');
-      ironGradient.addColorStop(1, '#555');
-      ctx.fillStyle = ironGradient;
-      ctx.beginPath();
-      ctx.roundRect(centerX - 130, centerY - 45, 260, 90, 8);
-      ctx.fill();
-
-      // Rust spots with animation
-      const rustSpots = Math.floor(time * 2) % 25;
-      for (let i = 0; i < rustSpots; i++) {
-        const x = centerX - 110 + (i * 47) % 220;
-        const y = centerY - 35 + (i * 23) % 70;
-        const size = 6 + (i * 7) % 18;
-
-        const rustGradient = ctx.createRadialGradient(x, y, 0, x, y, size);
-        rustGradient.addColorStop(0, '#8b4513');
-        rustGradient.addColorStop(1, '#5d2906');
-        ctx.fillStyle = rustGradient;
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Water droplet
-      ctx.fillStyle = 'rgba(100, 180, 255, 0.5)';
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY - 70, 90, 35, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(100, 180, 255, 0.8)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Oxygen molecules animation
-      if (isPlaying) {
-        for (let i = 0; i < 6; i++) {
-          const angle = time + i * 1.0;
-          const x = centerX + Math.cos(angle) * 70;
-          const y = centerY - 90 + Math.sin(angle * 0.5) * 25;
-
-          ctx.fillStyle = '#ef4444';
-          ctx.beginPath();
-          ctx.arc(x, y, 10, 0, Math.PI * 2);
-          ctx.arc(x + 14, y, 10, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 10px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('O₂', x + 7, y + 4);
-        }
-      }
-
-      // Labels
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('تآكل الحديد (الصدأ)', centerX, 60);
-
-      ctx.font = '15px monospace';
-      ctx.fillText('4Fe + 3O₂ + 6H₂O → 4Fe(OH)₃', centerX, canvas.height - 70);
-      ctx.fillStyle = '#8b4513';
-      ctx.fillText('2Fe(OH)₃ → Fe₂O₃·3H₂O (صدأ)', centerX, canvas.height - 45);
-    };
-
-    const drawFuelCell = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const cellY = 90;
-      const cellH = 300;
-
-      // Membrane
-      ctx.fillStyle = '#333';
-      ctx.fillRect(centerX - 6, cellY, 12, cellH);
-
-      // Anode side
-      const anodeGradient = ctx.createLinearGradient(centerX - 160, 0, centerX, 0);
-      anodeGradient.addColorStop(0, 'rgba(100, 200, 100, 0.2)');
-      anodeGradient.addColorStop(1, 'rgba(100, 200, 100, 0.4)');
-      ctx.fillStyle = anodeGradient;
-      ctx.fillRect(centerX - 160, cellY, 154, cellH);
-      ctx.strokeStyle = '#4CAF50';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(centerX - 160, cellY, 154, cellH);
-
-      // Cathode side
-      const cathodeGradient = ctx.createLinearGradient(centerX, 0, centerX + 160, 0);
-      cathodeGradient.addColorStop(0, 'rgba(100, 150, 255, 0.4)');
-      cathodeGradient.addColorStop(1, 'rgba(100, 150, 255, 0.2)');
-      ctx.fillStyle = cathodeGradient;
-      ctx.fillRect(centerX + 6, cellY, 154, cellH);
-      ctx.strokeStyle = '#3b82f6';
-      ctx.strokeRect(centerX + 6, cellY, 154, cellH);
-
-      // H2 molecules
-      if (isPlaying) {
-        for (let i = 0; i < 10; i++) {
-          const x = centerX - 140 + Math.sin(time + i) * 35;
-          const y = cellY + 35 + i * 28;
-
-          ctx.fillStyle = '#4CAF50';
-          ctx.beginPath();
-          ctx.arc(x, y, 9, 0, Math.PI * 2);
-          ctx.arc(x + 15, y, 9, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 9px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('H₂', x + 7, y + 3);
-        }
-
-        // Protons through membrane
-        for (let i = 0; i < 6; i++) {
-          const progress = ((time * 0.3 + i * 0.15) % 1);
-          const x = centerX - 6 + progress * 12;
-          const y = cellY + 50 + i * 45;
-
-          ctx.shadowColor = '#ff9800';
-          ctx.shadowBlur = 8;
-          ctx.fillStyle = '#ff9800';
-          ctx.beginPath();
-          ctx.arc(x, y, 7, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          ctx.fillStyle = '#000';
-          ctx.font = 'bold 8px Arial';
-          ctx.fillText('H⁺', x, y + 3);
-        }
-
-        // O2 molecules
-        for (let i = 0; i < 5; i++) {
-          const x = centerX + 110 + Math.sin(time * 0.8 + i) * 25;
-          const y = cellY + 50 + i * 55;
-
-          ctx.fillStyle = '#ef4444';
-          ctx.beginPath();
-          ctx.arc(x, y, 11, 0, Math.PI * 2);
-          ctx.arc(x + 18, y, 11, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 10px Arial';
-          ctx.fillText('O₂', x + 9, y + 4);
-        }
-
-        // Water output
-        for (let i = 0; i < 4; i++) {
-          const x = centerX + 85 + i * 25;
-          const y = cellY + cellH - 45 + Math.sin(time + i) * 12;
-
-          ctx.fillStyle = '#3b82f6';
-          ctx.beginPath();
-          ctx.arc(x, y, 10, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 8px Arial';
-          ctx.fillText('H₂O', x, y + 3);
-        }
-      }
-
-      // Labels
-      ctx.fillStyle = '#4CAF50';
-      ctx.font = 'bold 16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('H₂', centerX - 85, cellY - 20);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillText('O₂', centerX + 85, cellY - 20);
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillText('H₂O', centerX + 85, cellY + cellH + 25);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px Arial';
-      ctx.fillText('أنود', centerX - 85, cellY + cellH + 50);
-      ctx.fillText('كاثود', centerX + 85, cellY + cellH + 50);
-
-      // Reactions
-      ctx.font = '12px monospace';
-      ctx.fillText('2H₂ → 4H⁺ + 4e⁻', centerX - 85, cellY + cellH + 70);
-      ctx.fillText('O₂ + 4H⁺ + 4e⁻ → 2H₂O', centerX + 85, cellY + cellH + 70);
-    };
-
-    animate();
-    return () => cancelAnimationFrame(animationId);
-  }, [isPlaying, simulationType, voltage, time]);
-
-  const resetSimulation = () => {
-    setTime(0);
-    setIsPlaying(true);
-  };
+  const challenges = [
+    {
+      id: 'standard-daniell',
+      title: 'معايرة خلية دانييل القياسية',
+      description: 'اضبط جهد الخلية الجلفانية بدقة على القيمة القياسية لتفاعل الخارصين والنحاس (1.10 V).',
+      targetDescription: 'الجهد = 1.10 V',
+      checkSuccess: () => simulationType === 'galvanic' && Math.abs(voltage - 1.10) < 0.05,
+      points: 200,
+      badge: 'خبير الخلايا الجلفانية'
+    },
+    {
+      id: 'electrolysis-boost',
+      title: 'تحفيز التحليل الكهربائي للماء',
+      description: 'ارفع فرق الجهد فوق 1.8 V في وضع التحليل الكهربائي لمضاعفة وتيرة تصاعد غاز الهيدروجين.',
+      targetDescription: 'الجهد > 1.8 V في وضع التحليل',
+      checkSuccess: () => simulationType === 'electrolysis' && voltage >= 1.8,
+      points: 150,
+      badge: 'مولد الهيدروجين الأخضر'
+    },
+    {
+      id: 'fuel-cell-ignition',
+      title: 'تشغيل خلية وقود الهيدروجين',
+      description: 'شغّل خلية الوقود لمشاهدة اندماج البروتونات وإنتاج الماء والطاقة النظيفة.',
+      targetDescription: 'تشغيل وضع خلية الوقود',
+      checkSuccess: () => simulationType === 'fuel' && isPlaying,
+      points: 180,
+      badge: 'مهندس الطاقة المستدامة'
+    }
+  ];
+
+  const quizQuestions = [
+    { question: 'في خلية دانييل الجلفانية، أين تحدث عملية الأكسدة وفقدان الإلكترونات؟', options: ['الكاثود (النحاس)', 'الأنود (الخارصين)', 'الجسر الملحي', 'المصباح'], correctIndex: 1, explanation: 'الأكسدة تحدث دائماً عند الأنود؛ حيث يتأكسد الخارصين Zn إلى أيونات Zn²⁺ ويفقد إلكترونين.' },
+    { question: 'ما الوظيفة الأساسية للجسر الملحي في الخلية الجلفانية؟', options: ['توليد التيار الكهربائي', 'المحافظة على التعادل الكهربائي وإغلاق الدائرة', 'تسخين المحلول', 'امتصاص الأكسجين'], correctIndex: 1, explanation: 'الجسر الملحي يسمح بهجرة الأيونات لمنع تراكم الشحنات في نصفي الخلية، مما يحافظ على استمرار سريان التيار.' },
+    { question: 'ما هو الناتج الوحيد العادم النظيف الصادر عن خلية وقود الهيدروجين؟', options: ['ثاني أكسيد الكربون', 'الماء H₂O', 'أول أكسيد الكربون', 'الأوزون'], correctIndex: 1, explanation: 'خلية الوقود تدمج غازي الهيدروجين والأكسجين كيميائياً لإنتاج طاقة كهربائية ونفاياتها هي ماء نقي H₂O فقط.' },
+    { question: 'ما هي النسبة الحجمية للغازين المتصاعدين عند التحليل الكهربائي للماء النقي؟', options: ['1 : 1', '2 هيدروجين : 1 أكسجين', '1 هيدروجين : 2 أكسجين', '3 : 1'], correctIndex: 1, explanation: 'لأن جزيء الماء يتكون من ذرتي هيدروجين وذرة أكسجين (H₂O)، فإن حجم غاز الهيدروجين المتصاعد عند الكاثود يعادل ضعف حجم غاز الأكسجين عند الأنود.' }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-yellow-900/30 to-slate-900 text-white p-4">
-      <StarField />
-
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
-      >
-        <Button variant="ghost" onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }} className="text-white hover:bg-white/10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/30 text-white p-4">
+      
+      {/* TOP HEADER */}
+      <div className="max-w-7xl mx-auto flex items-center justify-between mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}
+          className="text-white hover:bg-white/10"
+        >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة'}
+          {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للمحاكاة'}
         </Button>
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-          ⚡ مختبر الكيمياء الكهربائية
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 bg-clip-text text-transparent">
+          ⚡ مختبر الكيمياء الكهربائية والخلايا الكهروكيميائية 3D
         </h1>
         <div className="w-24" />
-      </motion.div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <SimulationCard color="yellow" delay={0.1}>
-            <canvas ref={canvasRef} width={800} height={500} className="w-full rounded-lg" />
-            <SimulationControls
-              isPlaying={isPlaying}
-              onTogglePlay={() => setIsPlaying(!isPlaying)}
-              onReset={resetSimulation}
-              primaryColor="yellow"
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* LIVE HUD */}
+        <CyberLabHUD
+          title="محطة القياسات الكهروكيميائية الحية"
+          statusBadge={simulationType === 'galvanic' ? "GALVANIC ACTIVE" : simulationType === 'electrolysis' ? "ELECTROLYSIS RUNNING" : "PEM FUEL CELL"}
+          showWaveform={true}
+          waveformColor={simulationType === 'galvanic' ? "#f59e0b" : simulationType === 'electrolysis' ? "#06b6d4" : "#10b981"}
+          waveformSpeed={voltage}
+          metrics={hudMetrics}
+        />
+
+        {/* MAIN WORKSTATION GRID */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          
+          {/* 3D VIEWPORT & CONTROLS (3 COLS) */}
+          <div className="xl:col-span-3 space-y-4">
+            
+            {/* Viewport Top Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-xl">
+              
+              {/* Simulation Mode Tabs */}
+              <Tabs value={simulationType} onValueChange={(v) => { setSimulationType(v as any); labSound.play('click'); }}>
+                <TabsList className="bg-slate-800/80 border border-slate-700/60 p-1">
+                  <TabsTrigger value="galvanic" className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                    🔋 خلية دانييل الجلفانية
+                  </TabsTrigger>
+                  <TabsTrigger value="electrolysis" className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-cyan-600 data-[state=active]:text-white">
+                    💧 التحليل الكهربائي للماء
+                  </TabsTrigger>
+                  <TabsTrigger value="fuel" className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                    🌱 خلية وقود الهيدروجين
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Camera Presets */}
+              <CinematicCameraController
+                activePreset={cameraPreset}
+                onSelectPreset={(p) => { setCameraPreset(p); labSound.play('whoosh'); }}
+              />
+            </div>
+
+            {/* 3D Viewport Box */}
+            <div className="relative w-full h-[520px] md:h-[600px] rounded-3xl overflow-hidden border border-amber-500/30 bg-radial from-slate-900 via-slate-950 to-black shadow-2xl">
+              
+              <Canvas camera={{ position: [0, 2.5, 7.5], fov: 45 }}>
+                <ambientLight intensity={0.7} />
+                <directionalLight position={[10, 15, 10]} intensity={1.3} />
+                <pointLight position={[-10, -5, -5]} intensity={0.6} color="#38bdf8" />
+
+                {simulationType === 'galvanic' && (
+                  <GalvanicCell3D voltage={voltage} isPlaying={isPlaying} />
+                )}
+
+                {simulationType === 'electrolysis' && (
+                  <ElectrolysisCell3D voltage={voltage} isPlaying={isPlaying} />
+                )}
+
+                {simulationType === 'fuel' && (
+                  <FuelCell3D isPlaying={isPlaying} />
+                )}
+
+                <OrbitControls 
+                  enablePan={true}
+                  enableZoom={true}
+                  enableRotate={true}
+                  minDistance={3.0}
+                  maxDistance={16}
+                />
+              </Canvas>
+
+              {/* Viewport Info Floating Badge */}
+              <div className="absolute top-4 left-4 p-3 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl text-xs text-white shadow-xl">
+                <div className="flex items-center gap-2 font-bold text-amber-300 mb-1">
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  <span>
+                    {simulationType === 'galvanic' ? 'خلية دانييل القياسية (Zn-Cu)' : 
+                     simulationType === 'electrolysis' ? 'تحليل كهربائي: تفكيك الماء إلى H₂ و O₂' : 
+                     'خلية وقود الهيدروجين الغشائية (PEM)'}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-300">
+                  {simulationType === 'galvanic' ? 'الأنود (Zn) يتأكسد والكاثود (Cu) يختزل مع سريان الإلكترونات عبر السلك.' : 
+                   simulationType === 'electrolysis' ? 'فقاعات الهيدروجين تتصاعد عند الكاثود بنسبة ضعف فقاعات الأكسجين.' : 
+                   'تفاعل نظيف يدمج الهيدروجين والأكسجين لإنتاج الماء والكهرباء.'}
+                </div>
+              </div>
+
+              {/* Bottom Instructions */}
+              <div className="absolute bottom-4 right-4 text-[11px] text-slate-400 bg-black/60 px-3 py-1.5 rounded-full border border-white/10 pointer-events-none">
+                تدوير 360° حر • عجلة الفأرة للتكبير والتنقل بين الأقطاب
+              </div>
+            </div>
+
+            {/* Slider Controls */}
+            <div className="p-4 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-lg space-y-4">
+              <div className="flex justify-between items-center text-xs font-semibold">
+                <span className="flex items-center gap-1.5 text-amber-300">
+                  <Battery className="w-4 h-4" />
+                  التحكم في فرق الجهد الكهربائي (Voltage)
+                </span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-amber-400 border-amber-500/40">
+                    {voltage.toFixed(2)} V
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="h-7 px-2 text-xs"
+                  >
+                    {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                  </Button>
+                </div>
+              </div>
+              <Slider
+                value={[voltage]}
+                onValueChange={(val) => { setVoltage(val[0]); setCurrentMilliAmps(Math.round(val[0] * 40)); }}
+                min={0.5}
+                max={2.5}
+                step={0.05}
+              />
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>جهد منخفض (0.5 V)</span>
+                <span className="text-amber-300 font-bold">الجهد القياسي لخلية دانييل (1.10 V)</span>
+                <span>جهد فائق (2.5 V)</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* SIDEBAR: AI CO-PILOT, CHALLENGES & QUIZ (1 COL) */}
+          <div className="xl:col-span-1 space-y-4">
+            
+            {/* Live AI Lab CoPilot */}
+            <LiveAILabCoPilot
+              simName="مختبر الكيمياء الكهربائية والخلايا الجلفانية 3D"
+              subject="chemistry"
+              liveHint={
+                simulationType === 'galvanic' && Math.abs(voltage - 1.10) < 0.05
+                  ? 'رائع! هذا هو جهد الخلية الجلفانية القياسي الدقيق (1.10 V) المحسوب من جهود الاختزال القياسية لقطبي Zn و Cu.'
+                  : simulationType === 'electrolysis'
+                  ? 'ملاحظة كيميائية: لاحظ كيف يتراكم غاز الهيدروجين عند الكاثود السالب بسرعة مضاعفة لغاز الأكسجين عند الأنود.'
+                  : 'تفاعل وقود الهيدروجين ينتج تياراً مستمراً وبخار ماء نقي، وهو جوهر النقل الأخضر المستدام.'
+              }
+              currentParameters={{
+                'نوع المنظومة الكهروكيميائية': simulationType === 'galvanic' ? 'خلية جلفانية' : simulationType === 'electrolysis' ? 'تحليل كهربائي' : 'خلية وقود',
+                'فرق الجهد': `${voltage.toFixed(2)} V`,
+                'شدة التيار': `${isPlaying ? currentMilliAmps : 0} mA`,
+                'طاقة غيبس الحرة': `${gibbsFreeEnergy.toFixed(1)} kJ/mol`
+              }}
             />
-          </SimulationCard>
 
-          <SimulationCard title="المبادئ الكهروكيميائية" icon={Lightbulb} color="yellow" delay={0.2}>
+            {/* Challenges Engine */}
+            <LabChallengeEngine challenges={challenges} />
+
+            {/* Scientific Formulas & Info Card */}
             <InfoSection
+              data={[
+                { label: 'جهد الخلية E°', value: `${voltage.toFixed(2)} V`, color: 'text-amber-300' },
+                { label: 'طاقة غيبس الحرة ΔG°', value: `${gibbsFreeEnergy.toFixed(1)} kJ`, color: 'text-emerald-300' },
+                { label: 'نصف تفاعل الأكسدة (الأنود)', value: 'Zn → Zn²⁺ + 2e⁻', color: 'text-red-300' },
+                { label: 'نصف تفاعل الاختزال (الكاثود)', value: 'Cu²⁺ + 2e⁻ → Cu', color: 'text-cyan-300' }
+              ]}
               formulas={[
-                { name: 'جهد الخلية', formula: 'E°cell = E°cathode - E°anode' },
-                { name: 'طاقة جبس الحرة', formula: 'ΔG = -nFE' },
-                { name: 'قانون فاراداي', formula: 'm = (Q × M) / (n × F)' }
+                { name: 'جهد الخلية القياسي', formula: 'E°cell = E°cathode - E°anode', description: 'الفرق بين جهود الاختزال المعيارية لنصفي الخلية' },
+                { name: 'معادلة طاقة غيبس والجهد', formula: 'ΔG° = -nFE°cell', description: 'العلاقة بين التلقائية الثرموديناميكية والقوة الدافعة' },
+                { name: 'معادلة نيرنست للجهد غير القياسي', formula: 'E = E° - (RT/nF) ln Q', description: 'لحساب الجهد عند تغير تراكيز المحاليل أو الحرارة' }
               ]}
               facts={[
-                'الخلية الجلفانية تحول الطاقة الكيميائية إلى كهربائية',
-                'التحليل الكهربائي يتطلب طاقة كهربائية لإجراء تفاعل غير تلقائي',
-                'خلايا الوقود تُعتبر مصدر طاقة نظيف للمستقبل'
+                'سميت خلية دانييل نسبة إلى الكيميائي الإنجليزي جون دانييل عام 1836.',
+                'التحليل الكهربائي للماء هو الأساس لصناعة الهيدروجين الأخضر للطاقة النظيفة.',
+                'مركبات الفضاء تستخدم خلايا وقود الهيدروجين لتوليد الكهرباء وشرب المياه الناتجة منها!'
               ]}
             />
-          </SimulationCard>
-        </div>
 
-        <div className="space-y-4">
-          <SimulationCard title="لوحة التحكم" icon={Settings} color="yellow" delay={0.15}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-slate-300 mb-2">نوع الخلية</label>
-                <Tabs value={simulationType} onValueChange={(v) => setSimulationType(v as any)}>
-                  <TabsList className="grid grid-cols-2 bg-slate-700">
-                    <TabsTrigger value="galvanic" className="text-xs">
-                      <Zap className="w-3 h-3 mr-1" />
-                      جلفانية
-                    </TabsTrigger>
-                    <TabsTrigger value="electrolysis" className="text-xs">تحليل</TabsTrigger>
-                  </TabsList>
-                  <TabsList className="grid grid-cols-2 bg-slate-700 mt-1">
-                    <TabsTrigger value="corrosion" className="text-xs">تآكل</TabsTrigger>
-                    <TabsTrigger value="fuel" className="text-xs">وقود</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              {simulationType === 'galvanic' && (
-                <div>
-                  <label className="block text-sm text-slate-300 mb-2">فرق الجهد: {voltage.toFixed(2)} V</label>
-                  <Slider value={[voltage]} onValueChange={([v]) => setVoltage(v)} min={0.5} max={2} step={0.1} />
-                </div>
-              )}
-            </div>
-          </SimulationCard>
-
-          <SimulationCard title="معلومات الخلية" icon={Battery} color="yellow" delay={0.2}>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between p-2 bg-slate-700/50 rounded">
-                <span className="text-slate-400">نوع الخلية:</span>
-                <span className="text-yellow-300 font-bold">
-                  {simulationType === 'galvanic' ? 'جلفانية' : 
-                   simulationType === 'electrolysis' ? 'تحليل كهربائي' :
-                   simulationType === 'corrosion' ? 'تآكل' : 'خلية وقود'}
-                </span>
-              </div>
-              {simulationType === 'galvanic' && (
-                <>
-                  <div className="flex justify-between p-2 bg-slate-700/50 rounded">
-                    <span className="text-slate-400">الأنود:</span>
-                    <span className="text-red-300 font-bold">Zn (زنك)</span>
-                  </div>
-                  <div className="flex justify-between p-2 bg-slate-700/50 rounded">
-                    <span className="text-slate-400">الكاثود:</span>
-                    <span className="text-green-300 font-bold">Cu (نحاس)</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </SimulationCard>
-
-          <SimulationCard title="اختبر معلوماتك" icon={HelpCircle} color="yellow" delay={0.25}>
+            {/* Interactive Quiz */}
             <QuizSection questions={quizQuestions} />
-          </SimulationCard>
+
+          </div>
+
         </div>
+
       </div>
     </div>
   );

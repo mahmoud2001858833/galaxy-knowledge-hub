@@ -1,311 +1,536 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Cylinder, Sphere, Ring, Float } from '@react-three/drei';
+import * as THREE from 'three';
 import SimulationLayout from '@/components/simulations/SimulationLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { 
+  Zap, 
+  Flame, 
+  Sparkles, 
+  RotateCcw, 
+  Play, 
+  Pause, 
+  Gauge, 
+  Layers, 
+  Activity,
+  Layers2
+} from 'lucide-react';
+import { CyberLabHUD } from '@/components/simulations/CyberLabHUD';
+import { LiveAILabCoPilot } from '@/components/simulations/LiveAILabCoPilot';
+import { CinematicCameraController, CameraPreset } from '@/components/simulations/CinematicCameraController';
+import { LabChallengeEngine } from '@/components/simulations/LabChallengeEngine';
 import InfoSection from '@/components/simulations/InfoSection';
 import QuizSection from '@/components/simulations/QuizSection';
+import { labSound } from '@/utils/labAudio';
 
-interface Molecule { x: number; y: number; vx: number; vy: number; type: 'reactant' | 'product'; color: string; radius: number; }
+// ====================================================
+// 3D MOLECULAR COLLISION SIMULATION ENGINE
+// ====================================================
 
-const ChemicalKineticsSimulation = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-  const moleculesRef = useRef<Molecule[]>([]);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [temperature, setTemperature] = useState(300);
-  const [concentration, setConcentration] = useState(50);
-  const [catalyst, setCatalyst] = useState(false);
-  const [activeTab, setActiveTab] = useState('reaction-rate');
-  const [reacted, setReacted] = useState(0);
-  const reactedRef = useRef(0);
+interface Molecule3DData {
+  id: number;
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+  isProduct: boolean;
+}
 
-  const initMolecules = useCallback(() => {
-    const ps: Molecule[] = [];
-    const count = Math.floor(concentration * 0.8);
+const CollisionChamber3D: React.FC<{
+  temperatureK: number;
+  concentration: number;
+  hasCatalyst: boolean;
+  isPlaying: boolean;
+  onReactionCount: (count: number) => void;
+}> = ({ temperatureK, concentration, hasCatalyst, isPlaying, onReactionCount }) => {
+  const containerRadius = 2.4;
+  const containerHeight = 3.6;
+
+  // Initialize particles
+  const particles = useMemo(() => {
+    const list: Molecule3DData[] = [];
+    const count = Math.min(80, Math.floor(concentration * 0.75) + 15);
+    const speedFactor = Math.sqrt(temperatureK / 300) * 1.5;
+
     for (let i = 0; i < count; i++) {
-      const speed = Math.sqrt(temperature / 150) * (0.5 + Math.random());
-      const angle = Math.random() * Math.PI * 2;
-      ps.push({
-        x: 60 + Math.random() * 480, y: 60 + Math.random() * 280,
-        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-        type: 'reactant', color: '#60a5fa', radius: 6,
+      list.push({
+        id: i,
+        pos: new THREE.Vector3(
+          (Math.random() - 0.5) * (containerRadius * 1.4),
+          (Math.random() - 0.5) * (containerHeight * 0.7),
+          (Math.random() - 0.5) * (containerRadius * 1.4)
+        ),
+        vel: new THREE.Vector3(
+          (Math.random() - 0.5) * speedFactor,
+          (Math.random() - 0.5) * speedFactor,
+          (Math.random() - 0.5) * speedFactor
+        ),
+        isProduct: false
       });
     }
-    moleculesRef.current = ps;
-    reactedRef.current = 0;
-    setReacted(0);
-  }, [concentration, temperature]);
+    return list;
+  }, [concentration, temperatureK]);
 
-  useEffect(() => { initMolecules(); }, [initMolecules]);
+  const catalystMeshRef = useRef<THREE.Mesh>(null);
+  const flashLightRef = useRef<THREE.PointLight>(null);
+  const flashIntensityRef = useRef<number>(0);
 
-  const drawReactionRate = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#0f172a');
-    grad.addColorStop(1, '#1e1b4b');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+  // Activation Energy threshold (Lower with catalyst)
+  const activationThreshold = useMemo(() => {
+    return hasCatalyst ? 1.4 : 2.5;
+  }, [hasCatalyst]);
 
-    // Container (beaker shape)
-    ctx.beginPath();
-    ctx.moveTo(50, 50);
-    ctx.lineTo(50, h - 50);
-    ctx.lineTo(w - 50, h - 50);
-    ctx.lineTo(w - 50, 50);
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  useFrame((state, delta) => {
+    if (!isPlaying) return;
 
-    // Activation energy threshold line
-    const Ea = catalyst ? 150 : 250;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(50, Ea);
-    ctx.lineTo(w - 50, Ea);
-    ctx.strokeStyle = '#f59e0b80';
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#f59e0b';
-    ctx.font = '10px Arial';
-    ctx.textAlign = 'right';
-    ctx.fillText(`طاقة التنشيط ${catalyst ? '(مع عامل مساعد)' : ''}`, w - 55, Ea - 5);
+    const baseSpeed = Math.sqrt(temperatureK / 300);
+    let reactedThisFrame = 0;
 
-    // Update molecules
-    const collisionThreshold = catalyst ? 1.5 : 3;
-    moleculesRef.current.forEach((m, i) => {
-      if (!isPlaying) return;
-      m.x += m.vx;
-      m.y += m.vy;
-      if (m.x < 55 || m.x > w - 55) m.vx *= -1;
-      if (m.y < 55 || m.y > h - 55) m.vy *= -1;
-      m.x = Math.max(55, Math.min(w - 55, m.x));
-      m.y = Math.max(55, Math.min(h - 55, m.y));
+    // Pulse catalyst mesh glow
+    if (catalystMeshRef.current && hasCatalyst) {
+      (catalystMeshRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 
+        0.5 + Math.sin(state.clock.elapsedTime * 4) * 0.25;
+    }
 
-      // Check collisions for reaction
-      if (m.type === 'reactant') {
-        for (let j = i + 1; j < moleculesRef.current.length; j++) {
-          const other = moleculesRef.current[j];
-          if (other.type !== 'reactant') continue;
-          const dx = m.x - other.x, dy = m.y - other.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const relSpeed = Math.sqrt((m.vx - other.vx) ** 2 + (m.vy - other.vy) ** 2);
-          if (dist < 15 && relSpeed > collisionThreshold) {
-            m.type = 'product'; m.color = '#f472b6'; m.radius = 5;
-            other.type = 'product'; other.color = '#f472b6'; other.radius = 5;
-            reactedRef.current += 2;
-            setReacted(reactedRef.current);
-            break;
+    // Decay reaction flash
+    if (flashLightRef.current) {
+      flashIntensityRef.current = Math.max(0, flashIntensityRef.current - delta * 4);
+      flashLightRef.current.intensity = flashIntensityRef.current;
+    }
+
+    // Step physics for all molecules
+    for (let i = 0; i < particles.length; i++) {
+      const p1 = particles[i];
+
+      // Update position
+      p1.pos.addScaledVector(p1.vel, delta * baseSpeed * 1.8);
+
+      // Radial container boundary rebound
+      const horizontalDist = Math.sqrt(p1.pos.x * p1.pos.x + p1.pos.z * p1.pos.z);
+      if (horizontalDist > containerRadius - 0.2) {
+        const normalX = p1.pos.x / horizontalDist;
+        const normalZ = p1.pos.z / horizontalDist;
+        const dot = p1.vel.x * normalX + p1.vel.z * normalZ;
+        p1.vel.x -= 2 * dot * normalX;
+        p1.vel.z -= 2 * dot * normalZ;
+      }
+
+      // Height boundary rebound
+      if (p1.pos.y > containerHeight / 2 - 0.2) {
+        p1.pos.y = containerHeight / 2 - 0.2;
+        p1.vel.y *= -1;
+      } else if (p1.pos.y < -containerHeight / 2 + (hasCatalyst ? 0.4 : 0.2)) {
+        p1.pos.y = -containerHeight / 2 + (hasCatalyst ? 0.4 : 0.2);
+        p1.vel.y *= -1;
+
+        // Catalyst surface interaction: adsorbed molecules react much faster!
+        if (hasCatalyst && !p1.isProduct && Math.random() < 0.15) {
+          p1.isProduct = true;
+          reactedThisFrame++;
+          flashIntensityRef.current = 1.8;
+        }
+      }
+
+      // Inter-molecule collisions
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const dist = p1.pos.distanceTo(p2.pos);
+
+        if (dist < 0.35) {
+          // Elastic rebound
+          const collisionNormal = p1.pos.clone().sub(p2.pos).normalize();
+          const relVel = p1.vel.clone().sub(p2.vel);
+          const speed = relVel.length();
+
+          // Exchange velocities
+          p1.vel.addScaledVector(collisionNormal, 0.4);
+          p2.vel.addScaledVector(collisionNormal, -0.4);
+
+          // Check if energetic enough to overcome Activation Energy (Ea)
+          if ((!p1.isProduct || !p2.isProduct) && speed > activationThreshold) {
+            if (!p1.isProduct || !p2.isProduct) {
+              p1.isProduct = true;
+              p2.isProduct = true;
+              reactedThisFrame += 2;
+              flashIntensityRef.current = 2.2;
+              labSound.playLaserPulse(700);
+            }
           }
         }
       }
-    });
+    }
 
-    // Draw molecules
-    moleculesRef.current.forEach(m => {
-      ctx.beginPath();
-      ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
-      ctx.fillStyle = m.color;
-      ctx.shadowColor = m.color;
-      ctx.shadowBlur = 6;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    });
+    if (reactedThisFrame > 0) {
+      const totalProducts = particles.filter(p => p.isProduct).length;
+      onReactionCount(totalProducts);
+    }
+  });
 
-    // Legend
-    ctx.fillStyle = '#60a5fa'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('● المتفاعلات', w * 0.3, 40);
-    ctx.fillStyle = '#f472b6';
-    ctx.fillText('● النواتج', w * 0.7, 40);
-  }, [isPlaying, catalyst]);
+  return (
+    <group position={[0, 0, 0]}>
+      {/* Reaction Flash Light */}
+      <pointLight ref={flashLightRef} color="#fbbf24" distance={5} intensity={0} />
 
-  const drawActivationEnergy = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, w, h);
+      {/* 3D Glass Cylindrical Chamber */}
+      <Cylinder args={[containerRadius, containerRadius, containerHeight, 32, 1, true]}>
+        <meshPhysicalMaterial
+          color="#ffffff"
+          transmission={0.92}
+          opacity={0.25}
+          transparent
+          roughness={0.08}
+          metalness={0.1}
+          side={THREE.DoubleSide}
+        />
+      </Cylinder>
 
-    // Energy diagram
-    const baseY = h - 80;
-    const peakY = 80;
-    const midX = w / 2;
+      {/* Chamber Top & Bottom Metallic Caps */}
+      <Cylinder args={[containerRadius + 0.1, containerRadius + 0.1, 0.15, 32]} position={[0, containerHeight / 2 + 0.08, 0]}>
+        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+      </Cylinder>
+      <Cylinder args={[containerRadius + 0.1, containerRadius + 0.1, 0.15, 32]} position={[0, -containerHeight / 2 - 0.08, 0]}>
+        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+      </Cylinder>
 
-    // Axes
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(60, 40);
-    ctx.lineTo(60, baseY + 20);
-    ctx.lineTo(w - 40, baseY + 20);
-    ctx.stroke();
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('مسار التفاعل', midX, baseY + 45);
-    ctx.save();
-    ctx.translate(20, h / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('الطاقة', 0, 0);
-    ctx.restore();
+      {/* Optional 3D Platinum Catalyst Honeycomb Grid at bottom */}
+      {hasCatalyst && (
+        <mesh ref={catalystMeshRef} position={[0, -containerHeight / 2 + 0.25, 0]}>
+          <cylinderGeometry args={[containerRadius - 0.1, containerRadius - 0.1, 0.25, 24]} />
+          <meshStandardMaterial
+            color="#10b981"
+            emissive="#059669"
+            emissiveIntensity={0.6}
+            metalness={0.85}
+            roughness={0.2}
+            wireframe
+          />
+        </mesh>
+      )}
 
-    // Without catalyst curve
-    ctx.beginPath();
-    ctx.moveTo(80, baseY - 40);
-    ctx.quadraticCurveTo(midX, peakY, w - 80, baseY - 100);
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+      {/* 3D Floating Molecules */}
+      {particles.map((p) => (
+        <group key={p.id} position={p.pos}>
+          <Sphere args={[p.isProduct ? 0.14 : 0.12, 16, 16]}>
+            <meshStandardMaterial
+              color={p.isProduct ? "#f43f5e" : "#0284c7"}
+              emissive={p.isProduct ? "#e11d48" : "#0ea5e9"}
+              emissiveIntensity={p.isProduct ? 0.8 : 0.4}
+              roughness={0.2}
+              metalness={0.3}
+            />
+          </Sphere>
+        </group>
+      ))}
+    </group>
+  );
+};
 
-    // With catalyst curve
-    ctx.beginPath();
-    ctx.moveTo(80, baseY - 40);
-    ctx.quadraticCurveTo(midX, peakY + 80, w - 80, baseY - 100);
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([8, 4]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+// ====================================================
+// MAIN CHEMICAL KINETICS SIMULATION PAGE
+// ====================================================
+const ChemicalKineticsSimulation = () => {
+  const [temperature, setTemperature] = useState<number>(350);
+  const [concentration, setConcentration] = useState<number>(60);
+  const [hasCatalyst, setHasCatalyst] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [productCount, setProductCount] = useState<number>(0);
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('overview');
 
-    // Labels
-    ctx.fillStyle = '#ef4444';
-    ctx.fillText('بدون عامل مساعد', midX - 80, peakY - 10);
-    ctx.fillStyle = '#22c55e';
-    ctx.fillText('مع عامل مساعد', midX + 80, peakY + 60);
+  // Arrhenius equation approximations
+  const eaWithout = 75; // kJ/mol
+  const eaWith = 45; // kJ/mol
+  const activeEa = hasCatalyst ? eaWith : eaWithout;
 
-    // Ea arrows
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillText('Ea', midX - 30, (peakY + baseY - 40) / 2);
-    ctx.fillText("Ea'", midX + 50, (peakY + 80 + baseY - 40) / 2);
+  // Rate constant k = A * exp(-Ea / RT)
+  const R = 8.314e-3; // kJ/(mol*K)
+  const rateConstantK = useMemo(() => {
+    return Math.exp(-activeEa / (R * temperature)) * 1e7;
+  }, [activeEa, temperature, R]);
 
-    // Reactants / Products labels
-    ctx.fillStyle = '#60a5fa';
-    ctx.fillText('المتفاعلات', 120, baseY - 15);
-    ctx.fillStyle = '#f472b6';
-    ctx.fillText('النواتج', w - 120, baseY - 75);
-  }, []);
+  const totalMolecules = Math.min(80, Math.floor(concentration * 0.75) + 15);
+  const yieldPercentage = Math.min(100, Math.round((productCount / Math.max(1, totalMolecules)) * 100));
 
-  const drawCatalystEffect = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, w, h);
+  const hudMetrics = [
+    {
+      id: 'rate_k',
+      label: 'ثابت السرعة (Arrhenius k)',
+      value: rateConstantK.toFixed(2),
+      unit: 's⁻¹',
+      color: 'text-amber-400',
+      progressPercent: Math.min(100, (rateConstantK / 50) * 100),
+      trend: rateConstantK > 15 ? 'up' as const : 'stable' as const
+    },
+    {
+      id: 'ea',
+      label: 'طاقة التنشيط (Ea)',
+      value: activeEa,
+      unit: 'kJ/mol',
+      color: hasCatalyst ? 'text-emerald-400' : 'text-rose-400',
+      progressPercent: (activeEa / 100) * 100,
+      trend: hasCatalyst ? 'down' as const : 'stable' as const
+    },
+    {
+      id: 'yield',
+      label: 'نسبة النواتج المتكونة',
+      value: `${yieldPercentage}%`,
+      unit: '',
+      color: yieldPercentage > 70 ? 'text-emerald-400' : 'text-cyan-400',
+      progressPercent: yieldPercentage,
+      trend: 'up' as const
+    },
+    {
+      id: 'temp_speed',
+      label: 'السرعة الجزيئية RMS',
+      value: Math.round(Math.sqrt((3 * 8.314 * temperature) / 0.028)),
+      unit: 'm/s',
+      color: 'text-purple-400',
+      progressPercent: (temperature / 600) * 100,
+      trend: 'stable' as const
+    }
+  ];
 
-    const time = Date.now() / 1000;
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('تأثير العوامل على سرعة التفاعل', w / 2, 30);
-
-    const factors = [
-      { name: 'الحرارة ↑', effect: 'سرعة ↑', color: '#ef4444', y: 80 },
-      { name: 'التركيز ↑', effect: 'سرعة ↑', color: '#3b82f6', y: 140 },
-      { name: 'العامل المساعد', effect: 'سرعة ↑↑', color: '#22c55e', y: 200 },
-      { name: 'مساحة السطح ↑', effect: 'سرعة ↑', color: '#f59e0b', y: 260 },
-    ];
-
-    factors.forEach((f, i) => {
-      const barWidth = 150 + Math.sin(time * 2 + i) * 30;
-      // Bar bg
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(w / 2 - 20, f.y, 250, 30);
-      // Bar fill
-      ctx.fillStyle = f.color + '80';
-      ctx.fillRect(w / 2 - 20, f.y, barWidth, 30);
-      ctx.strokeStyle = f.color;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(w / 2 - 20, f.y, 250, 30);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '13px Arial';
-      ctx.textAlign = 'right';
-      ctx.fillText(f.name, w / 2 - 30, f.y + 20);
-      ctx.textAlign = 'left';
-      ctx.fillStyle = f.color;
-      ctx.fillText(f.effect, w / 2 + 260, f.y + 20);
-    });
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const draw = () => {
-      const w = canvas.width, h = canvas.height;
-      if (activeTab === 'reaction-rate') drawReactionRate(ctx, w, h);
-      else if (activeTab === 'activation-energy') drawActivationEnergy(ctx, w, h);
-      else drawCatalystEffect(ctx, w, h);
-      animRef.current = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => cancelAnimationFrame(animRef.current);
-  }, [activeTab, drawReactionRate, drawActivationEnergy, drawCatalystEffect]);
+  const challenges = [
+    {
+      id: 'catalyst-activation',
+      title: 'كسر حاجز طاقة التنشيط',
+      description: 'فعّل العامل المساعد الحفاز وسخّن المفاعل لتجاوز نسبة تحول 75% من المتفاعلات إلى نواتج.',
+      targetDescription: 'نسبة النواتج > 75% مع تفعيل الحافز',
+      checkSuccess: () => hasCatalyst && yieldPercentage >= 75,
+      points: 200,
+      badge: 'مهندس المحفزات الكيميائية'
+    },
+    {
+      id: 'speed-doubling',
+      title: 'مضاعفة سرعة التفاعل الحرارية',
+      description: 'ارفع درجة الحرارة فوق 450 K لملاحظة زيادة تردد التصادمات الجزيئية الفعالة وتضاعف ثابت السرعة k.',
+      targetDescription: 'الحرارة > 450 K و k > 20',
+      checkSuccess: () => temperature >= 450 && rateConstantK >= 20,
+      points: 150,
+      badge: 'خبير نظرية التصادم'
+    },
+    {
+      id: 'high-concentration-yield',
+      title: 'مضاعفة التصادمات بالتركيز',
+      description: 'ارفع تركيز الجزيئات إلى 80% لتكثيف احتمالية التقاء الجزيئات في وحدة الحجم.',
+      targetDescription: 'التركيز >= 80%',
+      checkSuccess: () => concentration >= 80,
+      points: 120,
+      badge: 'مكثف التفاعلات الكيميائية'
+    }
+  ];
 
   const quizQuestions = [
-    { question: 'ما تأثير زيادة درجة الحرارة على سرعة التفاعل؟', options: ['تقل السرعة', 'تزيد السرعة', 'لا تأثير', 'يتوقف التفاعل'], correctIndex: 1, explanation: 'زيادة الحرارة تزيد الطاقة الحركية للجزيئات مما يزيد عدد التصادمات الفعالة.' },
-    { question: 'كيف يؤثر العامل المساعد على التفاعل؟', options: ['يزيد طاقة التنشيط', 'يقلل طاقة التنشيط', 'يغير النواتج', 'يزيد حرارة التفاعل'], correctIndex: 1, explanation: 'العامل المساعد يوفر مساراً بديلاً بطاقة تنشيط أقل دون أن يستهلك في التفاعل.' },
-    { question: 'ما وحدة قياس سرعة التفاعل؟', options: ['mol/L', 'mol/L·s', 'J/mol', 'K/s'], correctIndex: 1, explanation: 'سرعة التفاعل تقاس بتغير التركيز (mol/L) لكل وحدة زمن (s).' },
-    { question: 'ما معنى طاقة التنشيط (Ea)؟', options: ['الحد الأدنى من الطاقة اللازمة لبدء التفاعل', 'الطاقة الناتجة عن التفاعل', 'طاقة الروابط', 'الطاقة الحرارية'], correctIndex: 0, explanation: 'طاقة التنشيط هي الحد الأدنى من الطاقة الحركية التي يجب أن تمتلكها الجزيئات المتصادمة لبدء التفاعل.' },
-    { question: 'في تفاعل من الرتبة الأولى، ماذا يحدث عند مضاعفة التركيز؟', options: ['تتضاعف السرعة', 'تتضاعف أربع مرات', 'تبقى ثابتة', 'تنقص للنصف'], correctIndex: 0, explanation: 'في تفاعل من الرتبة الأولى r = k[A]، مضاعفة التركيز تضاعف سرعة التفاعل.' },
+    { question: 'ما هو الدور الأساسي للعامل المساعد (Catalyst) في التفاعل الكيميائي؟', options: ['زيادة طاقة التنشيط', 'خفض طاقة التنشيط وتوفير مسار بديل للتفاعل', 'زيادة كمية النواتج النهائية فقط', 'تبريد المفاعل'], correctIndex: 1, explanation: 'العامل المساعد يوفر مساراً بديلاً ذا طاقة تنشيط (Ea) أقل، مما يزيد من نسبة التصادمات الفعالة وسرعة التفاعل دون أن يُستهلك.' },
+    { question: 'وفق نظرية التصادم، ما الشرطان الأساسيان لحدوث تصادم فعال؟', options: ['السرعة العالية فقط', 'طاقة كافية (تساوي أو تفوق Ea) والتوجيه الفراغي الصحيح', 'اللون المناسب والحرارة المنخفضة', 'وجود شحنات متماثلة'], correctIndex: 1, explanation: 'لكي يتفكك الرابط وتتشكل الروابط الجديدة، يجب أن تمتلك الجزيئات طاقة حركة تفوق طاقة التنشيط وأن تتصادم بزوايا هندسية مناسبة.' },
+    { question: 'ماذا يحدث لسرعة التفاعل الكيميائي تقريباً عند رفع درجة الحرارة بمقدار 10 درجات مئوية؟', options: ['تتضاعف مرتين تقريباً', 'تنخفض إلى النصف', 'تبقى ثابتة دون تغيير', 'تتضاعف 100 مرة'], correctIndex: 0, explanation: 'كقاعدة تجريبية شائعة، زيادة 10°C تضاعف تقريباً عدد الجزيئات التي تمتلك طاقة تعادل أو تزيد عن Ea.' }
   ];
 
   return (
-    <SimulationLayout title="حركية التفاعلات الكيميائية" titleGradient="from-blue-400 to-cyan-400" backgroundGradient="from-slate-900 via-blue-900 to-slate-900">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-slate-800/50 w-full">
-              <TabsTrigger value="reaction-rate" className="flex-1 text-xs">سرعة التفاعل</TabsTrigger>
-              <TabsTrigger value="activation-energy" className="flex-1 text-xs">طاقة التنشيط</TabsTrigger>
-              <TabsTrigger value="factors" className="flex-1 text-xs">العوامل المؤثرة</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <canvas ref={canvasRef} width={600} height={400} className="w-full rounded-xl border border-blue-500/30 bg-slate-900" />
-          <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => setIsPlaying(!isPlaying)} className="border-blue-500/50 text-blue-300">
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            </Button>
-            <Button size="sm" variant="outline" onClick={initMolecules} className="border-blue-500/50 text-blue-300">
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant={catalyst ? "default" : "outline"} onClick={() => setCatalyst(!catalyst)} className={catalyst ? "bg-green-600" : "border-green-500/50 text-green-300"}>
-              عامل مساعد
-            </Button>
-          </div>
-          {activeTab === 'reaction-rate' && (
-            <div className="space-y-3 p-3 bg-slate-800/40 rounded-xl">
-              <div>
-                <label className="text-xs text-slate-400">درجة الحرارة: {temperature} K</label>
-                <Slider value={[temperature]} onValueChange={v => setTemperature(v[0])} min={200} max={800} step={10} className="mt-1" />
+    <SimulationLayout 
+      title="مختبر الحركية الكيميائية ونظرية التصادم ثلاثي الأبعاد 3D" 
+      titleGradient="from-amber-400 via-emerald-400 to-cyan-400" 
+      backgroundGradient="from-slate-950 via-slate-900 to-emerald-950/20"
+    >
+      <div className="space-y-6">
+        
+        {/* LIVE HUD */}
+        <CyberLabHUD
+          title="محطة القياسات الحركية ومعدل التصادم الجزيئي"
+          statusBadge={hasCatalyst ? "CATALYZED CASCADE" : "UNCATALYZED REGIME"}
+          showWaveform={true}
+          waveformColor={hasCatalyst ? "#10b981" : "#f59e0b"}
+          waveformSpeed={rateConstantK * 0.15}
+          metrics={hudMetrics}
+        />
+
+        {/* MAIN WORKSTATION GRID */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          
+          {/* 3D VIEWPORT & CONTROLS (3 COLS) */}
+          <div className="xl:col-span-3 space-y-4">
+            
+            {/* Top Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-xl">
+              
+              {/* Catalyst Switch Toggle */}
+              <div className="flex items-center gap-3 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+                <Switch 
+                  checked={hasCatalyst} 
+                  onCheckedChange={(val) => { setHasCatalyst(val); labSound.play(val ? 'laser' : 'click'); }} 
+                />
+                <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <Sparkles className={`w-3.5 h-3.5 ${hasCatalyst ? 'text-emerald-400' : 'text-slate-400'}`} />
+                  العامل الحفاز البلاتيني (Pt Catalyst): {hasCatalyst ? 'مفعل (Ea = 45 kJ)' : 'معطل (Ea = 75 kJ)'}
+                </span>
               </div>
-              <div>
-                <label className="text-xs text-slate-400">التركيز: {concentration}%</label>
-                <Slider value={[concentration]} onValueChange={v => setConcentration(v[0])} min={10} max={100} step={5} className="mt-1" />
+
+              {/* Camera Presets */}
+              <CinematicCameraController
+                activePreset={cameraPreset}
+                onSelectPreset={(p) => { setCameraPreset(p); labSound.play('whoosh'); }}
+              />
+            </div>
+
+            {/* 3D Viewport Box */}
+            <div className="relative w-full h-[520px] md:h-[600px] rounded-3xl overflow-hidden border border-emerald-500/30 bg-radial from-slate-900 via-slate-950 to-black shadow-2xl">
+              
+              <Canvas camera={{ position: [0, 1.8, 6.5], fov: 45 }}>
+                <ambientLight intensity={0.7} />
+                <directionalLight position={[10, 15, 10]} intensity={1.3} />
+                <pointLight position={[-10, -5, -5]} intensity={0.6} color="#38bdf8" />
+
+                <CollisionChamber3D
+                  temperatureK={temperature}
+                  concentration={concentration}
+                  hasCatalyst={hasCatalyst}
+                  isPlaying={isPlaying}
+                  onReactionCount={setProductCount}
+                />
+
+                <OrbitControls 
+                  enablePan={true}
+                  enableZoom={true}
+                  enableRotate={true}
+                  minDistance={3.0}
+                  maxDistance={15}
+                />
+              </Canvas>
+
+              {/* Viewport Info Overlay */}
+              <div className="absolute top-4 left-4 p-3 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl text-xs text-white shadow-xl">
+                <div className="flex items-center gap-2 font-bold text-emerald-300 mb-1">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  <span>محاكاة حركة الجزيئات والتصادمات الفعالة</span>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] text-slate-300 mt-1">
+                  <div className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
+                    <span>متفاعلات ({totalMolecules - productCount})</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                    <span>نواتج ({productCount})</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Instructions */}
+              <div className="absolute bottom-4 right-4 text-[11px] text-slate-400 bg-black/60 px-3 py-1.5 rounded-full border border-white/10 pointer-events-none">
+                تدوير 360° حر • راقب وميض الطاقة الضوئي عند حدوث تصادم فعال
               </div>
             </div>
-          )}
+
+            {/* Sliders Control Panel */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-lg">
+              
+              {/* Temperature Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="flex items-center gap-1.5 text-amber-300">
+                    <Flame className="w-4 h-4" />
+                    درجة الحرارة (Temperature)
+                  </span>
+                  <Badge variant="outline" className="text-amber-400 border-amber-500/40">
+                    {temperature} K ({temperature - 273}°C)
+                  </Badge>
+                </div>
+                <Slider
+                  value={[temperature]}
+                  onValueChange={(val) => setTemperature(val[0])}
+                  min={200}
+                  max={650}
+                  step={10}
+                />
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>تبريد بطيء (200 K)</span>
+                  <span>تسخين عالي وطاقة حركة فائقة (650 K)</span>
+                </div>
+              </div>
+
+              {/* Concentration Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="flex items-center gap-1.5 text-cyan-300">
+                    <Gauge className="w-4 h-4" />
+                    تركيز المواد المتفاعلة (Concentration)
+                  </span>
+                  <Badge variant="outline" className="text-cyan-400 border-cyan-500/40">
+                    {concentration}%
+                  </Badge>
+                </div>
+                <Slider
+                  value={[concentration]}
+                  onValueChange={(val) => setConcentration(val[0])}
+                  min={20}
+                  max={100}
+                  step={5}
+                />
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>محلول مخفف (20%)</span>
+                  <span>كثافة جزيئية فائقة وتصادمات مضاعفة (100%)</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* SIDEBAR: AI CO-PILOT, CHALLENGES & QUIZ (1 COL) */}
+          <div className="xl:col-span-1 space-y-4">
+            
+            {/* Live AI Lab CoPilot */}
+            <LiveAILabCoPilot
+              simName="الحركية الكيميائية ونظرية التصادم 3D"
+              subject="chemistry"
+              liveHint={
+                hasCatalyst
+                  ? 'العامل الحفاز يخفض حاجز طاقة التنشيط Ea بنسبة 40%؛ تلاحظ الآن وميض النواتج بسرعة مضاعفة عند السطح المعدني.'
+                  : temperature > 500
+                  ? 'الحرارة العالية تزيد متوسط الطاقة الحركية (توزيع ماكسويل-بولتزمان)، مما يرفع نسبة الجزيئات القادرة على كسر الروابط.'
+                  : 'التفاعل يعتمد على احتمالية التقاء الجزيئات بالسرعة والزاوية الهندسية الملائمة.'
+              }
+              currentParameters={{
+                'درجة الحرارة': `${temperature} K`,
+                'تركيز المتفاعلات': `${concentration}%`,
+                'العامل الحفاز': hasCatalyst ? 'مفعل (بلاتين)' : 'معطل',
+                'طاقة التنشيط Ea': `${activeEa} kJ/mol`,
+                'ثابت السرعة k': rateConstantK.toFixed(2),
+                'نسبة النواتج': `${yieldPercentage}%`
+              }}
+            />
+
+            {/* Challenges Engine */}
+            <LabChallengeEngine challenges={challenges} />
+
+            {/* Scientific Formulas & Info Card */}
+            <InfoSection
+              data={[
+                { label: 'طاقة التنشيط الحالية', value: `${activeEa} kJ/mol`, color: hasCatalyst ? 'text-emerald-300' : 'text-rose-300' },
+                { label: 'ثابت معدل السرعة k', value: rateConstantK.toFixed(2), color: 'text-amber-300' },
+                { label: 'الجزيئات المتفاعلة', value: `${productCount} / ${totalMolecules}`, color: 'text-cyan-300' },
+              ]}
+              formulas={[
+                { name: 'معادلة أرينيوس (Arrhenius)', formula: 'k = A · e^(-Ea / RT)', description: 'العلاقة الأسية بين درجة الحرارة، طاقة التنشيط وثابت سرعة التفاعل' },
+                { name: 'قانون سرعة التفاعل الكيميائي', formula: 'Rate = k [A]^m [B]^n', description: 'يعبر عن سرعة التفاعل بدلالة تراكيز المواد المتفاعلة' },
+                { name: 'متوسط السرعة الجزيئية', formula: 'Vrms = √(3RT / M)', description: 'السرعة الجذرية لمتوسط مربعات سرعات الجزيئات في الغازات' }
+              ]}
+              facts={[
+                'إنزيمات جسم الإنسان هي عوامل حفازة حيوية فائقة تسرع التفاعلات ملايين المرات تحت حرارة 37°C.',
+                'السيارات الحديثة تحتوي على محول حفاز (Catalytic Converter) ينقي الغازات السامة في أجزاء من الثانية.',
+                'المركب النشط المؤقت (Activated Complex) يتشكل في قمة منحنى طاقة التنشيط ويبقى لأجزاء من الفيمتو ثانية فقط!'
+              ]}
+            />
+
+            {/* Interactive Quiz */}
+            <QuizSection questions={quizQuestions} />
+
+          </div>
+
         </div>
-        <div className="space-y-4">
-          <InfoSection
-            data={[
-              { label: 'درجة الحرارة', value: temperature, unit: 'K', color: 'text-red-300' },
-              { label: 'التركيز', value: concentration, unit: '%', color: 'text-blue-300' },
-              { label: 'عدد الجزيئات المتفاعلة', value: reacted, color: 'text-pink-300' },
-              { label: 'العامل المساعد', value: catalyst ? 'نشط' : 'غير نشط', color: catalyst ? 'text-green-300' : 'text-gray-400' },
-            ]}
-            formulas={[
-              { name: 'قانون أرهينيوس', formula: 'k = A·e^(-Ea/RT)', description: 'العلاقة بين ثابت السرعة والحرارة' },
-              { name: 'سرعة التفاعل', formula: 'r = k·[A]^m·[B]^n', description: 'تعتمد على التركيز ورتبة التفاعل' },
-            ]}
-            explanation="حركية التفاعلات تدرس سرعة التفاعلات الكيميائية والعوامل المؤثرة فيها. فهم هذه العوامل أساسي في الصناعة الكيميائية والصيدلانية."
-            facts={[
-              'مضاعفة الحرارة 10°C تضاعف سرعة التفاعل تقريباً',
-              'الإنزيمات هي عوامل مساعدة بيولوجية فائقة الكفاءة',
-              'صدأ الحديد تفاعل بطيء جداً مقارنة بالاحتراق',
-              'المحول الحفاز في السيارة يستخدم البلاتين كعامل مساعد',
-            ]}
-          />
-          <QuizSection questions={quizQuestions} />
-        </div>
+
       </div>
     </SimulationLayout>
   );

@@ -1,360 +1,669 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Float, Box, Cylinder, Sphere, Html } from '@react-three/drei';
+import * as THREE from 'three';
 import SimulationLayout from '@/components/simulations/SimulationLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Play, Pause, RotateCcw, Flame, Snowflake, Wind, Zap, Gauge, Layers, Sparkles } from 'lucide-react';
 import InfoSection from '@/components/simulations/InfoSection';
 import QuizSection from '@/components/simulations/QuizSection';
 
-interface MatterParticle { x: number; y: number; vx: number; vy: number; baseX: number; baseY: number; }
+// Core Framework
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import CinematicCameraController, { CameraPreset } from '@/components/simulations/CinematicCameraController';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
 
-const StatesOfMatterSimulation = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-  const particlesRef = useRef<MatterParticle[]>([]);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [temperature, setTemperature] = useState(25);
-  const [activeTab, setActiveTab] = useState('states');
-  const [pressure, setPressure] = useState(1);
+type MatterState = 'solid' | 'liquid' | 'gas' | 'plasma';
 
-  const getState = (temp: number) => temp < 0 ? 'solid' : temp < 100 ? 'liquid' : 'gas';
+interface Particle3D {
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+  latticeBase: THREE.Vector3;
+  type: 'neutral' | 'ion' | 'electron';
+}
 
-  const initParticles = useCallback(() => {
-    const ps: MatterParticle[] = [];
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 10; col++) {
-        const bx = 180 + col * 25, by = 100 + row * 25;
-        ps.push({ x: bx, y: by, vx: 0, vy: 0, baseX: bx, baseY: by });
+// 3D Matter Chamber
+const MatterChamber3D: React.FC<{
+  temperature: number; // -50 to 3500 °C
+  pressure: number;    // 0.1 to 10 atm
+  isPlaying: boolean;
+}> = ({ temperature, pressure, isPlaying }) => {
+  const pointsRef = useRef<THREE.InstancedMesh>(null);
+  const electronsRef = useRef<THREE.InstancedMesh>(null);
+  const chamberBounds = { minX: -2.0, maxX: 2.0, minY: -1.8, maxY: 1.8, minZ: -2.0, maxZ: 2.0 };
+
+  // Determine current thermodynamic state
+  const state: MatterState = useMemo(() => {
+    if (temperature < 0) return 'solid';
+    if (temperature <= 100) return 'liquid';
+    if (temperature < 2500) return 'gas';
+    return 'plasma';
+  }, [temperature]);
+
+  // Generate 125 particles in a 5x5x5 regular crystal grid
+  const particles = useMemo<Particle3D[]>(() => {
+    const list: Particle3D[] = [];
+    const countPerAxis = 5;
+    const spacing = 0.7;
+    for (let x = 0; x < countPerAxis; x++) {
+      for (let y = 0; y < countPerAxis; y++) {
+        for (let z = 0; z < countPerAxis; z++) {
+          const bx = (x - 2) * spacing;
+          const by = (y - 2) * spacing - 0.4;
+          const bz = (z - 2) * spacing;
+          list.push({
+            pos: new THREE.Vector3(bx, by, bz),
+            vel: new THREE.Vector3(
+              (Math.random() - 0.5) * 0.05,
+              (Math.random() - 0.5) * 0.05,
+              (Math.random() - 0.5) * 0.05
+            ),
+            latticeBase: new THREE.Vector3(bx, by, bz),
+            type: 'neutral',
+          });
+        }
       }
     }
-    particlesRef.current = ps;
+    return list;
   }, []);
 
-  useEffect(() => { initParticles(); }, [initParticles]);
+  // Extra electrons for plasma state
+  const electrons = useMemo<Particle3D[]>(() => {
+    return Array.from({ length: 60 }, () => ({
+      pos: new THREE.Vector3(
+        (Math.random() - 0.5) * 3,
+        (Math.random() - 0.5) * 3,
+        (Math.random() - 0.5) * 3
+      ),
+      vel: new THREE.Vector3(
+        (Math.random() - 0.5) * 0.3,
+        (Math.random() - 0.5) * 0.3,
+        (Math.random() - 0.5) * 0.3
+      ),
+      latticeBase: new THREE.Vector3(),
+      type: 'electron',
+    }));
+  }, []);
 
-  const drawStates = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#0f172a');
-    grad.addColorStop(1, '#1e1b4b');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const dummyElectron = useMemo(() => new THREE.Object3D(), []);
 
-    const state = getState(temperature);
-    // Container
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(150, 70, 300, 260);
+  // Simulation step
+  useFrame((_, delta) => {
+    if (!pointsRef.current || !isPlaying) return;
 
-    // Temperature bar
-    const tempNorm = (temperature + 50) / 200;
-    const barH = 250;
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(50, 80, 30, barH);
-    const tempGrad = ctx.createLinearGradient(50, 80 + barH, 50, 80);
-    tempGrad.addColorStop(0, '#3b82f6');
-    tempGrad.addColorStop(0.5, '#f59e0b');
-    tempGrad.addColorStop(1, '#ef4444');
-    ctx.fillStyle = tempGrad;
-    ctx.fillRect(50, 80 + barH * (1 - tempNorm), 30, barH * tempNorm);
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${temperature}°C`, 65, 80 + barH + 20);
+    // Thermodynamic speed coefficient
+    const kelvin = Math.max(10, temperature + 273.15);
+    const thermalSpeed = Math.sqrt(kelvin / 300) * 1.6;
 
-    // Update & draw particles based on state
-    particlesRef.current.forEach(p => {
-      if (!isPlaying) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = state === 'solid' ? '#60a5fa' : state === 'liquid' ? '#3b82f6' : '#93c5fd';
-        ctx.fill();
-        return;
-      }
-
+    // Update main particles
+    particles.forEach((p, i) => {
       if (state === 'solid') {
-        // Vibrate around base position
-        const vibration = temperature / 50 + 0.5;
-        p.x = p.baseX + (Math.random() - 0.5) * vibration;
-        p.y = p.baseY + (Math.random() - 0.5) * vibration;
+        // Lattice harmonic oscillation around base position
+        const amp = 0.02 + (Math.max(0, temperature + 50) / 100) * 0.08;
+        p.pos.x = p.latticeBase.x + (Math.sin(p.pos.y * 10 + delta * 20 + i) * amp);
+        p.pos.y = p.latticeBase.y + (Math.cos(p.pos.z * 10 + delta * 20 + i) * amp);
+        p.pos.z = p.latticeBase.z + (Math.sin(p.pos.x * 10 + delta * 20 + i) * amp);
       } else if (state === 'liquid') {
-        const speed = temperature / 80;
-        p.vx += (Math.random() - 0.5) * speed * 0.3;
-        p.vy += (Math.random() - 0.5) * speed * 0.3 + 0.05;
-        p.vx *= 0.98; p.vy *= 0.98;
-        p.x += p.vx; p.y += p.vy;
-        // Stay in bottom half of container
-        if (p.x < 155) { p.x = 155; p.vx *= -0.5; }
-        if (p.x > 445) { p.x = 445; p.vx *= -0.5; }
-        if (p.y < 180) { p.y = 180; p.vy *= -0.5; }
-        if (p.y > 325) { p.y = 325; p.vy *= -0.5; }
+        // Fluid shear & gravity settle
+        p.vel.y -= 0.015; // Gravity
+        p.vel.x += (Math.random() - 0.5) * 0.02 * thermalSpeed;
+        p.vel.z += (Math.random() - 0.5) * 0.02 * thermalSpeed;
+        p.vel.multiplyScalar(0.96); // Viscous drag
+
+        p.pos.add(p.vel);
+
+        // Bounds check (settles in bottom half)
+        if (p.pos.y < chamberBounds.minY + 0.3) {
+          p.pos.y = chamberBounds.minY + 0.3;
+          p.vel.y *= -0.3;
+        }
+        if (p.pos.y > -0.2) {
+          p.pos.y = -0.2;
+          p.vel.y *= -0.3;
+        }
+        if (p.pos.x < chamberBounds.minX + 0.3) { p.pos.x = chamberBounds.minX + 0.3; p.vel.x *= -0.7; }
+        if (p.pos.x > chamberBounds.maxX - 0.3) { p.pos.x = chamberBounds.maxX - 0.3; p.vel.x *= -0.7; }
+        if (p.pos.z < chamberBounds.minZ + 0.3) { p.pos.z = chamberBounds.minZ + 0.3; p.vel.z *= -0.7; }
+        if (p.pos.z > chamberBounds.maxZ - 0.3) { p.pos.z = chamberBounds.maxZ - 0.3; p.vel.z *= -0.7; }
       } else {
-        // Gas - free movement
-        const speed = (temperature - 80) / 40;
-        p.vx += (Math.random() - 0.5) * speed * 0.2;
-        p.vy += (Math.random() - 0.5) * speed * 0.2;
-        p.vx *= 0.99; p.vy *= 0.99;
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 155 || p.x > 445) p.vx *= -1;
-        if (p.y < 75 || p.y > 325) p.vy *= -1;
-        p.x = Math.max(155, Math.min(445, p.x));
-        p.y = Math.max(75, Math.min(325, p.y));
+        // Gas / Plasma: Maxwell-Boltzmann free ballistic motion
+        p.pos.addScaledVector(p.vel, thermalSpeed * (state === 'plasma' ? 1.5 : 1.0));
+
+        // Wall collisions
+        ['x', 'y', 'z'].forEach(axis => {
+          const a = axis as 'x' | 'y' | 'z';
+          const min = a === 'x' ? chamberBounds.minX : a === 'y' ? chamberBounds.minY : chamberBounds.minZ;
+          const max = a === 'x' ? chamberBounds.maxX : a === 'y' ? chamberBounds.maxY : chamberBounds.maxZ;
+          if (p.pos[a] < min + 0.3) {
+            p.pos[a] = min + 0.3;
+            p.vel[a] *= -1;
+          }
+          if (p.pos[a] > max - 0.3) {
+            p.pos[a] = max - 0.3;
+            p.vel[a] *= -1;
+          }
+        });
       }
 
-      const color = state === 'solid' ? '#60a5fa' : state === 'liquid' ? '#3b82f6' : '#93c5fd';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, state === 'gas' ? 4 : 6, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 4;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      dummy.position.copy(p.pos);
+      const scale = state === 'solid' ? 0.85 : state === 'plasma' ? 0.7 : 0.75;
+      dummy.scale.setScalar(scale);
+      dummy.updateMatrix();
+      pointsRef.current!.setMatrixAt(i, dummy.matrix);
     });
 
-    // State label
-    const stateNames: Record<string, string> = { solid: 'صلب ❄️', liquid: 'سائل 💧', gas: 'غاز 💨' };
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(`الحالة: ${stateNames[state]}`, w / 2, h - 20);
-  }, [isPlaying, temperature]);
+    pointsRef.current.instanceMatrix.needsUpdate = true;
 
-  const drawPhaseDiagram = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, w, h);
+    // Update plasma electrons
+    if (electronsRef.current && state === 'plasma') {
+      electrons.forEach((e, i) => {
+        e.pos.add(e.vel);
+        if (Math.abs(e.pos.x) > 1.8) e.vel.x *= -1;
+        if (Math.abs(e.pos.y) > 1.6) e.vel.y *= -1;
+        if (Math.abs(e.pos.z) > 1.8) e.vel.z *= -1;
 
-    const ox = 100, oy = h - 80;
-    const gw = w - 160, gh = h - 140;
+        dummyElectron.position.copy(e.pos);
+        dummyElectron.scale.setScalar(0.25);
+        dummyElectron.updateMatrix();
+        electronsRef.current!.setMatrixAt(i, dummyElectron.matrix);
+      });
+      electronsRef.current.instanceMatrix.needsUpdate = true;
+    }
+  });
 
-    // Axes
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(ox, 40);
-    ctx.lineTo(ox, oy);
-    ctx.lineTo(w - 40, oy);
-    ctx.stroke();
+  // Color theme according to state
+  const particleColor = useMemo(() => {
+    switch (state) {
+      case 'solid':
+        return '#38bdf8'; // Crystal ice cyan
+      case 'liquid':
+        return '#0284c7'; // Liquid azure blue
+      case 'gas':
+        return '#f59e0b'; // Warm vapor amber
+      case 'plasma':
+        return '#ef4444'; // Glowing ion crimson
+    }
+  }, [state]);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('درجة الحرارة (°C)', w / 2, oy + 40);
-    ctx.save();
-    ctx.translate(30, h / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('الضغط (atm)', 0, 0);
-    ctx.restore();
+  return (
+    <group position={[0, 0, 0]}>
+      {/* Transparent Glass Vacuum Chamber Cube */}
+      <mesh>
+        <boxGeometry args={[4.4, 4.0, 4.4]} />
+        <meshPhysicalMaterial
+          color="#0f172a"
+          transmission={0.92}
+          transparent
+          opacity={0.3}
+          roughness={0.1}
+          ior={1.4}
+        />
+      </mesh>
 
-    // Phase regions
-    // Solid
-    ctx.fillStyle = '#3b82f630';
-    ctx.beginPath();
-    ctx.moveTo(ox, oy);
-    ctx.lineTo(ox, 80);
-    ctx.lineTo(ox + gw * 0.3, oy - gh * 0.4);
-    ctx.lineTo(ox + gw * 0.35, oy);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#60a5fa';
-    ctx.font = 'bold 14px Arial';
-    ctx.fillText('صلب', ox + gw * 0.15, oy - gh * 0.2);
+      {/* Chamber Corner Pillars */}
+      {[-2.2, 2.2].map(x =>
+        [-2.2, 2.2].map(z => (
+          <mesh key={`pillar-${x}-${z}`} position={[x, 0, z]}>
+            <cylinderGeometry args={[0.08, 0.08, 4.1, 16]} />
+            <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.2} />
+          </mesh>
+        ))
+      )}
 
-    // Liquid
-    ctx.fillStyle = '#22c55e30';
-    ctx.beginPath();
-    ctx.moveTo(ox + gw * 0.3, oy - gh * 0.4);
-    ctx.lineTo(ox + gw * 0.35, oy);
-    ctx.lineTo(ox + gw * 0.7, oy);
-    ctx.lineTo(ox + gw * 0.5, oy - gh * 0.7);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#22c55e';
-    ctx.fillText('سائل', ox + gw * 0.45, oy - gh * 0.3);
+      {/* Top & Bottom Solid Metal Flanges */}
+      <mesh position={[0, 2.05, 0]}>
+        <boxGeometry args={[4.6, 0.15, 4.6]} />
+        <meshStandardMaterial color="#1e293b" metalness={0.8} />
+      </mesh>
+      <mesh position={[0, -2.05, 0]}>
+        <boxGeometry args={[4.6, 0.15, 4.6]} />
+        <meshStandardMaterial color="#1e293b" metalness={0.8} />
+      </mesh>
 
-    // Gas
-    ctx.fillStyle = '#f59e0b30';
-    ctx.beginPath();
-    ctx.moveTo(ox + gw * 0.3, oy - gh * 0.4);
-    ctx.lineTo(ox + gw * 0.5, oy - gh * 0.7);
-    ctx.lineTo(w - 50, 50);
-    ctx.lineTo(w - 50, oy);
-    ctx.lineTo(ox + gw * 0.35, oy);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillText('غاز', ox + gw * 0.7, oy - gh * 0.15);
+      {/* Heating / Cooling Base Grate */}
+      <mesh position={[0, -1.95, 0]}>
+        <boxGeometry args={[4.0, 0.05, 4.0]} />
+        <meshStandardMaterial
+          color={temperature > 100 ? '#ef4444' : temperature < 0 ? '#38bdf8' : '#64748b'}
+          emissive={temperature > 100 ? '#ef4444' : temperature < 0 ? '#38bdf8' : '#000000'}
+          emissiveIntensity={Math.min(1.5, Math.abs(temperature) / 200)}
+        />
+      </mesh>
 
-    // Triple point
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(ox + gw * 0.3, oy - gh * 0.4, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = '10px Arial';
-    ctx.fillText('النقطة الثلاثية', ox + gw * 0.3, oy - gh * 0.4 - 12);
+      {/* Instanced Matter Particles (Nuclei / Atoms) */}
+      <instancedMesh ref={pointsRef} args={[undefined, undefined, particles.length]}>
+        <sphereGeometry args={[0.18, 16, 16]} />
+        <meshStandardMaterial
+          color={particleColor}
+          emissive={particleColor}
+          emissiveIntensity={state === 'plasma' ? 0.8 : 0.2}
+          roughness={0.2}
+          metalness={0.3}
+        />
+      </instancedMesh>
 
-    // Current position
-    const cx = ox + ((temperature + 50) / 200) * gw;
-    const cy = oy - (pressure / 5) * gh;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 8px Arial';
-    ctx.fillText('أنت', cx, cy + 3);
-  }, [temperature, pressure]);
+      {/* Instanced Free Electrons in Plasma State */}
+      {state === 'plasma' && (
+        <instancedMesh ref={electronsRef} args={[undefined, undefined, electrons.length]}>
+          <sphereGeometry args={[0.15, 12, 12]} />
+          <meshBasicMaterial color="#60a5fa" />
+        </instancedMesh>
+      )}
 
-  const drawTransitions = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, w, h);
+      {/* Plasma High-voltage Glow Light */}
+      {state === 'plasma' && (
+        <pointLight position={[0, 0, 0]} color="#f43f5e" intensity={2.5} distance={6} />
+      )}
+    </group>
+  );
+};
 
-    const time = Date.now() / 1000;
-    const transitions = [
-      { from: 'صلب', to: 'سائل', name: 'انصهار', reverse: 'تجمد', y: 80, color: '#3b82f6' },
-      { from: 'سائل', to: 'غاز', name: 'تبخر', reverse: 'تكاثف', y: 170, color: '#22c55e' },
-      { from: 'صلب', to: 'غاز', name: 'تسامي', reverse: 'ترسب', y: 260, color: '#f59e0b' },
+export const StatesOfMatterSimulation: React.FC = () => {
+  const [temperature, setTemperature] = useState(25); // Celsius
+  const [pressure, setPressure] = useState(1.0);       // atm
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [activeTab, setActiveTab] = useState<'states' | 'phasediagram' | 'transitions'>('states');
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('overview');
+
+  // Compute thermal physics metrics
+  const kelvin = Math.max(10, temperature + 273.15);
+  // RMS velocity for water/argon: v_rms = sqrt(3 R T / M)
+  const rmsSpeed = Math.round(Math.sqrt((3 * 8.314 * kelvin) / 0.018));
+  // Entropy proxy
+  const entropy = Number((188.8 + 0.05 * (temperature - 25) + (temperature > 100 ? 109 : 0) + (temperature < 0 ? -22 : 0)).toFixed(1));
+
+  // Determine state string
+  const stateLabel = useMemo(() => {
+    if (temperature < 0) return 'صلب (جليد متبلور ❄️)';
+    if (temperature <= 100) return 'سائل (مائع لزج 💧)';
+    if (temperature < 2500) return 'غاز (بخار متطاير 💨)';
+    return 'بلازما (غاز متأين فائق ⚡)';
+  }, [temperature]);
+
+  // CyberLab HUD Metrics
+  const hudMetrics = useMemo(() => {
+    return [
+      {
+        id: 'temperature',
+        label: 'درجة الحرارة (T)',
+        value: temperature,
+        unit: '°C',
+        status: temperature > 1000 ? ('critical' as const) : temperature < 0 ? ('normal' as const) : ('normal' as const),
+        min: -50,
+        max: 3500,
+      },
+      {
+        id: 'pressure',
+        label: 'الضغط الداخلي (P)',
+        value: pressure,
+        unit: 'atm',
+        status: pressure > 5 ? ('warning' as const) : ('normal' as const),
+        min: 0.1,
+        max: 10,
+      },
+      {
+        id: 'rms',
+        label: 'متوسط السرعة الحركية (v_rms)',
+        value: rmsSpeed,
+        unit: 'm/s',
+        status: 'normal' as const,
+        min: 200,
+        max: 3000,
+      },
+      {
+        id: 'entropy',
+        label: 'الإنتروبيا العشوائية (S)',
+        value: entropy,
+        unit: 'J/mol·K',
+        status: entropy > 250 ? ('warning' as const) : ('normal' as const),
+        min: 150,
+        max: 400,
+      },
     ];
+  }, [temperature, pressure, rmsSpeed, entropy]);
 
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('التحولات بين حالات المادة', w / 2, 40);
-
-    transitions.forEach((t, i) => {
-      const arrowPulse = Math.sin(time * 2 + i) * 10;
-
-      // From box
-      ctx.fillStyle = t.color + '30';
-      ctx.strokeStyle = t.color;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(50, t.y, 120, 60, 8);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(t.from, 110, t.y + 35);
-
-      // Forward arrow
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(180, t.y + 20);
-      ctx.lineTo(380 + arrowPulse, t.y + 20);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(375 + arrowPulse, t.y + 15);
-      ctx.lineTo(385 + arrowPulse, t.y + 20);
-      ctx.lineTo(375 + arrowPulse, t.y + 25);
-      ctx.fill();
-      ctx.fillStyle = '#22c55e';
-      ctx.font = '11px Arial';
-      ctx.fillText(t.name + ' →', 280, t.y + 15);
-
-      // Reverse arrow
-      ctx.strokeStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.moveTo(380, t.y + 45);
-      ctx.lineTo(180 - arrowPulse, t.y + 45);
-      ctx.stroke();
-      ctx.fillStyle = '#ef4444';
-      ctx.font = '11px Arial';
-      ctx.fillText('← ' + t.reverse, 280, t.y + 58);
-
-      // To box
-      ctx.fillStyle = t.color + '30';
-      ctx.strokeStyle = t.color;
-      ctx.beginPath();
-      ctx.roundRect(400, t.y, 120, 60, 8);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText(t.to, 460, t.y + 35);
-    });
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const draw = () => {
-      const w = canvas.width, h = canvas.height;
-      if (activeTab === 'states') drawStates(ctx, w, h);
-      else if (activeTab === 'phase-diagram') drawPhaseDiagram(ctx, w, h);
-      else drawTransitions(ctx, w, h);
-      animRef.current = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => cancelAnimationFrame(animRef.current);
-  }, [activeTab, drawStates, drawPhaseDiagram, drawTransitions]);
+  // Gamified Challenges
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'boiling_vaporization',
+        title: 'الوصول إلى نقطة الغليان والتبخر التام',
+        description: 'ارفع درجة حرارة الغرفة إلى 100°C أو أكثر لمشاهدة تفكك الروابط الهيدروجينية وتحول السائل إلى غاز حر الحركة.',
+        targetMetric: 'درجة الحرارة',
+        targetValue: 120,
+        unit: '°C',
+        currentValue: temperature,
+        holdTimeRequired: 3,
+        tolerance: 30,
+        isCompleted: false,
+        hint: 'حرك منزلق درجة الحرارة إلى ما فوق 100°C لتنشيط حالة الغاز.',
+      },
+      {
+        id: 'crystalline_solidification',
+        title: 'التجميد والتبلور الشبكي الصلب',
+        description: 'اخفض درجة الحرارة إلى ما دون الصفر المئوي (< 0°C) لمراقبة ترتب الجسيمات في شبكة بلورية متراصة مع اهتزازات موضعية.',
+        targetMetric: 'درجة الحرارة',
+        targetValue: -20,
+        unit: '°C',
+        currentValue: temperature,
+        holdTimeRequired: 3,
+        tolerance: 20,
+        isCompleted: false,
+        hint: 'اخفض الحرارة إلى قيمة سالبة (مثلاً -20°C) لتجميد المادة.',
+      },
+      {
+        id: 'plasma_ionization',
+        title: 'توليد الحالة الرابعة للمادة (البلازما المتأينة)',
+        description: 'ارفع درجة الحرارة إلى النطاق الشمسي الفائق (> 2500°C) لنزع الإلكترونات عن النوى وتوليد بلازما نشطة كهربائياً.',
+        targetMetric: 'درجة الحرارة',
+        targetValue: 2800,
+        unit: '°C',
+        currentValue: temperature,
+        holdTimeRequired: 3,
+        tolerance: 400,
+        isCompleted: false,
+        hint: 'ارفع درجة الحرارة إلى أقصاها (> 2500°C) لمشاهدة وميض الإلكترونات الحرة والنوى المتأينة.',
+      },
+    ];
+  }, [temperature]);
 
   const quizQuestions = [
-    { question: 'عند أي درجة حرارة يتحول الماء من سائل إلى غاز؟', options: ['0°C', '50°C', '100°C', '200°C'], correctIndex: 2, explanation: 'الماء يغلي عند 100°C تحت الضغط الجوي العادي.' },
-    { question: 'ما اسم التحول المباشر من الحالة الصلبة إلى الغازية؟', options: ['التبخر', 'التسامي', 'الانصهار', 'التكاثف'], correctIndex: 1, explanation: 'التسامي هو تحول المادة من صلب إلى غاز مباشرة دون المرور بالحالة السائلة.' },
-    { question: 'ماذا يحدث لحركة الجزيئات عند التسخين؟', options: ['تقل', 'تتوقف', 'تزداد', 'لا تتغير'], correctIndex: 2, explanation: 'زيادة الحرارة تزيد الطاقة الحركية للجزيئات فتتحرك بسرعة أكبر.' },
-    { question: 'ما النقطة الثلاثية في مخطط الطور؟', options: ['حيث تتعايش الحالات الثلاث معاً', 'نقطة الغليان', 'نقطة التجمد', 'نقطة الضغط الأقصى'], correctIndex: 0, explanation: 'النقطة الثلاثية هي درجة الحرارة والضغط اللذان تتوازن عندهما الحالات الثلاث للمادة.' },
-    { question: 'لماذا يتمدد الماء عند التجمد؟', options: ['بسبب الروابط الهيدروجينية التي تشكل بنية بلورية أقل كثافة', 'بسبب زيادة الحرارة', 'بسبب فقدان الكتلة', 'بسبب الضغط'], correctIndex: 0, explanation: 'الروابط الهيدروجينية في الجليد تشكل بنية سداسية منتظمة تحتل حجماً أكبر من الماء السائل.' },
+    {
+      question: 'ما الذي يحدد بشكل أساسي حالة المادة (صلبة، سائلة، أو غازية)؟',
+      options: [
+        'لون الوعاء الحاوي فقط',
+        'التوازن بين الطاقة الحركية الحرارية للجزيئات وقوى التجاذب بين الجزيئية',
+        'شحنة الإلكترونات الخارجية فقط',
+        'كثافة الهواء الجوي المحيط بالوعاء',
+      ],
+      correctIndex: 1,
+      explanation: 'الحالة الفيزيائية هي محصلة التنافس بين الطاقة الحركية (التي تحاول تشتيت الجزيئات مع زيادة الحرارة) وقوى التجاذب (فان دير فالس / الروابط الهيدروجينية).',
+    },
+    {
+      question: 'ما هي النقطة الثلاثية (Triple Point) في مخطط أطوار المادة؟',
+      options: [
+        'درجة الحرارة التي يغلي عندها الماء ثلاث مرات',
+        'الحالة الديناميكية الحرارية الدقيقة من الضغط والحرارة التي تتعايش عندها الأطوار الثلاثة (صلب، سائل، غاز) في اتزان تام',
+        'أعلى ضغط يمكن أن يتحمله الغاز قبل الانفجار',
+        'نقطة التسامي المباشر للثلج الجاف',
+      ],
+      correctIndex: 1,
+      explanation: 'النقطة الثلاثية للماء تحدث عند 0.01°C وضغط 0.006 atm، حيث تتساوى الطاقات الحرة وتتعايش الحالات الثلاث معاً.',
+    },
+    {
+      question: 'لماذا تنخفض كثافة الجليد مقارنة بالماء السائل مما يجعله يطفو على السطح؟',
+      options: [
+        'لأن الجليد يفقد جزءاً من كتلته',
+        'بسبب تشكل شبكة بلورية سداسية مفتوحة بواسطة الروابط الهيدروجينية تحتجز فراغات هوائية أكبر',
+        'بسبب امتصاصه للغازات المحيطة',
+        'لأن الجزيئات تتوقف تماماً عن الحركة',
+      ],
+      correctIndex: 1,
+      explanation: 'الروابط الهيدروجينية تتبلور في بنية سداسية سفلية أقل تراصاً من السائل، وهي شذوذ مائي فريد يسمح بالحياة المائية تحت الأنهار المتجمدة.',
+    },
+    {
+      question: 'ما هي البلازما، ولماذا توصف بالحالة الرابعة للمادة؟',
+      options: [
+        'محلول مائي يحتوي على بروتينات الدم فقط',
+        'غاز متأين فائق الحرارة تنفصل فيه الإلكترونات عن أنويتها الذرية وتتحرك بحرية موصلة للكهرباء',
+        'سائل شديد البرودة قرب الصفر المطلق',
+        'معدن صلب تحت ضغط هائل في باطن الأرض',
+      ],
+      correctIndex: 1,
+      explanation: 'البلازما تتكون عند درجات حرارة فائقة حيث تكتسب الإلكترونات طاقة كافية للتحرر من جذب النواة، مما يجعله وسطاً فائق التوصيل للكهرباء والمجالات المغناطيسية.',
+    },
   ];
 
   return (
-    <SimulationLayout title="حالات المادة والتحولات" titleGradient="from-cyan-400 to-blue-400" backgroundGradient="from-slate-900 via-cyan-900 to-slate-900">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <SimulationLayout
+      title="مختبر حالات المادة والديناميكا الحرارية 3D"
+      titleGradient="from-cyan-400 via-sky-300 to-indigo-400"
+      backgroundGradient="from-slate-950 via-slate-900 to-sky-950"
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main 3D Particle Chamber Viewport */}
         <div className="lg:col-span-2 space-y-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-slate-800/50 w-full">
-              <TabsTrigger value="states" className="flex-1 text-xs">حالات المادة</TabsTrigger>
-              <TabsTrigger value="phase-diagram" className="flex-1 text-xs">مخطط الطور</TabsTrigger>
-              <TabsTrigger value="transitions" className="flex-1 text-xs">التحولات</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <canvas ref={canvasRef} width={600} height={400} className="w-full rounded-xl border border-cyan-500/30 bg-slate-900" />
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setIsPlaying(!isPlaying)} className="border-cyan-500/50 text-cyan-300">
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            </Button>
-            <Button size="sm" variant="outline" onClick={initParticles} className="border-cyan-500/50 text-cyan-300">
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="space-y-3 p-3 bg-slate-800/40 rounded-xl">
-            <div>
-              <label className="text-xs text-slate-400">درجة الحرارة: {temperature}°C</label>
-              <Slider value={[temperature]} onValueChange={v => setTemperature(v[0])} min={-50} max={150} step={1} className="mt-1" />
+          <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-sky-500/30 bg-slate-950 shadow-2xl shadow-sky-950/40">
+            <Canvas camera={{ position: [0, 1.8, 6.5], fov: 45 }}>
+              <ambientLight intensity={0.6} />
+              <pointLight position={[10, 10, 10]} intensity={1.2} />
+              <pointLight position={[-10, -5, -6]} intensity={0.6} color="#0284c7" />
+              <directionalLight position={[0, 8, 4]} intensity={0.8} />
+
+              <CinematicCameraController preset={cameraPreset} />
+
+              <Float speed={0.5} rotationIntensity={0.05} floatIntensity={0.08}>
+                <MatterChamber3D
+                  temperature={temperature}
+                  pressure={pressure}
+                  isPlaying={isPlaying}
+                />
+              </Float>
+
+              <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+            </Canvas>
+
+            {/* CyberLab HUD Overlay */}
+            <CyberLabHUD
+              metrics={hudMetrics}
+              title={`غرفة الأطوار الحرارية • الحالة: ${stateLabel}`}
+              status="active"
+              oscilloscopeWaveform={temperature > 2500 ? 'noise' : 'sine'}
+              oscilloscopeFrequency={rmsSpeed / 200}
+            />
+
+            {/* Live Camera Presets */}
+            <div className="absolute top-4 left-4 z-20 flex gap-1.5 bg-slate-900/85 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/60 shadow-lg">
+              <Button
+                size="sm"
+                variant={cameraPreset === 'overview' ? 'default' : 'ghost'}
+                onClick={() => setCameraPreset('overview')}
+                className="h-7 text-xs px-2.5 text-sky-300"
+              >
+                شامل
+              </Button>
+              <Button
+                size="sm"
+                variant={cameraPreset === 'microscopic' ? 'default' : 'ghost'}
+                onClick={() => setCameraPreset('microscopic')}
+                className="h-7 text-xs px-2.5 text-sky-300"
+              >
+                مجهري بلوري
+              </Button>
+              <Button
+                size="sm"
+                variant={cameraPreset === 'flow' ? 'default' : 'ghost'}
+                onClick={() => setCameraPreset('flow')}
+                className="h-7 text-xs px-2.5 text-sky-300"
+              >
+                محور التدفق
+              </Button>
+              <Button
+                size="sm"
+                variant={cameraPreset === 'orbit360' ? 'default' : 'ghost'}
+                onClick={() => setCameraPreset('orbit360')}
+                className="h-7 text-xs px-2.5 text-sky-300"
+              >
+                دوران 360°
+              </Button>
             </div>
-            {activeTab === 'phase-diagram' && (
-              <div>
-                <label className="text-xs text-slate-400">الضغط: {pressure} atm</label>
-                <Slider value={[pressure]} onValueChange={v => setPressure(v[0])} min={0.1} max={5} step={0.1} className="mt-1" />
-              </div>
-            )}
+
+            {/* Playback Controls Overlay */}
+            <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="h-8 w-8 p-0 text-sky-400 hover:text-sky-300"
+              >
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setTemperature(25);
+                  setPressure(1.0);
+                }}
+                className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+                title="إعادة ضبط"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
+
+          {/* Thermal & Pressure Thermodynamic Sliders */}
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-md space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold text-sky-300 flex items-center gap-2">
+                <Gauge className="w-4 h-4 text-sky-400" />
+                <span>التحكم في المتغيرات الديناميكية الحرارية:</span>
+              </div>
+              <div className="text-xs text-slate-400 font-mono">
+                الحالة الآن: <strong className="text-sky-300">{stateLabel}</strong>
+              </div>
+            </div>
+
+            {/* Quick State Presets */}
+            <div className="grid grid-cols-4 gap-2">
+              <Button
+                size="sm"
+                variant={temperature < 0 ? 'default' : 'outline'}
+                onClick={() => setTemperature(-25)}
+                className="text-xs border-sky-500/40 text-sky-300 bg-sky-950/30"
+              >
+                <Snowflake className="w-3.5 h-3.5 mr-1" />
+                صلب (-25°C)
+              </Button>
+              <Button
+                size="sm"
+                variant={temperature >= 0 && temperature <= 100 ? 'default' : 'outline'}
+                onClick={() => setTemperature(40)}
+                className="text-xs border-blue-500/40 text-blue-300 bg-blue-950/30"
+              >
+                سائل (40°C)
+              </Button>
+              <Button
+                size="sm"
+                variant={temperature > 100 && temperature < 2500 ? 'default' : 'outline'}
+                onClick={() => setTemperature(250)}
+                className="text-xs border-amber-500/40 text-amber-300 bg-amber-950/30"
+              >
+                <Wind className="w-3.5 h-3.5 mr-1" />
+                غاز (250°C)
+              </Button>
+              <Button
+                size="sm"
+                variant={temperature >= 2500 ? 'default' : 'outline'}
+                onClick={() => setTemperature(3000)}
+                className="text-xs border-rose-500/40 text-rose-300 bg-rose-950/30"
+              >
+                <Zap className="w-3.5 h-3.5 mr-1" />
+                بلازما (3000°C)
+              </Button>
+            </div>
+
+            {/* Continuous Temperature Slider */}
+            <div className="space-y-2 p-3 rounded-lg bg-slate-950/40 border border-slate-800/60">
+              <div className="flex justify-between items-center text-xs text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-rose-400" />
+                  درجة حرارة الغرفة (Temperature):
+                </span>
+                <span className="font-mono text-sky-400 font-bold">{temperature}°C ({kelvin.toFixed(1)} K)</span>
+              </div>
+              <Slider
+                value={[temperature]}
+                onValueChange={(val) => setTemperature(val[0])}
+                min={-50}
+                max={3500}
+                step={10}
+              />
+              <div className="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span className="text-cyan-400">-50°C (تجميد فائق)</span>
+                <span className="text-sky-300">0°C (انصهار)</span>
+                <span className="text-amber-400">100°C (غليان)</span>
+                <span className="text-rose-400">2500°C+ (تأين البلازما)</span>
+              </div>
+            </div>
+
+            {/* Continuous Pressure Slider */}
+            <div className="space-y-2 p-3 rounded-lg bg-slate-950/40 border border-slate-800/60">
+              <div className="flex justify-between items-center text-xs text-slate-300">
+                <span>الضغط المسلط بواسطة المكبس (Pressure):</span>
+                <span className="font-mono text-teal-400 font-bold">{pressure.toFixed(1)} atm</span>
+              </div>
+              <Slider
+                value={[pressure]}
+                onValueChange={(val) => setPressure(val[0])}
+                min={0.1}
+                max={10.0}
+                step={0.1}
+              />
+            </div>
+          </div>
+
+          {/* Gamified Laboratory Challenges */}
+          <LabChallengeEngine
+            challenges={challenges}
+            onChallengeComplete={(c) => {
+              console.log('Challenge completed:', c.title);
+            }}
+          />
         </div>
+
+        {/* Right Pedagogical & Live CoPilot Column */}
         <div className="space-y-4">
-          <InfoSection
-            data={[
-              { label: 'درجة الحرارة', value: temperature, unit: '°C', color: 'text-cyan-300' },
-              { label: 'الحالة', value: getState(temperature) === 'solid' ? 'صلب' : getState(temperature) === 'liquid' ? 'سائل' : 'غاز', color: 'text-blue-300' },
-              { label: 'الضغط', value: pressure, unit: 'atm', color: 'text-violet-300' },
-            ]}
-            formulas={[
-              { name: 'معادلة كلاوزيوس-كلابيرون', formula: 'dP/dT = ΔH/(T·ΔV)', description: 'العلاقة بين الضغط والحرارة عند التحول' },
-            ]}
-            explanation="حالات المادة الثلاث (صلبة، سائلة، غازية) تختلف في ترتيب الجزيئات وطاقتها الحركية. التحولات بينها تتطلب طاقة لكسر أو تكوين قوى بين جزيئية."
-            facts={[
-              'الماء من المواد القليلة التي يتمدد حجمها عند التجمد',
-              'الهيليوم لا يتجمد عند الضغط الجوي العادي مهما انخفضت الحرارة',
-              'التسامي يحدث في الثلج الجاف (CO₂) وكرات النفتالين',
-              'حالة البلازما تعتبر الحالة الرابعة للمادة وتوجد في النجوم',
+          {/* AI Lab CoPilot */}
+          <LiveAILabCoPilot
+            experimentContext={{
+              title: 'حالات المادة والديناميكا الحرارية',
+              currentStep: `الحالة الفيزيائية الحالية: ${stateLabel}`,
+              userAction: `مراقبة اهتزاز وحركة 125 جسيماً عند درجة حرارة ${temperature}°C وضغط ${pressure.toFixed(1)} atm`,
+              activeMetrics: {
+                state: stateLabel,
+                temperature: `${temperature}°C`,
+                kelvin: `${kelvin.toFixed(1)} K`,
+                pressure: `${pressure.toFixed(1)} atm`,
+                rmsSpeed: `${rmsSpeed} m/s`,
+                entropy: `${entropy} J/mol·K`,
+              }
+            }}
+            suggestions={[
+              'كيف تفسر معادلة ماكسويل-بولتزمان سرعات الجزيئات في الغاز؟',
+              'ما هو السائل فائق الحرج (Supercritical Fluid) ومتى يتكون؟',
+              'لماذا تبقى درجة الحرارة ثابتة أثناء حدوث التحول الطوري (الحرارة الكامنة)؟',
+              'ما الفارق الجوهري في التوصيل الكهربائي بين الغاز العادي والبلازما؟',
             ]}
           />
+
+          {/* Educational Information Section */}
+          <InfoSection
+            data={[
+              { label: 'الحالة الفيزيائية', value: stateLabel.split(' ')[0], color: 'text-sky-300' },
+              { label: 'متوسط السرعة الحركية', value: `${rmsSpeed} m/s`, color: 'text-teal-300' },
+              { label: 'الإنتروبيا العشوائية', value: `${entropy} J/mol·K`, color: 'text-indigo-300' },
+              { label: 'الضغط الداخلي', value: `${pressure.toFixed(1)} atm`, color: 'text-amber-300' },
+            ]}
+            formulas={[
+              { name: 'متوسط السرعة الجزيئية الجذرية', formula: 'v_rms = √(3RT / M)', description: 'سرعة جزيئات الغاز تتناسب طردياً مع الجذر التربيعي لدرجة الحرارة المطلقة' },
+              { name: 'معادلة كلاوزيوس-كلابيرون', formula: 'dP/dT = L / (T × ΔV)', description: 'تحدد ميل منحنى الاتزان بين طورين في مخطط الطور اعتماداً على الحرارة الكامنة L' },
+              { name: 'قانون الغاز المثالي', formula: 'PV = nRT', description: 'العلاقة التأسيسية بين الضغط والحجم ودرجة الحرارة للغازات الخفيفة' },
+            ]}
+            explanation="تتحدد حالات المادة بناءً على الطاقة الحركية لجسيماتها مقارنة بقوى التجاذب بين الجزيئات. في الحالة الصلبة تتقيد الجسيمات باهتزازات موضعية داخل شبكة بلورية، وفي السائلة تنزلق بحرية مع الحفاظ على تماسك الحجم، وفي الغازية تتطاير بمسارات عشوائية، بينما عند درجات الحرارة الهائلة تتأين الذرات تماماً مشكلة البلازما التي تمثل أكثر من 99% من المادة المرئية في الكون."
+            facts={[
+              'الماء يمتلك شذوذاً فريداً في مخطط الطور، حيث يمتلك خط الانصهار (صلب-سائل) ميلاً سالباً نادراً؛ مما يعني أن زيادة الضغط تذيب الجليد بدلاً من تجميده.',
+              'الهيليوم السائل يتحول عند درجة 2.17 كلفن إلى حالة "الميوعة الفائقة" (Superfluid) حيث تنعدم لزوجته تماماً ويمكنه التسلق على جدران الوعاء.',
+              'تحدث ظاهرة التسامي في المريخ بكثرة حيث يتحول الجليد الجاف (CO₂) مباشرة إلى غاز دون المرور بحالة سائلة بسبب انخفاض الضغط الجوي.',
+            ]}
+          />
+
+          {/* Interactive Quiz Section */}
           <QuizSection questions={quizQuestions} />
         </div>
       </div>

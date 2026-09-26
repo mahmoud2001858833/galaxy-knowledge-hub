@@ -20,6 +20,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
+import { CyberLabHUD } from '@/components/simulations/CyberLabHUD';
+import { LiveAILabCoPilot } from '@/components/simulations/LiveAILabCoPilot';
+import { CinematicCameraController, CameraPreset } from '@/components/simulations/CinematicCameraController';
+import { LabChallengeEngine } from '@/components/simulations/LabChallengeEngine';
 
 interface ReactionSystem {
   id: string;
@@ -503,6 +507,55 @@ export default function ChemicalEquilibriumSimulation() {
           </Card>
         </div>
 
+        {/* Cyber-Lab Live Telemetry HUD */}
+        <div className="mb-6">
+          <CyberLabHUD
+            title="محطة الرصد الديناميكي ومخطط انزياح الاتزان"
+            statusBadge={Math.abs(Q - currentKc) < 0.1 ? "EQUILIBRIUM LOCKED" : Q < currentKc ? "FORWARD SHIFT ⟶" : "REVERSE SHIFT ⟵"}
+            showWaveform={true}
+            waveformColor={selectedReaction.deltaH < 0 ? "#f59e0b" : "#38bdf8"}
+            waveformSpeed={Math.max(0.5, pressureAtm * 0.4)}
+            metrics={[
+              {
+                id: 'kc',
+                label: 'ثابت الاتزان (Kc)',
+                value: currentKc,
+                unit: '',
+                color: 'text-emerald-400',
+                progressPercent: Math.min(100, currentKc * 20),
+                trend: 'stable'
+              },
+              {
+                id: 'q',
+                label: 'حاصل التفاعل (Q)',
+                value: Q,
+                unit: '',
+                color: 'text-cyan-400',
+                progressPercent: Math.min(100, Q * 20),
+                trend: Q < currentKc ? 'up' : 'down'
+              },
+              {
+                id: 'temp',
+                label: 'درجة الحرارة (T)',
+                value: temperatureK,
+                unit: 'K',
+                color: temperatureK > 450 ? 'text-rose-400' : 'text-sky-400',
+                progressPercent: ((temperatureK - 250) / 550) * 100,
+                trend: 'stable'
+              },
+              {
+                id: 'press',
+                label: 'الضغط (P)',
+                value: pressureAtm.toFixed(1),
+                unit: 'atm',
+                color: 'text-purple-400',
+                progressPercent: (pressureAtm / 5.0) * 100,
+                trend: 'stable'
+              }
+            ]}
+          />
+        </div>
+
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-slate-900/90 border border-slate-800 p-1 mb-6 rounded-xl">
@@ -690,6 +743,62 @@ export default function ChemicalEquilibriumSimulation() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Live AI Lab CoPilot */}
+                <LiveAILabCoPilot
+                  simName="الاتزان الكيميائي ومبدأ لوشاتيليه 3D"
+                  subject="chemistry"
+                  liveHint={
+                    Math.abs(Q - currentKc) < 0.1
+                      ? 'التفاعل الآن في حالة اتزان ديناميكي مستقر تماماً (Q ≈ Kc)؛ تتساوى سرعتا التفاعل الطردي والعكسي.'
+                      : Q < currentKc
+                      ? `حاصل التفاعل Q أقل من Kc؛ يزاح موضع الاتزان طردياً نحو النواتج لتكوين المزيد من ${selectedReaction.productsAr}.`
+                      : `حاصل التفاعل Q أكبر من Kc؛ يزاح موضع الاتزان عكسياً نحو المتفاعلات لتكوين المزيد من ${selectedReaction.reactantsAr}.`
+                  }
+                  currentParameters={{
+                    'التفاعل الكيميائي': selectedReaction.nameAr,
+                    'المعادلة': selectedReaction.equationAr,
+                    'درجة الحرارة': `${temperatureK} K`,
+                    'الضغط': `${pressureAtm.toFixed(1)} atm`,
+                    'ثابت الاتزان Kc': currentKc,
+                    'حاصل التفاعل Q': Q,
+                    'تغير عدد مولات الغاز Δn': selectedReaction.deltaMolesGas,
+                    'حرارة التفاعل ΔH': `${selectedReaction.deltaH} kJ`
+                  }}
+                />
+
+                {/* Gamified Challenge Engine */}
+                <LabChallengeEngine
+                  challenges={[
+                    {
+                      id: 'haber-high-yield',
+                      title: 'رفع إنتاج الأمونيا (Haber-Bosch)',
+                      description: 'ارفع الضغط فوق 3.5 atm واخفض درجة الحرارة تحت 350 K لزيادة حصيلة الأمونيا.',
+                      targetDescription: 'P > 3.5 atm & T < 350 K في تفاعل هابر',
+                      checkSuccess: () => selectedReaction.id === 'haber' && pressureAtm >= 3.5 && temperatureK <= 350,
+                      points: 200,
+                      badge: 'مهندس تخليق الأمونيا'
+                    },
+                    {
+                      id: 'no2-colorless',
+                      title: 'توازن ثاني أكسيد النيتروجين الملون',
+                      description: 'برّد المفاعل دون 300 K لإزاحة التفاعل نحو تكوين رابع أكسيد ثنائي النيتروجين الشفاف.',
+                      targetDescription: 'حرارة < 300 K في تفاعل NO2',
+                      checkSuccess: () => selectedReaction.id === 'no2-dimer' && temperatureK <= 300,
+                      points: 150,
+                      badge: 'متحكم أطياف الغازات'
+                    },
+                    {
+                      id: 'equilibrium-lock',
+                      title: 'تثبيت حالة الاتزان التام',
+                      description: 'حافظ على ثبات قيمة حاصل التفاعل Q مساوية لثابت الاتزان Kc (الفرق أقل من 0.05).',
+                      targetDescription: '|Q - Kc| < 0.05',
+                      checkSuccess: () => Math.abs(Q - currentKc) < 0.05,
+                      points: 180,
+                      badge: 'خبير اتزان لوشاتيليه'
+                    }
+                  ]}
+                />
               </div>
             </div>
           </TabsContent>
