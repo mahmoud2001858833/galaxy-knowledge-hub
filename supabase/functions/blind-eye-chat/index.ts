@@ -1,5 +1,5 @@
-// Blind Eye - Always-on chat with the visual assistant
-// Uses Lovable AI Gateway (exception granted only for Blind Eye feature)
+// Blind Eye - Intelligent Conversational Visual Companion for the Visually Impaired
+// Powered by Lovable AI Gateway (Gemini 2.5 Flash / Pro, GPT-4o)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,46 +9,56 @@ const corsHeaders = {
 };
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
+const MODELS = [
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  "google/gemini-3-flash-preview",
+  "openai/gpt-4o",
+];
 
 type Lang = "en" | "ar";
 
 const SYSTEM = (lang: Lang) => lang === "ar"
-  ? `أنت "عين الأعمى"، رفيق صوتي ودود ودافئ للمكفوفين أثناء المشي. تتحدث معهم بطبيعية كصديق مهتم.
+  ? `أنت "عين الأعمى" (Blind Eye)، رفيق بصري ذكي وفائق الإدراك لمساعدة المكفوفين وضعاف البصر أثناء حركتهم وحياتهم اليومية.
+أنت بمثابة صديق بصير يسير بجانب الكفيف ويمده بالرؤية الحية الدقيقة:
 
-قواعد:
-- ردود قصيرة جداً (٥-٢٥ كلمة) لأنها تُنطق صوتياً.
-- عربية فصحى بسيطة دافئة، ليست رسمية.
-- استخدم visualContext بثقة كأنك ترى المشهد فعلاً، ولا تقل "في الصورة".
-- إن سأل "ماذا حولي؟" → استخدم visualContext لوصف موجز.
-- إن سأل "هل الطريق آمن؟" → استند إلى القرب والاتجاه الأفضل.
-- لا ترفض إلا لضرورة قصوى.
-- في كل ردّ، أرفق 2-3 اقتراحات قصيرة بأشياء يمكنه أن يسألها بعد ذلك.`
-  : `You are "Blind Eye", a warm friendly voice companion for a blind user while they walk. Talk like a caring friend.
+قواعد الإجابة:
+1. الوضوح والأمان أولاً: إذا كان هناك أي خطر أو عائق حرج، اذكر التحذير فوراً في بداية جملتك مع الاتجاه الآمن (يمين/يسار/توقف).
+2. في وصف المشهد ("صف ما أمامي"): قدم جولة وصفية ثرية وواضحة (3-5 جمل): نوع المكان، العوائق الرئيسية ومسافاتها التقريبية، الممر الآمن المفتوح، والإضاءة أو الأشخاص.
+3. في قراءة النصوص والأدوية ("اقرأ"): اقرأ النص بدقة واذكر اسم الدواء والجرعة وتاريخ الصلاحية إن وجد بوضوح تام.
+4. في التعرف على النقود والأغراض ("كم دينار؟" / "ما هذا؟"): حدد فئة العملة بدقة (مثل: 10 دنانير أردنية، 50 ريالاً، 20 دولاراً) أو لون الغرض وموقعه النسبي.
+5. في الأسئلة السريعة أثناء المشي: أجب بجمل مباشرة وسلسة (10-30 كلمة) مناسبة للنطق الصوتي الفوري.
+6. اللغة: عربية فصيحة سلسة ودافئة، وتفهم جميع اللهجات العامية (الأردنية، الشامية، الخليجية، المصرية، المغاربية).
+7. اقترح دائماً في قائمة suggestions خيارين أو ثلاثة أسئلة ذكية ومفيدة تناسب ما تراه في الكاميرا.`
+  : `You are "Blind Eye", an ultra-intelligent, caring visual companion walking alongside a blind or visually impaired person.
+You act as their personal eyes, providing vivid, accurate, and safety-focused guidance:
 
 Rules:
-- Keep replies very short (5-25 words) — they will be spoken out loud.
-- Plain warm English, not formal.
-- Use visualContext confidently as if you actually see the scene. Never say "in the image".
-- If asked "what's around me?" → describe briefly using visualContext.
-- If asked "is the path safe?" → use the proximity and best path.
-- Refuse only when absolutely necessary.
-- Always include 2-3 short follow-up suggestions of things the user could ask next.`;
+1. Safety First: If there is an imminent obstacle or hazard, warn them immediately with an escape direction.
+2. In Scene Description ("Describe what is in front of me"): Provide a vivid, practical 3-5 sentence walkthrough: room/environment type, main obstacles and distances, clear walking path, lighting and people.
+3. In Text & Medicine Reading ("Read"): Read all visible text with high precision, prioritizing medicine names, dosages, expiry dates, or room numbers.
+4. In Currency & Object Recognition: Identify exact currency denomination (e.g. 10 JOD, 50 SAR, 100 USD) and colors/positions of objects.
+5. In Walking Queries: Keep answers direct, reassuring, and concise (10-30 words) optimized for clear speech.
+6. Always provide 2-3 contextual suggestions relevant to the live camera view.`;
 
 const speakTool = {
   type: "function",
   function: {
     name: "speak",
-    description: "Return short sentence to be spoken to the blind user plus follow-up suggestions",
+    description: "Return high-quality spoken response for the blind user with contextual follow-up suggestions",
     parameters: {
       type: "object",
       properties: {
-        spoken: { type: "string" },
+        spoken: {
+          type: "string",
+          description: "Warm, crystal-clear, highly informative sentence(s) to be spoken out loud to the user.",
+        },
         suggestions: {
           type: "array",
           minItems: 0,
           maxItems: 3,
           items: { type: "string" },
+          description: "Follow-up questions or actions the user might want to ask next.",
         },
       },
       required: ["spoken"],
@@ -72,15 +82,15 @@ async function callGateway(
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
   const messages: any[] = [{ role: "system", content: SYSTEM(lang) }];
-  for (const m of history.slice(-4)) {
+  for (const m of history.slice(-6)) {
     if (!m?.text) continue;
     messages.push({ role: m.role, content: m.text });
   }
 
-  const ctxLabel = lang === "ar" ? "[سياق بصري حالي من الكاميرا]" : "[Live visual context from camera]";
-  const askLabel = lang === "ar" ? "[سؤال المستخدم]" : "[User]";
+  const ctxLabel = lang === "ar" ? "[سياق المشهد الحي من الكاميرا]" : "[Live camera visual context]";
+  const askLabel = lang === "ar" ? "[طلب المستخدم الكفيف]" : "[Blind user request]";
   const intentLine = intent
-    ? (lang === "ar" ? `\n[نوع الطلب]: ${intent}` : `\n[Intent]: ${intent}`)
+    ? (lang === "ar" ? `\n[الهدف المحدد]: ${intent}` : `\n[Intent]: ${intent}`)
     : "";
   const prefixText = visualContext
     ? `${ctxLabel}: ${visualContext}${intentLine}\n\n${askLabel}: ${userText}`
@@ -90,15 +100,13 @@ async function callGateway(
   if (imageDataUrl) userContent.push({ type: "image_url", image_url: { url: imageDataUrl } });
   messages.push({ role: "user", content: userContent });
 
-
   const body = {
     model,
-    max_tokens: 120,
+    max_tokens: 500,
     messages,
     tools: [speakTool],
     tool_choice: { type: "function", function: { name: "speak" } },
   };
-
 
   const r = await fetch(GATEWAY, {
     method: "POST",
@@ -121,7 +129,10 @@ async function callGateway(
     return parsed;
   }
   const txt = j?.choices?.[0]?.message?.content ?? "";
-  return { spoken: typeof txt === "string" ? txt.slice(0, 200) : (lang === "ar" ? "حسناً" : "Okay"), suggestions: [] };
+  return {
+    spoken: typeof txt === "string" ? txt.slice(0, 400) : (lang === "ar" ? "أنا معك، الطريق أمامك مراقب." : "I am with you, watching the path."),
+    suggestions: [],
+  };
 }
 
 Deno.serve(async (req) => {
@@ -143,20 +154,27 @@ Deno.serve(async (req) => {
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, text, useLang, image, safeHistory, typeof visualContext === "string" ? visualContext : undefined, typeof intent === "string" ? intent : undefined);
+        const result = await callGateway(
+          model,
+          text,
+          useLang,
+          image,
+          safeHistory,
+          typeof visualContext === "string" ? visualContext : undefined,
+          typeof intent === "string" ? intent : undefined
+        );
         return new Response(JSON.stringify({ ok: true, model, lang: useLang, ...result }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "RATE_LIMIT") {
-          return new Response(JSON.stringify({ error: "rate_limit", message: useLang === "ar" ? "النظام مزدحم" : "System busy" }), {
+          return new Response(JSON.stringify({ error: "rate_limit", message: useLang === "ar" ? "النظام مزدحم مؤقتاً" : "System busy" }), {
             status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         if (msg === "PAYMENT_REQUIRED") {
-          return new Response(JSON.stringify({ error: "payment_required", message: useLang === "ar" ? "نفذت الأرصدة" : "Out of credits" }), {
+          return new Response(JSON.stringify({ error: "payment_required", message: useLang === "ar" ? "نفذت الأرصدة، يرجى الشحن" : "Out of credits" }), {
             status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
@@ -165,7 +183,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ error: "All models failed", details: lastErr }), {
+    return new Response(JSON.stringify({ error: "All chat models failed", details: lastErr }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

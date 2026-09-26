@@ -1,5 +1,5 @@
-// Blind Eye - Vision navigation assistant for blind users
-// Uses Lovable AI Gateway (exception granted only for Blind Eye feature)
+// Blind Eye - Advanced Vision Navigation Engine for the Visually Impaired
+// Powered by Lovable AI Gateway (Gemini 2.5 Flash / Pro, GPT-4o)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,188 +9,129 @@ const corsHeaders = {
 };
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
+const MODELS = [
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  "google/gemini-3-flash-preview",
+  "openai/gpt-4o",
+];
 
 type Lang =
   | "en" | "ar" | "fr" | "es" | "de" | "pt" | "ru" | "tr"
   | "fa" | "ur" | "he" | "hi" | "ja" | "ko" | "zh";
 
-const COMMANDS: Record<Lang, { left: string; right: string; ahead: string; stop: string; back: string; continue_: string }> = {
-  en: { left: "Left", right: "Right", ahead: "Ahead", stop: "Stop", back: "Back", continue_: "Continue" },
-  ar: { left: "يسار", right: "يمين", ahead: "أمام", stop: "قف", back: "تراجع", continue_: "استمر" },
-  fr: { left: "Gauche", right: "Droite", ahead: "Avancez", stop: "Stop", back: "Reculez", continue_: "Continuez" },
-  es: { left: "Izquierda", right: "Derecha", ahead: "Adelante", stop: "Alto", back: "Atrás", continue_: "Continúa" },
-  de: { left: "Links", right: "Rechts", ahead: "Geradeaus", stop: "Halt", back: "Zurück", continue_: "Weiter" },
-  pt: { left: "Esquerda", right: "Direita", ahead: "Em frente", stop: "Pare", back: "Recue", continue_: "Continue" },
-  ru: { left: "Налево", right: "Направо", ahead: "Прямо", stop: "Стоп", back: "Назад", continue_: "Продолжайте" },
-  tr: { left: "Sol", right: "Sağ", ahead: "İleri", stop: "Dur", back: "Geri", continue_: "Devam" },
-  fa: { left: "چپ", right: "راست", ahead: "جلو", stop: "بایست", back: "عقب", continue_: "ادامه" },
-  ur: { left: "بائیں", right: "دائیں", ahead: "آگے", stop: "رکو", back: "پیچھے", continue_: "جاری رکھیں" },
-  he: { left: "שמאלה", right: "ימינה", ahead: "קדימה", stop: "עצור", back: "אחורה", continue_: "המשך" },
-  hi: { left: "बाएं", right: "दाएं", ahead: "आगे", stop: "रुको", back: "पीछे", continue_: "जारी रखें" },
-  ja: { left: "左", right: "右", ahead: "前へ", stop: "止まれ", back: "後ろ", continue_: "進め" },
-  ko: { left: "왼쪽", right: "오른쪽", ahead: "앞으로", stop: "멈춰", back: "뒤로", continue_: "계속" },
-  zh: { left: "左", right: "右", ahead: "前进", stop: "停", back: "后退", continue_: "继续" },
-};
-
-// spoken MUST be a single short directional command in the user's language.
-// Never describe what's seen.
-function cmdList(lang: Lang): string {
-  const c = COMMANDS[lang] || COMMANDS.en;
-  return `"${c.left}" "${c.right}" "${c.ahead}" "${c.stop}" "${c.back}" "${c.continue_}"`;
-}
-
-const POINTS_PROMPT = (lang: Lang, target?: string) => {
-  const c = COMMANDS[lang] || COMMANDS.en;
-  const targetLine = target
-    ? `\n- User destination: "${target}". If seen: target_seen=true, target_bearing=(left|center|right), target_distance=(far|mid|near|arrived), next_step_ar=one short command word in language "${lang}". Else target_seen=false.`
-    : "";
-  return `You are "Blind Eye" helping a blind user. Reply strictly in language "${lang}".
-- objects: up to 6, label one word in language "${lang}", hazard low|medium|high, proximity 0-100, coordinates 0-1.
-- best_path: left|center|right
-- global_proximity 0-100
-- spoken: EXACTLY one word from: ${cmdList(lang)}. Never describe.
-  Rules: global_proximity>=70 → "${c.stop}". Side hazard → safe direction. Clear → "${c.ahead}" or "${c.continue_}".
-- obstacles_summary: 3-6 words in language "${lang}" (display only, NOT spoken).${targetLine}
-Be fast.`;
-};
-
-const GUIDANCE_FAST_PROMPT = (lang: Lang) => {
-  return `You are "Blind Eye". Reply strictly in language "${lang}".
-- best_path: left|center|right
-- global_proximity 0-100
-- spoken: EXACTLY one word from: ${cmdList(lang)}. Never describe.
-- obstacles_summary: 3-6 words in "${lang}" for display only
-- top_hazards: 1-2`;
-};
-
-const GUIDANCE_DETAILED_PROMPT = (lang: Lang) => {
-  return `You are "Blind Eye". 3×3 grid (TL TC TR / ML MC MR / BL BC BR). Reply strictly in language "${lang}".
-Per cell: object/label/proximity 0-100/hazard.
-Return best_path, global_proximity, spoken (ONE word from ${cmdList(lang)}), obstacles_summary for display.`;
-};
-
-const CALIBRATION_PROMPT = (lang: Lang) => `Quick calibration. Any walkable frame → position_ok=true. spoken: ONE short ready-word in language "${lang}".`;
-
-
+// Structured Tool Definitions
 const pointsTool = {
   type: "function",
   function: {
     name: "describe_points",
-    description: "Return detected objects with normalized 0-1 coordinates",
+    description: "Real-time obstacle detection and human-like natural navigation advice",
     parameters: {
       type: "object",
       properties: {
         objects: {
-          type: "array", maxItems: 6,
+          type: "array",
+          maxItems: 8,
           items: {
             type: "object",
             properties: {
-              x: { type: "number" }, y: { type: "number" },
-              w: { type: "number" }, h: { type: "number" },
-              label: { type: "string" },
-              hazard: { type: "string", enum: ["low","medium","high"] },
-              proximity: { type: "number" },
+              x: { type: "number", description: "0..1 left coordinate" },
+              y: { type: "number", description: "0..1 top coordinate" },
+              w: { type: "number", description: "0..1 width" },
+              h: { type: "number", description: "0..1 height" },
+              label: { type: "string", description: "Obstacle name in user's language" },
+              hazard: { type: "string", enum: ["low", "medium", "high"] },
+              proximity: { type: "number", description: "0..100 closeness" },
+              distance_hint: { type: "string", description: "Approximate distance like 1 meter / 2 steps" },
             },
-            required: ["x","y","w","h","label","hazard","proximity"],
+            required: ["x", "y", "w", "h", "label", "hazard", "proximity"],
             additionalProperties: false,
           },
         },
-        best_path: { type: "string", enum: ["left","center","right"] },
-        global_proximity: { type: "number" },
-        spoken: { type: "string" },
-        obstacles_summary: { type: "string" },
-        target_seen: { type: "boolean" },
-        target_bearing: { type: "string", enum: ["left","center","right"] },
-        target_distance: { type: "string", enum: ["far","mid","near","arrived"] },
-        next_step_ar: { type: "string" },
-      },
-      required: ["objects","best_path","global_proximity","spoken","obstacles_summary"],
-      additionalProperties: false,
-    },
-  },
-};
-
-const guidanceFastTool = {
-  type: "function",
-  function: {
-    name: "describe_scene_fast",
-    description: "Fast spatial analysis",
-    parameters: {
-      type: "object",
-      properties: {
         best_path: { type: "string", enum: ["left", "center", "right"] },
-        global_proximity: { type: "number" },
-        spoken: { type: "string" },
-        obstacles_summary: { type: "string" },
-        top_hazards: {
-          type: "array", maxItems: 2,
-          items: {
-            type: "object",
-            properties: {
-              id: { type: "string", enum: ["TL","TC","TR","ML","MC","MR","BL","BC","BR"] },
-              label: { type: "string" },
-              hazard: { type: "string", enum: ["low","medium","high"] },
-            },
-            required: ["id","label","hazard"],
-            additionalProperties: false,
-          },
+        global_proximity: { type: "number", description: "0..100 overall collision danger" },
+        spoken: {
+          type: "string",
+          description: "Natural, crystal-clear, highly practical spoken instruction for the blind user (concise 4-12 words in user's language). Never robotic. Tell them where to step or warn of exact obstacle.",
         },
+        obstacles_summary: { type: "string", description: "Short descriptive summary for companion display" },
+        target_seen: { type: "boolean" },
+        target_bearing: { type: "string", enum: ["left", "center", "right"] },
+        target_distance: { type: "string", enum: ["far", "mid", "near", "arrived"] },
+        next_step_ar: { type: "string", description: "Guidance sentence toward target" },
       },
-      required: ["best_path","global_proximity","spoken","obstacles_summary","top_hazards"],
+      required: ["objects", "best_path", "global_proximity", "spoken", "obstacles_summary"],
       additionalProperties: false,
     },
   },
 };
 
-const guidanceDetailedTool = {
+const describeSceneTool = {
   type: "function",
   function: {
-    name: "describe_scene",
-    description: "Full 3x3 spatial grid analysis",
+    name: "describe_scene_full",
+    description: "Full panoramic spatial scene description for a blind user",
     parameters: {
       type: "object",
       properties: {
-        cells: {
-          type: "array", minItems: 9, maxItems: 9,
-          items: {
-            type: "object",
-            properties: {
-              id: { type: "string", enum: ["TL","TC","TR","ML","MC","MR","BL","BC","BR"] },
-              label: { type: "string" },
-              object: { type: "string" },
-              proximity: { type: "number" },
-              hazard: { type: "string", enum: ["low","medium","high"] },
-            },
-            required: ["id","label","object","proximity","hazard"],
-            additionalProperties: false,
-          },
+        spoken: {
+          type: "string",
+          description: "A vivid, reassuring, highly informative 3-5 sentence walkthrough in user's language: 1) Environment/room type, 2) Key obstacles & distance, 3) Clear safe walking corridor, 4) Lighting, doors, or people.",
         },
-        best_path: { type: "string", enum: ["left","center","right"] },
-        global_proximity: { type: "number" },
-        spoken: { type: "string" },
-        obstacles_summary: { type: "string" },
+        scene_title: { type: "string", description: "Short title of the scene" },
+        safe_path: { type: "string", enum: ["left", "center", "right"] },
+        top_obstacles: {
+          type: "array",
+          items: { type: "string" },
+          description: "Main items/obstacles seen",
+        },
+        lighting_condition: { type: "string", description: "Bright, normal, dim, or dark" },
       },
-      required: ["cells","best_path","global_proximity","spoken","obstacles_summary"],
+      required: ["spoken", "scene_title", "safe_path"],
       additionalProperties: false,
     },
   },
 };
 
-const calibTool = {
+const ocrTool = {
   type: "function",
   function: {
-    name: "calibrate",
-    description: "Phone position calibration result",
+    name: "read_text_full",
+    description: "Accurate OCR reader for signs, documents, labels, medication, and packaging",
     parameters: {
       type: "object",
       properties: {
-        position_ok: { type: "boolean" },
-        issue: { type: "string" },
-        adjustment: { type: "string" },
-        spoken: { type: "string" },
+        spoken: {
+          type: "string",
+          description: "Fluent reading aloud of the text in user's language, stating the type of sign/document first, then the content and any crucial safety or dosage info.",
+        },
+        title: { type: "string", description: "Type of text (e.g. Door Sign, Medicine Box, Invoice)" },
+        full_text: { type: "string", description: "Exact extracted text" },
+        key_instruction: { type: "string", description: "Any key warning, expiry date, or room number" },
       },
-      required: ["position_ok","spoken"],
+      required: ["spoken", "full_text"],
+      additionalProperties: false,
+    },
+  },
+};
+
+const identifyItemTool = {
+  type: "function",
+  function: {
+    name: "identify_item",
+    description: "Identify currency notes, handheld objects, clothing colors, and items",
+    parameters: {
+      type: "object",
+      properties: {
+        spoken: {
+          type: "string",
+          description: "Clear statement of what is held or seen: exact currency denomination and country (e.g. 10 Jordanian Dinars, 50 Saudi Riyals), or object name, color, and location.",
+        },
+        category: { type: "string", enum: ["currency", "medicine", "electronics", "clothing", "document", "food", "general"] },
+        denomination: { type: "string", description: "If currency, exact value like '10 JOD'" },
+        primary_color: { type: "string", description: "Item color in user's language" },
+      },
+      required: ["spoken", "category"],
       additionalProperties: false,
     },
   },
@@ -200,7 +141,7 @@ const spinScanTool = {
   type: "function",
   function: {
     name: "spin_scan_summary",
-    description: "Summarize a 360° look around the user",
+    description: "Summarize a 360° rotation around the blind user",
     parameters: {
       type: "object",
       properties: {
@@ -220,13 +161,13 @@ const describeHazardTool = {
   type: "function",
   function: {
     name: "describe_hazard",
-    description: "One short sentence describing the obstacle directly in front",
+    description: "Immediate emergency obstacle warning with exact escape direction",
     parameters: {
       type: "object",
       properties: {
-        spoken: { type: "string" },
+        spoken: { type: "string", description: "e.g. 'Stop! Chair directly in front, step right.'" },
         label: { type: "string" },
-        side: { type: "string", enum: ["left","center","right"] },
+        side: { type: "string", enum: ["left", "center", "right"] },
       },
       required: ["spoken"],
       additionalProperties: false,
@@ -234,29 +175,96 @@ const describeHazardTool = {
   },
 };
 
-type Mode = "calibration" | "fast" | "detailed" | "points" | "spin_scan" | "describe_hazard";
+type Mode = "points" | "describe_scene" | "ocr" | "identify" | "spin_scan" | "describe_hazard" | "calibration" | "detailed" | "fast";
 
-const SPIN_SCAN_PROMPT = (lang: Lang) => `You are "Blind Eye". The blind user just rotated 360°. From these snapshots, give ONE warm short summary in language "${lang}" (<= 25 words) saying place_type, key landmarks, open directions, and any clear warnings. summary_spoken must be ready-to-speak in language "${lang}".`;
+const SYSTEM_PROMPTS = {
+  points: (lang: Lang, target?: string) => `You are "Blind Eye" (عين الأعمى), an elite, caring visual navigator guiding a blind or visually impaired person in real time. Reply strictly in language "${lang}".
+- Detect up to 8 obstacles with coordinates (0..1), labels in "${lang}", hazard levels, and distance estimations.
+- Determine best_path: left | center | right.
+- Determine global_proximity: 0..100 (where 0=completely clear hallway, 40-60=approaching object, 75+=imminent collision).
+- spoken: MUST be a natural, warm, highly practical guidance sentence (4 to 12 words) in "${lang}".
+  * If global_proximity >= 75: Start with urgent stop/caution and name the obstacle and safe move: e.g. "انتبه! كرسي أمامك على بعد خطوة، اتجه يميناً" or "قف! شخص قادم في مواجهتك، خذ أقصى اليمين".
+  * If global_proximity >= 40: Give a smooth navigational cue: e.g. "طاولة على يسارك، استمر نحو اليمين" or "الباب مفتوح أمامك على بعد مترين".
+  * If global_proximity < 40 (clear path): Reassure the user: e.g. "الطريق سالك تماماً أمامك، استمر للأمام" or "الممر مفتوح، تابع المشي بأمان".
+${target ? `- Target Destination: "${target}". If visible: target_seen=true, target_bearing=(left|center|right), target_distance=(far|mid|near|arrived), next_step_ar=helpful navigation instruction.` : ""}`,
 
-const DESCRIBE_HAZARD_PROMPT = (lang: Lang) => `You are "Blind Eye". Describe ONLY the closest obstacle directly in front of the blind user in <= 8 words in language "${lang}". Include a short safe action (e.g. step right/back). No extra text.`;
+  describe_scene: (lang: Lang) => `You are "Blind Eye" (عين الأعمى), the personal visual companion for a blind individual. The user asked "Describe what is in front of me" (صف ما أمامي).
+Provide an intelligent, vivid, highly spatial description in language "${lang}".
+Include:
+1. Environment type (e.g. living room, hospital corridor, office, outdoor sidewalk, classroom).
+2. Key furniture, objects, or obstacles and their approximate distances (e.g. "طاولة خشبية في المنتصف على بعد مترين").
+3. The clearest safe walking corridor (where they can step without tripping).
+4. Lighting conditions, windows, doors, or people in the room.
+Keep the spoken response warm, natural, and directly actionable (3 to 5 sentences).`,
 
-async function callGateway(model: string, imageDataUrl: string | string[], mode: Mode, lang: Lang, extraContext?: string, target?: string) {
+  ocr: (lang: Lang) => `You are "Blind Eye" (عين الأعمى) text reading assistant for the blind.
+Examine the image and read all visible text with utmost precision in language "${lang}".
+Identify the document type (e.g. Medicine packaging, Street sign, Room label, Printed letter, Price tag, Screen).
+Extract the text accurately. In "spoken", deliver a fluent, clean, natural reading. Highlight crucial safety information like medicine dosage, expiration dates, warnings, or room names first.`,
+
+  identify: (lang: Lang) => `You are "Blind Eye" (عين الأعمى). The blind user is holding an item, currency note, or asking what something is.
+Identify with 100% precision in language "${lang}":
+- If CURRENCY/MONEY: Specify the exact country and denomination (e.g. "عشرة دنانير أردنية" or "خمسون ريالاً سعودياً" or "ورقة مئة دولار"). Note security features or color if helpful.
+- If MEDICINE: Name the medication, strength (e.g. 500mg), and purpose.
+- If OBJECT: State what it is, its color, and relative position.
+In "spoken", speak directly and clearly to the user.`,
+
+  spin_scan: (lang: Lang) => `You are "Blind Eye". The blind user completed a 360° turn. Provide a warm, comprehensive spatial overview in language "${lang}" (< 35 words): place type, key landmarks around them, open walking exits, and any safety warnings.`,
+
+  describe_hazard: (lang: Lang) => `You are "Blind Eye". Describe ONLY the immediate obstacle directly blocking the blind user in <= 10 words in "${lang}", giving an immediate safe evasion direction (e.g. "انتبه! عتبة أمامك، توقف وخطُ للأعلى").`,
+
+  calibration: (lang: Lang) => `Quick phone calibration. Confirm if phone camera angle covers walking path ahead. position_ok=true if walkable floor/path is visible. spoken: Short ready phrase in "${lang}".`,
+};
+
+async function callGateway(
+  model: string,
+  imageDataUrl: string | string[],
+  mode: Mode,
+  lang: Lang,
+  extraContext?: string,
+  target?: string
+) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
-  let sys: string;
-  let tool: any;
-  if (mode === "calibration") { sys = CALIBRATION_PROMPT(lang); tool = calibTool; }
-  else if (mode === "detailed") { sys = GUIDANCE_DETAILED_PROMPT(lang); tool = guidanceDetailedTool; }
-  else if (mode === "points") { sys = POINTS_PROMPT(lang, target); tool = pointsTool; }
-  else if (mode === "spin_scan") { sys = SPIN_SCAN_PROMPT(lang); tool = spinScanTool; }
-  else if (mode === "describe_hazard") { sys = DESCRIBE_HAZARD_PROMPT(lang); tool = describeHazardTool; }
-  else { sys = GUIDANCE_FAST_PROMPT(lang); tool = guidanceFastTool; }
+  let sysPrompt = "";
+  let tool: any = pointsTool;
+  let maxTokens = 350;
 
+  if (mode === "describe_scene" || mode === "detailed") {
+    sysPrompt = SYSTEM_PROMPTS.describe_scene(lang);
+    tool = describeSceneTool;
+    maxTokens = 650;
+  } else if (mode === "ocr") {
+    sysPrompt = SYSTEM_PROMPTS.ocr(lang);
+    tool = ocrTool;
+    maxTokens = 650;
+  } else if (mode === "identify") {
+    sysPrompt = SYSTEM_PROMPTS.identify(lang);
+    tool = identifyItemTool;
+    maxTokens = 450;
+  } else if (mode === "spin_scan") {
+    sysPrompt = SYSTEM_PROMPTS.spin_scan(lang);
+    tool = spinScanTool;
+    maxTokens = 300;
+  } else if (mode === "describe_hazard") {
+    sysPrompt = SYSTEM_PROMPTS.describe_hazard(lang);
+    tool = describeHazardTool;
+    maxTokens = 120;
+  } else if (mode === "calibration") {
+    sysPrompt = SYSTEM_PROMPTS.calibration(lang);
+    tool = pointsTool;
+    maxTokens = 150;
+  } else {
+    // points / fast / live guidance
+    sysPrompt = SYSTEM_PROMPTS.points(lang, target);
+    tool = pointsTool;
+    maxTokens = 400;
+  }
 
   const userText = extraContext
-    ? `Context: ${extraContext}\nAnalyze in language "${lang}".`
-    : `Analyze in language "${lang}".`;
+    ? `Context: ${extraContext}\nAnalyze the scene for the blind user in language "${lang}".`
+    : `Analyze the scene for the blind user in language "${lang}".`;
 
   const images = Array.isArray(imageDataUrl) ? imageDataUrl : [imageDataUrl];
   const userContent: any[] = [{ type: "text", text: userText }];
@@ -264,16 +272,14 @@ async function callGateway(model: string, imageDataUrl: string | string[], mode:
 
   const body = {
     model,
-    max_tokens: mode === "spin_scan" ? 220 : mode === "describe_hazard" ? 60 : 200,
+    max_tokens: maxTokens,
     messages: [
-      { role: "system", content: sys },
+      { role: "system", content: sysPrompt },
       { role: "user", content: userContent },
     ],
     tools: [tool],
     tool_choice: { type: "function", function: { name: tool.function.name } },
   };
-
-
 
   const r = await fetch(GATEWAY, {
     method: "POST",
@@ -302,48 +308,67 @@ Deno.serve(async (req) => {
     const imgInput: string | string[] | null =
       Array.isArray(images) && images.length ? images.filter((i: any) => typeof i === "string") :
       typeof image === "string" ? image : null;
+
     if (!imgInput || (Array.isArray(imgInput) && imgInput.length === 0)) {
       return new Response(JSON.stringify({ error: "image required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
     let useMode: Mode = "points";
-    if (mode === "calibration") useMode = "calibration";
-    else if (mode === "detailed") useMode = "detailed";
-    else if (mode === "fast") useMode = "fast";
-    else if (mode === "points") useMode = "points";
+    if (mode === "describe_scene" || mode === "detailed") useMode = "describe_scene";
+    else if (mode === "ocr" || mode === "read_text") useMode = "ocr";
+    else if (mode === "identify" || mode === "currency") useMode = "identify";
     else if (mode === "spin_scan") useMode = "spin_scan";
     else if (mode === "describe_hazard") useMode = "describe_hazard";
-    else if (mode === "guidance") useMode = "fast";
+    else if (mode === "calibration") useMode = "calibration";
+    else useMode = "points";
 
-    const useLang: Lang = (typeof lang === "string" && lang in COMMANDS) ? (lang as Lang) : "en";
+    const useLang: Lang = (typeof lang === "string" && ["en","ar","fr","es","de","pt","ru","tr","fa","ur","he","hi","ja","ko","zh"].includes(lang))
+      ? (lang as Lang)
+      : "ar";
 
     let lastErr = "";
     for (const model of MODELS) {
       try {
-        const result = await callGateway(model, imgInput, useMode, useLang, context, typeof target === 'string' ? target : undefined);
-        return new Response(JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-
+        const result = await callGateway(
+          model,
+          imgInput,
+          useMode,
+          useLang,
+          context,
+          typeof target === "string" ? target : undefined
+        );
+        return new Response(
+          JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "RATE_LIMIT") {
-          return new Response(JSON.stringify({ error: "rate_limit", message: useLang === "ar" ? "النظام مزدحم، حاول بعد قليل" : "System busy, try again shortly" }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: "rate_limit",
+              message: useLang === "ar" ? "النظام مزدحم مؤقتاً، أواصل التوجيه المحلي" : "System busy, continuing local guidance",
+            }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
         if (msg === "PAYMENT_REQUIRED") {
-          return new Response(JSON.stringify({ error: "payment_required", message: useLang === "ar" ? "نفذت الأرصدة، يرجى الشحن" : "Out of credits, please top up" }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: "payment_required",
+              message: useLang === "ar" ? "نفذت الأرصدة، يرجى الشحن" : "Out of credits",
+            }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
         lastErr = msg;
-        console.warn(`Model ${model} failed:`, msg);
+        console.warn(`Model ${model} failed in blind-eye-vision:`, msg);
       }
     }
 
-    return new Response(JSON.stringify({ error: "All models failed", details: lastErr }), {
+    return new Response(JSON.stringify({ error: "All vision models failed", details: lastErr }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

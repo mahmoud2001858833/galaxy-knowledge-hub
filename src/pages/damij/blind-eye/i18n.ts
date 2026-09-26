@@ -107,8 +107,8 @@ export const BE_STRINGS: Record<BELang, Dict> = {
 };
 
 export const defaultSuggestions: Record<BELang, string[]> = {
-  en: ['Take me to the door', 'What is around me?', 'Switch to Arabic'],
-  ar: ['خذني إلى الباب', 'ماذا حولي؟', 'حوّل إلى الإنجليزية'],
+  en: ['Describe what is ahead', 'Read text & signs', 'What is this currency?', 'Take me to the door'],
+  ar: ['صف ما أمامي بالتفصيل', 'اقرأ النص واللافتات', 'كم دينار هاي الورقة؟', 'خذني إلى الباب'],
   fr: ['Emmène-moi à la porte', "Qu'y a-t-il autour ?", "Passe à l'anglais"],
   es: ['Llévame a la puerta', '¿Qué hay alrededor?', 'Cambia al inglés'],
   de: ['Bring mich zur Tür', 'Was ist um mich herum?', 'Wechsle zu Englisch'],

@@ -198,13 +198,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const v = videoRef.current;
     const c = captureCanvasRef.current;
     if (!v || !c || v.readyState < 2) return null;
-    const w = mode === 'calibration' ? 224 : mode === 'detailed' ? 480 : 256;
+    const w = mode === 'calibration' ? 240 : mode === 'detailed' ? 840 : 480;
     const h = Math.round((v.videoHeight / v.videoWidth) * w) || Math.round(w * 0.75);
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(v, 0, 0, w, h);
-    const q = mode === 'calibration' ? 0.4 : mode === 'detailed' ? 0.6 : 0.45;
+    const q = mode === 'calibration' ? 0.45 : mode === 'detailed' ? 0.85 : 0.65;
     return c.toDataURL('image/jpeg', q);
 
   }, []);
@@ -681,11 +681,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const visualContext = parts.length ? parts.join(' | ') : undefined;
     const wasAwaitingDest = awaitingDestinationRef.current;
     if (wasAwaitingDest) awaitingDestinationRef.current = false;
-    chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user' as const, text }].slice(-4);
+    const liveImg = captureFrame('detailed');
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
         body: {
           text,
+          image: liveImg,
           history: chatHistoryRef.current.slice(0, -1),
           visualContext,
           lang: langRef.current,
@@ -734,16 +735,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const img = captureFrame('detailed');
 
       if (onlineRef.current && img) {
-        const promptText = lg === 'ar'
-          ? 'صف المشهد أمامي بالتفصيل: ما هي الغرفة أو المكان، ما هي العوائق القريبة والبعيدة، أين الممر الآمن، وما هي الإضاءة والأشياء البارزة. اجعل الرد دقيقاً ومفيداً لمكفوف.'
-          : 'Describe the scene in front of me in detail: location, nearby and distant obstacles, safe corridor, lighting and key items.';
-
-        const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
+        const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
           body: {
-            text: promptText,
-            imageDataUrl: img,
+            image: img,
+            mode: 'describe_scene',
             lang: lg,
-            intent: 'describe_scene',
           },
         });
 
@@ -806,7 +802,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
     vibrate([100, 60, 100]);
     const lg = langRef.current;
     enqueueSpeech({
-      text: lg === 'ar' ? 'أقرأ النصوص واللافتات أمامك...' : 'Reading text and signs ahead...',
+      text: lg === 'ar' ? 'أقرأ النصوص واللافتات أمامك بدقة...' : 'Reading text & signs ahead...',
       priority: 'critical',
       lang: lg,
     });
@@ -827,16 +823,15 @@ const BlindEyeNavigatorInner: React.FC = () => {
       // Try AI Vision first if online for high accuracy on handwriting, signs, Arabic font
       if (onlineRef.current) {
         try {
-          const { data } = await supabase.functions.invoke('blind-eye-chat', {
+          const { data } = await supabase.functions.invoke('blind-eye-vision', {
             body: {
-              text: 'اقرأ جميع الكلمات والنصوص واللافتات والعبارات المكتوبة في هذه الصورة باللغة المكتوبة بها بوضوح وبدون أي مقدمات أو تحيات أو كلمات إضافية.',
-              imageDataUrl: img,
+              image: img,
+              mode: 'ocr',
               lang: lg,
-              intent: 'ocr',
             },
           });
-          if (data?.spoken && data.spoken.length > 2 && !data.spoken.includes('لا أرى')) {
-            readText = data.spoken;
+          if (data?.spoken || data?.full_text) {
+            readText = data.spoken || data.full_text;
           }
         } catch {}
       }
@@ -853,9 +848,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
           : 'No clear text detected. Move closer to the text.';
         enqueueSpeech({ text: msg, priority: 'critical', lang: lg });
       } else {
-        const spoken = readText.slice(0, 450);
+        const spoken = readText.slice(0, 500);
         enqueueSpeech({
-          text: lg === 'ar' ? `النص المكتوب: ${spoken}` : `Text reads: ${spoken}`,
+          text: spoken,
           priority: 'critical',
           lang: lg,
           rate: 0.95,
@@ -878,6 +873,78 @@ const BlindEyeNavigatorInner: React.FC = () => {
           activeModeRef.current = 'walk';
         }
       }, 6000);
+    }
+  }, [captureFrame]);
+
+  // ---- Currency & Item Identification (اقرأ العملة / تعرف على الشيء) ----
+  const triggerIdentifyItem = useCallback(async () => {
+    setActiveMode('describe');
+    activeModeRef.current = 'describe';
+    setIsAnalyzingScene(true);
+    earcons.approach();
+    vibrate([100, 60, 100]);
+    const lg = langRef.current;
+    enqueueSpeech({
+      text: lg === 'ar' ? 'أفحص ما تحمله بيدك أو ما هو أمامك...' : 'Identifying item or currency...',
+      priority: 'critical',
+      lang: lg,
+    });
+
+    try {
+      const img = captureFrame('detailed');
+      if (!img) {
+        enqueueSpeech({
+          text: lg === 'ar' ? 'تعذر التقاط الصورة، اضبط الكاميرا.' : 'Could not capture frame.',
+          priority: 'directional',
+          lang: lg,
+        });
+        return;
+      }
+
+      if (onlineRef.current) {
+        const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
+          body: {
+            image: img,
+            mode: 'identify',
+            lang: lg,
+          },
+        });
+        if (!error && data?.spoken) {
+          enqueueSpeech({
+            text: data.spoken,
+            priority: 'critical',
+            lang: lg,
+            rate: 0.95,
+          });
+          setLastAnnouncedText(data.spoken);
+          vibrate([150, 70, 150]);
+          return;
+        }
+      }
+
+      // Offline fallback
+      const v = videoRef.current;
+      if (v) {
+        const objs = await detectFromVideo(v, 6);
+        const sum = summarizeSceneArabic(objs);
+        enqueueSpeech({ text: sum, priority: 'critical', lang: lg });
+        setLastAnnouncedText(sum);
+      }
+    } catch (e) {
+      console.warn('Identify error:', e);
+      enqueueSpeech({
+        text: lg === 'ar' ? 'تعذر التعرف حالياً.' : 'Could not identify item.',
+        priority: 'directional',
+        lang: lg,
+      });
+    } finally {
+      setIsAnalyzingScene(false);
+      setTimeout(() => {
+        if (activeModeRef.current === 'describe') {
+          setActiveMode('walk');
+          activeModeRef.current = 'walk';
+        }
+      }, 5000);
     }
   }, [captureFrame]);
 
@@ -1199,6 +1266,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
       case 'READ_TEXT':
         triggerReadText();
         return;
+      case 'IDENTIFY':
+        triggerIdentifyItem();
+        return;
       case 'HELP':
         sendChat(langRef.current === 'ar' ? 'ماذا تستطيع أن تفعل؟ اقترح ٣ أوامر مفيدة.' : 'What can you do? Suggest 3 useful commands.');
         return;
@@ -1207,7 +1277,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         sendChat(text);
         return;
     }
-  }, [startCamera, stopAll, runAI, switchLang, sendChat, triggerDescribeScene, triggerReadText]);
+  }, [startCamera, stopAll, runAI, switchLang, sendChat, triggerDescribeScene, triggerReadText, triggerIdentifyItem]);
 
   // Voice recognition (re-binds when language changes)
   useEffect(() => {
@@ -1540,11 +1610,21 @@ const BlindEyeNavigatorInner: React.FC = () => {
         onTouchEnd={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Gestures hint badge for blind user & companion */}
-        <div className="text-[11px] text-center text-white/70 font-medium py-1 px-3 bg-white/10 rounded-full mx-auto backdrop-blur">
-          {lang === 'ar'
-            ? '💡 نقرة: حالة الطريق • نقرتان: تحدث • ضغطة مطولة: صف المشهد'
-            : '💡 Tap: Status • Double-tap: Speak • Long-press: Describe'}
+        {/* Top hint bar with quick currency button */}
+        <div className="flex items-center justify-between gap-2 max-w-md mx-auto w-full">
+          <div className="text-[11px] text-white/70 font-medium py-1 px-3 bg-white/10 rounded-full backdrop-blur truncate flex-1 text-center">
+            {lang === 'ar'
+              ? '💡 نقرة: الحالة • نقرتان: تحدث • ضغطة مطولة: صف المشهد'
+              : '💡 Tap: Status • Double-tap: Speak • Long-press: Describe'}
+          </div>
+          <button
+            onClick={() => triggerIdentifyItem()}
+            aria-label={lang === 'ar' ? 'فحص العملة والأغراض' : 'Identify currency & objects'}
+            className="text-[11px] font-bold py-1 px-3 rounded-full bg-amber-500/25 border border-amber-400/50 text-amber-200 hover:bg-amber-500/35 active:scale-95 flex items-center gap-1 shrink-0 backdrop-blur"
+          >
+            <span>💵</span>
+            <span>{lang === 'ar' ? 'فحص عملة/غرض' : 'Currency/Item'}</span>
+          </button>
         </div>
 
         {/* Action Controls Bar */}

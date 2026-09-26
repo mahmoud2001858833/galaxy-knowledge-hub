@@ -3,7 +3,7 @@ import type { BELang } from './i18n';
 
 export type CommandId =
   | 'STOP' | 'START' | 'REPEAT' | 'SCAN_AREA' | 'WHATS_AROUND'
-  | 'READ_TEXT' | 'SWITCH_LANG_AR' | 'SWITCH_LANG_EN'
+  | 'READ_TEXT' | 'IDENTIFY' | 'SWITCH_LANG_AR' | 'SWITCH_LANG_EN'
   | 'SLOWER' | 'FASTER' | 'QUIETER' | 'LOUDER' | 'HELP' | 'CHAT'
   | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY'
   | 'SAVE_PLACE' | 'EMERGENCY' | 'LIST_PLACES';
@@ -27,6 +27,9 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
   { id: 'READ_TEXT',
     en: [/\b(read (the )?(text|sign)?|read it|read words|read sign)\b/i, /^read\b/i],
     ar: [/(اقرأ|إقرأ|اقرا|قراءة|شو مكتوب|ايش مكتوب|قراءة النص|اقرأ النص)/i] },
+  { id: 'IDENTIFY',
+    en: [/\b(currency|money|bill|cash|what is this|what am i holding|what color)\b/i],
+    ar: [/(عملة|مصاري|فلوس|نقود|كم دينار|كم ريال|شو هاد|شو هاي|ما هذا|شو ماسك|شو بإيدي|شو بايدي|شو اللون|ما اللون|ايش هاد)/i] },
   { id: 'SWITCH_LANG_AR',
     en: [/\b(switch|change|go) to arabic\b/i, /\barabic please\b/i],
     ar: [/(حوّل|حول|بدّل|بدل).*(عرب)/, /(تكلم|إحكي|احكي).*(عرب)/] },
