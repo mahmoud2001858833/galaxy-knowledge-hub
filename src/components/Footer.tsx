@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
               <span>أقسام المنصة السريعة</span>
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
-              {settings.footerLinks.slice(0, 4).map((link) => (
+              {(settings?.footerLinks || []).slice(0, 4).map((link) => (
                 <li key={link.id}>
                   <Link
                     to={link.url}
@@ -83,7 +83,7 @@ const Footer: React.FC = () => {
               <span>المختبرات والمراجع</span>
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
-              {settings.footerLinks.slice(4).map((link) => (
+              {(settings?.footerLinks || []).slice(4).map((link) => (
                 <li key={link.id}>
                   <Link
                     to={link.url}
