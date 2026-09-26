@@ -35,22 +35,32 @@ export async function ensureDetector(): Promise<cocoSsdNs.ObjectDetection> {
 }
 
 const HAZARD_LABELS = new Set([
-  'person','car','truck','bus','motorcycle','bicycle','dog','cat',
-  'chair','bench','potted plant','traffic light','stop sign','fire hydrant',
-  'dining table','couch','bed','suitcase','backpack','handbag',
+  'person', 'car', 'truck', 'bus', 'motorcycle', 'bicycle', 'dog', 'cat',
+  'chair', 'bench', 'potted plant', 'traffic light', 'stop sign', 'fire hydrant',
+  'dining table', 'couch', 'bed', 'suitcase', 'backpack', 'handbag', 'stairs', 'door'
 ]);
 
 const LABEL_AR: Record<string, string> = {
   person: 'شخص', car: 'سيارة', truck: 'شاحنة', bus: 'حافلة',
   motorcycle: 'دراجة نارية', bicycle: 'دراجة', dog: 'كلب', cat: 'قطة',
-  chair: 'كرسي', bench: 'مقعد', 'potted plant': 'نبتة', 'traffic light': 'إشارة',
-  'stop sign': 'لافتة قف', 'fire hydrant': 'حنفية', 'dining table': 'طاولة',
-  couch: 'أريكة', bed: 'سرير', suitcase: 'حقيبة', backpack: 'حقيبة ظهر',
-  handbag: 'حقيبة يد', door: 'باب', wall: 'جدار',
+  chair: 'كرسي', bench: 'مقعد', 'potted plant': 'نبتة', 'traffic light': 'إشارة مرور',
+  'stop sign': 'لافتة قف', 'fire hydrant': 'صنبور إطفاء', 'dining table': 'طاولة',
+  couch: 'أريكة', bed: 'سرير', suitcase: 'حقيبة سفر', backpack: 'حقيبة ظهر',
+  handbag: 'حقيبة يد', door: 'باب', wall: 'جدار', stairs: 'درج',
+  bottle: 'قارورة', cup: 'كوب', fork: 'شوكة', knife: 'سكين', spoon: 'ملعقة',
+  bowl: 'وعاء', banana: 'موزة', apple: 'تفاحة', sandwich: 'شطيرة',
+  orange: 'برتقالة', broccoli: 'بروكلي', carrot: 'جزرة', pizza: 'بيتزا',
+  donut: 'دونات', cake: 'كعكة', toilet: 'مرحاض', tv: 'شاشة',
+  laptop: 'حاسوب محمول', mouse: 'فأرة', remote: 'جهاز تحكم', keyboard: 'لوحة مفاتيح',
+  'cell phone': 'هاتف محمول', microwave: 'ميكروويف', oven: 'فرن', toaster: 'محمصة',
+  sink: 'مغسلة', refrigerator: 'ثلاجة', book: 'كتاب', clock: 'ساعة',
+  vase: 'مزهرية', scissors: 'مقص', 'teddy bear': 'دمية', 'hair drier': 'مجفف شعر',
+  toothbrush: 'فرشاة أسنان', umbrella: 'مظلة', horse: 'حصان', sheep: 'خروف', cow: 'بقرة'
 };
 
 export function labelToArabic(en: string): string {
-  return LABEL_AR[en] || en;
+  const clean = (en || '').toLowerCase().trim();
+  return LABEL_AR[clean] || en;
 }
 
 export async function detectFromVideo(
@@ -89,4 +99,16 @@ export function detectImmediateHazard(objs: DetectedObject[]): DetectedObject | 
     if (risk > worstScore) { worstScore = risk; worst = o; }
   }
   return worst;
+}
+
+/** Summarize all detected objects into a natural Arabic descriptive sentence */
+export function summarizeSceneArabic(objs: DetectedObject[]): string {
+  if (!objs || objs.length === 0) return 'المسار أمامك خالٍ ولا تظهر عوائق قريبة.';
+  const counts: Record<string, number> = {};
+  for (const o of objs) {
+    const ar = labelToArabic(o.label);
+    counts[ar] = (counts[ar] || 0) + 1;
+  }
+  const items = Object.entries(counts).map(([name, count]) => count > 1 ? `${count} ${name}` : name);
+  return `أرى في محيطك: ${items.join('، ')}.`;
 }

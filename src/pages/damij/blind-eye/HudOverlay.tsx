@@ -111,13 +111,13 @@ const HudOverlay: React.FC<Props> = ({ points, bestPath, showLabels = true, show
         ctx.stroke();
 
         // label
-        if (showLabels && p.label && p.source === 'ai') {
+        if (showLabels && p.label) {
           ctx.font = `bold ${12 * dpr}px system-ui, sans-serif`;
           const text = p.label;
           const tw = ctx.measureText(text).width;
           const padX = 6 * dpr, padY = 3 * dpr;
           const ty = cy - baseR - 8 * dpr;
-          ctx.fillStyle = 'rgba(0,0,0,0.7)';
+          ctx.fillStyle = p.hazard === 'high' ? 'rgba(239, 68, 68, 0.85)' : p.hazard === 'medium' ? 'rgba(245, 158, 11, 0.85)' : 'rgba(16, 185, 129, 0.85)';
           ctx.fillRect(cx - tw / 2 - padX, ty - 14 * dpr, tw + padX * 2, 18 * dpr + padY);
           ctx.fillStyle = '#fff';
           ctx.textAlign = 'center';

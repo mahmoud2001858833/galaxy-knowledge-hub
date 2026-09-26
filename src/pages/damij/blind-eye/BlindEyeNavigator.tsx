@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Power, Volume2, Mic, Activity, ArrowUp, ArrowLeft as ArrowL, ArrowRight as ArrowR, Zap, Eye, EyeOff, Scan, Languages } from 'lucide-react';
+import { ArrowLeft, Power, Volume2, Mic, Activity, ArrowUp, ArrowLeft as ArrowL, ArrowRight as ArrowR, Zap, Eye, EyeOff, Scan, Languages, Footprints, Camera, FileText, Sparkles, RefreshCw, Compass, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { LocalVision, type LocalFrameStats } from './localVision';
@@ -21,11 +21,12 @@ import { startCompass, requestCompassPermission } from './navigation/compass';
 import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
 import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
 import { startSpinScan, type SpinHandle } from './navigation/spinScan';
-import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic } from './localDetector';
+import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic, summarizeSceneArabic } from './localDetector';
 import { isOnline, onConnectivityChange } from './offlineMode';
 import { hapticForDirection, haptics } from './haptics';
 import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 
+export type NavMode = 'walk' | 'describe' | 'read' | 'target';
 
 type Phase = 'starting' | 'calibrating' | 'spin' | 'guiding' | 'stopped';
 
@@ -116,6 +117,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
 
   const [phase, setPhase] = useState<Phase>('starting');
+  const [activeMode, setActiveMode] = useState<NavMode>('walk');
+  const activeModeRef = useRef<NavMode>('walk');
+  const [isAnalyzingScene, setIsAnalyzingScene] = useState<boolean>(false);
+  const [isReadingText, setIsReadingText] = useState<boolean>(false);
+  const [lastAnnouncedText, setLastAnnouncedText] = useState<string>('');
   const [lastGuide, setLastGuide] = useState<Guide | null>(null);
   const [lastCalib, setLastCalib] = useState<Calib | null>(null);
   const [listening, setListening] = useState(false);
@@ -264,25 +270,21 @@ const BlindEyeNavigatorInner: React.FC = () => {
             source: 'ai' as const,
           })));
         }
-        // ---- IMPORTANT: stay completely silent until the user states a destination ----
-        // No directional cues, no hazard warnings, no earcons — Blind Eye must wait
-        // until the person says where they want to go (e.g. "أريد أن أذهب إلى الباب").
-        const hasDestination = !!(targetLocalRef.current || targetGeoRef.current);
-        if (!hasDestination) {
-          // skip all spoken/auditory navigation; keep updating HUD points only
-        } else {
+        // ---- Continuous Active Obstacle Avoidance & Corridor Guidance ----
+        // Works 24/7 whenever guiding is active (with or without a destination)
         const score = g.global_proximity ?? 0;
         const bucket = score >= 75 ? 'H' : score >= 40 ? 'M' : 'L';
         const key = `${g.best_path}|${bucket}|${g.spoken}`;
         const pri = score >= 75 ? 'critical' : score >= 40 ? 'directional' : 'descriptive';
         const now = Date.now();
         const samePath = lastSpokenPathRef.current.path === `${g.best_path}|${bucket}`;
-        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 1500 : 1200);
-        // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt.
+        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 1400 : 1200);
+
+        // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt immediately.
         if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
           const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
           if (score >= 75) {
-            // 3-step hazard pattern: "Stop. Stop." → obstacle label → action
+            // 3-step urgent hazard pattern: "Stop. Stop." -> obstacle label -> action
             const obstacleLabel = (g.objects?.[0]?.label || g.obstacles_summary || '').toString().split(/[,،.]/)[0].trim().slice(0, 24);
             const action = g.best_path === 'left' ? cmds.left : g.best_path === 'right' ? cmds.right : cmds.back;
             enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
@@ -290,37 +292,45 @@ const BlindEyeNavigatorInner: React.FC = () => {
               enqueueSpeech({ text: obstacleLabel, priority: 'critical', lang: langRef.current });
             }
             enqueueSpeech({ text: action, priority: 'critical', lang: langRef.current });
-          } else {
+            haptics.stop();
+          } else if (score >= 40) {
+            // Approaching obstacle -> give clear directional escape cue
             speakDedup(g.spoken, key, pri, 1200, { lang: langRef.current });
+            hapticForDirection(g.best_path);
+          } else {
+            // Safe corridor: give periodic reassurance if moving
+            const timeSinceLastSpoken = now - lastSpokenPathRef.current.t;
+            if (timeSinceLastSpoken > 4500) {
+              const safeMsg = g.best_path === 'left' ? cmds.left : g.best_path === 'right' ? cmds.right : cmds.continue_;
+              enqueueSpeech({ text: safeMsg, priority: 'directional', lang: langRef.current });
+              earcons.pointAhead();
+            }
           }
           lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
-          // Directional haptic mirrors the spoken direction
-          hapticForDirection(g.best_path);
-
+          if (score >= 40) hapticForDirection(g.best_path);
         }
 
         const prev = prevProximityRef.current;
-        if (score >= 75 && Date.now() - lastHazardSoundRef.current > 700) {
+        if (score >= 75 && Date.now() - lastHazardSoundRef.current > 650) {
           lastHazardSoundRef.current = Date.now();
           const pan = g.best_path === 'left' ? 0.9 : g.best_path === 'right' ? -0.9 : 0;
           earcons.hazard(pan);
-          vibrate([180, 70, 180]);
-        } else if (score - prev > 12 && Date.now() - lastApproachSoundRef.current > 900) {
+          vibrate([200, 80, 200]);
+        } else if (score - prev > 12 && Date.now() - lastApproachSoundRef.current > 800) {
           lastApproachSoundRef.current = Date.now();
           earcons.approach();
           if (score >= 40) vibrate(60);
-        } else if (prev - score > 15 && Date.now() - lastApproachSoundRef.current > 1200) {
+        } else if (prev - score > 15 && Date.now() - lastApproachSoundRef.current > 1100) {
           lastApproachSoundRef.current = Date.now();
           earcons.away();
         }
         prevProximityRef.current = score;
-        if (Date.now() - lastDirSoundRef.current > 2500) {
+        if (Date.now() - lastDirSoundRef.current > 2200) {
           lastDirSoundRef.current = Date.now();
           if (g.best_path === 'left') earcons.pointLeft();
           else if (g.best_path === 'right') earcons.pointRight();
           else earcons.pointAhead();
         }
-        } // end hasDestination
 
 
         // ---- Target-oriented local navigation (with stability filter) ----
@@ -470,8 +480,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
       if (v && v.videoWidth && now - lastDetTickRef.current >= 120) {
         lastDetTickRef.current = now;
         detectFromVideo(v, 6).then((objs) => {
-          const hasDest = !!(targetLocalRef.current || targetGeoRef.current);
-          const hazard = hasDest ? detectImmediateHazard(objs) : null;
+          const hazard = detectImmediateHazard(objs);
           if (hazard && now - lastLocalHazardSpeakRef.current > 900) {
             lastLocalHazardSpeakRef.current = now;
             const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
@@ -706,6 +715,261 @@ const BlindEyeNavigatorInner: React.FC = () => {
     }
   }, []);
 
+  // ---- Instant Full Scene Description (صف ما أمامي) ----
+  const triggerDescribeScene = useCallback(async () => {
+    setActiveMode('describe');
+    activeModeRef.current = 'describe';
+    setIsAnalyzingScene(true);
+    earcons.pointAhead();
+    vibrate([80, 50, 80]);
+    const lg = langRef.current;
+    enqueueSpeech({
+      text: lg === 'ar' ? 'أفحص المشهد أمامك بتفصيل...' : 'Analyzing the scene in detail...',
+      priority: 'critical',
+      lang: lg,
+    });
+
+    try {
+      const v = videoRef.current;
+      const img = captureFrame('detailed');
+
+      if (onlineRef.current && img) {
+        const promptText = lg === 'ar'
+          ? 'صف المشهد أمامي بالتفصيل: ما هي الغرفة أو المكان، ما هي العوائق القريبة والبعيدة، أين الممر الآمن، وما هي الإضاءة والأشياء البارزة. اجعل الرد دقيقاً ومفيداً لمكفوف.'
+          : 'Describe the scene in front of me in detail: location, nearby and distant obstacles, safe corridor, lighting and key items.';
+
+        const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
+          body: {
+            text: promptText,
+            imageDataUrl: img,
+            lang: lg,
+            intent: 'describe_scene',
+          },
+        });
+
+        if (!error && data?.spoken) {
+          enqueueSpeech({
+            text: data.spoken,
+            priority: 'critical',
+            lang: lg,
+            rate: 0.95,
+          });
+          setLastAnnouncedText(data.spoken);
+          vibrate([120, 60, 120]);
+          return;
+        }
+      }
+
+      // Offline or cloud fallback: use local COCO-SSD + local vision stats
+      if (v) {
+        const objs = await detectFromVideo(v, 10);
+        const localSummary = summarizeSceneArabic(objs);
+        const stats = lastStatsRef.current;
+        let brightnessText = '';
+        if (stats) {
+          if (stats.avgLum < 0.15) brightnessText = ' المكان مظلم نسبياً.';
+          else if (stats.avgLum > 0.8) brightnessText = ' الإضاءة ساطعة جداً.';
+        }
+        const fullDesc = localSummary + brightnessText;
+        enqueueSpeech({
+          text: fullDesc,
+          priority: 'critical',
+          lang: lg,
+        });
+        setLastAnnouncedText(fullDesc);
+        vibrate([100, 50, 100]);
+      }
+    } catch (e) {
+      console.warn('Describe scene error:', e);
+      enqueueSpeech({
+        text: lg === 'ar' ? 'تعذر وصف المشهد حالياً، سأواصل الإرشاد للمشي.' : 'Could not describe scene, resuming walk guidance.',
+        priority: 'directional',
+        lang: lg,
+      });
+    } finally {
+      setIsAnalyzingScene(false);
+      setTimeout(() => {
+        if (activeModeRef.current === 'describe') {
+          setActiveMode('walk');
+          activeModeRef.current = 'walk';
+        }
+      }, 5000);
+    }
+  }, [captureFrame]);
+
+  // ---- Instant OCR & Sign Reading (اقرأ النص) ----
+  const triggerReadText = useCallback(async () => {
+    setActiveMode('read');
+    activeModeRef.current = 'read';
+    setIsReadingText(true);
+    earcons.approach();
+    vibrate([100, 60, 100]);
+    const lg = langRef.current;
+    enqueueSpeech({
+      text: lg === 'ar' ? 'أقرأ النصوص واللافتات أمامك...' : 'Reading text and signs ahead...',
+      priority: 'critical',
+      lang: lg,
+    });
+
+    try {
+      const img = captureFrame('detailed');
+      if (!img) {
+        enqueueSpeech({
+          text: lg === 'ar' ? 'تعذر التقاط الصورة، اضبط الكاميرا.' : 'Could not capture frame.',
+          priority: 'directional',
+          lang: lg,
+        });
+        return;
+      }
+
+      let readText = '';
+
+      // Try AI Vision first if online for high accuracy on handwriting, signs, Arabic font
+      if (onlineRef.current) {
+        try {
+          const { data } = await supabase.functions.invoke('blind-eye-chat', {
+            body: {
+              text: 'اقرأ جميع الكلمات والنصوص واللافتات والعبارات المكتوبة في هذه الصورة باللغة المكتوبة بها بوضوح وبدون أي مقدمات أو تحيات أو كلمات إضافية.',
+              imageDataUrl: img,
+              lang: lg,
+              intent: 'ocr',
+            },
+          });
+          if (data?.spoken && data.spoken.length > 2 && !data.spoken.includes('لا أرى')) {
+            readText = data.spoken;
+          }
+        } catch {}
+      }
+
+      // If AI didn't return text or offline, run local Tesseract OCR
+      if (!readText) {
+        const ocrResult = await recognizeImage(img);
+        readText = (ocrResult || '').replace(/\s+/g, ' ').trim();
+      }
+
+      if (!readText) {
+        const msg = lg === 'ar'
+          ? 'لا أرى نصاً واضحاً أمام الكاميرا. قرّب الهاتف من النص وتأكد من ثبات يدك.'
+          : 'No clear text detected. Move closer to the text.';
+        enqueueSpeech({ text: msg, priority: 'critical', lang: lg });
+      } else {
+        const spoken = readText.slice(0, 450);
+        enqueueSpeech({
+          text: lg === 'ar' ? `النص المكتوب: ${spoken}` : `Text reads: ${spoken}`,
+          priority: 'critical',
+          lang: lg,
+          rate: 0.95,
+        });
+        setLastAnnouncedText(spoken);
+        vibrate([150, 70, 150]);
+      }
+    } catch (e) {
+      console.warn('OCR error:', e);
+      enqueueSpeech({
+        text: lg === 'ar' ? 'حدث خطأ أثناء قراءة النص.' : 'Error reading text.',
+        priority: 'directional',
+        lang: lg,
+      });
+    } finally {
+      setIsReadingText(false);
+      setTimeout(() => {
+        if (activeModeRef.current === 'read') {
+          setActiveMode('walk');
+          activeModeRef.current = 'walk';
+        }
+      }, 6000);
+    }
+  }, [captureFrame]);
+
+  // ---- Tactile Status Announcement & Gestures ----
+  const lastTapTimeRef = useRef<number>(0);
+  const singleTapTimeoutRef = useRef<number | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+
+  const announceCurrentStatus = useCallback(() => {
+    vibrate(60);
+    const lg = langRef.current;
+    const g = lastGuideRef.current;
+    const dest = targetLocalRef.current ? LANDMARK_AR[targetLocalRef.current] : targetGeoRef.current?.name;
+
+    let statusMsg = '';
+    if (activeModeRef.current === 'describe') {
+      statusMsg = lg === 'ar' ? 'أنت في نمط وصف المشهد. ' : 'Scene description mode. ';
+    } else if (activeModeRef.current === 'read') {
+      statusMsg = lg === 'ar' ? 'أنت في نمط قراءة النصوص. ' : 'Text reading mode. ';
+    } else if (dest) {
+      statusMsg = lg === 'ar' ? `التوجيه نشط نحو ${dest}. ` : `Navigating to ${dest}. `;
+    } else {
+      statusMsg = lg === 'ar' ? 'أنت في نمط المشي الآمن. ' : 'Walking safety mode active. ';
+    }
+
+    if (g?.obstacles_summary) {
+      statusMsg += (lg === 'ar' ? `أمامك: ${g.obstacles_summary}. ` : `Ahead: ${g.obstacles_summary}. `);
+    }
+    if (g?.best_path) {
+      const cmds = BE_COMMANDS[lg] || BE_COMMANDS.en;
+      const dirText = g.best_path === 'center' ? cmds.ahead : g.best_path === 'left' ? cmds.left : cmds.right;
+      statusMsg += (lg === 'ar' ? `المسار الأفضل: ${dirText}.` : `Best path: ${dirText}.`);
+    } else {
+      statusMsg += (lg === 'ar' ? 'الطريق سالك للأمام.' : 'Path is clear ahead.');
+    }
+
+    enqueueSpeech({ text: statusMsg, priority: 'critical', lang: lg });
+  }, []);
+
+  const handleContainerTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // Two-finger tap -> repeat last spoken instruction
+      if (singleTapTimeoutRef.current) clearTimeout(singleTapTimeoutRef.current);
+      if (lastGuideRef.current?.spoken) {
+        enqueueSpeech({ text: lastGuideRef.current.spoken, priority: 'critical', lang: langRef.current });
+      }
+      return;
+    }
+
+    // Long press detector (850ms) -> Trigger Scene Description
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = window.setTimeout(() => {
+      vibrate([120, 80, 120]);
+      triggerDescribeScene();
+      longPressTimerRef.current = null;
+    }, 850);
+  };
+
+  const handleContainerTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapTimeRef.current;
+
+    if (timeSinceLastTap < 360) {
+      // Double tap -> Activate Voice Command / Mic
+      if (singleTapTimeoutRef.current) {
+        clearTimeout(singleTapTimeoutRef.current);
+        singleTapTimeoutRef.current = null;
+      }
+      lastTapTimeRef.current = 0;
+      vibrate([80, 50, 80]);
+      earcons.pointAhead();
+      enqueueSpeech({
+        text: langRef.current === 'ar' ? 'تحدث، أنا أستمع إليك...' : 'Speak, I am listening...',
+        priority: 'critical',
+        lang: langRef.current,
+      });
+      try { recRef.current?.start(); setListening(true); } catch {}
+    } else {
+      lastTapTimeRef.current = now;
+      if (singleTapTimeoutRef.current) clearTimeout(singleTapTimeoutRef.current);
+      singleTapTimeoutRef.current = window.setTimeout(() => {
+        announceCurrentStatus();
+        singleTapTimeoutRef.current = null;
+      }, 380);
+    }
+  };
+
   const switchLang = useCallback((next: BELang) => {
     if (next === langRef.current) return;
     setLang(next);
@@ -754,8 +1018,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         return;
       case 'SCAN_AREA':
       case 'WHATS_AROUND':
-        runAI('detailed');
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].scanningArea, priority: 'directional', lang: langRef.current });
+        triggerDescribeScene();
         return;
       case 'SWITCH_LANG_AR': switchLang('ar'); return;
       case 'SWITCH_LANG_EN': switchLang('en'); return;
@@ -933,17 +1196,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
         try { window.location.href = `tel:${tel}`; } catch {}
         return;
       }
-      case 'READ_TEXT': {
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].scanningArea, priority: 'directional', lang: langRef.current });
-        const img = captureFrame('detailed');
-        if (!img) { enqueueSpeech({ text: 'لم أتمكن من التقاط الصورة', priority: 'directional', lang: langRef.current }); return; }
-        recognizeImage(img).then((txt) => {
-          const clean = (txt || '').replace(/\s+/g, ' ').trim();
-          if (!clean) { enqueueSpeech({ text: 'لا أرى نصاً واضحاً', priority: 'directional', lang: langRef.current }); return; }
-          enqueueSpeech({ text: clean.slice(0, 400), priority: 'directional', lang: langRef.current });
-        }).catch(() => enqueueSpeech({ text: 'تعذرت قراءة النص', priority: 'directional', lang: langRef.current }));
+      case 'READ_TEXT':
+        triggerReadText();
         return;
-      }
       case 'HELP':
         sendChat(langRef.current === 'ar' ? 'ماذا تستطيع أن تفعل؟ اقترح ٣ أوامر مفيدة.' : 'What can you do? Suggest 3 useful commands.');
         return;
@@ -952,7 +1207,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         sendChat(text);
         return;
     }
-  }, [startCamera, stopAll, runAI, switchLang, sendChat]);
+  }, [startCamera, stopAll, runAI, switchLang, sendChat, triggerDescribeScene, triggerReadText]);
 
   // Voice recognition (re-binds when language changes)
   useEffect(() => {
@@ -1061,7 +1316,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const PathArrow = lastGuide?.best_path === 'left' ? ArrowL : lastGuide?.best_path === 'right' ? ArrowR : ArrowUp;
 
   return (
-    <div className="fixed inset-0 bg-black text-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div
+      className="fixed inset-0 bg-black text-white select-none overflow-hidden touch-none"
+      dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      onTouchStart={handleContainerTouchStart}
+      onTouchEnd={handleContainerTouchEnd}
+    >
       {!eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />}
       {eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-0 h-0 opacity-0" />}
       <canvas ref={captureCanvasRef} className="hidden" />
@@ -1073,6 +1333,43 @@ const BlindEyeNavigatorInner: React.FC = () => {
       {!online && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-rose-600/90 text-white text-sm font-bold shadow-2xl">
           ⚠ بدون إنترنت — التوجيه الأساسي يعمل
+        </div>
+      )}
+
+      {/* Active Scene Analysis Overlay */}
+      {isAnalyzingScene && (
+        <div className="absolute top-20 inset-x-4 p-4 rounded-2xl bg-fuchsia-700/95 backdrop-blur shadow-2xl z-30 flex items-center gap-3 animate-pulse">
+          <RefreshCw className="w-7 h-7 animate-spin shrink-0 text-white" />
+          <div>
+            <div className="text-lg font-black">{lang === 'ar' ? 'جاري فحص ووصف المشهد...' : 'Analyzing & describing scene...'}</div>
+            <div className="text-xs text-white/80">{lang === 'ar' ? 'أفحص العوائق، الممر الآمن، والإضاءة' : 'Detecting obstacles, safe path & lighting'}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Text Reading Overlay */}
+      {isReadingText && (
+        <div className="absolute top-20 inset-x-4 p-4 rounded-2xl bg-sky-700/95 backdrop-blur shadow-2xl z-30 flex items-center gap-3 animate-pulse">
+          <RefreshCw className="w-7 h-7 animate-spin shrink-0 text-white" />
+          <div>
+            <div className="text-lg font-black">{lang === 'ar' ? 'جاري استخراج وقراءة النصوص...' : 'Reading text & signs...'}</div>
+            <div className="text-xs text-white/80">{lang === 'ar' ? 'أبحث عن لافتات أو كتابات أمام الكاميرا' : 'Scanning for signs or labels'}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Last announced text display */}
+      {lastAnnouncedText && !eyesOff && !isAnalyzingScene && !isReadingText && (
+        <div className="absolute top-20 inset-x-4 p-3 rounded-xl bg-black/80 backdrop-blur border border-white/20 shadow-2xl z-20 flex items-start justify-between gap-3 text-xs sm:text-sm">
+          <div className="text-white/95 leading-snug flex-1 line-clamp-3">
+            <span className="font-bold text-emerald-400">"{lastAnnouncedText}"</span>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setLastAnnouncedText(''); }}
+            className="text-[11px] px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-white shrink-0"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -1196,7 +1493,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
       )}
 
       {phase === 'guiding' && lastGuide && !eyesOff && (
-        <div className={`absolute bottom-40 inset-x-4 p-4 rounded-2xl ${urgencyColor} shadow-2xl z-10`}>
+        <div className={`absolute bottom-36 inset-x-4 p-4 rounded-2xl ${urgencyColor} shadow-2xl z-10`}>
           <div className="flex items-center gap-3">
             <Volume2 className="w-6 h-6 shrink-0" />
             <div className="text-xl font-extrabold leading-tight">{lastGuide.spoken}</div>
@@ -1212,7 +1509,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
       {/* Suggestions chips */}
       {phase === 'guiding' && !eyesOff && suggestions.length > 0 && (
-        <div className="absolute bottom-28 inset-x-3 z-10 flex flex-wrap gap-2 justify-center">
+        <div className="absolute bottom-60 inset-x-3 z-10 flex flex-wrap gap-2 justify-center">
           {suggestions.slice(0, 3).map((s, i) => (
             <button
               key={`${s}-${i}`}
@@ -1236,23 +1533,116 @@ const BlindEyeNavigatorInner: React.FC = () => {
         </div>
       )}
 
-      <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-center gap-4 bg-gradient-to-t from-black/85 to-transparent z-10">
-        {phase === 'guiding' && (
+      {/* Bottom Accessible Mode Dock */}
+      <div
+        className="absolute bottom-0 inset-x-0 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/90 to-transparent z-30 flex flex-col gap-2"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Gestures hint badge for blind user & companion */}
+        <div className="text-[11px] text-center text-white/70 font-medium py-1 px-3 bg-white/10 rounded-full mx-auto backdrop-blur">
+          {lang === 'ar'
+            ? '💡 نقرة: حالة الطريق • نقرتان: تحدث • ضغطة مطولة: صف المشهد'
+            : '💡 Tap: Status • Double-tap: Speak • Long-press: Describe'}
+        </div>
+
+        {/* Action Controls Bar */}
+        <div className="flex items-center justify-between gap-2 max-w-md mx-auto w-full">
+          {/* 1. Walk Mode Button */}
           <button
-            onClick={() => { runAI('detailed'); enqueueSpeech({ text: BE_STRINGS[langRef.current].scanningArea, priority: 'directional', lang: langRef.current }); }}
-            aria-label={t.ariaScan}
-            className="w-16 h-16 rounded-full flex items-center justify-center bg-blue-600 shadow-2xl active:scale-95"
+            onClick={() => {
+              setActiveMode('walk');
+              activeModeRef.current = 'walk';
+              vibrate(60);
+              earcons.pointAhead();
+              enqueueSpeech({
+                text: lang === 'ar' ? 'نمط المشي الآمن نشط، أراقب المسار.' : 'Walk guidance active.',
+                priority: 'critical',
+                lang,
+              });
+            }}
+            aria-label={lang === 'ar' ? 'نمط المشي الآمن' : 'Safe walk mode'}
+            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
+              activeMode === 'walk'
+                ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-300/70 font-black'
+                : 'bg-white/15 text-white/80 hover:bg-white/25'
+            }`}
           >
-            <Scan className="w-7 h-7" />
+            <Footprints className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[11px] font-bold">{lang === 'ar' ? 'مشي آمن' : 'Walk'}</span>
           </button>
-        )}
-        <button
-          onClick={phase === 'stopped' ? startCamera : stopAll}
-          aria-label={t.ariaPower}
-          className={`w-24 h-24 rounded-full flex items-center justify-center text-lg font-extrabold shadow-2xl active:scale-95 transition-all ${phase === 'stopped' ? 'bg-emerald-600' : 'bg-red-600'}`}
-        >
-          <Power className="w-10 h-10" />
-        </button>
+
+          {/* 2. Describe Scene Button */}
+          <button
+            onClick={() => triggerDescribeScene()}
+            disabled={isAnalyzingScene}
+            aria-label={lang === 'ar' ? 'صف ما أمامي' : 'Describe scene'}
+            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
+              isAnalyzingScene
+                ? 'bg-fuchsia-600 text-white animate-pulse shadow-lg'
+                : activeMode === 'describe'
+                ? 'bg-fuchsia-600 text-white shadow-lg ring-2 ring-fuchsia-300/70 font-black'
+                : 'bg-white/15 text-white/80 hover:bg-white/25'
+            }`}
+          >
+            <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[11px] font-bold">{lang === 'ar' ? 'صف أمامي' : 'Describe'}</span>
+          </button>
+
+          {/* 3. Read Text Button */}
+          <button
+            onClick={() => triggerReadText()}
+            disabled={isReadingText}
+            aria-label={lang === 'ar' ? 'اقرأ النص واللافتات' : 'Read text and signs'}
+            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
+              isReadingText
+                ? 'bg-sky-600 text-white animate-pulse shadow-lg'
+                : activeMode === 'read'
+                ? 'bg-sky-600 text-white shadow-lg ring-2 ring-sky-300/70 font-black'
+                : 'bg-white/15 text-white/80 hover:bg-white/25'
+            }`}
+          >
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[11px] font-bold">{lang === 'ar' ? 'اقرأ النص' : 'Read'}</span>
+          </button>
+
+          {/* 4. Speak / Listen Button */}
+          <button
+            onClick={() => {
+              vibrate([80, 50, 80]);
+              earcons.pointAhead();
+              enqueueSpeech({
+                text: lang === 'ar' ? 'تحدث، أنا أستمع إليك...' : 'Speak, I am listening...',
+                priority: 'critical',
+                lang,
+              });
+              try { recRef.current?.start(); setListening(true); } catch {}
+            }}
+            aria-label={lang === 'ar' ? 'تحدث مع المرشد' : 'Speak to navigator'}
+            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
+              listening
+                ? 'bg-amber-500 text-black shadow-lg animate-pulse ring-2 ring-amber-300 font-black'
+                : 'bg-white/15 text-white/80 hover:bg-white/25'
+            }`}
+          >
+            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[11px] font-bold">
+              {listening ? (lang === 'ar' ? 'أسمعك...' : 'Listening') : (lang === 'ar' ? 'تحدث' : 'Speak')}
+            </span>
+          </button>
+
+          {/* 5. Power On / Off Button */}
+          <button
+            onClick={phase === 'stopped' ? startCamera : stopAll}
+            aria-label={phase === 'stopped' ? t.start : t.stop}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all shrink-0 ${
+              phase === 'stopped' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-600 hover:bg-rose-500'
+            }`}
+          >
+            <Power className="w-6 h-6 text-white" />
+          </button>
+        </div>
       </div>
     </div>
   );

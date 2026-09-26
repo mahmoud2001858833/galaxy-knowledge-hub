@@ -141,19 +141,71 @@ export function cancelAllSpeech() {
   speakingItem = null;
 }
 
-// ============================================================
-// No-op stubs — kept so existing imports don't break.
-// Blind Eye now emits ONLY voice commands. No tones, no vibration.
-// ============================================================
+// Web Audio API Spatial Earcons Synthesizer (Zero-latency, offline, stereo panning)
+let audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtxClass) return null;
+  if (!audioCtx) {
+    audioCtx = new AudioCtxClass();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function playTone(freq: number, durationMs: number, type: OscillatorType = 'sine', pan = 0, gainLevel = 0.15) {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+    gain.gain.setValueAtTime(gainLevel, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000);
+
+    if (ctx.createStereoPanner) {
+      const panner = ctx.createStereoPanner();
+      panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), ctx.currentTime);
+      osc.connect(panner);
+      panner.connect(gain);
+    } else {
+      osc.connect(gain);
+    }
+
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + durationMs / 1000);
+  } catch {}
+}
+
 export const earcons = {
-  scanTick: () => {},
-  approach: () => {},
-  away: () => {},
-  hazard: (_pan?: number) => {},
-  pointLeft: () => {},
-  pointRight: () => {},
-  pointAhead: () => {},
-  sceneChange: () => {},
+  scanTick: () => playTone(880, 50, 'sine', 0, 0.08),
+  approach: () => {
+    playTone(440, 90, 'triangle', 0, 0.12);
+    setTimeout(() => playTone(660, 120, 'triangle', 0, 0.12), 100);
+  },
+  away: () => {
+    playTone(660, 90, 'sine', 0, 0.1);
+    setTimeout(() => playTone(330, 120, 'sine', 0, 0.1), 100);
+  },
+  hazard: (pan = 0) => {
+    playTone(750, 80, 'sawtooth', pan, 0.2);
+    setTimeout(() => playTone(850, 120, 'sawtooth', pan, 0.22), 90);
+  },
+  pointLeft: () => playTone(480, 100, 'sine', -0.85, 0.15),
+  pointRight: () => playTone(480, 100, 'sine', 0.85, 0.15),
+  pointAhead: () => playTone(540, 80, 'sine', 0, 0.12),
+  sceneChange: () => playTone(400, 60, 'sine', 0, 0.08),
 };
 
-export function vibrate(_pattern: number | number[]) { /* disabled */ }
+export function vibrate(pattern: number | number[]) {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try { navigator.vibrate(pattern); } catch {}
+  }
+}
+
