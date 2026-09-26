@@ -205,6 +205,7 @@ const GJUCompetition = wrap(lazy(() => import("./pages/GJUCompetition")));
 const FacePayAI = wrap(lazy(() => import("./pages/FacePayAI")));
 const AIFutureStore = wrap(lazy(() => import("./pages/AIFutureStore")));
 const RoboticsGenerator = wrap(lazy(() => import("./pages/RoboticsGenerator")));
+const RoboticsSection = wrap(lazy(() => import("./pages/RoboticsSection")));
 const JordanDigitalTwin = wrap(lazy(() => import("./pages/JordanDigitalTwin")));
 const CancerDetection = wrap(lazy(() => import("./pages/CancerDetection")));
 
@@ -1061,6 +1062,14 @@ const router = createBrowserRouter([
       {
         path: 'gju/robotics-generator',
         element: <PublicRoute><RoboticsGenerator /></PublicRoute>,
+      },
+      {
+        path: 'robotics-section',
+        element: <PublicRoute><RoboticsSection /></PublicRoute>,
+      },
+      {
+        path: 'robotics',
+        element: <PublicRoute><RoboticsSection /></PublicRoute>,
       },
       {
         path: 'gju/jordan-digital-twin',

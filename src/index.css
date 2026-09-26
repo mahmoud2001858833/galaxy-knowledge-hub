@@ -86,12 +86,16 @@ body {
   --chart-5: 340 75% 55%;
 }
 
-body.light {
-  background-color: #f8fafc;
-  color: #0f172a;
+body.light,
+html.light,
+html.light body {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
-body.dark {
+body.dark,
+html.dark,
+html.dark body {
   background-color: #050714;
   color: #f8fafc;
 }
@@ -100,6 +104,211 @@ body.dark {
 body, html, main {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
+
+/* ========================================================
+   GALAXY COMPREHENSIVE LIGHT THEME ENGINE (الوضع الفاتح الشامل)
+   Ensures ALL platform pages, subpages, components, modals,
+   inputs, cards, and drawers are rendered in pure crisp white (#ffffff)
+   with high-contrast typography and harmonious borders.
+   ======================================================== */
+
+.light {
+  color-scheme: light;
+}
+
+/* Top-level page wrappers remapping to pure white */
+.light .min-h-screen:not([data-preserve-dark]),
+.light [class*="min-h-screen"]:not([data-preserve-dark]) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Hardcoded dark space and slate backgrounds across subpages */
+.light .bg-space-cosmic-black,
+.light .bg-slate-950:not([data-preserve-dark]):not(canvas),
+.light .bg-slate-900:not([data-preserve-dark]):not(canvas),
+.light .bg-\[\#04020e\],
+.light .bg-\[\#04040e\],
+.light .bg-\[\#05060f\],
+.light .bg-\[\#050714\],
+.light .bg-\[\#060919\],
+.light .bg-\[\#070716\],
+.light .bg-\[\#0a0b18\],
+.light .bg-\[\#0a0b1a\],
+.light .bg-\[\#0a0f1d\],
+.light .bg-\[\#1a1f2c\],
+.light .bg-black:not([data-preserve-dark]):not(canvas) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Translucent dark cards and panels map to clean white elevated surfaces */
+.light .bg-slate-900\/95,
+.light .bg-slate-900\/90,
+.light .bg-slate-900\/85,
+.light .bg-slate-900\/80,
+.light .bg-slate-900\/70,
+.light .bg-slate-900\/60,
+.light .bg-slate-900\/50,
+.light .bg-slate-950\/95,
+.light .bg-slate-950\/90,
+.light .bg-slate-950\/85,
+.light .bg-slate-950\/80,
+.light .bg-slate-950\/70,
+.light .bg-slate-950\/60,
+.light .bg-slate-950\/50,
+.light .bg-slate-950\/40,
+.light .bg-black\/90,
+.light .bg-black\/80,
+.light .bg-black\/60,
+.light .bg-black\/50,
+.light .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: #0f172a !important;
+}
+
+/* Dark gradients on pages map to clean pure white with subtle depth */
+.light .bg-gradient-to-b.from-blue-900\/40.to-blue-950,
+.light .bg-gradient-to-b.from-\[\#050714\],
+.light .bg-gradient-to-b.from-slate-950,
+.light .bg-gradient-to-br.from-slate-950,
+.light .bg-gradient-to-b.from-slate-900 {
+  background: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
+}
+
+/* High contrast typography in light mode */
+.light h1, .light h2, .light h3, .light h4, .light h5, .light h6 {
+  color: #0f172a;
+}
+
+.light .text-white,
+.light .text-slate-100,
+.light .text-slate-200 {
+  color: #0f172a !important;
+}
+
+.light .text-slate-300,
+.light .text-slate-400 {
+  color: #334155 !important;
+}
+
+.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+.light .text-white\/90,
+.light .text-white\/80 {
+  color: #0f172a !important;
+}
+
+.light .text-white\/70,
+.light .text-white\/60 {
+  color: #334155 !important;
+}
+
+.light .text-white\/50,
+.light .text-white\/40 {
+  color: #64748b !important;
+}
+
+/* Crisp subtle borders in light mode */
+.light .border-slate-800,
+.light .border-slate-700,
+.light .border-slate-800\/80,
+.light .border-slate-800\/60,
+.light .border-slate-800\/50,
+.light .border-slate-700\/60,
+.light .border-white\/10,
+.light .border-white\/20,
+.light .border-white\/5,
+.light .border-white\/\[0\.08\],
+.light .border-white\/\[0\.06\],
+.light [class*="border-white\/"] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Dialogs, Popovers, Dropdowns, Sheets in Light Mode */
+.light [role="dialog"],
+.light [data-radix-popper-content-wrapper] > div,
+.light .DialogContent,
+.light [data-state="open"] > .bg-slate-900,
+.light [data-state="open"] > .bg-slate-950 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Inputs, Textareas, Select triggers in Light Mode */
+.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.light textarea,
+.light select,
+.light [data-radix-select-trigger] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Tabs list styling in Light Mode */
+.light .TabsList,
+.light [role="tablist"] {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light [role="tab"][data-state="active"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light [role="tab"][data-state="inactive"] {
+  color: #64748b !important;
+}
+
+/* Preserve bright action buttons, badges & colored gradients */
+.light .bg-gradient-to-r.from-cyan-500,
+.light .bg-gradient-to-r.from-teal-500,
+.light .bg-gradient-to-r.from-purple-500,
+.light .bg-gradient-to-r.from-blue-500,
+.light .bg-gradient-to-r.from-amber-500,
+.light .bg-gradient-to-r.from-emerald-500,
+.light .bg-cyan-500,
+.light .bg-teal-500,
+.light .bg-blue-600,
+.light .bg-indigo-600,
+.light .bg-purple-600,
+.light .bg-rose-600,
+.light .bg-emerald-600 {
+  background-color: revert !important;
+}
+
+.light button .text-slate-950,
+.light .bg-gradient-to-r .text-slate-950,
+.light .bg-cyan-500 .text-slate-950 {
+  color: #020617 !important;
+}
+
+/* Gentle starfield canvas in light mode */
+.light canvas.starfield-canvas,
+.light .fixed.inset-0.pointer-events-none canvas {
+  opacity: 0.12 !important;
+}
+
+/* 3D WebGL scenes and interactive physics canvases: preserve simulation canvas */
+.light canvas:not(.starfield-canvas),
+.light [data-preserve-dark],
+.light .preserve-dark,
+.light .preserve-dark * {
+  background-color: revert;
+  color: revert;
+}
+
 
 @layer utilities {
   .grid-cols-18 {

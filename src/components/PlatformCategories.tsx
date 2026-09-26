@@ -13,7 +13,9 @@ import {
   ArrowRight,
   Layers,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Cpu,
+  Bot
 } from 'lucide-react';
 
 // Bespoke 16:9 high-resolution images for each platform section
@@ -23,6 +25,7 @@ import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
 import smartCityBg from '@/assets/smart-city-section.jpg';
 import sourcesLibraryBg from '@/assets/sources-library-section.jpg';
+import roboticsBg from '@/assets/robotics-ai-section.jpg';
 
 const clickSound = '/message-notification.mp3';
 
@@ -142,6 +145,23 @@ const PlatformCategories: React.FC = () => {
       badgeColor: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30',
       highlights: ['أبحاث محكّمة ودولية', 'اقتباس فوري بنظام APA', 'إرشادات WHO & APA'],
       link: '/damij/sources'
+    },
+    {
+      id: 'robotics-ai',
+      title: 'قسم الروبوتات والذكاء الاصطناعي',
+      subtitle: 'حركيات الأذرع الروبوتية، أنظمة ROS2 والشبكات العصبية',
+      icon: Cpu,
+      description: 'بيئة هندسية متطورة تحاكي حركيات الأذرع الروبوتية المتقدمة (Inverse Kinematics)، وتتبع أجهزة استشعار LiDAR، وبرمجة متحكمات ROS2 بلغة Python، مع مصنفات الذكاء الاصطناعي.',
+      image: roboticsBg,
+      gradient: 'from-blue-600/25 via-indigo-600/15 to-transparent',
+      accentColor: 'from-blue-500 via-cyan-400 to-indigo-400',
+      borderColor: 'border-blue-500/30 hover:border-blue-400',
+      iconBg: 'bg-blue-500/20 text-blue-400 border-blue-400/40 shadow-blue-500/20',
+      glowColor: 'hover:shadow-blue-500/20',
+      badge: 'هندسة & AI 2.0',
+      badgeColor: 'bg-blue-500/20 text-blue-200 border-blue-400/30',
+      highlights: ['حركيات الأذرع 3D (Kinematics)', 'برمجة متحكمات ROS2 & Python', 'رؤية حاسوبية وشبكات عصبية'],
+      link: '/robotics-section'
     }
   ];
 
@@ -159,9 +179,9 @@ const PlatformCategories: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/10 backdrop-blur-md"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/80 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 text-xs sm:text-sm font-semibold shadow-md dark:shadow-lg shadow-cyan-500/10 backdrop-blur-md"
         >
-          <Layers className="w-4 h-4 text-cyan-400 animate-pulse" />
+          <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
           <span>منظومة متكاملة للمعرفة والتقنية المتقدمة</span>
         </motion.div>
 
@@ -170,7 +190,7 @@ const PlatformCategories: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="text-3xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-blue-300 tracking-tight"
+          className="text-3xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-slate-900 to-blue-600 dark:from-cyan-300 dark:via-white dark:to-blue-300 tracking-tight"
         >
           أقسام منصة ذروة العلم
         </motion.h2>
@@ -182,13 +202,13 @@ const PlatformCategories: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="text-slate-300 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed pt-2"
+          className="text-slate-600 dark:text-slate-300 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed pt-2"
         >
-          استكشف مجالات المنصة المترابطة، حيث تلتقي المختبرات الافتراضية ثلاثية الأبعاد، وحلول التربية الخاصة الشاملة، مع الذكاء الاصطناعي والمراجع العلمية الموثقة.
+          استكشف مجالات المنصة المترابطة، حيث تلتقي المختبرات الافتراضية ثلاثية الأبعاد، وهندسة الروبوتات والذكاء الاصطناعي، وحلول التربية الخاصة الشاملة، مع المراجع العلمية الموثقة.
         </motion.p>
       </div>
 
-      {/* Modern 6-Card Bento Grid Layout */}
+      {/* Modern Multi-Card Bento Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
         {categories.map((category, index) => {
           const IconComponent = category.icon;
@@ -204,10 +224,10 @@ const PlatformCategories: React.FC = () => {
                 playSound();
                 navigate(category.link);
               }}
-              className={`group relative rounded-3xl overflow-hidden cursor-pointer border bg-slate-900/70 backdrop-blur-xl transition-all duration-400 hover:-translate-y-2 hover:shadow-2xl flex flex-col justify-between ${category.borderColor} ${category.glowColor}`}
+              className={`group relative rounded-3xl overflow-hidden cursor-pointer border bg-white/95 dark:bg-slate-900/70 border-slate-200/90 dark:border-slate-800 backdrop-blur-xl transition-all duration-400 hover:-translate-y-2 hover:shadow-2xl shadow-sm flex flex-col justify-between ${category.borderColor} ${category.glowColor}`}
             >
               {/* Bespoke Section Image Header with Zoom Effect */}
-              <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950">
+              <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-100 dark:bg-slate-950">
                 <img
                   src={category.image}
                   alt={category.title}
@@ -216,7 +236,7 @@ const PlatformCategories: React.FC = () => {
                 />
                 
                 {/* Gradient Overlay for seamless blend into card body */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/40 to-transparent dark:from-slate-900 dark:via-slate-900/50" />
                 <div className={`absolute inset-0 bg-gradient-to-b ${category.gradient} opacity-40 group-hover:opacity-60 transition-opacity`} />
 
                 {/* Floating Badge on Top Corner */}
@@ -241,11 +261,11 @@ const PlatformCategories: React.FC = () => {
                     {category.subtitle}
                   </span>
                   
-                  <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-cyan-300 transition-colors leading-snug">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors leading-snug">
                     {category.title}
                   </h3>
 
-                  <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed">
+                  <p className="text-slate-600 dark:text-slate-300/85 text-xs sm:text-sm leading-relaxed">
                     {category.description}
                   </p>
 
@@ -254,9 +274,9 @@ const PlatformCategories: React.FC = () => {
                     {category.highlights.map((highlight, hIdx) => (
                       <span
                         key={hIdx}
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-300 flex items-center gap-1 group-hover:border-white/20 transition-colors"
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center gap-1 group-hover:border-slate-300 dark:group-hover:border-white/20 transition-colors"
                       >
-                        <span className="w-1 h-1 rounded-full bg-cyan-400" />
+                        <span className="w-1 h-1 rounded-full bg-cyan-500" />
                         {highlight}
                       </span>
                     ))}
@@ -264,12 +284,12 @@ const PlatformCategories: React.FC = () => {
                 </div>
 
                 {/* Action Footer */}
-                <div className="pt-5 mt-5 border-t border-white/[0.08] flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-bold text-white/80 group-hover:text-white transition-colors flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="pt-5 mt-5 border-t border-slate-200 dark:border-white/[0.08] flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white/80 group-hover:text-cyan-700 dark:group-hover:text-white transition-colors flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                     استكشف المحتوى الآن
                   </span>
-                  <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20 group-hover:bg-cyan-400 group-hover:border-cyan-300 group-hover:text-slate-950 transition-all duration-300 text-white shadow-md">
+                  <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center border border-slate-200 dark:border-white/20 group-hover:bg-cyan-500 group-hover:border-cyan-400 group-hover:text-slate-950 transition-all duration-300 text-slate-700 dark:text-white shadow-sm">
                     <ArrowIcon className="w-4 h-4 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform" />
                   </div>
                 </div>

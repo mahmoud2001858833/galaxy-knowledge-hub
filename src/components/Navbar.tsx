@@ -141,18 +141,18 @@ const Navbar = () => {
   const navLinks = [
     { label: 'الرئيسية', path: '/' },
     { label: 'المحاكاة 3D', path: '/experiments-section', badge: 'جديد', icon: Atom },
+    { label: 'الروبوتات و AI', path: '/robotics-section', badge: 'جديد', icon: Sparkles },
     { label: 'الفيزياء', path: '/physics' },
     { label: 'الكيمياء', path: '/chemistry' },
     { label: 'الأحياء', path: '/biology' },
     { label: 'الرياضيات', path: '/mathematics' },
     { label: 'دامج', path: '/damij', icon: HeartHandshake },
-    { label: 'المساعد الذكي', path: '/ai-assistant-section', icon: Sparkles },
+    { label: 'المساعد الذكي', path: '/ai-assistant-section' },
     { label: 'الألغاز', path: '/subject-puzzles' },
-    { label: 'الامتحان', path: '/exam-scanner' },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-slate-950/75 border-b border-white/[0.08] shadow-2xl transition-all">
+    <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-white/90 dark:bg-slate-950/75 border-b border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-2xl transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center h-16 sm:h-18">
         
         {/* Logo & Brand */}
@@ -162,10 +162,10 @@ const Navbar = () => {
               <img src="/logo.png" alt="ذروة العلم" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-black text-white group-hover:text-cyan-300 transition-colors tracking-tight">
+              <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors tracking-tight">
                 ذروة العلم
               </span>
-              <span className="text-[10px] text-cyan-400 font-semibold hidden sm:inline -mt-1">
+              <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold hidden sm:inline -mt-1">
                 منصة الابتكار والتعليم الذكي
               </span>
             </div>
@@ -182,13 +182,13 @@ const Navbar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5",
+                  "relative px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5",
                   active 
-                    ? "bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 shadow-sm shadow-cyan-500/20 font-bold" 
-                    : "text-slate-300 hover:text-white hover:bg-white/[0.06]"
+                    ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 dark:border-cyan-400/30 shadow-sm shadow-cyan-500/10 dark:shadow-cyan-500/20 font-bold" 
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
                 )}
               >
-                {Icon && <Icon className="w-3.5 h-3.5 text-cyan-400" />}
+                {Icon && <Icon className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />}
                 <span>{item.label}</span>
                 {item.badge && (
                   <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 font-black">
@@ -203,7 +203,7 @@ const Navbar = () => {
             <Link
               to="/control-center"
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold transition-all text-amber-300 hover:bg-amber-500/10 border border-amber-400/30",
+                "px-3 py-1.5 rounded-full text-xs font-semibold transition-all text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 dark:border-amber-400/30",
                 isActive('/control-center') && "bg-amber-500/20"
               )}
             >
@@ -219,7 +219,7 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-white hover:bg-white/10 rounded-full px-3 py-1.5 border border-white/10">
+                <Button variant="ghost" className="flex items-center gap-2 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-full px-3 py-1.5 border border-slate-200 dark:border-white/10">
                   <Avatar className="h-7 w-7 border border-cyan-400/40">
                     {profile?.avatar_url ? (
                       <AvatarImage src={profile.avatar_url} />
@@ -229,33 +229,33 @@ const Navbar = () => {
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <span className="text-xs font-medium max-w-[100px] truncate">
+                  <span className="text-xs font-medium max-w-[100px] truncate text-slate-900 dark:text-white">
                     {profile?.username || user.email?.split('@')[0]}
                   </span>
                   <ChevronDown className="h-3.5 w-3.5 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
               
-              <DropdownMenuContent align="end" className="w-56 bg-slate-950/95 backdrop-blur-2xl border-white/10 text-white shadow-2xl rounded-2xl p-2">
-                <DropdownMenuLabel className="text-slate-400 text-xs px-2 py-1.5">الحساب الشخصي</DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-950/95 backdrop-blur-2xl border-slate-200 dark:border-white/10 text-slate-900 dark:text-white shadow-xl dark:shadow-2xl rounded-2xl p-2">
+                <DropdownMenuLabel className="text-slate-500 dark:text-slate-400 text-xs px-2 py-1.5">الحساب الشخصي</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                 
                 <Link to="/profile">
-                  <DropdownMenuItem className="flex items-center cursor-pointer text-slate-200 hover:text-white hover:bg-white/10 rounded-xl px-2 py-2 text-xs">
-                    <User className="mr-2 h-4 w-4 text-cyan-400" />
+                  <DropdownMenuItem className="flex items-center cursor-pointer text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl px-2 py-2 text-xs">
+                    <User className="mr-2 h-4 w-4 text-cyan-500 dark:text-cyan-400" />
                     <span>الملف الشخصي</span>
                   </DropdownMenuItem>
                 </Link>
 
                 <Link to="/admin">
-                  <DropdownMenuItem className="flex items-center cursor-pointer text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
+                  <DropdownMenuItem className="flex items-center cursor-pointer text-amber-600 dark:text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>لوحة التحكم الإدارية</span>
                   </DropdownMenuItem>
                 </Link>
                 
-                <DropdownMenuSeparator className="bg-white/10" />
-                <DropdownMenuItem className="flex items-center cursor-pointer text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl px-2 py-2 text-xs" onClick={handleLogout}>
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                <DropdownMenuItem className="flex items-center cursor-pointer text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-xl px-2 py-2 text-xs" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
@@ -264,7 +264,7 @@ const Navbar = () => {
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/admin">
-                <Button size="sm" variant="ghost" className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 font-bold text-xs rounded-xl px-3 py-1.5 border border-amber-400/20">
+                <Button size="sm" variant="ghost" className="text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-500/10 font-bold text-xs rounded-xl px-3 py-1.5 border border-amber-500/30 dark:border-amber-400/20">
                   لوحة التحكم
                 </Button>
               </Link>
@@ -279,15 +279,16 @@ const Navbar = () => {
 
         {/* Mobile menu drawer */}
         <div className="lg:hidden flex items-center gap-2">
+          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-xl">
+              <Button variant="ghost" size="icon" className="text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] bg-slate-950/95 backdrop-blur-2xl border-white/10 text-white p-6">
+            <SheetContent side="right" className="w-[280px] bg-white dark:bg-slate-950/95 backdrop-blur-2xl border-slate-200 dark:border-white/10 text-slate-900 dark:text-white p-6">
               {user && (
-                <div className="py-4 mb-4 border-b border-white/10 flex items-center gap-3">
+                <div className="py-4 mb-4 border-b border-slate-200 dark:border-white/10 flex items-center gap-3">
                   <Avatar className="h-10 w-10 border border-cyan-400/40">
                     {profile?.avatar_url ? (
                       <AvatarImage src={profile.avatar_url} />
@@ -298,8 +299,8 @@ const Navbar = () => {
                     )}
                   </Avatar>
                   <div className="overflow-hidden">
-                    <p className="text-white font-bold text-sm truncate">{profile?.username || user.email?.split('@')[0]}</p>
-                    <p className="text-slate-400 text-xs truncate">{user.email}</p>
+                    <p className="text-slate-900 dark:text-white font-bold text-sm truncate">{profile?.username || user.email?.split('@')[0]}</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user.email}</p>
                   </div>
                 </div>
               )}
@@ -312,8 +313,8 @@ const Navbar = () => {
                     className={cn(
                       "px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-between",
                       isActive(item.path)
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30"
-                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                        ? "bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 dark:border-cyan-400/30"
+                        : "text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
                     )}
                   >
                     <span>{item.label}</span>
@@ -326,12 +327,12 @@ const Navbar = () => {
                 ))}
                 
                 {isSuperAdmin && (
-                  <Link to="/control-center" className="px-4 py-2.5 rounded-xl text-sm font-semibold text-amber-300 hover:bg-amber-500/10 border border-amber-400/20">
+                  <Link to="/control-center" className="px-4 py-2.5 rounded-xl text-sm font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 dark:border-amber-400/20">
                     مركز التحكم
                   </Link>
                 )}
                 
-                <div className="pt-6 border-t border-white/10">
+                <div className="pt-6 border-t border-slate-200 dark:border-white/10">
                   {user ? (
                     <Button onClick={handleLogout} variant="outline" className="w-full border-rose-500/30 text-rose-300 hover:bg-rose-500/10 rounded-xl">
                       تسجيل الخروج

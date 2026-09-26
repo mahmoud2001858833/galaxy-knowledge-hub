@@ -112,11 +112,11 @@ const EducationalResources = () => {
       dir={dir}
     >
       <div className="mb-14 text-center">
-        <h2 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-cyan-300 mb-4 tracking-tight">
+        <h2 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-slate-900 to-cyan-700 dark:from-blue-300 dark:via-white dark:to-cyan-300 mb-4 tracking-tight">
           الموارد والأدوات التعليمية الذكية
         </h2>
         <div className="h-1 w-20 bg-gradient-to-r from-cyan-400 to-blue-500 mx-auto rounded-full shadow-lg shadow-cyan-500/50 mb-4" />
-        <p className="text-slate-300 max-w-xl mx-auto text-base sm:text-lg">
+        <p className="text-slate-600 dark:text-slate-300 max-w-xl mx-auto text-base sm:text-lg">
           أدوات مبتكرة ومساعدة ترافقك لتعزيز الفهم والاستيعاب ورفع كفاءتك الدراسية
         </p>
       </div>
@@ -132,28 +132,28 @@ const EducationalResources = () => {
               viewport={{ once: true, margin: "-30px" }}
               transition={{ duration: 0.4, delay: index * 0.04 }}
               onClick={() => navigate(item.link)}
-              className="group relative p-6 rounded-2xl bg-slate-900/50 hover:bg-slate-900/80 border border-white/[0.08] hover:border-cyan-500/40 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-cyan-500/10 cursor-pointer flex flex-col justify-between"
+              className="group relative p-6 rounded-2xl bg-white/90 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-900/80 border border-slate-200/90 dark:border-white/[0.08] hover:border-cyan-500/40 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 shadow-sm hover:shadow-xl hover:shadow-cyan-500/10 cursor-pointer flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${item.accent} text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${item.accent} text-white shadow-md group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/10">
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/80 border border-slate-200 dark:border-white/10">
                     {item.badge}
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors mb-2 leading-snug">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors mb-2 leading-snug">
                   {item.title}
                 </h3>
 
-                <p className="text-slate-300/80 text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300/80 text-sm leading-relaxed">
                   {item.description}
                 </p>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-slate-400 group-hover:text-cyan-300 transition-colors">
+              <div className="pt-4 mt-4 border-t border-slate-200 dark:border-white/[0.06] flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                 <span>انتقال سريع</span>
                 <ArrowIcon className="w-4 h-4 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform" />
               </div>
