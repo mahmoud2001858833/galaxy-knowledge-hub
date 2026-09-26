@@ -1172,6 +1172,10 @@ const router = createBrowserRouter([
         ],
       },
       {
+        path: 'sources',
+        element: <Navigate to="/damij/sources" replace />,
+      },
+      {
         path: '*',
         element: <NotFound />,
       }

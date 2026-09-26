@@ -8,17 +8,25 @@ import {
   Sparkles, 
   Building2, 
   HeartHandshake, 
+  BookOpen,
   ArrowLeft,
   ArrowRight,
   Layers,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react';
+
+// Bespoke 16:9 high-resolution images for each platform section
+import simulationsBg from '@/assets/simulations-3d-section.jpg';
+import damijBg from '@/assets/damij-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
+import smartCityBg from '@/assets/smart-city-section.jpg';
+import sourcesLibraryBg from '@/assets/sources-library-section.jpg';
 
 const clickSound = '/message-notification.mp3';
 
-const PlatformCategories = () => {
+const PlatformCategories: React.FC = () => {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -38,116 +46,157 @@ const PlatformCategories = () => {
       title: 'قسم التجارب والمحاكاة 3D',
       subtitle: 'مختبرات افتراضية ثلاثية الأبعاد فائقة الدقة',
       icon: Atom,
-      description: 'أكثر من 45 محاكاة علمية تفاعلية تغطي الفيزياء النووية، ميكانيكا الكم، كريسبر، الثقوب السوداء والكيمياء الحركية مع تصدير القياسات وتحليل مباشر.',
-      gradient: 'from-cyan-500/20 via-blue-500/20 to-purple-500/20',
-      accentColor: 'from-cyan-400 to-blue-500',
-      borderColor: 'border-cyan-500/40 hover:border-cyan-400',
-      iconBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30',
-      glowColor: 'shadow-cyan-500/25',
+      description: 'أكثر من 45 محاكاة تفاعلية ثلاثية الأبعاد تغطي ميكانيكا الكم، الفيزياء النووية، كريسبر، الثقوب السوداء والكيمياء الحركية مع تحكم فيزيائي فوري وتصدير قياسات.',
+      image: simulationsBg,
+      gradient: 'from-cyan-500/20 via-blue-500/10 to-transparent',
+      accentColor: 'from-cyan-400 via-blue-400 to-indigo-400',
+      borderColor: 'border-cyan-500/30 hover:border-cyan-400',
+      iconBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-cyan-500/20',
+      glowColor: 'hover:shadow-cyan-500/20',
       badge: '49 محاكاة تفاعلية',
-      link: '/experiments-section',
-      featured: true,
-      image: educationBg
+      badgeColor: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/30',
+      highlights: ['ميكانيكا الكم والنسبية', 'كريسبر والجينات', 'الثقوب السوداء والدوائر'],
+      link: '/experiments-section'
     },
     {
       id: 'damij',
       title: 'منصة دامج — التعليم الخاص والدمج الذكي',
       subtitle: 'التقنيات المساعدة وحلول الشمولية الذكية',
       icon: HeartHandshake,
-      description: 'منظومة مبتكرة تدمج مترجم برايل اللمسي، تشخيص وتحليل التوحد بالذكاء الاصطناعي، التشخيص التفريقي لـ ADHD، وترجمة لغة الإشارة بالكاميرا.',
-      gradient: 'from-teal-500/20 via-emerald-500/20 to-sky-500/20',
-      accentColor: 'from-teal-400 to-emerald-400',
-      borderColor: 'border-teal-500/40 hover:border-teal-400',
-      iconBg: 'bg-teal-500/20 text-teal-300 border-teal-400/30',
-      glowColor: 'shadow-teal-500/25',
+      description: 'منظومة رائدة تدمج مترجم لغة الإشارة الذكي بالكاميرا، مترجم برايل اللمسي والصوتي، التشخيص التفريقي لاضطراب فرط الحركة ADHD، وأدوات دعم طيف التوحد.',
+      image: damijBg,
+      gradient: 'from-teal-500/20 via-emerald-500/10 to-transparent',
+      accentColor: 'from-teal-400 via-emerald-400 to-cyan-400',
+      borderColor: 'border-teal-500/30 hover:border-teal-400',
+      iconBg: 'bg-teal-500/20 text-teal-300 border-teal-400/40 shadow-teal-500/20',
+      glowColor: 'hover:shadow-teal-500/20',
       badge: 'شامل ومستقل',
-      link: '/damij',
-      featured: true,
-      image: educationBg
+      badgeColor: 'bg-teal-500/20 text-teal-200 border-teal-400/30',
+      highlights: ['مترجم برايل التفاعلي', 'كاشف لغة الإشارة بالذكاء الاصطناعي', 'فحص التوحد وADHD'],
+      link: '/damij'
     },
     {
       id: 'education',
       title: 'قسم التعليم الشامل',
       subtitle: 'المناهج العلمية والأدبية والتطبيقية',
       icon: GraduationCap,
-      description: 'منصات تعليمية متكاملة تشمل العلوم العامة، الأدب واللغات، الاستدامة البيئية، وبرامج BTEC لتكنولوجيا المعلومات والبرمجة.',
-      gradient: 'from-blue-500/20 to-indigo-500/20',
-      accentColor: 'from-blue-400 to-indigo-400',
-      borderColor: 'border-blue-500/40 hover:border-blue-400',
-      iconBg: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
-      glowColor: 'shadow-blue-500/25',
+      description: 'منصات ومسارات تعليمية متكاملة تشمل العلوم العامة، الرياضيات والفيزياء، الأدب واللغات، الاستدامة البيئية، وبرامج BTEC الدولية لتكنولوجيا المعلومات.',
+      image: educationBg,
+      gradient: 'from-blue-500/20 via-indigo-500/10 to-transparent',
+      accentColor: 'from-blue-400 via-indigo-400 to-purple-400',
+      borderColor: 'border-blue-500/30 hover:border-blue-400',
+      iconBg: 'bg-blue-500/20 text-blue-300 border-blue-400/40 shadow-blue-500/20',
+      glowColor: 'hover:shadow-blue-500/20',
       badge: '4 مسارات تعليمية',
-      link: '/education-section',
-      featured: false,
-      image: educationBg
+      badgeColor: 'bg-blue-500/20 text-blue-200 border-blue-400/30',
+      highlights: ['العلوم الطبيعية والأدب', 'مناهج BTEC التقنية', 'الاستدامة والطاقة النظيفة'],
+      link: '/education-section'
     },
     {
       id: 'ai-assistant',
       title: 'قسم مساعدك الذكي',
       subtitle: 'دعم أكاديمي ونفسي مدعوم بالذكاء الاصطناعي',
       icon: Sparkles,
-      description: 'مساعدون أذكياء فوريون (فالك المعرفة والمرشد النفسي) لشرح المفاهيم المعقدة خطوة بخطوة وإدارة التوتر وتوجيه مسار تعلمك.',
-      gradient: 'from-purple-500/20 to-pink-500/20',
-      accentColor: 'from-purple-400 to-pink-400',
-      borderColor: 'border-purple-500/40 hover:border-purple-400',
-      iconBg: 'bg-purple-500/20 text-purple-300 border-purple-400/30',
-      glowColor: 'shadow-purple-500/25',
+      description: 'مساعدون أذكياء فوريون (فالك المعرفة والمرشد النفسي) لشرح المفاهيم المعقدة خطوة بخطوة وإدارة التوتر وتوجيه مسار تعلمك بدعم من نماذج Gemini المتطورة.',
+      image: aiAssistantBg,
+      gradient: 'from-purple-500/20 via-pink-500/10 to-transparent',
+      accentColor: 'from-purple-400 via-pink-400 to-rose-400',
+      borderColor: 'border-purple-500/30 hover:border-purple-400',
+      iconBg: 'bg-purple-500/20 text-purple-300 border-purple-400/40 shadow-purple-500/20',
+      glowColor: 'hover:shadow-purple-500/20',
       badge: 'مدعوم بـ Gemini AI',
-      link: '/ai-assistant-section',
-      featured: false,
-      image: aiAssistantBg
+      badgeColor: 'bg-purple-500/20 text-purple-200 border-purple-400/30',
+      highlights: ['فالك المعرفة الأكاديمي', 'المرشد التفاعلي الصوتي 2.0', 'الموجه النفسي للطلاب'],
+      link: '/ai-assistant-section'
     },
     {
       id: 'smart-city',
       title: 'قسم المدينة الذكية والابتكار',
       subtitle: 'المستقبل المعماري والأنظمة الروبوتية',
       icon: Building2,
-      description: 'أدوات استشراف المستقبل والتصميم المعماري والديكور الداخلي بالذكاء الاصطناعي وتطبيقات الإنشاءات الروبوتية المتقدمة.',
-      gradient: 'from-amber-500/20 to-cyan-500/20',
-      accentColor: 'from-amber-400 to-cyan-400',
-      borderColor: 'border-amber-500/40 hover:border-amber-400',
-      iconBg: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
-      glowColor: 'shadow-amber-500/25',
+      description: 'أدوات استشراف المستقبل والتصميم المعماري والديكور الداخلي بالذكاء الاصطناعي ومحاكاة الإنشاءات الروبوتية وأنظمة الطاقة المتجددة الموزعة.',
+      image: smartCityBg,
+      gradient: 'from-amber-500/20 via-orange-500/10 to-transparent',
+      accentColor: 'from-amber-400 via-orange-400 to-yellow-400',
+      borderColor: 'border-amber-500/30 hover:border-amber-400',
+      iconBg: 'bg-amber-500/20 text-amber-300 border-amber-400/40 shadow-amber-500/20',
+      glowColor: 'hover:shadow-amber-500/20',
       badge: 'ابتكار وهندسة',
-      link: '/smart-city',
-      featured: false,
-      image: educationBg
+      badgeColor: 'bg-amber-500/20 text-amber-200 border-amber-400/30',
+      highlights: ['التصميم المعماري التوليدي', 'الإنشاءات الروبوتية', 'أنظمة المدن المستدامة'],
+      link: '/smart-city'
+    },
+    {
+      id: 'sources-library',
+      title: 'المكتبة العلمية والمصادر الموثقة',
+      subtitle: 'مراجع أكاديمية وأدلة دولية معتمدة',
+      icon: BookOpen,
+      description: 'أكثر من 200 مرجع علمي ودولي معتمد يشمل أبحاث APA، أدلة منظمة الصحة العالمية WHO، ومعايير W3C/WCAG مع ميزة النسخ الفوري للاقتباسات وتنزيل التقارير.',
+      image: sourcesLibraryBg,
+      gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+      accentColor: 'from-emerald-400 via-teal-400 to-cyan-400',
+      borderColor: 'border-emerald-500/30 hover:border-emerald-400',
+      iconBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-emerald-500/20',
+      glowColor: 'hover:shadow-emerald-500/20',
+      badge: '200+ مرجع معتمد',
+      badgeColor: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30',
+      highlights: ['أبحاث محكّمة ودولية', 'اقتباس فوري بنظام APA', 'إرشادات WHO & APA'],
+      link: '/damij/sources'
     }
   ];
 
   return (
     <section
       id="platform-sections"
-      className="py-24 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10"
+      className="py-20 sm:py-28 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10"
       dir={dir}
     >
       <audio ref={audioRef} src={clickSound} preload="none" />
       
       {/* Section Header */}
-      <div className="mb-16 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-medium mb-4 backdrop-blur-md">
-          <Layers className="w-4 h-4 text-cyan-400" />
-          <span>منظومة متكاملة للمعرفة والتقنية</span>
-        </div>
-        <h2 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-cyan-300 mb-4 tracking-tight">
+      <div className="mb-16 text-center space-y-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/10 backdrop-blur-md"
+        >
+          <Layers className="w-4 h-4 text-cyan-400 animate-pulse" />
+          <span>منظومة متكاملة للمعرفة والتقنية المتقدمة</span>
+        </motion.div>
+
+        <motion.h2 
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="text-3xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-blue-300 tracking-tight"
+        >
           أقسام منصة ذروة العلم
-        </h2>
-        <div className="h-1 w-24 bg-gradient-to-r from-blue-500 via-cyan-400 to-purple-500 mx-auto rounded-full shadow-lg shadow-cyan-500/50" />
-        <p className="text-slate-300 mt-4 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
-          اختر مجالك التعليمي المفضل واستكشف تجارب بصرية وأدوات ذكاء اصطناعي تفاعلية مصممة لإثراء شغفك بالمعرفة
-        </p>
+        </motion.h2>
+
+        <div className="h-1.5 w-28 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 mx-auto rounded-full shadow-lg shadow-cyan-500/40" />
+
+        <motion.p 
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="text-slate-300 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed pt-2"
+        >
+          استكشف مجالات المنصة المترابطة، حيث تلتقي المختبرات الافتراضية ثلاثية الأبعاد، وحلول التربية الخاصة الشاملة، مع الذكاء الاصطناعي والمراجع العلمية الموثقة.
+        </motion.p>
       </div>
 
-      {/* Modern Bento Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Modern 6-Card Bento Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
         {categories.map((category, index) => {
           const IconComponent = category.icon;
-          const isLarge = category.featured;
 
           return (
             <motion.div
               key={category.id}
-              initial={{ opacity: 0, y: 25 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
@@ -155,46 +204,74 @@ const PlatformCategories = () => {
                 playSound();
                 navigate(category.link);
               }}
-              className={`group relative rounded-3xl overflow-hidden cursor-pointer border bg-slate-900/60 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl ${category.borderColor} ${category.glowColor} ${
-                isLarge ? 'md:col-span-2 lg:col-span-1' : 'col-span-1'
-              } flex flex-col justify-between p-7`}
+              className={`group relative rounded-3xl overflow-hidden cursor-pointer border bg-slate-900/70 backdrop-blur-xl transition-all duration-400 hover:-translate-y-2 hover:shadow-2xl flex flex-col justify-between ${category.borderColor} ${category.glowColor}`}
             >
-              {/* Top ambient highlight */}
-              <div className={`absolute top-0 right-0 left-0 h-32 bg-gradient-to-b ${category.gradient} pointer-events-none opacity-40 group-hover:opacity-80 transition-opacity duration-500`} />
-              
-              {/* Header inside card */}
-              <div className="relative z-10">
-                <div className="flex items-center justify-between gap-4 mb-6">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg ${category.iconBg} group-hover:scale-110 transition-transform duration-300`}>
-                    <IconComponent className="w-7 h-7" />
-                  </div>
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-white/10 text-white/90 border border-white/10 backdrop-blur-md">
+              {/* Bespoke Section Image Header with Zoom Effect */}
+              <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950">
+                <img
+                  src={category.image}
+                  alt={category.title}
+                  className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                />
+                
+                {/* Gradient Overlay for seamless blend into card body */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent" />
+                <div className={`absolute inset-0 bg-gradient-to-b ${category.gradient} opacity-40 group-hover:opacity-60 transition-opacity`} />
+
+                {/* Floating Badge on Top Corner */}
+                <div className="absolute top-4 start-4 z-10">
+                  <span className={`text-[11px] font-bold px-3 py-1 rounded-full border backdrop-blur-md shadow-md ${category.badgeColor}`}>
                     {category.badge}
                   </span>
                 </div>
 
-                <div className="space-y-2">
-                  <span className={`text-xs font-bold uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r ${category.accentColor}`}>
-                    {category.subtitle}
-                  </span>
-                  <h3 className="text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors">
-                    {category.title}
-                  </h3>
+                {/* Floating Icon with Glow */}
+                <div className="absolute bottom-3 end-4 z-10">
+                  <div className={`w-13 h-13 p-3 rounded-2xl flex items-center justify-center border shadow-xl ${category.iconBg} group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}>
+                    <IconComponent className="w-6 h-6" />
+                  </div>
                 </div>
-
-                <p className="text-slate-300/90 text-sm sm:text-base leading-relaxed mt-4">
-                  {category.description}
-                </p>
               </div>
 
-              {/* Action Footer */}
-              <div className="relative z-10 pt-8 mt-4 border-t border-white/[0.08] flex items-center justify-between">
-                <span className="text-sm font-semibold text-white/80 group-hover:text-white transition-colors flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  جاهز للاستكشاف
-                </span>
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 group-hover:bg-cyan-500 group-hover:border-cyan-400 group-hover:text-slate-950 transition-all duration-300 text-white">
-                  <ArrowIcon className="w-5 h-5 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform" />
+              {/* Card Body */}
+              <div className="p-6 pt-3 flex-1 flex flex-col justify-between relative z-10">
+                <div className="space-y-3">
+                  <span className={`text-[11px] font-bold uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r ${category.accentColor}`}>
+                    {category.subtitle}
+                  </span>
+                  
+                  <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-cyan-300 transition-colors leading-snug">
+                    {category.title}
+                  </h3>
+
+                  <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed">
+                    {category.description}
+                  </p>
+
+                  {/* Highlights Mini Pills */}
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {category.highlights.map((highlight, hIdx) => (
+                      <span
+                        key={hIdx}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-300 flex items-center gap-1 group-hover:border-white/20 transition-colors"
+                      >
+                        <span className="w-1 h-1 rounded-full bg-cyan-400" />
+                        {highlight}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Footer */}
+                <div className="pt-5 mt-5 border-t border-white/[0.08] flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-white/80 group-hover:text-white transition-colors flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    استكشف المحتوى الآن
+                  </span>
+                  <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20 group-hover:bg-cyan-400 group-hover:border-cyan-300 group-hover:text-slate-950 transition-all duration-300 text-white shadow-md">
+                    <ArrowIcon className="w-4 h-4 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform" />
+                  </div>
                 </div>
               </div>
             </motion.div>
