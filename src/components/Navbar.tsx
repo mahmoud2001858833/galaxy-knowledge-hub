@@ -149,7 +149,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all">
+    <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all w-full max-w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center h-16 sm:h-18">
         
         {/* Logo & Brand */}

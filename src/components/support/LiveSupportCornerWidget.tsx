@@ -97,7 +97,7 @@ export const LiveSupportCornerWidget: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 start-6 z-40 select-none font-sans" dir="rtl">
+    <div className="fixed bottom-6 end-6 z-40 select-none font-sans" dir="rtl">
       {/* Floating Trigger Button */}
       {!isOpen && (
         <motion.button

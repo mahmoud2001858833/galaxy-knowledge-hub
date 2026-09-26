@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
 
+import { openInteractiveTourModal } from '@/components/home/InteractiveTourGuideModal';
+
 interface ProductTourHeroProps {
   onStartTour?: () => void;
 }
@@ -23,11 +25,15 @@ interface ProductTourHeroProps {
 export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour }) => {
   const navigate = useNavigate();
 
-  const handleScrollToNext = () => {
+  const handleStartInteractiveTour = () => {
     if (onStartTour) {
       onStartTour();
-      return;
+    } else {
+      openInteractiveTourModal();
     }
+  };
+
+  const handleScrollToNext = () => {
     const target = document.getElementById('mission-section');
     if (target) {
       target.scrollIntoView({ behavior: 'smooth' });
@@ -35,7 +41,7 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
   };
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col justify-between items-center pt-16 sm:pt-24 pb-12 px-4 sm:px-6 overflow-hidden">
+    <section className="relative min-h-[640px] md:min-h-[80vh] max-h-[900px] flex flex-col justify-between items-center pt-12 sm:pt-16 pb-8 px-4 sm:px-6 overflow-hidden">
       {/* Subtle Architectural Grid Background */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20"
@@ -56,11 +62,11 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+          className="inline-flex max-w-full flex-wrap sm:flex-nowrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[11px] sm:text-sm font-semibold shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400" />
-          <span className="tracking-tight">المنظومة الوطنية الموحدة للمحاكاة العلمية والتعليم التفاعلي 2.0</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono">
+          <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0" />
+          <span className="tracking-tight text-center">المنظومة الوطنية الموحدة للمحاكاة العلمية 2.0</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono shrink-0">
             EST. 2026
           </span>
         </motion.div>
@@ -70,18 +76,18 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-          className="space-y-4"
+          className="space-y-3 sm:space-y-4 max-w-full px-2"
         >
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-sm flex items-center justify-center">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-sm flex items-center justify-center shrink-0">
               <img src={logo} alt="ذروة العلم" className="w-full h-full object-contain" />
             </div>
-            <span className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 font-mono">
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider sm:tracking-widest text-slate-500 dark:text-slate-400 font-mono">
               GALAXY ENTERPRISE SUITE
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-tight break-words">
             منصة{' '}
             <span className="text-slate-900 dark:text-slate-100 border-b-4 border-blue-600 dark:border-blue-500 pb-1">
               ذروة العلم
@@ -89,11 +95,11 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
           </h1>
 
           {/* Two Authoritative Impact Taglines */}
-          <div className="max-w-3xl mx-auto space-y-2 pt-2">
-            <p className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-snug">
+          <div className="max-w-3xl mx-auto space-y-2 pt-1 sm:pt-2">
+            <p className="text-base sm:text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-snug">
               البنية التحتية الرقمية الرائدة في العالم العربي للمختبرات العلمية ثلاثية الأبعاد والذكاء الاصطناعي التطبيقي.
             </p>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm lg:text-base text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
               منظومة معتمدة تمكّن أكثر من 150,000 طالب وباحث عبر 49 مختبراً افتراضياً عالي الدقة، ومسارات تطبيقية متقدمة، وحلول الشمولية والتربية الخاصة مع مبادرة دامج الوطنية.
             </p>
           </div>
@@ -104,22 +110,32 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-          className="flex flex-wrap items-center justify-center gap-3.5 pt-2"
+          className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 sm:gap-3.5 pt-2 w-full max-w-2xl px-2"
         >
           <Button
             size="lg"
-            onClick={handleScrollToNext}
-            className="h-12 px-7 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-sm shadow-sm transition-all duration-200 flex items-center gap-2"
+            onClick={handleStartInteractiveTour}
+            className="w-full sm:w-auto h-11 sm:h-12 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-xs sm:text-sm shadow-md transition-all duration-200 flex items-center justify-center gap-2 group"
           >
-            <span>ابدأ الجولة التعريفية</span>
-            <ChevronDown className="w-4 h-4 animate-bounce" />
+            <Sparkles className="w-4 h-4 text-cyan-400 dark:text-blue-600 transition-transform group-hover:rotate-12" />
+            <span>ابدأ الجولة الاسترشادية</span>
+          </Button>
+
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleScrollToNext}
+            className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-semibold text-xs sm:text-sm shadow-sm transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            <span>استكشف المنظومة</span>
+            <ChevronDown className="w-4 h-4" />
           </Button>
 
           <Button
             size="lg"
             variant="outline"
             onClick={() => navigate('/experiments-section')}
-            className="h-12 px-6 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-semibold text-sm shadow-sm transition-all duration-200 flex items-center gap-2"
+            className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-semibold text-xs sm:text-sm shadow-sm transition-all duration-200 flex items-center justify-center gap-2"
           >
             <Atom className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>المختبرات والمحاكاة 3D</span>
@@ -129,7 +145,7 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
             size="lg"
             variant="ghost"
             onClick={() => navigate('/damij')}
-            className="h-12 px-5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium text-sm transition-colors flex items-center gap-1.5"
+            className="w-full sm:w-auto h-11 sm:h-12 px-4 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5"
           >
             <span>مبادرة دامج للتربية الخاصة</span>
             <ArrowLeft className="w-4 h-4 rtl:rotate-0 rotate-180" />
