@@ -20,6 +20,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
 
 interface CrystalSample {
   id: string;
@@ -187,6 +190,91 @@ export default function XRayDiffractionSimulation() {
     const peak = 100 / (1 + Math.pow(diff / 0.5, 2));
     return +peak.toFixed(1);
   }, [thetaDeg, theoreticalPeakTheta]);
+
+  const hudMetrics = useMemo(() => {
+    return [
+      {
+        id: 'theta',
+        label: 'زاوية السقوط (θ)',
+        value: Number(thetaDeg.toFixed(1)),
+        unit: '°',
+        status: isConstructive ? ('nominal' as const) : ('idle' as const),
+        min: 5,
+        max: 45,
+      },
+      {
+        id: 'twotheta',
+        label: 'زاوية الكاشف (2θ)',
+        value: Number((2 * thetaDeg).toFixed(1)),
+        unit: '°',
+        status: isConstructive ? ('nominal' as const) : ('idle' as const),
+        min: 10,
+        max: 90,
+      },
+      {
+        id: 'intensity',
+        label: 'شدة الحيود النسبية',
+        value: relativeIntensity,
+        unit: '%',
+        status: isConstructive ? ('nominal' as const) : ('idle' as const),
+        min: 0,
+        max: 100,
+      },
+      {
+        id: 'spacing',
+        label: 'المسافة البينية (d)',
+        value: selectedCrystal.dSpacingAngstrom,
+        unit: 'Å',
+        status: 'nominal' as const,
+        min: 1.5,
+        max: 4.0,
+      },
+    ];
+  }, [thetaDeg, relativeIntensity, selectedCrystal, isConstructive]);
+
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'nacl_peak',
+        title: 'رصد قمة حيود ملح الطعام NaCl (100)',
+        description: 'اختر بلورة NaCl واضبط زاوية مقياس الزوايا θ إلى 15.8° لتحقيق شرط براغ والحصول على شدة حيود عظمى.',
+        targetMetric: 'شدة الحيود',
+        targetValue: 95,
+        unit: '%',
+        currentValue: selectedCrystal.id === 'nacl' ? relativeIntensity : 0,
+        holdTimeRequired: 3,
+        tolerance: 8,
+        isCompleted: false,
+        hint: 'اختر عينة NaCl وحرك زاوية θ بالقرب من 15.8° أو اضغط الانتقال التلقائي للقمة.',
+      },
+      {
+        id: 'silicon_lattice',
+        title: 'حيود مستويات السيليكون Si (111)',
+        description: 'اختر بلورة السيليكون واضبط الزاوية عند قمة براغ الأولى θ = 14.2° (2θ = 28.5°) لدراسة الشبيكة الألماسية.',
+        targetMetric: 'شدة حيود السيليكون',
+        targetValue: 95,
+        unit: '%',
+        currentValue: selectedCrystal.id === 'silicon' ? relativeIntensity : 0,
+        holdTimeRequired: 3,
+        tolerance: 8,
+        isCompleted: false,
+        hint: 'اختر السيليكون واضبط θ على 14.2°.',
+      },
+      {
+        id: 'gold_fcc',
+        title: 'تحليل شبكة الذهب النقي Au (111)',
+        description: 'اختر الذهب واضبط زاوية الحيود θ على 19.1° لرصد انعكاس المستويات البلورية كثيفة التراص (FCC).',
+        targetMetric: 'شدة حيود الذهب',
+        targetValue: 95,
+        unit: '%',
+        currentValue: selectedCrystal.id === 'gold' ? relativeIntensity : 0,
+        holdTimeRequired: 3,
+        tolerance: 8,
+        isCompleted: false,
+        hint: 'اختر الذهب واضبط الزاوية على 19.1°.',
+      },
+    ];
+  }, [selectedCrystal, relativeIntensity]);
 
   // Mission check
   useEffect(() => {
@@ -475,8 +563,16 @@ export default function XRayDiffractionSimulation() {
                       />
                     </Canvas>
 
+                    {/* CyberLabHUD */}
+                    <CyberLabHUD
+                      title="مقياس الزوايا ومطياف براغ"
+                      metrics={hudMetrics}
+                      waveformMode="pulse"
+                      status={isConstructive ? 'nominal' : 'idle'}
+                    />
+
                     {/* Camera Angle Presets */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
                       <button
                         onClick={() => setCameraView('default')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
@@ -504,7 +600,7 @@ export default function XRayDiffractionSimulation() {
                     </div>
 
                     {/* Live Assistant Hint */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2 z-20">
                       <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>
                         {isConstructive
@@ -514,6 +610,9 @@ export default function XRayDiffractionSimulation() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Cyber Challenge Engine */}
+                <LabChallengeEngine challenges={challenges} />
               </div>
 
               {/* Controls Column */}
@@ -585,6 +684,20 @@ export default function XRayDiffractionSimulation() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Live AI Lab CoPilot */}
+                <LiveAILabCoPilot
+                  experimentName="حيود الأشعة السينية وقانون براغ"
+                  currentMetrics={{
+                    crystal: selectedCrystal.nameAr,
+                    dSpacing: selectedCrystal.dSpacingAngstrom,
+                    theta: Number(thetaDeg.toFixed(1)),
+                    twoTheta: Number((2 * thetaDeg).toFixed(1)),
+                    relativeIntensity,
+                    isConstructive,
+                  }}
+                  hint="اضبط زاوية السقوط لتتطابق مع قمة براغ النظرية لتحقيق تداخل بناء وانعكاس للأشعة السينية من المستويات الذرية."
+                />
               </div>
             </div>
           </TabsContent>

@@ -20,6 +20,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
 
 // Physical Constants
 const H_EV_S = 4.135667696e-15; // Planck's constant in eV·s
@@ -295,6 +298,93 @@ export default function PhotoelectricEffectSimulation() {
   const photocurrentUA = isCurrentFlowing
     ? +( (intensity * 0.15) * Math.min(1.5, Math.max(0.05, (voltage + stoppingVoltage) / (stoppingVoltage + 0.1))) ).toFixed(2)
     : 0.0;
+
+  // CyberLab HUD Metrics
+  const hudMetrics = useMemo(() => {
+    return [
+      {
+        id: 'energy',
+        label: 'طاقة الفوتون الساقط (E = hf)',
+        value: Number(photonEnergyEV.toFixed(2)),
+        unit: 'eV',
+        status: isEmitting ? ('normal' as const) : ('warning' as const),
+        min: 1.0,
+        max: 6.0,
+      },
+      {
+        id: 'work_func',
+        label: 'دالة الشغل للمعدن (Φ)',
+        value: selectedMetal.workFunctionEV,
+        unit: 'eV',
+        status: 'normal' as const,
+        min: 2.0,
+        max: 6.0,
+      },
+      {
+        id: 'kmax',
+        label: 'أقصى طاقة حركية (K_max)',
+        value: Number(maxKineticEnergyEV.toFixed(2)),
+        unit: 'eV',
+        status: maxKineticEnergyEV > 0 ? ('normal' as const) : ('idle' as const),
+        min: 0,
+        max: 4.0,
+      },
+      {
+        id: 'current',
+        label: 'التيار الكهروضوئي (I_ph)',
+        value: photocurrentUA,
+        unit: 'μA',
+        status: photocurrentUA > 0 ? ('normal' as const) : ('idle' as const),
+        min: 0,
+        max: 20.0,
+      },
+    ];
+  }, [photonEnergyEV, selectedMetal, maxKineticEnergyEV, photocurrentUA, isEmitting]);
+
+  // Gamified Challenges
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'photoemission',
+        title: 'تحرير الإلكترونات الضوئية (Photoelectric Effect)',
+        description: 'اضبط الطول الموجي ليكون أقصر من الطول الموجي الحرج للمعدن (λ < λ₀) لتحرير إلكترونات وبدء سريان التيار.',
+        targetMetric: 'التيار الكهروضوئي (I_ph)',
+        targetValue: 8.0,
+        unit: 'μA',
+        currentValue: photocurrentUA,
+        holdTimeRequired: 3,
+        tolerance: 5.0,
+        isCompleted: false,
+        hint: 'اختر السيزيوم أو قلل الطول الموجي إلى النطاق الأزرق أو البنفسجي.',
+      },
+      {
+        id: 'stopping_voltage',
+        title: 'جهد الإيقاف التام (Stopping Potential)',
+        description: 'قم بعكس الجهد الكهربائي إلى قيمة سالبة تعادل أو تتجاوز جهد الإيقاف (-V₀) لإيقاف التيار الكهروضوئي تماماً I = 0.',
+        targetMetric: 'الجهد العكسي المطبق',
+        targetValue: -Number(stoppingVoltage.toFixed(1)),
+        unit: 'V',
+        currentValue: voltage,
+        holdTimeRequired: 2,
+        tolerance: 0.2,
+        isCompleted: false,
+        hint: 'حرك منزلق الجهد إلى قيمة سالبة تكفي لمنع أسرع الإلكترونات من الوصول للمصعد.',
+      },
+      {
+        id: 'high_work_function',
+        title: 'تحرير إلكترونات البلاتين فائق دالة الشغل',
+        description: 'اختر معدن البلاتين (Φ = 5.65 eV) واستخدم أشعة فوق بنفسجية عميقة (λ < 219 nm) لانتزاع إلكتروناته المقيدة.',
+        targetMetric: 'أقصى طاقة حركية (K_max)',
+        targetValue: 0.5,
+        unit: 'eV',
+        currentValue: selectedMetal.id === 'platinum' && isEmitting ? maxKineticEnergyEV : 0,
+        holdTimeRequired: 3,
+        tolerance: 0.4,
+        isCompleted: false,
+        hint: 'اختر البلاتين وقلل الطول الموجي إلى أقل من 219 nm.',
+      },
+    ];
+  }, [photocurrentUA, stoppingVoltage, voltage, selectedMetal, isEmitting, maxKineticEnergyEV]);
 
   // Realtime mission check
   useEffect(() => {
@@ -589,8 +679,16 @@ export default function PhotoelectricEffectSimulation() {
                       />
                     </Canvas>
 
+                    {/* CyberLabHUD */}
+                    <CyberLabHUD
+                      title="مختبر التأثير الكهروضوئي الكمومي"
+                      metrics={hudMetrics}
+                      waveformMode="sine"
+                      status={isEmitting ? 'nominal' : 'warning'}
+                    />
+
                     {/* Camera Angle Presets */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
                       <button
                         onClick={() => setCameraView('default')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
@@ -618,7 +716,7 @@ export default function PhotoelectricEffectSimulation() {
                     </div>
 
                     {/* Live Assistant Hint */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2 z-20">
                       <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>
                         {isEmitting
@@ -628,6 +726,9 @@ export default function PhotoelectricEffectSimulation() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Cyber Challenge Engine */}
+                <LabChallengeEngine challenges={challenges} />
               </div>
 
               {/* Controls Column */}
@@ -725,6 +826,23 @@ export default function PhotoelectricEffectSimulation() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Live AI Lab CoPilot */}
+                <LiveAILabCoPilot
+                  experimentName="الظاهرة الكهروضوئية وثابت بلانك"
+                  currentMetrics={{
+                    metal: selectedMetal.nameAr,
+                    workFunctionEV: selectedMetal.workFunctionEV,
+                    wavelengthNm,
+                    photonEnergyEV: Number(photonEnergyEV.toFixed(2)),
+                    kineticEnergyEV: Number(maxKineticEnergyEV.toFixed(2)),
+                    voltage,
+                    stoppingVoltage: Number(stoppingVoltage.toFixed(2)),
+                    photocurrentUA,
+                    isEmitting,
+                  }}
+                  hint="قم بتغيير الطول الموجي للضوء أو تغيير مادة الكاثود لدراسة تكميم طاقة الفوتون وعلاقة أينشتاين للظاهرة الكهروضوئية."
+                />
               </div>
             </div>
           </TabsContent>

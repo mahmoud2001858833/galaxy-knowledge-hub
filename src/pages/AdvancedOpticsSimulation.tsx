@@ -1,22 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, Play, Pause, RotateCcw, Sun, Eye, Sparkles, Waves, Circle } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Sun, Eye, Sparkles, Waves, Circle, Maximize2, Minimize2, Download, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SimulationLayout from '@/components/simulations/SimulationLayout';
 import InfoSection from '@/components/simulations/InfoSection';
 import QuizSection from '@/components/simulations/QuizSection';
+import OpticsBench3D from '@/components/optics/OpticsBench3D';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
+import { labSound } from '@/utils/labAudio';
 
 const AdvancedOpticsSimulation = () => {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [simulationType, setSimulationType] = useState<'prism' | 'lens' | 'interference' | 'polarization'>('prism');
   const [prismAngle, setPrismAngle] = useState(60);
   const [focalLength, setFocalLength] = useState(100);
   const [slitDistance, setSlitDistance] = useState(50);
   const [lensType, setLensType] = useState<'convex' | 'concave'>('convex');
+  const [polarizerAngle, setPolarizerAngle] = useState(45);
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
+  const [cameraPreset, setCameraPreset] = useState<'bench' | 'prism' | 'screen' | 'top'>('bench');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [time, setTime] = useState(0);
 
   useEffect(() => {
@@ -886,27 +896,198 @@ const AdvancedOpticsSimulation = () => {
     "بعض الحيوانات مثل النحل ترى الضوء فوق البنفسجي"
   ];
 
+  const transmittedIntensity = Math.pow(Math.cos((polarizerAngle * Math.PI) / 180), 2) * 100;
+
+  const hudMetrics = useMemo(() => {
+    if (simulationType === 'prism') {
+      return [
+        { id: 'angle', label: 'زاوية رأس المنشور (Apex A)', value: prismAngle, unit: '°', status: 'nominal' as const, min: 30, max: 90 },
+        { id: 'ior', label: 'معامل الانكسار (Glass IOR)', value: 1.52, unit: '', status: 'nominal' as const, min: 1.0, max: 2.0 },
+        { id: 'colors', label: 'ألوان الطيف المنفصلة', value: 7, unit: 'bands', status: 'nominal' as const, min: 1, max: 7 },
+      ];
+    }
+    if (simulationType === 'lens') {
+      return [
+        { id: 'focal', label: 'البعد البؤري (Focal Length)', value: focalLength, unit: 'mm', status: 'nominal' as const, min: 50, max: 200 },
+        { id: 'power', label: 'قوة العدسة (Diopters)', value: Number((1000 / focalLength).toFixed(2)), unit: 'D', status: 'nominal' as const, min: 5, max: 20 },
+        { id: 'type', label: 'طبيعة الصورة', value: lensType === 'convex' ? 1 : -1, unit: lensType === 'convex' ? 'حقيقية' : 'تقديرية', status: 'nominal' as const, min: -1, max: 1 },
+      ];
+    }
+    if (simulationType === 'interference') {
+      return [
+        { id: 'slit_d', label: 'المسافة بين الشقين (d)', value: slitDistance * 2, unit: 'μm', status: 'nominal' as const, min: 40, max: 200 },
+        { id: 'fringes', label: 'رتبة الهدب المركزي', value: 0, unit: 'm=0', status: 'nominal' as const, min: 0, max: 5 },
+      ];
+    }
+    return [
+      { id: 'theta', label: 'زاوية المحلل (Analyzer θ)', value: polarizerAngle, unit: '°', status: 'nominal' as const, min: 0, max: 180 },
+      { id: 'intensity', label: 'الشدة النافذة (I/I₀)', value: Number(transmittedIntensity.toFixed(1)), unit: '%', status: transmittedIntensity < 5 ? ('danger' as const) : ('nominal' as const), min: 0, max: 100 },
+    ];
+  }, [simulationType, prismAngle, focalLength, lensType, slitDistance, polarizerAngle, transmittedIntensity]);
+
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'prism_dispersion',
+        title: 'تشتت المنشور النيوتوني (Newtonian Dispersion)',
+        description: 'اضبط زاوية المنشور الزجاجي إلى 60° لمشاهدة الانفصال الطيفي المتناسق لألوان قوس قزح السبعة.',
+        targetMetric: 'زاوية المنشور',
+        targetValue: 60,
+        unit: '°',
+        currentValue: simulationType === 'prism' ? prismAngle : 0,
+        holdTimeRequired: 3,
+        tolerance: 2,
+        isCompleted: false,
+        hint: 'اختر محاكاة المنشور واضبط الزاوية عند 60 درجة.',
+      },
+      {
+        id: 'lens_focal',
+        title: 'البعد البؤري القياسي للعدسة المحدبة (Focal Point)',
+        description: 'اختر العدسة المحدبة واضبط بعدها البؤري إلى 120 mm لتجميع حزمة الأشعة الضوئية المتوازية بدقة.',
+        targetMetric: 'البعد البؤري',
+        targetValue: 120,
+        unit: 'px',
+        currentValue: simulationType === 'lens' && lensType === 'convex' ? focalLength : 0,
+        holdTimeRequired: 2,
+        tolerance: 5,
+        isCompleted: false,
+        hint: 'اختر محاكاة العدسة واضبط البعد البؤري على 120.',
+      },
+      {
+        id: 'malus_extinction',
+        title: 'إخماد الضوء التام بقانون مالوس (Malus Extinction I = 0%)',
+        description: 'اضبط زاوية مرشح الاستقطاب المحلل إلى 90° لتعامد محاور النفاذ وإخماد شدة الضوء النافذ تماماً إلى 0%.',
+        targetMetric: 'الشدة النافذة',
+        targetValue: 0.0,
+        unit: '%',
+        currentValue: simulationType === 'polarization' ? Number(transmittedIntensity.toFixed(1)) : 100,
+        holdTimeRequired: 2,
+        tolerance: 3,
+        isCompleted: false,
+        hint: 'اختر الاستقطاب واضبط زاوية المحلل إلى 90 درجة.',
+      },
+    ];
+  }, [simulationType, prismAngle, lensType, focalLength, transmittedIntensity]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   return (
     <SimulationLayout 
-      title="البصريات المتقدمة"
+      title="مختبر البصريات المتقدمة ثلاثي الأبعاد (3D Pro)"
       titleGradient="from-yellow-400 via-orange-400 to-red-400"
       backgroundGradient="from-orange-900/20 via-red-900/30 to-yellow-900/20"
     >
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Canvas Section */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-4">
           <motion.div 
-            className="bg-gradient-to-br from-slate-900/80 to-orange-900/40 rounded-2xl p-4 border border-orange-500/20 backdrop-blur-sm"
+            ref={containerRef}
+            className="bg-gradient-to-br from-slate-900/90 to-slate-950 rounded-2xl overflow-hidden border border-orange-500/20 shadow-2xl relative"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={500}
-              className="w-full rounded-xl"
-            />
+            {/* Header controls inside simulation box */}
+            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={viewMode === '3d' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('3d')}
+                  className={`text-xs h-7 ${viewMode === '3d' ? 'bg-orange-600 hover:bg-orange-500 text-white' : 'border-slate-700 text-slate-300'}`}
+                >
+                  <Eye className="w-3.5 h-3.5 ml-1" />
+                  المختبر ثلاثي الأبعاد (3D Bench)
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === '2d' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('2d')}
+                  className={`text-xs h-7 ${viewMode === '2d' ? 'bg-orange-600 hover:bg-orange-500 text-white' : 'border-slate-700 text-slate-300'}`}
+                >
+                  <Layers className="w-3.5 h-3.5 ml-1" />
+                  مخطط المسارات (2D Ray Tracer)
+                </Button>
+              </div>
+
+              <button
+                onClick={toggleFullscreen}
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                title="ملء الشاشة"
+              >
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {/* Display Mode: 3D or 2D */}
+            {viewMode === '3d' ? (
+              <div className="h-[480px] bg-slate-950 relative">
+                <OpticsBench3D
+                  mode={simulationType}
+                  prismAngle={prismAngle}
+                  focalLength={focalLength}
+                  lensType={lensType}
+                  slitDistance={slitDistance}
+                  polarizerAngle={polarizerAngle}
+                  isPlaying={isPlaying}
+                  cameraPreset={cameraPreset}
+                />
+
+                {/* CyberLabHUD overlay */}
+                <CyberLabHUD
+                  title="مقعد البصريات التجريبي"
+                  metrics={hudMetrics}
+                  waveformMode="sine"
+                  status="nominal"
+                />
+
+                {/* Camera Angle Presets */}
+                <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
+                  <button
+                    onClick={() => setCameraPreset('bench')}
+                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'bench' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                  >
+                    المنظور العام
+                  </button>
+                  <button
+                    onClick={() => setCameraPreset('prism')}
+                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'prism' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                  >
+                    العنصر البصري
+                  </button>
+                  <button
+                    onClick={() => setCameraPreset('screen')}
+                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'screen' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                  >
+                    شاشة الرصد
+                  </button>
+                  <button
+                    onClick={() => setCameraPreset('top')}
+                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'top' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                  >
+                    علوي
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={500}
+                className="w-full rounded-b-xl"
+              />
+            )}
           </motion.div>
+
+          {/* Cyber Challenges Engine */}
+          <LabChallengeEngine challenges={challenges} />
 
           {/* Info Section */}
           <motion.div 
@@ -1044,6 +1225,36 @@ const AdvancedOpticsSimulation = () => {
             </motion.div>
           )}
 
+          {simulationType === 'polarization' && (
+            <motion.div 
+              className="bg-gradient-to-br from-slate-900/80 to-orange-900/40 rounded-2xl p-4 border border-orange-500/20 backdrop-blur-sm"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <label className="text-sm font-medium flex items-center justify-between text-amber-300">
+                <span className="flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  زاوية المحلل (θ):
+                </span>
+                <span className="font-mono font-bold">{polarizerAngle}° (I = {transmittedIntensity.toFixed(1)}%)</span>
+              </label>
+              <Slider
+                value={[polarizerAngle]}
+                onValueChange={([v]) => setPolarizerAngle(v)}
+                min={0}
+                max={180}
+                step={1}
+                className="mt-2"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                <span>0° (نفاذ كامل)</span>
+                <span>90° (إخماد تام)</span>
+                <span>180°</span>
+              </div>
+            </motion.div>
+          )}
+
           {/* Playback Controls */}
           <motion.div 
             className="flex gap-2"
@@ -1105,6 +1316,29 @@ const AdvancedOpticsSimulation = () => {
               )}
             </div>
           </motion.div>
+
+          {/* Live AI Lab CoPilot */}
+          <LiveAILabCoPilot
+            experimentName="البصريات الهندسية والموجية"
+            currentMetrics={{
+              type: simulationType,
+              prismAngle: simulationType === 'prism' ? prismAngle : undefined,
+              focalLength: simulationType === 'lens' ? focalLength : undefined,
+              lensType: simulationType === 'lens' ? lensType : undefined,
+              slitDistance: simulationType === 'interference' ? slitDistance * 2 : undefined,
+              polarizerAngle: simulationType === 'polarization' ? polarizerAngle : undefined,
+              transmittedIntensity: simulationType === 'polarization' ? Number(transmittedIntensity.toFixed(1)) : undefined,
+            }}
+            hint={
+              simulationType === 'prism'
+                ? 'تحقق من انكسار الضوء الأبيض وتشتته إلى أطيافه السبعة عبر قانون سنل ومعادلة كوشي.'
+                : simulationType === 'lens'
+                ? 'غيّر البعد البؤري لمراقبة نقطة تجمع الأشعة وتطابقها مع معادلة صانعي العدسات.'
+                : simulationType === 'interference'
+                ? 'راقب تشكل الأهداب المضيئة والمعتمة وفقاً لفرق المسار بين الشقين.'
+                : 'اضبط زاوية المحلل إلى 90 درجة للتحقق من قانون مالوس وانعدام الشدة كلياً.'
+            }
+          />
 
           {/* Quiz Section */}
           <motion.div

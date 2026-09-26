@@ -28,6 +28,8 @@ import {
   SimViewButtons,
   useSimNotebook,
 } from '@/components/sim3d';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
 import type { SimQuizQuestion, SimView } from '@/components/sim3d';
 import {
   MATERIALS,
@@ -482,6 +484,26 @@ const Thermodynamics3D = () => {
           ))}
         </CardContent>
       </Card>
+
+      <LiveAILabCoPilot
+        experimentName="الديناميكا الحرارية والغاز المثالي وكارنو"
+        currentMetrics={{
+          mode: MODE_LABEL[mode],
+          temperatureK: temperature,
+          volumeL: Number(volume.toFixed(1)),
+          pressureKPa: Number((stats.pressure / 1000).toFixed(2)),
+          carnotEfficiency: mode === 'carnot' ? Number((stats.efficiency * 100).toFixed(1)) : undefined,
+          workJ: mode === 'carnot' ? Number(stats.work.toFixed(0)) : undefined,
+          totalFluxW: mode === 'heat-transfer' ? Number(stats.totalFlux.toFixed(1)) : undefined,
+        }}
+        hint={
+          mode === 'ideal-gas'
+            ? 'ارفع درجة الحرارة ولاحظ زيادة سرعة حركة الجزيئات العشوائية وارتفاع الضغط وفق معادلة الحالة PV = nRT.'
+            : mode === 'carnot'
+            ? 'تعتمد كفاءة كارنو فقط على حرارة الخزانين η = 1 - Tc/Th، ولا يمكن الوصول لكفاءة 100% عملياً.'
+            : 'اختر مادة عازلة وراقب كيف يقل معدل التوصيل الحراري مع زيادة السماكة وفق قانون فورييه.'
+        }
+      />
     </>
   );
 
@@ -591,46 +613,94 @@ const Thermodynamics3D = () => {
     </div>
   );
 
+  const thermoChallenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'carnot_opt',
+        title: 'تحقيق أقصى كفاءة لمحرك كارنو (Carnot η ≥ 65%)',
+        description: 'انتقل لنمط محرك كارنو وارفع حرارة الخزان الساخن Th مع تبريد Tc لتحقيق كفاءة تحويل حراري تتجاوز 65%.',
+        targetMetric: 'كفاءة كارنو',
+        targetValue: 65,
+        unit: '%',
+        currentValue: mode === 'carnot' ? Number((stats.efficiency * 100).toFixed(1)) : 0,
+        holdTimeRequired: 3,
+        tolerance: 2,
+        isCompleted: false,
+        hint: 'اضبط Th = 1000 K أو أعلى و Tc = 300 K أو أقل.',
+      },
+      {
+        id: 'ideal_gas_isothermal',
+        title: 'تمدد أيزوثيرمي متوازن (Isothermal Expansion)',
+        description: 'في نمط الغاز المثالي، اضبط الحجم على 40 لتر مع الحفاظ على درجة الحرارة عند 300 كلفن لتطبيق قانون بويل.',
+        targetMetric: 'حجم الغاز',
+        targetValue: 40.0,
+        unit: 'L',
+        currentValue: mode === 'ideal-gas' && Math.abs(temperature - 300) < 20 ? volume : 0,
+        holdTimeRequired: 2,
+        tolerance: 2,
+        isCompleted: false,
+        hint: 'اختر العملية الأيزوثيرمية واضبط T = 300 K و V = 40 L.',
+      },
+      {
+        id: 'insulation_shield',
+        title: 'العزل الحراري الفائق (Thermal Insulation)',
+        description: 'في نمط انتقال الحرارة، اختر مادة عازلة وزد السماكة لتقليل إجمالي الفيض الحراري النافذ تحت 50 W.',
+        targetMetric: 'الفيض الحراري الإجمالي',
+        targetValue: 40,
+        unit: 'W',
+        currentValue: mode === 'heat-transfer' ? stats.totalFlux : 500,
+        holdTimeRequired: 2,
+        tolerance: 15,
+        isCompleted: false,
+        hint: 'اختر الفوم العازل وزد السماكة إلى أقصى حد.',
+      },
+    ];
+  }, [mode, stats.efficiency, stats.totalFlux, temperature, volume]);
+
   const challengeCard = (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Trophy className="h-5 w-5 text-amber-500" />
-          تحدّي: اضبط كفاءة المحرك
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        <p className="text-muted-foreground">
-          انتقل إلى نمط «كارنو» واضبط حرارتَي الخزانين للوصول إلى الكفاءة المطلوبة بفارق أقل من 1.5%.
-        </p>
-        <Button onClick={newChallenge} className="gap-2">
-          <Trophy className="h-4 w-4" /> تحدٍّ جديد
-        </Button>
-        {challenge !== null && (
-          <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4">
-            <div className="flex items-center justify-between">
-              <span>الكفاءة المطلوبة</span>
-              <Badge variant="secondary" className="font-mono">{challenge}%</Badge>
+    <div className="space-y-4">
+      <LabChallengeEngine challenges={thermoChallenges} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Trophy className="h-5 w-5 text-amber-500" />
+            تحدّي: اضبط كفاءة المحرك
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <p className="text-muted-foreground">
+            انتقل إلى نمط «كارنو» واضبط حرارتَي الخزانين للوصول إلى الكفاءة المطلوبة بفارق أقل من 1.5%.
+          </p>
+          <Button onClick={newChallenge} className="gap-2">
+            <Trophy className="h-4 w-4" /> تحدٍّ جديد
+          </Button>
+          {challenge !== null && (
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4">
+              <div className="flex items-center justify-between">
+                <span>الكفاءة المطلوبة</span>
+                <Badge variant="secondary" className="font-mono">{challenge}%</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>كفاءتك الحالية</span>
+                <span className="font-mono font-bold">{(stats.efficiency * 100).toFixed(1)}%</span>
+              </div>
+              <div
+                className={`rounded-md p-2 text-center font-bold ${
+                  (challengeError ?? 99) <= 1.5
+                    ? 'bg-emerald-500/15 text-emerald-500'
+                    : 'bg-amber-500/15 text-amber-500'
+                }`}
+              >
+                {(challengeError ?? 99) <= 1.5
+                  ? `ممتاز! الفارق ${challengeError?.toFixed(2)}% فقط.`
+                  : `الفارق ${challengeError?.toFixed(2)}% — واصل الضبط.`}
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span>كفاءتك الحالية</span>
-              <span className="font-mono font-bold">{(stats.efficiency * 100).toFixed(1)}%</span>
-            </div>
-            <div
-              className={`rounded-md p-2 text-center font-bold ${
-                (challengeError ?? 99) <= 1.5
-                  ? 'bg-emerald-500/15 text-emerald-500'
-                  : 'bg-amber-500/15 text-amber-500'
-              }`}
-            >
-              {(challengeError ?? 99) <= 1.5
-                ? `ممتاز! الفارق ${challengeError?.toFixed(2)}% فقط.`
-                : `الفارق ${challengeError?.toFixed(2)}% — واصل الضبط.`}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 
   return (
