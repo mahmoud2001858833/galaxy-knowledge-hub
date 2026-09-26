@@ -36,6 +36,7 @@ import {
   radiusSweep,
   sceneRadius,
 } from '@/lib/sim-physics/circular';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
 
 const CircularScene3D = lazy(() =>
   import('@/components/simulations3d/circular/CircularScene3D').then((m) => ({
@@ -312,6 +313,21 @@ const CircularMotion3D = () => {
           ))}
         </CardContent>
       </Card>
+
+      <LiveAILabCoPilot
+        experimentName="الحركة الدائرية والقوة المركزية"
+        currentMetrics={{
+          mode: MODE_LABEL[mode],
+          radius: mode === 'orbit' ? orbitRadius : radius,
+          omega: stats.omega,
+          v: Number(stats.v.toFixed(2)),
+          ac: Number(stats.ac.toFixed(2)),
+          fc: Number(stats.fc.toFixed(2)),
+          period: Number(stats.period.toFixed(2)),
+          released: released,
+        }}
+        hint="لاحظ أن مضاعفة السرعة الزاوية ω يضاعف التسارع المركزي 4 أضعاف لأن a_c = ω²r. عند قطع الخيط، ينطلق الجسم مماسياً في خط مستقيم بفعل القصور الذاتي."
+      />
     </>
   );
 

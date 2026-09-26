@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Target, Play, Square, RotateCcw, TrendingUp, Zap, Activity, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Target, Play, Square, RotateCcw, TrendingUp, Zap, Activity, ChevronDown, Maximize2, Minimize2, Download, Eye, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -11,6 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { useProjectilePhysics } from '@/hooks/useProjectilePhysics';
 import StarField from '@/components/StarField';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, ComposedChart, Bar } from 'recharts';
+import Ballistics3DScene from '@/components/ballistics/Ballistics3DScene';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
+import { labSound } from '@/utils/labAudio';
 
 const ProjectileMotionSimulation = () => {
   const navigate = useNavigate();
@@ -48,6 +53,89 @@ const ProjectileMotionSimulation = () => {
   const [chartType, setChartType] = useState<'position' | 'velocity' | 'energy'>('position');
   const [showVectors, setShowVectors] = useState(true);
   const [showTrail, setShowTrail] = useState(true);
+
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
+  const [cameraPreset, setCameraPreset] = useState<'overview' | 'cannon' | 'target' | 'top'>('overview');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const hudMetrics = useMemo(() => {
+    if (activeTab === 'projectile') {
+      return [
+        { id: 'v0', label: 'السرعة الابتدائية (v₀)', value: state.initialVelocity, unit: 'm/s', status: 'nominal' as const, min: 5, max: 100 },
+        { id: 'angle', label: 'زاوية الإطلاق (θ)', value: state.angle, unit: '°', status: 'nominal' as const, min: 5, max: 85 },
+        { id: 'range', label: 'المدى الأفقي (Range)', value: Number(projectileStats.range.toFixed(1)), unit: 'm', status: Math.abs(projectileStats.range - 150) < 6 ? ('nominal' as const) : ('idle' as const), min: 0, max: 400 },
+        { id: 'maxH', label: 'أقصى ارتفاع (H_max)', value: Number(projectileStats.maxHeight.toFixed(1)), unit: 'm', status: projectileStats.maxHeight >= 80 ? ('nominal' as const) : ('idle' as const), min: 0, max: 200 },
+        { id: 'time', label: 'زمن التحليق (Time)', value: Number(projectileStats.flightTime.toFixed(2)), unit: 's', status: 'nominal' as const, min: 0, max: 20 },
+      ];
+    }
+    if (activeTab === 'pendulum') {
+      return [
+        { id: 'period', label: 'زمن الدورة (Period T)', value: Number(pendulumStats.period.toFixed(2)), unit: 's', status: Math.abs(pendulumStats.period - 2.0) < 0.05 ? ('nominal' as const) : ('idle' as const), min: 0.5, max: 4.0 },
+        { id: 'theta', label: 'الزاوية اللحظية (θ)', value: Number(state.pendulumAngle.toFixed(1)), unit: '°', status: 'nominal' as const, min: -90, max: 90 },
+        { id: 'energy', label: 'الطاقة الكلية (E_tot)', value: Number(pendulumStats.total.toFixed(3)), unit: 'J', status: 'nominal' as const, min: 0, max: 5 },
+      ];
+    }
+    return [
+      { id: 'height', label: 'الارتفاع اللحظي (h)', value: Number(state.freeFallPosition.toFixed(1)), unit: 'm', status: 'nominal' as const, min: 0, max: state.freeFallHeight },
+      { id: 'velocity', label: 'سرعة السقوط (v)', value: Number(freeFallStats.currentVelocity.toFixed(1)), unit: 'm/s', status: 'nominal' as const, min: 0, max: 150 },
+      { id: 'gravity', label: 'تسارع الجاذبية (g)', value: state.gravity, unit: 'm/s²', status: 'nominal' as const, min: 1.6, max: 24.8 },
+    ];
+  }, [activeTab, state.initialVelocity, state.angle, projectileStats, pendulumStats, state.pendulumAngle, state.freeFallPosition, freeFallStats, state.gravity, state.freeFallHeight]);
+
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'hit_target_150',
+        title: 'إصابة الهدف على مسافة 150 متراً (Bullseye 150m)',
+        description: 'اضبط زاوية الإطلاق وسرعة المقذوف ليسقط بدقة على الهدف في منطقة الـ 150 متراً (±5m).',
+        targetMetric: 'المدى الأفقي (Range)',
+        targetValue: 150,
+        unit: 'm',
+        currentValue: activeTab === 'projectile' && state.projectilePosition.x > 5 ? projectileStats.range : 0,
+        holdTimeRequired: 2,
+        tolerance: 6,
+        isCompleted: false,
+        hint: 'جرب زاوية 45 درجة مع سرعة تقارب 38.3 m/s على الأرض.',
+      },
+      {
+        id: 'high_apogee',
+        title: 'بلوغ ذروة شاهقة (H_max ≥ 80m)',
+        description: 'ارفع زاوية المدفع إلى زاوية حادة (مثلاً 70°-80°) وسرعة عالية ليتجاوز أقصى ارتفاع للمقذوف 80 متراً.',
+        targetMetric: 'أقصى ارتفاع',
+        targetValue: 80,
+        unit: 'm',
+        currentValue: activeTab === 'projectile' ? projectileStats.maxHeight : 0,
+        holdTimeRequired: 2,
+        tolerance: 10,
+        isCompleted: false,
+        hint: 'ارفع السرعة إلى أقصى حد واختر زاوية حادة قرب 75 درجة.',
+      },
+      {
+        id: 'pendulum_resonance',
+        title: 'معايرة دور البندول إلى ثانيتين بالضبط (T = 2.00s)',
+        description: 'في نمط البندول، اضبط طول الخيط L ليصل زمن الدورة الكاملة T إلى 2.00 ثانية على الأرض وفق T = 2π√(L/g).',
+        targetMetric: 'زمن الدورة T',
+        targetValue: 2.00,
+        unit: 's',
+        currentValue: activeTab === 'pendulum' ? pendulumStats.period : 0,
+        holdTimeRequired: 3,
+        tolerance: 0.05,
+        isCompleted: false,
+        hint: 'على جاذبية الأرض (9.8 m/s²)، طول الخيط المطلوب هو حوالي 100 cm.',
+      },
+    ];
+  }, [activeTab, state.projectilePosition.x, projectileStats, pendulumStats]);
 
   // Animation loop
   useEffect(() => {
@@ -495,11 +583,109 @@ const ProjectileMotionSimulation = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3 space-y-4">
-                <Card className="bg-card/80 backdrop-blur-md border-primary/20">
-                  <CardContent className="p-4">
-                    <canvas ref={canvasRef} width={800} height={400} className="w-full rounded-lg border border-border" />
-                  </CardContent>
+                <Card ref={containerRef} className="bg-card/80 backdrop-blur-md border-primary/20 overflow-hidden shadow-2xl relative">
+                  {/* ViewMode & Controls header */}
+                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={viewMode === '3d' ? 'default' : 'outline'}
+                        onClick={() => setViewMode('3d')}
+                        className={`text-xs h-7 ${viewMode === '3d' ? 'bg-orange-600 hover:bg-orange-500 text-white' : 'border-slate-700 text-slate-300'}`}
+                      >
+                        <Eye className="w-3.5 h-3.5 ml-1" />
+                        الميدان ثلاثي الأبعاد (3D Arena)
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={viewMode === '2d' ? 'default' : 'outline'}
+                        onClick={() => setViewMode('2d')}
+                        className={`text-xs h-7 ${viewMode === '2d' ? 'bg-orange-600 hover:bg-orange-500 text-white' : 'border-slate-700 text-slate-300'}`}
+                      >
+                        <Layers className="w-3.5 h-3.5 ml-1" />
+                        المخطط البياني (2D Canvas)
+                      </Button>
+                    </div>
+
+                    <button
+                      onClick={toggleFullscreen}
+                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                      title="ملء الشاشة"
+                    >
+                      {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {viewMode === '3d' ? (
+                    <div className="h-[480px] bg-slate-950 relative">
+                      <Ballistics3DScene
+                        mode={activeTab as any}
+                        angle={state.angle}
+                        initialVelocity={state.initialVelocity}
+                        height={state.height}
+                        gravity={state.gravity}
+                        airResistance={state.airResistance}
+                        isLaunched={state.isLaunched}
+                        trajectory={state.trajectory}
+                        currentPosition={state.projectilePosition}
+                        pendulumAngle={state.pendulumAngle}
+                        pendulumLength={state.pendulumLength}
+                        freeFallPosition={state.freeFallPosition}
+                        freeFallHeight={state.freeFallHeight}
+                        cameraPreset={cameraPreset}
+                      />
+
+                      {/* CyberLabHUD overlay */}
+                      <CyberLabHUD
+                        title={
+                          activeTab === 'projectile'
+                            ? 'ميدان المقذوفات البالستية'
+                            : activeTab === 'pendulum'
+                            ? 'مختبر البندول البسيط'
+                            : 'برج السقوط الحر'
+                        }
+                        metrics={hudMetrics}
+                        waveformMode="sine"
+                        status="nominal"
+                      />
+
+                      {/* Camera Angle Presets */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
+                        <button
+                          onClick={() => setCameraPreset('overview')}
+                          className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'overview' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                        >
+                          المنظور العام
+                        </button>
+                        <button
+                          onClick={() => setCameraPreset('cannon')}
+                          className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'cannon' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                        >
+                          المدفع
+                        </button>
+                        <button
+                          onClick={() => setCameraPreset('target')}
+                          className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'target' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                        >
+                          الهدف 150m
+                        </button>
+                        <button
+                          onClick={() => setCameraPreset('top')}
+                          className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'top' ? 'bg-orange-500/20 text-orange-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                        >
+                          علوي
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <CardContent className="p-4">
+                      <canvas ref={canvasRef} width={800} height={400} className="w-full rounded-lg border border-border" />
+                    </CardContent>
+                  )}
                 </Card>
+
+                {/* Cyber Challenges Engine */}
+                <LabChallengeEngine challenges={challenges} />
 
                 {/* Enhanced Charts */}
                 <Card className="bg-card/80 backdrop-blur-md">
@@ -759,6 +945,21 @@ const ProjectileMotionSimulation = () => {
                     <p className="text-red-400">السقوط: v = gt, h = ½gt²</p>
                   </CardContent>
                 </Card>
+
+                <LiveAILabCoPilot
+                  experimentName="المقذوفات والحركة الكلاسيكية"
+                  currentMetrics={{
+                    tab: activeTab,
+                    angle: state.angle,
+                    initialVelocity: state.initialVelocity,
+                    range: Number(projectileStats.range.toFixed(1)),
+                    maxHeight: Number(projectileStats.maxHeight.toFixed(1)),
+                    flightTime: Number(projectileStats.flightTime.toFixed(2)),
+                    gravity: GRAVITY_VALUES[state.environment],
+                    pendulumPeriod: activeTab === 'pendulum' ? Number(pendulumStats.period.toFixed(2)) : undefined,
+                  }}
+                  hint="جرب زاوية 45 درجة لتحقيق أقصى مدى أفقي ممكن في غياب مقاومة الهواء، أو قم بزيادة مقاومة الهواء لمعاينة مسار المقذوف الحقيقي غير المتماثل."
+                />
               </div>
             </div>
           </Tabs>

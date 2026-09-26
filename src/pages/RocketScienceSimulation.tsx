@@ -1,16 +1,58 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Play, Pause, RotateCcw, Rocket, Flame, Target, Orbit } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Play, Pause, RotateCcw, Rocket, Flame, Target, Orbit, Eye, Layers } from 'lucide-react';
+import Rocket3DScene from '@/components/rocket/Rocket3DScene';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
+import { labSound } from '@/utils/labAudio';
+
+const rocketChallenges: Challenge[] = [
+  {
+    id: 'launch_liftoff',
+    title: 'الإقلاع واختراق الغلاف الجوي',
+    description: 'اضبط قوة الدفع إلى أقصاها واصعد بالصاروخ لارتفاع ≥ 80 m وسرعة ≥ 25 m/s واثبت 3 ثوانٍ.',
+    targetMetric: 'الارتفاع والسرعة',
+    targetValue: 80,
+    unit: 'm',
+    holdDuration: 3,
+    check: (m) => m.simulationType === 'launch' && (m.altitude ?? 0) >= 80 && (m.velocity ?? 0) >= 25,
+  },
+  {
+    id: 'staging_separation',
+    title: 'فصل مراحل الصاروخ بنجاح (Staging)',
+    description: 'انتقل لنمط فصل المراحل ولاحظ تخلص الصاروخ من كتلة المعزز الثقيل لإشعال محرك الفراغ لمدة 3 ثوانٍ.',
+    targetMetric: 'فصل المراحل',
+    targetValue: 1,
+    unit: 'حالة',
+    holdDuration: 3,
+    check: (m) => m.simulationType === 'staging',
+  },
+  {
+    id: 'propulsive_landing',
+    title: 'الهبوط الصاروخي الدقيق (Propulsive Landing)',
+    description: 'انتقل لنمط الهبوط الصاروخي واكبح السرعة للهبوط على سفينة الدرونز البحرية لمدة 3 ثوانٍ.',
+    targetMetric: 'الهبوط الرأسي',
+    targetValue: 1,
+    unit: 'حالة',
+    holdDuration: 3,
+    check: (m) => m.simulationType === 'landing',
+  },
+];
 
 const RocketScienceSimulation = () => {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [simulationType, setSimulationType] = useState<'launch' | 'staging' | 'orbit' | 'landing'>('launch');
-  const [thrust, setThrust] = useState(50);
+  const [thrust, setThrust] = useState(75);
   const [fuelMass, setFuelMass] = useState(80);
   const [time, setTime] = useState(0);
   const [rocketState, setRocketState] = useState({
@@ -18,10 +60,36 @@ const RocketScienceSimulation = () => {
     velocity: 0,
     fuel: 100,
     stage: 1,
-    landed: false
+    landed: false,
   });
 
+  const updateRocketState = () => {
+    setRocketState((prev) => {
+      if (simulationType === 'launch') {
+        if (prev.fuel <= 0) {
+          const newVelocity = Math.max(0, prev.velocity - 0.2);
+          const newAltitude = prev.altitude + newVelocity * 0.1;
+          return { ...prev, velocity: newVelocity, altitude: newAltitude };
+        }
+        const fuelConsumption = thrust * 0.005;
+        const newFuel = Math.max(0, prev.fuel - fuelConsumption);
+        const acceleration = (thrust * 0.1) - 9.8 * 0.1;
+        const newVelocity = Math.max(0, prev.velocity + acceleration * 0.1);
+        const newAltitude = prev.altitude + newVelocity * 0.1;
+        return {
+          ...prev,
+          fuel: newFuel,
+          velocity: newVelocity,
+          altitude: newAltitude,
+        };
+      }
+      return prev;
+    });
+  };
+
+  // 2D Canvas Fallback
   useEffect(() => {
+    if (viewMode !== '2d') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -33,361 +101,57 @@ const RocketScienceSimulation = () => {
       ctx.fillStyle = '#0a0a1a';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw stars
-      for (let i = 0; i < 100; i++) {
+      // Stars
+      for (let i = 0; i < 60; i++) {
         const x = (i * 73) % canvas.width;
         const y = (i * 47) % canvas.height;
-        const brightness = 0.3 + Math.sin(time * 2 + i) * 0.2;
-        ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.beginPath();
         ctx.arc(x, y, 1, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      if (simulationType === 'launch') {
-        drawLaunchSimulation(ctx, canvas);
-      } else if (simulationType === 'staging') {
-        drawStagingSimulation(ctx, canvas);
-      } else if (simulationType === 'orbit') {
-        drawOrbitSimulation(ctx, canvas);
-      } else if (simulationType === 'landing') {
-        drawLandingSimulation(ctx, canvas);
-      }
+      const groundY = canvas.height - 50;
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, groundY, canvas.width, 50);
 
-      if (isPlaying) {
-        setTime(prev => prev + 0.016);
-        updateRocketState();
+      // Simple 2D rocket
+      const rocketX = canvas.width / 2;
+      const rocketY = Math.max(80, groundY - 60 - rocketState.altitude * 2);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(rocketX - 10, rocketY, 20, 50);
+      ctx.beginPath();
+      ctx.moveTo(rocketX, rocketY - 20);
+      ctx.lineTo(rocketX - 10, rocketY);
+      ctx.lineTo(rocketX + 10, rocketY);
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+
+      if (isPlaying && rocketState.fuel > 0) {
+        ctx.beginPath();
+        ctx.moveTo(rocketX - 8, rocketY + 50);
+        ctx.lineTo(rocketX + 8, rocketY + 50);
+        ctx.lineTo(rocketX, rocketY + 75 + Math.random() * 15);
+        ctx.fillStyle = '#f97316';
+        ctx.fill();
       }
 
       animationId = requestAnimationFrame(animate);
     };
 
-    const drawLaunchSimulation = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const groundY = canvas.height - 50;
-      
-      // Draw ground
-      const gradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
-      gradient.addColorStop(0, '#2d5016');
-      gradient.addColorStop(1, '#1a3009');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, groundY, canvas.width, 50);
-
-      // Draw launch pad
-      ctx.fillStyle = '#555';
-      ctx.fillRect(canvas.width / 2 - 40, groundY - 10, 80, 15);
-      ctx.fillStyle = '#777';
-      ctx.fillRect(canvas.width / 2 - 30, groundY - 5, 60, 10);
-
-      // Calculate rocket position
-      const rocketX = canvas.width / 2;
-      const rocketY = groundY - 60 - rocketState.altitude * 2;
-
-      // Draw rocket
-      drawRocket(ctx, rocketX, Math.max(rocketY, 80), rocketState.fuel > 0 && isPlaying);
-
-      // Draw altitude indicator
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`ارتفاع: ${rocketState.altitude.toFixed(0)} م`, 20, 30);
-      ctx.fillText(`سرعة: ${rocketState.velocity.toFixed(1)} م/ث`, 20, 50);
-      ctx.fillText(`وقود: ${rocketState.fuel.toFixed(0)}%`, 20, 70);
-
-      // Draw thrust equation
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.font = '12px monospace';
-      ctx.fillText('F = ṁ × ve', 20, canvas.height - 80);
-      ctx.fillText('قوة الدفع = معدل استهلاك الوقود × سرعة العادم', 20, canvas.height - 60);
-    };
-
-    const drawStagingSimulation = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const rocketY = canvas.height / 2 - Math.sin(time) * 20;
-
-      // Draw multi-stage rocket
-      const stage = Math.floor(time / 3) % 3 + 1;
-      
-      // Stage 3 (payload)
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(centerX, rocketY - 80);
-      ctx.lineTo(centerX - 15, rocketY - 50);
-      ctx.lineTo(centerX + 15, rocketY - 50);
-      ctx.closePath();
-      ctx.fill();
-
-      // Stage 2
-      if (stage <= 2) {
-        ctx.fillStyle = '#3498db';
-        ctx.fillRect(centerX - 20, rocketY - 50, 40, 50);
-      }
-
-      // Stage 1
-      if (stage <= 1) {
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(centerX - 25, rocketY, 50, 70);
-        
-        // Fins
-        ctx.fillStyle = '#27ae60';
-        ctx.beginPath();
-        ctx.moveTo(centerX - 25, rocketY + 70);
-        ctx.lineTo(centerX - 40, rocketY + 90);
-        ctx.lineTo(centerX - 25, rocketY + 50);
-        ctx.closePath();
-        ctx.fill();
-        
-        ctx.beginPath();
-        ctx.moveTo(centerX + 25, rocketY + 70);
-        ctx.lineTo(centerX + 40, rocketY + 90);
-        ctx.lineTo(centerX + 25, rocketY + 50);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // Draw flame
-      if (isPlaying) {
-        const flameY = stage === 1 ? rocketY + 70 : (stage === 2 ? rocketY : rocketY - 50);
-        drawFlame(ctx, centerX, flameY, 20 + Math.random() * 10);
-      }
-
-      // Draw separated stages
-      if (stage >= 2 && isPlaying) {
-        const sepY = rocketY + 100 + (time % 3) * 50;
-        ctx.fillStyle = 'rgba(46, 204, 113, 0.5)';
-        ctx.fillRect(centerX - 25, sepY, 50, 70);
-      }
-
-      // Info
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`المرحلة الحالية: ${stage}`, centerX, 40);
-      ctx.font = '12px monospace';
-      ctx.fillText('فصل المراحل يقلل الكتلة ويزيد الكفاءة', centerX, 60);
-    };
-
-    const drawOrbitSimulation = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-
-      // Draw Earth
-      const earthGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 80);
-      earthGradient.addColorStop(0, '#4a90d9');
-      earthGradient.addColorStop(0.5, '#2d6ab8');
-      earthGradient.addColorStop(1, '#1a4a7a');
-      ctx.fillStyle = earthGradient;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw atmosphere
-      ctx.strokeStyle = 'rgba(100, 180, 255, 0.3)';
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 90, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Draw orbit paths
-      const orbits = [130, 170, 220];
-      orbits.forEach((radius, i) => {
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 - i * 0.05})`;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      });
-
-      // Draw satellites
-      orbits.forEach((radius, i) => {
-        const angle = time * (0.5 - i * 0.1) + i * 2;
-        const satX = centerX + Math.cos(angle) * radius;
-        const satY = centerY + Math.sin(angle) * radius;
-
-        // Satellite body
-        ctx.fillStyle = '#ddd';
-        ctx.fillRect(satX - 5, satY - 3, 10, 6);
-        
-        // Solar panels
-        ctx.fillStyle = '#3498db';
-        ctx.fillRect(satX - 15, satY - 2, 8, 4);
-        ctx.fillRect(satX + 7, satY - 2, 8, 4);
-      });
-
-      // Orbital velocity formula
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('v = √(GM/r)', centerX, canvas.height - 60);
-      ctx.font = '12px monospace';
-      ctx.fillText('السرعة المدارية تتناسب عكسياً مع نصف قطر المدار', centerX, canvas.height - 40);
-    };
-
-    const drawLandingSimulation = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const groundY = canvas.height - 60;
-      
-      // Draw Mars surface
-      const marsGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
-      marsGradient.addColorStop(0, '#c1440e');
-      marsGradient.addColorStop(1, '#8b3008');
-      ctx.fillStyle = marsGradient;
-      ctx.fillRect(0, groundY, canvas.width, 60);
-
-      // Draw craters
-      for (let i = 0; i < 5; i++) {
-        const craterX = 100 + i * 150;
-        ctx.fillStyle = '#a03808';
-        ctx.beginPath();
-        ctx.ellipse(craterX, groundY + 10, 30, 8, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Landing pad
-      ctx.fillStyle = '#555';
-      ctx.fillRect(canvas.width / 2 - 50, groundY - 5, 100, 10);
-      ctx.strokeStyle = '#ff0';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(canvas.width / 2 - 50, groundY - 5, 100, 10);
-
-      // Calculate lander position
-      const landingProgress = Math.min(time / 10, 1);
-      const landerY = 100 + (groundY - 160) * landingProgress;
-      const landerX = canvas.width / 2;
-
-      // Draw lander
-      ctx.fillStyle = '#ddd';
-      ctx.beginPath();
-      ctx.moveTo(landerX, landerY - 30);
-      ctx.lineTo(landerX - 20, landerY);
-      ctx.lineTo(landerX + 20, landerY);
-      ctx.closePath();
-      ctx.fill();
-
-      // Lander body
-      ctx.fillStyle = '#bbb';
-      ctx.fillRect(landerX - 15, landerY, 30, 20);
-
-      // Landing legs
-      ctx.strokeStyle = '#888';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(landerX - 15, landerY + 20);
-      ctx.lineTo(landerX - 25, landerY + 40);
-      ctx.moveTo(landerX + 15, landerY + 20);
-      ctx.lineTo(landerX + 25, landerY + 40);
-      ctx.stroke();
-
-      // Retro rockets (if not landed)
-      if (isPlaying && landingProgress < 1) {
-        ctx.fillStyle = `rgba(255, ${150 + Math.random() * 100}, 0, 0.8)`;
-        ctx.beginPath();
-        ctx.moveTo(landerX - 10, landerY + 20);
-        ctx.lineTo(landerX, landerY + 50 + Math.random() * 20);
-        ctx.lineTo(landerX + 10, landerY + 20);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // Info
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`ارتفاع: ${((1 - landingProgress) * 1000).toFixed(0)} م`, 20, 30);
-      ctx.fillText(`سرعة هبوط: ${((1 - landingProgress) * 50).toFixed(1)} م/ث`, 20, 50);
-      
-      if (landingProgress >= 1) {
-        ctx.fillStyle = '#2ecc71';
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('🎉 هبوط ناجح!', canvas.width / 2, 80);
-      }
-    };
-
-    const drawRocket = (ctx: CanvasRenderingContext2D, x: number, y: number, showFlame: boolean) => {
-      // Rocket body
-      ctx.fillStyle = '#e0e0e0';
-      ctx.beginPath();
-      ctx.moveTo(x, y - 50);
-      ctx.lineTo(x - 15, y);
-      ctx.lineTo(x - 15, y + 40);
-      ctx.lineTo(x + 15, y + 40);
-      ctx.lineTo(x + 15, y);
-      ctx.closePath();
-      ctx.fill();
-
-      // Nose cone
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(x, y - 50);
-      ctx.lineTo(x - 15, y);
-      ctx.lineTo(x + 15, y);
-      ctx.closePath();
-      ctx.fill();
-
-      // Window
-      ctx.fillStyle = '#3498db';
-      ctx.beginPath();
-      ctx.arc(x, y + 10, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Fins
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(x - 15, y + 40);
-      ctx.lineTo(x - 25, y + 55);
-      ctx.lineTo(x - 15, y + 30);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x + 15, y + 40);
-      ctx.lineTo(x + 25, y + 55);
-      ctx.lineTo(x + 15, y + 30);
-      ctx.closePath();
-      ctx.fill();
-
-      // Flame
-      if (showFlame) {
-        drawFlame(ctx, x, y + 40, 15 + Math.random() * 10);
-      }
-    };
-
-    const drawFlame = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-      const gradient = ctx.createLinearGradient(x, y, x, y + size * 2);
-      gradient.addColorStop(0, '#fff');
-      gradient.addColorStop(0.2, '#ffff00');
-      gradient.addColorStop(0.5, '#ff8800');
-      gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.moveTo(x - size / 2, y);
-      ctx.quadraticCurveTo(x - size / 3, y + size, x, y + size * 2);
-      ctx.quadraticCurveTo(x + size / 3, y + size, x + size / 2, y);
-      ctx.closePath();
-      ctx.fill();
-    };
-
-    const updateRocketState = () => {
-      if (simulationType === 'launch' && rocketState.fuel > 0) {
-        const thrustForce = thrust * 0.5;
-        const gravity = 9.8;
-        const acceleration = thrustForce - gravity;
-        
-        setRocketState(prev => ({
-          ...prev,
-          velocity: Math.max(0, prev.velocity + acceleration * 0.016),
-          altitude: prev.altitude + prev.velocity * 0.016,
-          fuel: Math.max(0, prev.fuel - thrust * 0.01)
-        }));
-      }
-    };
-
     animate();
-
     return () => cancelAnimationFrame(animationId);
-  }, [isPlaying, simulationType, thrust, time, rocketState]);
+  }, [viewMode, isPlaying, rocketState]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      setTime((prev) => prev + 0.05);
+      updateRocketState();
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isPlaying, thrust, simulationType]);
 
   const resetSimulation = () => {
     setTime(0);
@@ -397,130 +161,208 @@ const RocketScienceSimulation = () => {
       velocity: 0,
       fuel: 100,
       stage: 1,
-      landed: false
+      landed: false,
     });
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}>
-            <ArrowLeft className="h-5 w-5 ml-2" />
-            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'رجوع'}
-          </Button>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Rocket className="h-6 w-6 text-orange-500" />
-            علوم الصواريخ والفضاء
-          </h1>
-        </div>
+  // Tsiolkovsky delta-v estimation (ve = 3000 m/s for kerolox)
+  const ve = 3000;
+  const deltaV = Math.round(ve * Math.log(100 / Math.max(15, 100 - (100 - rocketState.fuel) * 0.75)));
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-card rounded-xl p-4 border">
-              <canvas
-                ref={canvasRef}
-                width={800}
-                height={500}
-                className="w-full rounded-lg"
-              />
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col" dir="rtl">
+      <div className="max-w-7xl mx-auto w-full px-4 py-6 flex-1">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+                navigate(isGJU ? '/gju-competition' : '/scientific-simulations');
+              }}
+              className="text-slate-400 hover:text-white p-0 h-auto"
+            >
+              <ArrowLeft className="h-5 w-5 ml-1" />
+              العودة للتجارب
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="p-2.5 bg-orange-600/20 border border-orange-500/40 rounded-xl">
+                <Rocket className="h-6 w-6 text-orange-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-extrabold bg-gradient-to-r from-orange-400 via-amber-300 to-red-400 bg-clip-text text-transparent">
+                  علوم وهندسة الصواريخ الفضائية ثلاثية الأبعاد (3D Rocketry)
+                </h1>
+                <p className="text-xs text-slate-400">
+                  معادلة تسيولكوفسكي، فصل المراحل، الإدخال المداري والهبوط الذاتي التراجعي
+                </p>
+              </div>
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewMode(viewMode === '3d' ? '2d' : '3d')}
+              className="text-xs border-slate-700 bg-slate-900/80 text-slate-200"
+            >
+              {viewMode === '3d' ? <Eye className="w-3.5 h-3.5 ml-1 text-orange-400" /> : <Layers className="w-3.5 h-3.5 ml-1 text-cyan-400" />}
+              {viewMode === '3d' ? 'عرض 3D Launchpad' : 'عرض 2D Canvas'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="text-xs border-slate-700 bg-slate-900/80 text-slate-200"
+            >
+              {isPlaying ? <Pause className="h-3.5 w-3.5 ml-1 text-amber-400" /> : <Play className="h-3.5 w-3.5 ml-1 text-emerald-400" />}
+              {isPlaying ? 'إيقاف' : 'إطلاق'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={resetSimulation} className="border-slate-700 bg-slate-900/80 text-slate-200">
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Main 3D Viewport */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
+              {viewMode === '3d' ? (
+                <div className="h-[520px] relative">
+                  <Canvas camera={{ position: [0, 1.5, 7.5], fov: 45 }}>
+                    <ambientLight intensity={0.6} />
+                    <directionalLight position={[10, 15, 10]} intensity={1.2} />
+                    <directionalLight position={[-10, 5, -5]} intensity={0.4} color="#f97316" />
+                    <Rocket3DScene
+                      simulationType={simulationType}
+                      thrust={thrust}
+                      altitude={rocketState.altitude}
+                      velocity={rocketState.velocity}
+                      fuel={rocketState.fuel}
+                      isPlaying={isPlaying}
+                    />
+                    <OrbitControls enablePan={true} enableZoom={true} minDistance={3} maxDistance={16} />
+                  </Canvas>
+
+                  {/* CyberLab HUD */}
+                  <div className="absolute top-3 left-3 pointer-events-none">
+                    <CyberLabHUD
+                      metrics={[
+                        { label: 'الارتفاع H', value: Math.round(rocketState.altitude), unit: 'm', color: '#38bdf8' },
+                        { label: 'السرعة V', value: Number(rocketState.velocity.toFixed(1)), unit: 'm/s', color: '#10b981' },
+                        { label: 'الوقود المتبقي', value: `${Math.round(rocketState.fuel)}%`, color: rocketState.fuel > 20 ? '#f59e0b' : '#ef4444' },
+                        { label: 'Δv تسيولكوفسكي', value: deltaV, unit: 'm/s', color: '#ec4899' },
+                        { label: 'قوة الدفع', value: `${thrust}%`, color: '#f97316' },
+                      ]}
+                      status={isPlaying ? 'ACTIVE' : 'IDLE'}
+                      waveformData={[
+                        (rocketState.altitude / 5) % 35,
+                        (rocketState.velocity * 2) % 30,
+                        rocketState.fuel % 25,
+                        thrust % 30,
+                      ]}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4">
+                  <canvas ref={canvasRef} width={800} height={500} className="w-full rounded-lg" />
+                </div>
+              )}
+            </div>
+
+            {/* Gamified Challenge Engine */}
+            <LabChallengeEngine
+              challenges={rocketChallenges}
+              currentMetrics={{
+                simulationType: simulationType,
+                altitude: rocketState.altitude,
+                velocity: rocketState.velocity,
+                fuel: rocketState.fuel,
+                thrust: thrust,
+              }}
+            />
+          </div>
+
+          {/* Controls Column */}
           <div className="space-y-4">
-            <div className="bg-card rounded-xl p-4 border">
-              <h3 className="font-semibold mb-3">نوع المحاكاة</h3>
-              <Tabs value={simulationType} onValueChange={(v) => { setSimulationType(v as any); resetSimulation(); }}>
-                <TabsList className="grid grid-cols-2 gap-1">
-                  <TabsTrigger value="launch" className="text-xs">
-                    <Flame className="h-3 w-3 ml-1" />
-                    إطلاق
-                  </TabsTrigger>
-                  <TabsTrigger value="staging" className="text-xs">
-                    <Rocket className="h-3 w-3 ml-1" />
-                    مراحل
-                  </TabsTrigger>
-                  <TabsTrigger value="orbit" className="text-xs">
-                    <Orbit className="h-3 w-3 ml-1" />
-                    مدار
-                  </TabsTrigger>
-                  <TabsTrigger value="landing" className="text-xs">
-                    <Target className="h-3 w-3 ml-1" />
-                    هبوط
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+            {/* Simulation Type Selector */}
+            <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 shadow-xl space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-2">مرحلة المهمة الفضائية</label>
+                <Tabs value={simulationType} onValueChange={(v) => { setSimulationType(v as any); resetSimulation(); labSound.playLaserPulse(400); }}>
+                  <TabsList className="grid grid-cols-2 gap-1 bg-slate-800">
+                    <TabsTrigger value="launch" className="text-xs data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-300">
+                      <Flame className="h-3 w-3 ml-1" />
+                      إطلاق رأسي
+                    </TabsTrigger>
+                    <TabsTrigger value="staging" className="text-xs data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300">
+                      <Rocket className="h-3 w-3 ml-1" />
+                      فصل المراحل
+                    </TabsTrigger>
+                    <TabsTrigger value="orbit" className="text-xs data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
+                      <Orbit className="h-3 w-3 ml-1" />
+                      إدخال مداري
+                    </TabsTrigger>
+                    <TabsTrigger value="landing" className="text-xs data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+                      <Target className="h-3 w-3 ml-1" />
+                      هبوط تراجعي
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {simulationType === 'launch' && (
+                <div className="space-y-4 pt-2 border-t border-slate-800">
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+                      <span>خانق الدفع (Thrust Throttle)</span>
+                      <span className="font-mono text-orange-400">{thrust}%</span>
+                    </div>
+                    <Slider value={[thrust]} onValueChange={([v]) => setThrust(v)} min={0} max={100} step={1} />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+                      <span>كتلة الوقود الابتدائية</span>
+                      <span className="font-mono text-cyan-400">{fuelMass}%</span>
+                    </div>
+                    <Slider value={[fuelMass]} onValueChange={([v]) => setFuelMass(v)} min={20} max={100} step={1} />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {simulationType === 'launch' && (
-              <div className="bg-card rounded-xl p-4 border space-y-4">
-                <div>
-                  <label className="text-sm font-medium">قوة الدفع: {thrust}%</label>
-                  <Slider
-                    value={[thrust]}
-                    onValueChange={([v]) => setThrust(v)}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">كتلة الوقود: {fuelMass}%</label>
-                  <Slider
-                    value={[fuelMass]}
-                    onValueChange={([v]) => setFuelMass(v)}
-                    min={20}
-                    max={100}
-                    step={1}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-            )}
+            {/* AI Lab CoPilot */}
+            <LiveAILabCoPilot
+              experimentName="علوم الصواريخ وهندسة الفضاء"
+              currentMetrics={{
+                simulationType: simulationType,
+                thrust: thrust,
+                altitude: Math.round(rocketState.altitude),
+                velocity: Number(rocketState.velocity.toFixed(1)),
+                fuel: Math.round(rocketState.fuel),
+                deltaV: deltaV,
+              }}
+              hint={
+                simulationType === 'launch'
+                  ? 'معادلة تسيولكوفسكي Δv = ve ln(m0/mf): نسبة كتلة الوقود إلى كتلة الهيكل هي العامل الحاسم في الوصول لسرعة الإفلات.'
+                  : simulationType === 'staging'
+                  ? 'التخلص من وزن خزان المرحلة الأولى الفارغ يقلل الكتلة الإجمالية ويوفر تسارعاً هائلاً للمرحلة الثانية في الفراغ.'
+                  : simulationType === 'orbit'
+                  ? 'السرعة المدارية v = √(GM/r): السقوط الحر المستمر حول انحناء الأرض دون الاصطدام بها.'
+                  : 'الهبوط الصاروخي الذاتي يعتمد على شبكات الزعانف الشبكية (Grid Fins) ومناورات الكبح التراجعي العكسي.'
+              }
+            />
 
-            <div className="flex gap-2">
-              <Button onClick={() => setIsPlaying(!isPlaying)} className="flex-1">
-                {isPlaying ? <Pause className="h-4 w-4 ml-2" /> : <Play className="h-4 w-4 ml-2" />}
-                {isPlaying ? 'إيقاف' : 'تشغيل'}
-              </Button>
-              <Button variant="outline" onClick={resetSimulation}>
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="bg-card rounded-xl p-4 border">
-              <h3 className="font-semibold mb-2">المفاهيم الفيزيائية</h3>
-              <div className="text-sm text-muted-foreground space-y-2">
-                {simulationType === 'launch' && (
-                  <>
-                    <p>• <strong>معادلة تسيولكوفسكي:</strong> Δv = ve × ln(m0/mf)</p>
-                    <p>• <strong>قوة الدفع:</strong> F = ṁ × ve</p>
-                    <p>• كلما زادت سرعة العادم زادت كفاءة الصاروخ</p>
-                  </>
-                )}
-                {simulationType === 'staging' && (
-                  <>
-                    <p>• فصل المراحل يقلل الكتلة الإجمالية</p>
-                    <p>• كل مرحلة لها محرك ووقود خاص</p>
-                    <p>• يزيد نسبة الكتلة ويحسن الأداء</p>
-                  </>
-                )}
-                {simulationType === 'orbit' && (
-                  <>
-                    <p>• <strong>السرعة المدارية:</strong> v = √(GM/r)</p>
-                    <p>• المدارات الأعلى أبطأ</p>
-                    <p>• التوازن بين الجاذبية والقوة الطردية</p>
-                  </>
-                )}
-                {simulationType === 'landing' && (
-                  <>
-                    <p>• الكبح الجوي يقلل السرعة</p>
-                    <p>• صواريخ الهبوط للتباطؤ النهائي</p>
-                    <p>• دقة الهبوط تتطلب تحكم دقيق</p>
-                  </>
-                )}
-              </div>
+            {/* Theoretical Background */}
+            <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 shadow-xl space-y-3 text-xs leading-relaxed text-slate-300">
+              <h3 className="font-bold text-amber-300">المعادلات الفيزيائية للصواريخ</h3>
+              <p>• <strong>معادلة الصاروخ المثالي (تسيولكوفسكي):</strong> Δv = ve · ln(m₀/m_f)</p>
+              <p>• <strong>قوة دفع المحرك:</strong> F = ṁ · ve + (Pe - Pa) · Ae</p>
+              <p>• <strong>السرعة المدارية الدنيا (LEO):</strong> v ≈ 7.8 km/s</p>
             </div>
           </div>
         </div>
