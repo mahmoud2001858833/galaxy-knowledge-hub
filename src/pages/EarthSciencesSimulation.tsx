@@ -1,463 +1,355 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, Play, Pause, RotateCcw, Globe, Mountain, 
+  Flame, Activity, Compass, Layers, ShieldAlert, Sparkles 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Play, Pause, RotateCcw, Globe, Mountain, Flame } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import EarthSciences3DScene from '@/components/earth/EarthSciences3DScene';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine from '@/components/simulations/LabChallengeEngine';
 
-const EarthSciencesSimulation = () => {
+const EARTH_CHALLENGES = [
+  {
+    id: 'major-earthquake',
+    title: 'تحدي زلزال مدمر (فوق 7.5 ريختر)',
+    description: 'قم بزيادة قوة الزلزال إلى أكثر من 7.5 درجة على مقياس ريختر، وراقب سعة الموجات الزلزالية السطحية واهتزاز المباني.',
+    targetCondition: (params: Record<string, any>) => params.simulationType === 'earthquake' && params.magnitude >= 7.5,
+    hint: 'اختر وضع الزلزال وارفع شريط الشدة (المقياس) فوق 7.5 درجة.'
+  },
+  {
+    id: 'volcano-chamber',
+    title: 'تحدي ثوران الصهارة والمقذوفات البركانية',
+    description: 'انتقل لوضع البركان ولاحظ كيف تصعد الصهارة عالية اللزوجة من غرفة الصهارة الجوفية إلى الفوهة المركزية لتطلق سحابة الرماد.',
+    targetCondition: (params: Record<string, any>) => params.simulationType === 'volcano',
+    hint: 'اختر وضع البراكين من قائمة الأوضاع.'
+  },
+  {
+    id: 'subduction-zone',
+    title: 'تحدي نطاق الانغراز التكتوني (Subduction)',
+    description: 'استكشف اصطدام الصفيحة المحيطية الأكثر كثافة بالصفيحة القارية وغوصها في الوشاح، مما يولد صهارة بركانية وزلازل عميقة.',
+    targetCondition: (params: Record<string, any>) => params.simulationType === 'plates',
+    hint: 'اختر وضع الصفائح التكتونية وشاهد الصفيحة المحيطية وهي تغوص بزاوية مائلة.'
+  }
+];
+
+const EarthSciencesSimulation: React.FC = () => {
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const seismographRef = useRef<HTMLCanvasElement>(null);
+
   const [isPlaying, setIsPlaying] = useState(true);
   const [simulationType, setSimulationType] = useState<'earthquake' | 'volcano' | 'plates' | 'rocks'>('earthquake');
-  const [magnitude, setMagnitude] = useState(6);
+  const [magnitude, setMagnitude] = useState(6.2);
   const [time, setTime] = useState(0);
+  const [showWaveforms, setShowWaveforms] = useState(true);
+  const [cameraPreset, setCameraPreset] = useState<'front' | 'top' | 'cross-section' | 'hypocenter'>('front');
 
+  // Animation Loop
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    let animId: number;
+    const update = () => {
+      if (isPlaying) {
+        setTime((prev) => prev + 0.03);
+      }
+      animId = requestAnimationFrame(update);
+    };
+    animId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying]);
+
+  // Seismograph 2D live trace recorder
+  useEffect(() => {
+    const canvas = seismographRef.current;
+    if (!canvas || simulationType !== 'earthquake') return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationId: number;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const animate = () => {
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Draw baseline
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    ctx.lineTo(canvas.width, canvas.height / 2);
+    ctx.stroke();
 
-      if (simulationType === 'earthquake') drawEarthquake(ctx, canvas);
-      else if (simulationType === 'volcano') drawVolcano(ctx, canvas);
-      else if (simulationType === 'plates') drawPlates(ctx, canvas);
-      else if (simulationType === 'rocks') drawRockCycle(ctx, canvas);
+    // Draw seismic waveform
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
 
-      if (isPlaying) setTime(prev => prev + 0.03);
-      animationId = requestAnimationFrame(animate);
-    };
+    const midY = canvas.height / 2;
+    for (let x = 0; x < canvas.width; x++) {
+      const freq = (time * 15 + x * 0.1);
+      const amp = (magnitude / 9) * 22;
+      const noise = Math.sin(freq * 0.4) * Math.cos(freq * 0.7) * amp;
+      const y = midY + noise;
 
-    const drawEarthquake = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const groundY = canvas.height - 150;
-      const shakeIntensity = magnitude * Math.sin(time * 10) * 0.5;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }, [time, magnitude, simulationType]);
 
-      // Underground layers
-      const layers = [
-        { color: '#8B4513', height: 50, name: 'تربة' },
-        { color: '#A0522D', height: 40, name: 'رسوبيات' },
-        { color: '#6B4423', height: 60, name: 'صخور' },
-        { color: '#4a3520', height: 80, name: 'قشرة' }
-      ];
+  // Derived seismic physics metrics
+  // Energy E = 10^(4.8 + 1.5 * M) Joules
+  const energyJoules = Math.pow(10, 4.8 + 1.5 * magnitude);
+  const energyTJ = (energyJoules / 1e12).toExponential(2);
+  const pWaveSpeed = 6.2; // km/s
+  const sWaveSpeed = 3.6; // km/s
 
-      let currentY = groundY;
-      layers.forEach(layer => {
-        ctx.fillStyle = layer.color;
-        ctx.fillRect(0, currentY + shakeIntensity, canvas.width, layer.height);
-        currentY += layer.height;
-      });
-
-      // Fault line
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(centerX + shakeIntensity * 2, groundY);
-      ctx.lineTo(centerX - 30 + shakeIntensity * 2, groundY + 100);
-      ctx.lineTo(centerX - 60 + shakeIntensity * 2, groundY + 230);
-      ctx.stroke();
-
-      // Epicenter
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.arc(centerX - 40, groundY + 150, 15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('البؤرة', centerX - 40, groundY + 155);
-
-      // Seismic waves
-      for (let i = 0; i < 5; i++) {
-        const waveRadius = ((time * 50 + i * 40) % 300);
-        ctx.strokeStyle = `rgba(231, 76, 60, ${1 - waveRadius / 300})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(centerX - 40, groundY + 150, waveRadius, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Surface with buildings
-      ctx.fillStyle = '#2d5016';
-      ctx.fillRect(0, groundY - 20 + shakeIntensity, canvas.width, 25);
-
-      // Buildings
-      const buildings = [
-        { x: 150, w: 60, h: 100 },
-        { x: 300, w: 80, h: 150 },
-        { x: 500, w: 50, h: 80 },
-        { x: 650, w: 70, h: 120 }
-      ];
-
-      buildings.forEach(b => {
-        const tilt = shakeIntensity * 0.02;
-        ctx.save();
-        ctx.translate(b.x + b.w / 2, groundY - 20);
-        ctx.rotate(tilt);
-        ctx.fillStyle = '#95a5a6';
-        ctx.fillRect(-b.w / 2, -b.h + shakeIntensity, b.w, b.h);
-        // Windows
-        ctx.fillStyle = '#f1c40f';
-        for (let row = 0; row < b.h / 25; row++) {
-          for (let col = 0; col < 3; col++) {
-            ctx.fillRect(-b.w / 2 + 10 + col * 18, -b.h + 15 + row * 25 + shakeIntensity, 12, 15);
-          }
-        }
-        ctx.restore();
-      });
-
-      // Seismograph
-      const graphX = 50;
-      const graphY = 80;
-      ctx.fillStyle = '#222';
-      ctx.fillRect(graphX, graphY, 200, 80);
-      ctx.strokeStyle = '#4CAF50';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i < 200; i++) {
-        const y = graphY + 40 + Math.sin((time * 20 + i) * 0.2) * magnitude * 3;
-        if (i === 0) ctx.moveTo(graphX + i, y);
-        else ctx.lineTo(graphX + i, y);
-      }
-      ctx.stroke();
-
-      // Labels
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('محاكاة الزلزال', canvas.width / 2, 30);
-      ctx.font = '14px Arial';
-      ctx.fillText(`الشدة: ${magnitude} ريختر`, canvas.width / 2, 55);
-    };
-
-    const drawVolcano = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerX = canvas.width / 2;
-      const baseY = canvas.height - 50;
-
-      // Volcano mountain
-      ctx.fillStyle = '#4a3520';
-      ctx.beginPath();
-      ctx.moveTo(centerX - 250, baseY);
-      ctx.lineTo(centerX - 50, 150);
-      ctx.lineTo(centerX + 50, 150);
-      ctx.lineTo(centerX + 250, baseY);
-      ctx.closePath();
-      ctx.fill();
-
-      // Crater
-      ctx.fillStyle = '#2c1810';
-      ctx.beginPath();
-      ctx.ellipse(centerX, 160, 50, 20, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Magma chamber
-      ctx.fillStyle = '#ff4500';
-      ctx.beginPath();
-      ctx.ellipse(centerX, baseY - 50, 100, 60, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Magma conduit
-      ctx.fillStyle = '#ff6347';
-      ctx.fillRect(centerX - 25, 180, 50, baseY - 230);
-
-      // Lava glow
-      const glowIntensity = 0.5 + Math.sin(time * 3) * 0.3;
-      ctx.fillStyle = `rgba(255, 69, 0, ${glowIntensity})`;
-      ctx.beginPath();
-      ctx.ellipse(centerX, 160, 40, 15, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Eruption particles
-      if (isPlaying) {
-        for (let i = 0; i < 30; i++) {
-          const angle = (Math.random() - 0.5) * 1;
-          const speed = 2 + Math.random() * 3;
-          const age = (time * speed + i * 0.3) % 3;
-          const x = centerX + Math.sin(angle + i) * age * 50;
-          const y = 150 - age * 80 + age * age * 15;
-
-          if (y < 150) {
-            ctx.fillStyle = Math.random() > 0.5 ? '#ff4500' : '#ff6347';
-            ctx.beginPath();
-            ctx.arc(x, y, 5 + Math.random() * 5, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        // Lava flow
-        ctx.fillStyle = '#ff4500';
-        for (let side = -1; side <= 1; side += 2) {
-          ctx.beginPath();
-          ctx.moveTo(centerX + side * 30, 160);
-          const flowLength = ((time * 20) % 200);
-          for (let i = 0; i < flowLength; i += 10) {
-            const x = centerX + side * (30 + i * 0.8);
-            const y = 160 + i * 1.5 + Math.sin(i * 0.1 + time) * 10;
-            ctx.lineTo(x, y);
-          }
-          ctx.lineWidth = 15;
-          ctx.strokeStyle = '#ff4500';
-          ctx.stroke();
-        }
-
-        // Ash cloud
-        ctx.fillStyle = 'rgba(100, 100, 100, 0.6)';
-        for (let i = 0; i < 10; i++) {
-          const cloudX = centerX + Math.sin(time + i) * (50 + i * 10);
-          const cloudY = 80 - i * 10;
-          const cloudR = 30 + i * 5;
-          ctx.beginPath();
-          ctx.arc(cloudX, cloudY, cloudR, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      // Labels
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('سحابة رماد', centerX + 80, 60);
-      ctx.fillText('فوهة', centerX + 60, 160);
-      ctx.fillText('قناة الصهارة', centerX + 40, 280);
-      ctx.fillText('غرفة الصهارة', centerX + 110, baseY - 40);
-
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('محاكاة البركان', canvas.width / 2, 30);
-    };
-
-    const drawPlates = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerY = canvas.height / 2;
-
-      // Mantle
-      ctx.fillStyle = '#c0392b';
-      ctx.fillRect(0, centerY + 50, canvas.width, 200);
-
-      // Convection currents
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 3;
-      for (let i = 0; i < 3; i++) {
-        const offset = (time * 20 + i * 100) % 250;
-        ctx.beginPath();
-        ctx.moveTo(100 + i * 250, centerY + 200);
-        ctx.quadraticCurveTo(100 + i * 250 + 60, centerY + 100, 100 + i * 250 + 125, centerY + 60);
-        ctx.quadraticCurveTo(100 + i * 250 + 190, centerY + 100, 100 + i * 250 + 250, centerY + 200);
-        ctx.stroke();
-
-        // Arrows
-        const arrowX = 100 + i * 250 + 125;
-        const arrowY = centerY + 80;
-        ctx.beginPath();
-        ctx.moveTo(arrowX, arrowY);
-        ctx.lineTo(arrowX - 10, arrowY + 20);
-        ctx.lineTo(arrowX + 10, arrowY + 20);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // Plates
-      const plateMovement = Math.sin(time) * 5;
-
-      // Left plate
-      ctx.fillStyle = '#8B4513';
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(canvas.width / 2 - 20 + plateMovement, centerY);
-      ctx.lineTo(canvas.width / 2 - 50 + plateMovement, centerY + 50);
-      ctx.lineTo(0, centerY + 50);
-      ctx.closePath();
-      ctx.fill();
-
-      // Right plate
-      ctx.fillStyle = '#A0522D';
-      ctx.beginPath();
-      ctx.moveTo(canvas.width, centerY);
-      ctx.lineTo(canvas.width / 2 + 20 - plateMovement, centerY);
-      ctx.lineTo(canvas.width / 2 + 50 - plateMovement, centerY + 50);
-      ctx.lineTo(canvas.width, centerY + 50);
-      ctx.closePath();
-      ctx.fill();
-
-      // Surface features
-      ctx.fillStyle = '#2d5016';
-      ctx.fillRect(0, centerY - 30, canvas.width / 2 - 30 + plateMovement, 30);
-      ctx.fillRect(canvas.width / 2 + 30 - plateMovement, centerY - 30, canvas.width / 2, 30);
-
-      // Mountains at collision zone
-      ctx.fillStyle = '#4a3520';
-      ctx.beginPath();
-      ctx.moveTo(canvas.width / 2 - 60, centerY - 30);
-      ctx.lineTo(canvas.width / 2, centerY - 100);
-      ctx.lineTo(canvas.width / 2 + 60, centerY - 30);
-      ctx.closePath();
-      ctx.fill();
-
-      // Rift zone magma
-      ctx.fillStyle = '#ff4500';
-      ctx.beginPath();
-      ctx.moveTo(canvas.width / 2 - 10, centerY + 40);
-      ctx.lineTo(canvas.width / 2, centerY + 10);
-      ctx.lineTo(canvas.width / 2 + 10, centerY + 40);
-      ctx.closePath();
-      ctx.fill();
-
-      // Labels
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('صفيحة قارية', 150, centerY + 30);
-      ctx.fillText('صفيحة قارية', canvas.width - 150, centerY + 30);
-      ctx.fillText('الوشاح', canvas.width / 2, centerY + 150);
-      ctx.fillText('تيارات الحمل', canvas.width / 2, centerY + 180);
-      ctx.fillText('جبال', canvas.width / 2, centerY - 110);
-
-      ctx.font = '16px Arial';
-      ctx.fillText('حركة الصفائح التكتونية', canvas.width / 2, 30);
-    };
-
-    const drawRockCycle = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const rocks = [
-        { x: canvas.width / 2, y: 100, name: 'صخور نارية', color: '#c0392b', type: 'igneous' },
-        { x: 150, y: 280, name: 'صخور رسوبية', color: '#f39c12', type: 'sedimentary' },
-        { x: canvas.width - 150, y: 280, name: 'صخور متحولة', color: '#9b59b6', type: 'metamorphic' },
-        { x: canvas.width / 2, y: 420, name: 'صهارة', color: '#e74c3c', type: 'magma' }
-      ];
-
-      // Draw rocks
-      rocks.forEach(rock => {
-        ctx.fillStyle = rock.color;
-        ctx.beginPath();
-        ctx.arc(rock.x, rock.y, 50, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(rock.name, rock.x, rock.y + 5);
-      });
-
-      // Draw arrows with labels
-      const arrows = [
-        { from: rocks[0], to: rocks[1], label: 'تجوية وتعرية', curve: -50 },
-        { from: rocks[1], to: rocks[2], label: 'حرارة وضغط', curve: 50 },
-        { from: rocks[2], to: rocks[3], label: 'انصهار', curve: 50 },
-        { from: rocks[3], to: rocks[0], label: 'تبريد', curve: -50 },
-        { from: rocks[0], to: rocks[2], label: 'حرارة وضغط', curve: 0 },
-        { from: rocks[1], to: rocks[3], label: 'انصهار', curve: 0 }
-      ];
-
-      arrows.forEach((arrow, i) => {
-        const progress = ((time * 0.5 + i * 0.3) % 1);
-        
-        ctx.strokeStyle = '#4CAF50';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        
-        const midX = (arrow.from.x + arrow.to.x) / 2 + arrow.curve;
-        const midY = (arrow.from.y + arrow.to.y) / 2;
-        
-        ctx.moveTo(arrow.from.x, arrow.from.y + 50);
-        ctx.quadraticCurveTo(midX, midY, arrow.to.x, arrow.to.y - 50);
-        ctx.stroke();
-
-        // Animated dot
-        const t = progress;
-        const dotX = (1 - t) * (1 - t) * arrow.from.x + 2 * (1 - t) * t * midX + t * t * arrow.to.x;
-        const dotY = (1 - t) * (1 - t) * (arrow.from.y + 50) + 2 * (1 - t) * t * midY + t * t * (arrow.to.y - 50);
-        
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Label
-        ctx.fillStyle = '#aaa';
-        ctx.font = '11px Arial';
-        ctx.fillText(arrow.label, midX, midY);
-      });
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('دورة الصخور', canvas.width / 2, 30);
-    };
-
-    animate();
-    return () => cancelAnimationFrame(animationId);
-  }, [isPlaying, simulationType, magnitude, time]);
+  const resetSimulation = () => {
+    setTime(0);
+    setMagnitude(6.0);
+    setShowWaveforms(true);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => { const isGJU = sessionStorage.getItem('gju_mode') === 'true'; navigate(isGJU ? '/gju-competition' : '/scientific-simulations'); }}>
-            <ArrowLeft className="h-5 w-5 ml-2" />
-            {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'رجوع'}
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+      {/* Header Bar */}
+      <div className="h-16 px-4 sm:px-6 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between z-20">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/scientific-simulations')}
+            className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Globe className="h-6 w-6 text-blue-500" />
-            علوم الأرض
-          </h1>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-black text-amber-500">
+                علوم الأرض والجيولوجيا التفاعلية 3D
+              </h1>
+              <Badge variant="outline" className="border-amber-500/40 text-amber-300 text-[10px] bg-amber-950/30">
+                Three.js Geophysics
+              </Badge>
+            </div>
+            <p className="text-[11px] text-slate-400 hidden sm:block">
+              محاكاة ثلاثية الأبعاد لموجات الزلازل، حجرة الصهارة البركانية، وحركة الصفائح التكتونية
+            </p>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-card rounded-xl p-4 border">
-              <canvas ref={canvasRef} width={800} height={500} className="w-full rounded-lg" />
-            </div>
+        {/* Camera Quick Presets */}
+        <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
+          <Button
+            size="sm"
+            variant={cameraPreset === 'front' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('front')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            أمامي
+          </Button>
+          <Button
+            size="sm"
+            variant={cameraPreset === 'cross-section' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('cross-section')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            مقطع
+          </Button>
+          <Button
+            size="sm"
+            variant={cameraPreset === 'hypocenter' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('hypocenter')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            البؤرة
+          </Button>
+          <Button
+            size="sm"
+            variant={cameraPreset === 'top' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('top')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            علوي
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Simulation Layout */}
+      <div className="flex-1 relative flex flex-col lg:flex-row overflow-hidden">
+        {/* 3D Viewport */}
+        <div className="flex-1 h-[55vh] lg:h-auto relative">
+          <EarthSciences3DScene
+            simulationType={simulationType}
+            magnitude={magnitude}
+            time={time}
+            showWaveforms={showWaveforms}
+            cutawayView={true}
+            cameraPreset={cameraPreset}
+          />
+
+          {/* CyberLabHUD Floating Physical Telemetry */}
+          <CyberLabHUD
+            title="مؤشرات الرصد الجيوفيزيائي"
+            metrics={
+              simulationType === 'earthquake' ? [
+                { label: 'شدة ريختر (Richter)', value: `${magnitude.toFixed(1)} M`, status: magnitude > 7.0 ? 'warning' : 'optimal' },
+                { label: 'الطاقة المحررة', value: `${energyTJ} TJ`, status: 'normal' },
+                { label: 'سرعة موجات P', value: `${pWaveSpeed} km/s`, status: 'optimal' },
+                { label: 'سرعة موجات S', value: `${sWaveSpeed} km/s`, status: 'normal' }
+              ] : simulationType === 'volcano' ? [
+                { label: 'درجة حرارة الصهارة', value: '1150 °C', status: 'warning' },
+                { label: 'الضغط الجوفي', value: '420 MPa', status: 'optimal' },
+                { label: 'نوع الثوران', value: 'بيليه/طبقي', status: 'normal' },
+                { label: 'ارتفاع عمود الرماد', value: '8.4 km', status: 'warning' }
+              ] : [
+                { label: 'معدل الانغراز', value: '7.2 cm/year', status: 'optimal' },
+                { label: 'زاوية الغوص', value: '45°', status: 'normal' },
+                { label: 'عمق الانصهار', value: '120 km', status: 'warning' },
+                { label: 'حالة الصفيحة', value: 'انغراز محيطي نشط', status: 'optimal' }
+              ]
+            }
+          />
+        </div>
+
+        {/* Sidebar Controls and Lab Instruments */}
+        <div className="w-full lg:w-96 bg-slate-900/95 border-t lg:border-t-0 lg:border-r border-slate-800 p-4 space-y-4 overflow-y-auto max-h-[45vh] lg:max-h-none">
+          {/* Simulation Type Tabs */}
+          <div>
+            <label className="text-xs font-bold text-slate-300 mb-2 block">الظاهرة الجيولوجية:</label>
+            <Tabs 
+              value={simulationType} 
+              onValueChange={(v) => {
+                setSimulationType(v as any);
+                setTime(0);
+              }}
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-2 gap-1 bg-slate-950 border border-slate-800 p-1 rounded-xl h-auto">
+                <TabsTrigger value="earthquake" className="text-xs data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 py-1.5">
+                  <Activity className="w-3.5 h-3.5 ml-1" />
+                  الزلزال والموجات
+                </TabsTrigger>
+                <TabsTrigger value="volcano" className="text-xs data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-300 py-1.5">
+                  <Flame className="w-3.5 h-3.5 ml-1" />
+                  البركان والصهارة
+                </TabsTrigger>
+                <TabsTrigger value="plates" className="text-xs data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300 py-1.5">
+                  <Layers className="w-3.5 h-3.5 ml-1" />
+                  الصفائح التكتونية
+                </TabsTrigger>
+                <TabsTrigger value="rocks" className="text-xs data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300 py-1.5">
+                  <Mountain className="w-3.5 h-3.5 ml-1" />
+                  دورة الصخور
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-card rounded-xl p-4 border">
-              <h3 className="font-semibold mb-3">الظاهرة</h3>
-              <Tabs value={simulationType} onValueChange={(v) => setSimulationType(v as any)}>
-                <TabsList className="grid grid-cols-2 gap-1">
-                  <TabsTrigger value="earthquake" className="text-xs">
-                    <Mountain className="h-3 w-3 ml-1" />
-                    زلزال
-                  </TabsTrigger>
-                  <TabsTrigger value="volcano" className="text-xs">
-                    <Flame className="h-3 w-3 ml-1" />
-                    بركان
-                  </TabsTrigger>
-                  <TabsTrigger value="plates" className="text-xs">صفائح</TabsTrigger>
-                  <TabsTrigger value="rocks" className="text-xs">صخور</TabsTrigger>
-                </TabsList>
-              </Tabs>
+          {/* Interactive Parameters Panel */}
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300">محاكي الحركة الجيوفيزيائية</span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="h-8 px-3 rounded-lg border-slate-700 bg-slate-900 text-xs flex items-center gap-1"
+                >
+                  {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>{isPlaying ? 'إيقاف' : 'تشغيل'}</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={resetSimulation}
+                  className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-white"
+                  title="إعادة ضبط"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
 
+            {/* Earthquake Magnitude Slider */}
             {simulationType === 'earthquake' && (
-              <div className="bg-card rounded-xl p-4 border">
-                <label className="text-sm font-medium">شدة الزلزال: {magnitude} ريختر</label>
-                <Slider value={[magnitude]} onValueChange={([v]) => setMagnitude(v)} min={1} max={9} step={0.5} className="mt-2" />
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] text-slate-400">
+                  <span>قوة الزلزال بمقياس ريختر (Magnitude):</span>
+                  <span className="text-emerald-400 font-bold">{magnitude.toFixed(1)} M</span>
+                </div>
+                <Slider
+                  value={[magnitude]}
+                  min={3.0}
+                  max={9.0}
+                  step={0.1}
+                  onValueChange={([v]) => setMagnitude(v)}
+                  className="py-1"
+                />
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button onClick={() => setIsPlaying(!isPlaying)} className="flex-1">
-                {isPlaying ? <Pause className="h-4 w-4 ml-2" /> : <Play className="h-4 w-4 ml-2" />}
-                {isPlaying ? 'إيقاف' : 'تشغيل'}
-              </Button>
-              <Button variant="outline" onClick={() => setTime(0)}>
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="bg-card rounded-xl p-4 border">
-              <h3 className="font-semibold mb-2">المفاهيم</h3>
-              <div className="text-sm text-muted-foreground space-y-1">
-                {simulationType === 'earthquake' && <p>• الزلازل تنتج من حركة الصفائح</p>}
-                {simulationType === 'volcano' && <p>• البراكين تنفث الصهارة من باطن الأرض</p>}
-                {simulationType === 'plates' && <p>• الصفائح تتحرك بفعل تيارات الحمل</p>}
-                {simulationType === 'rocks' && <p>• الصخور تتحول في دورة مستمرة</p>}
+            {/* Live Seismograph Output */}
+            {simulationType === 'earthquake' && (
+              <div className="space-y-1 pt-1">
+                <div className="flex justify-between text-[11px] text-slate-400">
+                  <span>جهاز رصد الزلازل (Seismograph Live Trace):</span>
+                  <span className="text-emerald-400 font-mono text-[10px]">مستشعر سطحي</span>
+                </div>
+                <canvas
+                  ref={seismographRef}
+                  width={320}
+                  height={65}
+                  className="w-full h-16 rounded-xl border border-slate-800 bg-slate-950"
+                />
               </div>
-            </div>
+            )}
+
+            {/* Waveform Toggle */}
+            {simulationType === 'earthquake' && (
+              <div className="pt-1">
+                <Button
+                  size="sm"
+                  variant={showWaveforms ? 'secondary' : 'outline'}
+                  onClick={() => setShowWaveforms(!showWaveforms)}
+                  className="w-full text-xs h-7 rounded-lg"
+                >
+                  {showWaveforms ? '✓ إظهار جبهات الموجات P و S' : 'إظهار جبهات الموجات P و S'}
+                </Button>
+              </div>
+            )}
           </div>
+
+          {/* Live AI Lab CoPilot */}
+          <LiveAILabCoPilot
+            simName="علوم الأرض والجيولوجيا"
+            currentParameters={{
+              "النمط": simulationType,
+              "درجة ريختر": `${magnitude.toFixed(1)} M`,
+              "الطاقة": `${energyTJ} TJ`,
+              "سرعة P": `${pWaveSpeed} km/s`,
+              "سرعة S": `${sWaveSpeed} km/s`
+            }}
+            liveHint={
+              simulationType === 'earthquake'
+                ? `الموجات الأولية P موجات تضاغطية تنتقل في السوائل والصلب بسرعة ${pWaveSpeed} km/s، تليها موجات القص S بسرعة ${sWaveSpeed} km/s!`
+                : simulationType === 'volcano'
+                ? "تتولد الصهارة من انصهار صخور الوشاح وترتفع بسبب انخفاض كثافتها مقارنة بالصخور المحيطة بها!"
+                : "انغراز الصفيحة المحيطية الأكثر كثافة تحت القارية يسبب حفر الأخاديد البحرية وسلاسل الجبال البركانية."
+            }
+          />
+
+          {/* Lab Challenge Engine */}
+          <LabChallengeEngine
+            challenges={EARTH_CHALLENGES}
+            currentParams={{
+              simulationType,
+              magnitude,
+              showWaveforms
+            }}
+          />
         </div>
       </div>
     </div>

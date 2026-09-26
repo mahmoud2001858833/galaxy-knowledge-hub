@@ -1,500 +1,287 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, Play, Pause, RotateCcw, Dna, 
+  Microscope, Sparkles, Activity, Layers, BookOpen 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dna, Microscope } from 'lucide-react';
-import SimulationLayout from '@/components/simulations/SimulationLayout';
-import SimulationCard from '@/components/simulations/SimulationCard';
-import SimulationControls from '@/components/simulations/SimulationControls';
-import InfoSection from '@/components/simulations/InfoSection';
-import QuizSection from '@/components/simulations/QuizSection';
+import { Badge } from '@/components/ui/badge';
+import MolecularBio3DScene from '@/components/biology/MolecularBio3DScene';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine from '@/components/simulations/LabChallengeEngine';
 
-const MolecularBiologySimulation = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const BIO_CHALLENGES = [
+  {
+    id: 'dna-replication',
+    title: 'تحدي تضاعف الـ DNA وشوكة التضاعف',
+    description: 'شغّل محاكاة التضاعف وراقب كيف يفك إنزيم الهيليكاز الحلزون المزدوج بينما يقوم إنزيم البوليميراز ببناء الشريط القائد والشريط المتلكئ.',
+    targetCondition: (params: Record<string, any>) => params.simulationType === 'replication' && params.speed >= 1.0,
+    hint: 'اختر وضع تضاعف DNA واضبط سرعة المحاكاة عند 1x أو أعلى.'
+  },
+  {
+    id: 'mrna-transcription',
+    title: 'تحدي النسخ الجيني واستبدال الثايمين باليوراسيل',
+    description: 'انتقل لوضع النسخ ولاحظ كيف يقرأ بوليميراز الرنا الشريط القالب لتركيب شريط mRNA أحادي واستبدال قاعدة T بقاعدة U الوردية.',
+    targetCondition: (params: Record<string, any>) => params.simulationType === 'transcription',
+    hint: 'اختر وضع النسخ (Transcription) من القائمة.'
+  },
+  {
+    id: 'ribosome-translation',
+    title: 'تحدي ترجمة الكودونات وبناء البروتين',
+    description: 'استكشف الترجمة في الريبوسوم، حيث تشفر كل 3 نيوكليوتيدات (كودون) حمضاً أمينياً واحداً يضاف لسلسلة عديد الببتيد المتنامية.',
+    targetCondition: (params: Record<string, any>) => params.simulationType === 'translation',
+    hint: 'اختر وضع الترجمة (Translation) من القائمة.'
+  }
+];
+
+const MolecularBiologySimulation: React.FC = () => {
+  const navigate = useNavigate();
+
   const [isPlaying, setIsPlaying] = useState(true);
   const [simulationType, setSimulationType] = useState<'replication' | 'transcription' | 'translation' | 'pcr'>('replication');
+  const [speed, setSpeed] = useState(1.0);
   const [time, setTime] = useState(0);
+  const [cameraPreset, setCameraPreset] = useState<'system' | 'fork' | 'ribosome' | 'helix'>('system');
 
-  const quizQuestions = [
-    {
-      question: 'ما هو إنزيم الهيليكاز؟',
-      options: ['يفك الحلزون المزدوج لـ DNA', 'يصنع نسخة من DNA', 'يترجم mRNA إلى بروتين', 'يصلح الأخطاء في DNA'],
-      correctIndex: 0,
-      explanation: 'الهيليكاز يفك الروابط الهيدروجينية بين قواعد DNA لفتح الحلزون المزدوج'
-    },
-    {
-      question: 'ما هو الفرق بين DNA و RNA؟',
-      options: ['DNA يحتوي ثايمين و RNA يحتوي يوراسيل', 'لا يوجد فرق', 'DNA أصغر من RNA', 'RNA ثنائي الشريط'],
-      correctIndex: 0,
-      explanation: 'DNA يحتوي على قاعدة الثايمين (T) بينما RNA يحتوي على اليوراسيل (U) بدلاً منها'
-    },
-    {
-      question: 'ما هي وظيفة الريبوسوم؟',
-      options: ['نسخ DNA', 'ترجمة mRNA إلى بروتين', 'تضاعف DNA', 'نقل الأحماض الأمينية'],
-      correctIndex: 1,
-      explanation: 'الريبوسوم يقرأ شفرة mRNA ويربط الأحماض الأمينية لتكوين سلسلة البروتين'
-    },
-    {
-      question: 'ما هي تقنية PCR؟',
-      options: ['تضخيم DNA في المختبر', 'تحليل البروتينات', 'فصل الكروموسومات', 'قراءة تسلسل RNA'],
-      correctIndex: 0,
-      explanation: 'PCR (تفاعل البلمرة المتسلسل) يستخدم لتضخيم قطع صغيرة من DNA إلى ملايين النسخ'
-    },
-    {
-      question: 'ما هو الكودون؟',
-      options: ['ثلاث قواعد نيتروجينية تشفر حمض أميني', 'بروتين صغير', 'جزء من الريبوسوم', 'إنزيم النسخ'],
-      correctIndex: 0,
-      explanation: 'الكودون هو ثلاثية من القواعد النيتروجينية في mRNA تشفر لحمض أميني واحد'
-    }
-  ];
-
-  const formulas = [
-    { name: 'تضاعف DNA', formula: 'DNA → 2 DNA', description: 'كل شريط يصبح قالباً لشريط جديد' },
-    { name: 'النسخ', formula: 'DNA → mRNA', description: 'نسخ المعلومات الجينية' },
-    { name: 'الترجمة', formula: 'mRNA → بروتين', description: 'كل 3 قواعد = 1 حمض أميني' }
-  ];
-
-  const facts = [
-    'يحتوي جسم الإنسان على حوالي 3 مليار زوج قواعد من DNA',
-    'إذا تم مد DNA خلية واحدة سيصل طوله إلى 2 متر',
-    'يتم نسخ حوالي 20,000 جين في الخلية البشرية',
-    'PCR يمكن أن يضاعف DNA مليار مرة في ساعات قليلة',
-    'الريبوسوم يمكنه ربط 20 حمض أميني في الثانية'
-  ];
-
+  // Animation frame loop
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationId: number;
-
-    const animate = () => {
-      // خلفية متدرجة
-      const gradient = ctx.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, 0,
-        canvas.width / 2, canvas.height / 2, canvas.width / 2
-      );
-      gradient.addColorStop(0, '#1a0a2e');
-      gradient.addColorStop(1, '#0a0a1a');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // نجوم خلفية
-      for (let i = 0; i < 50; i++) {
-        const x = (i * 137.5 + time * 0.5) % canvas.width;
-        const y = (i * 73.3) % canvas.height;
-        const alpha = 0.3 + Math.sin(time * 2 + i) * 0.2;
-        ctx.fillStyle = `rgba(200, 150, 255, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(x, y, 1, 0, Math.PI * 2);
-        ctx.fill();
+    let animId: number;
+    const update = () => {
+      if (isPlaying) {
+        setTime((prev) => prev + 0.02 * speed);
       }
-
-      if (simulationType === 'replication') drawReplication(ctx, canvas);
-      else if (simulationType === 'transcription') drawTranscription(ctx, canvas);
-      else if (simulationType === 'translation') drawTranslation(ctx, canvas);
-      else if (simulationType === 'pcr') drawPCR(ctx, canvas);
-
-      if (isPlaying) setTime(prev => prev + 0.02);
-      animationId = requestAnimationFrame(animate);
+      animId = requestAnimationFrame(update);
     };
+    animId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying, speed]);
 
-    const drawReplication = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerY = canvas.height / 2;
-      const forkX = 200 + (time * 30) % 400;
-
-      const bases = ['A', 'T', 'G', 'C', 'A', 'T', 'C', 'G', 'T', 'A', 'G', 'C', 'A', 'T', 'G', 'C'];
-      const complements: Record<string, string> = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
-      const colors: Record<string, string> = { 'A': '#ff6b6b', 'T': '#4ecdc4', 'G': '#45b7d1', 'C': '#f9ca24' };
-
-      for (let i = 0; i < bases.length; i++) {
-        const x = 100 + i * 40;
-        const base = bases[i];
-        const comp = complements[base];
-
-        if (x < forkX) {
-          const separation = Math.min((forkX - x) / 2, 50);
-          
-          // توهج حول القواعد
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = colors[base];
-          
-          // القالب العلوي
-          ctx.fillStyle = colors[base];
-          ctx.beginPath();
-          ctx.arc(x, centerY - separation, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 11px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(base, x, centerY - separation + 4);
-
-          // القالب السفلي
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = colors[comp];
-          ctx.fillStyle = colors[comp];
-          ctx.beginPath();
-          ctx.arc(x, centerY + separation, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#fff';
-          ctx.fillText(comp, x, centerY + separation + 4);
-
-          // الشرائط الجديدة
-          if (separation > 20) {
-            ctx.globalAlpha = 0.7;
-            ctx.fillStyle = colors[comp];
-            ctx.beginPath();
-            ctx.arc(x, centerY - separation + 35, 12, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = colors[base];
-            ctx.beginPath();
-            ctx.arc(x, centerY + separation - 35, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-          }
-        } else {
-          // الزوج المترابط
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = colors[base];
-          ctx.fillStyle = colors[base];
-          ctx.beginPath();
-          ctx.arc(x, centerY - 18, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#fff';
-          ctx.fillText(base, x, centerY - 14);
-
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = colors[comp];
-          ctx.fillStyle = colors[comp];
-          ctx.beginPath();
-          ctx.arc(x, centerY + 18, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#fff';
-          ctx.fillText(comp, x, centerY + 22);
-
-          // روابط هيدروجينية
-          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-          ctx.setLineDash([3, 3]);
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(x, centerY - 4);
-          ctx.lineTo(x, centerY + 4);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-      }
-
-      // إنزيم الهيليكاز مع توهج
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = '#9b59b6';
-      const helicaseGradient = ctx.createRadialGradient(forkX, centerY, 0, forkX, centerY, 30);
-      helicaseGradient.addColorStop(0, '#e056fd');
-      helicaseGradient.addColorStop(1, '#9b59b6');
-      ctx.fillStyle = helicaseGradient;
-      ctx.beginPath();
-      ctx.arc(forkX, centerY, 28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px Arial';
-      ctx.fillText('هيليكاز', forkX, centerY + 4);
-
-      // العنوان
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText('تضاعف DNA - شوكة التضاعف', canvas.width / 2, 45);
-    };
-
-    const drawTranscription = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerY = canvas.height / 2;
-      const polymeraseX = 150 + (time * 25) % 450;
-
-      const dnaSequence = ['T', 'A', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'G', 'C', 'T', 'A', 'G'];
-      const rnaComplement: Record<string, string> = { 'T': 'A', 'A': 'U', 'G': 'C', 'C': 'G' };
-      const colors: Record<string, string> = { 'A': '#ff6b6b', 'T': '#4ecdc4', 'U': '#ff9f43', 'G': '#45b7d1', 'C': '#f9ca24' };
-
-      for (let i = 0; i < dnaSequence.length; i++) {
-        const x = 100 + i * 40;
-        const base = dnaSequence[i];
-
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = colors[base];
-        ctx.fillStyle = colors[base];
-        ctx.beginPath();
-        ctx.arc(x, centerY - 35, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(base, x, centerY - 31);
-
-        if (x < polymeraseX - 35) {
-          const rnaBase = rnaComplement[base];
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = colors[rnaBase];
-          ctx.fillStyle = colors[rnaBase];
-          ctx.beginPath();
-          ctx.arc(x, centerY + 65, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#fff';
-          ctx.fillText(rnaBase, x, centerY + 69);
-        }
-      }
-
-      // RNA Polymerase
-      ctx.shadowBlur = 30;
-      ctx.shadowColor = '#8e44ad';
-      const polyGradient = ctx.createRadialGradient(polymeraseX, centerY + 15, 0, polymeraseX, centerY + 15, 45);
-      polyGradient.addColorStop(0, '#be2edd');
-      polyGradient.addColorStop(1, '#8e44ad');
-      ctx.fillStyle = polyGradient;
-      ctx.beginPath();
-      ctx.ellipse(polymeraseX, centerY + 15, 45, 32, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px Arial';
-      ctx.fillText('RNA بوليميراز', polymeraseX, centerY + 19);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText('النسخ - تحويل DNA إلى mRNA', canvas.width / 2, 45);
-      ctx.font = '14px Arial';
-      ctx.fillStyle = '#aaa';
-      ctx.fillText('DNA (قالب)', 60, centerY - 30);
-      ctx.fillText('mRNA', 60, centerY + 70);
-    };
-
-    const drawTranslation = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const centerY = canvas.height / 2;
-
-      // الريبوسوم مع توهج
-      ctx.shadowBlur = 30;
-      ctx.shadowColor = '#636e72';
-      const riboGradient = ctx.createRadialGradient(canvas.width / 2, centerY, 0, canvas.width / 2, centerY, 130);
-      riboGradient.addColorStop(0, '#95a5a6');
-      riboGradient.addColorStop(1, '#636e72');
-      ctx.fillStyle = riboGradient;
-      ctx.beginPath();
-      ctx.ellipse(canvas.width / 2, centerY, 130, 70, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#b2bec3';
-      ctx.beginPath();
-      ctx.ellipse(canvas.width / 2, centerY - 35, 110, 45, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      const codons = ['AUG', 'GCU', 'UAC', 'GAA', 'UGA'];
-      const aminoAcids: Record<string, string> = { 'AUG': 'Met', 'GCU': 'Ala', 'UAC': 'Tyr', 'GAA': 'Glu', 'UGA': 'Stop' };
-
-      for (let i = 0; i < codons.length; i++) {
-        const x = 200 + i * 100;
-        ctx.fillStyle = '#ff9f43';
-        ctx.fillRect(x - 42, centerY + 55, 84, 28);
-        ctx.strokeStyle = '#e17055';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x - 42, centerY + 55, 84, 28);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(codons[i], x, centerY + 74);
-      }
-
-      const currentCodon = Math.floor((time * 0.5) % 4);
-      for (let i = 0; i <= currentCodon && i < 4; i++) {
-        const x = 200 + i * 100;
-        
-        ctx.strokeStyle = '#00b894';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(x, centerY + 55);
-        ctx.lineTo(x, centerY + 5);
-        ctx.stroke();
-
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#9b59b6';
-        ctx.fillStyle = '#9b59b6';
-        ctx.beginPath();
-        ctx.arc(x, centerY - 15, 18, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px Arial';
-        ctx.fillText(aminoAcids[codons[i]], x, centerY - 11);
-      }
-
-      if (currentCodon > 0) {
-        ctx.strokeStyle = '#9b59b6';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(200, centerY - 15);
-        for (let i = 1; i <= currentCodon && i < 4; i++) {
-          ctx.lineTo(200 + i * 100, centerY - 15);
-        }
-        ctx.stroke();
-      }
-
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText('الترجمة - تحويل mRNA إلى بروتين', canvas.width / 2, 45);
-    };
-
-    const drawPCR = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const cycle = Math.floor(time / 3) % 3;
-      const phaseProgress = (time % 3) / 3;
-
-      const phases = ['التمسخ (95°C)', 'الارتباط (55°C)', 'الامتداد (72°C)'];
-      const temps = [95, 55, 72];
-      const phaseColors = ['#e74c3c', '#3498db', '#2ecc71'];
-
-      // مؤشر الحرارة
-      ctx.fillStyle = '#2d3436';
-      ctx.fillRect(50, 80, 45, 320);
-      ctx.strokeStyle = '#636e72';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(50, 80, 45, 320);
-      
-      const tempY = 80 + (100 - temps[cycle]) * 3.2;
-      const tempGradient = ctx.createLinearGradient(52, tempY, 52, 400);
-      tempGradient.addColorStop(0, phaseColors[cycle]);
-      tempGradient.addColorStop(1, '#2d3436');
-      ctx.fillStyle = tempGradient;
-      ctx.fillRect(54, tempY, 38, 400 - tempY);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${temps[cycle]}°C`, 73, tempY - 12);
-
-      const centerX = canvas.width / 2 + 60;
-      const centerY = canvas.height / 2;
-
-      const drawDNAStrand = (x: number, y: number, length: number, color: string) => {
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = color;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 10;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(x - length / 2, y);
-        ctx.lineTo(x + length / 2, y);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      };
-
-      if (cycle === 0) {
-        const separation = phaseProgress * 90;
-        drawDNAStrand(centerX, centerY - separation, 220, '#ff6b6b');
-        drawDNAStrand(centerX, centerY + separation, 220, '#4ecdc4');
-      } else if (cycle === 1) {
-        drawDNAStrand(centerX, centerY - 90, 220, '#ff6b6b');
-        drawDNAStrand(centerX, centerY + 90, 220, '#4ecdc4');
-        
-        if (phaseProgress > 0.5) {
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = '#f9ca24';
-          ctx.fillStyle = '#f9ca24';
-          ctx.fillRect(centerX - 100, centerY - 80, 50, 18);
-          ctx.fillRect(centerX + 50, centerY + 62, 50, 18);
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = '#000';
-          ctx.font = 'bold 11px Arial';
-          ctx.fillText('بادئ', centerX - 75, centerY - 68);
-          ctx.fillText('بادئ', centerX + 75, centerY + 75);
-        }
-      } else {
-        const extensionLength = phaseProgress * 220;
-        drawDNAStrand(centerX, centerY - 90, 220, '#ff6b6b');
-        drawDNAStrand(centerX, centerY + 90, 220, '#4ecdc4');
-        
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(centerX - 100, centerY - 75, extensionLength, 12);
-        ctx.fillRect(centerX + 100 - extensionLength, centerY + 63, extensionLength, 12);
-      }
-
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 22px Arial';
-      ctx.fillText(phases[cycle], canvas.width / 2, 50);
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#aaa';
-      ctx.fillText(`الدورة: ${Math.floor(time / 9) + 1}`, canvas.width / 2, 78);
-    };
-
-    animate();
-    return () => cancelAnimationFrame(animationId);
-  }, [isPlaying, simulationType, time]);
-
-  const getExplanation = () => {
-    switch (simulationType) {
-      case 'replication': return 'تضاعف DNA هو عملية نسخ المادة الوراثية قبل انقسام الخلية. إنزيم الهيليكاز يفك الحلزون المزدوج وDNA بوليميراز يبني الشريط الجديد.';
-      case 'transcription': return 'النسخ هو تحويل المعلومات من DNA إلى mRNA. RNA بوليميراز يقرأ شريط DNA القالب وينتج شريط mRNA مكمل.';
-      case 'translation': return 'الترجمة تحدث في الريبوسوم حيث يُقرأ mRNA ويُترجم إلى سلسلة من الأحماض الأمينية تشكل البروتين.';
-      case 'pcr': return 'PCR تقنية لتضخيم DNA تستخدم دورات من التسخين والتبريد لمضاعفة قطعة DNA ملايين المرات.';
-      default: return '';
-    }
+  const resetSimulation = () => {
+    setTime(0);
+    setSpeed(1.0);
   };
 
   return (
-    <SimulationLayout
-      title="البيولوجيا الجزيئية"
-      titleGradient="from-pink-400 to-purple-400"
-      backgroundGradient="from-slate-900 via-purple-900 to-slate-900"
-    >
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Canvas */}
-        <SimulationCard className="lg:col-span-2" color="purple">
-          <canvas ref={canvasRef} width={800} height={500} className="w-full rounded-lg" />
-        </SimulationCard>
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+      {/* Header bar */}
+      <div className="h-16 px-4 sm:px-6 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between z-20">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/scientific-simulations')}
+            className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-black text-cyan-400">
+                علم الأحياء الجزيئي والجينات 3D
+              </h1>
+              <Badge variant="outline" className="border-cyan-500/40 text-cyan-300 text-[10px] bg-cyan-950/30">
+                Molecular Engine
+              </Badge>
+            </div>
+            <p className="text-[11px] text-slate-400 hidden sm:block">
+              محاكاة ثلاثية الأبعاد لتضاعف DNA، النسخ الجيني mRNA، وترجمة البروتينات في الريبوسوم
+            </p>
+          </div>
+        </div>
 
-        {/* Controls */}
-        <div className="space-y-4">
-          <SimulationCard title="العملية" icon={Dna} color="pink">
-            <Tabs value={simulationType} onValueChange={(v) => { setSimulationType(v as any); setTime(0); }}>
-              <TabsList className="grid grid-cols-2 gap-1 bg-slate-800/50">
-                <TabsTrigger value="replication" className="text-xs data-[state=active]:bg-pink-600">تضاعف</TabsTrigger>
-                <TabsTrigger value="transcription" className="text-xs data-[state=active]:bg-pink-600">نسخ</TabsTrigger>
-                <TabsTrigger value="translation" className="text-xs data-[state=active]:bg-pink-600">ترجمة</TabsTrigger>
-                <TabsTrigger value="pcr" className="text-xs data-[state=active]:bg-pink-600">PCR</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </SimulationCard>
-
-          <SimulationControls
-            isPlaying={isPlaying}
-            onTogglePlay={() => setIsPlaying(!isPlaying)}
-            onReset={() => setTime(0)}
-            primaryColor="pink"
-          />
-
-          <SimulationCard title="المعلومات العلمية" icon={Microscope} color="purple" delay={0.2}>
-            <InfoSection
-              explanation={getExplanation()}
-              formulas={formulas}
-              facts={facts}
-            />
-          </SimulationCard>
+        {/* Camera Presets */}
+        <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
+          <Button
+            size="sm"
+            variant={cameraPreset === 'system' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('system')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            عام
+          </Button>
+          <Button
+            size="sm"
+            variant={cameraPreset === 'fork' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('fork')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            الشوكة
+          </Button>
+          <Button
+            size="sm"
+            variant={cameraPreset === 'ribosome' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('ribosome')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            الريبوسوم
+          </Button>
+          <Button
+            size="sm"
+            variant={cameraPreset === 'helix' ? 'secondary' : 'ghost'}
+            onClick={() => setCameraPreset('helix')}
+            className="h-7 text-xs px-2 rounded-lg"
+          >
+            الحلزون
+          </Button>
         </div>
       </div>
 
-      {/* Quiz Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mt-6"
-      >
-        <QuizSection questions={quizQuestions} title="اختبر معلوماتك في البيولوجيا الجزيئية" />
-      </motion.div>
-    </SimulationLayout>
+      {/* Main Viewport */}
+      <div className="flex-1 relative flex flex-col lg:flex-row overflow-hidden">
+        {/* 3D Scene */}
+        <div className="flex-1 h-[55vh] lg:h-auto relative">
+          <MolecularBio3DScene
+            simulationType={simulationType}
+            time={time}
+            speed={speed}
+            cameraPreset={cameraPreset}
+          />
+
+          {/* CyberLabHUD Floating Telemetry */}
+          <CyberLabHUD
+            title="مؤشرات الديناميكا الجزيئية"
+            metrics={
+              simulationType === 'replication' ? [
+                { label: 'معدل البلمرة', value: '1,000 bp/sec', status: 'optimal' },
+                { label: 'إنزيم فك الالتواء', value: 'DNA Helicase نشط', status: 'optimal' },
+                { label: 'دقة النسخ', value: '99.999%', status: 'optimal' },
+                { label: 'أجزاء أوكازاكي', value: 'تجميع نشط', status: 'normal' }
+              ] : simulationType === 'transcription' ? [
+                { label: 'إنزيم النسخ', value: 'RNA Polymerase II', status: 'optimal' },
+                { label: 'الشريط الناتج', value: 'mRNA أحادي', status: 'optimal' },
+                { label: 'قاعدة اليوراسيل (U)', value: 'نشطة مكملة لـ A', status: 'normal' },
+                { label: 'سرعة النسخ', value: '50 nt/sec', status: 'optimal' }
+              ] : [
+                { label: 'وحدات الريبوسوم', value: '50S + 30S ملتحمة', status: 'optimal' },
+                { label: 'كودون البدء', value: 'AUG (ميثيونين)', status: 'optimal' },
+                { label: 'طول الببتيد', value: `${Math.floor((time * 3) % 40) + 6} أحماض أمينية`, status: 'normal' },
+                { label: 'معدل الترجمة', value: '20 aa/sec', status: 'optimal' }
+              ]
+            }
+          />
+        </div>
+
+        {/* Controls Sidebar */}
+        <div className="w-full lg:w-96 bg-slate-900/95 border-t lg:border-t-0 lg:border-r border-slate-800 p-4 space-y-4 overflow-y-auto max-h-[45vh] lg:max-h-none">
+          {/* Mode Switcher */}
+          <div>
+            <label className="text-xs font-bold text-slate-300 mb-2 block">العملية الجزيئية:</label>
+            <Tabs 
+              value={simulationType} 
+              onValueChange={(v) => {
+                setSimulationType(v as any);
+                setTime(0);
+              }}
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-2 gap-1 bg-slate-950 border border-slate-800 p-1 rounded-xl h-auto">
+                <TabsTrigger value="replication" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300 py-1.5">
+                  <Dna className="w-3.5 h-3.5 ml-1" />
+                  تضاعف الـ DNA
+                </TabsTrigger>
+                <TabsTrigger value="transcription" className="text-xs data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300 py-1.5">
+                  <Activity className="w-3.5 h-3.5 ml-1" />
+                  النسخ الجيني (mRNA)
+                </TabsTrigger>
+                <TabsTrigger value="translation" className="text-xs data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300 py-1.5">
+                  <Layers className="w-3.5 h-3.5 ml-1" />
+                  الترجمة والبروتين
+                </TabsTrigger>
+                <TabsTrigger value="pcr" className="text-xs data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 py-1.5">
+                  <Sparkles className="w-3.5 h-3.5 ml-1" />
+                  تفاعل PCR المتسلسل
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Speed & Playback */}
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300">محاكي التفاعل الجزيئي</span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="h-8 px-3 rounded-lg border-slate-700 bg-slate-900 text-xs flex items-center gap-1"
+                >
+                  {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>{isPlaying ? 'إيقاف' : 'تشغيل'}</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={resetSimulation}
+                  className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-white"
+                  title="إعادة ضبط"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Speed slider */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>سرعة الإنزيمات والتفاعلات:</span>
+                <span className="text-cyan-400 font-bold">{speed.toFixed(1)}x</span>
+              </div>
+              <Slider
+                value={[speed]}
+                min={0.2}
+                max={2.5}
+                step={0.1}
+                onValueChange={([v]) => setSpeed(v)}
+                className="py-1"
+              />
+            </div>
+
+            {/* Base Color Legend */}
+            <div className="pt-2 border-t border-slate-800">
+              <span className="text-[10px] text-slate-400 block mb-1.5 font-bold">دليل القواعد النيتروجينية:</span>
+              <div className="grid grid-cols-5 gap-1 text-[10px] font-bold text-center">
+                <span className="p-1 rounded bg-red-950/70 border border-red-500/50 text-red-300">A أدينين</span>
+                <span className="p-1 rounded bg-blue-950/70 border border-blue-500/50 text-blue-300">T ثايمين</span>
+                <span className="p-1 rounded bg-emerald-950/70 border border-emerald-500/50 text-emerald-300">G جوانين</span>
+                <span className="p-1 rounded bg-amber-950/70 border border-amber-500/50 text-amber-300">C سيتوزين</span>
+                <span className="p-1 rounded bg-pink-950/70 border border-pink-500/50 text-pink-300">U يوراسيل</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Live AI Lab CoPilot */}
+          <LiveAILabCoPilot
+            simName="الأحياء الجزيئية والجينات"
+            currentParameters={{
+              "العملية": simulationType,
+              "السرعة": `${speed.toFixed(1)}x`,
+              "حالة البلمرة": isPlaying ? "نشطة" : "متوقفة مؤقتاً"
+            }}
+            liveHint={
+              simulationType === 'replication'
+                ? "يتحرك إنزيم الهيليكاز لفك الروابط الهيدروجينية بين القواعد المتتامة (A-T برابطتين، و G-C بثلاث روابط)!"
+                : simulationType === 'transcription'
+                ? "يقرأ RNA Polymerase الشريط المضاد في الاتجاه 3' إلى 5' لتصنيع mRNA في الاتجاه 5' إلى 3' مستبدلاً T بـ U!"
+                : "يرتبط جزيء tRNA الحامل للحمض الأميني بالكودون المطابق على mRNA داخل موقع A في الريبوسوم!"
+            }
+          />
+
+          {/* Lab Challenge Engine */}
+          <LabChallengeEngine
+            challenges={BIO_CHALLENGES}
+            currentParams={{
+              simulationType,
+              speed
+            }}
+          />
+        </div>
+      </div>
+    </div>
   );
 };
 
