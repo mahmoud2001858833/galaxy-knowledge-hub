@@ -1,8 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
-import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Globe, Play, Pause, RotateCcw, Award, CheckCircle2, HelpCircle, 
@@ -19,16 +17,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
-
-interface BlackHolePreset {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  solarMasses: number;
-  typeAr: string;
-  description: string;
-  color: string;
-}
+import BlackHoleChamber3D, { BlackHolePreset } from '@/components/astronomy/BlackHoleChamber3D';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
 
 const PRESETS: BlackHolePreset[] = [
   { id: 'cygnus-x1', nameAr: 'الدجاجة X-1 (نجمي)', nameEn: 'Cygnus X-1', solarMasses: 21.2, typeAr: 'ثقب أسود نجمي', description: 'أول ثقب أسود تم تأكيد وجوده رصدياً في مجرتنا', color: '#38bdf8' },
@@ -40,116 +32,38 @@ const G = 6.67430e-11;
 const C = 299792458;
 const SOLAR_MASS_KG = 1.989e30;
 
-interface BlackHole3DProps {
-  probeDistanceMultiplier: number;
-  isPlaying: boolean;
-  selectedPreset: BlackHolePreset;
-}
-
-function BlackHole3DScene({
-  probeDistanceMultiplier,
-  isPlaying,
-  selectedPreset,
-}: BlackHole3DProps) {
-  const diskRef = useRef<THREE.Group>(null);
-  const probeRef = useRef<THREE.Group>(null);
-  const angleRef = useRef<number>(0);
-
-  const eventHorizonRadius = 1.2;
-  const photonSphereRadius = eventHorizonRadius * 1.5;
-  const iscoRadius = eventHorizonRadius * 3.0;
-
-  useFrame(() => {
-    if (!isPlaying) return;
-
-    if (diskRef.current) {
-      diskRef.current.rotation.z += 0.008;
-    }
-
-    if (probeRef.current) {
-      const orbitalSpeed = (0.02 * Math.sqrt(eventHorizonRadius / Math.max(1.1, probeDistanceMultiplier)));
-      angleRef.current += orbitalSpeed;
-
-      const r3D = probeDistanceMultiplier * eventHorizonRadius;
-      const px = Math.cos(angleRef.current) * r3D;
-      const pz = Math.sin(angleRef.current) * r3D;
-      probeRef.current.position.set(px, 0.15, pz);
-    }
-  });
-
-  return (
-    <group>
-      {/* 3D EVENT HORIZON */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[eventHorizonRadius, 48, 48]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-
-      {/* Relativistic Glow Rim */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[eventHorizonRadius * 1.03, 32, 32]} />
-        <meshBasicMaterial color="#f59e0b" opacity={0.25} transparent side={THREE.BackSide} />
-      </mesh>
-
-      {/* PHOTON SPHERE */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[photonSphereRadius - 0.03, photonSphereRadius + 0.03, 64]} />
-        <meshBasicMaterial color="#fde047" opacity={0.6} transparent side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* ACCRETION DISK */}
-      <group ref={diskRef} rotation={[Math.PI / 3, 0, 0]}>
-        <mesh>
-          <ringGeometry args={[iscoRadius * 0.7, iscoRadius * 1.4, 64]} />
-          <meshBasicMaterial color="#38bdf8" opacity={0.7} transparent side={THREE.DoubleSide} />
-        </mesh>
-        <mesh>
-          <ringGeometry args={[iscoRadius * 1.35, iscoRadius * 2.2, 64]} />
-          <meshBasicMaterial color={selectedPreset.color} opacity={0.55} transparent side={THREE.DoubleSide} />
-        </mesh>
-        <mesh>
-          <ringGeometry args={[iscoRadius * 2.15, iscoRadius * 3.2, 64]} />
-          <meshBasicMaterial color="#ef4444" opacity={0.3} transparent side={THREE.DoubleSide} />
-        </mesh>
-      </group>
-
-      {/* SPACETIME GRAVITATIONAL WELL */}
-      <group position={[0, -0.2, 0]}>
-        {[-0.2, -0.6, -1.2, -2.0].map((depth, idx) => {
-          const rad = 5.5 - idx * 1.1;
-          return (
-            <mesh key={`grid-${idx}`} position={[0, depth, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[rad - 0.02, rad + 0.02, 32]} />
-              <meshBasicMaterial color="#475569" opacity={0.25} transparent side={THREE.DoubleSide} />
-            </mesh>
-          );
-        })}
-      </group>
-
-      {/* 3D PROBE */}
-      <group ref={probeRef}>
-        <mesh>
-          <boxGeometry args={[0.25, 0.15, 0.25]} />
-          <meshStandardMaterial color="#f8fafc" metalness={0.9} roughness={0.1} />
-        </mesh>
-        <mesh position={[0.35, 0, 0]}>
-          <boxGeometry args={[0.4, 0.02, 0.2]} />
-          <meshStandardMaterial color="#0284c7" metalness={0.8} />
-        </mesh>
-        <mesh position={[-0.35, 0, 0]}>
-          <boxGeometry args={[0.4, 0.02, 0.2]} />
-          <meshStandardMaterial color="#0284c7" metalness={0.8} />
-        </mesh>
-        <pointLight color="#38bdf8" intensity={1.5} distance={2} />
-        <Html position={[0, 0.45, 0]} center>
-          <div className="bg-slate-900/90 text-sky-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-sky-500/40 pointer-events-none whitespace-nowrap shadow-lg">
-            المسبار ({probeDistanceMultiplier.toFixed(2)} rs)
-          </div>
-        </Html>
-      </group>
-    </group>
-  );
-}
+const blackHoleChallenges: Challenge[] = [
+  {
+    id: 'isco_stabilization',
+    title: 'مدار الاستقرار الدائري الأخير (ISCO Orbit)',
+    description: 'وجّه المسبار ليستقر عند أضيق مدار دائري مستقر ممكن (r ≈ 3.00 rs ± 0.2) واثبت 3 ثوانٍ.',
+    targetMetric: 'المسافة r',
+    targetValue: 3.0,
+    unit: 'rs',
+    holdDuration: 3,
+    check: (m) => Math.abs((m.probeDistance ?? 0) - 3.0) <= 0.25,
+  },
+  {
+    id: 'photon_sphere',
+    title: 'كرة مسار الفوتونات (Photon Sphere)',
+    description: 'اقترب بالمسبار من مدار الفوتونات (r ≈ 1.50 rs ± 0.15) حيث تحني الجاذبية الضوء في دوائر مغلقة.',
+    targetMetric: 'المسافة r',
+    targetValue: 1.5,
+    unit: 'rs',
+    holdDuration: 3,
+    check: (m) => Math.abs((m.probeDistance ?? 0) - 1.5) <= 0.15,
+  },
+  {
+    id: 'horizon_freeze',
+    title: 'تجميد الزمن عند أفق الحدث',
+    description: 'انحدر بالمسبار إلى الحافة الفائقة (r ≤ 1.15 rs) لتشهد تباطؤ الزمن الخاص بالمسبار إلى أقل من 36% نسبة للأرض.',
+    targetMetric: 'سريان الزمن',
+    targetValue: 36,
+    unit: '%',
+    holdDuration: 3,
+    check: (m) => (m.probeDistance ?? 0) <= 1.15,
+  },
+];
 
 export default function BlackHoleSimulation() {
   const navigate = useNavigate();
@@ -164,11 +78,6 @@ export default function BlackHoleSimulation() {
   const [activeTab, setActiveTab] = useState<string>('simulation');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-
-  // Missions
-  const [mission1Completed, setMission1Completed] = useState<boolean>(false);
-  const [mission2Completed, setMission2Completed] = useState<boolean>(false);
-  const [mission3Completed, setMission3Completed] = useState<boolean>(false);
 
   // Relative Clocks
   const [coordinateTimeSec, setCoordinateTimeSec] = useState<number>(0);
@@ -217,25 +126,6 @@ export default function BlackHoleSimulation() {
 
     return () => clearInterval(interval);
   }, [isPlaying, isFalling, timeDilationFactor]);
-
-  // Mission check
-  useEffect(() => {
-    // Mission 1: Probe at 3.0 rs
-    if (Math.abs(probeDistanceMultiplier - 3.0) <= 0.2 && !mission1Completed) {
-      setMission1Completed(true);
-      labSound.playSuccessChime();
-    }
-    // Mission 2: Probe at Photon sphere (1.5 rs)
-    if (Math.abs(probeDistanceMultiplier - 1.5) <= 0.15 && !mission2Completed) {
-      setMission2Completed(true);
-      labSound.playSuccessChime();
-    }
-    // Mission 3: Probe near horizon (< 1.15 rs)
-    if (probeDistanceMultiplier <= 1.15 && !mission3Completed) {
-      setMission3Completed(true);
-      labSound.playSuccessChime();
-    }
-  }, [probeDistanceMultiplier, mission1Completed, mission2Completed, mission3Completed]);
 
   const setCameraView = (view: 'default' | 'top' | 'event_horizon' | 'accretion_disk') => {
     if (!controlsRef.current) return;
@@ -429,9 +319,9 @@ export default function BlackHoleSimulation() {
               <Activity className="w-4 h-4" />
               أفق الحدث والمسبار ثلاثي الأبعاد (3D Space)
             </TabsTrigger>
-            <TabsTrigger value="missions" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <TabsTrigger value="challenges" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
               <Target className="w-4 h-4" />
-              مهام النسبية العامة ({[mission1Completed, mission2Completed, mission3Completed].filter(Boolean).length}/3)
+              تحديات النسبية العامة
             </TabsTrigger>
             <TabsTrigger value="theory" className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300">
               <BookOpen className="w-4 h-4" />
@@ -446,7 +336,7 @@ export default function BlackHoleSimulation() {
           {/* TAB 1: 3D Simulation */}
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 3D WebGL Canvas */}
+              {/* 3D WebGL Canvas + HUD */}
               <div className="lg:col-span-2 space-y-3" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
                   <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
@@ -467,15 +357,16 @@ export default function BlackHoleSimulation() {
                       </button>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[460px] bg-slate-950 relative">
+                  <CardContent className="p-0 h-[520px] bg-slate-950 relative">
                     <Canvas camera={{ position: [0, 4.5, 9.0], fov: 45 }}>
                       <ambientLight intensity={0.4} />
                       <pointLight position={[10, 10, 10]} intensity={1.5} color="#ffffff" />
                       <pointLight position={[-10, -10, -10]} intensity={0.5} color="#38bdf8" />
-                      <BlackHole3DScene
+                      <BlackHoleChamber3D
                         probeDistanceMultiplier={probeDistanceMultiplier}
                         isPlaying={isPlaying}
                         selectedPreset={selectedPreset}
+                        timeDilationFactor={timeDilationFactor}
                       />
                       <OrbitControls
                         ref={controlsRef}
@@ -486,8 +377,27 @@ export default function BlackHoleSimulation() {
                       />
                     </Canvas>
 
+                    {/* CyberLab HUD */}
+                    <div className="absolute top-3 left-3 pointer-events-none">
+                      <CyberLabHUD
+                        metrics={[
+                          { label: 'سريان زمن المسبار', value: `${(timeDilationFactor * 100).toFixed(1)}%`, color: '#c084fc' },
+                          { label: 'المسافة r/rs', value: probeDistanceMultiplier.toFixed(2), color: '#38bdf8' },
+                          { label: 'الانزياح الأحمر z', value: `+${gravitationalRedshift}`, color: '#f43f5e' },
+                          { label: 'نصف قطر أفق الحدث', value: `${schwarzschildRadiusKm} km`, color: '#f59e0b' },
+                        ]}
+                        status={probeDistanceMultiplier <= 1.15 ? 'ERROR' : isPlaying ? 'ACTIVE' : 'IDLE'}
+                        waveformData={[
+                          timeDilationFactor * 40,
+                          (probeDistanceMultiplier * 10) % 35,
+                          gravitationalRedshift % 30,
+                          20,
+                        ]}
+                      />
+                    </div>
+
                     {/* Camera Angle Presets */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-10">
                       <button
                         onClick={() => setCameraView('default')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
@@ -512,16 +422,6 @@ export default function BlackHoleSimulation() {
                       >
                         علوي
                       </button>
-                    </div>
-
-                    {/* Live Assistant Hint */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-purple-400 shrink-0" />
-                      <span>
-                        {probeDistanceMultiplier <= 1.2
-                          ? `💡 المسبار قريب جداً من أفق الحدث (${probeDistanceMultiplier.toFixed(2)} rs): الزمن يتجمد عملياً (${(timeDilationFactor * 100).toFixed(1)}%) وتتحول الإشارات الكهرومغناطيسية إلى أطوال موجية متناهية الطول.`
-                          : `💡 المسبار عند ${probeDistanceMultiplier.toFixed(2)} أضعاف نصف قطر شفارتزشيلد. سريان الزمن الذاتي للمسبار يبلغ ${(timeDilationFactor * 100).toFixed(1)}% مقارنة بساعة الأرض.`}
-                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -550,8 +450,8 @@ export default function BlackHoleSimulation() {
                             }}
                             className={`w-full p-2.5 rounded-xl text-xs font-medium border transition-all text-right ${
                               selectedPreset.id === preset.id
-                                ? 'bg-purple-500/20 border-purple-500 text-purple-300'
-                                : 'bg-slate-800/60 border-slate-700 text-slate-400'
+                                ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-lg shadow-purple-500/10'
+                                : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800'
                             }`}
                           >
                             <div className="font-bold text-slate-200">{preset.nameAr}</div>
@@ -581,113 +481,72 @@ export default function BlackHoleSimulation() {
                     </div>
 
                     {/* Fall Button */}
-                    <div className="pt-2">
-                      <Button
-                        onClick={() => {
-                          setIsFalling(!isFalling);
-                          labSound.playRocketBurst();
-                        }}
-                        className={`w-full font-bold text-xs ${
-                          isFalling
-                            ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                            : 'bg-purple-600 hover:bg-purple-500 text-white'
-                        }`}
-                      >
-                        {isFalling ? 'إيقاف السقوط الحر' : 'بدء السقوط الحر نحو أفق الحدث 🚀'}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => setIsFalling(!isFalling)}
+                      variant={isFalling ? 'destructive' : 'default'}
+                      className="w-full text-xs"
+                    >
+                      {isFalling ? 'إلغاء السقوط الحر' : 'بدء السقوط الحر نحو أفق الحدث (Free Fall)'}
+                    </Button>
                   </CardContent>
                 </Card>
+
+                {/* AI Lab CoPilot */}
+                <LiveAILabCoPilot
+                  experimentName="الثقوب السوداء والنسبية العامة"
+                  currentMetrics={{
+                    blackHole: selectedPreset.nameEn,
+                    massSolar: selectedPreset.solarMasses,
+                    schwarzschildRadiusKm: schwarzschildRadiusKm,
+                    probeDistanceRs: Number(probeDistanceMultiplier.toFixed(2)),
+                    timeDilationPct: Number((timeDilationFactor * 100).toFixed(1)),
+                    redshift: gravitationalRedshift,
+                  }}
+                  hint={
+                    probeDistanceMultiplier <= 1.15
+                      ? 'تحذير: المسبار عند حافة أفق الحدث! تجمد الزمن تقريباً بالنسبة للراصد الخارجي، وقوى المد الثقالية تمزق الأجسام (التأثير المعكروني Spaghettification).'
+                      : probeDistanceMultiplier <= 1.6
+                      ? 'المسبار داخل كرة الفوتونات (r = 1.5 rs): الضوء نفسه يدور في مدارات دائرية، ولا يمكن لأي جسم البقاء في مدار مستقر دون دفع صاروخي مستمر.'
+                      : `عامل تمدد الزمن: dt/dτ = √(1 - rs/r). ساعة المسبار تدق بمعدل ${(timeDilationFactor * 100).toFixed(1)}% من سرعة ساعة الراصد البعيد.`
+                  }
+                />
               </div>
             </div>
           </TabsContent>
 
-          {/* TAB 2: Guided Missions */}
-          <TabsContent value="missions" className="space-y-4">
-            <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-6">
-              <div>
-                <CardTitle className="text-lg font-bold text-emerald-300 flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  مهام استكشاف الزمكان والنسبية العامة (Relativistic Missions)
-                </CardTitle>
-                <p className="text-xs text-slate-400 mt-1">
-                  أكمل هذه المهام الاستكشافية لمراقبة سلوك الزمن والضوء بالقرب من الثقوب السوداء.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {/* Mission 1 */}
-                <div className={`p-4 rounded-xl border transition-all ${mission1Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 font-bold text-sm">
-                        <CheckSquare className={`w-4 h-4 ${mission1Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
-                        المهمة 1: وضع المسبار عند المدار المستقر الأخير (ISCO = 3.0 rs)
-                      </div>
-                      <p className="text-xs text-slate-400">
-                        اضبط مسافة المسبار عند 3.0 أضعاف نصف قطر شفارتزشيلد لمراقبة دوران المسبار عند الحافة الداخلية لقرص التراكم.
-                      </p>
-                    </div>
-                    <Badge variant="outline" className={mission1Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
-                      {mission1Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Mission 2 */}
-                <div className={`p-4 rounded-xl border transition-all ${mission2Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 font-bold text-sm">
-                        <CheckSquare className={`w-4 h-4 ${mission2Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
-                        المهمة 2: دخول كرة الفوتونات الدائرية (Photon Sphere = 1.5 rs)
-                      </div>
-                      <p className="text-xs text-slate-400">
-                        حرك المسبار إلى مسافة 1.5 rs حيث تدور أشعة الضوء نفسها في مدارات دائرية مغلقة حول الثقب الأسود.
-                      </p>
-                    </div>
-                    <Badge variant="outline" className={mission2Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
-                      {mission2Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Mission 3 */}
-                <div className={`p-4 rounded-xl border transition-all ${mission3Completed ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 font-bold text-sm">
-                        <CheckSquare className={`w-4 h-4 ${mission3Completed ? 'text-emerald-400' : 'text-slate-500'}`} />
-                        المهمة 3: الاقتراب الحرج من أفق الحدث ومراقبة تجمد ساعة المسبار (&lt; 1.15 rs)
-                      </div>
-                      <p className="text-xs text-slate-400">
-                        قم بتفعيل السقوط الحر للمسبار نحو أفق الحدث وملاحظة تراجع سرعة سريان الزمن إلى أقل من 35% وقفز الانزياح الأحمر نحو ما لا نهاية.
-                      </p>
-                    </div>
-                    <Badge variant="outline" className={mission3Completed ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'}>
-                      {mission3Completed ? 'مكتملة ✓' : 'قيد الإنجاز'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </Card>
+          {/* TAB 2: Challenges Engine */}
+          <TabsContent value="challenges" className="space-y-4">
+            <LabChallengeEngine
+              challenges={blackHoleChallenges}
+              currentMetrics={{
+                probeDistance: probeDistanceMultiplier,
+                timeDilationFactor: timeDilationFactor,
+                presetId: selectedPreset.id,
+              }}
+            />
           </TabsContent>
 
           {/* TAB 3: Theory */}
           <TabsContent value="theory" className="space-y-4">
             <Card className="bg-slate-900/90 border-slate-800 p-6 space-y-4 text-slate-300 leading-relaxed">
-              <h3 className="text-xl font-bold text-purple-300">الفيزياء النسبية للثقوب السوداء (النسبية العامة 1915)</h3>
+              <h3 className="text-xl font-bold text-purple-300">النسبية العامة وهندسة الزمكان المشوهة</h3>
               <p>
-                في عام 1916، استنتج الفيزيائي الألماني كارل شفارتزشيلد أول حل دقيق لمعادلات أينشتاين للمجال، واصفاً هندسة الزمكان حول كتلة كروية غير دوارة.
+                وفقاً لنظرية النسبية العامة لأينشتاين (1915)، الثقب الأسود ليس مجرد جرم ذي جاذبية عالية، بل هو انحناء لا نهائي في نسيج الزمكان (Spacetime Curvature).
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
                   <h4 className="font-bold text-amber-300">1. نصف قطر شفارتزشيلد (Schwarzschild Radius)</h4>
                   <p className="text-sm font-mono text-purple-300">rs = 2GM / c²</p>
+                  <p className="text-xs text-slate-400">
+                    نصف القطر الحرج الذي إذا ضُغطت فيه كتلة الجرم M، تصبح سرعة الإفلات مساوية لسرعة الضوء تماماً، مشكلاً أفق الحدث (Event Horizon).
+                  </p>
                 </div>
                 <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-amber-300">2. معادلة تمدد الزمن الثقالي</h4>
+                  <h4 className="font-bold text-amber-300">2. تمدد الزمن الثقالي (Gravitational Time Dilation)</h4>
                   <p className="text-sm font-mono text-purple-300">dτ = dt · √(1 - rs / r)</p>
+                  <p className="text-xs text-slate-400">
+                    كلما اقترب المسبار من أفق الحدث (r → rs)، يقترب الزمن الذاتي dτ من الصفر بالنسبة لراصد بعيد، فيبدو المسبار وكأنه تجمد للأبد عند الأفق.
+                  </p>
                 </div>
               </div>
             </Card>
@@ -699,7 +558,7 @@ export default function BlackHoleSimulation() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-emerald-300 flex items-center gap-2">
                   <HelpCircle className="w-5 h-5" />
-                  اختبار مفاهيم النسبية العامة والثقوب السوداء
+                  اختبار فهم فيزياء الثقوب السوداء
                 </h3>
                 <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">
                   النقاط: {quizScore}
@@ -708,14 +567,14 @@ export default function BlackHoleSimulation() {
 
               <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-4">
                 <p className="font-semibold text-slate-200">
-                  سؤال: بالنسبة لراصد يقف بعيداً جداً عن ثقب أسود، ماذا يرى عندما يسقط رائد فضاء نحو أفق الحدث؟
+                  سؤال: ماذا يرى راصد يقف على الأرض لساعة مسبار يقترب جداً من أفق حدث ثقب أسود؟
                 </p>
                 <div className="space-y-2">
                   {[
-                    { id: 0, text: 'يراه يعبر أفق الحدث بسرعة البرق ويختفي فوراً.' },
-                    { id: 1, text: 'يراه يتباطأ تدريجياً ويتلاشى ضوؤه بسبب الإزاحة الحمراء التثاقلية، ويبدو كأنه تجمد للأبد عند أفق الحدث.' },
-                    { id: 2, text: 'يرى ساعته تدق أسرع من المعتاد.' },
-                    { id: 3, text: 'يرتد رائد الفضاء إلى الفضاء الخارجي.' },
+                    { id: 0, text: 'تدق ساعة المسبار أسرع وتسبق ساعة الأرض.' },
+                    { id: 1, text: 'تتباطأ ساعة المسبار تدريجياً وتبدو وكأنها تجمدت تماماً عند ملامسة أفق الحدث مع انزياح ضوئها للأحمر.' },
+                    { id: 2, text: 'لا يحدث أي تغير في معدل سريان الزمن.' },
+                    { id: 3, text: 'تعود عقارب الساعة للوراء ويسافر المسبار للماضي.' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -741,10 +600,10 @@ export default function BlackHoleSimulation() {
                     {quizAnswer === 1 ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة ورائعة! بسبب تمدد الزمن التثاقلي اللانهائي عند أفق الحدث والإزاحة التثاقلية نحو الأحمر، يرى الراصد البعيد أن رائد الفضاء يتجمد ضوئياً ولا يعبر الأفق في زمن كوني محدود.</span>
+                        <span>إجابة عبقرية! بسبب تمدد الزمن الثقالي الشديد، يرى الراصد البعيد أن المسبار يتباطأ حتى يتجمد تماماً عند أفق الحدث، وتخفت إشاراته بسبب الإزاحة الثقالية نحو الأحمر اللانهائية.</span>
                       </div>
                     ) : (
-                      <span>إجابة غير صحيحة. تمدد الزمن الثقالي يجعل الحركة تبدو متباطئة للغاية حتى تتجمد عند أفق الحدث بالنسبة للراصد البعيد.</span>
+                      <span>إجابة غير صحيحة. تمدد الزمن الثقالي يجعل المسبار يبدو بطيئاً جداً حتى يتجمد عند أفق الحدث.</span>
                     )}
                   </div>
                 )}

@@ -1,17 +1,59 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Play, Pause, RotateCcw, ZoomIn, ZoomOut, Sun, Moon, Clock } from 'lucide-react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { ArrowLeft, Play, Pause, RotateCcw, ZoomIn, ZoomOut, Sun, Moon, Clock, Eye, Layers, Orbit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import StarField from '@/components/StarField';
 import { useSolarSystemPhysics, CelestialBody } from '@/hooks/useSolarSystemPhysics';
+import SolarSystem3DScene from '@/components/astronomy/SolarSystem3DScene';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
+import { labSound } from '@/utils/labAudio';
+
+const solarChallenges: Challenge[] = [
+  {
+    id: 'mars_exploration',
+    title: 'استكشاف الكوكب الأحمر (المريخ)',
+    description: 'حدد كوكب المريخ (Mars) وافحص بياناته المدارية (الدور: ~687 يوماً) واثبت 3 ثوانٍ.',
+    targetMetric: 'الكوكب المحدد',
+    targetValue: 1,
+    unit: 'كوكب',
+    holdDuration: 3,
+    check: (m) => m.selectedBody === 'mars',
+  },
+  {
+    id: 'jupiter_titan',
+    title: 'عملاق النظام الشمسي (المشتري)',
+    description: 'حدد كوكب المشتري (Jupiter) وتعرف على كتلته الهائلة التي تفوق كل الكواكب مجتمعة واثبت 3 ثوانٍ.',
+    targetMetric: 'الكوكب المحدد',
+    targetValue: 1,
+    unit: 'كوكب',
+    holdDuration: 3,
+    check: (m) => m.selectedBody === 'jupiter',
+  },
+  {
+    id: 'saturn_rings',
+    title: 'سيد الحلقات الكوكبية (زحل)',
+    description: 'حدد كوكب زحل (Saturn) واستعرض نظامه الحلقي الجليدي وميله المحوري واثبت 3 ثوانٍ.',
+    targetMetric: 'الكوكب المحدد',
+    targetValue: 1,
+    unit: 'كوكب',
+    holdDuration: 3,
+    check: (m) => m.selectedBody === 'saturn',
+  },
+];
 
 const SolarSystemSimulation = () => {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [selectedPlanet, setSelectedPlanet] = useState<CelestialBody | null>(null);
   const [viewScale, setViewScale] = useState(1);
@@ -24,13 +66,11 @@ const SolarSystemSimulation = () => {
     toggleOrbits,
     toggleLabels,
     resetSimulation,
-    getBodyPosition,
-    selectedBodyInfo
+    selectedBodyInfo,
   } = useSolarSystemPhysics();
 
-  const planets = state.bodies.filter(b => b.type === 'planet' || b.type === 'dwarf-planet');
+  const planets = state.bodies.filter((b) => b.type === 'planet' || b.type === 'dwarf-planet');
 
-  // Planet colors
   const planetColors: Record<string, string> = {
     'عطارد': '#B5B5B5',
     'الزهرة': '#E6C229',
@@ -49,11 +89,12 @@ const SolarSystemSimulation = () => {
     'Saturn': '#E4D191',
     'Uranus': '#7DE3F4',
     'Neptune': '#4B70DD',
-    'Pluto': '#9CA6B5'
+    'Pluto': '#9CA6B5',
   };
 
-  // Draw solar system
+  // 2D Canvas Drawing Fallback
   useEffect(() => {
+    if (viewMode !== '2d') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -65,31 +106,26 @@ const SolarSystemSimulation = () => {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Clear canvas
     ctx.fillStyle = isDarkMode ? '#0a0a1a' : '#f0f5ff';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw stars in dark mode
     if (isDarkMode) {
-      for (let i = 0; i < 200; i++) {
+      for (let i = 0; i < 150; i++) {
         const x = Math.random() * width;
         const y = Math.random() * height;
         const size = Math.random() * 1.5;
-        const opacity = Math.random() * 0.8 + 0.2;
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // Scale factor for visualization
     const scale = 80 * viewScale * state.distanceScale;
 
-    // Draw orbits
     if (state.showOrbits) {
-      planets.forEach(planet => {
-        ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+      planets.forEach((planet) => {
+        ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(centerX, centerY, planet.orbitalRadius * scale, 0, Math.PI * 2);
@@ -97,268 +133,293 @@ const SolarSystemSimulation = () => {
       });
     }
 
-    // Draw Sun with glow
-    const sunGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30);
-    sunGradient.addColorStop(0, '#FFF5E0');
-    sunGradient.addColorStop(0.3, '#FFD93D');
-    sunGradient.addColorStop(0.6, '#FF8C00');
-    sunGradient.addColorStop(1, '#FF4500');
-    
-    ctx.shadowColor = '#FFD93D';
-    ctx.shadowBlur = 50;
-    ctx.fillStyle = sunGradient;
+    // Sun in 2D
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 25, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 20;
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Draw planets
-    planets.forEach(planet => {
-      const pos = getBodyPosition(planet, state.distanceScale);
-      const x = centerX + pos.x * scale * 0.001;
-      const y = centerY + pos.y * scale * 0.001;
+    // Planets in 2D
+    planets.forEach((p, idx) => {
+      const angle = (idx * 0.8) + (state.elapsedDays / (p.orbitalPeriod || 365)) * Math.PI * 2;
+      const r = p.orbitalRadius * scale;
+      const px = centerX + Math.cos(angle) * r;
+      const py = centerY + Math.sin(angle) * r;
 
-      ctx.shadowColor = planetColors[planet.name] || planetColors[planet.nameAr] || '#ffffff';
-      ctx.shadowBlur = 10;
-
-      ctx.fillStyle = planetColors[planet.name] || planetColors[planet.nameAr] || '#ffffff';
       ctx.beginPath();
-      ctx.arc(x, y, Math.max(3, 8 * state.sizeScale), 0, Math.PI * 2);
+      ctx.arc(px, py, Math.max(3, p.radius / 15000), 0, Math.PI * 2);
+      ctx.fillStyle = planetColors[p.nameAr] || '#38bdf8';
       ctx.fill();
-      ctx.shadowBlur = 0;
 
-      // Saturn rings
-      if (planet.name === 'Saturn' || planet.nameAr === 'زحل') {
-        ctx.strokeStyle = '#E4D191';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(x, y, 12, 4, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Planet label
       if (state.showLabels) {
-        ctx.fillStyle = isDarkMode ? '#ffffff' : '#000000';
-        ctx.font = '12px Arial';
+        ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#1e293b';
+        ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(planet.nameAr, x, y + 20);
+        ctx.fillText(p.nameAr, px, py - 6);
       }
     });
+  }, [viewMode, isDarkMode, viewScale, state.distanceScale, state.showOrbits, state.showLabels, state.elapsedDays, planets]);
 
-  }, [state, isDarkMode, viewScale, getBodyPosition, planets]);
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const scale = 80 * viewScale * state.distanceScale;
-
-    for (const planet of planets) {
-      const pos = getBodyPosition(planet, state.distanceScale);
-      const px = centerX + pos.x * scale * 0.001;
-      const py = centerY + pos.y * scale * 0.001;
-      const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
-      
-      if (dist < 20) {
-        setSelectedPlanet(planet);
-        selectBody(planet.id);
-        return;
-      }
-    }
-    setSelectedPlanet(null);
+  const handleSelectPlanet = (bodyId: string) => {
+    selectBody(bodyId);
+    const found = state.bodies.find((b) => b.id === bodyId) || null;
+    setSelectedPlanet(found);
+    labSound.playLaserPulse(400);
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-blue-50'} transition-colors duration-500`}>
+    <div className="min-h-screen bg-slate-950 text-white p-4" dir="rtl">
+      <StarField />
+
       {/* Header */}
       <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="p-4 flex items-center justify-between"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between mb-4 flex-wrap gap-3"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
-            className={isDarkMode ? 'text-white hover:bg-white/10' : 'text-gray-800'}
+            onClick={() => {
+              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+              navigate(isGJU ? '/gju-competition' : '/scientific-simulations');
+            }}
+            className="text-white hover:bg-white/10"
           >
             <ArrowLeft className="w-5 h-5 ml-2" />
-            رجوع
+            العودة للتجارب
           </Button>
-          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            🌌 محاكاة النظام الشمسي
-          </h1>
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-amber-500/20 rounded-xl border border-amber-500/30">
+              <Sun className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-amber-300 via-orange-400 to-sky-400 bg-clip-text text-transparent">
+                محاكاة النظام الشمسي والميكانيكا الكوكبية ثلاثية الأبعاد (3D Solar System)
+              </h1>
+              <p className="text-xs text-slate-400">
+                استكشاف مدارات كواكب المجموعة الشمسية وقوانين كبلر والحسابات الفلكية الدقيقة
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className={isDarkMode ? 'text-yellow-400 border-yellow-400' : ''}>
-            <Clock className="w-3 h-3 ml-1" />
-            سرعة: {state.timeScale}x
-          </Badge>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={isDarkMode ? 'text-white' : 'text-gray-800'}
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode(viewMode === '3d' ? '2d' : '3d')}
+            className="text-xs border-slate-700 bg-slate-900/80 text-slate-200"
           >
-            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {viewMode === '3d' ? <Eye className="w-3.5 h-3.5 ml-1 text-amber-400" /> : <Layers className="w-3.5 h-3.5 ml-1 text-sky-400" />}
+            {viewMode === '3d' ? 'عرض 3D Solar Arena' : 'عرض 2D Canvas'}
           </Button>
+          <Badge variant="outline" className="bg-slate-900 border-slate-700 text-xs">
+            <Clock className="w-3 h-3 ml-1 text-amber-400" />
+            سرعة الزمن: {state.timeScale}x
+          </Badge>
         </div>
       </motion.div>
 
-      <div className="flex flex-col lg:flex-row gap-4 p-4">
-        {/* Main Canvas */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Viewport */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
+          initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="flex-1"
+          className="flex-1 space-y-4"
         >
-          <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white'}`}>
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={600}
-              onClick={handleCanvasClick}
-              className="w-full rounded-lg cursor-pointer"
-              style={{ maxHeight: '60vh' }}
-            />
+          <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
+            {viewMode === '3d' ? (
+              <div className="h-[520px] relative">
+                <Canvas camera={{ position: [0, 14, 18], fov: 45 }}>
+                  <ambientLight intensity={0.2} />
+                  <SolarSystem3DScene
+                    bodies={state.bodies}
+                    selectedBody={state.selectedBody}
+                    onSelectBody={handleSelectPlanet}
+                    timeScale={state.timeScale}
+                    isPaused={state.isPaused}
+                    showOrbits={state.showOrbits}
+                    showLabels={state.showLabels}
+                  />
+                  <OrbitControls enablePan={true} enableZoom={true} minDistance={3} maxDistance={35} />
+                </Canvas>
 
-            {/* Controls */}
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-4">
-              <Button
-                onClick={togglePause}
-                className={`${!state.isPaused ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-              >
-                {!state.isPaused ? <Pause className="w-4 h-4 ml-2" /> : <Play className="w-4 h-4 ml-2" />}
-                {!state.isPaused ? 'إيقاف' : 'تشغيل'}
-              </Button>
+                {/* CyberLab HUD */}
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <CyberLabHUD
+                    metrics={[
+                      { label: 'الجرم المحدد', value: selectedBodyInfo?.nameAr || 'الشمس', color: '#f59e0b' },
+                      { label: 'البعد عن الشمس', value: selectedBodyInfo ? `${selectedBodyInfo.orbitalRadius?.toFixed(2)} AU` : '0 AU', color: '#38bdf8' },
+                      { label: 'الدور المداري', value: selectedBodyInfo ? `${selectedBodyInfo.orbitalPeriod?.toFixed(0)} d` : '---', color: '#10b981' },
+                      { label: 'السرعة المدارية', value: selectedBodyInfo ? `${selectedBodyInfo.orbitalVelocity?.toFixed(1)} km/s` : '---', color: '#ec4899' },
+                    ]}
+                    status={state.isPaused ? 'IDLE' : 'ACTIVE'}
+                    waveformData={[
+                      (selectedBodyInfo?.orbitalVelocity || 30) % 35,
+                      (selectedBodyInfo?.orbitalRadius || 1) * 8,
+                      state.timeScale % 25,
+                      20,
+                    ]}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="p-4">
+                <canvas
+                  ref={canvasRef}
+                  width={800}
+                  height={500}
+                  className="w-full rounded-lg"
+                  style={{ maxHeight: '520px' }}
+                />
+              </div>
+            )}
+          </div>
 
-              <Button variant="outline" onClick={resetSimulation} className={isDarkMode ? 'border-gray-600 text-white' : ''}>
-                <RotateCcw className="w-4 h-4 ml-2" />
-                إعادة
-              </Button>
-
+          {/* Controls Bar */}
+          <Card className="bg-slate-900/90 border-slate-800 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => setViewScale(Math.max(0.5, viewScale - 0.2))} className={isDarkMode ? 'border-gray-600 text-white' : ''}>
-                  <ZoomOut className="w-4 h-4" />
+                <Button
+                  onClick={togglePause}
+                  className={`text-xs ${!state.isPaused ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                >
+                  {!state.isPaused ? <Pause className="w-4 h-4 ml-1.5" /> : <Play className="w-4 h-4 ml-1.5" />}
+                  {!state.isPaused ? 'إيقاف مؤقت' : 'تشغيل المدارات'}
                 </Button>
-                <span className={`text-sm ${isDarkMode ? 'text-white' : ''}`}>{(viewScale * 100).toFixed(0)}%</span>
-                <Button variant="outline" size="icon" onClick={() => setViewScale(Math.min(2, viewScale + 0.2))} className={isDarkMode ? 'border-gray-600 text-white' : ''}>
-                  <ZoomIn className="w-4 h-4" />
+                <Button variant="outline" size="sm" onClick={resetSimulation} className="border-slate-700 text-xs">
+                  <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                  إعادة
                 </Button>
               </div>
-            </div>
 
-            {/* Time Speed */}
-            <div className="mt-4">
-              <label className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                سرعة الزمن: {state.timeScale}x
-              </label>
-              <Slider
-                value={[state.timeScale]}
-                onValueChange={([v]) => setTimeScale(v)}
-                min={0.1}
-                max={100}
-                step={0.1}
-                className="mt-2"
-              />
-            </div>
+              <div className="flex items-center gap-4 flex-1 max-w-xs">
+                <span className="text-xs text-slate-300 font-mono">السرعة:</span>
+                <Slider
+                  value={[state.timeScale]}
+                  onValueChange={([v]) => setTimeScale(v)}
+                  min={0.1}
+                  max={60}
+                  step={0.5}
+                  className="flex-1"
+                />
+                <span className="text-xs font-mono text-cyan-400">{state.timeScale}x</span>
+              </div>
 
-            {/* Toggle Options */}
-            <div className="flex gap-4 mt-4">
-              <label className={`flex items-center gap-2 cursor-pointer ${isDarkMode ? 'text-white' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={state.showOrbits}
-                  onChange={toggleOrbits}
-                  className="rounded"
-                />
-                إظهار المدارات
-              </label>
-              <label className={`flex items-center gap-2 cursor-pointer ${isDarkMode ? 'text-white' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={state.showLabels}
-                  onChange={toggleLabels}
-                  className="rounded"
-                />
-                إظهار الأسماء
-              </label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={state.showOrbits}
+                    onChange={toggleOrbits}
+                    className="rounded border-slate-700"
+                  />
+                  المدارات
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={state.showLabels}
+                    onChange={toggleLabels}
+                    className="rounded border-slate-700"
+                  />
+                  الأسماء
+                </label>
+              </div>
             </div>
           </Card>
+
+          {/* Gamified Challenge Engine */}
+          <LabChallengeEngine
+            challenges={solarChallenges}
+            currentMetrics={{
+              selectedBody: state.selectedBody,
+              timeScale: state.timeScale,
+              isPaused: state.isPaused,
+            }}
+          />
         </motion.div>
 
-        {/* Side Panel */}
+        {/* Side Panel: Planets & Kepler Laws & CoPilot */}
         <motion.div
-          initial={{ x: 50, opacity: 0 }}
+          initial={{ x: 30, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="w-full lg:w-96"
+          className="w-full lg:w-96 space-y-4"
         >
+          {/* AI Lab CoPilot */}
+          <LiveAILabCoPilot
+            experimentName="النظام الشمسي والميكانيكا الفلكية"
+            currentMetrics={{
+              selectedPlanet: selectedBodyInfo?.nameAr || 'الشمس',
+              orbitalRadiusAU: selectedBodyInfo?.orbitalRadius,
+              orbitalPeriodDays: selectedBodyInfo?.orbitalPeriod,
+              orbitalVelocityKms: selectedBodyInfo?.orbitalVelocity,
+              temperatureK: selectedBodyInfo?.surfaceTemperature,
+            }}
+            hint={
+              selectedBodyInfo
+                ? `${selectedBodyInfo.nameAr}: يبعد ${selectedBodyInfo.orbitalRadius?.toFixed(2)} وحدة فلكية عن الشمس ويستغرق ${selectedBodyInfo.orbitalPeriod?.toFixed(0)} يوماً ليكمل دورة واحدة وفق قانون كبلر الثالث T² ∝ a³.`
+                : 'انقر على أي كوكب لعرض خصائصه الفيزيائية والمدارية ومقارنتها بالأرض.'
+            }
+          />
+
           <Tabs defaultValue="planets" className="w-full">
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="planets">الكواكب</TabsTrigger>
-              <TabsTrigger value="laws">قوانين كيبلر</TabsTrigger>
-              <TabsTrigger value="info">معلومات</TabsTrigger>
+            <TabsList className="w-full grid grid-cols-2 bg-slate-900 border border-slate-800">
+              <TabsTrigger value="planets" className="text-xs">كواكب المجموعة</TabsTrigger>
+              <TabsTrigger value="laws" className="text-xs">قوانين كبلر</TabsTrigger>
             </TabsList>
 
             <TabsContent value="planets">
-              <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white'}`}>
-                <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : ''}`}>🪐 الكواكب</h3>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {planets.map(planet => (
-                    <motion.div
+              <Card className="p-4 bg-slate-900/90 border-slate-800 space-y-3">
+                <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                  {planets.map((planet) => (
+                    <div
                       key={planet.id}
-                      whileHover={{ scale: 1.02 }}
-                      onClick={() => {
-                        setSelectedPlanet(planet);
-                        selectBody(planet.id);
-                      }}
-                      className={`p-3 rounded-lg cursor-pointer transition-all ${
-                        selectedPlanet?.id === planet.id
-                          ? 'bg-blue-600 text-white'
-                          : isDarkMode ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                      onClick={() => handleSelectPlanet(planet.id)}
+                      className={`p-2 rounded-xl cursor-pointer transition-all flex items-center justify-between border ${
+                        state.selectedBody === planet.id
+                          ? 'bg-sky-500/20 border-sky-500 text-sky-200'
+                          : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-800 text-slate-300'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div
-                          className="w-6 h-6 rounded-full"
+                          className="w-4 h-4 rounded-full border border-white/20"
                           style={{ backgroundColor: planetColors[planet.name] || planetColors[planet.nameAr] }}
                         />
-                        <div>
-                          <p className="font-bold">{planet.nameAr}</p>
-                          <p className="text-xs opacity-70">
-                            الدور: {planet.orbitalPeriod?.toFixed(1) || 'N/A'} يوم
-                          </p>
-                        </div>
+                        <span className="font-bold text-xs">{planet.nameAr}</span>
                       </div>
-                    </motion.div>
+                      <span className="text-[10px] opacity-75 font-mono">
+                        {planet.orbitalRadius?.toFixed(2)} AU
+                      </span>
+                    </div>
                   ))}
                 </div>
 
-                {/* Selected Planet Info */}
+                {/* Selected Planet Details */}
                 <AnimatePresence>
                   {selectedBodyInfo && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className={`mt-4 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-blue-50'}`}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs"
                     >
-                      <h4 className={`font-bold text-lg mb-2 ${isDarkMode ? 'text-white' : ''}`}>
-                        {selectedBodyInfo.nameAr}
-                      </h4>
-                      <div className={`space-y-1 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        <p>📏 نصف القطر: {selectedBodyInfo.radius?.toLocaleString()} كم</p>
-                        <p>⚖️ الكتلة: {selectedBodyInfo.mass?.toExponential(2)} كغ</p>
-                        <p>📍 البعد عن الشمس: {selectedBodyInfo.orbitalRadius?.toFixed(2)} AU</p>
-                        <p>🔄 الدور المداري: {selectedBodyInfo.orbitalPeriod?.toFixed(1)} يوم</p>
-                        <p>🌀 السرعة المدارية: {selectedBodyInfo.orbitalVelocity?.toFixed(2)} كم/ث</p>
+                      <div className="flex justify-between items-center border-b border-slate-800 pb-1">
+                        <span className="font-bold text-amber-300 text-sm">{selectedBodyInfo.nameAr}</span>
+                        <Badge variant="outline" className="text-[10px] border-slate-700">
+                          {selectedBodyInfo.name}
+                        </Badge>
                       </div>
+                      <p className="text-slate-400">📏 نصف القطر: {selectedBodyInfo.radius?.toLocaleString()} km</p>
+                      <p className="text-slate-400">⚖️ الكتلة: {selectedBodyInfo.mass?.toExponential(2)} kg</p>
+                      <p className="text-slate-400">📍 البعد عن الشمس: {selectedBodyInfo.orbitalRadius?.toFixed(2)} AU</p>
+                      <p className="text-slate-400">🔄 زمن الدورة: {selectedBodyInfo.orbitalPeriod?.toFixed(1)} يوم</p>
+                      <p className="text-slate-400">🌀 السرعة المدارية: {selectedBodyInfo.orbitalVelocity?.toFixed(2)} km/s</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -366,57 +427,18 @@ const SolarSystemSimulation = () => {
             </TabsContent>
 
             <TabsContent value="laws">
-              <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-700 text-white' : 'bg-white'}`}>
-                <h3 className="font-bold mb-4">📐 قوانين كيبلر</h3>
-                
-                <div className="space-y-4">
-                  <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-blue-50'}`}>
-                    <h4 className="font-bold text-blue-500">القانون الأول: المدارات الإهليلجية</h4>
-                    <p className="text-sm mt-1">
-                      تدور الكواكب حول الشمس في مدارات إهليلجية (بيضاوية) تقع الشمس في إحدى بؤرتيها
-                    </p>
-                  </div>
-
-                  <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-green-50'}`}>
-                    <h4 className="font-bold text-green-500">القانون الثاني: المساحات المتساوية</h4>
-                    <p className="text-sm mt-1">
-                      الخط الواصل بين الكوكب والشمس يمسح مساحات متساوية في أزمنة متساوية
-                    </p>
-                    <p className="text-xs mt-2 font-mono bg-black/20 p-2 rounded">
-                      dA/dt = ثابت
-                    </p>
-                  </div>
-
-                  <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-purple-50'}`}>
-                    <h4 className="font-bold text-purple-500">القانون الثالث: العلاقة التوافقية</h4>
-                    <p className="text-sm mt-1">
-                      مربع الدور المداري يتناسب طردياً مع مكعب نصف المحور الأكبر
-                    </p>
-                    <p className="text-xs mt-2 font-mono bg-black/20 p-2 rounded">
-                      T² = (4π²/GM) × a³
-                    </p>
-                  </div>
+              <Card className="p-4 bg-slate-900/90 border-slate-800 space-y-3 text-xs leading-relaxed text-slate-300">
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-sky-400">1. المدارات الإهليلجية</h4>
+                  <p>تدور الكواكب حول الشمس في مدارات إهليلجية تقع الشمس في إحدى بؤرتيها.</p>
                 </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="info">
-              <Card className={`p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-700 text-white' : 'bg-white'}`}>
-                <h3 className="font-bold mb-4">📚 معلومات عن النظام الشمسي</h3>
-                
-                <div className="space-y-3 text-sm">
-                  <p><strong>عمر النظام الشمسي:</strong> ~4.6 مليار سنة</p>
-                  <p><strong>عدد الكواكب:</strong> 8 كواكب رئيسية</p>
-                  <p><strong>الشمس:</strong> نجم قزم أصفر يحتوي على 99.86% من كتلة النظام</p>
-                  <p><strong>حزام الكويكبات:</strong> بين المريخ والمشتري</p>
-                  <p><strong>حزام كايبر:</strong> خلف نبتون، يحتوي على بلوتو</p>
-                  
-                  <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'} mt-4`}>
-                    <p className="text-yellow-500 font-bold">💡 هل تعلم؟</p>
-                    <p className="mt-1">
-                      الضوء يستغرق حوالي 8 دقائق للوصول من الشمس إلى الأرض!
-                    </p>
-                  </div>
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-emerald-400">2. المساحات المتساوية</h4>
+                  <p>الخط الواصل بين الكوكب والشمس يمسح مساحات متساوية في أزمنة متساوية (dA/dt = ثابت).</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-purple-400">3. القانون التوافقي</h4>
+                  <p>مربع زمن الدورة يتناسب طردياً مع مكعب نصف المحور الأكبر: T² = (4π²/GM) · a³.</p>
                 </div>
               </Card>
             </TabsContent>

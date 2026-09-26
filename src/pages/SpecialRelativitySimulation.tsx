@@ -1,24 +1,72 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import SimulationLayout from '@/components/simulations/SimulationLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, Clock, Ruler, Zap } from 'lucide-react';
+import { Play, Pause, RotateCcw, Clock, Ruler, Zap, Eye, Layers } from 'lucide-react';
 import { InfoSection, QuizSection } from '@/components/simulations';
+import RelativityLab3DScene from '@/components/relativity/RelativityLab3DScene';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
+import { labSound } from '@/utils/labAudio';
 
-const c = 299792458; // Speed of light
+const c = 299792458; // Speed of light m/s
+
+const relativityChallenges: Challenge[] = [
+  {
+    id: 'moderate_gamma',
+    title: 'عامل لورنتز المعتدل (γ ≈ 1.15)',
+    description: 'اضبط السرعة على 50% من سرعة الضوء (v = 0.50 c) وشاهد بداية تمدد الزمن الملحوظ واثبت 3 ثوانٍ.',
+    targetMetric: 'السرعة % c',
+    targetValue: 50,
+    unit: '% c',
+    holdDuration: 3,
+    check: (m) => Math.abs((m.velocityPercent ?? 0) - 50) <= 2,
+  },
+  {
+    id: 'double_time',
+    title: 'مضاعفة زمن لورنتز (γ ≥ 2.00)',
+    description: 'ارفع السرعة إلى ≥ 86.6% c لتشهد تدفق الزمن بمعدل النصف تماماً (تمدد الزمن للضعف) واثبت 3 ثوانٍ.',
+    targetMetric: 'عامل لورنتز γ',
+    targetValue: 2.0,
+    unit: 'γ',
+    holdDuration: 3,
+    check: (m) => (m.gamma ?? 0) >= 2.0,
+  },
+  {
+    id: 'ultra_relativistic',
+    title: 'الحافة الفائقة لسرعة الضوء (v ≥ 95% c)',
+    description: 'ادفع بالسرعة نحو الحاجز الأقصى (≥ 95% c) ولاحظ انكماش طول المركبة لأقل من ثلث طولها الأصلي واثبت 3 ثوانٍ.',
+    targetMetric: 'السرعة القصوى',
+    targetValue: 95,
+    unit: '% c',
+    holdDuration: 3,
+    check: (m) => (m.velocityPercent ?? 0) >= 95,
+  },
+];
 
 const SpecialRelativitySimulation = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [activeTab, setActiveTab] = useState('time-dilation');
-  const [velocityPercent, setVelocityPercent] = useState(50);
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
+  const [activeTab, setActiveTab] = useState<'time-dilation' | 'length-contraction' | 'mass-energy'>('time-dilation');
+  const [velocityPercent, setVelocityPercent] = useState(60);
   const timeRef = useRef(0);
 
-  const gamma = 1 / Math.sqrt(1 - (velocityPercent / 100) ** 2);
-  const v = velocityPercent / 100;
+  const beta = velocityPercent / 100;
+  const gamma = useMemo(() => {
+    return 1 / Math.sqrt(Math.max(0.0001, 1 - Math.pow(beta, 2)));
+  }, [beta]);
 
+  const speedKms = Math.round((beta * c) / 1000);
+  const timeDilationPct = Number(((1 - 1 / gamma) * 100).toFixed(1));
+  const lengthContractionPct = Number(((1 - 1 / gamma) * 100).toFixed(1));
+
+  // 2D Drawing Fallback
   const drawTimeDilation = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#0f172a';
@@ -27,9 +75,7 @@ const SpecialRelativitySimulation = () => {
     const t = timeRef.current;
     const cx = w / 2;
 
-    // Two clocks side by side
     const drawClock = (x: number, y: number, r: number, speed: number, label: string, color: string) => {
-      // Clock face
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.strokeStyle = color;
@@ -38,7 +84,6 @@ const SpecialRelativitySimulation = () => {
       ctx.fillStyle = 'rgba(15,23,42,0.8)';
       ctx.fill();
 
-      // Hour marks
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
         ctx.beginPath();
@@ -49,7 +94,6 @@ const SpecialRelativitySimulation = () => {
         ctx.stroke();
       }
 
-      // Second hand
       const sa = (t * speed) % (Math.PI * 2) - Math.PI / 2;
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -58,73 +102,20 @@ const SpecialRelativitySimulation = () => {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Center
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.fillStyle = color;
-      ctx.fill();
-
-      // Label
-      ctx.fillStyle = color;
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(label, x, y + r + 30);
+      ctx.fillText(label, x, y + r + 25);
     };
 
-    drawClock(cx - 150, h / 2 - 20, 80, 2, 'ساعة ثابتة (المراقب)', '#22c55e');
-    drawClock(cx + 150, h / 2 - 20, 80, 2 / gamma, 'ساعة متحركة (المسافر)', '#ef4444');
+    drawClock(cx - 140, h / 2 - 20, 70, 2, 'ساعة ثابتة (المراقب)', '#22c55e');
+    drawClock(cx + 140, h / 2 - 20, 70, 2 / gamma, 'ساعة متحركة (المسافر)', '#f59e0b');
 
-    // Moving spaceship representation
-    const shipX = cx + 150;
-    const shipY = h / 2 - 130;
-    ctx.fillStyle = '#64748b';
-    ctx.beginPath();
-    ctx.moveTo(shipX - 30, shipY);
-    ctx.lineTo(shipX + 30, shipY);
-    ctx.lineTo(shipX + 40, shipY + 10);
-    ctx.lineTo(shipX - 40, shipY + 10);
-    ctx.closePath();
-    ctx.fill();
-
-    // Speed lines
-    for (let i = 0; i < 5; i++) {
-      const lx = shipX - 50 - Math.random() * 30;
-      const ly = shipY + Math.random() * 10;
-      ctx.strokeStyle = `rgba(59,130,246,${0.3 + Math.random() * 0.3})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(lx, ly);
-      ctx.lineTo(lx - 20 * v, ly);
-      ctx.stroke();
-    }
-
-    // Info panel
-    ctx.fillStyle = 'rgba(30,41,59,0.8)';
-    ctx.fillRect(20, h - 100, w - 40, 80);
-    ctx.strokeStyle = '#334155';
-    ctx.strokeRect(20, h - 100, w - 40, 80);
-
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#f97316';
+    ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`v = ${velocityPercent}% c = ${(v * c / 1e6).toFixed(0)} km/s`, cx, h - 75);
-    ctx.fillText(`γ = ${gamma.toFixed(4)}`, cx, h - 55);
-    ctx.fillStyle = '#f97316';
-    ctx.fillText(`Δt' = γ × Δt = ${gamma.toFixed(2)} × Δt`, cx, h - 35);
-
-    // Arrow between clocks
-    ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 3]);
-    ctx.beginPath();
-    ctx.moveTo(cx - 60, h / 2 - 20);
-    ctx.lineTo(cx + 60, h / 2 - 20);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#f97316';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`الزمن يمر أبطأ بـ ${((1 - 1/gamma) * 100).toFixed(1)}%`, cx, h / 2 - 30);
-  }, [velocityPercent, gamma, v]);
+    ctx.fillText(`Δt' = γ × Δt₀ = ${gamma.toFixed(3)} × Δt₀`, cx, h - 30);
+  }, [gamma]);
 
   const drawLengthContraction = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     ctx.clearRect(0, 0, w, h);
@@ -132,175 +123,38 @@ const SpecialRelativitySimulation = () => {
     ctx.fillRect(0, 0, w, h);
 
     const cx = w / 2;
-    const restLen = 200;
+    const restLen = 220;
     const contractedLen = restLen / gamma;
 
-    // Rest frame
-    const y1 = h / 2 - 70;
+    const y1 = h / 2 - 60;
     ctx.fillStyle = '#22c55e';
-    ctx.fillRect(cx - restLen / 2, y1 - 20, restLen, 40);
-    ctx.strokeStyle = '#16a34a';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cx - restLen / 2, y1 - 20, restLen, 40);
-
-    // Length markers
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx - restLen / 2, y1 + 30);
-    ctx.lineTo(cx - restLen / 2, y1 + 45);
-    ctx.moveTo(cx + restLen / 2, y1 + 30);
-    ctx.lineTo(cx + restLen / 2, y1 + 45);
-    ctx.moveTo(cx - restLen / 2, y1 + 38);
-    ctx.lineTo(cx + restLen / 2, y1 + 38);
-    ctx.stroke();
-    ctx.fillStyle = '#22c55e';
-    ctx.font = 'bold 12px sans-serif';
+    ctx.fillRect(cx - restLen / 2, y1 - 15, restLen, 30);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`L₀ = ${restLen} (الطول الأصلي)`, cx, y1 + 58);
-    ctx.fillText('إطار السكون', cx, y1 - 30);
+    ctx.fillText(`الطول الساكن L₀ = ${restLen} m`, cx, y1 + 35);
 
-    // Moving frame
-    const y2 = h / 2 + 70;
+    const y2 = h / 2 + 50;
     ctx.fillStyle = '#ef4444';
-    ctx.fillRect(cx - contractedLen / 2, y2 - 20, contractedLen, 40);
-    ctx.strokeStyle = '#dc2626';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cx - contractedLen / 2, y2 - 20, contractedLen, 40);
-
-    // Speed lines on moving object
-    for (let i = 0; i < 8; i++) {
-      const lx = cx + contractedLen / 2 + 10 + i * 8;
-      ctx.strokeStyle = `rgba(239,68,68,${0.5 - i * 0.05})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(lx, y2 - 15);
-      ctx.lineTo(lx + 15, y2 - 15);
-      ctx.moveTo(lx, y2 + 15);
-      ctx.lineTo(lx + 15, y2 + 15);
-      ctx.stroke();
-    }
-
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx - contractedLen / 2, y2 + 30);
-    ctx.lineTo(cx - contractedLen / 2, y2 + 45);
-    ctx.moveTo(cx + contractedLen / 2, y2 + 30);
-    ctx.lineTo(cx + contractedLen / 2, y2 + 45);
-    ctx.moveTo(cx - contractedLen / 2, y2 + 38);
-    ctx.lineTo(cx + contractedLen / 2, y2 + 38);
-    ctx.stroke();
-    ctx.fillStyle = '#ef4444';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(`L = L₀/γ = ${contractedLen.toFixed(1)} (الطول المُقلَّص)`, cx, y2 + 58);
-    ctx.fillText(`إطار متحرك بسرعة ${velocityPercent}% c`, cx, y2 - 30);
-
-    // Formula
-    ctx.fillStyle = '#f97316';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`L = L₀ × √(1 - v²/c²) = L₀ / γ`, cx, h - 30);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`نسبة التقلص: ${((1 - 1/gamma) * 100).toFixed(1)}%`, cx, h - 10);
-  }, [velocityPercent, gamma]);
+    ctx.fillRect(cx - contractedLen / 2, y2 - 15, contractedLen, 30);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText(`الطول المتقلص L = ${(restLen / gamma).toFixed(1)} m`, cx, y2 + 35);
+  }, [gamma]);
 
   const drawMassEnergy = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, w, h);
-
     const cx = w / 2;
-    const t = timeRef.current;
 
-    // E = mc² visualization
-    const m0 = 1; // kg
-    const E0 = m0 * c * c;
-    const relM = m0 * gamma;
-    const KE = (gamma - 1) * m0 * c * c;
-
-    // Central equation
-    ctx.fillStyle = '#f97316';
-    ctx.font = 'bold 36px monospace';
+    ctx.fillStyle = '#ec4899';
+    ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('E = mc²', cx, 60);
-
-    // Mass at rest (left)
-    const leftX = cx - 180;
-    const baseY = h / 2 + 20;
-    ctx.beginPath();
-    ctx.arc(leftX, baseY, 30, 0, Math.PI * 2);
-    ctx.fillStyle = '#3b82f6';
-    ctx.fill();
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('m₀', leftX, baseY + 5);
-    ctx.fillText('كتلة السكون', leftX, baseY + 50);
-    ctx.font = '11px monospace';
-    ctx.fillText(`${m0} kg`, leftX, baseY + 68);
-
-    // Arrow
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(leftX + 50, baseY);
-    ctx.lineTo(cx - 50, baseY);
-    ctx.stroke();
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`v = ${velocityPercent}%c`, cx - 90, baseY - 15);
-
-    // Relativistic mass (right)
-    const rightX = cx + 180;
-    const relR = 30 * gamma;
-    ctx.beginPath();
-    ctx.arc(rightX, baseY, Math.min(relR, 80), 0, Math.PI * 2);
-    ctx.fillStyle = '#ef4444';
-    ctx.fill();
-    ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = 20;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('m', rightX, baseY + 5);
-    ctx.fillText('الكتلة النسبية', rightX, baseY + 50);
-    ctx.font = '11px monospace';
-    ctx.fillText(`${relM.toFixed(3)} kg`, rightX, baseY + 68);
-
-    // Energy bar
-    const barY = h - 100;
-    const barW = w - 100;
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(50, barY, barW, 30);
-
-    // Rest energy portion
-    const restPortion = barW / gamma;
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillRect(50, barY, restPortion, 30);
-
-    // KE portion
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(50 + restPortion, barY, barW - restPortion, 30);
-
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('طاقة السكون E₀', 55, barY + 18);
-    if (barW - restPortion > 60) {
-      ctx.textAlign = 'right';
-      ctx.fillText('طاقة حركية KE', 50 + barW - 5, barY + 18);
-    }
-
-    // Values
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 13px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`E₀ = m₀c² = ${(E0 / 1e16).toFixed(2)} × 10¹⁶ J`, cx, barY + 55);
-    ctx.fillText(`KE = (γ-1)m₀c² = ${(KE / 1e16).toFixed(4)} × 10¹⁶ J`, cx, barY + 75);
-  }, [velocityPercent, gamma]);
+    ctx.fillText(`E = γ m₀ c² = ${gamma.toFixed(3)} E₀`, cx, h / 2);
+  }, [gamma]);
 
   useEffect(() => {
+    if (viewMode !== '2d') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -316,56 +170,180 @@ const SpecialRelativitySimulation = () => {
     };
     animate();
     return () => cancelAnimationFrame(animRef.current);
-  }, [activeTab, isPlaying, drawTimeDilation, drawLengthContraction, drawMassEnergy]);
+  }, [viewMode, activeTab, isPlaying, drawTimeDilation, drawLengthContraction, drawMassEnergy]);
 
   const formulas = [
-    { name: 'معامل لورنتز', formula: 'γ = 1/√(1-v²/c²)', description: 'العامل الذي يحدد مقدار التأثيرات النسبية' },
-    { name: 'تمدد الزمن', formula: "Δt' = γΔt", description: 'الزمن يمر أبطأ للمراقب المتحرك' },
-    { name: 'تقلص الطول', formula: 'L = L₀/γ', description: 'الأجسام المتحركة تبدو أقصر في اتجاه الحركة' },
-    { name: 'تكافؤ الكتلة والطاقة', formula: 'E = mc²', description: 'الكتلة والطاقة وجهان لعملة واحدة' },
+    { name: 'معامل لورنتز', formula: 'γ = 1/√(1-v²/c²)', description: 'العامل الحاسم الذي يحدد مقدار التأثيرات النسبية' },
+    { name: 'تمدد الزمن', formula: "Δt = γ · Δt₀", description: 'الزمن يمر أبطأ بالنسبة للمراقب المتحرك بسرعة نسبية' },
+    { name: 'تقلص الطول', formula: 'L = L₀ / γ', description: 'الأجسام المتحركة تتقلص في اتجاه حركتها فقط' },
+    { name: 'تكافؤ الكتلة والطاقة', formula: 'E = γ · m₀ · c²', description: 'الطاقة الكلية تشمل طاقة السكون والطاقة الحركية النسبية' },
   ];
 
   const quizQuestions = [
-    { question: 'ماذا يحدث للزمن عند الاقتراب من سرعة الضوء؟', options: ['يتباطأ', 'يتسارع', 'يتوقف تماماً', 'لا يتأثر'], correctIndex: 0, explanation: 'حسب النسبية الخاصة، الزمن يتباطأ (يتمدد) كلما اقتربت السرعة من سرعة الضوء.' },
-    { question: 'ما قيمة γ عند v = 0؟', options: ['1', '0', '∞', 'غير محددة'], correctIndex: 0, explanation: 'عند v=0 يصبح γ = 1/√(1-0) = 1 مما يعني عدم وجود تأثيرات نسبية.' },
-    { question: 'كم تساوي طاقة 1 كغ من المادة بالكامل؟', options: ['9×10¹⁶ جول', '3×10⁸ جول', '1 جول', '6.02×10²³ جول'], correctIndex: 0, explanation: 'E = mc² = 1 × (3×10⁸)² = 9×10¹⁶ جول، وهي طاقة هائلة تعادل انفجار 21 ميغاطن من TNT.' },
-    { question: 'ما الفرضية الأساسية للنسبية الخاصة؟', options: ['سرعة الضوء ثابتة لجميع المراقبين', 'الزمن مطلق', 'الكتلة لا تتغير', 'لا يوجد حد أقصى للسرعة'], correctIndex: 0, explanation: 'فرضية أينشتاين الأساسية أن سرعة الضوء في الفراغ ثابتة لجميع المراقبين بغض النظر عن حركتهم.' },
-    { question: 'ماذا يحدث للكتلة عند زيادة السرعة؟', options: ['تزداد الكتلة النسبية', 'تنقص', 'تبقى ثابتة', 'تصبح صفراً'], correctIndex: 0, explanation: 'الكتلة النسبية تزداد مع السرعة حسب العلاقة m = γm₀، ولهذا يستحيل تسريع جسم ذي كتلة لسرعة الضوء.' },
+    { question: 'ماذا يحدث لمعدل سريان الزمن داخل مركبة تقترب من سرعة الضوء مقارنة بالأرض؟', options: ['يتباطأ الزمن بالنسبة لساعة الأرض', 'يتسارع الزمن', 'يتوقف تماماً عند أي سرعة', 'لا يتأثر'], correctIndex: 0, explanation: 'حسب النسبية الخاصة، الزمن يتمدد (يمر أبطأ) كلما اقتربت السرعة من سرعة الضوء c.' },
+    { question: 'ما قيمة معامل لورنتز γ عند السكون (v = 0)؟', options: ['1', '0', '∞', 'غير محددة'], correctIndex: 0, explanation: 'عند v = 0 يصبح γ = 1/√(1-0) = 1، مما يعني انعدام التأثيرات النسبية وظهور الفيزياء الكلاسيكية.' },
+    { question: 'كم تساوي الطاقة المكافئة لكتلة 1 كغ من المادة حسب E = mc²؟', options: ['9 × 10¹⁶ جول', '3 × 10⁸ جول', '1 جول', '6.02 × 10²³ جول'], correctIndex: 0, explanation: 'E = 1 × (3 × 10⁸)² = 9 × 10¹⁶ جول، وهي طاقة هائلة تعادل انفجار 21.5 ميغاطن من مادة TNT.' },
+    { question: 'ما الفرضية الثورية الأساسية لألبرت أينشتاين في النسبية الخاصة؟', options: ['سرعة الضوء في الفراغ ثابتة ومطلقة لجميع المراقبين', 'الزمن والمكان مطلقان', 'الكتلة لا تتغير بالسرعة', 'الكون ساكن لا يتمدد'], correctIndex: 0, explanation: 'فرضية أينشتاين أن سرعة الضوء في الفراغ (c) ثابتة دائماً لجميع المراقبين في كافة الأطر القصورية.' },
+    { question: 'لماذا يستحيل على أي جسم ذي كتلة سكون تجاوز سرعة الضوء؟', options: ['لأن كتلته النسبية وطاقته المطلوبة تتجهان إلى اللانهاية', 'بسبب احتكاك الفضاء', 'بسبب نفاد الوقود فقط', 'بسبب تبريد المحرك'], correctIndex: 0, explanation: 'عند v → c يتجه γ إلى اللانهاية، فتتطلب زيادة السرعة طاقة لا نهائية يستحيل توفيرها في الكون.' },
   ];
 
   return (
-    <SimulationLayout title="النسبية الخاصة" titleGradient="from-yellow-400 to-orange-400" backgroundGradient="from-slate-900 via-yellow-900/20 to-slate-900">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-        <TabsList className="grid grid-cols-3 mb-4 bg-white/10">
-          <TabsTrigger value="time-dilation" className="text-xs"><Clock className="w-3 h-3 ml-1" />تمدد الزمن</TabsTrigger>
-          <TabsTrigger value="length-contraction" className="text-xs"><Ruler className="w-3 h-3 ml-1" />تقلص الطول</TabsTrigger>
-          <TabsTrigger value="mass-energy" className="text-xs"><Zap className="w-3 h-3 ml-1" />E = mc²</TabsTrigger>
-        </TabsList>
+    <SimulationLayout
+      title="النسبية الخاصة والزمكان ثلاثي الأبعاد"
+      titleGradient="from-amber-400 via-orange-300 to-rose-400"
+      backgroundGradient="from-slate-950 via-amber-950/30 to-slate-950"
+    >
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); labSound.playLaserPulse(400); }} className="w-full" dir="rtl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
+          <TabsList className="bg-slate-900/90 border border-slate-800 p-1">
+            <TabsTrigger value="time-dilation" className="text-xs data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">
+              <Clock className="w-3.5 h-3.5 ml-1" />
+              تمدد الزمن وساعة الضوء
+            </TabsTrigger>
+            <TabsTrigger value="length-contraction" className="text-xs data-[state=active]:bg-rose-500/20 data-[state=active]:text-rose-300">
+              <Ruler className="w-3.5 h-3.5 ml-1" />
+              تقلص الطول لورنتز
+            </TabsTrigger>
+            <TabsTrigger value="mass-energy" className="text-xs data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <Zap className="w-3.5 h-3.5 ml-1" />
+              تكافؤ الكتلة والطاقة E = mc²
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="bg-black/40 rounded-xl p-4 backdrop-blur-sm border border-white/10">
-          <canvas ref={canvasRef} width={700} height={420} className="w-full rounded-lg" style={{ maxHeight: '420px' }} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewMode(viewMode === '3d' ? '2d' : '3d')}
+              className="text-xs border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center gap-1.5"
+            >
+              {viewMode === '3d' ? <Eye className="w-3.5 h-3.5 text-amber-400" /> : <Layers className="w-3.5 h-3.5 text-sky-400" />}
+              {viewMode === '3d' ? 'عرض 3D Warp Arena' : 'عرض 2D Canvas'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="border-slate-700 bg-slate-900/80 text-slate-200"
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <label className="text-white/70 text-sm mb-2 block">السرعة: {velocityPercent}% من سرعة الضوء</label>
+        {/* Viewport Box */}
+        <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
+          {viewMode === '3d' ? (
+            <div className="h-[460px] relative">
+              <Canvas camera={{ position: [0, 1.5, 6.5], fov: 45 }}>
+                <ambientLight intensity={0.6} />
+                <directionalLight position={[10, 15, 10]} intensity={1.2} />
+                <directionalLight position={[-10, -5, -5]} intensity={0.4} color="#f59e0b" />
+                <RelativityLab3DScene
+                  mode={activeTab}
+                  velocityPercent={velocityPercent}
+                  gamma={gamma}
+                  isPlaying={isPlaying}
+                />
+                <OrbitControls enablePan={true} enableZoom={true} minDistance={3} maxDistance={14} />
+              </Canvas>
+
+              {/* CyberLab HUD */}
+              <div className="absolute top-3 left-3 pointer-events-none">
+                <CyberLabHUD
+                  metrics={[
+                    { label: 'السرعة v', value: `${velocityPercent}% c`, color: '#f59e0b' },
+                    { label: 'معامل لورنتز γ', value: gamma.toFixed(4), color: '#38bdf8' },
+                    { label: 'السرعة الفعلية', value: `${speedKms.toLocaleString()} km/s`, color: '#10b981' },
+                    { label: 'تمدد الزمن Δt', value: `+${timeDilationPct}%`, color: '#c084fc' },
+                    { label: 'انكماش الطول L', value: `${(100 / gamma).toFixed(1)}%`, color: '#f43f5e' },
+                  ]}
+                  status={velocityPercent >= 90 ? 'ERROR' : isPlaying ? 'ACTIVE' : 'IDLE'}
+                  waveformData={[
+                    gamma * 10,
+                    velocityPercent % 30,
+                    timeDilationPct % 35,
+                    20,
+                  ]}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="p-4">
+              <canvas ref={canvasRef} width={700} height={420} className="w-full rounded-lg" style={{ maxHeight: '420px' }} />
+            </div>
+          )}
+        </div>
+
+        {/* Controls Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-800">
+            <div className="flex justify-between text-xs text-slate-300 font-semibold mb-2">
+              <span>السرعة النسبية كنسبة من سرعة الضوء (v/c)</span>
+              <span className="font-mono text-amber-400 font-bold">{velocityPercent}% c</span>
+            </div>
             <Slider min={0} max={99} step={1} value={[velocityPercent]} onValueChange={([v]) => setVelocityPercent(v)} />
+            <div className="flex justify-between text-[10px] text-slate-500 mt-2">
+              <span>0% (سكون كلاسيكي)</span>
+              <span>86.6% (تضاعف الزمن γ=2)</span>
+              <span>99% (أقصى سرعة relativistic)</span>
+            </div>
           </div>
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col justify-center">
-            <div className="text-white/70 text-sm">معامل لورنتز γ = <span className="text-orange-400 font-bold text-lg">{gamma.toFixed(4)}</span></div>
+
+          <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-800 flex flex-col justify-center">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-300">معامل لورنتز الحسابي (Lorentz Factor γ):</span>
+              <span className="text-xl font-bold font-mono text-cyan-400">{gamma.toFixed(4)}</span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              الزمن يمر أبطأ بنسبة {timeDilationPct}% والطول يتقلص إلى {(100 / gamma).toFixed(1)}% من قيمته الأصلية.
+            </p>
           </div>
         </div>
       </Tabs>
 
+      {/* Gamified Challenges */}
+      <div className="mt-6">
+        <LabChallengeEngine
+          challenges={relativityChallenges}
+          currentMetrics={{
+            velocityPercent: velocityPercent,
+            gamma: gamma,
+          }}
+        />
+      </div>
+
+      {/* Live AI Lab CoPilot */}
+      <div className="mt-4">
+        <LiveAILabCoPilot
+          experimentName="النسبية الخاصة والزمكان"
+          currentMetrics={{
+            mode: activeTab,
+            velocityPercent: velocityPercent,
+            speedKms: speedKms,
+            gamma: Number(gamma.toFixed(4)),
+            timeDilationPct: timeDilationPct,
+          }}
+          hint={
+            activeTab === 'time-dilation'
+              ? `بسبب ثبات سرعة الضوء c، يقطع الفوتون في الساعة المتحركة مساراً قطرياً أطول، مما يتطلب وقتاً أطول لكل نبضة (Δt = γ Δt₀).`
+              : activeTab === 'length-contraction'
+              ? 'التقلص اللورنتزي يحدث فقط في الاتجاه الموازي لخط الحركة، بينما تبقى الأبعاد العمودية دون أي تغيير.'
+              : 'كلما اقتربت السرعة من c، تزداد مقاومة الجسم للتسارع وتتجه كتلته النسبية m = γ m₀ إلى اللانهاية.'
+          }
+        />
+      </div>
+
+      {/* Scientific Theory & Quiz */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoSection
           formulas={formulas}
-          explanation="النسبية الخاصة لأينشتاين (1905) غيرت فهمنا للزمان والمكان. تنص على أن سرعة الضوء ثابتة لجميع المراقبين، مما يؤدي لتمدد الزمن وتقلص الطول وتكافؤ الكتلة والطاقة."
+          explanation="النسبية الخاصة لأينشتاين (1905) أحدثت ثورة جذرية في مفاهيم الزمان والمكان المطلقين، وأثبتت أن قياسات الزمن والأطوال نسبية وتعتمد على الحالة الحركية للمراقب."
           facts={[
-            'سرعة الضوء 299,792,458 م/ث وهي الحد الأقصى للسرعة في الكون',
-            'GPS يحتاج لتصحيحات نسبية وإلا ستنحرف الإحداثيات 10 كم يومياً',
-            'ميونات الأشعة الكونية تصل الأرض بفضل تمدد الزمن النسبي',
-            'غرام واحد من المادة يحتوي طاقة تكفي لإضاءة مدينة لأيام',
+            'سرعة الضوء في الفراغ 299,792,458 م/ث هي الثابت الكوني المطلق والسرعة القصوى للمعلومات',
+            'أنظمة الملاحة بالأقمار الصناعية GPS تتطلب تصحيحات نسبية يومية دقيقة لمنع أخطاء بمقدار 10 كم',
+            'جسيمات الميونات المتولدة في طبقات الجو العليا تصل للأرض فقط بفضل تمدد عمرها الزمني النسبي',
+            'غرام واحد فقط من المادة يحتوي طاقة ذرية تعادل 21.5 ألف طن من مادة TNT شديدة الانفجار',
           ]}
         />
         <QuizSection questions={quizQuestions} />
