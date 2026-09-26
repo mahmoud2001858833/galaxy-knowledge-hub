@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from '@/contexts/ThemeContext';
 
 interface UserProfile {
   id?: string;
@@ -211,8 +212,10 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* User Account / Auth buttons */}
-        <div className="hidden sm:flex items-center gap-3">
+        {/* User Account / Theme Toggle / Auth buttons */}
+        <div className="hidden sm:flex items-center gap-2.5">
+          <ThemeToggle />
+
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -244,14 +247,12 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
 
-                {isSuperAdmin && (
-                  <Link to="/control-center">
-                    <DropdownMenuItem className="flex items-center cursor-pointer text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>مركز التحكم</span>
-                    </DropdownMenuItem>
-                  </Link>
-                )}
+                <Link to="/admin">
+                  <DropdownMenuItem className="flex items-center cursor-pointer text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>لوحة التحكم الإدارية</span>
+                  </DropdownMenuItem>
+                </Link>
                 
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem className="flex items-center cursor-pointer text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl px-2 py-2 text-xs" onClick={handleLogout}>
@@ -261,11 +262,18 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link to="/auth">
-              <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-full px-5 py-2 shadow-md shadow-cyan-500/20 border border-cyan-400/30">
-                تسجيل الدخول
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="/admin">
+                <Button size="sm" variant="ghost" className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 font-bold text-xs rounded-xl px-3 py-1.5 border border-amber-400/20">
+                  لوحة التحكم
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-full px-5 py-2 shadow-md shadow-cyan-500/20 border border-cyan-400/30">
+                  تسجيل الدخول
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
 

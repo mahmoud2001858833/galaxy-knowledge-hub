@@ -12,14 +12,16 @@ const Index = () => {
   const { dir } = useLanguage();
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-[#050714] via-[#090e28] to-[#040612] text-white relative selection:bg-cyan-500 selection:text-slate-950" dir={dir}>
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-slate-50 via-sky-50/30 to-slate-100 text-slate-900 dark:from-[#050714] dark:via-[#090e28] dark:to-[#040612] dark:text-white relative selection:bg-cyan-500 selection:text-slate-950 transition-colors duration-300" dir={dir}>
       <SEO 
         title="ذروة العلم - منصة الابتكار والتعليم التفاعلي ثلاثي الأبعاد"
         description="منصة ذروة العلم - منظومة تعليمية عربية شاملة للمحاكاة العلمية ثلاثية الأبعاد (3D)، الذكاء الاصطناعي، الفيزياء، الكيمياء، الأحياء، الرياضيات، والتربية الخاصة مع منصة دامج."
         keywords="ذروة العلم, منصة ذروة العلم, محاكاة علمية 3D, فيزياء, كيمياء, أحياء, رياضيات, الذكاء الاصطناعي, دامج, فالك المعرفة, تعليم تفاعلي"
         canonicalUrl="https://yoursite.lovable.app/"
       />
-      <StarField />
+      <div className="dark:opacity-100 opacity-20 pointer-events-none transition-opacity duration-300">
+        <StarField />
+      </div>
       <Navbar />
       
       <main className="flex-1 relative z-10">

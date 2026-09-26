@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
 import WelcomeGuide from '@/components/WelcomeGuide';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { LiveSupportCornerWidget } from '@/components/support/LiveSupportCornerWidget';
 import Index from './pages/Index';
 
 // Removed: UploadTextbooks, UploadJordanianContent, ManageJordanianContent
@@ -179,6 +181,7 @@ const ParentAssignments = wrap(lazy(() => import("./pages/ParentAssignments")));
 const ParentNotes = wrap(lazy(() => import("./pages/ParentNotes")));
 const ClassChat = wrap(lazy(() => import("./pages/ClassChat")));
 const ControlCenter = wrap(lazy(() => import("./pages/ControlCenter")));
+const SuperAdminControlHub = wrap(lazy(() => import("./pages/admin/SuperAdminControlHub")));
 const EducationSection = wrap(lazy(() => import("./pages/EducationSection")));
 const AIAssistantSection = wrap(lazy(() => import("./pages/AIAssistantSection")));
 const JordanianAssistant = wrap(lazy(() => import("./pages/JordanianAssistant")));
@@ -325,6 +328,7 @@ const RootLayout = () => {
       <Outlet />
       {!isGJUMode && <WelcomeGuide />}
       {!isGJUMode && <PlatformGuideAssistant />}
+      {!isGJUMode && <LiveSupportCornerWidget />}
       {!isGJUMode && <AccessibilityPanel />}
       {isGJUMode && !isDamijRoute && <GJUFloatingNav />}
     </AutoReadWrapper>
@@ -968,8 +972,12 @@ const router = createBrowserRouter([
         element: <AuthGuard><ClassChat /></AuthGuard>,
       },
       {
+        path: 'admin',
+        element: <SuperAdminControlHub />,
+      },
+      {
         path: 'control-center',
-        element: <AuthGuard><ControlCenter /></AuthGuard>,
+        element: <SuperAdminControlHub />,
       },
       
       {
@@ -1185,9 +1193,11 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <AccessibilityProvider>
-      <RouterProvider router={router} />
-    </AccessibilityProvider>
+    <ThemeProvider>
+      <AccessibilityProvider>
+        <RouterProvider router={router} />
+      </AccessibilityProvider>
+    </ThemeProvider>
   );
 }
 
