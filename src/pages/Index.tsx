@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -13,18 +12,18 @@ const Index = () => {
   const { dir } = useLanguage();
   
   return (
-    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b from-blue-900/40 to-blue-950`} dir={dir}>
+    <div className="min-h-screen flex flex-col text-right bg-gradient-to-b from-[#050714] via-[#090e28] to-[#040612] text-white relative selection:bg-cyan-500 selection:text-slate-950" dir={dir}>
       <SEO 
-        title="الصفحة الرئيسية - منصة تعليمية تفاعلية شاملة"
-        description="ذروة العلم - أفضل منصة تعليمية سعودية تفاعلية شاملة لتعلم الفيزياء والكيمياء والأحياء والرياضيات واللغة العربية والإنجليزية مع مساعد ذكي AI وأدوات تعليمية متطورة وألغاز تفاعلية ومحاكاة علمية وفيديوهات تعليمية ومشاريع بيئية وBTEC تكنولوجيا المعلومات"
-        keywords="ذروة العلم, منصة ذروة العلم, ذروة العلم التعليمية, موقع ذروة العلم, تطبيق ذروة العلم, منصة تعليمية سعودية, منصة تعليمية عربية, منصة تعليمية شاملة, منصة تعليمية تفاعلية, تعليم إلكتروني, تعليم رقمي, تعليم ذكي, أفضل منصة تعليمية, تعلم الفيزياء, تعلم الكيمياء, تعلم الأحياء, تعلم الرياضيات, تعلم اللغة العربية, تعلم الإنجليزية, مساعد ذكي, AI تعليمي, ذكاء اصطناعي, ألغاز تعليمية, فيديوهات تعليمية, الجدول الدوري, محاكاة الذرة, حسابات علمية, آلة حاسبة علمية, بنك الأسئلة, الاستدامة البيئية, حاسبة الكربون, BTEC, تكنولوجيا المعلومات, البرمجة, جسر التواصل, المشرفون والمعلمين, لوحة التحكم, مشاريع الطلاب, المكتبة البصرية, المجلة العلمية, الفن والتصميم, تنظيم الدراسة, المرشد النفسي, التعليم السعودي, المناهج السعودية, وزارة التعليم"
+        title="ذروة العلم - منصة الابتكار والتعليم التفاعلي ثلاثي الأبعاد"
+        description="منصة ذروة العلم - منظومة تعليمية عربية شاملة للمحاكاة العلمية ثلاثية الأبعاد (3D)، الذكاء الاصطناعي، الفيزياء، الكيمياء، الأحياء، الرياضيات، والتربية الخاصة مع منصة دامج."
+        keywords="ذروة العلم, منصة ذروة العلم, محاكاة علمية 3D, فيزياء, كيمياء, أحياء, رياضيات, الذكاء الاصطناعي, دامج, فالك المعرفة, تعليم تفاعلي"
         canonicalUrl="https://yoursite.lovable.app/"
       />
       <StarField />
       <Navbar />
       
-      <main className="flex-1">
-        {/* Hero Section with Logo and Orbiting Icons */}
+      <main className="flex-1 relative z-10">
+        {/* Hero Section */}
         <HeroSection />
         
         {/* Platform Categories */}
@@ -35,7 +34,6 @@ const Index = () => {
       </main>
       
       <Footer />
-      
     </div>
   );
 };

@@ -1,236 +1,167 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookIcon, CalendarDays, Puzzle, Video, Atom, FileText, Brain, Sparkles, Award } from 'lucide-react';
+import { 
+  BookOpen, 
+  BookIcon, 
+  CalendarDays, 
+  Puzzle, 
+  Video, 
+  Atom, 
+  FileText, 
+  Brain, 
+  Sparkles, 
+  Award,
+  ArrowLeft,
+  ArrowRight
+} from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 const EducationalResources = () => {
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
-  
+  const isRtl = dir === 'rtl';
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+
   const resources = [
     {
-      title: '🏆 إنجازات المعلمين للمنصة',
-      icon: Award,
-      description: 'لوحة شرف لإسهامات معلمي مدرسة عنبه في إثراء المنصة',
-      link: '/teacher-achievements',
-      gradient: 'from-amber-500 to-orange-600'
-    },
-    {
-      title: '🎨 إنشاء الصور التعليمية',
+      title: 'إنشاء الصور التعليمية بالذكاء الاصطناعي',
       icon: Sparkles,
-      description: 'أنشئ صوراً تعليمية احترافية بالذكاء الاصطناعي',
+      description: 'أنشئ رسومات ومخططات تعليمية عالية الدقة باستخدام الذكاء الاصطناعي',
       link: '/ai-image-generator',
-      gradient: 'from-pink-500 to-rose-500'
+      accent: 'from-pink-500 to-rose-500',
+      badge: 'توليد ذكي'
     },
     {
-      title: '🧠 نظام المراجعة الذكي',
+      title: 'نظام المراجعة الذكي (Spaced Repetition)',
       icon: Brain,
-      description: 'جدول مراجعة علمي يعتمد على منحنى النسيان',
+      description: 'جدول وخوارزمية مراجعة علمية مثبتة لترسيخ المعلومات ومكافحة النسيان',
       link: '/spaced-repetition',
-      gradient: 'from-indigo-500 to-violet-500'
+      accent: 'from-indigo-500 to-violet-500',
+      badge: 'تثبيت الحفظ'
     },
     {
-      title: t.resources.studyOrganizer,
+      title: 'منظم ومخطط الدراسة التفاعلي',
       icon: CalendarDays,
-      description: t.resources.explorationTools,
+      description: 'أدوات ذكية لتخطيط المذاكرة وجدولة الحصص بكفاءة عالية',
       link: '/study-organization',
-      gradient: 'from-purple-500 to-pink-500'
+      accent: 'from-purple-500 to-pink-500',
+      badge: 'إدارة الوقت'
     },
     {
-      title: t.resources.scientificJournals,
+      title: 'المجلة العلمية والأبحاث',
       icon: BookIcon,
-      description: t.resources.explorationTools,
+      description: 'مقالات وأبحاث علمية منتقاة بعناية لتعميق الفهم وتوسيع المدارك',
       link: '/scientific-journal',
-      gradient: 'from-blue-500 to-cyan-500'
+      accent: 'from-blue-500 to-cyan-500',
+      badge: 'أبحاث ومقالات'
     },
     {
-      title: t.resources.visualLearning,
+      title: 'المكتبة البصرية التعليمية',
       icon: BookOpen,
-      description: t.resources.explorationTools,
+      description: 'رسومات ثلاثية الأبعاد ومخططات توضيحية لتبسيط أعتى النظريات',
       link: '/visual-library',
-      gradient: 'from-green-500 to-emerald-500'
+      accent: 'from-emerald-500 to-teal-500',
+      badge: 'مكتبة مرئية'
     },
     {
-      title: t.resources.educationalPuzzles,
+      title: 'بنك الألغاز والتحديات العلمية',
       icon: Puzzle,
-      description: t.resources.explorationTools,
+      description: 'تحديات فكرية وألغاز تفاعلية ممتعة في الرياضيات والعلوم والمنطق',
       link: '/subject-puzzles',
-      gradient: 'from-orange-500 to-red-500'
+      accent: 'from-amber-500 to-orange-500',
+      badge: 'تفكير نقدي'
     },
     {
-      title: "التجارب العلمية",
+      title: 'المحاكاة والتجارب العلمية التفاعلية',
       icon: Atom,
-      description: "محاكاة وتجارب علمية تفاعلية",
+      description: 'مختبر رقمي كامل لإجراء التجارب المعملية بدون مخاطر',
       link: '/scientific-simulations',
-      gradient: 'from-teal-500 to-cyan-500'
+      accent: 'from-teal-500 to-cyan-500',
+      badge: 'مختبر رقمي'
     },
     {
-      title: "🏥 المساعدة الطبية",
+      title: 'المساعد الطبي المدرسي',
       icon: Video,
-      description: "دليل شامل للتعامل مع الحالات الطبية الشائعة في المدارس",
+      description: 'دليل شامل وبروتوكولات تفاعلية للتعامل مع الإسعافات والحالات الطارئة',
       link: '/medical-assistant',
-      gradient: 'from-emerald-500 to-teal-500'
+      accent: 'from-rose-500 to-red-600',
+      badge: 'صحة ورعاية'
     },
     {
-      title: "📄 توثيق المنصة",
+      title: 'إنجازات المعلمين والمنصة',
+      icon: Award,
+      description: 'لوحة شرف تبرز إسهامات المعلمين والمبدعين في تطوير المنصة',
+      link: '/teacher-achievements',
+      accent: 'from-amber-500 to-yellow-500',
+      badge: 'لوحة الشرف'
+    },
+    {
+      title: 'توثيق المنصة الشامل',
       icon: FileText,
-      description: "دليل شامل لجميع ميزات وأدوات المنصة",
+      description: 'دليل مفصل وتوثيق تقني لجميع الميزات والأدوات ومصادر التعلم',
       link: '/platform-documentation',
-      gradient: 'from-slate-500 to-gray-600'
-    },
-    {
-      title: "🤖 حديقة الحسن - الذكاء الاصطناعي",
-      icon: Brain,
-      description: "تجربة تفاعلية لبناء نموذج ذكاء اصطناعي خاص بك",
-      link: '/hassan-garden-ai',
-      gradient: 'from-violet-500 to-fuchsia-500'
+      accent: 'from-slate-400 to-slate-600',
+      badge: 'دليل المستخدم'
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50, rotateX: -15 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      rotateX: 0,
-      transition: {
-        duration: 0.6,
-        ease: "backOut"
-      }
-    }
-  };
-
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1.5, duration: 0.7 }}
-      className="py-16 w-full max-w-7xl mx-auto px-4"
+    <section
+      className="py-20 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10"
       dir={dir}
     >
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8 }}
-        className="mb-16 text-center"
-      >
-        <h2 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-blue-500 mb-4">
-          {t.resources.title}
+      <div className="mb-14 text-center">
+        <h2 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-cyan-300 mb-4 tracking-tight">
+          الموارد والأدوات التعليمية الذكية
         </h2>
-        <div className="w-24 h-1.5 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 mx-auto mt-6 rounded-full"></div>
-      </motion.div>
+        <div className="h-1 w-20 bg-gradient-to-r from-cyan-400 to-blue-500 mx-auto rounded-full shadow-lg shadow-cyan-500/50 mb-4" />
+        <p className="text-slate-300 max-w-xl mx-auto text-base sm:text-lg">
+          أدوات مبتكرة ومساعدة ترافقك لتعزيز الفهم والاستيعاب ورفع كفاءتك الدراسية
+        </p>
+      </div>
 
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {resources.map((resource, index) => {
-          const IconComponent = resource.icon;
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        {resources.map((item, index) => {
+          const Icon = item.icon;
           return (
             <motion.div
               key={index}
-              variants={cardVariants}
-              whileHover={{ 
-                scale: 1.05,
-                y: -10,
-                transition: { duration: 0.3 }
-              }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate(resource.link)}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-900/40 to-blue-950/60 backdrop-blur-md cursor-pointer border-2 border-blue-500/30 hover:border-blue-400/60 transition-all duration-500 h-[280px]"
-              style={{ transformStyle: 'preserve-3d' }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.4, delay: index * 0.04 }}
+              onClick={() => navigate(item.link)}
+              className="group relative p-6 rounded-2xl bg-slate-900/50 hover:bg-slate-900/80 border border-white/[0.08] hover:border-cyan-500/40 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-cyan-500/10 cursor-pointer flex flex-col justify-between"
             >
-              {/* Animated Background Gradient */}
-              <motion.div 
-                className="absolute inset-0 opacity-20"
-                animate={{
-                  background: [
-                    `linear-gradient(135deg, transparent 0%, transparent 100%)`,
-                    `linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, transparent 100%)`,
-                    `linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.3) 100%)`,
-                    `linear-gradient(135deg, transparent 0%, transparent 100%)`,
-                  ]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              />
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${item.accent} text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/10">
+                    {item.badge}
+                  </span>
+                </div>
 
-              {/* Content Container */}
-              <div className="relative h-full p-8 flex flex-col items-center justify-center text-center z-10">
-                {/* Icon with Gradient Background */}
-                <motion.div 
-                  className={`mb-6 p-6 rounded-2xl bg-gradient-to-br ${resource.gradient} shadow-2xl`}
-                  whileHover={{ 
-                    rotate: [0, -10, 10, -10, 0],
-                    scale: 1.1,
-                    transition: { duration: 0.5 }
-                  }}
-                >
-                  <IconComponent className="w-12 h-12 text-white" />
-                </motion.div>
-                
-                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-blue-300 transition-colors duration-300">
-                  {resource.title}
+                <h3 className="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors mb-2 leading-snug">
+                  {item.title}
                 </h3>
-                
-                <p className="text-white/70 text-sm leading-relaxed mb-6">
-                  {resource.description}
+
+                <p className="text-slate-300/80 text-sm leading-relaxed">
+                  {item.description}
                 </p>
-                
-                {/* Arrow Indicator */}
-                <motion.div
-                  className="absolute bottom-6 left-1/2 transform -translate-x-1/2"
-                  animate={{
-                    y: [0, 8, 0]
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                >
-                  <div className="text-blue-400 text-2xl">↓</div>
-                </motion.div>
               </div>
 
-              {/* Glow Effect on Hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className={`absolute inset-0 bg-gradient-to-tr ${resource.gradient} opacity-20 blur-xl`}></div>
+              <div className="pt-4 mt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-slate-400 group-hover:text-cyan-300 transition-colors">
+                <span>انتقال سريع</span>
+                <ArrowIcon className="w-4 h-4 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform" />
               </div>
-
-              {/* Shine Effect */}
-              <motion.div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100"
-                initial={{ x: '-100%', skewX: -20 }}
-                whileHover={{ 
-                  x: '200%',
-                  transition: { duration: 0.8, ease: "easeInOut" }
-                }}
-              >
-                <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-              </motion.div>
             </motion.div>
           );
         })}
-      </motion.div>
-    </motion.section>
+      </div>
+    </section>
   );
 };
 

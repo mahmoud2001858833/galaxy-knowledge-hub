@@ -12,219 +12,200 @@ import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPane
 import { GJUFloatingNav } from '@/components/gju/GJUFloatingNav';
 import ScrollToTop from '@/components/ScrollToTop';
 import { AutoReadWrapper } from '@/components/accessibility/AutoReadWrapper';
-import StudyScheduleCreator from './pages/StudyScheduleCreator';
-import StudentProgress from './pages/StudentProgress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
 import WelcomeGuide from '@/components/WelcomeGuide';
 import Index from './pages/Index';
-import NotFound from './pages/NotFound';
-import Physics from './pages/Physics';
-import Chemistry from './pages/Chemistry';
-import Mathematics from './pages/Mathematics';
-import CalculatorPage from './pages/CalculatorPage';
-import GraphVisualizerPage from './pages/GraphVisualizerPage';
-import MathematiciansPage from './pages/MathematiciansPage';
-import MathAIAssistantPage from './pages/MathAIAssistantPage';
-import Biology from './pages/Biology';
-import SubjectPuzzles from './pages/SubjectPuzzles';
-import VisualLibrary from './pages/VisualLibrary';
-import UploadImagePage from './pages/UploadImagePage';
-import ScientificJournal from './pages/ScientificJournal';
-import UploadJournalPage from './pages/UploadJournalPage';
-import TeacherAchievements from './pages/TeacherAchievements';
-import TeacherAchievementDetail from './pages/TeacherAchievementDetail';
-import StudyOrganization from './pages/StudyOrganization';
-import ChatRooms from './pages/ChatRooms';
-import Auth from './pages/Auth';
-import FalakKnowledgeAI from './pages/FalakKnowledgeAI';
-import MathPuzzles from './pages/MathPuzzles';
-import UserProfile from './pages/UserProfile';
-import Contact from './pages/Contact';
-import PuzzleDetails from './pages/PuzzleDetails';
-import EducationalVideos from './pages/EducationalVideos';
-import ScientificPlatforms from './pages/ScientificPlatforms';
-import LiteraryPlatforms from './pages/LiteraryPlatforms';
-import IslamicEducation from './pages/IslamicEducation';
-import HijriEventsExplorer from './pages/HijriEventsExplorer';
-import IslamicHistoricalEras from './pages/IslamicHistoricalEras';
-import BTEC from './pages/BTEC';
-import BTECInformationTechnology from './pages/BTECInformationTechnology';
-import TechCodingPlatform from './pages/TechCodingPlatform';
-import AIPlatformBuilderPro from './pages/AIPlatformBuilderPro';
-import Complaints from './pages/Complaints';
-import BTECStudentProjects from './components/btec/BTECStudentProjects';
-import CodeFixerSection from './components/btec/CodeFixerSection';
-import DevelopmentTipsSection from './components/btec/DevelopmentTipsSection';
-import BuildPlatformSection from './components/btec/BuildPlatformSection';
-import EnglishLanguage from './pages/EnglishLanguage';
-import ScientificSimulations from './pages/ScientificSimulations';
-import ScientificSimulationsHub from './pages/ScientificSimulationsHub';
-import ExperimentsSection from './pages/ExperimentsSection';
-import BlackbodyRadiationSimulation from './pages/BlackbodyRadiationSimulation';
-import BuildAtomSimulation from './pages/BuildAtomSimulation';
-import LHCSimulation from './pages/LHCSimulation';
-import ElectromagneticWavesSimulation from './pages/ElectromagneticWavesSimulation';
-import NuclearReactionsSimulation from './pages/NuclearReactionsSimulation';
-import ChemicalReactionsSimulation from './pages/ChemicalReactionsSimulation';
-import FourierSeriesSimulation from './pages/FourierSeriesSimulation';
-import Function3DVisualization from './pages/Function3DVisualization';
-import OpticsLabSimulation from './pages/OpticsLabSimulation';
-import CircuitBuilderSimulation from './pages/CircuitBuilderSimulation';
-import CircuitBuilderAdvanced from './pages/CircuitBuilderAdvanced';
-import ProjectileMotionSimulation from './pages/ProjectileMotionSimulation';
-import ProjectileMotion3D from './pages/ProjectileMotion3D';
 
-import SolarSystemSimulation from './pages/SolarSystemSimulation';
-import SolarSystem3D from './pages/SolarSystem3D';
-import GeneticsLabSimulation from './pages/GeneticsLabSimulation';
-import EcosystemSimulation from './pages/EcosystemSimulation';
-import ElectromagnetismLabSimulation from './pages/ElectromagnetismLabSimulation';
-import WavesAndSoundSimulation from './pages/WavesAndSoundSimulation';
-import StaticElectricitySimulation from './pages/StaticElectricitySimulation';
-import AdvancedAstronomySimulation from './pages/AdvancedAstronomySimulation';
-import QuantumMechanicsSimulation from './pages/QuantumMechanicsSimulation';
-import AnalyticalChemistrySimulation from './pages/AnalyticalChemistrySimulation';
-import ElectrochemistrySimulation from './pages/ElectrochemistrySimulation';
-import MolecularBiologySimulation from './pages/MolecularBiologySimulation';
-import HumanBodySimulation from './pages/HumanBodySimulation';
-import AdvancedNuclearSimulation from './pages/AdvancedNuclearSimulation';
-import DigitalElectronicsSimulation from './pages/DigitalElectronicsSimulation';
-import EarthSciencesSimulation from './pages/EarthSciencesSimulation';
-import RocketScienceSimulation from './pages/RocketScienceSimulation';
-import AdvancedOpticsSimulation from './pages/AdvancedOpticsSimulation';
-import MaterialsScienceSimulation from './pages/MaterialsScienceSimulation';
-import ThermodynamicsSimulation from './pages/ThermodynamicsSimulation';
-import Thermodynamics3D from './pages/Thermodynamics3D';
-import RocketScience3D from './pages/RocketScience3D';
-import FluidMechanicsSimulation from './pages/FluidMechanicsSimulation';
-import FluidMechanics3D from './pages/FluidMechanics3D';
-import CircularMotionSimulation from './pages/CircularMotionSimulation';
-import CircularMotion3D from './pages/CircularMotion3D';
-import SpecialRelativitySimulation from './pages/SpecialRelativitySimulation';
-import InterferenceDiffractionSimulation from './pages/InterferenceDiffractionSimulation';
-import PlasmaPhysicsSimulation from './pages/PlasmaPhysicsSimulation';
-import ChemicalKineticsSimulation from './pages/ChemicalKineticsSimulation';
-import OrganicChemistrySimulation from './pages/OrganicChemistrySimulation';
-import StatesOfMatterSimulation from './pages/StatesOfMatterSimulation';
-import AcidsBasesSimulation from './pages/AcidsBasesSimulation';
-import NuclearApplicationsSimulation from './pages/NuclearApplicationsSimulation';
-import LivingCellSimulation from './pages/LivingCellSimulation';
-import CellDivisionSimulation from './pages/CellDivisionSimulation';
-import PhotosynthesisRespirationSimulation from './pages/PhotosynthesisRespirationSimulation';
-import ImmuneSystemSimulation from './pages/ImmuneSystemSimulation';
-import EvolutionSimulation from './pages/EvolutionSimulation';
-import SpatialGeometrySimulation from './pages/SpatialGeometrySimulation';
-import ProbabilitySimulation from './pages/ProbabilitySimulation';
-import RoboticsSimulation from './pages/RoboticsSimulation';
-import MechanicalEngineeringSimulation from './pages/MechanicalEngineeringSimulation';
-import PhotoelectricEffectSimulation from './pages/PhotoelectricEffectSimulation';
-import MillikanOilDropSimulation from './pages/MillikanOilDropSimulation';
-import BlackHoleSimulation from './pages/BlackHoleSimulation';
-import RutherfordScatteringSimulation from './pages/RutherfordScatteringSimulation';
-import ChemicalEquilibriumSimulation from './pages/ChemicalEquilibriumSimulation';
-import CrisprGeneEditingSimulation from './pages/CrisprGeneEditingSimulation';
-import XRayDiffractionSimulation from './pages/XRayDiffractionSimulation';
-import AerodynamicsWindTunnelSimulation from './pages/AerodynamicsWindTunnelSimulation';
-import SuperconductivitySimulation from './pages/SuperconductivitySimulation';
-import OrbitalMechanicsSimulation from './pages/OrbitalMechanicsSimulation';
-import EnvironmentalSustainability from './pages/EnvironmentalSustainability';
-import CarbonCalculator from './pages/CarbonCalculator';
-import SchoolProjects from './pages/SchoolProjects';
-import HomeProjects from './pages/HomeProjects';
-import PersonalSustainabilityIndex from './pages/PersonalSustainabilityIndex';
-import PsychologicalGuide from './pages/PsychologicalGuide';
-import StudentProjects from './components/environmental/StudentProjects';
-import RecyclingProjectAdvisor from './pages/RecyclingProjectAdvisor';
-import EcoPredictDashboard from './pages/EcoPredictDashboard';
-import MedicalAssistant from './pages/MedicalAssistant';
-import AdministratorsTeachers from './pages/AdministratorsTeachers';
-import ArtDesign from './pages/ArtDesign';
-import DrawingChallengeRoom from './pages/DrawingChallengeRoom';
-import CommunicationBridge from './pages/CommunicationBridge';
-import JordanTawjihi from './pages/JordanTawjihi';
-import JordanTawjihiHistory from './pages/JordanTawjihiHistory';
-import JordanTawjihiReligion from './pages/JordanTawjihiReligion';
-import JordanTawjihiEnglish from './pages/JordanTawjihiEnglish';
-import TeacherRegistration from './pages/TeacherRegistration';
-import TeacherDashboard from './pages/TeacherDashboard';
-import TeacherAssignments from './pages/TeacherAssignments';
-import TeacherNotes from './pages/TeacherNotes';
-import TeacherStatistics from './pages/TeacherStatistics';
-import ParentRegistration from './pages/ParentRegistration';
-import ParentDashboard from './pages/ParentDashboard';
-import ParentAssignments from './pages/ParentAssignments';
-import ParentNotes from './pages/ParentNotes';
-import ClassChat from './pages/ClassChat';
-import ControlCenter from './pages/ControlCenter';
-import ManagementSection from './pages/ManagementSection';
-import EducationSection from './pages/EducationSection';
-import AIAssistantSection from './pages/AIAssistantSection';
-import JordanianAssistant from './pages/JordanianAssistant';
-import ConversationView from './pages/ConversationView';
 // Removed: UploadTextbooks, UploadJordanianContent, ManageJordanianContent
 // Now using UploadedSourcesTab inside JordanianAssistant
-import SchoolMagazine from './pages/SchoolMagazine';
-import NewsDetail from './pages/NewsDetail';
-import MathematicsQuestionBank from './pages/MathematicsQuestionBank';
-
-import AIPlatformBuilder from './pages/AIPlatformBuilder';
-import PublishedProject from './pages/PublishedProject';
-import TenantSettings from './pages/TenantSettings';
-import PlatformDocumentation from './pages/PlatformDocumentation';
-import SpacedRepetitionSystem from './pages/SpacedRepetitionSystem';
-import AIImageGenerator from './pages/AIImageGenerator';
-import SignLanguagePage from './pages/SignLanguagePage';
-import ExamScannerPage from './pages/ExamScannerPage';
-import SmartCitySection from './pages/SmartCitySection';
-import AIArchitecturalDesign from './pages/AIArchitecturalDesign';
-import RoboticConstruction from './pages/RoboticConstruction';
-import AIInteriorDesign from './pages/AIInteriorDesign';
-import GJUCompetition from './pages/GJUCompetition';
-import FacePayAI from './pages/FacePayAI';
-import AIFutureStore from './pages/AIFutureStore';
-import RoboticsGenerator from './pages/RoboticsGenerator';
-import JordanDigitalTwin from './pages/JordanDigitalTwin';
-import HassanGardenAI from './pages/HassanGardenAI';
-import MemoryTree from './pages/MemoryTree';
-import CancerDetection from './pages/CancerDetection';
-// ===== Damij: lazy-loaded to keep the main bundle small (faster first load + Safari friendly) =====
 import DamijAuthGuard from './components/damij/DamijAuthGuard';
 
-const DamijFallback = () => (
-  <div style={{
-    minHeight: '60vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: '"Tajawal","Cairo","Inter",sans-serif',
-    color: 'hsl(215 55% 22%)',
-    background: 'linear-gradient(180deg,#f6f9fc,#eef3f8)',
-  }}>
-    <div style={{ textAlign: 'center' }}>
-      <div style={{
-        width: 44, height: 44, margin: '0 auto 12px',
-        border: '3px solid rgba(0,0,0,0.1)',
-        borderTopColor: 'hsl(200 65% 34%)',
-        borderRadius: '50%',
-        animation: 'spin 0.9s linear infinite'
-      }} />
-      <div style={{ fontSize: 14, opacity: 0.7 }}>...جاري التحميل</div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+// Universal sleek fallback for lazy loaded routes
+const GlobalFallback = () => (
+  <div className="min-h-[60vh] flex flex-col items-center justify-center bg-transparent text-white font-sans">
+    <div className="relative w-12 h-12 mb-3">
+      <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+      <div className="absolute inset-1.5 rounded-full border-2 border-purple-500/20 border-b-purple-400 animate-[spin_1.2s_linear_infinite_reverse]" />
     </div>
+    <div className="text-xs font-semibold text-slate-300/80 animate-pulse">...جاري التحميل</div>
   </div>
 );
 
-const wrap = <P,>(Comp: React.LazyExoticComponent<ComponentType<P>>) => {
+const wrap = <P extends object>(Comp: React.LazyExoticComponent<ComponentType<P>>) => {
   const Wrapped: React.FC<P> = (props) => (
-    <Suspense fallback={<DamijFallback />}>
-      <Comp {...(props as any)} />
+    <Suspense fallback={<GlobalFallback />}>
+      <Comp {...props} />
     </Suspense>
   );
   return Wrapped;
 };
 
+// ===== Code-split lazy loaded platform pages =====
+const StudyScheduleCreator = wrap(lazy(() => import("./pages/StudyScheduleCreator")));
+const StudentProgress = wrap(lazy(() => import("./pages/StudentProgress")));
+const NotFound = wrap(lazy(() => import("./pages/NotFound")));
+const Physics = wrap(lazy(() => import("./pages/Physics")));
+const Chemistry = wrap(lazy(() => import("./pages/Chemistry")));
+const Mathematics = wrap(lazy(() => import("./pages/Mathematics")));
+const CalculatorPage = wrap(lazy(() => import("./pages/CalculatorPage")));
+const GraphVisualizerPage = wrap(lazy(() => import("./pages/GraphVisualizerPage")));
+const MathematiciansPage = wrap(lazy(() => import("./pages/MathematiciansPage")));
+const MathAIAssistantPage = wrap(lazy(() => import("./pages/MathAIAssistantPage")));
+const Biology = wrap(lazy(() => import("./pages/Biology")));
+const SubjectPuzzles = wrap(lazy(() => import("./pages/SubjectPuzzles")));
+const VisualLibrary = wrap(lazy(() => import("./pages/VisualLibrary")));
+const UploadImagePage = wrap(lazy(() => import("./pages/UploadImagePage")));
+const ScientificJournal = wrap(lazy(() => import("./pages/ScientificJournal")));
+const UploadJournalPage = wrap(lazy(() => import("./pages/UploadJournalPage")));
+const TeacherAchievements = wrap(lazy(() => import("./pages/TeacherAchievements")));
+const TeacherAchievementDetail = wrap(lazy(() => import("./pages/TeacherAchievementDetail")));
+const StudyOrganization = wrap(lazy(() => import("./pages/StudyOrganization")));
+const ChatRooms = wrap(lazy(() => import("./pages/ChatRooms")));
+const Auth = wrap(lazy(() => import("./pages/Auth")));
+const FalakKnowledgeAI = wrap(lazy(() => import("./pages/FalakKnowledgeAI")));
+const MathPuzzles = wrap(lazy(() => import("./pages/MathPuzzles")));
+const UserProfile = wrap(lazy(() => import("./pages/UserProfile")));
+const Contact = wrap(lazy(() => import("./pages/Contact")));
+const PuzzleDetails = wrap(lazy(() => import("./pages/PuzzleDetails")));
+const EducationalVideos = wrap(lazy(() => import("./pages/EducationalVideos")));
+const ScientificPlatforms = wrap(lazy(() => import("./pages/ScientificPlatforms")));
+const LiteraryPlatforms = wrap(lazy(() => import("./pages/LiteraryPlatforms")));
+const IslamicEducation = wrap(lazy(() => import("./pages/IslamicEducation")));
+const HijriEventsExplorer = wrap(lazy(() => import("./pages/HijriEventsExplorer")));
+const IslamicHistoricalEras = wrap(lazy(() => import("./pages/IslamicHistoricalEras")));
+const BTEC = wrap(lazy(() => import("./pages/BTEC")));
+const BTECInformationTechnology = wrap(lazy(() => import("./pages/BTECInformationTechnology")));
+const TechCodingPlatform = wrap(lazy(() => import("./pages/TechCodingPlatform")));
+const AIPlatformBuilderPro = wrap(lazy(() => import("./pages/AIPlatformBuilderPro")));
+const Complaints = wrap(lazy(() => import("./pages/Complaints")));
+const BTECStudentProjects = wrap(lazy(() => import("./components/btec/BTECStudentProjects")));
+const CodeFixerSection = wrap(lazy(() => import("./components/btec/CodeFixerSection")));
+const DevelopmentTipsSection = wrap(lazy(() => import("./components/btec/DevelopmentTipsSection")));
+const BuildPlatformSection = wrap(lazy(() => import("./components/btec/BuildPlatformSection")));
+const EnglishLanguage = wrap(lazy(() => import("./pages/EnglishLanguage")));
+const ScientificSimulations = wrap(lazy(() => import("./pages/ScientificSimulations")));
+const ScientificSimulationsHub = wrap(lazy(() => import("./pages/ScientificSimulationsHub")));
+const ExperimentsSection = wrap(lazy(() => import("./pages/ExperimentsSection")));
+const BlackbodyRadiationSimulation = wrap(lazy(() => import("./pages/BlackbodyRadiationSimulation")));
+const BuildAtomSimulation = wrap(lazy(() => import("./pages/BuildAtomSimulation")));
+const LHCSimulation = wrap(lazy(() => import("./pages/LHCSimulation")));
+const ElectromagneticWavesSimulation = wrap(lazy(() => import("./pages/ElectromagneticWavesSimulation")));
+const NuclearReactionsSimulation = wrap(lazy(() => import("./pages/NuclearReactionsSimulation")));
+const ChemicalReactionsSimulation = wrap(lazy(() => import("./pages/ChemicalReactionsSimulation")));
+const FourierSeriesSimulation = wrap(lazy(() => import("./pages/FourierSeriesSimulation")));
+const Function3DVisualization = wrap(lazy(() => import("./pages/Function3DVisualization")));
+const OpticsLabSimulation = wrap(lazy(() => import("./pages/OpticsLabSimulation")));
+const CircuitBuilderSimulation = wrap(lazy(() => import("./pages/CircuitBuilderSimulation")));
+const CircuitBuilderAdvanced = wrap(lazy(() => import("./pages/CircuitBuilderAdvanced")));
+const ProjectileMotionSimulation = wrap(lazy(() => import("./pages/ProjectileMotionSimulation")));
+const ProjectileMotion3D = wrap(lazy(() => import("./pages/ProjectileMotion3D")));
+const SolarSystemSimulation = wrap(lazy(() => import("./pages/SolarSystemSimulation")));
+const SolarSystem3D = wrap(lazy(() => import("./pages/SolarSystem3D")));
+const GeneticsLabSimulation = wrap(lazy(() => import("./pages/GeneticsLabSimulation")));
+const EcosystemSimulation = wrap(lazy(() => import("./pages/EcosystemSimulation")));
+const ElectromagnetismLabSimulation = wrap(lazy(() => import("./pages/ElectromagnetismLabSimulation")));
+const WavesAndSoundSimulation = wrap(lazy(() => import("./pages/WavesAndSoundSimulation")));
+const StaticElectricitySimulation = wrap(lazy(() => import("./pages/StaticElectricitySimulation")));
+const AdvancedAstronomySimulation = wrap(lazy(() => import("./pages/AdvancedAstronomySimulation")));
+const QuantumMechanicsSimulation = wrap(lazy(() => import("./pages/QuantumMechanicsSimulation")));
+const AnalyticalChemistrySimulation = wrap(lazy(() => import("./pages/AnalyticalChemistrySimulation")));
+const ElectrochemistrySimulation = wrap(lazy(() => import("./pages/ElectrochemistrySimulation")));
+const MolecularBiologySimulation = wrap(lazy(() => import("./pages/MolecularBiologySimulation")));
+const HumanBodySimulation = wrap(lazy(() => import("./pages/HumanBodySimulation")));
+const AdvancedNuclearSimulation = wrap(lazy(() => import("./pages/AdvancedNuclearSimulation")));
+const DigitalElectronicsSimulation = wrap(lazy(() => import("./pages/DigitalElectronicsSimulation")));
+const EarthSciencesSimulation = wrap(lazy(() => import("./pages/EarthSciencesSimulation")));
+const RocketScienceSimulation = wrap(lazy(() => import("./pages/RocketScienceSimulation")));
+const AdvancedOpticsSimulation = wrap(lazy(() => import("./pages/AdvancedOpticsSimulation")));
+const MaterialsScienceSimulation = wrap(lazy(() => import("./pages/MaterialsScienceSimulation")));
+const ThermodynamicsSimulation = wrap(lazy(() => import("./pages/ThermodynamicsSimulation")));
+const Thermodynamics3D = wrap(lazy(() => import("./pages/Thermodynamics3D")));
+const RocketScience3D = wrap(lazy(() => import("./pages/RocketScience3D")));
+const FluidMechanicsSimulation = wrap(lazy(() => import("./pages/FluidMechanicsSimulation")));
+const FluidMechanics3D = wrap(lazy(() => import("./pages/FluidMechanics3D")));
+const CircularMotionSimulation = wrap(lazy(() => import("./pages/CircularMotionSimulation")));
+const CircularMotion3D = wrap(lazy(() => import("./pages/CircularMotion3D")));
+const SpecialRelativitySimulation = wrap(lazy(() => import("./pages/SpecialRelativitySimulation")));
+const InterferenceDiffractionSimulation = wrap(lazy(() => import("./pages/InterferenceDiffractionSimulation")));
+const PlasmaPhysicsSimulation = wrap(lazy(() => import("./pages/PlasmaPhysicsSimulation")));
+const ChemicalKineticsSimulation = wrap(lazy(() => import("./pages/ChemicalKineticsSimulation")));
+const OrganicChemistrySimulation = wrap(lazy(() => import("./pages/OrganicChemistrySimulation")));
+const StatesOfMatterSimulation = wrap(lazy(() => import("./pages/StatesOfMatterSimulation")));
+const AcidsBasesSimulation = wrap(lazy(() => import("./pages/AcidsBasesSimulation")));
+const NuclearApplicationsSimulation = wrap(lazy(() => import("./pages/NuclearApplicationsSimulation")));
+const LivingCellSimulation = wrap(lazy(() => import("./pages/LivingCellSimulation")));
+const CellDivisionSimulation = wrap(lazy(() => import("./pages/CellDivisionSimulation")));
+const PhotosynthesisRespirationSimulation = wrap(lazy(() => import("./pages/PhotosynthesisRespirationSimulation")));
+const ImmuneSystemSimulation = wrap(lazy(() => import("./pages/ImmuneSystemSimulation")));
+const EvolutionSimulation = wrap(lazy(() => import("./pages/EvolutionSimulation")));
+const SpatialGeometrySimulation = wrap(lazy(() => import("./pages/SpatialGeometrySimulation")));
+const ProbabilitySimulation = wrap(lazy(() => import("./pages/ProbabilitySimulation")));
+const RoboticsSimulation = wrap(lazy(() => import("./pages/RoboticsSimulation")));
+const MechanicalEngineeringSimulation = wrap(lazy(() => import("./pages/MechanicalEngineeringSimulation")));
+const PhotoelectricEffectSimulation = wrap(lazy(() => import("./pages/PhotoelectricEffectSimulation")));
+const MillikanOilDropSimulation = wrap(lazy(() => import("./pages/MillikanOilDropSimulation")));
+const BlackHoleSimulation = wrap(lazy(() => import("./pages/BlackHoleSimulation")));
+const RutherfordScatteringSimulation = wrap(lazy(() => import("./pages/RutherfordScatteringSimulation")));
+const ChemicalEquilibriumSimulation = wrap(lazy(() => import("./pages/ChemicalEquilibriumSimulation")));
+const CrisprGeneEditingSimulation = wrap(lazy(() => import("./pages/CrisprGeneEditingSimulation")));
+const XRayDiffractionSimulation = wrap(lazy(() => import("./pages/XRayDiffractionSimulation")));
+const AerodynamicsWindTunnelSimulation = wrap(lazy(() => import("./pages/AerodynamicsWindTunnelSimulation")));
+const SuperconductivitySimulation = wrap(lazy(() => import("./pages/SuperconductivitySimulation")));
+const OrbitalMechanicsSimulation = wrap(lazy(() => import("./pages/OrbitalMechanicsSimulation")));
+const EnvironmentalSustainability = wrap(lazy(() => import("./pages/EnvironmentalSustainability")));
+const CarbonCalculator = wrap(lazy(() => import("./pages/CarbonCalculator")));
+const SchoolProjects = wrap(lazy(() => import("./pages/SchoolProjects")));
+const HomeProjects = wrap(lazy(() => import("./pages/HomeProjects")));
+const PersonalSustainabilityIndex = wrap(lazy(() => import("./pages/PersonalSustainabilityIndex")));
+const PsychologicalGuide = wrap(lazy(() => import("./pages/PsychologicalGuide")));
+const StudentProjects = wrap(lazy(() => import("./components/environmental/StudentProjects")));
+const RecyclingProjectAdvisor = wrap(lazy(() => import("./pages/RecyclingProjectAdvisor")));
+const EcoPredictDashboard = wrap(lazy(() => import("./pages/EcoPredictDashboard")));
+const MedicalAssistant = wrap(lazy(() => import("./pages/MedicalAssistant")));
+const AdministratorsTeachers = wrap(lazy(() => import("./pages/AdministratorsTeachers")));
+const ArtDesign = wrap(lazy(() => import("./pages/ArtDesign")));
+const DrawingChallengeRoom = wrap(lazy(() => import("./pages/DrawingChallengeRoom")));
+const CommunicationBridge = wrap(lazy(() => import("./pages/CommunicationBridge")));
+const TeacherRegistration = wrap(lazy(() => import("./pages/TeacherRegistration")));
+const TeacherDashboard = wrap(lazy(() => import("./pages/TeacherDashboard")));
+const TeacherAssignments = wrap(lazy(() => import("./pages/TeacherAssignments")));
+const TeacherNotes = wrap(lazy(() => import("./pages/TeacherNotes")));
+const TeacherStatistics = wrap(lazy(() => import("./pages/TeacherStatistics")));
+const ParentRegistration = wrap(lazy(() => import("./pages/ParentRegistration")));
+const ParentDashboard = wrap(lazy(() => import("./pages/ParentDashboard")));
+const ParentAssignments = wrap(lazy(() => import("./pages/ParentAssignments")));
+const ParentNotes = wrap(lazy(() => import("./pages/ParentNotes")));
+const ClassChat = wrap(lazy(() => import("./pages/ClassChat")));
+const ControlCenter = wrap(lazy(() => import("./pages/ControlCenter")));
+const EducationSection = wrap(lazy(() => import("./pages/EducationSection")));
+const AIAssistantSection = wrap(lazy(() => import("./pages/AIAssistantSection")));
+const JordanianAssistant = wrap(lazy(() => import("./pages/JordanianAssistant")));
+const ConversationView = wrap(lazy(() => import("./pages/ConversationView")));
+const SchoolMagazine = wrap(lazy(() => import("./pages/SchoolMagazine")));
+const NewsDetail = wrap(lazy(() => import("./pages/NewsDetail")));
+const MathematicsQuestionBank = wrap(lazy(() => import("./pages/MathematicsQuestionBank")));
+const AIPlatformBuilder = wrap(lazy(() => import("./pages/AIPlatformBuilder")));
+const PublishedProject = wrap(lazy(() => import("./pages/PublishedProject")));
+const TenantSettings = wrap(lazy(() => import("./pages/TenantSettings")));
+const PlatformDocumentation = wrap(lazy(() => import("./pages/PlatformDocumentation")));
+const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionSystem")));
+const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
+const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
+const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
+const SmartCitySection = wrap(lazy(() => import("./pages/SmartCitySection")));
+const AIArchitecturalDesign = wrap(lazy(() => import("./pages/AIArchitecturalDesign")));
+const RoboticConstruction = wrap(lazy(() => import("./pages/RoboticConstruction")));
+const AIInteriorDesign = wrap(lazy(() => import("./pages/AIInteriorDesign")));
+const GJUCompetition = wrap(lazy(() => import("./pages/GJUCompetition")));
+const FacePayAI = wrap(lazy(() => import("./pages/FacePayAI")));
+const AIFutureStore = wrap(lazy(() => import("./pages/AIFutureStore")));
+const RoboticsGenerator = wrap(lazy(() => import("./pages/RoboticsGenerator")));
+const JordanDigitalTwin = wrap(lazy(() => import("./pages/JordanDigitalTwin")));
+const CancerDetection = wrap(lazy(() => import("./pages/CancerDetection")));
+
+// ===== Damij: lazy-loaded =====
 const DamijLayout = wrap(lazy(() => import('./pages/damij/DamijLayout')));
 const DamijLanding = wrap(lazy(() => import('./pages/damij/DamijLanding')));
 const DamijLandingStandalone = wrap(lazy(() => import('./pages/damij/DamijLandingStandalone')));
@@ -448,22 +429,10 @@ const router = createBrowserRouter([
         path: 'islamic-education/historical-eras',
         element: <PublicRoute><IslamicHistoricalEras /></PublicRoute>,
       },
-      {
-        path: 'jordan-tawjihi',
-        element: <PublicRoute><JordanTawjihi /></PublicRoute>,
-      },
-      {
-        path: 'jordan-tawjihi/history',
-        element: <PublicRoute><JordanTawjihiHistory /></PublicRoute>,
-      },
-      {
-        path: 'jordan-tawjihi/religion',
-        element: <PublicRoute><JordanTawjihiReligion /></PublicRoute>,
-      },
-      {
-        path: 'jordan-tawjihi/english',
-        element: <PublicRoute><JordanTawjihiEnglish /></PublicRoute>,
-      },
+      
+      
+      
+      
       {
         path: 'btec',
         element: <PublicRoute><BTEC /></PublicRoute>,
@@ -1002,10 +971,7 @@ const router = createBrowserRouter([
         path: 'control-center',
         element: <AuthGuard><ControlCenter /></AuthGuard>,
       },
-      {
-        path: 'management-section',
-        element: <PublicRoute><ManagementSection /></PublicRoute>,
-      },
+      
       {
         path: 'education-section',
         element: <AuthGuard><EducationSection /></AuthGuard>,
@@ -1092,14 +1058,8 @@ const router = createBrowserRouter([
         path: 'gju/jordan-digital-twin',
         element: <PublicRoute><JordanDigitalTwin /></PublicRoute>,
       },
-      {
-        path: 'hassan-garden-ai',
-        element: <PublicRoute><HassanGardenAI /></PublicRoute>,
-      },
-      {
-        path: 'memory-tree',
-        element: <PublicRoute><MemoryTree /></PublicRoute>,
-      },
+      
+      
       {
         path: 'cancer-detection',
         element: <PublicRoute><CancerDetection /></PublicRoute>,

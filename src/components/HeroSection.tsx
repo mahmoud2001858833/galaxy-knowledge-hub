@@ -1,12 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Atom, Sparkles, Compass, ShieldCheck, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import logo from '@/assets/logo.png';
 
 const HeroSection = () => {
   const { dir } = useLanguage();
-
+  const navigate = useNavigate();
 
   const scrollToSections = () => {
     const element = document.getElementById('platform-sections');
@@ -14,167 +15,141 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20 px-4" dir={dir}>
-      {/* Animated Background */}
-      <div className="absolute inset-0">
-        <motion.div
-          animate={{ 
-            background: [
-              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
-              'radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
-              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
-            ]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0"
-        />
+    <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden py-16 sm:py-24 px-4 sm:px-6" dir={dir}>
+      {/* Ambient background glows - pure CSS for max performance */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-blue-600/15 via-cyan-500/15 to-purple-600/15 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-20 left-10 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Left Side - Large Logo with Rotating Circle */}
+      <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        {/* Left Side (on Desktop) - Platform Presentation & Call to Actions */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="flex justify-center lg:justify-end"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="lg:col-span-7 text-center lg:text-right space-y-6"
         >
-          <div className="relative w-full h-[500px] flex items-center justify-center">
-            {/* Central Logo - Large and Static */}
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ 
-                type: "spring",
-                stiffness: 100,
-                damping: 10,
-                delay: 0.3
-              }}
-              className="relative z-10"
-            >
-              {/* Glowing Background */}
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  opacity: [0.3, 0.4, 0.3]
-                }}
-                transition={{ 
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-cyan-500/30 blur-3xl rounded-full"
-              />
+          {/* Top Pill Badge */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/80 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm font-medium shadow-lg shadow-cyan-500/10 backdrop-blur-xl">
+            <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span>الجيل الجديد من التعليم التفاعلي والذكاء الاصطناعي</span>
+          </div>
 
-              {/* Logo - Large and Static */}
-              <img 
-                src={logo} 
-                alt="ذروة العلم" 
-                className="relative w-[400px] h-[400px] object-contain drop-shadow-2xl"
-              />
-            </motion.div>
+          {/* Main Title */}
+          <div className="space-y-3">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight">
+              منصة{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 drop-shadow-sm">
+                ذروة العلم
+              </span>
+            </h1>
+            <p className="text-xl sm:text-2xl text-slate-200 font-medium">
+              بوابتك نحو استكشاف أسرار الكون، الفيزياء، الكيمياء والذكاء الاصطناعي
+            </p>
+          </div>
 
-            {/* Rotating Circle - No Icons */}
-            <motion.div
-              animate={{ 
-                rotate: 360,
-              }}
-              transition={{ 
-                duration: 50,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="absolute inset-0 flex items-center justify-center"
+          {/* Subtitle / Description */}
+          <p className="text-base sm:text-lg text-slate-300/90 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal">
+            منظومة تعليمية متكاملة تجمع بين أكثر من 45 مختبراً تفاعلياً ثلاثي الأبعاد، نماذج محاكاة علمية فائقة الدقة، مساعدات ذكية متقدمة مدعومة بـ Gemini، وحلول الشمولية والتربية الخاصة.
+          </p>
+
+          {/* Quick Metrics / Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 max-w-xl mx-auto lg:mx-0">
+            <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md text-center">
+              <div className="text-2xl sm:text-3xl font-black text-cyan-300">45+</div>
+              <div className="text-xs text-slate-400 font-medium mt-1">محاكاة 3D</div>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md text-center">
+              <div className="text-2xl sm:text-3xl font-black text-purple-300">25+</div>
+              <div className="text-xs text-slate-400 font-medium mt-1">أداة AI</div>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md text-center">
+              <div className="text-2xl sm:text-3xl font-black text-teal-300">دامج</div>
+              <div className="text-xs text-slate-400 font-medium mt-1">تعليم خاص ذكي</div>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md text-center">
+              <div className="text-2xl sm:text-3xl font-black text-amber-300">100%</div>
+              <div className="text-xs text-slate-400 font-medium mt-1">تفاعلي ومجاني</div>
+            </div>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+            <motion.button
+              onClick={() => navigate('/experiments-section')}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2.5 px-8 py-4 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-slate-950 hover:text-white font-extrabold text-base rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-300 border border-cyan-400/40"
             >
-              <div className="w-[480px] h-[480px] rounded-full border border-dashed border-blue-400/30" />
-            </motion.div>
+              <Atom className="w-5 h-5 animate-spin-slow" />
+              <span>المختبرات والمحاكاة 3D</span>
+            </motion.button>
+
+            <motion.button
+              onClick={() => navigate('/ai-assistant-section')}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2.5 px-7 py-4 bg-slate-900/80 hover:bg-slate-850 border border-white/15 hover:border-purple-400/50 rounded-2xl text-white font-bold text-base backdrop-blur-md shadow-lg transition-all duration-300"
+            >
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              <span>المساعد الذكي (AI)</span>
+            </motion.button>
+
+            <motion.button
+              onClick={scrollToSections}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2 px-5 py-4 text-slate-300 hover:text-white text-sm font-semibold transition-colors"
+            >
+              <Compass className="w-4 h-4 text-cyan-400" />
+              <span>استعراض الأقسام</span>
+            </motion.button>
           </div>
         </motion.div>
 
-        {/* Right Side - Platform Description */}
+        {/* Right Side (on Desktop) - High-Tech Glowing Centerpiece Logo */}
         <motion.div
-          initial={{ opacity: 0, x: 100 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="text-center lg:text-right space-y-8"
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="lg:col-span-5 flex justify-center items-center relative"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 mb-6 leading-tight">
-              ذروة العلم
-            </h1>
-            
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 1.5, delay: 0.8 }}
-              className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-full mb-8 shadow-lg shadow-blue-500/50"
-            />
+          <div className="relative w-[340px] sm:w-[420px] h-[340px] sm:h-[420px] flex items-center justify-center">
+            {/* Ambient Background Aura */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/25 via-blue-600/25 to-purple-600/25 rounded-full blur-3xl animate-pulse" />
 
-            <p className="text-2xl md:text-3xl text-white/95 font-medium leading-relaxed mb-4">
-              منصتك التعليمية الشاملة
-            </p>
+            {/* Orbiting Tech Rings */}
+            <div className="absolute inset-2 rounded-full border border-dashed border-cyan-400/30 animate-[spin_60s_linear_infinite]" />
+            <div className="absolute inset-10 rounded-full border border-purple-500/20 animate-[spin_40s_linear_infinite_reverse]" />
 
-            <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              رحلة تعليمية مبتكرة تجمع العلوم، الرياضيات، اللغات، والتكنولوجيا
-              <br />
-              <span className="text-blue-300">مع مساعد ذكي يرافقك في كل خطوة</span>
-            </p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2 }}
-              className="flex flex-col items-center lg:items-end gap-4"
-            >
-              <div className="flex items-center gap-6 text-white/60">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm">8+ منصات تعليمية</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-sm">مساعد ذكي متقدم</span>
-                </div>
-              </div>
-
-              <motion.button
-                onClick={scrollToSections}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600/50 to-purple-600/50 hover:from-blue-600/70 hover:to-purple-600/70 border border-blue-400/50 rounded-full text-white font-bold text-lg backdrop-blur-sm shadow-2xl shadow-blue-500/30 transition-all"
-              >
-                <span>استكشف المنصات</span>
-                <motion.div
-                  animate={{ y: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <ChevronDown className="w-6 h-6" />
-                </motion.div>
-              </motion.button>
-            </motion.div>
-          </motion.div>
+            {/* Central Glow Card */}
+            <div className="relative z-10 p-6 sm:p-8 rounded-full bg-slate-950/70 border border-cyan-500/30 backdrop-blur-2xl shadow-2xl shadow-cyan-500/20 group">
+              <img
+                src={logo}
+                alt="شعار ذروة العلم"
+                className="w-52 h-52 sm:w-64 sm:h-64 object-contain drop-shadow-[0_15px_35px_rgba(6,182,212,0.4)] transition-transform duration-500 group-hover:scale-105"
+                loading="eager"
+              />
+            </div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2 }}
-        className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
-      >
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      {/* Modern Down Indicator */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+        <motion.button
           onClick={scrollToSections}
-          className="cursor-pointer"
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+          aria-label="الانتقال إلى الأقسام"
         >
-          <ChevronDown className="w-8 h-8 text-white/50" />
-        </motion.div>
-      </motion.div>
+          <ChevronDown className="w-5 h-5" />
+        </motion.button>
+      </div>
     </section>
   );
 };
