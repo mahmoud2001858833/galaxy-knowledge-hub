@@ -1,38 +1,54 @@
 import React from 'react';
-import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EducationalResources from '@/components/EducationalResources';
-import PlatformCategories from '@/components/PlatformCategories';
-import HeroSection from '@/components/HeroSection';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { SEO } from '@/components/SEO';
+
+// Executive Product Tour 5-Section Architecture
+import ProductTourHero from '@/components/home/ProductTourHero';
+import PlatformMissionSection from '@/components/home/PlatformMissionSection';
+import EcosystemBentoGrid from '@/components/home/EcosystemBentoGrid';
+import InteractiveCapabilitiesDemo from '@/components/home/InteractiveCapabilitiesDemo';
+import StrategicRoadmapSection from '@/components/home/StrategicRoadmapSection';
+import EducationalResources from '@/components/EducationalResources';
 
 const Index = () => {
   const { dir } = useLanguage();
   
   return (
-    <div className="min-h-screen flex flex-col text-right bg-white dark:bg-gradient-to-b dark:from-[#050714] dark:via-[#090e28] dark:to-[#040612] text-slate-900 dark:text-white relative selection:bg-cyan-500 selection:text-slate-950 transition-colors duration-300" dir={dir}>
+    <div 
+      className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white relative selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-slate-900 transition-colors duration-300 font-sans" 
+      dir={dir}
+    >
       <SEO 
-        title="ذروة العلم - منصة الابتكار والتعليم التفاعلي ثلاثي الأبعاد"
-        description="منصة ذروة العلم - منظومة تعليمية عربية شاملة للمحاكاة العلمية ثلاثية الأبعاد (3D)، الذكاء الاصطناعي، الفيزياء، الكيمياء، الأحياء، الرياضيات، والتربية الخاصة مع منصة دامج."
-        keywords="ذروة العلم, منصة ذروة العلم, محاكاة علمية 3D, فيزياء, كيمياء, أحياء, رياضيات, الذكاء الاصطناعي, دامج, فالك المعرفة, تعليم تفاعلي"
+        title="ذروة العلم - المنظومة الوطنية للتعليم التفاعلي والمحاكاة 3D"
+        description="منصة ذروة العلم - البنية التحتية الرقمية الرائدة للمختبرات العلمية ثلاثية الأبعاد (3D)، الذكاء الاصطناعي التطبيقي، وحلول الشمولية والتربية الخاصة مع مشروع دامج."
+        keywords="ذروة العلم, منصة ذروة العلم, محاكاة علمية 3D, فيزياء, كيمياء, أحياء, رياضيات, الذكاء الاصطناعي, روبوتات, دامج, تعليم تفاعلي"
         canonicalUrl="https://yoursite.lovable.app/"
       />
-      <div className="dark:opacity-100 opacity-20 pointer-events-none transition-opacity duration-300">
-        <StarField />
-      </div>
+
       <Navbar />
       
-      <main className="flex-1 relative z-10">
-        {/* Hero Section */}
-        <HeroSection />
+      <main className="flex-1 relative z-10 space-y-4">
+        {/* Section 1: Hero & Vision (المقدمة والترحيب المؤسسي) */}
+        <ProductTourHero />
         
-        {/* Platform Categories */}
-        <PlatformCategories />
+        {/* Section 2: Mission & Core Value (هدف المنصة ورسالتها الأكاديمية) */}
+        <PlatformMissionSection />
         
-        {/* Educational Resources */}
-        <EducationalResources />
+        {/* Section 3: Educational Ecosystem & Platforms (منظومة المنصات التعليمية - Bento Grid) */}
+        <EcosystemBentoGrid />
+        
+        {/* Section 4: Interactive Demos & Capabilities (المختبرات والتجارب العملية الحية) */}
+        <InteractiveCapabilitiesDemo />
+        
+        {/* Section 5: Future Strategic Initiatives (المشاريع المستقبلية - مبادرة "دمج" الاستراتيجية) */}
+        <StrategicRoadmapSection />
+
+        {/* Auxiliary Learning Tools & Resources */}
+        <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-8">
+          <EducationalResources />
+        </div>
       </main>
       
       <Footer />

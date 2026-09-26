@@ -33,30 +33,43 @@ import { useNavigate } from 'react-router-dom';
 
 interface AccessibilityPanelProps {
   className?: string;
+  showFloating?: boolean;
 }
 
-export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ className }) => {
+export const openAccessibilityModal = () => {
+  window.dispatchEvent(new CustomEvent('galaxy_open_accessibility'));
+};
+
+export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ className, showFloating = false }) => {
   const { settings, updateSettings, resetSettings } = useAccessibility();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('galaxy_open_accessibility', handleOpen);
+    return () => window.removeEventListener('galaxy_open_accessibility', handleOpen);
+  }, []);
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className={cn(
-            'fixed bottom-4 left-4 z-50 h-12 w-12 rounded-full shadow-lg',
-            'bg-primary text-primary-foreground hover:bg-primary/90',
-            'transition-transform hover:scale-110',
-            className
-          )}
-          title="إعدادات الوصول"
-        >
-          <Accessibility className="h-6 w-6" />
-        </Button>
-      </SheetTrigger>
+      {showFloating && (
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className={cn(
+              'fixed bottom-4 left-4 z-40 h-9 w-9 rounded-full shadow-sm',
+              'bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800',
+              'hover:bg-slate-100 dark:hover:bg-slate-800 transition-all',
+              className
+            )}
+            title="إعدادات إمكانية الوصول"
+          >
+            <Accessibility className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+      )}
 
       <SheetContent side="left" className="w-80 overflow-y-auto" dir="rtl">
         <SheetHeader>

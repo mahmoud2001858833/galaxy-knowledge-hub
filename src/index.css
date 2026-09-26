@@ -89,7 +89,7 @@ body {
 body.light,
 html.light,
 html.light body {
-  background-color: #ffffff !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
@@ -106,20 +106,22 @@ body, html, main {
 }
 
 /* ========================================================
-   GALAXY COMPREHENSIVE LIGHT THEME ENGINE (الوضع الفاتح الشامل)
-   Ensures ALL platform pages, subpages, components, modals,
-   inputs, cards, and drawers are rendered in pure crisp white (#ffffff)
-   with high-contrast typography and harmonious borders.
+   GALAXY ENTERPRISE GLOBAL LIGHT THEME ARCHITECTURE
+   Layered Canvas Strategy:
+   - Base App Canvas: Refined light slate #F8FAFC
+   - Elevated Surfaces: Crisp White #FFFFFF with diffuse micro-shadows
+   - Structural Borders: Ultra-thin #E2E8F0 (border-slate-200/80)
+   - Corporate Accents: Deep institutional sapphire/navy (#0F172A, #1E293B, #2563EB)
    ======================================================== */
 
 .light {
   color-scheme: light;
 }
 
-/* Top-level page wrappers remapping to pure white */
+/* Top-level page wrappers remapping to refined base canvas */
 .light .min-h-screen:not([data-preserve-dark]),
 .light [class*="min-h-screen"]:not([data-preserve-dark]) {
-  background-color: #ffffff !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
@@ -138,11 +140,11 @@ body, html, main {
 .light .bg-\[\#0a0f1d\],
 .light .bg-\[\#1a1f2c\],
 .light .bg-black:not([data-preserve-dark]):not(canvas) {
-  background-color: #ffffff !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
-/* Translucent dark cards and panels map to clean white elevated surfaces */
+/* Translucent cards and panels elevated to crisp pure white */
 .light .bg-slate-900\/95,
 .light .bg-slate-900\/90,
 .light .bg-slate-900\/85,
@@ -163,17 +165,18 @@ body, html, main {
 .light .bg-black\/60,
 .light .bg-black\/50,
 .light .bg-black\/40 {
-  background-color: rgba(255, 255, 255, 0.96) !important;
+  background-color: #ffffff !important;
   color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.04) !important;
 }
 
-/* Dark gradients on pages map to clean pure white with subtle depth */
+/* Subtle layered gradients */
 .light .bg-gradient-to-b.from-blue-900\/40.to-blue-950,
 .light .bg-gradient-to-b.from-\[\#050714\],
 .light .bg-gradient-to-b.from-slate-950,
 .light .bg-gradient-to-br.from-slate-950,
 .light .bg-gradient-to-b.from-slate-900 {
-  background: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
+  background: #f8fafc !important;
 }
 
 /* High contrast typography in light mode */

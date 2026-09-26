@@ -725,81 +725,58 @@ export const PlatformGuideAssistant: React.FC = () => {
 
   return (
     <>
-      {/* Floating Holographic Orb Trigger Button */}
+      {/* Enterprise Minimal Floating Pill / Circular Assistant Trigger */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ scale: 0, opacity: 0, y: 30 }}
+            initial={{ scale: 0.9, opacity: 0, y: 15 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0, opacity: 0, y: 30 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 260 }}
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-3"
+            exit={{ scale: 0.9, opacity: 0, y: 15 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-5 start-5 z-40 flex items-center gap-2"
           >
-            {/* Ambient greeting pill on desktop */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8 }}
-              className="hidden lg:flex items-center gap-2 py-2 px-4 rounded-full bg-slate-950/90 border border-teal-500/40 backdrop-blur-2xl shadow-2xl shadow-teal-950/50 text-xs text-teal-200 cursor-pointer hover:border-teal-400 hover:scale-105 transition-all"
+            <button
               onClick={() => setIsOpen(true)}
+              className="group flex items-center gap-2 px-3.5 py-2 rounded-full bg-slate-900/90 dark:bg-white text-white dark:text-slate-900 border border-slate-700/60 dark:border-slate-200 shadow-lg shadow-slate-900/10 hover:shadow-xl hover:scale-102 transition-all duration-200"
+              aria-label="فتح المرشد الذكي"
             >
-              <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-ping" />
-              <span className="font-bold">مرشدك الذكي 2.0 • اضغط للتحدث أو السؤال</span>
-            </motion.div>
-
-            {/* Glowing Interactive Core Orb */}
-            <div className="relative group">
-              {/* Outer rotating pulse aura */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-teal-400 via-indigo-500 to-cyan-400 rounded-full blur-lg opacity-80 group-hover:opacity-100 transition duration-700 animate-tilt" />
-
-              <Button
-                onClick={() => setIsOpen(true)}
-                className="relative w-16 h-16 rounded-full bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 border-2 border-teal-400/90 shadow-[0_0_30px_rgba(20,184,166,0.6)] hover:shadow-[0_0_45px_rgba(20,184,166,0.9)] text-teal-300 hover:text-white transition-all duration-300 p-0 overflow-hidden flex items-center justify-center group"
-                size="icon"
-                aria-label="فتح المرشد الذكي"
-              >
-                {/* Synaptic particles background */}
-                <div className="absolute inset-0 bg-radial-gradient from-teal-500/30 via-transparent to-transparent animate-pulse" />
-                
-                <Brain className="w-8 h-8 text-teal-300 relative z-10 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_12px_rgba(45,212,191,0.9)]" />
-                <Sparkles className="w-4 h-4 text-yellow-300 absolute top-2.5 right-2.5 animate-bounce z-10" />
-
-                {/* Ring animation */}
-                <motion.div
-                  className="absolute inset-1 rounded-full border border-teal-400/40"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-                />
-              </Button>
-            </div>
+              <div className="relative flex items-center justify-center">
+                <Brain className="w-4 h-4 text-cyan-400 dark:text-blue-600 transition-transform group-hover:scale-110" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              </div>
+              <span className="text-xs font-bold tracking-tight">المرشد الذكي</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 dark:bg-blue-100 dark:text-blue-700 font-semibold hidden sm:inline">
+                AI 2.0
+              </span>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Futuristic Cyber-Glass Dialog / Drawer */}
+      {/* Enterprise Modular Sidebar Panel (~360px Desktop, Bottom Sheet Mobile) */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Soft Ambient Backdrop */}
+            {/* Ambient Backdrop on Mobile */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md"
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 z-50 bg-slate-900/30 dark:bg-black/60 backdrop-blur-sm sm:hidden"
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Main Interactive Floating Panel */}
+            {/* Modular Sidebar / Panel */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className={`fixed z-50 flex flex-col bg-slate-950/95 border border-teal-500/40 backdrop-blur-2xl shadow-[0_0_60px_rgba(15,23,42,0.95)] overflow-hidden transition-all duration-300
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className={`fixed z-50 flex flex-col bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl overflow-hidden transition-all duration-300
                 ${isExpanded 
-                  ? 'inset-3 md:inset-8 rounded-2xl md:rounded-3xl' 
-                  : 'bottom-4 right-4 left-4 sm:left-auto sm:w-[480px] h-[670px] max-h-[92vh] rounded-2xl md:rounded-3xl'
+                  ? 'inset-4 md:inset-10' 
+                  : 'bottom-4 start-4 end-4 sm:end-auto sm:w-[380px] h-[580px] max-h-[88vh]'
                 }
               `}
             >

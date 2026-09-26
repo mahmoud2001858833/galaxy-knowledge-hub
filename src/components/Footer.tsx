@@ -10,8 +10,10 @@ import {
   Heart, 
   ShieldCheck, 
   Sparkles,
-  Layers
+  Layers,
+  Accessibility
 } from 'lucide-react';
+import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 
 const Footer: React.FC = () => {
   const [settings, setSettings] = useState<PlatformSettings>(() => platformSettings.getSettings());
@@ -146,11 +148,18 @@ const Footer: React.FC = () => {
             © {settings.copyrightYear} {settings.siteName}. جميع الحقوق محفوظة — {settings.developedBy}.
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/contact" className="hover:text-cyan-500 transition-colors">تواصل معنا</Link>
+            <button
+              onClick={openAccessibilityModal}
+              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-1 font-semibold"
+            >
+              <span>إمكانية الوصول والشمولية</span>
+            </button>
             <span>•</span>
-            <Link to="/admin" className="hover:text-amber-500 transition-colors">بوابة المشرفين</Link>
+            <Link to="/contact" className="hover:text-blue-600 transition-colors">تواصل معنا</Link>
             <span>•</span>
-            <Link to="/privacy" className="hover:text-cyan-500 transition-colors">الخصوصية والشروط</Link>
+            <Link to="/admin" className="hover:text-amber-600 transition-colors">بوابة المشرفين</Link>
+            <span>•</span>
+            <Link to="/privacy" className="hover:text-blue-600 transition-colors">الخصوصية والشروط</Link>
           </div>
         </div>
       </div>
