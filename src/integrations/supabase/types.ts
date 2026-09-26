@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -3857,6 +3857,98 @@ export type Database = {
         }
         Relationships: []
       }
+      sim_ai_events: {
+        Row: {
+          at_seconds: number
+          created_at: string
+          id: string
+          kind: string
+          label: string | null
+          payload: Json
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          at_seconds?: number
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string | null
+          payload?: Json
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          at_seconds?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          payload?: Json
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sim_ai_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sim_ai_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sim_ai_sessions: {
+        Row: {
+          ai_summary: string | null
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          events_count: number
+          hints_count: number
+          id: string
+          metrics: Json
+          mistakes_count: number
+          score: number | null
+          sim_id: string
+          sim_title: string | null
+          started_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          events_count?: number
+          hints_count?: number
+          id?: string
+          metrics?: Json
+          mistakes_count?: number
+          score?: number | null
+          sim_id: string
+          sim_title?: string | null
+          started_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          events_count?: number
+          hints_count?: number
+          id?: string
+          metrics?: Json
+          mistakes_count?: number
+          score?: number | null
+          sim_id?: string
+          sim_title?: string | null
+          started_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       spaced_lessons: {
         Row: {
           created_at: string | null
@@ -4665,12 +4757,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4694,11 +4786,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4719,11 +4811,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4744,11 +4836,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4761,11 +4853,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
