@@ -1,767 +1,590 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Zap, Magnet, Compass, Settings, Info, BookOpen } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
+import React, { useRef, useState, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Float, Cylinder, Torus, Box, Sphere, Html } from '@react-three/drei';
+import * as THREE from 'three';
+import SimulationLayout from '@/components/simulations/SimulationLayout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { SimulationLayout, SimulationCard, SimulationControls, InfoSection, QuizSection } from '@/components/simulations';
+import { Play, Pause, RotateCcw, Zap, Compass, Magnet, RotateCw, Activity, Eye, Layers } from 'lucide-react';
+import InfoSection from '@/components/simulations/InfoSection';
+import QuizSection from '@/components/simulations/QuizSection';
 
-const ElectromagnetismLabSimulation = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
-  
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [current, setCurrent] = useState(5);
-  const [wireType, setWireType] = useState<'straight' | 'loop' | 'solenoid' | 'motor'>('straight');
+// Core Framework
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import CinematicCameraController, { CameraPreset } from '@/components/simulations/CinematicCameraController';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
+
+type WireType = 'straight' | 'loop' | 'solenoid' | 'motor';
+
+// 3D Magnetic Field and Conductor Engine
+const ElectromagnetismEngine3D: React.FC<{
+  wireType: WireType;
+  current: number;
+  showFieldLines: boolean;
+  showCompass: boolean;
+  isPlaying: boolean;
+}> = ({ wireType, current, showFieldLines, showCompass, isPlaying }) => {
+  const motorRotorRef = useRef<THREE.Group>(null);
+  const particleGroupRef = useRef<THREE.Group>(null);
+
+  // Rotate motor armature and animate electron drift
+  useFrame((state, delta) => {
+    if (motorRotorRef.current && isPlaying && wireType === 'motor') {
+      const motorRPM = current * 60;
+      motorRotorRef.current.rotation.y += delta * (motorRPM / 60) * Math.PI * 2;
+    }
+    if (particleGroupRef.current && isPlaying) {
+      particleGroupRef.current.rotation.y += delta * (current * 0.4);
+    }
+  });
+
+  return (
+    <group position={[0, 0, 0]}>
+      {/* Wooden / Slate Workbench Plate */}
+      <mesh position={[0, -2.2, 0]}>
+        <boxGeometry args={[10, 0.3, 8]} />
+        <meshStandardMaterial color="#1e1b4b" roughness={0.7} metalness={0.2} />
+      </mesh>
+
+      {/* MODE 1: STRAIGHT CONDUCTOR WIRE */}
+      {wireType === 'straight' && (
+        <group position={[0, 0, 0]}>
+          {/* Vertical Heavy Copper Rod */}
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 4.4, 32]} />
+            <meshStandardMaterial color="#f59e0b" metalness={0.9} roughness={0.2} />
+          </mesh>
+          {/* Terminal Caps */}
+          <mesh position={[0, 2.2, 0]}>
+            <cylinderGeometry args={[0.25, 0.25, 0.2, 24]} />
+            <meshStandardMaterial color="#ef4444" metalness={0.8} />
+          </mesh>
+          <mesh position={[0, -2.1, 0]}>
+            <cylinderGeometry args={[0.25, 0.25, 0.2, 24]} />
+            <meshStandardMaterial color="#3b82f6" metalness={0.8} />
+          </mesh>
+
+          {/* Current Direction Arrow */}
+          <Html position={[0.4, 1.2, 0]} center distanceFactor={10}>
+            <div className="bg-amber-950/80 text-amber-300 font-mono text-[10px] px-2 py-0.5 rounded border border-amber-500/50 flex items-center gap-1">
+              <span>↑ التيار I = {current.toFixed(1)}A</span>
+            </div>
+          </Html>
+
+          {/* Concentric Magnetic Field Rings (Biot-Savart Law) */}
+          {showFieldLines && (
+            <group ref={particleGroupRef}>
+              {[0.9, 1.6, 2.3, 3.0].map((radius, idx) => (
+                <group key={`field-ring-${idx}`}>
+                  <mesh rotation={[Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[radius, 0.025, 16, 64]} />
+                    <meshStandardMaterial
+                      color="#c084fc"
+                      emissive="#9333ea"
+                      emissiveIntensity={Math.max(0.4, (current / 10) * 1.5)}
+                      transparent
+                      opacity={0.75}
+                    />
+                  </mesh>
+
+                  {/* Compass Needles Orbiting on the Field Line */}
+                  {showCompass && (
+                    <group
+                      position={[
+                        radius * Math.cos((idx * Math.PI) / 2),
+                        0,
+                        radius * Math.sin((idx * Math.PI) / 2),
+                      ]}
+                      rotation={[0, -(idx * Math.PI) / 2 - Math.PI / 2, 0]}
+                    >
+                      {/* Compass dial base */}
+                      <mesh position={[0, -0.05, 0]}>
+                        <cylinderGeometry args={[0.22, 0.22, 0.05, 24]} />
+                        <meshStandardMaterial color="#0f172a" />
+                      </mesh>
+                      {/* North Needle (Red) */}
+                      <mesh position={[0.1, 0.02, 0]} rotation={[0, 0, -Math.PI / 2]}>
+                        <coneGeometry args={[0.06, 0.2, 8]} />
+                        <meshStandardMaterial color="#ef4444" />
+                      </mesh>
+                      {/* South Needle (Silver) */}
+                      <mesh position={[-0.1, 0.02, 0]} rotation={[0, 0, Math.PI / 2]}>
+                        <coneGeometry args={[0.06, 0.2, 8]} />
+                        <meshStandardMaterial color="#cbd5e1" />
+                      </mesh>
+                    </group>
+                  )}
+                </group>
+              ))}
+            </group>
+          )}
+        </group>
+      )}
+
+      {/* MODE 2: CIRCULAR WIRE LOOP */}
+      {wireType === 'loop' && (
+        <group position={[0, 0, 0]}>
+          {/* Circular Copper Ring */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[1.8, 0.09, 24, 64]} />
+            <meshStandardMaterial color="#f59e0b" metalness={0.9} roughness={0.2} />
+          </mesh>
+
+          {/* Center Magnetic Dipole Flux Beam */}
+          {showFieldLines && (
+            <group>
+              <mesh position={[0, 0, 0]}>
+                <cylinderGeometry args={[0.05, 0.05, 4.0, 16]} />
+                <meshStandardMaterial color="#a855f7" emissive="#9333ea" emissiveIntensity={1.2} />
+              </mesh>
+              {/* Looping field return curves */}
+              {[-1.2, 1.2].map((ox) => (
+                <mesh key={`loop-curve-${ox}`} position={[ox * 1.8, 0, 0]} rotation={[0, 0, ox > 0 ? 0.3 : -0.3]}>
+                  <torusGeometry args={[1.5, 0.03, 16, 48, Math.PI]} />
+                  <meshStandardMaterial color="#a855f7" transparent opacity={0.6} />
+                </mesh>
+              ))}
+            </group>
+          )}
+        </group>
+      )}
+
+      {/* MODE 3: SOLENOID ELECTROMAGNET WITH FERROMAGNETIC CORE */}
+      {wireType === 'solenoid' && (
+        <group position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          {/* Soft Iron Core Cylinder */}
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.45, 0.45, 4.2, 32]} />
+            <meshStandardMaterial color="#475569" metalness={0.9} roughness={0.3} />
+          </mesh>
+
+          {/* Solenoid Copper Helix Turns (represented by stacked coils) */}
+          {Array.from({ length: 18 }, (_, i) => {
+            const py = -1.8 + i * 0.21;
+            return (
+              <mesh key={`solenoid-turn-${i}`} position={[0, py, 0]}>
+                <torusGeometry args={[0.55, 0.06, 16, 32]} />
+                <meshStandardMaterial color="#f59e0b" metalness={0.9} roughness={0.2} />
+              </mesh>
+            );
+          })}
+
+          {/* Internal Dense Magnetic Flux Lines */}
+          {showFieldLines && (
+            <group>
+              {[-0.2, 0, 0.2].map((xOffset, idx) => (
+                <mesh key={`flux-${idx}`} position={[xOffset, 0, 0]}>
+                  <cylinderGeometry args={[0.04, 0.04, 5.5, 16]} />
+                  <meshStandardMaterial
+                    color="#c084fc"
+                    emissive="#a855f7"
+                    emissiveIntensity={Math.min(2.5, (current / 5) * 2)}
+                  />
+                </mesh>
+              ))}
+            </group>
+          )}
+        </group>
+      )}
+
+      {/* MODE 4: DC ELECTRIC MOTOR & LORENTZ TORQUE */}
+      {wireType === 'motor' && (
+        <group position={[0, 0, 0]}>
+          {/* Permanent Stator Magnets */}
+          {/* North Pole (Red) */}
+          <mesh position={[-2.4, 0, 0]}>
+            <boxGeometry args={[1.0, 1.8, 2.5]} />
+            <meshStandardMaterial color="#dc2626" metalness={0.3} roughness={0.4} />
+          </mesh>
+          <Html position={[-2.4, 1.2, 0]} center distanceFactor={10}>
+            <div className="bg-red-950 text-red-200 font-bold px-1.5 py-0.5 rounded text-xs border border-red-500">
+              قطب شمالي (N)
+            </div>
+          </Html>
+
+          {/* South Pole (Blue) */}
+          <mesh position={[2.4, 0, 0]}>
+            <boxGeometry args={[1.0, 1.8, 2.5]} />
+            <meshStandardMaterial color="#2563eb" metalness={0.3} roughness={0.4} />
+          </mesh>
+          <Html position={[2.4, 1.2, 0]} center distanceFactor={10}>
+            <div className="bg-blue-950 text-blue-200 font-bold px-1.5 py-0.5 rounded text-xs border border-blue-500">
+              قطب جنوبي (S)
+            </div>
+          </Html>
+
+          {/* Stator Uniform Magnetic Field Lines (N -> S) */}
+          {showFieldLines && (
+            <group>
+              {[-0.6, 0, 0.6].map((zy, idx) => (
+                <mesh key={`stator-field-${idx}`} position={[0, zy * 0.8, zy * 0.8]} rotation={[0, 0, Math.PI / 2]}>
+                  <cylinderGeometry args={[0.02, 0.02, 3.8, 12]} />
+                  <meshBasicMaterial color="#38bdf8" transparent opacity={0.4} />
+                </mesh>
+              ))}
+            </group>
+          )}
+
+          {/* Rotating Rotor Armature Coil on Axle */}
+          <group ref={motorRotorRef}>
+            {/* Central Steel Shaft */}
+            <mesh position={[0, 0, 0]}>
+              <cylinderGeometry args={[0.08, 0.08, 3.5, 16]} />
+              <meshStandardMaterial color="#94a3b8" metalness={0.9} />
+            </mesh>
+            {/* Rectangular Copper Coil Loop */}
+            <mesh position={[0.9, 0, 0]}>
+              <cylinderGeometry args={[0.06, 0.06, 2.2, 16]} />
+              <meshStandardMaterial color="#f59e0b" metalness={0.9} />
+            </mesh>
+            <mesh position={[-0.9, 0, 0]}>
+              <cylinderGeometry args={[0.06, 0.06, 2.2, 16]} />
+              <meshStandardMaterial color="#f59e0b" metalness={0.9} />
+            </mesh>
+            <mesh position={[0, 1.1, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.06, 0.06, 1.8, 16]} />
+              <meshStandardMaterial color="#f59e0b" metalness={0.9} />
+            </mesh>
+            <mesh position={[0, -1.1, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.06, 0.06, 1.8, 16]} />
+              <meshStandardMaterial color="#f59e0b" metalness={0.9} />
+            </mesh>
+
+            {/* Split-ring Commutator */}
+            <mesh position={[0, -1.4, 0]}>
+              <cylinderGeometry args={[0.22, 0.22, 0.3, 16]} />
+              <meshStandardMaterial color="#fbbf24" metalness={0.8} />
+            </mesh>
+          </group>
+        </group>
+      )}
+    </group>
+  );
+};
+
+export const ElectromagnetismLabSimulation: React.FC = () => {
+  const [wireType, setWireType] = useState<WireType>('straight');
+  const [current, setCurrent] = useState(5.0); // Amperes
   const [showFieldLines, setShowFieldLines] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
-  const [showParticles, setShowParticles] = useState(true);
-  const [time, setTime] = useState(0);
-  const [magneticFieldStrength, setMagneticFieldStrength] = useState(0);
-  const [motorAngle, setMotorAngle] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('overview');
 
-  const mu0 = 4 * Math.PI * 1e-7;
+  // Physical calculations:
+  // mu0 = 4*pi*1e-7 T*m/A
+  // Straight wire at r = 5 cm: B = (mu0 * I) / (2 * pi * r) = (2e-7 * I) / 0.05 = 4e-6 * I T = 4 * I microTesla
+  const fieldAt5cmMicroTesla = useMemo(() => {
+    switch (wireType) {
+      case 'straight':
+        return current * 4.0; // microTesla
+      case 'loop':
+        return current * 12.5; // microTesla at center
+      case 'solenoid':
+        return current * 45.0; // microTesla inside (n = 1000 turns/m)
+      case 'motor':
+        return current * 15.0; // Torque coefficient proxy
+    }
+  }, [wireType, current]);
 
-  const calculateMagneticField = useCallback((x: number, y: number, wireX: number, wireY: number): { bx: number; by: number } => {
-    const dx = x - wireX;
-    const dy = y - wireY;
-    const r = Math.sqrt(dx * dx + dy * dy);
-    
-    if (r < 10) return { bx: 0, by: 0 };
-    
-    const B = (mu0 * current) / (2 * Math.PI * r) * 1e6;
-    const angle = Math.atan2(dy, dx) + Math.PI / 2;
-    
-    return {
-      bx: B * Math.cos(angle),
-      by: B * Math.sin(angle)
-    };
+  // Motor RPM calculation
+  const motorRPM = useMemo(() => {
+    return Math.round(current * 60);
   }, [current]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // CyberLab HUD Metrics
+  const hudMetrics = useMemo(() => {
+    return [
+      {
+        id: 'current',
+        label: 'شدة التيار الكهربائي (I)',
+        value: current,
+        unit: 'A',
+        status: current > 8 ? ('warning' as const) : ('normal' as const),
+        min: 0.5,
+        max: 10,
+      },
+      {
+        id: 'mag_field',
+        label: 'شدة المجال المغناطيسي (B)',
+        value: Number(fieldAt5cmMicroTesla.toFixed(1)),
+        unit: 'μT',
+        status: 'normal' as const,
+        min: 1,
+        max: 500,
+      },
+      {
+        id: 'rpm',
+        label: wireType === 'motor' ? 'سرعة دوران المحرك' : 'عزم ثنائي القطب',
+        value: wireType === 'motor' ? motorRPM : Number((current * 0.18).toFixed(2)),
+        unit: wireType === 'motor' ? 'RPM' : 'A·m²',
+        status: 'normal' as const,
+        min: 0,
+        max: 600,
+      },
+      {
+        id: 'permeability',
+        label: 'نفاذية الفراغ المغناطيسية (μ₀)',
+        value: 1.256,
+        unit: 'μH/m',
+        status: 'normal' as const,
+        min: 1.2,
+        max: 1.3,
+      },
+    ];
+  }, [current, fieldAt5cmMicroTesla, wireType, motorRPM]);
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const animate = () => {
-      if (!isPlaying) {
-        animationRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      const width = canvas.width;
-      const height = canvas.height;
-      const centerX = width / 2;
-      const centerY = height / 2;
-
-      // Clear with gradient background
-      const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-      bgGradient.addColorStop(0, '#0f172a');
-      bgGradient.addColorStop(0.5, '#1e1b4b');
-      bgGradient.addColorStop(1, '#0f172a');
-      ctx.fillStyle = bgGradient;
-      ctx.fillRect(0, 0, width, height);
-
-      // Animated grid
-      ctx.strokeStyle = `rgba(139, 92, 246, ${0.05 + 0.02 * Math.sin(time)})`;
-      ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-      for (let y = 0; y < height; y += 40) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
-
-      if (wireType === 'straight') {
-        drawStraightWire(ctx, centerX, centerY, width, height);
-      } else if (wireType === 'loop') {
-        drawLoopWire(ctx, centerX, centerY, width, height);
-      } else if (wireType === 'solenoid') {
-        drawSolenoid(ctx, centerX, centerY, width, height);
-      } else if (wireType === 'motor') {
-        drawMotor(ctx, centerX, centerY, width, height);
-      }
-
-      // Draw compass needles
-      if (showCompass && wireType !== 'motor') {
-        drawCompasses(ctx, centerX, centerY);
-      }
-
-      setTime(prev => prev + 0.02);
-      if (wireType === 'motor') {
-        setMotorAngle(prev => prev + current * 0.05);
-      }
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    const drawStraightWire = (ctx: CanvasRenderingContext2D, centerX: number, centerY: number, width: number, height: number) => {
-      // Wire glow
-      const glowGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 60);
-      glowGradient.addColorStop(0, 'rgba(251, 191, 36, 0.3)');
-      glowGradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(centerX - 60, 0, 120, height);
-
-      // Wire
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 10;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(centerX, 0);
-      ctx.lineTo(centerX, height);
-      ctx.stroke();
-
-      // Wire highlight
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(centerX - 2, 0);
-      ctx.lineTo(centerX - 2, height);
-      ctx.stroke();
-
-      // Animated current arrows
-      for (let i = 0; i < 5; i++) {
-        const arrowY = ((time * 100 + i * 100) % height);
-        ctx.save();
-        ctx.translate(centerX, arrowY);
-        ctx.fillStyle = '#fef3c7';
-        ctx.beginPath();
-        ctx.moveTo(-12, 15);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(12, 15);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Magnetic field circles with particles
-      if (showFieldLines) {
-        for (let r = 50; r <= 200; r += 40) {
-          const intensity = Math.max(0.2, 1 - r / 250);
-          
-          // Field line
-          ctx.strokeStyle = `rgba(147, 51, 234, ${intensity * 0.8})`;
-          ctx.lineWidth = 2 + intensity;
-          ctx.setLineDash([10, 5]);
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          // Animated direction arrows
-          if (showParticles) {
-            for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 3) {
-              const arrowAngle = angle + time * (current > 0 ? 1 : -1);
-              const ax = centerX + r * Math.cos(arrowAngle);
-              const ay = centerY + r * Math.sin(arrowAngle);
-              
-              ctx.save();
-              ctx.translate(ax, ay);
-              ctx.rotate(arrowAngle + Math.PI / 2);
-              
-              // Glowing particle
-              const particleGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 12);
-              particleGradient.addColorStop(0, `rgba(167, 139, 250, ${intensity})`);
-              particleGradient.addColorStop(1, 'transparent');
-              ctx.fillStyle = particleGradient;
-              ctx.fillRect(-12, -12, 24, 24);
-              
-              ctx.fillStyle = `rgba(167, 139, 250, ${intensity})`;
-              ctx.beginPath();
-              ctx.moveTo(0, -10);
-              ctx.lineTo(7, 7);
-              ctx.lineTo(-7, 7);
-              ctx.closePath();
-              ctx.fill();
-              ctx.restore();
-            }
-          }
-        }
-      }
-
-      // Calculate field strength at specific point
-      const field = calculateMagneticField(centerX + 100, centerY, centerX, centerY);
-      setMagneticFieldStrength(Math.sqrt(field.bx * field.bx + field.by * field.by));
-
-      // Labels
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 18px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('سلك يحمل تياراً كهربائياً', centerX, 35);
-      
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#a78bfa';
-      ctx.fillText('B ∝ I/r', centerX, height - 25);
-
-      // Right-hand rule indicator
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
-      ctx.beginPath();
-      ctx.arc(80, 80, 50, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = '#22c55e';
-      ctx.font = '12px Arial';
-      ctx.fillText('👆', 80, 75);
-      ctx.fillText('قاعدة اليد اليمنى', 80, 100);
-    };
-
-    const drawLoopWire = (ctx: CanvasRenderingContext2D, centerX: number, centerY: number, width: number, height: number) => {
-      const loopRadius = 100;
-
-      // Glow effect
-      const glowGradient = ctx.createRadialGradient(centerX, centerY, loopRadius - 20, centerX, centerY, loopRadius + 40);
-      glowGradient.addColorStop(0, 'transparent');
-      glowGradient.addColorStop(0.5, 'rgba(251, 191, 36, 0.2)');
-      glowGradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = glowGradient;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, loopRadius + 40, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Wire loop
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, loopRadius, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      // Highlight
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, loopRadius - 2, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      // Animated current arrows on loop
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * 2 * Math.PI + time;
-        const ax = centerX + loopRadius * Math.cos(angle);
-        const ay = centerY + loopRadius * Math.sin(angle);
-        
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate(angle + Math.PI / 2);
-        ctx.fillStyle = '#fef3c7';
-        ctx.beginPath();
-        ctx.moveTo(0, -8);
-        ctx.lineTo(6, 6);
-        ctx.lineTo(-6, 6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Field lines through center
-      if (showFieldLines) {
-        const fieldStrength = current * 0.5;
-        
-        for (let offset = -40; offset <= 40; offset += 20) {
-          ctx.strokeStyle = `rgba(147, 51, 234, ${0.7 - Math.abs(offset) / 100})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          
-          for (let t = -200; t <= 200; t += 5) {
-            const spread = Math.abs(t) / 200;
-            const x = centerX + offset * (1 + spread * 0.8);
-            const y = centerY + t;
-            
-            if (t === -200) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-
-          // Arrows
-          if (showParticles) {
-            const arrowT = ((time * 50) % 300) - 150;
-            const spread = Math.abs(arrowT) / 200;
-            const arrowX = centerX + offset * (1 + spread * 0.8);
-            const arrowY = centerY + arrowT;
-            
-            ctx.fillStyle = '#a78bfa';
-            ctx.beginPath();
-            ctx.moveTo(arrowX, arrowY - 8);
-            ctx.lineTo(arrowX + 6, arrowY + 8);
-            ctx.lineTo(arrowX - 6, arrowY + 8);
-            ctx.closePath();
-            ctx.fill();
-          }
-        }
-      }
-
-      // Central field indicator
-      ctx.fillStyle = 'rgba(147, 51, 234, 0.3)';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = '#a78bfa';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText('B', centerX, centerY + 8);
-
-      // Labels
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 18px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('ملف دائري', centerX, 35);
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#a78bfa';
-      ctx.fillText('B = μ₀I/2r', centerX, height - 25);
-    };
-
-    const drawSolenoid = (ctx: CanvasRenderingContext2D, centerX: number, centerY: number, width: number, height: number) => {
-      const numLoops = 10;
-      const loopSpacing = 35;
-      const loopRadius = 60;
-      const startX = centerX - (numLoops * loopSpacing) / 2;
-
-      // Solenoid body glow
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.1)';
-      ctx.fillRect(startX - 20, centerY - loopRadius - 20, numLoops * loopSpacing + 40, loopRadius * 2 + 40);
-
-      // Draw loops
-      for (let i = 0; i < numLoops; i++) {
-        const loopX = startX + i * loopSpacing;
-        const phase = (i / numLoops) * Math.PI * 2;
-        
-        // 3D effect - back part
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.ellipse(loopX, centerY, 15, loopRadius, 0, 0, Math.PI);
-        ctx.stroke();
-        
-        // Front part
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.ellipse(loopX, centerY, 15, loopRadius, 0, Math.PI, 2 * Math.PI);
-        ctx.stroke();
-      }
-
-      // Connecting wires
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(startX, centerY - loopRadius);
-      ctx.lineTo(startX + (numLoops - 1) * loopSpacing, centerY - loopRadius);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(startX, centerY + loopRadius);
-      ctx.lineTo(startX + (numLoops - 1) * loopSpacing, centerY + loopRadius);
-      ctx.stroke();
-
-      // Magnetic field inside
-      if (showFieldLines) {
-        for (let offset = -35; offset <= 35; offset += 17) {
-          ctx.strokeStyle = 'rgba(147, 51, 234, 0.9)';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(startX - 80, centerY + offset);
-          ctx.lineTo(startX + numLoops * loopSpacing + 80, centerY + offset);
-          ctx.stroke();
-
-          // Animated arrows
-          if (showParticles) {
-            const arrowX = startX + ((time * 80) % (numLoops * loopSpacing + 100));
-            ctx.save();
-            ctx.translate(arrowX, centerY + offset);
-            ctx.fillStyle = '#a78bfa';
-            ctx.beginPath();
-            ctx.moveTo(12, 0);
-            ctx.lineTo(-6, -8);
-            ctx.lineTo(-6, 8);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-          }
-        }
-
-        // External field (curved)
-        ctx.strokeStyle = 'rgba(147, 51, 234, 0.4)';
-        ctx.lineWidth = 2;
-        for (let i = -2; i <= 2; i++) {
-          ctx.beginPath();
-          ctx.moveTo(startX + numLoops * loopSpacing + 60, centerY + i * 20);
-          ctx.bezierCurveTo(
-            width - 50, centerY + i * 60,
-            50, centerY + i * 60,
-            startX - 60, centerY + i * 20
-          );
-          ctx.stroke();
-        }
-      }
-
-      // N and S poles
-      ctx.font = 'bold 28px Arial';
-      ctx.fillStyle = '#ef4444';
-      ctx.fillText('N', startX + numLoops * loopSpacing + 60, centerY + 10);
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillText('S', startX - 60, centerY + 10);
-
-      // Labels
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 18px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('ملف لولبي (سولينويد)', centerX, 35);
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#a78bfa';
-      ctx.fillText('B = μ₀nI', centerX, height - 25);
-    };
-
-    const drawMotor = (ctx: CanvasRenderingContext2D, centerX: number, centerY: number, width: number, height: number) => {
-      // Motor housing
-      ctx.fillStyle = '#374151';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 150, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#4b5563';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-
-      // Magnets
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(centerX - 160, centerY - 50, 30, 100);
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillRect(centerX + 130, centerY - 50, 30, 100);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText('N', centerX - 145, centerY + 8);
-      ctx.fillText('S', centerX + 145, centerY + 8);
-
-      // Rotating coil
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(motorAngle);
-      
-      // Coil
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(-80, -40, 160, 80);
-      
-      // Coil sides with current direction
-      ctx.fillStyle = '#fef3c7';
-      ctx.beginPath();
-      ctx.arc(-80, 0, 10, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = '#1f2937';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('⊙', -80, 5);
-      
-      ctx.fillStyle = '#fef3c7';
-      ctx.beginPath();
-      ctx.arc(80, 0, 10, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = '#1f2937';
-      ctx.fillText('⊗', 80, 5);
-      
-      ctx.restore();
-
-      // Axis
-      ctx.fillStyle = '#6b7280';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Commutator
-      ctx.fillStyle = '#d97706';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY + 170, 25, 0, Math.PI);
-      ctx.fill();
-
-      // Brushes
-      ctx.fillStyle = '#9ca3af';
-      ctx.fillRect(centerX - 35, centerY + 160, 15, 30);
-      ctx.fillRect(centerX + 20, centerY + 160, 15, 30);
-
-      // Force arrows
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(motorAngle);
-      
-      // Force on left side (up)
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(-80, 0);
-      ctx.lineTo(-80, -60);
-      ctx.stroke();
-      ctx.fillStyle = '#22c55e';
-      ctx.beginPath();
-      ctx.moveTo(-80, -70);
-      ctx.lineTo(-90, -50);
-      ctx.lineTo(-70, -50);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Force on right side (down)
-      ctx.beginPath();
-      ctx.moveTo(80, 0);
-      ctx.lineTo(80, 60);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(80, 70);
-      ctx.lineTo(70, 50);
-      ctx.lineTo(90, 50);
-      ctx.closePath();
-      ctx.fill();
-      
-      ctx.restore();
-
-      // Labels
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 18px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('المحرك الكهربائي', centerX, 35);
-      ctx.font = '14px Arial';
-      ctx.fillStyle = '#22c55e';
-      ctx.fillText('F = BIL', centerX, height - 25);
-
-      // RPM indicator
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText(`${Math.floor(current * 60)} RPM`, centerX, height - 50);
-    };
-
-    const drawCompasses = (ctx: CanvasRenderingContext2D, centerX: number, centerY: number) => {
-      const compassPositions = [
-        { x: centerX - 180, y: centerY - 120 },
-        { x: centerX + 180, y: centerY - 120 },
-        { x: centerX - 180, y: centerY + 120 },
-        { x: centerX + 180, y: centerY + 120 },
-      ];
-
-      compassPositions.forEach(pos => {
-        const field = calculateMagneticField(pos.x, pos.y, centerX, centerY);
-        const angle = Math.atan2(field.by, field.bx);
-
-        // Compass background
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 30, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        // Compass ring
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Cardinal directions
-        ctx.fillStyle = '#64748b';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('N', pos.x, pos.y - 20);
-        ctx.fillText('S', pos.x, pos.y + 25);
-        ctx.fillText('E', pos.x + 22, pos.y + 4);
-        ctx.fillText('W', pos.x - 22, pos.y + 4);
-
-        // Needle with smooth animation
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.rotate(angle);
-        
-        // North needle (red)
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.moveTo(22, 0);
-        ctx.lineTo(-4, -5);
-        ctx.lineTo(-4, 5);
-        ctx.closePath();
-        ctx.fill();
-        
-        // South needle (white)
-        ctx.fillStyle = '#e2e8f0';
-        ctx.beginPath();
-        ctx.moveTo(-22, 0);
-        ctx.lineTo(4, -5);
-        ctx.lineTo(4, 5);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Center pin
-        ctx.fillStyle = '#fbbf24';
-        ctx.beginPath();
-        ctx.arc(0, 0, 4, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        ctx.restore();
-      });
-    };
-
-    animate();
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, current, wireType, showFieldLines, showCompass, showParticles, calculateMagneticField, time, motorAngle]);
-
-  const resetSimulation = () => {
-    setTime(0);
-    setCurrent(5);
-    setMotorAngle(0);
-    setIsPlaying(true);
-  };
+  // Gamified Challenges
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'biot_savart_high',
+        title: 'توليد مجال كهرومغناطيسي قوي (بيو-سافار)',
+        description: 'في وضع السلك المستقيم، ارفع التيار الكهربائي إلى 8.0A أو أكثر لمشاهدة الانحراف الحاد لإبر البوصلات.',
+        targetMetric: 'شدة التيار الكهربائي (I)',
+        targetValue: 8.5,
+        unit: 'A',
+        currentValue: wireType === 'straight' ? current : 0,
+        holdTimeRequired: 3,
+        tolerance: 1.0,
+        isCompleted: false,
+        hint: 'اختر السلك المستقيم وارفع التيار إلى أكثر من 8A.',
+      },
+      {
+        id: 'solenoid_flux',
+        title: 'مضاعفة التدفق داخل السولينويد',
+        description: 'انتقل لوضع السولينويد واضبط التيار لإنتاج كثافة تدفق تتجاوز 300 μTesla داخل النواة الحديدية.',
+        targetMetric: 'شدة المجال المغناطيسي (B)',
+        targetValue: 315,
+        unit: 'μT',
+        currentValue: wireType === 'solenoid' ? fieldAt5cmMicroTesla : 0,
+        holdTimeRequired: 3,
+        tolerance: 50,
+        isCompleted: false,
+        hint: 'اختر السولينويد وارفع شدة التيار إلى 7A أو أكثر.',
+      },
+      {
+        id: 'lorentz_motor_speed',
+        title: 'تسريع محرك لورنتز الكهربائي',
+        description: 'انتقل إلى محرك التيار المستمر DC واجعل سرعة الدوران تتجاوز 400 RPM بتطبيق عزم لورنتز فائق.',
+        targetMetric: 'سرعة دوران المحرك',
+        targetValue: 420,
+        unit: 'RPM',
+        currentValue: wireType === 'motor' ? motorRPM : 0,
+        holdTimeRequired: 2,
+        tolerance: 50,
+        isCompleted: false,
+        hint: 'اختر وضع المحرك الكهربائي وارفع التيار فوق 7A.',
+      },
+    ];
+  }, [wireType, current, fieldAt5cmMicroTesla, motorRPM]);
 
   const quizQuestions = [
     {
-      question: 'ما هو اتجاه المجال المغناطيسي حول سلك يحمل تياراً كهربائياً؟',
-      options: ['خطوط مستقيمة', 'دوائر متحدة المركز', 'حلزوني', 'عشوائي'],
+      question: 'وفق قاعدة اليد اليمنى، إذا كان الإبهام يشير إلى اتجاه التيار في سلك مستقيم، فإلى ماذا تشير الأصابع المنحنية؟',
+      options: [
+        'اتجاه القوة الكهربائية',
+        'اتجاه دوائر خطوط المجال المغناطيسي حول السلك',
+        'اتجاه حركة الإلكترونات الحقيقية',
+        'اتجاه الحرارة المتولدة',
+      ],
       correctIndex: 1,
-      explanation: 'المجال المغناطيسي حول سلك مستقيم يشكل دوائر متحدة المركز حول السلك، ويُحدد اتجاهها بقاعدة اليد اليمنى.'
+      explanation: 'قاعدة اليد اليمنى تنص على أن دوران الأصابع حول السلك يحدد اتجاه خطوط المجال المغناطيسي الحلقية.',
     },
     {
-      question: 'كيف تتغير شدة المجال المغناطيسي مع زيادة المسافة عن السلك؟',
-      options: ['تزداد', 'تنقص', 'تبقى ثابتة', 'تتذبذب'],
+      question: 'لماذا يعتبر المجال المغناطيسي داخل السولينويد (الملف الحلزوني) منتظماً وقوياً جداً؟',
+      options: [
+        'لأنه لا يحتوي على أسلاك',
+        'بسبب تراكم وتراكب المجالات الناتجة عن جميع الحلقات المتوازية في اتجاه محوري واحد موحد',
+        'بسبب انعدام مقاومة النحاس',
+        'لأنه يعمل في الفراغ فقط',
+      ],
       correctIndex: 1,
-      explanation: 'شدة المجال المغناطيسي تتناسب عكسياً مع المسافة (B ∝ 1/r)، أي أنها تنقص كلما ابتعدنا عن السلك.'
+      explanation: 'تتحد مجالات الحلقات الفردية داخل الملف لتعطي مجالاً خطياً منتظماً موازياً للمحور بقيمة B = μ₀ n I.',
     },
     {
-      question: 'ما الذي يميز السولينويد عن الملف الدائري؟',
-      options: ['لا يولد مجالاً مغناطيسياً', 'المجال منتظم داخله', 'يحتاج تياراً أكبر', 'المجال خارجي فقط'],
+      question: 'ما هو المبدأ الفيزيائي الذي يرتكز عليه دوران المحرك الكهربائي (DC Motor)؟',
+      options: [
+        'قوة كولوم الكهروستاتيكية الساكنة فقط',
+        'قوة لورنتز المغناطيسية (F = I L × B) المؤثرة على جانبي الملف المتعاكسين بالتيار مولدة عزم ازدواج',
+        'التمدد الحراري للأسلاك',
+        'تأثير الجاذبية الأرضية',
+      ],
       correctIndex: 1,
-      explanation: 'السولينويد يولد مجالاً مغناطيسياً منتظماً وقوياً داخله، مشابهاً للمغناطيس ذي القطبين.'
-    },
-    {
-      question: 'في المحرك الكهربائي، ما الذي يسبب دوران الملف؟',
-      options: ['الجاذبية', 'القوة المغناطيسية على التيار', 'الحرارة', 'الضغط'],
-      correctIndex: 1,
-      explanation: 'القوة المغناطيسية (F = BIL) تؤثر على السلك الحامل للتيار في المجال المغناطيسي، مما يسبب دوران الملف.'
+      explanation: 'التيار يسري في اتجاهين متعاكسين على ضلعي الملف، مما ينتج قوتين مغناطيسيتين متعاكستين تشكلان عزم ازدواج (Torque) يدير العمود.',
     },
   ];
 
-  const getExplanation = () => {
-    switch(wireType) {
-      case 'straight':
-        return 'المجال المغناطيسي حول سلك مستقيم يشكل دوائر متحدة المركز. يتناسب المجال طردياً مع التيار وعكسياً مع المسافة. استخدم قاعدة اليد اليمنى لتحديد الاتجاه.';
-      case 'loop':
-        return 'الملف الدائري يولد مجالاً مغناطيسياً يمر عبر مركزه. كلما زاد عدد اللفات، زادت شدة المجال. يُستخدم في المحركات والمولدات.';
-      case 'solenoid':
-        return 'السولينويد يولد مجالاً مغناطيسياً قوياً ومنتظماً داخله، مشابهاً للمغناطيس الطبيعي. يُستخدم في الكهرومغناطيسات والمرحلات الكهربائية.';
-      case 'motor':
-        return 'المحرك الكهربائي يحول الطاقة الكهربائية إلى طاقة حركية. القوة المغناطيسية على السلك الحامل للتيار تسبب دوران الملف.';
-      default:
-        return '';
-    }
-  };
-
   return (
     <SimulationLayout
-      title="مختبر الكهرومغناطيسية"
-      titleGradient="from-purple-400 to-blue-400"
-      backgroundGradient="from-slate-900 via-purple-900 to-slate-900"
+      title="مختبر الكهرومغناطيسية ومحرك لورنتز 3D"
+      titleGradient="from-purple-400 via-fuchsia-300 to-blue-400"
+      backgroundGradient="from-slate-950 via-slate-900 to-purple-950"
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Canvas */}
-        <div className="lg:col-span-2">
-          <SimulationCard color="purple">
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={500}
-              className="w-full rounded-lg"
-            />
-            
-            <SimulationControls
-              isPlaying={isPlaying}
-              onTogglePlay={() => setIsPlaying(!isPlaying)}
-              onReset={resetSimulation}
-              primaryColor="purple"
-            />
-          </SimulationCard>
-        </div>
+        {/* Main 3D Canvas Viewport */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-purple-500/30 bg-slate-950 shadow-2xl shadow-purple-950/40">
+            <Canvas camera={{ position: [0, 2.5, 6], fov: 45 }}>
+              <ambientLight intensity={0.7} />
+              <pointLight position={[10, 10, 10]} intensity={1.2} />
+              <pointLight position={[-10, -5, -6]} intensity={0.6} color="#a855f7" />
+              <directionalLight position={[0, 8, 4]} intensity={0.8} />
 
-        {/* Control Panel */}
-        <div className="space-y-4">
-          <SimulationCard title="لوحة التحكم" icon={Settings} color="purple" delay={0.1}>
-            {/* Wire Type Selection */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-300 mb-2">نوع المحاكاة</label>
-              <Tabs value={wireType} onValueChange={(v) => setWireType(v as any)}>
-                <TabsList className="grid grid-cols-2 bg-slate-700/50 gap-1 p-1">
-                  <TabsTrigger value="straight" className="text-xs data-[state=active]:bg-purple-600">سلك مستقيم</TabsTrigger>
-                  <TabsTrigger value="loop" className="text-xs data-[state=active]:bg-purple-600">ملف دائري</TabsTrigger>
-                </TabsList>
-                <TabsList className="grid grid-cols-2 bg-slate-700/50 gap-1 p-1 mt-1">
-                  <TabsTrigger value="solenoid" className="text-xs data-[state=active]:bg-purple-600">سولينويد</TabsTrigger>
-                  <TabsTrigger value="motor" className="text-xs data-[state=active]:bg-purple-600">محرك كهربائي</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <CinematicCameraController preset={cameraPreset} />
+
+              <Float speed={0.5} rotationIntensity={0.03} floatIntensity={0.05}>
+                <ElectromagnetismEngine3D
+                  wireType={wireType}
+                  current={current}
+                  showFieldLines={showFieldLines}
+                  showCompass={showCompass}
+                  isPlaying={isPlaying}
+                />
+              </Float>
+
+              <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+            </Canvas>
+
+            {/* CyberLab HUD Overlay */}
+            <CyberLabHUD
+              metrics={hudMetrics}
+              title={`الكهرومغناطيسية • ${wireType === 'straight' ? 'سلك بيو-سافار' : wireType === 'loop' ? 'ملف دائري' : wireType === 'solenoid' ? 'سولينويد بنواة حديد' : 'محرك لورنتز DC'}`}
+              status="active"
+              oscilloscopeWaveform="sine"
+              oscilloscopeFrequency={wireType === 'motor' ? motorRPM / 100 : current}
+            />
+
+            {/* Live Camera Presets */}
+            <div className="absolute top-4 left-4 z-20 flex gap-1.5 bg-slate-900/85 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/60 shadow-lg">
+              <Button size="sm" variant={cameraPreset === 'overview' ? 'default' : 'ghost'} onClick={() => setCameraPreset('overview')} className="h-7 text-xs px-2.5 text-purple-300">شامل</Button>
+              <Button size="sm" variant={cameraPreset === 'microscopic' ? 'default' : 'ghost'} onClick={() => setCameraPreset('microscopic')} className="h-7 text-xs px-2.5 text-purple-300">محور المجال</Button>
+              <Button size="sm" variant={cameraPreset === 'flow' ? 'default' : 'ghost'} onClick={() => setCameraPreset('flow')} className="h-7 text-xs px-2.5 text-purple-300">مسار الدوران</Button>
+              <Button size="sm" variant={cameraPreset === 'orbit360' ? 'default' : 'ghost'} onClick={() => setCameraPreset('orbit360')} className="h-7 text-xs px-2.5 text-purple-300">دوران 360°</Button>
             </div>
 
-            {/* Current Control */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-300 mb-2">
-                شدة التيار: <span className="text-yellow-400 font-mono">{current.toFixed(1)} A</span>
-              </label>
+            {/* Bottom Playback Overlay */}
+            <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="h-8 w-8 p-0 text-purple-400 hover:text-purple-300"
+              >
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCurrent(5.0)}
+                className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+                title="إعادة ضبط"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Mode Selector & Current Sliders */}
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-md space-y-4">
+            <Tabs value={wireType} onValueChange={(val) => setWireType(val as WireType)}>
+              <TabsList className="bg-slate-800/80 w-full grid grid-cols-4">
+                <TabsTrigger value="straight" className="text-xs">سلك مستقيم</TabsTrigger>
+                <TabsTrigger value="loop" className="text-xs">ملف دائري</TabsTrigger>
+                <TabsTrigger value="solenoid" className="text-xs">سولينويد</TabsTrigger>
+                <TabsTrigger value="motor" className="text-xs">محرك كهربائي</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Current Slider */}
+            <div className="space-y-2 p-3 rounded-lg bg-slate-950/40 border border-slate-800/60">
+              <div className="flex justify-between items-center text-xs text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  شدة التيار الكهربائي (Current):
+                </span>
+                <span className="font-mono text-purple-400 font-bold">{current.toFixed(1)} A</span>
+              </div>
               <Slider
                 value={[current]}
-                onValueChange={(v) => setCurrent(v[0])}
+                onValueChange={(val) => setCurrent(val[0])}
                 min={0.5}
-                max={10}
+                max={10.0}
                 step={0.1}
-                className="w-full"
               />
             </div>
 
-            {/* Toggle Options */}
-            <div className="space-y-3">
-              <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-slate-700/30 transition-colors">
-                <span className="text-sm text-slate-300">خطوط المجال</span>
+            {/* Visual Options Toggles */}
+            <div className="flex gap-4 p-2 text-xs text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <Switch checked={showFieldLines} onCheckedChange={setShowFieldLines} />
+                <span>إظهار خطوط المجال المغناطيسي</span>
               </label>
-              <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-slate-700/30 transition-colors">
-                <span className="text-sm text-slate-300">البوصلات</span>
-                <Switch checked={showCompass} onCheckedChange={setShowCompass} />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-slate-700/30 transition-colors">
-                <span className="text-sm text-slate-300">الجسيمات المتحركة</span>
-                <Switch checked={showParticles} onCheckedChange={setShowParticles} />
-              </label>
+              {wireType === 'straight' && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Switch checked={showCompass} onCheckedChange={setShowCompass} />
+                  <span>إظهار إبر البوصلة المغناطيسية</span>
+                </label>
+              )}
             </div>
-          </SimulationCard>
+          </div>
 
-          {/* Info Card */}
-          <SimulationCard title="المعلومات" icon={Info} color="blue" delay={0.2}>
-            <InfoSection
-              data={[
-                { label: 'شدة المجال', value: magneticFieldStrength.toFixed(4), unit: 'μT', color: 'text-purple-300' },
-                { label: 'التيار', value: current, unit: 'A', color: 'text-yellow-300' },
-              ]}
-              explanation={getExplanation()}
-              formulas={[
-                { name: 'سلك مستقيم', formula: 'B = μ₀I / 2πr' },
-                { name: 'ملف دائري', formula: 'B = μ₀I / 2r' },
-                { name: 'سولينويد', formula: 'B = μ₀nI' },
-              ]}
-              facts={[
-                'μ₀ (نفاذية الفراغ) = 4π × 10⁻⁷ T·m/A',
-                'اكتشف أورستد العلاقة بين الكهرباء والمغناطيسية عام 1820',
-                'المحرك الكهربائي اخترعه مايكل فاراداي عام 1821',
-                'أقوى مغناطيس كهربائي في العالم يولد مجالاً بقوة 45.5 تسلا',
-              ]}
-            />
-          </SimulationCard>
+          {/* Gamified Laboratory Challenges */}
+          <LabChallengeEngine
+            challenges={challenges}
+            onChallengeComplete={(c) => {
+              console.log('Challenge completed:', c.title);
+            }}
+          />
+        </div>
 
-          {/* Quiz */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <QuizSection questions={quizQuestions} />
-          </motion.div>
+        {/* Right Pedagogical & Live CoPilot Column */}
+        <div className="space-y-4">
+          {/* AI Lab CoPilot */}
+          <LiveAILabCoPilot
+            experimentContext={{
+              title: 'الكهرومغناطيسية ومحرك لورنتز',
+              currentStep: `المنظومة المغناطيسية: ${wireType}`,
+              userAction: `تطبيق تيار ${current.toFixed(1)} A ومراقبة الحقل الناتج ${fieldAt5cmMicroTesla.toFixed(1)} μT`,
+              activeMetrics: {
+                wireType: wireType,
+                current: `${current.toFixed(1)} A`,
+                magneticField: `${fieldAt5cmMicroTesla.toFixed(1)} μT`,
+                motorRPM: wireType === 'motor' ? `${motorRPM} RPM` : 'غير نشط',
+              }
+            }}
+            suggestions={[
+              'كيف يفسر قانون بيو-سافار تناقص شدة المجال المغناطيسي مع البعد عن السلك؟',
+              'لماذا تزيد النواة الحديدية (Ferromagnetic Core) شدة حقل السولينويد مئات المرات؟',
+              'ما دور المبدل (Commutator) وفرش الكربون في استمرار دوران محرك التيار المستمر؟',
+              'اشرح كيف تنشأ قوة لورنتز من تفاعل الإلكترونات المتحركة مع المجال الخارجي.',
+            ]}
+          />
+
+          {/* Educational Information Section */}
+          <InfoSection
+            data={[
+              { label: 'المنظومة النشطة', value: wireType, color: 'text-purple-300' },
+              { label: 'كثافة التدفق B', value: `${fieldAt5cmMicroTesla.toFixed(1)} μT`, color: 'text-fuchsia-300' },
+              { label: 'شدة التيار I', value: `${current.toFixed(1)} A`, color: 'text-amber-300' },
+              { label: 'سرعة المحرك', value: wireType === 'motor' ? `${motorRPM} RPM` : '-', color: 'text-cyan-300' },
+            ]}
+            formulas={[
+              { name: 'قانون بيو-سافار للسلك المستقيم', formula: 'B = (μ₀ × I) / (2π × r)', description: 'شدة المجال تتناسب طردياً مع التيار وعكسياً مع المسافة r' },
+              { name: 'مجال السولينويد المنتظم', formula: 'B = μ₀ × n × I', description: 'حيث n هو عدد اللفات في وحدة الطول (Turns/meter)' },
+              { name: 'عزم ازدواج المحرك الكهربائي', formula: 'τ = N × I × A × B × sin(θ)', description: 'العزم الميكانيكي المؤدي لدوران الملف بين القطبين' },
+            ]}
+            explanation="الكهرومغناطيسية هي إحدى القوى الأساسية الأربع في الكون، وتكشف أن الشحنات الكهربائية المتحركة (التيارات) تولد بالضرورة مجالاً مغناطيسياً يدور حولها. هذا الاكتشاف الثوري هو الأساس الذي بنيت عليه الحضارة الحديثة من محركات كهربائية ومولدات ومحولات وأجهزة الرنين المغناطيسي."
+            facts={[
+              'في عام 1820، لاحظ هانز كريستيان أورستد بالصدفة انحراف إبرة بوصلة موضوعة بجوار سلك عند مرور تيار كهربائي فيه، رابطاً الكهرباء بالمغناطيسية لأول مرة.',
+              'أقوى مغناطيس كهربائي أرضي في مختبر ماغنت لاب يولد مجالاً يصل إلى 45.5 تسلا، أي أقوى بحوالي مليون مرة من مجال الأرض المغناطيسي الطبيعي!',
+            ]}
+          />
+
+          {/* Interactive Quiz Section */}
+          <QuizSection questions={quizQuestions} />
         </div>
       </div>
     </SimulationLayout>

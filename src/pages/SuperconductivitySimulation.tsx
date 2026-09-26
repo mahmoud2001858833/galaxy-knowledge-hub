@@ -20,6 +20,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine, { Challenge } from '@/components/simulations/LabChallengeEngine';
 
 interface SuperconductorMaterial {
   id: string;
@@ -172,6 +175,93 @@ export default function SuperconductivitySimulation() {
     const diff = temperatureK - selectedMaterial.tcKelvin;
     return +(0.05 + diff * 0.008).toFixed(4);
   }, [temperatureK, isSuperconducting, selectedMaterial]);
+
+  // CyberLab HUD Metrics
+  const hudMetrics = useMemo(() => {
+    return [
+      {
+        id: 'temp',
+        label: 'درجة حرارة العينة (T)',
+        value: temperatureK,
+        unit: 'K',
+        status: isSuperconducting ? ('normal' as const) : ('warning' as const),
+        min: 0,
+        max: 150,
+      },
+      {
+        id: 'tc',
+        label: 'الحرارة الحرجة (Tc)',
+        value: selectedMaterial.tcKelvin,
+        unit: 'K',
+        status: 'normal' as const,
+        min: 0,
+        max: 150,
+      },
+      {
+        id: 'resistance',
+        label: 'المقاومة الكهربائية (R)',
+        value: electricalResistanceOhms,
+        unit: 'Ω',
+        status: isSuperconducting ? ('normal' as const) : ('critical' as const),
+        min: 0,
+        max: 1.0,
+      },
+      {
+        id: 'lev_height',
+        label: 'ارتفاع الطفو المغناطيسي (h)',
+        value: isSuperconducting ? 14.0 : 0.0,
+        unit: 'mm',
+        status: isSuperconducting ? ('normal' as const) : ('idle' as const),
+        min: 0,
+        max: 20,
+      },
+    ];
+  }, [temperatureK, selectedMaterial, electricalResistanceOhms, isSuperconducting]);
+
+  // Gamified Challenges
+  const challenges: Challenge[] = useMemo(() => {
+    return [
+      {
+        id: 'meissner_ybco',
+        title: 'تحقيق ظاهرة مايسنر (Meissner Effect)',
+        description: 'قم بتبريد قرص YBCO بالنيتروجين السائل تحت 93 K لمراقبة طرد خطوط الفيض المغناطيسي التام وطفو مغناطيس النيوديميوم.',
+        targetMetric: 'المقاومة الكهربائية (R)',
+        targetValue: 0.0,
+        unit: 'Ω',
+        currentValue: selectedMaterial.id === 'ybco' && isSuperconducting ? 0.0 : electricalResistanceOhms,
+        holdTimeRequired: 3,
+        tolerance: 0.0001,
+        isCompleted: false,
+        hint: 'اختر مادة YBCO واضغط على زر "نيتروجين سائل (77 K)".',
+      },
+      {
+        id: 'lts_liquid_helium',
+        title: 'الموصلية الفائقة منخفضة الحرارة (LTS)',
+        description: 'اختر سبيكة النيوبيوم والقصدير (Nb₃Sn) أو الزئبق وبردها لدرجة حرارة الهيليوم السائل 4.2 K لتشغيل المغانط الفائقة.',
+        targetMetric: 'درجة حرارة العينة (T)',
+        targetValue: 4.2,
+        unit: 'K',
+        currentValue: (selectedMaterial.id === 'nb3sn' || selectedMaterial.id === 'mercury') && isSuperconducting ? 4.2 : temperatureK,
+        holdTimeRequired: 3,
+        tolerance: 0.5,
+        isCompleted: false,
+        hint: 'اختر مادة الزئبق أو Nb3Sn واضغط على زر "هيليوم سائل (4.2 K)".',
+      },
+      {
+        id: 'zero_resistance_stability',
+        title: 'استقرار المقاومة الصفرية وتماسك أزواج كوبر',
+        description: 'حافظ على استقرار حالة التوصيل الفائق وانعدام المقاومة تماماً R = 0.0000 Ω لأكثر من 5 ثوانٍ.',
+        targetMetric: 'المقاومة الكهربائية (R)',
+        targetValue: 0.0,
+        unit: 'Ω',
+        currentValue: electricalResistanceOhms,
+        holdTimeRequired: 5,
+        tolerance: 0.0001,
+        isCompleted: false,
+        hint: 'أبق درجة الحرارة تحت الدرجة الحرجة دون رفعها.',
+      },
+    ];
+  }, [selectedMaterial, isSuperconducting, electricalResistanceOhms, temperatureK]);
 
   // Mission check
   useEffect(() => {
@@ -457,8 +547,17 @@ export default function SuperconductivitySimulation() {
                       />
                     </Canvas>
 
+                    {/* CyberLab HUD Overlay */}
+                    <CyberLabHUD
+                      metrics={hudMetrics}
+                      title={`الموصلية الفائقة • ${selectedMaterial.nameAr}`}
+                      status={isSuperconducting ? 'active' : 'idle'}
+                      oscilloscopeWaveform={isSuperconducting ? 'sine' : 'flat'}
+                      oscilloscopeFrequency={isSuperconducting ? 4 : 0.5}
+                    />
+
                     {/* Camera Angle Presets */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px]">
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
                       <button
                         onClick={() => setCameraView('default')}
                         className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
@@ -486,7 +585,7 @@ export default function SuperconductivitySimulation() {
                     </div>
 
                     {/* Live Assistant Hint */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2 z-20">
                       <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>
                         {isSuperconducting
@@ -496,10 +595,40 @@ export default function SuperconductivitySimulation() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Gamified Laboratory Challenges */}
+                <LabChallengeEngine
+                  challenges={challenges}
+                  onChallengeComplete={(c) => {
+                    console.log('Challenge completed:', c.title);
+                  }}
+                />
               </div>
 
               {/* Controls Column */}
               <div className="space-y-4">
+                {/* AI Lab CoPilot */}
+                <LiveAILabCoPilot
+                  experimentContext={{
+                    title: 'الموصلية الفائقة وتأثير مايسنر',
+                    currentStep: `مادة العينة: ${selectedMaterial.nameAr}`,
+                    userAction: `مراقبة السلوك الكمي عند ${temperatureK} K ومقاومة كهربائية ${electricalResistanceOhms.toFixed(4)} Ω`,
+                    activeMetrics: {
+                      material: selectedMaterial.nameEn,
+                      temperature: `${temperatureK} K`,
+                      criticalTemp: `${selectedMaterial.tcKelvin} K`,
+                      resistance: `${electricalResistanceOhms.toFixed(4)} Ω`,
+                      meissnerEffect: isSuperconducting ? 'نشط (طرد تام B=0)' : 'غير نشط',
+                    }
+                  }}
+                  suggestions={[
+                    'كيف تتشكل أزواج كوبر (Cooper Pairs) عبر التفاعل مع اهتزازات الشبكة البلورية (Phonons)؟',
+                    'ما الفرق الجوهري بين فائق التوصيل من النوع الأول (Type I) والنوع الثاني (Type II)؟',
+                    'كيف يفسر تأثير مايسنر ظاهرة حبس التدفق الكمي (Quantum Flux Pinning)؟',
+                    'لماذا يعتبر اكتشاف موصل فائق في درجة حرارة الغرفة الكأس المقدسة للفيزياء التطبيقية؟',
+                  ]}
+                />
+
                 <Card className="bg-slate-900/90 border-slate-800 shadow-xl">
                   <CardHeader className="py-3 px-4 border-b border-slate-800">
                     <CardTitle className="text-base font-bold text-slate-200 flex items-center gap-2">

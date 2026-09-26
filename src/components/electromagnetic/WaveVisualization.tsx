@@ -1,201 +1,177 @@
-import { useEffect, useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Float, Html } from '@react-three/drei';
+import * as THREE from 'three';
 import { motion } from 'framer-motion';
 
 interface WaveVisualizationProps {
   frequency: number;
   amplitude: number;
   waveType: string;
+  polarization?: 'linear' | 'circular';
 }
 
-export const WaveVisualization = ({ frequency, amplitude, waveType }: WaveVisualizationProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const timeRef = useRef(0);
-  const animationRef = useRef<number>();
+const getWaveColors = (type: string) => {
+  switch (type) {
+    case 'radio': return { e: '#ef4444', b: '#3b82f6', glow: '#f87171' };
+    case 'microwave': return { e: '#f97316', b: '#06b6d4', glow: '#fb923c' };
+    case 'infrared': return { e: '#eab308', b: '#3b82f6', glow: '#facc15' };
+    case 'visible': return { e: '#22c55e', b: '#a855f7', glow: '#4ade80' };
+    case 'ultraviolet': return { e: '#a855f7', b: '#06b6d4', glow: '#c084fc' };
+    case 'xray': return { e: '#3b82f6', b: '#ec4899', glow: '#60a5fa' };
+    case 'gamma': return { e: '#6366f1', b: '#f43f5e', glow: '#818cf8' };
+    default: return { e: '#22c55e', b: '#a855f7', glow: '#4ade80' };
+  }
+};
 
-  const getWaveColor = (type: string) => {
-    switch (type) {
-      case 'radio': return { main: 'hsl(0, 100%, 60%)', glow: 'hsl(0, 100%, 50%)' };
-      case 'microwave': return { main: 'hsl(30, 100%, 60%)', glow: 'hsl(30, 100%, 50%)' };
-      case 'infrared': return { main: 'hsl(50, 100%, 60%)', glow: 'hsl(50, 100%, 50%)' };
-      case 'visible': return { main: 'hsl(200, 100%, 60%)', glow: 'hsl(200, 100%, 50%)' };
-      case 'ultraviolet': return { main: 'hsl(270, 100%, 60%)', glow: 'hsl(270, 100%, 50%)' };
-      case 'xray': return { main: 'hsl(240, 100%, 60%)', glow: 'hsl(240, 100%, 50%)' };
-      case 'gamma': return { main: 'hsl(280, 100%, 60%)', glow: 'hsl(280, 100%, 50%)' };
-      default: return { main: 'hsl(200, 100%, 60%)', glow: 'hsl(200, 100%, 50%)' };
+const MaxwellWave3D: React.FC<{
+  frequency: number;
+  amplitude: number;
+  waveType: string;
+  polarization: 'linear' | 'circular';
+}> = ({ frequency, amplitude, waveType, polarization }) => {
+  const lineERef = useRef<THREE.Line>(null);
+  const lineBRef = useRef<THREE.Line>(null);
+  const vectorsGroupRef = useRef<THREE.Group>(null);
+
+  const colors = useMemo(() => getWaveColors(waveType), [waveType]);
+  const numPoints = 120;
+  const zSpan = 10;
+
+  // Pre-allocated geometry vectors
+  const pointsE = useMemo(() => Array.from({ length: numPoints }, () => new THREE.Vector3()), []);
+  const pointsB = useMemo(() => Array.from({ length: numPoints }, () => new THREE.Vector3()), []);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime * 3.0;
+    // Spatial wave number k
+    const k = 2.5;
+
+    for (let i = 0; i < numPoints; i++) {
+      const z = -zSpan / 2 + (i / (numPoints - 1)) * zSpan;
+      const phase = k * z - t;
+
+      if (polarization === 'linear') {
+        // Linear: E on Y, B on X
+        const ey = Math.sin(phase) * amplitude * 1.2;
+        const bx = Math.sin(phase) * amplitude * 1.2;
+        pointsE[i].set(0, ey, z);
+        pointsB[i].set(bx, 0, z);
+      } else {
+        // Circular Polarization: E rotates in XY, B rotates 90 deg out of phase
+        const ex = Math.cos(phase) * amplitude * 1.0;
+        const ey = Math.sin(phase) * amplitude * 1.0;
+        const bx = -Math.sin(phase) * amplitude * 1.0;
+        const by = Math.cos(phase) * amplitude * 1.0;
+        pointsE[i].set(ex, ey, z);
+        pointsB[i].set(bx, by, z);
+      }
     }
-  };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-    const centerY = height / 2;
-
-    const animate = () => {
-      ctx.clearRect(0, 0, width, height);
-      
-      const colors = getWaveColor(waveType);
-      timeRef.current += 0.02;
-
-      // Draw grid
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < width; i += 50) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, height);
-        ctx.stroke();
-      }
-      for (let i = 0; i < height; i += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(width, i);
-        ctx.stroke();
-      }
-
-      // Draw center line
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(width, centerY);
-      ctx.stroke();
-
-      // Draw Electric Field (E) - Main wave
-      ctx.beginPath();
-      ctx.strokeStyle = colors.main;
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = colors.glow;
-
-      for (let x = 0; x < width; x++) {
-        const scaledFreq = frequency / 100;
-        const y = centerY + Math.sin((x * scaledFreq * 0.02) - timeRef.current) * amplitude * 60;
-        
-        if (x === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-      ctx.stroke();
-
-      // Draw glow effect
-      ctx.beginPath();
-      ctx.strokeStyle = colors.glow + '60';
-      ctx.lineWidth = 8;
-      ctx.shadowBlur = 25;
-      
-      for (let x = 0; x < width; x++) {
-        const scaledFreq = frequency / 100;
-        const y = centerY + Math.sin((x * scaledFreq * 0.02) - timeRef.current) * amplitude * 60;
-        
-        if (x === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-      ctx.stroke();
-
-      // Draw Magnetic Field (B) - Perpendicular wave
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      ctx.strokeStyle = 'hsl(120, 100%, 60%)';
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = 'hsl(120, 100%, 50%)';
-
-      for (let x = 0; x < width; x++) {
-        const scaledFreq = frequency / 100;
-        const y = centerY + Math.cos((x * scaledFreq * 0.02) - timeRef.current) * amplitude * 40;
-        
-        if (x === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-      ctx.stroke();
-      ctx.restore();
-
-      // Draw wave properties labels
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('E (مجال كهربائي)', 20, 30);
-      ctx.fillStyle = 'hsl(120, 100%, 60%)';
-      ctx.fillText('B (مجال مغناطيسي)', 20, 50);
-
-      // Draw wavelength indicator
-      const scaledFreq = frequency / 100;
-      const wavelengthPx = (2 * Math.PI) / (scaledFreq * 0.02);
-      
-      if (wavelengthPx < width && wavelengthPx > 20) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([5, 5]);
-        
-        const y1 = centerY + Math.sin(-timeRef.current) * amplitude * 60;
-        const y2 = centerY + Math.sin((wavelengthPx * scaledFreq * 0.02) - timeRef.current) * amplitude * 60;
-        
-        ctx.beginPath();
-        ctx.moveTo(0, y1);
-        ctx.lineTo(wavelengthPx, y1);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(0, y1);
-        ctx.lineTo(0, centerY);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(wavelengthPx, y2);
-        ctx.lineTo(wavelengthPx, centerY);
-        ctx.stroke();
-        
-        ctx.setLineDash([]);
-        
-        // Label
-        ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
-        ctx.fillText('λ', wavelengthPx / 2 - 10, centerY - 10);
-      }
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [frequency, amplitude, waveType]);
+    if (lineERef.current) {
+      lineERef.current.geometry.setFromPoints(pointsE);
+      lineERef.current.geometry.attributes.position.needsUpdate = true;
+    }
+    if (lineBRef.current) {
+      lineBRef.current.geometry.setFromPoints(pointsB);
+      lineBRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+  });
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="relative"
-    >
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={400}
-        className="w-full rounded-lg bg-gray-900/50"
-      />
-      <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-border">
-        <p className="text-xs text-muted-foreground">السرعة: c = 3×10⁸ m/s</p>
+    <group position={[0, 0, 0]}>
+      {/* Propagation Z-Axis Guide Rod */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, zSpan + 1.5, 16]} />
+        <meshStandardMaterial color="#64748b" metalness={0.8} />
+      </mesh>
+
+      {/* Poynting Vector Arrow (Propagation Direction) */}
+      <mesh position={[0, 0, zSpan / 2 + 0.9]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.15, 0.5, 16]} />
+        <meshStandardMaterial color="#fbbf24" emissive="#f59e0b" emissiveIntensity={1} />
+      </mesh>
+      <Html position={[0, 0.4, zSpan / 2 + 0.9]} center distanceFactor={10}>
+        <div className="bg-amber-950/80 text-amber-300 font-mono text-[10px] px-1.5 py-0.5 rounded border border-amber-500/50 whitespace-nowrap">
+          متجه بوينتنج S⃗ (سرعة الضوء c)
+        </div>
+      </Html>
+
+      {/* Electric Field (E) 3D Line */}
+      <line ref={lineERef as any}>
+        <bufferGeometry />
+        <lineBasicMaterial color={colors.e} linewidth={3} />
+      </line>
+
+      {/* Magnetic Field (B) 3D Line */}
+      <line ref={lineBRef as any}>
+        <bufferGeometry />
+        <lineBasicMaterial color={colors.b} linewidth={3} />
+      </line>
+
+      {/* Sample E and B Vector Combs */}
+      {Array.from({ length: 11 }, (_, i) => {
+        const z = -zSpan / 2 + (i / 10) * zSpan;
+        return (
+          <group key={`comb-${i}`} position={[0, 0, z]}>
+            {/* Center node */}
+            <mesh>
+              <sphereGeometry args={[0.04, 8, 8]} />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* In-scene Orthogonal Labels */}
+      <Html position={[0, amplitude * 1.5, -zSpan / 3]} center distanceFactor={12}>
+        <div className="bg-emerald-950/90 text-emerald-300 font-mono text-xs px-2 py-0.5 rounded border border-emerald-500/60 shadow-md">
+          المجال الكهربائي E⃗
+        </div>
+      </Html>
+      <Html position={[amplitude * 1.5, 0, -zSpan / 3]} center distanceFactor={12}>
+        <div className="bg-purple-950/90 text-purple-300 font-mono text-xs px-2 py-0.5 rounded border border-purple-500/60 shadow-md">
+          المجال المغناطيسي B⃗
+        </div>
+      </Html>
+    </group>
+  );
+};
+
+export const WaveVisualization: React.FC<WaveVisualizationProps> = ({
+  frequency,
+  amplitude,
+  waveType,
+  polarization = 'linear',
+}) => {
+  return (
+    <div className="relative w-full h-[450px] rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
+      <Canvas camera={{ position: [3.5, 2.5, 7.0], fov: 45 }}>
+        <ambientLight intensity={0.7} />
+        <pointLight position={[10, 10, 10]} intensity={1.2} />
+        <pointLight position={[-10, -5, -6]} intensity={0.6} color="#3b82f6" />
+        <directionalLight position={[0, 8, 4]} intensity={0.8} />
+
+        <Float speed={0.4} rotationIntensity={0.02} floatIntensity={0.03}>
+          <MaxwellWave3D
+            frequency={frequency}
+            amplitude={amplitude}
+            waveType={waveType}
+            polarization={polarization}
+          />
+        </Float>
+
+        <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+      </Canvas>
+
+      {/* Speed of light indicator overlay */}
+      <div className="absolute top-3 right-3 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 shadow-md flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+        <span className="text-xs text-slate-300 font-mono">
+          c = 299,792,458 m/s
+        </span>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
