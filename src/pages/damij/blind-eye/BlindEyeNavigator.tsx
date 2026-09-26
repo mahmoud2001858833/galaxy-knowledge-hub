@@ -193,20 +193,19 @@ const BlindEyeNavigatorInner: React.FC = () => {
     enqueueSpeech({ text: BE_STRINGS[langRef.current].stopping, priority: 'critical', lang: langRef.current });
   }, []);
 
-  // ---- Frame capture for AI ----
+  // ---- Frame capture for AI (Low latency payload optimization) ----
   const captureFrame = useCallback((mode: 'calibration'|'fast'|'detailed'|'points'): string | null => {
     const v = videoRef.current;
     const c = captureCanvasRef.current;
     if (!v || !c || v.readyState < 2) return null;
-    const w = mode === 'calibration' ? 240 : mode === 'detailed' ? 840 : 480;
+    const w = mode === 'calibration' ? 240 : mode === 'detailed' ? 840 : mode === 'points' ? 380 : 420;
     const h = Math.round((v.videoHeight / v.videoWidth) * w) || Math.round(w * 0.75);
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(v, 0, 0, w, h);
-    const q = mode === 'calibration' ? 0.45 : mode === 'detailed' ? 0.85 : 0.65;
+    const q = mode === 'calibration' ? 0.45 : mode === 'detailed' ? 0.85 : mode === 'points' ? 0.52 : 0.60;
     return c.toDataURL('image/jpeg', q);
-
   }, []);
 
   // ---- AI tick ----
@@ -284,14 +283,17 @@ const BlindEyeNavigatorInner: React.FC = () => {
         if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
           const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
           if (score >= 75) {
-            // 3-step urgent hazard pattern: "Stop. Stop." -> obstacle label -> action
+            // Unified urgent hazard sentence (single utterance, zero stutter)
             const obstacleLabel = (g.objects?.[0]?.label || g.obstacles_summary || '').toString().split(/[,،.]/)[0].trim().slice(0, 24);
-            const action = g.best_path === 'left' ? cmds.left : g.best_path === 'right' ? cmds.right : cmds.back;
-            enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
-            if (obstacleLabel) {
-              enqueueSpeech({ text: obstacleLabel, priority: 'critical', lang: langRef.current });
-            }
-            enqueueSpeech({ text: action, priority: 'critical', lang: langRef.current });
+            const escapeWord = g.best_path === 'left'
+              ? (langRef.current === 'ar' ? 'نحو اليسار' : cmds.left)
+              : g.best_path === 'right'
+              ? (langRef.current === 'ar' ? 'نحو اليمين' : cmds.right)
+              : (langRef.current === 'ar' ? 'خطوة للخلف' : cmds.back);
+            const warningPhrase = langRef.current === 'ar'
+              ? `توقف! ${obstacleLabel ? obstacleLabel + ' قريب، ' : ''}اتجه ${escapeWord}`
+              : `Stop! ${obstacleLabel ? obstacleLabel + ' ahead, ' : ''}move ${escapeWord}`;
+            enqueueSpeech({ text: warningPhrase, priority: 'critical', lang: langRef.current });
             haptics.stop();
           } else if (score >= 40) {
             // Approaching obstacle -> give clear directional escape cue
@@ -301,7 +303,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
             // Safe corridor: give periodic reassurance if moving
             const timeSinceLastSpoken = now - lastSpokenPathRef.current.t;
             if (timeSinceLastSpoken > 4500) {
-              const safeMsg = g.best_path === 'left' ? cmds.left : g.best_path === 'right' ? cmds.right : cmds.continue_;
+              const safeMsg = g.best_path === 'left'
+                ? (langRef.current === 'ar' ? 'انعطف يساراً' : cmds.left)
+                : g.best_path === 'right'
+                ? (langRef.current === 'ar' ? 'انعطف يميناً' : cmds.right)
+                : (langRef.current === 'ar' ? 'المسار سالك أمامك' : cmds.continue_);
               enqueueSpeech({ text: safeMsg, priority: 'directional', lang: langRef.current });
               earcons.pointAhead();
             }
@@ -473,6 +479,18 @@ const BlindEyeNavigatorInner: React.FC = () => {
               return [...aiOnly, ...localPts.slice(0, 9)];
             });
           }
+
+          // Offline / real-time corridor guidance fallback
+          if (phase === 'guiding' && stats?.corridor?.isCenterBlocked && !onlineRef.current && now - lastSpokenPathRef.current.t > 2400) {
+            const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
+            const dir = stats.corridor.bestCorridor;
+            const msg = dir === 'left'
+              ? (langRef.current === 'ar' ? 'عائق بالمنتصف، تحرك يساراً' : `${cmds.stop}, move ${cmds.left}`)
+              : (langRef.current === 'ar' ? 'عائق بالمنتصف، تحرك يميناً' : `${cmds.stop}, move ${cmds.right}`);
+            enqueueSpeech({ text: msg, priority: 'directional', lang: langRef.current });
+            hapticForDirection(dir);
+            lastSpokenPathRef.current = { path: dir, t: now };
+          }
         }
       }
 
@@ -481,16 +499,18 @@ const BlindEyeNavigatorInner: React.FC = () => {
         lastDetTickRef.current = now;
         detectFromVideo(v, 6).then((objs) => {
           const hazard = detectImmediateHazard(objs);
-          if (hazard && now - lastLocalHazardSpeakRef.current > 900) {
+          if (hazard && now - lastLocalHazardSpeakRef.current > 1100) {
             lastLocalHazardSpeakRef.current = now;
             const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
-            // Three-step: STOP. STOP. → label → escape direction
             const label = langRef.current === 'ar' ? labelToArabic(hazard.label) : hazard.label;
-            enqueueSpeech({ text: `${cmds.stop}. ${cmds.stop}.`, priority: 'critical', lang: langRef.current });
-            enqueueSpeech({ text: label, priority: 'critical', lang: langRef.current });
             const cx = hazard.x + hazard.w / 2;
-            const escape = cx < 0.5 ? cmds.right : cmds.left;
-            enqueueSpeech({ text: escape, priority: 'critical', lang: langRef.current });
+            const escape = cx < 0.5
+              ? (langRef.current === 'ar' ? 'نحو اليمين' : cmds.right)
+              : (langRef.current === 'ar' ? 'نحو اليسار' : cmds.left);
+            const warningText = langRef.current === 'ar'
+              ? `انتبه! ${label} أمامك، تحرك ${escape}`
+              : `Caution! ${label} ahead, move ${escape}`;
+            enqueueSpeech({ text: warningText, priority: 'critical', lang: langRef.current });
             haptics.stop();
             // Followup: short cloud sentence explaining what it is (throttled)
             if (now - lastHazardDescribeRef.current > 3500 && onlineRef.current) {
@@ -551,12 +571,10 @@ const BlindEyeNavigatorInner: React.FC = () => {
           // Wipe stale boxes immediately so the HUD reflects the new view.
           setPoints(prev => prev.filter(p => p.source === 'local'));
           lastGuideRef.current = null;
-          // Fire two parallel requests for fastest catch-up.
           if (now - lastSceneChangeAt.current > 1500) {
             lastSceneChangeAt.current = now;
           }
           const mode = phase === 'calibrating' ? 'calibration' : 'points';
-          runAI(mode);
           runAI(mode);
         } else {
           const mode = phase === 'calibrating' ? 'calibration' : 'points';

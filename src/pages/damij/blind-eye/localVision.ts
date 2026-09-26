@@ -7,12 +7,21 @@ export type CellStats = {
   bright: number; // 0..1
 };
 
+export type CorridorStats = {
+  leftScore: number;    // 0..1 (0 = clear, 1 = blocked)
+  centerScore: number;
+  rightScore: number;
+  bestCorridor: 'left' | 'center' | 'right';
+  isCenterBlocked: boolean;
+};
+
 export type LocalFrameStats = {
   cells: CellStats[]; // 9 entries TL..BR
   globalMotion: number; // 0..1 avg
   bottomMotion: number; // 0..1 (bottom row average)
   sceneChange: number;  // 0..1 large = scene swapped
   brightness: number;   // 0..1
+  corridor: CorridorStats;
 };
 
 export class LocalVision {
@@ -97,6 +106,20 @@ export class LocalVision {
     // Bottom motion = avg of bottom row cells
     const bottomMotion = (cells[6].motion + cells[7].motion + cells[8].motion) / 3;
 
+    // Corridor analysis: Left (0,3,6), Center (1,4,7), Right (2,5,8)
+    const leftScore = Math.min(1, cells[0].edge * 0.15 + cells[3].edge * 0.35 + cells[6].edge * 0.5 + cells[6].motion * 0.2);
+    const centerScore = Math.min(1, cells[1].edge * 0.15 + cells[4].edge * 0.35 + cells[7].edge * 0.5 + cells[7].motion * 0.2);
+    const rightScore = Math.min(1, cells[2].edge * 0.15 + cells[5].edge * 0.35 + cells[8].edge * 0.5 + cells[8].motion * 0.2);
+    const isCenterBlocked = centerScore > 0.42;
+    let bestCorridor: 'left' | 'center' | 'right' = 'center';
+    if (isCenterBlocked) {
+      bestCorridor = leftScore <= rightScore ? 'left' : 'right';
+    } else {
+      const min = Math.min(leftScore, centerScore, rightScore);
+      bestCorridor = min === centerScore ? 'center' : (min === leftScore ? 'left' : 'right');
+    }
+    const corridor: CorridorStats = { leftScore, centerScore, rightScore, bestCorridor, isCenterBlocked };
+
     // Scene change: compare current edge histogram with last
     let sceneChange = 0;
     if (this.lastEdgeMap) {
@@ -113,7 +136,7 @@ export class LocalVision {
     for (let p = 0; p < gray.length; p++) this.prev[p] = gray[p];
     this.lastEdgeMap = edge;
 
-    return { cells, globalMotion, bottomMotion, sceneChange, brightness };
+    return { cells, globalMotion, bottomMotion, sceneChange, brightness, corridor };
   }
 
   reset() {

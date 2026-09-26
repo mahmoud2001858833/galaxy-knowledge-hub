@@ -25,18 +25,76 @@ let lastSpokenHash: { key: string; t: number } = { key: '', t: 0 };
 let lastAnySpeechAt = 0;
 let volume = 1;
 
+export function cleanSpokenText(raw: string, lang: BELang = 'ar'): string {
+  if (!raw) return '';
+  let clean = raw
+    // Strip markdown formatting & links
+    .replace(/[*#_~`>[\]()]/g, ' ')
+    .replace(/http\S+/g, ' ')
+    // Strip emoji characters
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (lang === 'ar') {
+    // Expand currency abbreviations into natural spoken Arabic
+    clean = clean
+      .replace(/\bJOD\b|\bJD\b/gi, 'دينار أردني')
+      .replace(/\bSAR\b/gi, 'ريال سعودي')
+      .replace(/\bAED\b/gi, 'درهم إماراتي')
+      .replace(/\bEGP\b/gi, 'جنيه مصري')
+      .replace(/\bKWD\b/gi, 'دينار كويتي')
+      .replace(/\bQAR\b/gi, 'ريال قطري')
+      .replace(/\bUSD\b|\$/g, 'دولار')
+      .replace(/\bEUR\b|€/g, 'يورو');
+
+    // Expand measurement units
+    clean = clean
+      .replace(/(\d+)\s*(m|م)\b/gi, '$1 متر')
+      .replace(/(\d+)\s*(cm|سم)\b/gi, '$1 سنتيمتر')
+      .replace(/(\d+)\s*(km|كم)\b/gi, '$1 كيلومتر')
+      .replace(/%/g, ' بالمئة ');
+
+    // Normalize punctuation to natural cadence
+    clean = clean
+      .replace(/[!؛;]/g, '، ')
+      .replace(/[:—–-]/g, ' ')
+      .replace(/([،,.])\s*([،,.])/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  return clean;
+}
+
 function scoreVoice(v: SpeechSynthesisVoice, lang: BELang) {
   const name = v.name.toLowerCase();
-  const target = BE_BCP47[lang];
-  let s = 0;
-  if (/google/.test(name)) s += 10;
-  if (/natural/.test(name)) s += 8;
-  if (/microsoft/.test(name)) s += 6;
-  if (/online/.test(name)) s += 4;
-  if (/premium|enhanced|wavenet/.test(name)) s += 5;
-  if (v.lang.toLowerCase() === target.toLowerCase()) s += 4;
-  else if (v.lang.toLowerCase().startsWith(lang.toLowerCase())) s += 2;
-  if (v.default) s += 1;
+  const vLang = v.lang.toLowerCase().replace('_', '-');
+  const target = BE_BCP47[lang].toLowerCase();
+  const langPrefix = lang.toLowerCase();
+
+  // Strict check: if voice language does NOT match requested language, disqualify completely!
+  const matchesLang = vLang.startsWith(langPrefix) || vLang.includes(langPrefix);
+  if (!matchesLang) return -10000;
+
+  let s = 100; // Base score for correct language
+  if (vLang === target) s += 40; // Exact locale match
+
+  // Prioritize premium, natural neural voices
+  if (/natural|neural|wavenet|enhanced|premium/.test(name)) s += 60;
+  if (/google/.test(name)) s += 40;
+  if (/microsoft/.test(name)) s += 35;
+  if (/apple|siri/.test(name)) s += 30;
+
+  // Specific top-rated Arabic voices on iOS / Mac / Android / Windows
+  if (lang === 'ar') {
+    if (/majed|ماجد/.test(name)) s += 90;
+    if (/tarik|طارق/.test(name)) s += 85;
+    if (/laila|ليلى/.test(name)) s += 80;
+    if (/mariam|مريم/.test(name)) s += 75;
+    if (/hamed|حامد|salma|سلمى|shakir|شاكر/.test(name)) s += 75;
+  }
+
+  if (v.default) s += 5;
   return s;
 }
 
@@ -50,7 +108,10 @@ export function refreshVoices() {
   const all = window.speechSynthesis.getVoices();
   for (const lang of Object.keys(BE_BCP47) as BELang[]) {
     const prefix = lang.toLowerCase();
-    const candidates = all.filter(v => v.lang.toLowerCase().startsWith(prefix));
+    const candidates = all.filter(v => {
+      const vl = v.lang.toLowerCase().replace('_', '-');
+      return vl.startsWith(prefix) || vl.includes(prefix);
+    });
     candidates.sort((a, b) => scoreVoice(b, lang) - scoreVoice(a, lang));
     voicesCache[lang] = candidates[0] ?? null;
   }
@@ -68,16 +129,16 @@ function priWeight(p: SpeechPriority) {
   return p === 'critical' ? 3 : p === 'directional' ? 2 : 1;
 }
 
-// Unified, elegant voice params — same breath for every utterance.
-function unifiedRate(lang: BELang) { return lang === 'ar' ? 1.0 : 1.05; }
+// Unified, elegant voice params — smooth articulation for Arabic.
+function unifiedRate(lang: BELang) { return lang === 'ar' ? 0.94 : 1.0; }
 
 function drainQueue() {
   if (speakingItem) return;
   const now = Date.now();
   // Drop stale items aggressively for snappy guidance.
   queue = queue.filter(q => {
-    if (q.priority === 'descriptive' && now - q.enqueuedAt > 500) return false;
-    if (q.priority === 'directional' && now - q.enqueuedAt > 1500) return false;
+    if (q.priority === 'descriptive' && now - q.enqueuedAt > 600) return false;
+    if (q.priority === 'directional' && now - q.enqueuedAt > 1800) return false;
     return true;
   });
   if (queue.length === 0) return;
@@ -88,13 +149,19 @@ function drainQueue() {
 
   if (!('speechSynthesis' in window)) { speakingItem = null; return; }
   const lang = item.lang ?? activeLang;
-  const u = new SpeechSynthesisUtterance(item.text);
-  u.lang = BE_BCP47[lang];
+  const cleanedText = cleanSpokenText(item.text, lang);
+  if (!cleanedText) { speakingItem = null; return; }
+
+  const u = new SpeechSynthesisUtterance(cleanedText);
   const voice = voicesCache[lang];
-  if (voice) u.voice = voice;
-  // Unified params — ignore per-item rate/pitch overrides for a consistent voice.
-  u.rate = unifiedRate(lang);
-  u.pitch = 1.0;
+  if (voice) {
+    u.voice = voice;
+    u.lang = voice.lang || BE_BCP47[lang];
+  } else {
+    u.lang = BE_BCP47[lang];
+  }
+  u.rate = item.rate ?? unifiedRate(lang);
+  u.pitch = item.pitch ?? 1.0;
   u.volume = volume;
   const finish = () => {
     speakingItem = null;
@@ -110,8 +177,21 @@ export function enqueueSpeech(item: Omit<SpeechItem, 'enqueuedAt'>) {
   if (!('speechSynthesis' in window)) return;
   const full: SpeechItem = { ...item, enqueuedAt: Date.now() };
   if (full.priority === 'critical') {
-    try { window.speechSynthesis.cancel(); } catch {}
-    speakingItem = null;
+    const lang = full.lang ?? activeLang;
+    const cleanNew = cleanSpokenText(full.text, lang);
+    const cleanCurrent = speakingItem ? cleanSpokenText(speakingItem.text, speakingItem.lang ?? activeLang) : '';
+
+    // If currently speaking the exact same alert within 1500ms, ignore duplicate spam
+    if (speakingItem && cleanCurrent === cleanNew && Date.now() - speakingItem.enqueuedAt < 1500) {
+      return;
+    }
+
+    // If currently speaking a lower priority message, interrupt immediately
+    if (speakingItem && speakingItem.priority !== 'critical') {
+      try { window.speechSynthesis.cancel(); } catch {}
+      speakingItem = null;
+    }
+    // Drop lower priority items from queue
     queue = queue.filter(q => q.priority === 'critical');
   }
   queue.push(full);
