@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import CyberLabHUD from '@/components/simulations/CyberLabHUD';
+import LiveAILabCoPilot from '@/components/simulations/LiveAILabCoPilot';
+import LabChallengeEngine from '@/components/simulations/LabChallengeEngine';
 
 // Enhanced organism types with more variety
 const ORGANISM_TYPES = {
@@ -133,6 +136,23 @@ interface Organism {
   targetX?: number;
   targetY?: number;
 }
+
+const ECO_CHALLENGES = [
+  {
+    id: 'eco-balance',
+    title: 'تحدي توازن السلسلة الغذائية',
+    description: 'حافظ على بقاء الكائنات الحية فوق 15 كائناً مع بقاء المنتجات أعلى من المستهلكات للحفاظ على قاعدة الهرم البيئي.',
+    targetCondition: (params: Record<string, any>) => params.organismCount >= 15 && params.producers > 0,
+    hint: 'أضف نباتات أو أشجار كافية لضمان وجود طاقة للمستهلكات.'
+  },
+  {
+    id: 'biodiversity-surge',
+    title: 'تحدي ذروة التنوع البيولوجي',
+    description: 'أدخل كائنات من 4 فئات مختلفة على الأقل في البيئة الحالية.',
+    targetCondition: (params: Record<string, any>) => params.categoryCount >= 4,
+    hint: 'استخدم تبويب "إضافة" لإدخال نباتات وآكلات عشب ومفترسات وطيور أو مائيات.'
+  }
+];
 
 const EcosystemSimulation = () => {
   const navigate = useNavigate();
@@ -460,8 +480,19 @@ const EcosystemSimulation = () => {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="flex-1"
+          className="flex-1 space-y-3"
         >
+          {/* CyberLabHUD Floating Telemetry */}
+          <CyberLabHUD
+            title="مؤشرات الاتزان البيئي والديناميكا السكانية"
+            metrics={[
+              { label: 'إجمالي الكائنات الحية', value: `${organisms.length}`, status: organisms.length > 15 ? 'optimal' : 'warning' },
+              { label: 'المنتجات (نباتات)', value: `${categories['نباتات'].count}`, status: categories['نباتات'].count > 5 ? 'optimal' : 'warning' },
+              { label: 'آكلات العشب', value: `${categories['آكلات العشب'].count}`, status: 'normal' },
+              { label: 'المفترسات', value: `${categories['آكلات اللحوم'].count}`, status: 'normal' }
+            ]}
+          />
+
           <Card className="bg-gray-900/70 border-green-500/30 p-4 backdrop-blur-sm">
             {/* Disaster overlay */}
             <AnimatePresence>
@@ -641,6 +672,38 @@ const EcosystemSimulation = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Live AI Lab CoPilot & Challenge Engine */}
+          <div className="mt-4 space-y-4">
+            <LiveAILabCoPilot
+              simName="النظام البيئي والديناميكا السكانية"
+              currentParameters={{
+                "البيئة": ENVIRONMENTS[environment].name,
+                "إجمالي الكائنات": `${organisms.length}`,
+                "المنتجات": `${categories['نباتات'].count}`,
+                "آكلات العشب": `${categories['آكلات العشب'].count}`,
+                "المفترسات": `${categories['آكلات اللحوم'].count}`
+              }}
+              subject="biology"
+              liveHint={
+                organisms.length < 5
+                  ? "تحذير: النظام البيئي مهدد بالانهيار بسبب ندرة الكائنات! أضف نباتات لإعادة بناء قاعدة الهرم."
+                  : categories['نباتات'].count < categories['آكلات العشب'].count
+                  ? "الرعي الجائر: عدد آكلات الأعشاب يتجاوز الغطاء النباتي المتاح!"
+                  : "النظام في حالة اتزان بيئي مستقر وتدفق طاقة سليم عبر السلسلة الغذائية."
+              }
+            />
+
+            <LabChallengeEngine
+              challenges={ECO_CHALLENGES}
+              currentParams={{
+                organismCount: organisms.length,
+                producers: categories['نباتات'].count,
+                herbivores: categories['آكلات العشب'].count,
+                categoryCount: Object.values(categories).filter(c => c.count > 0).length
+              }}
+            />
+          </div>
         </motion.div>
       </div>
     </div>
