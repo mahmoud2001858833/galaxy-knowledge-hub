@@ -7,11 +7,9 @@ import {
   CalendarDays, 
   Puzzle, 
   Video, 
-  Atom, 
   FileText, 
   Brain, 
   Sparkles, 
-  Award,
   ArrowLeft,
   ArrowRight
 } from 'lucide-react';
@@ -73,28 +71,12 @@ const EducationalResources = () => {
       badge: 'تفكير نقدي'
     },
     {
-      title: 'المحاكاة والتجارب العلمية التفاعلية',
-      icon: Atom,
-      description: 'مختبر رقمي كامل لإجراء التجارب المعملية بدون مخاطر',
-      link: '/scientific-simulations',
-      accent: 'from-teal-500 to-cyan-500',
-      badge: 'مختبر رقمي'
-    },
-    {
       title: 'المساعد الطبي المدرسي',
       icon: Video,
       description: 'دليل شامل وبروتوكولات تفاعلية للتعامل مع الإسعافات والحالات الطارئة',
       link: '/medical-assistant',
       accent: 'from-rose-500 to-red-600',
       badge: 'صحة ورعاية'
-    },
-    {
-      title: 'إنجازات المعلمين والمنصة',
-      icon: Award,
-      description: 'لوحة شرف تبرز إسهامات المعلمين والمبدعين في تطوير المنصة',
-      link: '/teacher-achievements',
-      accent: 'from-amber-500 to-yellow-500',
-      badge: 'لوحة الشرف'
     },
     {
       title: 'توثيق المنصة الشامل',
