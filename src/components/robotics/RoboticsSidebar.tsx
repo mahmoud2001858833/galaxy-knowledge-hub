@@ -20,7 +20,12 @@ import {
   CheckCircle2,
   Wand2,
   HelpCircle,
-  RotateCcw
+  RotateCcw,
+  LayoutGrid,
+  Maximize2,
+  PanelLeftClose,
+  PanelLeft,
+  SlidersHorizontal
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -129,24 +134,29 @@ export const ROBOTICS_NAV_ITEMS: NavSectionItem[] = [
 ];
 
 export const NAV_GROUPS = [
-  { id: 'foundations', label: 'التأسيس والمسارات الأكاديمية' },
-  { id: 'hardware', label: 'العتاد والمحاكاة الفيزيائية' },
-  { id: 'ai', label: 'الذكاء الاصطناعي والرؤية' },
-  { id: 'industrial', label: 'التصنيع والبرمجة الصناعية' }
+  { id: 'foundations', label: 'التأسيس والمسارات الأكاديمية', count: 1 },
+  { id: 'hardware', label: 'العتاد والمحاكاة الفيزيائية', count: 3 },
+  { id: 'ai', label: 'الذكاء الاصطناعي والرؤية', count: 2 },
+  { id: 'industrial', label: 'التصنيع والبرمجة الصناعية', count: 2 }
 ];
 
-interface RoboticsSidebarProps {
+export interface RoboticsSidebarProps {
   activeTab: string;
   onSelectTab: (tabId: string) => void;
   onResetAll?: () => void;
+  layoutMode?: 'horizontal' | 'vertical';
+  onToggleLayoutMode?: (mode: 'horizontal' | 'vertical') => void;
 }
 
 export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
   activeTab,
   onSelectTab,
-  onResetAll
+  onResetAll,
+  layoutMode = 'horizontal',
+  onToggleLayoutMode
 }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
   const [completedTabs, setCompletedTabs] = useState<string[]>([
     'pathways',
     'arm'
@@ -162,6 +172,194 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
 
   const progressPercentage = Math.round((completedTabs.length / ROBOTICS_NAV_ITEMS.length) * 100);
 
+  // Filtered items based on group filter in horizontal view
+  const visibleItems = selectedGroupFilter === 'all'
+    ? ROBOTICS_NAV_ITEMS
+    : ROBOTICS_NAV_ITEMS.filter(item => item.group === selectedGroupFilter);
+
+  // ==========================================
+  // 1. HORIZONTAL PANORAMIC DECK ("عرض عرضي")
+  // ==========================================
+  if (layoutMode === 'horizontal') {
+    return (
+      <div className="w-full space-y-4">
+        {/* Top Control & Filter Header */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 dark:bg-slate-900/95 border-2 border-cyan-500/30 backdrop-blur-xl shadow-xl space-y-4 text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            {/* Title & Brand */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/25">
+                <Bot className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-base sm:text-lg text-white">
+                    منصة مختبرات الروبوتات والذكاء الاصطناعي
+                  </h3>
+                  <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-[10px] font-bold">
+                    8 مختبرات متكاملة
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400">
+                  اختر التجربة من القائمة العرضية أدناه لمشاهدة المحاكاة والتحكم الفيزيائي الكامل
+                </p>
+              </div>
+            </div>
+
+            {/* Right Action Tools: Progress + Mode Switch + Reset */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Student Completion Progress */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs">
+                <GraduationCap className="w-4 h-4 text-cyan-400" />
+                <span className="text-slate-300 font-semibold">الإنجاز:</span>
+                <span className="font-mono font-bold text-cyan-300">
+                  {completedTabs.length}/8 ({progressPercentage}%)
+                </span>
+                <div className="w-16 h-2 rounded-full bg-slate-700 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* View Switcher Toggle */}
+              {onToggleLayoutMode && (
+                <div className="flex items-center rounded-xl bg-slate-800/80 border border-slate-700 p-0.5">
+                  <button
+                    onClick={() => onToggleLayoutMode('horizontal')}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-cyan-600 text-white shadow-sm flex items-center gap-1"
+                    title="العرض الأفقي البانورامي (كامل الشاشة)"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">عرض عرضي</span>
+                  </button>
+                  <button
+                    onClick={() => onToggleLayoutMode('vertical')}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1"
+                    title="التبديل إلى عرض القائمة الجانبية"
+                  >
+                    <PanelLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">عرض جانبي</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Reset all button */}
+              {onResetAll && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onResetAll}
+                  className="h-8 px-2.5 text-xs rounded-xl border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white"
+                  title="إعادة ضبط كافة التجارب والمحاكيات"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                  <span className="hidden md:inline">إعادة ضبط</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Academic Track Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <span className="text-slate-400 text-xs font-bold shrink-0 ml-1">التصنيف:</span>
+            <button
+              onClick={() => setSelectedGroupFilter('all')}
+              className={`px-3 py-1 rounded-xl font-bold whitespace-nowrap transition-all border ${
+                selectedGroupFilter === 'all'
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-sm'
+                  : 'bg-slate-800/60 text-slate-400 hover:text-white border-transparent'
+              }`}
+            >
+              كافة المختبرات (8)
+            </button>
+            {NAV_GROUPS.map(grp => (
+              <button
+                key={grp.id}
+                onClick={() => setSelectedGroupFilter(grp.id)}
+                className={`px-3 py-1 rounded-xl font-bold whitespace-nowrap transition-all border ${
+                  selectedGroupFilter === grp.id
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-sm'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-white border-transparent'
+                }`}
+              >
+                {grp.label} ({grp.count})
+              </button>
+            ))}
+          </div>
+
+          {/* Horizontal Grid of 8 Lab Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-1">
+            {visibleItems.map(item => {
+              const isActive = activeTab === item.id;
+              const isCompleted = completedTabs.includes(item.id);
+              const Icon = item.icon;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelect(item.id)}
+                  className={`text-right p-3 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden group min-h-[110px] text-xs ${
+                    isActive
+                      ? 'bg-gradient-to-b from-cyan-600/30 to-blue-700/40 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.3)] text-white'
+                      : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/70 hover:border-slate-600 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {/* Active Top Glow Line */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeDeckBar"
+                      className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-400 to-blue-500"
+                    />
+                  )}
+
+                  {/* Header Row: Icon + Checkmark */}
+                  <div className="flex items-center justify-between w-full mb-2">
+                    <div
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        isActive
+                          ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/30'
+                          : 'bg-slate-700/60 text-slate-300 group-hover:bg-cyan-500/20 group-hover:text-cyan-400'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </div>
+
+                    {isCompleted && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Title & Subtitle */}
+                  <div className="w-full space-y-1">
+                    <h4 className={`font-bold line-clamp-1 text-xs ${isActive ? 'text-white' : 'text-slate-200'}`}>
+                      {item.shortTitle}
+                    </h4>
+                    <p className="text-[10px] text-slate-400 line-clamp-1">
+                      {item.badge}
+                    </p>
+                  </div>
+
+                  {/* Active Indicator status */}
+                  <div className="pt-2 flex items-center justify-between w-full border-t border-slate-700/50 mt-2 text-[10px]">
+                    <span className={`font-semibold ${isActive ? 'text-cyan-300' : 'text-slate-400'}`}>
+                      {isActive ? 'نشط الآن' : 'استعراض'}
+                    </span>
+                    <Sparkles className={`w-2.5 h-2.5 ${isActive ? 'text-amber-300' : 'text-slate-500'}`} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // 2. VERTICAL SIDEBAR (Classic Option)
+  // ==========================================
   const sidebarContent = (
     <div className="flex flex-col h-full space-y-6">
       {/* Sidebar Header & Brand */}
@@ -180,10 +378,19 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
               </span>
             </div>
           </div>
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] px-2 py-0.5 font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1 inline-block" />
-            نشط
-          </Badge>
+
+          {onToggleLayoutMode && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onToggleLayoutMode('horizontal')}
+              className="text-[10px] h-7 px-2 rounded-lg border-blue-500/30 text-blue-600 dark:text-blue-400"
+              title="التبديل إلى العرض الأفقي البانورامي"
+            >
+              <SlidersHorizontal className="w-3 h-3 ml-1" />
+              عرض عرضي
+            </Button>
+          )}
         </div>
 
         {/* Student Progress Metric */}
@@ -233,7 +440,6 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                           : 'bg-white/80 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200'
                       }`}
                     >
-                      {/* Active indicator bar */}
                       {isActive && (
                         <motion.div
                           layoutId="activeSidePill"
@@ -241,7 +447,6 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                         />
                       )}
 
-                      {/* Icon */}
                       <div
                         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                           isActive
@@ -252,7 +457,6 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                         <Icon className="w-5 h-5" />
                       </div>
 
-                      {/* Title & Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <h4 className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
@@ -326,7 +530,6 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Persistent Sidebar (RTL: Placed gracefully on side) */}
       <aside className="hidden lg:block w-80 shrink-0 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
         {sidebarContent}
       </aside>
@@ -355,11 +558,10 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
         </Button>
       </div>
 
-      {/* Mobile Full Screen Drawer / Modal */}
+      {/* Mobile Full Screen Drawer */}
       <AnimatePresence>
         {isMobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -367,8 +569,6 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
               onClick={() => setIsMobileOpen(false)}
               className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
             />
-
-            {/* Drawer Sheet */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
