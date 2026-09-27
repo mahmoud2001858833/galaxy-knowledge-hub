@@ -12,7 +12,7 @@ import InteractivePersonaTour from '@/components/home/InteractivePersonaTour';
 import EcosystemBentoGrid from '@/components/home/EcosystemBentoGrid';
 import InteractiveCapabilitiesDemo from '@/components/home/InteractiveCapabilitiesDemo';
 import PlatformBenchmarkMatrix from '@/components/home/PlatformBenchmarkMatrix';
-import StrategicRoadmapSection from '@/components/home/StrategicRoadmapSection';
+import FuturePlatformsShowcase from '@/components/home/FuturePlatformsShowcase';
 import EducationalResources from '@/components/EducationalResources';
 import InteractiveTourGuideModal from '@/components/home/InteractiveTourGuideModal';
 
@@ -72,9 +72,9 @@ const Index = () => {
           <PlatformBenchmarkMatrix />
         </SafeBoundary>
         
-        {/* Stage 7: Future Strategic Initiatives (المشاريع المستقبلية - مبادرة "دمج" الاستراتيجية) */}
-        <SafeBoundary name="StrategicRoadmapSection">
-          <StrategicRoadmapSection />
+        {/* Stage 7: Future Platforms & Strategic Suites (قسم المنصات المستقبلية والخطط الاستراتيجية مع مشروع دامج) */}
+        <SafeBoundary name="FuturePlatformsShowcase">
+          <FuturePlatformsShowcase />
         </SafeBoundary>
 
         {/* Stage 8: Auxiliary Learning Tools & Resources (الأدوات المساندة والمكتبات) */}
