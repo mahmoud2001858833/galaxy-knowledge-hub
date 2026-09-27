@@ -23,7 +23,7 @@ export const SEO = ({
   locale = "ar_SA",
   siteName = "ذروة العلم - منصة تعليمية تفاعلية"
 }: SEOProps) => {
-  const fullTitle = `${title} | ذروة العلم`;
+  const fullTitle = title.includes("ذروة العلم") ? title : `${title} | منصة ذروة العلم`;
   const currentUrl = canonicalUrl || window.location.href;
   
   return (
