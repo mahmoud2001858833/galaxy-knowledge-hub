@@ -35,7 +35,8 @@ import {
   Moon,
   BookOpen,
   GraduationCap,
-  Megaphone
+  Megaphone,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +55,7 @@ import { SchoolBroadcastsManager } from '@/components/admin/lcm/SchoolBroadcasts
 import { CommunityModerationManager } from '@/components/admin/lcm/CommunityModerationManager';
 import { AdminPuzzlesManagementHub } from '@/components/admin/AdminPuzzlesManagementHub';
 import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsManager';
+import { InstitutionalPartnershipsManager } from '@/components/admin/InstitutionalPartnershipsManager';
 
 type AdminTab = 
   | 'overview'
@@ -65,6 +67,7 @@ type AdminTab =
   | 'simulations'
   | 'puzzles'
   | 'users'
+  | 'partnerships'
   | 'audit'
   | 'support'
   | 'footer'
@@ -205,6 +208,7 @@ export const SuperAdminControlHub: React.FC = () => {
     { id: 'simulations', label: 'المحاكيات والتجارب (49)', icon: Atom, badge: '49' },
     { id: 'puzzles', label: 'إدارة الألغاز والذكاء الاصطناعي', icon: HelpCircle, badge: 'AI 2.0' },
     { id: 'users', label: 'المستخدمين والصلاحيات', icon: Users, badge: '618 مسجل' },
+    { id: 'partnerships', label: 'معلومات الشراكات المؤسسية', icon: Building2, badge: 'جديد' },
     { id: 'audit', label: 'سجل النشاط ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}` },
     { id: 'support', label: 'جلسات التواصل والدعم', icon: MessageSquare, badge: `${supportSessions.filter(s => s.unreadForAdmin).length || ''}` },
     { id: 'footer', label: 'محرر الفوتر ونهاية الصفحات', icon: Sliders },
@@ -615,6 +619,11 @@ export const SuperAdminControlHub: React.FC = () => {
             {/* 4. Users & Roles Management Tab */}
             {currentTab === 'users' && (
               <UsersPermissionsManager />
+            )}
+
+            {/* 4.1 Institutional Partnerships Tab */}
+            {currentTab === 'partnerships' && (
+              <InstitutionalPartnershipsManager />
             )}
 
             {/* 5. Ultra-Granular Audit Trail Tab ("اعرف الإبرة من رماها") */}

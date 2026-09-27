@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, Compass, X, Play, Square, ChevronRight, ChevronLeft, 
   Volume2, VolumeX, Atom, Cpu, HeartHandshake, Eye, ShieldCheck, 
-  CheckCircle2, ArrowUpRight, MousePointer2
+  CheckCircle2, ArrowUpRight, MousePointer2, Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +80,17 @@ const TOUR_MILESTONES: TourMilestone[] = [
     icon: ShieldCheck,
     accentColor: 'from-amber-500 to-yellow-500',
     mouseTarget: { xPercent: 50, yPercent: 50 }
+  },
+  {
+    id: 6,
+    targetId: 'tour-stage-partnerships',
+    badge: 'المحطة السادسة • الشراكة المؤسسية',
+    title: 'الشراكة المؤسسية والاعتماد الأكاديمي',
+    description: 'تمكين المدارس والجامعات والوزارات من خفض تكاليف المعامل 85% عبر 49 مختبراً 3D، مسارات BTEC المهنية، وحلول دامج للتربية الخاصة.',
+    voiceText: 'بوابة الشراكة المؤسسية تتيح للمدارس والجامعات والوزارات الاستفادة الكاملة من بنية المنصة ومختبراتها المعتمدة.',
+    icon: Building2,
+    accentColor: 'from-blue-600 to-indigo-600',
+    mouseTarget: { xPercent: 50, yPercent: 48 }
   }
 ];
 

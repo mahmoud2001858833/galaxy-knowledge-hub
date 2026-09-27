@@ -57,6 +57,18 @@ const Footer: React.FC = () => {
               <span>أقسام المنصة السريعة</span>
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm">
+              <li>
+                <Link
+                  to="/institutional-partnerships"
+                  className="hover:text-blue-600 dark:hover:text-cyan-300 transition-colors inline-flex items-center gap-1.5 group font-bold text-blue-600 dark:text-cyan-400"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>الشراكة المؤسسية والاعتماد</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 font-bold border border-blue-500/20">
+                    جديد
+                  </span>
+                </Link>
+              </li>
               {(settings?.footerLinks || []).slice(0, 4).map((link) => (
                 <li key={link.id}>
                   <Link

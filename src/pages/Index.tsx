@@ -15,6 +15,7 @@ import PlatformBenchmarkMatrix from '@/components/home/PlatformBenchmarkMatrix';
 import FuturePlatformsShowcase from '@/components/home/FuturePlatformsShowcase';
 import EducationalResources from '@/components/EducationalResources';
 import InteractiveTourGuideModal from '@/components/home/InteractiveTourGuideModal';
+import InstitutionalPartnershipSection from '@/components/home/InstitutionalPartnershipSection';
 
 const Index = () => {
   let dir = 'rtl';
@@ -93,6 +94,11 @@ const Index = () => {
             </div>
           </SafeBoundary>
         </div>
+
+        {/* Stage 9: Institutional Partnerships & Enterprise Collaboration (الشراكة المؤسسية) */}
+        <SafeBoundary name="InstitutionalPartnershipSection">
+          <InstitutionalPartnershipSection />
+        </SafeBoundary>
       </main>
       
       <SafeBoundary name="Footer">

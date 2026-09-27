@@ -202,6 +202,7 @@ const PublishedProject = wrap(lazy(() => import("./pages/PublishedProject")));
 const TenantSettings = wrap(lazy(() => import("./pages/TenantSettings")));
 const PlatformDocumentation = wrap(lazy(() => import("./pages/PlatformDocumentation")));
 const PrivacyAndTerms = wrap(lazy(() => import("./pages/PrivacyAndTerms")));
+const InstitutionalPartnerships = wrap(lazy(() => import("./pages/InstitutionalPartnerships")));
 const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionSystem")));
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
@@ -1115,6 +1116,14 @@ const router = createBrowserRouter([
         element: <SuperAdminControlHub />,
       },
       
+      {
+        path: 'institutional-partnerships',
+        element: <PublicRoute><InstitutionalPartnerships /></PublicRoute>,
+      },
+      {
+        path: 'partnerships',
+        element: <PublicRoute><InstitutionalPartnerships /></PublicRoute>,
+      },
       {
         path: 'education-section',
         element: <PublicRoute><EducationSection /></PublicRoute>,
