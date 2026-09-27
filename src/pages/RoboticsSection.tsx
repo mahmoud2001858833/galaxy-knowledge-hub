@@ -32,8 +32,17 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import roboticsHeroBg from '@/assets/robotics-ai-section.jpg';
+import { RoboticsPathways } from '@/components/robotics/RoboticsPathways';
+import { HardwareCircuitSandbox } from '@/components/robotics/HardwareCircuitSandbox';
+import { AIVisionPlayground } from '@/components/robotics/AIVisionPlayground';
+import { CodeArenaMaze } from '@/components/robotics/CodeArenaMaze';
+import { DigitalTwinProjects } from '@/components/robotics/DigitalTwinProjects';
+import { Radio, Swords, Printer } from 'lucide-react';
 
 export const RoboticsSection: React.FC = () => {
+  // Main Tab State
+  const [activeMainTab, setActiveMainTab] = useState<string>('pathways');
+
   // Robotic Arm Kinematics State
   const [theta1, setTheta1] = useState(45); // Base angle (deg)
   const [theta2, setTheta2] = useState(-30); // Shoulder angle (deg)
@@ -371,6 +380,14 @@ export const RoboticsSection: React.FC = () => {
     setGripper(40);
   };
 
+  const handleTargetDetected = (x: number, y: number, color: string) => {
+    // Map normalized visual coordinate to arm joint angles in real time
+    const mappedTheta1 = Math.round((x / 640) * 140 + 20);
+    const mappedTheta2 = Math.round((y / 420) * 60 - 30);
+    setTheta1(mappedTheta1);
+    setTheta2(mappedTheta2);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#060919] text-slate-900 dark:text-white flex flex-col font-sans transition-colors duration-300" dir="rtl">
       <SEO
@@ -413,16 +430,22 @@ export const RoboticsSection: React.FC = () => {
               {/* Badges / Metrics */}
               <div className="flex flex-wrap gap-2.5 pt-2">
                 <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-blue-600 dark:text-blue-300 border-blue-500/30 px-3 py-1 text-xs">
-                  <Bot className="w-3.5 h-3.5 ml-1.5" /> 6-DOF Kinematics
-                </Badge>
-                <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-cyan-600 dark:text-cyan-300 border-cyan-500/30 px-3 py-1 text-xs">
-                  <Terminal className="w-3.5 h-3.5 ml-1.5" /> ROS 2 & Python
+                  <Layers className="w-3.5 h-3.5 ml-1.5" /> 4 مسارات تعليمية معتمدة
                 </Badge>
                 <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-emerald-600 dark:text-emerald-300 border-emerald-500/30 px-3 py-1 text-xs">
-                  <Radar className="w-3.5 h-3.5 ml-1.5" /> 360° LiDAR Mapping
+                  <Cpu className="w-3.5 h-3.5 ml-1.5" /> محاكي Wokwi والدوائر المدمجة
+                </Badge>
+                <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-cyan-600 dark:text-cyan-300 border-cyan-500/30 px-3 py-1 text-xs">
+                  <Radar className="w-3.5 h-3.5 ml-1.5" /> 360° LiDAR & Kinematics
                 </Badge>
                 <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-purple-600 dark:text-purple-300 border-purple-500/30 px-3 py-1 text-xs">
-                  <BrainCircuit className="w-3.5 h-3.5 ml-1.5" /> Edge Vision AI
+                  <BrainCircuit className="w-3.5 h-3.5 ml-1.5" /> مختبر الرؤية الحاسوبية بالكاميرا
+                </Badge>
+                <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-amber-600 dark:text-amber-300 border-amber-500/30 px-3 py-1 text-xs">
+                  <Swords className="w-3.5 h-3.5 ml-1.5" /> حلبة منافسات المتاهة
+                </Badge>
+                <Badge variant="outline" className="bg-white/80 dark:bg-slate-900/80 text-indigo-600 dark:text-indigo-300 border-indigo-500/30 px-3 py-1 text-xs">
+                  <Printer className="w-3.5 h-3.5 ml-1.5" /> 5 مشاريع توأم رقمي بملفات STL
                 </Badge>
               </div>
             </div>
@@ -439,26 +462,62 @@ export const RoboticsSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Interactive Engineering Tabs */}
-        <Tabs defaultValue="arm" className="w-full space-y-8">
+        {/* Interactive Engineering Workstation Tabs */}
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full space-y-8">
           <div className="flex justify-center">
-            <TabsList className="bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-1.5 rounded-2xl max-w-2xl w-full grid grid-cols-3">
-              <TabsTrigger value="arm" className="rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5">
-                <Bot className="w-4 h-4 text-blue-500" />
-                <span>الذراع الروبوتية (Kinematics)</span>
+            <TabsList className="bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-1.5 rounded-2xl w-full flex flex-wrap justify-center gap-1.5 h-auto shadow-sm">
+              <TabsTrigger value="pathways" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">
+                <Layers className="w-3.5 h-3.5 text-blue-500" />
+                <span>1. خريطة المسارات</span>
               </TabsTrigger>
-              <TabsTrigger value="amr" className="rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5">
-                <Radar className="w-4 h-4 text-cyan-500" />
-                <span>الملاحة بالليدار (LiDAR AMR)</span>
+              <TabsTrigger value="wokwi" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-sm">
+                <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+                <span>2. محاكي العتاد وWokwi</span>
               </TabsTrigger>
-              <TabsTrigger value="code" className="rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5">
-                <Code2 className="w-4 h-4 text-purple-500" />
-                <span>مختبر كود ROS2 & Python</span>
+              <TabsTrigger value="arm" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-blue-500" />
+                <span>3. الذراع والحركيات</span>
+              </TabsTrigger>
+              <TabsTrigger value="amr" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-cyan-600 dark:data-[state=active]:text-cyan-400 data-[state=active]:shadow-sm">
+                <Radar className="w-3.5 h-3.5 text-cyan-500" />
+                <span>4. الملاحة والليدار</span>
+              </TabsTrigger>
+              <TabsTrigger value="vision" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm">
+                <BrainCircuit className="w-3.5 h-3.5 text-purple-500" />
+                <span>5. مختبر الرؤية والوكلاء</span>
+              </TabsTrigger>
+              <TabsTrigger value="arena" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm">
+                <Swords className="w-3.5 h-3.5 text-amber-500" />
+                <span>6. حلبة الأكواد والمتاهة</span>
+              </TabsTrigger>
+              <TabsTrigger value="digital-twin" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm">
+                <Printer className="w-3.5 h-3.5 text-indigo-500" />
+                <span>7. التوأم الرقمي والطباعة 3D</span>
+              </TabsTrigger>
+              <TabsTrigger value="code" className="rounded-xl text-xs font-bold flex items-center gap-1.5 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm">
+                <Code2 className="w-3.5 h-3.5 text-purple-500" />
+                <span>8. مختبر ROS 2 & Python</span>
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* TAB 1: Robotic Arm Kinematics */}
+          {/* TAB 1: Pathways */}
+          <TabsContent value="pathways" className="space-y-6">
+            <RoboticsPathways onLaunchLab={(lab) => {
+              if (lab === 'wokwi') setActiveMainTab('wokwi');
+              else if (lab === 'kinematics') setActiveMainTab('arm');
+              else if (lab === 'vision') setActiveMainTab('vision');
+              else if (lab === 'arena') setActiveMainTab('arena');
+              else if (lab === 'digital-twin') setActiveMainTab('digital-twin');
+            }} />
+          </TabsContent>
+
+          {/* TAB 2: Hardware Circuit Sandbox */}
+          <TabsContent value="wokwi" className="space-y-6">
+            <HardwareCircuitSandbox />
+          </TabsContent>
+
+          {/* TAB 3: Robotic Arm Kinematics */}
           <TabsContent value="arm" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Canvas Simulator Visualizer */}
@@ -741,7 +800,22 @@ export const RoboticsSection: React.FC = () => {
             </div>
           </TabsContent>
 
-          {/* TAB 3: ROS 2 & Python Code Studio */}
+          {/* TAB 5: AI Vision Playground */}
+          <TabsContent value="vision" className="space-y-6">
+            <AIVisionPlayground onTargetDetected={handleTargetDetected} />
+          </TabsContent>
+
+          {/* TAB 6: Code Arena & Maze */}
+          <TabsContent value="arena" className="space-y-6">
+            <CodeArenaMaze />
+          </TabsContent>
+
+          {/* TAB 7: Digital Twin & 3D STL Capstones */}
+          <TabsContent value="digital-twin" className="space-y-6">
+            <DigitalTwinProjects />
+          </TabsContent>
+
+          {/* TAB 8: ROS 2 & Python Code Studio */}
           <TabsContent value="code" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Code Editor Panel */}
