@@ -203,6 +203,7 @@ const TenantSettings = wrap(lazy(() => import("./pages/TenantSettings")));
 const PlatformDocumentation = wrap(lazy(() => import("./pages/PlatformDocumentation")));
 const PrivacyAndTerms = wrap(lazy(() => import("./pages/PrivacyAndTerms")));
 const InstitutionalPartnerships = wrap(lazy(() => import("./pages/InstitutionalPartnerships")));
+const PlatformSecurityReport = wrap(lazy(() => import("./pages/PlatformSecurityReport")));
 const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionSystem")));
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
@@ -1139,6 +1140,18 @@ const router = createBrowserRouter([
       {
         path: 'partnerships',
         element: <PublicRoute><InstitutionalPartnerships /></PublicRoute>,
+      },
+      {
+        path: 'security-report',
+        element: <PublicRoute><PlatformSecurityReport /></PublicRoute>,
+      },
+      {
+        path: 'platform-security',
+        element: <PublicRoute><PlatformSecurityReport /></PublicRoute>,
+      },
+      {
+        path: 'security',
+        element: <PublicRoute><PlatformSecurityReport /></PublicRoute>,
       },
       {
         path: 'education-section',

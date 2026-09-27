@@ -835,3 +835,38 @@ html[data-damij-cbf="achromatopsia"] body { filter: grayscale(1) contrast(1.1); 
   0%, 100% { transform: rotate(-12deg); }
   50% { transform: rotate(12deg); }
 }
+
+/* ==========================================================================
+   PLATFORM LOAD RESILIENCE & MULTI-DEVICE PERFORMANCE ENHANCEMENTS
+   ========================================================================== */
+
+/* GPU Hardware Acceleration & Instant Touch Response */
+button,
+a,
+[role="button"],
+.touch-optimized {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Eliminate jank and force hardware composite layers */
+.smooth-gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Inertial smooth scrolling on mobile & tablet devices */
+.smooth-touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Smooth typography and crisp rendering across all screen densities */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+

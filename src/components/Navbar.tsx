@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu, MessageSquare } from 'lucide-react';
+import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu, MessageSquare, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -277,6 +277,13 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
 
+                <Link to="/security-report">
+                  <DropdownMenuItem className="flex items-center cursor-pointer text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 rounded-xl px-2 py-2 text-xs font-semibold">
+                    <ShieldCheck className="mr-2 h-4 w-4 text-emerald-500" />
+                    <span>تقرير الأمان وقوة التحمل A+</span>
+                  </DropdownMenuItem>
+                </Link>
+
                 {isSuperAdmin && (
                   <Link to="/super-admin-control-hub">
                     <DropdownMenuItem className="flex items-center cursor-pointer text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
@@ -400,6 +407,15 @@ const Navbar = () => {
                   <Link to="/platform-documentation" className="px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2">
                     <Layers className="w-3.5 h-3.5 opacity-60" />
                     <span>دليل المنصة والتوثيق التقني</span>
+                  </Link>
+                  <Link to="/security-report" className="px-3 py-2 rounded-xl text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>تقرير الأمان وقوة التحمل</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 font-mono font-bold">
+                      A+ 120k
+                    </span>
                   </Link>
                   <button 
                     onClick={openAccessibilityModal} 

@@ -69,6 +69,18 @@ const Footer: React.FC = () => {
                   </span>
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/security-report"
+                  className="hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors inline-flex items-center gap-1.5 group font-bold text-emerald-600 dark:text-emerald-400"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>مستوى الأمان وقوة التحمل</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 font-bold border border-emerald-500/20 font-mono">
+                    درع A+ (120k+)
+                  </span>
+                </Link>
+              </li>
               {(settings?.footerLinks || []).slice(0, 4).map((link) => (
                 <li key={link.id}>
                   <Link
@@ -172,6 +184,16 @@ const Footer: React.FC = () => {
             <Link to="/super-admin-control-hub" className="hover:text-amber-600 transition-colors">لوحة الأدمن</Link>
             <span>•</span>
             <Link to="/privacy" className="hover:text-blue-600 transition-colors">الخصوصية والشروط</Link>
+            <span>•</span>
+            <Link
+              to="/security-report"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all font-bold text-xs group"
+              title="تقرير مستوى حماية المنصة وقوة التحمل"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>درع الحماية A+ وقوة التحمل: 120k+ مستخدم</span>
+            </Link>
           </div>
         </div>
       </div>
