@@ -52,6 +52,7 @@ import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
 import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
 import { SchoolBroadcastsManager } from '@/components/admin/lcm/SchoolBroadcastsManager';
 import { CommunityModerationManager } from '@/components/admin/lcm/CommunityModerationManager';
+import { AdminPuzzlesManagementHub } from '@/components/admin/AdminPuzzlesManagementHub';
 
 type AdminTab = 
   | 'overview'
@@ -69,49 +70,7 @@ type AdminTab =
   | 'questions'
   | 'copilot';
 
-interface PuzzleItem {
-  id: string;
-  title: string;
-  subject: string;
-  question: string;
-  answer: string;
-  hint?: string;
-  points: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-}
 
-const INITIAL_PUZZLES: PuzzleItem[] = [
-  {
-    id: 'puz-1',
-    title: 'تراكب الحالات الكمية',
-    subject: 'فيزياء',
-    question: 'ما هي الخاصية الكمية التي تسمح لجسيم بالتواجد في أكثر من حالة طاقية في آن واحد قبل إجراء القياس؟',
-    answer: 'التراكب الكمي (Quantum Superposition)',
-    hint: 'مرتبط بتجربة قطة شرودنغر',
-    points: 15,
-    difficulty: 'medium'
-  },
-  {
-    id: 'puz-2',
-    title: 'توازن لوشاتيليه الديناميكي',
-    subject: 'كيمياء',
-    question: 'في تفاعل طارد للحرارة في حالة اتزان، إلى أي اتجاه ينزاح موضع الاتزان عند رفع درجة الحرارة؟',
-    answer: 'نحو الاتجاه العكسي (المتفاعلات)',
-    hint: 'وفق قاعدة لوشاتيليه لتقليل الأثر الخارجي',
-    points: 10,
-    difficulty: 'easy'
-  },
-  {
-    id: 'puz-3',
-    title: 'تعديل الجينات بكريسبر',
-    subject: 'أحياء',
-    question: 'ما هو البروتين الأنزيمي الذي يعمل كمقص جزيئي لقطع الحمض النووي بدقة موجهة بـ gRNA؟',
-    answer: 'Cas9 (أو Cas12)',
-    hint: 'Cas هو اختصار لـ CRISPR-associated protein',
-    points: 20,
-    difficulty: 'hard'
-  }
-];
 
 export const SuperAdminControlHub: React.FC = () => {
   const navigate = useNavigate();
@@ -153,25 +112,7 @@ export const SuperAdminControlHub: React.FC = () => {
   const [auditActionFilter, setAuditActionFilter] = useState<string>('all');
   const [auditSeverityFilter, setAuditSeverityFilter] = useState<string>('all');
 
-  // Puzzles State
-  const [puzzles, setPuzzles] = useState<PuzzleItem[]>(() => {
-    try {
-      const stored = localStorage.getItem('galaxy_admin_puzzles_v2');
-      return stored ? JSON.parse(stored) : INITIAL_PUZZLES;
-    } catch {
-      return INITIAL_PUZZLES;
-    }
-  });
 
-  const [newPuzzle, setNewPuzzle] = useState({
-    title: '',
-    subject: 'فيزياء',
-    question: '',
-    answer: '',
-    hint: '',
-    points: 10,
-    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
-  });
 
   // Footer Link Form
   const [newFooterLink, setNewFooterLink] = useState({
@@ -218,50 +159,7 @@ export const SuperAdminControlHub: React.FC = () => {
     }
   };
 
-  // Add Puzzle Handler
-  const handleAddPuzzle = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPuzzle.title || !newPuzzle.question || !newPuzzle.answer) {
-      toast.error('يرجى ملء الحقول الأساسية للغز');
-      return;
-    }
 
-    const created: PuzzleItem = {
-      ...newPuzzle,
-      id: 'puz-' + Date.now()
-    };
-
-    const updated = [created, ...puzzles];
-    setPuzzles(updated);
-    localStorage.setItem('galaxy_admin_puzzles_v2', JSON.stringify(updated));
-
-    auditLogger.record({
-      action: 'PUZZLE_CREATE',
-      module: 'إدارة الألغاز والتحديات',
-      description: `إضافة لغز جديد (${created.subject}): ${created.title}`,
-      user: { id: 'admin-master', name: 'المشرف العام', email: 'jowmahmoud6@gmail.com', role: 'super_admin' },
-      severity: 'info'
-    });
-
-    setNewPuzzle({
-      title: '',
-      subject: 'فيزياء',
-      question: '',
-      answer: '',
-      hint: '',
-      points: 10,
-      difficulty: 'medium'
-    });
-
-    toast.success('تمت إضافة اللغز بنجاح إلى المنصة!');
-  };
-
-  const handleDeletePuzzle = (id: string) => {
-    const updated = puzzles.filter((p) => p.id !== id);
-    setPuzzles(updated);
-    localStorage.setItem('galaxy_admin_puzzles_v2', JSON.stringify(updated));
-    toast.success('تم حذف اللغز');
-  };
 
   // Footer Save Handler
   const handleSaveFooterSettings = () => {
@@ -304,7 +202,7 @@ export const SuperAdminControlHub: React.FC = () => {
     { id: 'community', label: 'مجتمع الطلاب والرقابة الحية', icon: MessageSquare, badge: 'رصد فوري' },
     { id: 'dashboard', label: 'المؤشرات الحية والقياس', icon: LayoutDashboard },
     { id: 'simulations', label: 'المحاكيات والتجارب (49)', icon: Atom, badge: '49' },
-    { id: 'puzzles', label: 'إدارة الألغاز والتحديات', icon: HelpCircle, badge: `${puzzles.length}` },
+    { id: 'puzzles', label: 'إدارة الألغاز والذكاء الاصطناعي', icon: HelpCircle, badge: 'AI 2.0' },
     { id: 'users', label: 'المستخدمين والصلاحيات', icon: Users },
     { id: 'audit', label: 'سجل النشاط ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}` },
     { id: 'support', label: 'جلسات التواصل والدعم', icon: MessageSquare, badge: `${supportSessions.filter(s => s.unreadForAdmin).length || ''}` },
@@ -710,149 +608,7 @@ export const SuperAdminControlHub: React.FC = () => {
 
             {/* 3. Puzzles Management Tab */}
             {currentTab === 'puzzles' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">إدارة الألغاز والتحديات بالكامل</h2>
-                    <p className="text-xs text-slate-500">إضافة ألغاز جديدة، تعديل النقاط، ومراجعة بنك التحديات</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Form to Add New Puzzle */}
-                  <form onSubmit={handleAddPuzzle} className="lg:col-span-5 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Plus className="w-4 h-4 text-cyan-500" />
-                      <span>إضافة لغز علمي جديد</span>
-                    </h3>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">عنوان اللغز:</label>
-                      <Input
-                        value={newPuzzle.title}
-                        onChange={(e) => setNewPuzzle({ ...newPuzzle, title: e.target.value })}
-                        placeholder="مثال: لغز قانون الحث الكهرومغناطيسي"
-                        className="text-xs h-9 rounded-xl bg-slate-50 dark:bg-slate-800"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">المادة:</label>
-                        <select
-                          value={newPuzzle.subject}
-                          onChange={(e) => setNewPuzzle({ ...newPuzzle, subject: e.target.value })}
-                          className="w-full text-xs h-9 px-2 rounded-xl bg-slate-50 dark:bg-slate-800 border"
-                        >
-                          <option value="فيزياء">فيزياء</option>
-                          <option value="كيمياء">كيمياء</option>
-                          <option value="أحياء">أحياء</option>
-                          <option value="رياضيات">رياضيات</option>
-                          <option value="ذكاء ومنطق">ذكاء ومنطق</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">الصعوبة:</label>
-                        <select
-                          value={newPuzzle.difficulty}
-                          onChange={(e) => setNewPuzzle({ ...newPuzzle, difficulty: e.target.value as any })}
-                          className="w-full text-xs h-9 px-2 rounded-xl bg-slate-50 dark:bg-slate-800 border"
-                        >
-                          <option value="easy">سهل</option>
-                          <option value="medium">متوسط</option>
-                          <option value="hard">صعب</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">النقاط:</label>
-                        <Input
-                          type="number"
-                          value={newPuzzle.points}
-                          onChange={(e) => setNewPuzzle({ ...newPuzzle, points: parseInt(e.target.value) || 5 })}
-                          className="text-xs h-9 rounded-xl bg-slate-50 dark:bg-slate-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">نص اللغز أو السؤال:</label>
-                      <Textarea
-                        value={newPuzzle.question}
-                        onChange={(e) => setNewPuzzle({ ...newPuzzle, question: e.target.value })}
-                        placeholder="اكتب السؤال بالتفصيل..."
-                        className="text-xs rounded-xl bg-slate-50 dark:bg-slate-800 min-h-[70px]"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">الإجابة النموذجية:</label>
-                      <Input
-                        value={newPuzzle.answer}
-                        onChange={(e) => setNewPuzzle({ ...newPuzzle, answer: e.target.value })}
-                        placeholder="الإجابة الصحيحة المقبولة"
-                        className="text-xs h-9 rounded-xl bg-slate-50 dark:bg-slate-800"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">تلميح (اختياري):</label>
-                      <Input
-                        value={newPuzzle.hint}
-                        onChange={(e) => setNewPuzzle({ ...newPuzzle, hint: e.target.value })}
-                        placeholder="تلميح لمساعدة الطالب"
-                        className="text-xs h-9 rounded-xl bg-slate-50 dark:bg-slate-800"
-                      />
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full h-10 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md"
-                    >
-                      <Plus className="w-3.5 h-3.5 ml-1" />
-                      إضافة اللغز لبنك التحديات
-                    </Button>
-                  </form>
-
-                  {/* List of Puzzles */}
-                  <div className="lg:col-span-7 space-y-3">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">الألغاز النشطة ({puzzles.length})</h3>
-                    {puzzles.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start justify-between gap-4"
-                      >
-                        <div className="space-y-1.5 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 font-bold">
-                              {p.subject}
-                            </span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold">
-                              {p.points} نقاط
-                            </span>
-                            <span className="text-xs font-bold text-slate-900 dark:text-white">{p.title}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400">{p.question}</p>
-                          <div className="text-[11px] text-emerald-600 font-bold">الإجابة: {p.answer}</div>
-                        </div>
-
-                        <Button
-                          onClick={() => handleDeletePuzzle(p.id)}
-                          variant="ghost"
-                          size="icon"
-                          className="text-slate-400 hover:text-rose-500 rounded-xl"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <AdminPuzzlesManagementHub />
             )}
 
             {/* 4. Users & Roles Management Tab */}
