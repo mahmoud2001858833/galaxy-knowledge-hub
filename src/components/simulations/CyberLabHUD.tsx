@@ -121,9 +121,9 @@ export const CyberLabHUD: React.FC<CyberLabHUDProps> = ({
             key={m.id}
             className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/15 transition-all flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-slate-200 font-medium mb-1">
               <span className="truncate">{m.label}</span>
-              {m.icon || <Activity className="w-3.5 h-3.5 text-slate-500" />}
+              {m.icon || <Activity className="w-3.5 h-3.5 text-cyan-400" />}
             </div>
 
             <div className="flex items-baseline gap-1 my-1">

@@ -157,6 +157,7 @@ const XRayDiffractionSimulation = wrap(lazy(() => import("./pages/XRayDiffractio
 const AerodynamicsWindTunnelSimulation = wrap(lazy(() => import("./pages/AerodynamicsWindTunnelSimulation")));
 const SuperconductivitySimulation = wrap(lazy(() => import("./pages/SuperconductivitySimulation")));
 const OrbitalMechanicsSimulation = wrap(lazy(() => import("./pages/OrbitalMechanicsSimulation")));
+const QuantumWaveInterferenceSimulation = wrap(lazy(() => import("./pages/QuantumWaveInterferenceSimulation")));
 const EnvironmentalSustainability = wrap(lazy(() => import("./pages/EnvironmentalSustainability")));
 const CarbonCalculator = wrap(lazy(() => import("./pages/CarbonCalculator")));
 const SchoolProjects = wrap(lazy(() => import("./pages/SchoolProjects")));
@@ -605,6 +606,14 @@ const router = createBrowserRouter([
         element: <PublicRoute><ExperimentsSection /></PublicRoute>,
       },
       {
+        path: 'experiments',
+        element: <PublicRoute><ExperimentsSection /></PublicRoute>,
+      },
+      {
+        path: 'simulations',
+        element: <PublicRoute><ExperimentsSection /></PublicRoute>,
+      },
+      {
         path: 'simulation/blackbody-radiation',
         element: <PublicRoute><BlackbodyRadiationSimulation /></PublicRoute>,
       },
@@ -869,6 +878,14 @@ const router = createBrowserRouter([
       {
         path: 'simulation/orbital-mechanics',
         element: <PublicRoute><OrbitalMechanicsSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/quantum-wave-interference',
+        element: <PublicRoute><QuantumWaveInterferenceSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/quantum-interference',
+        element: <PublicRoute><QuantumWaveInterferenceSimulation /></PublicRoute>,
       },
       {
         path: 'environmental-sustainability',

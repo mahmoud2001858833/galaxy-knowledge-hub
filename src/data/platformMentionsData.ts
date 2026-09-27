@@ -12,6 +12,16 @@ export interface PlatformResourceMention {
 export const PLATFORM_MENTION_RESOURCES: PlatformResourceMention[] = [
   // 1. Simulations & Labs
   {
+    id: 'quantum-wave-interference',
+    title: 'تداخل الموجات الكمية وازدواجية المادة',
+    category: 'محاكاة علمية',
+    categoryKey: 'simulations',
+    route: '/simulation/quantum-wave-interference',
+    iconName: 'Atom',
+    badge: 'ميكانيكا الكم 2.0',
+    summary: 'إثبات الطبيعة الموجية للإلكترونات والفوتونات، وتراكب دالة الموجة وانهيارها بكاشف المسار.'
+  },
+  {
     id: 'lhc-simulation',
     title: 'محاكي مصادم الهادرونات الكبير (LHC)',
     category: 'محاكاة علمية',
