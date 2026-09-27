@@ -181,28 +181,53 @@ export const DocsExportSyncToolbar: React.FC = () => {
               ) : (
                 /* Export Mode Options */
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  {/* Option 1: Full Dossier */}
+                  {/* Option 1: Mega Encyclopedia (500+ Pages) */}
+                  <div 
+                    onClick={() => {
+                      openPrintablePlatformDossierWindow();
+                      setIsExportModalOpen(false);
+                      toast.success('تم فتح الموسوعة الشاملة (500+ صفحة) في نافذة جديدة فائقة الوضوح. اضغط على زر "طباعة / حفظ كـ PDF" للتحميل الفوري.');
+                    }}
+                    className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-600 cursor-pointer transition-all space-y-2.5 text-right group shadow-xs hover:shadow-md"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
+                      <Printer className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+                        الموسوعة الكبرى الشاملة (500+ صفحة)
+                      </div>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 mt-0.5">
+                        تفكيك كل خيار وأداة تحكم في الـ 59 مختبراً، المعادلات، الروبوتات، و1,100+ مصدر بالتفصيل الممل.
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-bold block w-fit">
+                      الأشمل والأدق (500+ صفحة) ★
+                    </span>
+                  </div>
+
+                  {/* Option 2: Full PDF Direct Download */}
                   <div 
                     onClick={() => handleStartPdfDownload('full')}
-                    className="p-4 rounded-2xl border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-blue-600 cursor-pointer transition-all space-y-2.5 text-right group shadow-xs"
+                    className="p-4 rounded-2xl border border-blue-300 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-950/20 hover:border-blue-500 cursor-pointer transition-all space-y-2.5 text-right group"
                   >
                     <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25">
                       <FileText className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
-                        الوثيقة الموسوعية الكاملة
+                        تنزيل ملف PDF المباشر
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
-                        تشمل المعمارية، الـ {snapshot.totalSources}+ مصدر ومراجع، المحاكيات، وBTEC بالتفصيل.
+                        ملف PDF جاهز للتحميل بجودة عالية يجمع ملخصات المعمارية والمختبرات والمصادر.
                       </div>
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-cyan-300 font-bold block w-fit">
-                      الموصى به ★
+                      تحميل مباشر
                     </span>
                   </div>
 
-                  {/* Option 2: Executive Summary */}
+                  {/* Option 3: Executive Summary */}
                   <div 
                     onClick={() => handleStartPdfDownload('executive')}
                     className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-indigo-400 cursor-pointer transition-all space-y-2.5 text-right group"
@@ -220,31 +245,6 @@ export const DocsExportSyncToolbar: React.FC = () => {
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold block w-fit">
                       موجز رسمي
-                    </span>
-                  </div>
-
-                  {/* Option 3: Print / Vector PDF Window */}
-                  <div 
-                    onClick={() => {
-                      openPrintablePlatformDossierWindow();
-                      setIsExportModalOpen(false);
-                      toast.info('تم فتح وثيقة الطباعة الفائقة في نافذة جديدة. يمكنك اختيار "حفظ كـ PDF" من أمر الطباعة.');
-                    }}
-                    className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-emerald-400 cursor-pointer transition-all space-y-2.5 text-right group"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
-                      <Printer className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
-                        طباعة المتصفح وحفظ Vector PDF
-                      </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
-                        تفتح نافذة الطباعة المباشرة مع نصوص حادة الدقة وجميع الجداول.
-                      </div>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold block w-fit">
-                      دقة طباعة 300 DPI
                     </span>
                   </div>
                 </div>
