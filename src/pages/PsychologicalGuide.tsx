@@ -24,7 +24,16 @@ import {
   Zap,
   BookmarkCheck,
   Layers,
-  HelpCircle
+  HelpCircle,
+  Eye,
+  Check,
+  Coffee,
+  Clock,
+  BookOpen,
+  Calendar,
+  MessageCircle,
+  ShieldCheck,
+  Sparkle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -52,142 +61,159 @@ interface Message {
   }>;
 }
 
-const moods = [
+interface MoodOption {
+  id: string;
+  emoji: string;
+  label: string;
+  desc: string;
+  color: string;
+  bgGradient: string;
+  accent: string;
+  pulseColor: string;
+}
+
+const moods: MoodOption[] = [
   { 
     id: 'anxious',
     emoji: '😰', 
     label: 'قلق وتوتر امتحانات', 
-    desc: 'شعور بالضغط، تسارع نبضات، وخوف من النتيجة',
-    color: 'from-amber-500 to-orange-600', 
-    bgGradient: 'from-orange-950 via-slate-900 to-black',
-    accent: '#f97316'
+    desc: 'تسارع نبضات، خوف من النتيجة، وثقل في الصدر',
+    color: 'from-amber-500 via-orange-600 to-rose-600', 
+    bgGradient: 'from-orange-950/80 via-slate-950 to-black',
+    accent: '#f97316',
+    pulseColor: 'bg-orange-500'
   },
   { 
     id: 'burnout',
     emoji: '😫', 
-    label: 'إرهاق واستنزاف طاقة', 
-    desc: 'تعب ذهني، صعوبة بالتركيز، وفقدان الشغف',
-    color: 'from-purple-500 to-indigo-600', 
-    bgGradient: 'from-purple-950 via-slate-900 to-black',
-    accent: '#a855f7'
+    label: 'إرهاق واحتراق دراسي', 
+    desc: 'إنهاك ذهني، فقدان الشغف، وصعوبة الاستمرار',
+    color: 'from-purple-500 via-indigo-600 to-slate-700', 
+    bgGradient: 'from-purple-950/80 via-slate-950 to-black',
+    accent: '#a855f7',
+    pulseColor: 'bg-purple-500'
   },
   { 
     id: 'sad',
     emoji: '😔', 
-    label: 'حزن أو عزلة', 
-    desc: 'ضيق في الصدر، شعور بالوحدة، أو إحباط',
-    color: 'from-blue-500 to-cyan-600', 
-    bgGradient: 'from-blue-950 via-slate-900 to-black',
-    accent: '#3b82f6'
+    label: 'حزن أو ضيق ووحدة', 
+    desc: 'شعور بالإحباط، العزلة، والحاجة لأذن صاغية',
+    color: 'from-blue-500 via-cyan-600 to-indigo-700', 
+    bgGradient: 'from-blue-950/80 via-slate-950 to-black',
+    accent: '#3b82f6',
+    pulseColor: 'bg-blue-500'
   },
   { 
     id: 'angry',
     emoji: '😤', 
-    label: 'غضب وانفعال', 
-    desc: 'استفزاز سريع، تشتت، وشعور بعدم العدالة',
-    color: 'from-red-500 to-rose-600', 
-    bgGradient: 'from-red-950 via-slate-900 to-black',
-    accent: '#ef4444'
+    label: 'غضب وتشتت سريع', 
+    desc: 'انفعال، شعور بعدم العدالة، وفقدان الصبر',
+    color: 'from-red-500 via-rose-600 to-orange-600', 
+    bgGradient: 'from-red-950/80 via-slate-950 to-black',
+    accent: '#ef4444',
+    pulseColor: 'bg-red-500'
   },
   { 
     id: 'calm',
     emoji: '😌', 
-    label: 'هادئ ومستقر', 
-    desc: 'ذهن صافٍ، رغبة بتنظيم الأفكار والأهداف',
-    color: 'from-teal-500 to-emerald-600', 
-    bgGradient: 'from-teal-950 via-slate-900 to-black',
-    accent: '#14b8a6'
+    label: 'سكينة وصفاء ذهني', 
+    desc: 'ذهن هادئ، رغبة بتنظيم الأفكار والأولويات',
+    color: 'from-teal-500 via-emerald-600 to-cyan-700', 
+    bgGradient: 'from-teal-950/80 via-slate-950 to-black',
+    accent: '#14b8a6',
+    pulseColor: 'bg-teal-500'
   },
   { 
     id: 'motivated',
     emoji: '🚀', 
-    label: 'متحمس للإنجاز', 
-    desc: 'طاقة عالية، رغبة بالتفوق وتخطي الحواجز',
-    color: 'from-emerald-500 to-green-600', 
-    bgGradient: 'from-emerald-950 via-slate-900 to-black',
-    accent: '#10b981'
+    label: 'حماس وشغف متوقد', 
+    desc: 'طاقة إيجابية عالية، جاهز للتحديات الأكاديمية',
+    color: 'from-emerald-500 via-green-600 to-teal-700', 
+    bgGradient: 'from-emerald-950/80 via-slate-950 to-black',
+    accent: '#10b981',
+    pulseColor: 'bg-emerald-500'
   }
 ];
 
 const reframingCards = [
   {
-    distorted: "أنا سأفشل حتماً في هذا الامتحان وسأخيب أمل أهلي",
-    rational: "قلقي دليل على حرصي، لكن الامتحان يقيس تحصيلي المؤقت في مادة معينة فقط ولا يحدد قيمتي ولا مستقبلي كإنسان.",
-    action: "خذ استراحة 10 دقائق، وقسم ما تبقى لمهام صغيرة مدتها 20 دقيقة."
+    distorted: "أنا سأفشل حتماً في هذا الامتحان وسأخيب أمل أهلي ونفسي",
+    distortionType: "الكارثية (Catastrophizing)",
+    rational: "قلقي دليل على حرصي ونبلي، لكن الامتحان يقيس تحصيلي المؤقت في مادة معينة فقط ولا يحدد قيمتي الإنسانية ولا مستقبلي بالكامل.",
+    action: "خذ استراحة 10 دقائق واشرب ماءً بارداً، ثم قسّم ما تبقى إلى مهام صغيرة مدتها 20 دقيقة فقط."
   },
   {
-    distorted: "كل زملائي يفهمون بسرعة وأنا الوحيد المتأخر",
-    rational: "لكل عقل وتيرته الخاصة في الاستيعاب، والتعلم العميق البطيء يثبت في الذاكرة طويلة المدى أفضل من الحفظ السريع.",
-    action: "استخدم نظام Spaced Repetition لتثبيت المعلومات خطوة بخطوة."
+    distorted: "كل زملائي يفهمون ويحفظون بسرعة وأنا الوحيد المتأخر",
+    distortionType: "المقارنة الظالمة (Unfair Comparison)",
+    rational: "لكل دماغ وتيرته الخاصة في الاستيعاب، والتعلم العميق التراكمي يثبت في الذاكرة الدائمة أفضل بكثير من الحفظ السريع العابر.",
+    action: "استخدم نظام المراجعة المتباعدة Spaced Repetition لتثبيت المعلومات خطوة بخطوة."
   },
   {
-    distorted: "الوقت داهم والمنهاج تراكم، لا فائدة من البدء الآن",
-    rational: "دراسة 20% من المفاهيم الأساسية تمنحك 80% من القدرة على الحل. أي جهد تبذله الآن أفضل بكثير من الاستسلام.",
-    action: "ابدأ بأهم موضوع أساسي لمدة 15 دقيقة فقط بدون التفكير في بقية الكتاب."
+    distorted: "الوقت داهم والمواد تراكمت، لا جدوى من المحاولة الآن",
+    distortionType: "التفكير المطلق (All-or-Nothing)",
+    rational: "دراسة 20% من المفاهيم والمحاور الأساسية تمنحك 80% من القدرة على حل الامتحان. أي دقيقة تبذلها الآن أفضل بمليار مرة من الاستسلام.",
+    action: "افتح أهم محور أساسي فقط وادرسه لمدة 15 دقيقة دون التفكير في بقية الكتاب."
   }
 ];
 
 const groundingSteps = [
-  { count: "5", label: "أشياء تراها بعينك الآن", desc: "انظر حولك ولاحظ 5 أشياء محددة (لون الجدار، القلم، النافذة...)" },
-  { count: "4", label: "أشياء يمكنك لمسها", desc: "المس ملمس ملابسك، برودة الطاولة، كف يدك..." },
-  { count: "3", label: "أصوات تسمعها الآن", desc: "ركز على صوت مروحة، تنفسك، أو صوت بعيد في الشارع..." },
-  { count: "2", label: "روائح تستشعرها", desc: "رائحة الهواء، عطر ملابسك، أو قهوتك..." },
-  { count: "1", label: "طعم في فمك", desc: "رشفة ماء بارد أو استشعار طعم لسانك للعودة للحظة الحاضرة." }
+  { count: "5", label: "أشياء تراها بعينك الآن", desc: "انظر حولك ولاحظ 5 أشياء محددة (لون الجدار، القلم، النافذة، إضاءة الشاشة...)" },
+  { count: "4", label: "أشياء يمكنك لمسها", desc: "المس ملمس ملابسك، برودة الطاولة، كف يدك الأخرى، أو ظهر المقعد..." },
+  { count: "3", label: "أصوات تسمعها الآن", desc: "ركز بأذنيك على صوت تنفسك، صوت مروحة، أو صوت حركة بعيدة..." },
+  { count: "2", label: "روائح تستشعرها", desc: "استنشق بعمق... رائحة الهواء، عطر ملابسك، أو قهوتك..." },
+  { count: "1", label: "طعم في فمك", desc: "رشفة ماء بارد أو استشعار طعم لسانك لإعادة عقلك بالكامل إلى اللحظة الحاضرة." }
 ];
 
 const quranicVerses = [
   {
     verse: "﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾",
-    surah: "سورة الرعد - آية 28",
-    reflection: "الطمأنينة سكينة ربانية تنزل على قلبك حين تسلّم أمرك وتثق بأنك في رعاية خالقك."
+    surah: "سورة الرعد • آية 28",
+    reflection: "الطمأنينة سكينة ربانية تنزل على قلبك حين تسلّم أمرك وتثق بأنك في رعاية خالقك العظيم."
   },
   {
     verse: "﴿ سَيَجْعَلُ اللَّهُ بَعْدَ عُسْرٍ يُسْرًا ﴾",
-    surah: "سورة الطلاق - آية 7",
+    surah: "سورة الطلاق • آية 7",
     reflection: "الشدة لا تدوم، وكل ضيق دراسي أو نفسي يعقبه فرج وانشراح بقدر ما تحتسب وتصبر."
   },
   {
     verse: "﴿ وَاصْبِرْ لِحُكْمِ رَبِّكَ فَإِنَّكَ بِأَعْيُنِنَا ﴾",
-    surah: "سورة الطور - آية 48",
-    reflection: "أنت لست وحدك، وجهدك وتعبك ودموعك كلها بعين الله ورحمته، وسيجزيك خيراً."
+    surah: "سورة الطور • آية 48",
+    reflection: "أنت لست وحدك أبداً، وجهدك وتعبك ودموعك كلها بعين الله ورحمته، وسيجزيك خيراً عظيماً."
   }
 ];
 
-const PsychologicalGuide: React.FC = () => {
+export const PsychologicalGuide: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Navigation steps: salah -> mood -> chat
-  const [step, setStep] = useState<'salah' | 'mood' | 'chat'>('salah');
+  // Navigation State
+  const [step, setStep] = useState<'mood' | 'chat'>('mood');
   const [selectedMood, setSelectedMood] = useState<string>('anxious');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
   // Box Breathing Active State
   const [isBreathingOpen, setIsBreathingOpen] = useState(false);
   const [breathingPhase, setBreathingPhase] = useState<'inhale' | 'hold1' | 'exhale' | 'hold2'>('inhale');
   const [breathingSeconds, setBreathingSeconds] = useState(4);
   const [isBreathingRunning, setIsBreathingRunning] = useState(true);
+  const [completedBreathingCycles, setCompletedBreathingCycles] = useState(0);
 
   // SOS Calming Drawer State
-  const [activeSosTab, setActiveSosTab] = useState<'none' | 'grounding' | 'reframing' | 'quran'>('none');
+  const [activeSosTab, setActiveSosTab] = useState<'none' | 'grounding' | 'reframing' | 'quran' | 'pomodoro'>('none');
+  const [groundingChecked, setGroundingChecked] = useState<boolean[]>([false, false, false, false, false]);
+
+  // Pomodoro Mini-Timer State
+  const [pomodoroSeconds, setPomodoroSeconds] = useState(25 * 60);
+  const [isPomodoroRunning, setIsPomodoroRunning] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
-
-  // Pre-screen auto transition after 3.5s if not clicked
-  useEffect(() => {
-    if (step === 'salah') {
-      const timer = setTimeout(() => {
-        setStep('mood');
-      }, 3500);
-      return () => clearTimeout(timer);
-    }
-  }, [step]);
 
   // Box Breathing Cycle Interval
   useEffect(() => {
@@ -197,13 +223,15 @@ const PsychologicalGuide: React.FC = () => {
       setBreathingSeconds(prev => {
         if (prev > 1) return prev - 1;
         
-        // Transition phases: inhale (4s) -> hold1 (4s) -> exhale (4s) -> hold2 (4s)
+        // Phase transition: Inhale (4s) -> Hold (4s) -> Exhale (4s) -> Hold (4s)
         setBreathingPhase(current => {
           switch (current) {
             case 'inhale': return 'hold1';
             case 'hold1': return 'exhale';
             case 'exhale': return 'hold2';
-            case 'hold2': return 'inhale';
+            case 'hold2':
+              setCompletedBreathingCycles(c => c + 1);
+              return 'inhale';
           }
         });
         return 4;
@@ -213,22 +241,60 @@ const PsychologicalGuide: React.FC = () => {
     return () => clearInterval(interval);
   }, [isBreathingOpen, isBreathingRunning]);
 
+  // Pomodoro Timer Interval
+  useEffect(() => {
+    if (!isPomodoroRunning) return;
+    const interval = setInterval(() => {
+      setPomodoroSeconds(prev => {
+        if (prev <= 1) {
+          setIsPomodoroRunning(false);
+          return 25 * 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPomodoroRunning]);
+
+  // Play gentle synthesized sound bell via Web Audio API
+  const playSynthesizedChime = (freq = 440) => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.2);
+    } catch {
+      // AudioContext policy
+    }
+  };
+
   const handleMoodSelect = (moodId: string) => {
     setSelectedMood(moodId);
     setStep('chat');
+    playSynthesizedChime(520);
 
     const moodGreetings: Record<string, { msg: string; suggestions?: any[] }> = {
       anxious: {
         msg: "أهلاً بك يا صديقي في مساحتك الآمنة 💙\n\nأشعر بالثقل الذي تحمله في صدرك بسبب قلق الامتحانات أو التوتر الدراسي. اعلم أن هذا القلق هو في الحقيقة دليل على حرصك ونبل غايتك، لكنه يحتاج إلى توجيه لطيف لا أن يسيطر عليك.\n\nخذ نفساً عميقاً... يمكنك الآن تجربة «التنفس الصندوقي 4-4-4-4» بالضغط على الزر العلوي، أو تفريغ ما يزعجك وسأرشدك خطوة بخطوة.",
         suggestions: [
           { type: 'tool', title: 'تمارين التنفس الصندوقي 4-4-4-4', url: '#breathing', icon: '🫁' },
-          { type: 'link', title: 'نظام المراجعة الذكي Spaced Repetition', url: '/spaced-repetition', icon: '⏱️' },
-          { type: 'link', title: 'بنك الألغاز الفكرية لتفريغ الذهن', url: '/subject-puzzles', icon: '🧩' }
+          { type: 'tool', title: 'بروتوكول التأريض الحسي 5-4-3-2-1', url: '#grounding', icon: '🛡️' },
+          { type: 'link', title: 'نظام المراجعة الذكي Spaced Repetition', url: '/spaced-repetition', icon: '⏱️' }
         ]
       },
       burnout: {
         msg: "سلامٌ على قلبك المتعب 🌸\n\nالإرهاق الذهني ليس دليلاً على الفشل، بل هو إشارة واضحة من جسدك وعقلك بأنهما قدما أقصى ما لديهما ويحتاجان إلى وقفة رحمة واسترخاء.\n\nحدثني، ما الذي يستهلك طاقتك الآن؟ دعنا نرتب أولوياتك ونعيد شحن طاقتك بهدوء.",
         suggestions: [
+          { type: 'tool', title: 'مؤقت بومودورو للاستراحة الذهنية 25/5', url: '#pomodoro', icon: '☕' },
           { type: 'link', title: 'منظم ومخطط الدراسة وجدول المذاكرة', url: '/study-organization', icon: '📅' },
           { type: 'link', title: 'المكتبة البصرية 3D لتعلم بصري مريح', url: '/visual-library', icon: '👁️' }
         ]
@@ -237,20 +303,22 @@ const PsychologicalGuide: React.FC = () => {
         msg: "أنا هنا معك وبجانبك دائماً 🤍\n\nأحياناً تبدو الأيام رمادية وثقيلة، ومن حقك تماماً أن تشعر بالحزن دون أن تلوم نفسك. أنت إنسان تشعر وتتأثر، وهذا جزء من قوتك.\n\nإذا كنت ترغب بالحديث، فضفض لي بما يجول في خاطرك، كل ما تقوله هنا محاط بالسرية والاحتواء.",
         suggestions: [
           { type: 'tool', title: 'آيات السكينة والطمأنينة', url: '#quran', icon: '📖' },
+          { type: 'tool', title: 'مختبر إعادة التأطير المعرفي CBT', url: '#reframing', icon: '🧠' },
           { type: 'link', title: 'منتدى مجتمع الطلبة للتفاعل الإيجابي', url: '/student-community-forum', icon: '💬' }
         ]
       },
       angry: {
         msg: "خذ نفساً عميقاً، واخرج الزفير ببطء 🕊️\n\nالغضب طاقة قوية تشتعل حين نشعر بضياع الجهد أو عدم العدالة. أنا أصغي إليك باهتمام تام... أفرغ كل شحنات الغضب هنا، وسنحول هذا الانفعال إلى تركيز بنّاء.",
         suggestions: [
-          { type: 'tool', title: 'تقنية التأريض 5-4-3-2-1 لتهدئة الغضب', url: '#grounding', icon: '🛡️' }
+          { type: 'tool', title: 'تقنية التأريض 5-4-3-2-1 لتهدئة الغضب', url: '#grounding', icon: '🛡️' },
+          { type: 'tool', title: 'تمارين التنفس الصندوقي 4-4-4-4', url: '#breathing', icon: '🫁' }
         ]
       },
       calm: {
         msg: "ما أجمل هذا الصفاء والسكينة 🌿\n\nأرى أنك في حالة ذهنية ممتازة اليوم. هذه فرصة ذهبية لترتيب أهدافك الدراسية، بناء عادات إيجابية، والانطلاق نحو إنجاز نوعي.\n\nكيف يمكنني مساعدتك في توجيه هذا التركيز الرائع اليوم؟",
         suggestions: [
-          { type: 'link', title: 'مسارات BTEC والمشاريع التطبيقية', url: '/btec', icon: '💻' },
-          { type: 'link', title: 'المختبرات والمحاكاة 3D', url: '/experiments-section', icon: '🔬' }
+          { type: 'link', title: 'المختبرات والمحاكاة 3D', url: '/experiments-section', icon: '🔬' },
+          { type: 'link', title: 'مسارات BTEC والمشاريع التطبيقية', url: '/btec', icon: '💻' }
         ]
       },
       motivated: {
@@ -275,30 +343,34 @@ const PsychologicalGuide: React.FC = () => {
     ]);
   };
 
-  // Local Cognitive Empathy Fallback Engine (Guaranteed 0-fail psychological response)
+  // Local Cognitive Empathy Fallback Engine (Guaranteed 0-fail clinical-grade psychological response)
   const generateEmpatheticFallback = (userQuery: string, currentMood: string): { text: string; suggestions?: any[] } => {
     const q = userQuery.toLowerCase();
     
-    // Check keywords
+    // Exam anxiety & fear of failure
     if (q.includes('امتحان') || q.includes('امتحانات') || q.includes('توجيهي') || q.includes('خايف') || q.includes('خوف') || q.includes('معدل')) {
       return {
-        text: `أسمعك بكل وضوح، وقلقك بشأن الامتحانات أو التوقعات شعور إنساني يمر به كل طالب طموح 💙\n\nإليك ثلاث حقائق علمية نفسية أرجو أن تضعها في قلبك:\n\n1. **قلق الأداء المعتدل مفيد، لكن القلق المفرط يشل الذاكرة العاملة**، لذلك هدفنا ليس إلغاء الخوف بل خفض شدته ليبقى في نطاق التركيز.\n2. **تقسيم المهام (Chunking)**: لا تفكر في الكتاب كاملاً. افتح فصلاً واحداً فقط واقرأ لمدة 20 دقيقة، ثم كافئ نفسك.\n3. **النوم والماء**: الدماغ يفرز هرمون الكورتيزول مع الجفاف وقلة النوم، مما يضاعف التوتر. اشرب كوب ماء بارد الآن.\n\nتذكر: أنت تبذل وسعك، والله لا يضيع أجر المحسنين. أنا هنا لأي استفسار آخر تريده.`,
+        text: `أسمعك بكل وضوح وعطف، وقلقك بشأن الامتحانات أو التوقعات شعور إنساني يمر به كل طالب حريص وطموح 💙\n\nإليك ثلاث حقائق علمية نفسية أرجو أن تضعها في قلبك:\n\n1. **قلق الأداء المعتدل مفيد، لكن القلق المفرط يشل الذاكرة العاملة**، لذلك هدفنا ليس إلغاء الخوف بل خفض شدته ليبقى في نطاق التركيز.\n2. **تقسيم المهام (Chunking)**: لا تفكر في الكتاب كاملاً. افتح فصلاً واحداً فقط واقرأ لمدة 20 دقيقة، ثم كافئ نفسك.\n3. **النوم والماء**: الدماغ يفرز هرمون الكورتيزول مع الجفاف وقلة النوم، مما يضاعف التوتر. اشرب كوب ماء بارد الآن.\n\nتذكر: أنت تبذل وسعك، والله لا يضيع أجر المحسنين. أنا هنا لأي استفسار آخر تريده.`,
         suggestions: [
           { type: 'tool', title: 'ابدأ تمرين التنفس الصندوقي 4-4-4-4', url: '#breathing', icon: '🫁' },
+          { type: 'tool', title: 'مختبر إعادة التأطير المعرفي CBT', url: '#reframing', icon: '🧠' },
           { type: 'link', title: 'جدول مذاكرتك بمنظم الدراسة', url: '/study-organization', icon: '📅' }
         ]
       };
     }
 
+    // Concentration & Distraction
     if (q.includes('تركيز') || q.includes('تشتت') || q.includes('نسيان') || q.includes('انسى') || q.includes('بنسی')) {
       return {
         text: `التشتت والنسيان ليسا علامة على ضعف في ذكائك على الإطلاق! عقولنا تتعرض لسيل من الإشعارات والمنبهات اليومية تجعل الدماغ في حالة تنبيه دائم 🧠\n\nلإعادة برمجة تركيزك اليوم:\n\n• **قاعدة الـ 5 دقائق**: قل لنفسك «سأجلس للدراسة 5 دقائق فقط وإذا لم استطع سأتوقف». 90% من الوقت ستواصل تلقائياً لأن أصعب خطوة هي البداية.\n• **أبعد الهاتف تماماً** خارج الغرفة وليس بجانبك.\n• **استخدم طريقة التكرار المتباعد**: مراجعة بطاقة المعلومات بعد 24 ساعة، ثم بعد 3 أيام، ثم أسبوع تنقلها للذاكرة الدائمة بنسبة 95%.\n\nهل تحب أن نحدد مادة معينة لتبدأ بها الآن؟`,
         suggestions: [
-          { type: 'link', title: 'نظام المراجعة الذكي Spaced Repetition', url: '/spaced-repetition', icon: '⏱️' }
+          { type: 'link', title: 'نظام المراجعة الذكي Spaced Repetition', url: '/spaced-repetition', icon: '⏱️' },
+          { type: 'tool', title: 'تفعيل مؤقت التركيز بومودورو 25 دقيقة', url: '#pomodoro', icon: '☕' }
         ]
       };
     }
 
+    // Exhaustion & Burnout
     if (q.includes('تعبان') || q.includes('ارهاق') || q.includes('فاشل') || q.includes('يئست') || q.includes('زهقت') || q.includes('مخنوق')) {
       return {
         text: `لا تقسُ على نفسك يا صديقي 🌸\n\nالكلمات التي تخاطب بها نفسك في لحظات الضعف تترك أثراً عميقاً في كيمياء دماغك. الشعور بالاختناق أو الإحباط رسالة مفادها: «توقف مؤقتاً والتقط أنفاسك»، وليس «أنت فاشل».\n\nأطلب منك الآن طلباً صغيراً:\n1. قف وابتعد عن الكتب والشاشات لمدة 15 دقيقة.\n2. اغسل وجهك بماء بارد منعش.\n3. تذكر إنجازاً قديماً ظننت يوماً أنك لن تتجاوزه وتجاوزته بفضل الله.\n\nأنا فخور بك لأنك تحاول رغم التعب، وموجود معك في كل خطوة.`,
@@ -314,6 +386,7 @@ const PsychologicalGuide: React.FC = () => {
       text: `أشكرك من القلب على مشاركتي هذه الكلمات الصادقة 💙\n\nكل فكرة أو شعور عبّرت عنه يستحق التقدير والاهتمام. عندما نتعلم كيف نسمي مشاعرنا بدقة، يفقد التوتر نصف قوته علينا.\n\nأنا معك لأساعدك على تفكيك هذه الأفكار وتحويلها إلى خطوات ملموسة وواقعية تمنحك الراحة والتركيز.\n\nما هي الخطوة الأولى الصغيرة التي تشعر أنك قادر على اتخاذها اليوم؟`,
       suggestions: [
         { type: 'tool', title: 'جلسة تنفس صندوقي هادئة', url: '#breathing', icon: '🫁' },
+        { type: 'tool', title: 'مختبر إعادة التأطير المعرفي', url: '#reframing', icon: '🧠' },
         { type: 'link', title: 'استكشف منصات التعلم الممتعة', url: '/education-section', icon: '🎓' }
       ]
     };
@@ -340,7 +413,7 @@ const PsychologicalGuide: React.FC = () => {
         content: msg.content
       }));
 
-      // Invoke Edge Function with timeout protection
+      // Edge Function with timeout race
       const invokePromise = supabase.functions.invoke('psychological-guide-ai', {
         body: {
           message: userText,
@@ -349,9 +422,8 @@ const PsychologicalGuide: React.FC = () => {
         }
       });
 
-      // 6-second timeout race
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 6000)
+        setTimeout(() => reject(new Error('timeout')), 5000)
       );
 
       const result: any = await Promise.race([invokePromise, timeoutPromise]);
@@ -372,11 +444,11 @@ const PsychologicalGuide: React.FC = () => {
 
       setMessages(prev => [...prev, aiMessage]);
       setIsLoading(false);
+      playSynthesizedChime(480);
 
     } catch (err) {
       console.warn('Psychological AI edge function fallback triggered:', err);
       
-      // Seamless local empathetic engine response
       setTimeout(() => {
         const fallback = generateEmpatheticFallback(userText, selectedMood);
         const aiMessage: Message = {
@@ -388,7 +460,8 @@ const PsychologicalGuide: React.FC = () => {
         };
         setMessages(prev => [...prev, aiMessage]);
         setIsLoading(false);
-      }, 400);
+        playSynthesizedChime(480);
+      }, 350);
     }
   };
 
@@ -399,132 +472,136 @@ const PsychologicalGuide: React.FC = () => {
     }
   };
 
+  const speakMessage = (msgId: string, text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    if (speakingMessageId === msgId) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*#`_\\()]/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'ar-SA';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.05;
+    utterance.onend = () => setSpeakingMessageId(null);
+    utterance.onerror = () => setSpeakingMessageId(null);
+
+    setSpeakingMessageId(msgId);
+    window.speechSynthesis.speak(utterance);
+  };
+
   const currentMoodData = moods.find(m => m.id === selectedMood) || moods[0];
 
   return (
-    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b ${currentMoodData.bgGradient} text-white transition-colors duration-700 selection:bg-purple-500 selection:text-white`} dir="rtl">
+    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b ${currentMoodData.bgGradient} text-white transition-colors duration-700 selection:bg-rose-500 selection:text-white font-sans`} dir="rtl">
       <SEO 
-        title="مرشدك النفسي الذكي | واحة الدعم الوجداني والسكينة"
-        description="مرشد نفسي ذكي متقدم يساعد الطلاب في تفريغ التوتر وقلق الامتحانات، ممارسة التنفس الصندوقي 4-4-4-4، وتقنيات التأريض المعرفي والسكينة."
-        keywords="مرشد نفسي, دعم نفسي للطلاب, قلق الامتحانات, تنفس صندوقي, تأريض نفسي, ذروة العلم"
+        title="مرشدك النفسي الذكي (واحة السكينة) | منصة ذروة العلم"
+        description="المرشد النفسي والأكاديمي الذكي المبني على العلاج المعرفي السلوكي (CBT): تنظيم قلق الامتحانات، التنفس الصندوقي 4-4-4-4، التأريض الحسي 5-4-3-2-1، وآيات السكينة والاطمئنان."
+        keywords="مرشد نفسي, دعم نفسي للطلاب, قلق الامتحانات, تنفس صندوقي, تأريض نفسي, ذروة العلم, علاج معرفي سلوكي"
       />
       
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
-        <StarField starCount={400} />
+      {/* Background Calm Starfield */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-30">
+        <StarField starCount={350} />
       </div>
       
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-6 relative z-10 flex flex-col max-w-5xl">
-        {/* Top Control Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 flex flex-col max-w-5xl space-y-4">
+        {/* Top Control Bar & Quick-Calm Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 sm:p-4 rounded-2xl border border-white/10 backdrop-blur-md">
           <Button
             onClick={() => navigate('/ai-assistant-section')}
             variant="ghost"
-            className="text-purple-300 hover:text-white hover:bg-purple-900/30 text-xs sm:text-sm font-semibold rounded-xl"
+            className="text-slate-300 hover:text-white hover:bg-white/10 text-xs sm:text-sm font-semibold rounded-xl"
           >
             <ArrowRight className="w-4 h-4 ml-1.5" />
-            مركز المساعدين الأذكياء
+            <span>مركز المساعدين الأذكياء</span>
           </Button>
 
           {/* Calming Utilities Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={() => {
                 setIsBreathingOpen(true);
                 setIsBreathingRunning(true);
+                playSynthesizedChime(520);
               }}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-purple-950/40 border-purple-500/40 text-purple-200 hover:bg-purple-900/60 text-xs font-bold flex items-center gap-1.5"
+              className="rounded-xl bg-cyan-950/40 border-cyan-500/40 text-cyan-200 hover:bg-cyan-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
               <Wind className="w-3.5 h-3.5 text-cyan-400" />
               <span>التنفس الصندوقي 4-4-4-4</span>
             </Button>
 
             <Button
-              onClick={() => setActiveSosTab(activeSosTab === 'none' ? 'grounding' : 'none')}
+              onClick={() => setActiveSosTab(activeSosTab === 'grounding' ? 'none' : 'grounding')}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-rose-950/40 border-rose-500/40 text-rose-200 hover:bg-rose-900/60 text-xs font-bold flex items-center gap-1.5"
+              className="rounded-xl bg-rose-950/40 border-rose-500/40 text-rose-200 hover:bg-rose-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
               <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-              <span>إسعاف الهلع SOS</span>
+              <span>التأريض الحسي 5-4-3-2-1</span>
+            </Button>
+
+            <Button
+              onClick={() => setActiveSosTab(activeSosTab === 'reframing' ? 'none' : 'reframing')}
+              variant="outline"
+              size="sm"
+              className="rounded-xl bg-purple-950/40 border-purple-500/40 text-purple-200 hover:bg-purple-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+            >
+              <Brain className="w-3.5 h-3.5 text-purple-400" />
+              <span>إعادة التأطير المعرفي CBT</span>
+            </Button>
+
+            <Button
+              onClick={() => setActiveSosTab(activeSosTab === 'quran' ? 'none' : 'quran')}
+              variant="outline"
+              size="sm"
+              className="rounded-xl bg-emerald-950/40 border-emerald-500/40 text-emerald-200 hover:bg-emerald-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>آيات السكينة</span>
+            </Button>
+
+            <Button
+              onClick={() => setActiveSosTab(activeSosTab === 'pomodoro' ? 'none' : 'pomodoro')}
+              variant="outline"
+              size="sm"
+              className="rounded-xl bg-amber-950/40 border-amber-500/40 text-amber-200 hover:bg-amber-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+            >
+              <Coffee className="w-3.5 h-3.5 text-amber-400" />
+              <span>استراحة التعافي 25/5</span>
             </Button>
           </div>
         </div>
 
         {/* Dynamic Multi-Step Flow */}
         <AnimatePresence mode="wait">
-          {/* STEP 1: Pre-screen Spiritual Reflection (صلِّ على النبي ﷺ) */}
-          {step === 'salah' && (
-            <motion.div
-              key="salah"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.5 }}
-              className="flex-1 flex items-center justify-center py-10"
-            >
-              <Card className="p-8 sm:p-14 bg-gradient-to-br from-purple-950/80 via-slate-900/90 to-purple-900/80 border-purple-500/30 backdrop-blur-2xl shadow-2xl max-w-2xl text-center space-y-6 rounded-3xl">
-                <motion.div
-                  animate={{ scale: [1, 1.06, 1] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-3xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 flex items-center justify-center text-5xl shadow-xl"
-                >
-                  🤲
-                </motion.div>
-
-                <div className="space-y-2">
-                  <h2 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-pink-200 to-white">
-                    صلِّ على النبي ﷺ
-                  </h2>
-                  <p className="text-xs sm:text-sm text-purple-300/80">
-                    لحظة صفاء وسكون تُلقي بها هموم الدنيا خلف ظهرك
-                  </p>
-                </div>
-
-                <div className="pt-6 border-t border-purple-400/20 space-y-2">
-                  <p className="text-lg sm:text-2xl text-purple-100 font-bold leading-relaxed">
-                    ﴿ إِنَّا لَا نُضِيعُ أَجْرَ مَنْ أَحْسَنَ عَمَلًا ﴾
-                  </p>
-                  <p className="text-xs sm:text-sm text-purple-300/70">
-                    سورة الكهف · آية 30
-                  </p>
-                </div>
-
-                <div className="pt-4">
-                  <Button
-                    onClick={() => setStep('mood')}
-                    className="rounded-2xl px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 font-bold text-sm shadow-lg text-white"
-                  >
-                    متابعة إلى المرشد النفسي
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                  </Button>
-                </div>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* STEP 2: Emotional State Scanner (6 Moods) */}
+          {/* STEP 1: Emotional State Scanner (6 Moods) */}
           {step === 'mood' && (
             <motion.div
               key="mood"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex items-center justify-center py-6"
+              exit={{ opacity: 0, y: -15 }}
+              className="flex-1 flex items-center justify-center py-4"
             >
-              <Card className="p-6 sm:p-10 bg-slate-900/80 border-slate-700/80 backdrop-blur-xl max-w-3xl w-full rounded-3xl shadow-2xl space-y-8">
+              <Card className="p-6 sm:p-10 bg-slate-900/85 border-white/10 backdrop-blur-xl max-w-3xl w-full rounded-3xl shadow-2xl space-y-8">
                 <div className="text-center space-y-3">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-400/30 text-purple-300 mb-1">
-                    <Heart className="w-8 h-8" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-400/30 text-rose-300 mb-1">
+                    <Heart className="w-8 h-8 animate-pulse" />
                   </div>
                   <h2 className="text-2xl sm:text-4xl font-black text-white">
                     كيف تشعر في هذه اللحظة؟
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto">
-                    اختر الحالة الوجدانية الأقرب لما يدور في صدرك الآن لنخصص لك الدعم والتوجيه المناسبين
+                    اختر الحالة الوجدانية الأقرب لما يدور في صدرك الآن لنخصص لك جلسة إرشادية آمنة ومريحة تلبي احتياجك الفعلي.
                   </p>
                 </div>
 
@@ -534,7 +611,7 @@ const PsychologicalGuide: React.FC = () => {
                       key={m.id}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.06 }}
+                      transition={{ delay: idx * 0.05 }}
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleMoodSelect(m.id)}
@@ -542,7 +619,7 @@ const PsychologicalGuide: React.FC = () => {
                     >
                       <div className="flex items-start justify-between">
                         <span className="text-3xl sm:text-4xl">{m.emoji}</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/20 text-white/90">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/30 text-white/90">
                           اختيار
                         </span>
                       </div>
@@ -550,7 +627,7 @@ const PsychologicalGuide: React.FC = () => {
                         <div className="text-white font-extrabold text-base sm:text-lg leading-tight mb-1">
                           {m.label}
                         </div>
-                        <div className="text-white/80 text-[11px] leading-snug line-clamp-2">
+                        <div className="text-white/85 text-[11px] leading-snug line-clamp-2">
                           {m.desc}
                         </div>
                       </div>
@@ -561,7 +638,7 @@ const PsychologicalGuide: React.FC = () => {
             </motion.div>
           )}
 
-          {/* STEP 3: Full Psychological Chat Console */}
+          {/* STEP 2: Full Psychological Chat & Therapeutic Console */}
           {step === 'chat' && (
             <motion.div
               key="chat"
@@ -582,7 +659,7 @@ const PsychologicalGuide: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Wind className="w-5 h-5 text-cyan-400" />
                         <span className="text-sm font-bold text-cyan-300">
-                          تمرين التنفس الصندوقي (4-4-4-4 Box Breathing)
+                          تمرين التنفس الصندوقي العيادي (4-4-4-4 Box Breathing)
                         </span>
                       </div>
                       <Button
@@ -595,30 +672,42 @@ const PsychologicalGuide: React.FC = () => {
                       </Button>
                     </div>
 
-                    {/* Animated Breathing Orb */}
+                    {/* Animated Concentric Breathing Orb */}
                     <div className="py-6 flex flex-col items-center justify-center">
-                      <motion.div
-                        animate={{
-                          scale: breathingPhase === 'inhale' ? 1.35 : breathingPhase === 'hold1' ? 1.35 : breathingPhase === 'exhale' ? 0.9 : 0.9,
-                          borderColor: breathingPhase === 'inhale' ? '#38bdf8' : breathingPhase === 'hold1' ? '#a855f7' : breathingPhase === 'exhale' ? '#34d399' : '#94a3b8'
-                        }}
-                        transition={{ duration: 4, ease: 'easeInOut' }}
-                        className="w-36 h-36 rounded-full border-4 flex flex-col items-center justify-center shadow-2xl bg-cyan-950/30"
-                      >
-                        <span className="text-4xl font-black text-white">{breathingSeconds}</span>
-                        <span className="text-xs font-bold text-cyan-200 mt-1">
-                          {breathingPhase === 'inhale' && 'شهيق عميق'}
-                          {breathingPhase === 'hold1' && 'حبس النفس بهدوء'}
-                          {breathingPhase === 'exhale' && 'زفير بطيء ومريح'}
-                          {breathingPhase === 'hold2' && 'سكون واسترخاء'}
-                        </span>
-                      </motion.div>
+                      <div className="relative flex items-center justify-center">
+                        {/* Ripple Aura */}
+                        <motion.div
+                          animate={{
+                            scale: breathingPhase === 'inhale' ? 1.5 : breathingPhase === 'hold1' ? 1.5 : breathingPhase === 'exhale' ? 0.85 : 0.85,
+                            opacity: [0.2, 0.4, 0.2]
+                          }}
+                          transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
+                          className="absolute w-48 h-48 rounded-full bg-cyan-500/20 blur-xl pointer-events-none"
+                        />
 
-                      <p className="text-xs text-slate-300 mt-4 max-w-md">
-                        {breathingPhase === 'inhale' && 'املأ رئتيك بالهواء ببطء من أنفك مع تمدد البطن'}
-                        {breathingPhase === 'hold1' && 'ابقَ هادئاً تماماً ولا تشد عضلات عنقك'}
-                        {breathingPhase === 'exhale' && 'اخرج الهواء بهدوء وتدرج من فمك كأنك تطفئ شمعة'}
-                        {breathingPhase === 'hold2' && 'استشعر خلو جسدك من التوتر قبل الدورة القادمة'}
+                        <motion.div
+                          animate={{
+                            scale: breathingPhase === 'inhale' ? 1.35 : breathingPhase === 'hold1' ? 1.35 : breathingPhase === 'exhale' ? 0.9 : 0.9,
+                            borderColor: breathingPhase === 'inhale' ? '#38bdf8' : breathingPhase === 'hold1' ? '#a855f7' : breathingPhase === 'exhale' ? '#34d399' : '#94a3b8'
+                          }}
+                          transition={{ duration: 4, ease: 'easeInOut' }}
+                          className="w-40 h-40 rounded-full border-4 flex flex-col items-center justify-center shadow-2xl bg-cyan-950/40 z-10"
+                        >
+                          <span className="text-4xl font-black text-white font-mono">{breathingSeconds}</span>
+                          <span className="text-xs font-bold text-cyan-200 mt-1">
+                            {breathingPhase === 'inhale' && 'شهيق عميق من الأنف'}
+                            {breathingPhase === 'hold1' && 'حبس النفس بهدوء'}
+                            {breathingPhase === 'exhale' && 'زفير بطيء ومريح'}
+                            {breathingPhase === 'hold2' && 'سكون واسترخاء تام'}
+                          </span>
+                        </motion.div>
+                      </div>
+
+                      <p className="text-xs text-slate-300 mt-4 max-w-md leading-relaxed">
+                        {breathingPhase === 'inhale' && 'املأ رئتيك بالهواء ببطء من أنفك، واشعر بتمدد بطنك وهدوء نبضاتك.'}
+                        {breathingPhase === 'hold1' && 'ابقَ هادئاً تماماً... لا تشد عضلات رقبتك أو كتفيك.'}
+                        {breathingPhase === 'exhale' && 'اخرج الهواء بهدوء وتدرج من فمك كأنك تطفئ شمعة بعيدة.'}
+                        {breathingPhase === 'hold2' && 'استشعر خلو جسدك من التوتر... أنت الآن بأمان.'}
                       </p>
 
                       <div className="flex items-center gap-2 mt-4">
@@ -641,8 +730,13 @@ const PsychologicalGuide: React.FC = () => {
                           className="rounded-xl border-slate-700 text-xs text-slate-300"
                         >
                           <RotateCcw className="w-3.5 h-3.5 ml-1" />
-                          إعادة البدء
+                          <span>إعادة البدء</span>
                         </Button>
+                        {completedBreathingCycles > 0 && (
+                          <span className="text-xs text-emerald-400 font-bold mr-2">
+                            تم إكمال {completedBreathingCycles} دورات استرخاء
+                          </span>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -656,34 +750,40 @@ const PsychologicalGuide: React.FC = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="p-5 rounded-3xl bg-slate-900/90 border border-rose-500/30 backdrop-blur-xl shadow-xl space-y-4"
+                    className="p-5 rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-xl shadow-xl space-y-4"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <ShieldAlert className="w-4 h-4 text-rose-400" />
-                        <span className="text-xs sm:text-sm font-bold text-rose-200">
-                          حقيبة الإسعاف النفسي السريع (SOS Toolkit)
+                        <span className="text-xs sm:text-sm font-bold text-slate-200">
+                          حقيبة التدخل النفسي العاجل (Clinical SOS Arsenal)
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                         <button
                           onClick={() => setActiveSosTab('grounding')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'grounding' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'grounding' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}
                         >
                           التأريض 5-4-3-2-1
                         </button>
                         <button
                           onClick={() => setActiveSosTab('reframing')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'reframing' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'reframing' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300'}`}
                         >
-                          إعادة التأطير
+                          التأطير المعرفي CBT
                         </button>
                         <button
                           onClick={() => setActiveSosTab('quran')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'quran' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'quran' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}
                         >
                           آيات السكينة
+                        </button>
+                        <button
+                          onClick={() => setActiveSosTab('pomodoro')}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'pomodoro' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                        >
+                          مؤقت 25/5
                         </button>
                         <Button
                           onClick={() => setActiveSosTab('none')}
@@ -698,16 +798,34 @@ const PsychologicalGuide: React.FC = () => {
 
                     {/* Grounding Tab Content */}
                     {activeSosTab === 'grounding' && (
-                      <div className="space-y-2 pt-2">
+                      <div className="space-y-3 pt-2">
                         <p className="text-xs text-slate-300">
-                          تقنية معتمدة لقطع حلقة الهلع وإعادة عقلك للحظة الحاضرة:
+                          بروتوكول التأريض الحسي يقطع فجأة إشارات الذعر في اللوزة الدماغية (Amygdala) ويعيد تنشيط الفص الجبهي المسؤول عن التفكير والهدوء:
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
                           {groundingSteps.map((gs, idx) => (
-                            <div key={idx} className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 text-right space-y-1">
-                              <span className="text-lg font-black text-rose-400">{gs.count}</span>
+                            <div 
+                              key={idx} 
+                              onClick={() => {
+                                const newChecked = [...groundingChecked];
+                                newChecked[idx] = !newChecked[idx];
+                                setGroundingChecked(newChecked);
+                                playSynthesizedChime(400 + idx * 80);
+                              }}
+                              className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-right space-y-1 ${
+                                groundingChecked[idx] 
+                                  ? 'bg-emerald-950/60 border-emerald-500/50 shadow-md' 
+                                  : 'bg-slate-800/80 border-slate-700/80 hover:border-slate-500'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xl font-black text-rose-400 font-mono">{gs.count}</span>
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${groundingChecked[idx] ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold' : 'border-slate-500'}`}>
+                                  {groundingChecked[idx] ? '✓' : ''}
+                                </div>
+                              </div>
                               <div className="text-xs font-bold text-white">{gs.label}</div>
-                              <div className="text-[10px] text-slate-400 leading-tight">{gs.desc}</div>
+                              <div className="text-[10px] text-slate-300 leading-tight">{gs.desc}</div>
                             </div>
                           ))}
                         </div>
@@ -718,19 +836,23 @@ const PsychologicalGuide: React.FC = () => {
                     {activeSosTab === 'reframing' && (
                       <div className="space-y-3 pt-2">
                         <p className="text-xs text-slate-300">
-                          حوّل الأفكار التلقائية السامة إلى حقائق عقلانية متوازنة:
+                          مختبر إعادة التأطير المعرفي (CBT Cognitive Re-framing) لتحويل الأفكار الكارثية إلى حقائق عقلانية متزنة:
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {reframingCards.map((rc, idx) => (
-                            <div key={idx} className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-right space-y-2">
-                              <div className="text-[11px] text-red-300 line-through">
+                            <div key={idx} className="p-4 rounded-2xl bg-slate-800/90 border border-slate-700 text-right space-y-2.5 shadow-sm">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">
+                                تشويه: {rc.distortionType}
+                              </span>
+                              <div className="text-[11px] text-rose-300/90 font-medium">
                                 ❌ «{rc.distorted}»
                               </div>
-                              <div className="text-xs font-bold text-emerald-300">
+                              <div className="text-xs font-bold text-emerald-300 leading-snug">
                                 ✔ «{rc.rational}»
                               </div>
-                              <div className="text-[10px] text-slate-400 border-t border-slate-700 pt-1">
-                                خطوة فورية: {rc.action}
+                              <div className="text-[10px] text-slate-300 border-t border-slate-700 pt-1.5 flex items-center gap-1">
+                                <span className="font-bold text-purple-400">خطوة فورية:</span>
+                                <span>{rc.action}</span>
                               </div>
                             </div>
                           ))}
@@ -738,16 +860,16 @@ const PsychologicalGuide: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Quran Tab Content (Pure voice recitation without music) */}
+                    {/* Quran Tab Content */}
                     {activeSosTab === 'quran' && (
                       <div className="space-y-3 pt-2">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {quranicVerses.map((qv, idx) => (
-                            <div key={idx} className="p-4 rounded-xl bg-purple-950/40 border border-purple-500/30 text-right space-y-2">
-                              <div className="text-sm font-bold text-purple-200">
+                            <div key={idx} className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-right space-y-2 shadow-sm">
+                              <div className="text-sm font-bold text-emerald-200">
                                 {qv.verse}
                               </div>
-                              <div className="text-[11px] text-purple-400 font-semibold">
+                              <div className="text-[11px] text-emerald-400 font-semibold">
                                 {qv.surah}
                               </div>
                               <p className="text-xs text-slate-300 leading-relaxed">
@@ -758,27 +880,60 @@ const PsychologicalGuide: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Pomodoro Timer Content */}
+                    {activeSosTab === 'pomodoro' && (
+                      <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 text-center space-y-3">
+                        <div className="text-xs font-bold text-amber-300">
+                          مؤقت بومودورو للتركيز المتقطع (25 دقيقة تركيز • 5 دقائق راحة)
+                        </div>
+                        <div className="text-4xl font-black font-mono text-white" dir="ltr">
+                          {Math.floor(pomodoroSeconds / 60).toString().padStart(2, '0')}:
+                          {(pomodoroSeconds % 60).toString().padStart(2, '0')}
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            onClick={() => setIsPomodoroRunning(!isPomodoroRunning)}
+                            size="sm"
+                            className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs"
+                          >
+                            {isPomodoroRunning ? 'إيقاف مؤقت' : 'بدء جلسة التركيز'}
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setIsPomodoroRunning(false);
+                              setPomodoroSeconds(25 * 60);
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl border-slate-600 text-xs text-slate-300"
+                          >
+                            إعادة الضبط
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Chat Message Window */}
-              <Card className="flex-1 p-4 sm:p-6 bg-slate-900/80 border-slate-800 backdrop-blur-xl flex flex-col justify-between rounded-3xl min-h-[500px]">
+              <Card className="flex-1 p-4 sm:p-6 bg-slate-900/85 border-white/10 backdrop-blur-xl flex flex-col justify-between rounded-3xl min-h-[520px] shadow-2xl">
                 {/* Header Profile */}
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center justify-between pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white shadow-lg">
-                      <Brain className="w-6 h-6" />
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                      <Heart className="w-6 h-6 animate-pulse" />
                     </div>
                     <div>
                       <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                        مرشدك النفسي الذكي
+                        <span>مرشدك النفسي الذكي</span>
                         <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
-                          نشط ومتصل
+                          CBT & Empathy Active
                         </Badge>
                       </h2>
                       <div className="text-xs text-slate-400">
-                        مساحة آمنة وموجهة لدعمك الدراسي والعاطفي
+                        مساحة استماع آمنة ومحمية بالكامل وخالية من أي أحكام
                       </div>
                     </div>
                   </div>
@@ -787,14 +942,14 @@ const PsychologicalGuide: React.FC = () => {
                     onClick={() => setStep('mood')}
                     variant="ghost"
                     size="sm"
-                    className="rounded-xl text-xs text-purple-300 hover:text-white"
+                    className="rounded-xl text-xs text-rose-300 hover:text-white hover:bg-white/10"
                   >
                     تغيير الحالة ({currentMoodData.emoji} {currentMoodData.label})
                   </Button>
                 </div>
 
                 {/* Messages List */}
-                <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 max-h-[550px] scrollbar-thin scrollbar-thumb-purple-500/40">
+                <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 max-h-[520px] scrollbar-thin scrollbar-thumb-purple-500/40">
                   <AnimatePresence>
                     {messages.map((message) => (
                       <motion.div
@@ -804,10 +959,10 @@ const PsychologicalGuide: React.FC = () => {
                         className={`flex ${message.role === 'user' ? 'justify-start' : 'justify-end'}`}
                       >
                         <div
-                          className={`max-w-[90%] sm:max-w-[80%] p-4 rounded-2xl ${
+                          className={`max-w-[90%] sm:max-w-[80%] p-4 sm:p-5 rounded-3xl ${
                             message.role === 'user'
-                              ? 'bg-purple-600/30 border border-purple-500/50 text-white rounded-tr-none'
-                              : 'bg-slate-800/80 border border-slate-700/80 text-slate-100 rounded-tl-none shadow-md'
+                              ? 'bg-purple-600/30 border border-purple-500/50 text-white rounded-tr-none shadow-sm'
+                              : 'bg-slate-800/90 border border-white/10 text-slate-100 rounded-tl-none shadow-md'
                           }`}
                         >
                           <div className="whitespace-pre-line text-xs sm:text-sm leading-relaxed">
@@ -818,7 +973,7 @@ const PsychologicalGuide: React.FC = () => {
                           {message.redirectTo && (
                             <Button
                               onClick={() => navigate(message.redirectTo!)}
-                              className="w-full mt-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-xs sm:text-sm font-bold text-white rounded-xl"
+                              className="w-full mt-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-xs sm:text-sm font-bold text-white rounded-2xl"
                               size="sm"
                             >
                               {message.redirectMessage || 'الانتقال للقسم المقترح'}
@@ -828,9 +983,9 @@ const PsychologicalGuide: React.FC = () => {
 
                           {/* Suggested Resources Links */}
                           {message.suggestions && message.suggestions.length > 0 && (
-                            <div className="mt-4 pt-3 border-t border-slate-700/60 space-y-2">
+                            <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
                               <div className="text-[11px] font-bold text-purple-300">
-                                خطوات مقترحة لأجلك:
+                                خطوات مقترحة لأجلك الآن:
                               </div>
                               <div className="grid grid-cols-1 gap-1.5">
                                 {message.suggestions.map((sug, sIdx) => {
@@ -841,11 +996,13 @@ const PsychologicalGuide: React.FC = () => {
                                         onClick={() => {
                                           if (sug.url === '#breathing') setIsBreathingOpen(true);
                                           if (sug.url === '#grounding') setActiveSosTab('grounding');
+                                          if (sug.url === '#reframing') setActiveSosTab('reframing');
                                           if (sug.url === '#quran') setActiveSosTab('quran');
+                                          if (sug.url === '#pomodoro') setActiveSosTab('pomodoro');
                                         }}
-                                        className="flex items-center justify-between p-2 rounded-xl bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/30 text-right transition-colors text-xs font-semibold text-purple-200"
+                                        className="flex items-center justify-between p-2.5 rounded-xl bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/30 text-right transition-colors text-xs font-semibold text-purple-200"
                                       >
-                                        <span className="flex items-center gap-1.5">
+                                        <span className="flex items-center gap-2">
                                           <span>{sug.icon}</span>
                                           <span>{sug.title}</span>
                                         </span>
@@ -858,13 +1015,13 @@ const PsychologicalGuide: React.FC = () => {
                                     <button
                                       key={sIdx}
                                       onClick={() => navigate(sug.url)}
-                                      className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-700/80 text-right transition-colors text-xs font-semibold text-slate-300"
+                                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70 hover:bg-slate-900 border border-white/10 text-right transition-colors text-xs font-semibold text-slate-300"
                                     >
-                                      <span className="flex items-center gap-1.5">
+                                      <span className="flex items-center gap-2">
                                         <span>{sug.icon}</span>
                                         <span>{sug.title}</span>
                                       </span>
-                                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                                      <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                                     </button>
                                   );
                                 })}
@@ -872,8 +1029,22 @@ const PsychologicalGuide: React.FC = () => {
                             </div>
                           )}
 
-                          <div className="text-[10px] text-slate-400 text-left mt-2">
-                            {message.timestamp}
+                          {/* Message Footer: Voice read out & timestamp */}
+                          <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/5 text-[10px] text-slate-400">
+                            {message.role === 'ai' ? (
+                              <button
+                                onClick={() => speakMessage(message.id, message.content)}
+                                className="flex items-center gap-1 hover:text-white transition-colors"
+                              >
+                                {speakingMessageId === message.id ? (
+                                  <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                                ) : (
+                                  <Volume2 className="w-3.5 h-3.5 text-purple-300" />
+                                )}
+                                <span>{speakingMessageId === message.id ? 'إيقاف الصوت' : 'استماع صوتي'}</span>
+                              </button>
+                            ) : <span />}
+                            <span>{message.timestamp}</span>
                           </div>
                         </div>
                       </motion.div>
@@ -886,9 +1057,9 @@ const PsychologicalGuide: React.FC = () => {
                       animate={{ opacity: 1 }}
                       className="flex justify-end"
                     >
-                      <div className="max-w-[80%] p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                        <span className="text-xs text-slate-300">المرشد النفسي يكتب رداً دافئاً لأجلك...</span>
+                      <div className="max-w-[80%] p-4 rounded-2xl bg-slate-800/80 border border-white/10 flex items-center gap-2 text-slate-300 text-xs">
+                        <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                        <span>المرشد النفسي يكتب رداً دافئاً وموجهاً لأجلك...</span>
                       </div>
                     </motion.div>
                   )}
@@ -896,19 +1067,19 @@ const PsychologicalGuide: React.FC = () => {
                 </div>
 
                 {/* Input Bar */}
-                <div className="pt-3 border-t border-slate-800 flex items-end gap-2">
+                <div className="pt-3 border-t border-white/10 flex items-end gap-2">
                   <Textarea
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="تحدث بحرية عما تشعر به، أو اسأل عن كيفية التعامل مع الضغط..."
+                    placeholder="تحدث بحرية عما تشعر به، أو اسأل عن كيفية تخفيف توتر الامتحانات..."
                     disabled={isLoading}
-                    className="flex-1 min-h-[48px] max-h-32 bg-slate-800/60 border-slate-700 text-white placeholder:text-slate-400 rounded-2xl resize-none text-xs sm:text-sm p-3 focus:border-purple-500"
+                    className="flex-1 min-h-[50px] max-h-32 bg-slate-800/70 border-white/10 text-white placeholder:text-slate-400 rounded-2xl resize-none text-xs sm:text-sm p-3 focus:border-rose-500"
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={isLoading || !inputText.trim()}
-                    className="h-12 px-4 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold shrink-0 shadow-lg"
+                    className="h-12 px-5 rounded-2xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white font-bold shrink-0 shadow-lg"
                   >
                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-1" />}
                     <span className="hidden sm:inline">إرسال</span>
