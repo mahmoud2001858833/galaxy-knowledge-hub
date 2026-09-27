@@ -35,6 +35,7 @@ import { DocsAITab } from '@/components/docs/DocsAITab';
 import { DocsSimulationsTab } from '@/components/docs/DocsSimulationsTab';
 import { DocsCurriculaTab } from '@/components/docs/DocsCurriculaTab';
 import { DocsSecurityTab } from '@/components/docs/DocsSecurityTab';
+import { DocsExportSyncToolbar } from '@/components/docs/DocsExportSyncToolbar';
 import { TOTAL_SOURCES_COUNT } from '@/data/platformSourcesData';
 
 export const PlatformDocumentation: React.FC = () => {
@@ -86,6 +87,7 @@ export const PlatformDocumentation: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <DocsExportSyncToolbar />
             <Button
               size="sm"
               variant="outline"
@@ -102,31 +104,55 @@ export const PlatformDocumentation: React.FC = () => {
               className="text-xs rounded-xl border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <Printer className="w-3.5 h-3.5 ml-1" />
-              طباعة التوثيق
+              طباعة
             </Button>
           </div>
         </div>
 
         {/* Hero Section Banner */}
-        <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-blue-500/30 bg-gradient-to-br from-blue-900/10 via-indigo-900/10 to-slate-900/10 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/40 p-8 sm:p-12 shadow-xl space-y-5">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30 text-xs px-3 py-1 font-bold">
-              <Sparkles className="w-3.5 h-3.5 ml-1 text-blue-500" />
-              التوثيق الأكاديمي والتقني المعتمد v3.5 Enterprise
-            </Badge>
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-xs px-3 py-1 font-bold">
-              <CheckCircle2 className="w-3.5 h-3.5 ml-1 text-emerald-500" />
-              {TOTAL_SOURCES_COUNT} مصدر ومرجع علمي مفهرس
-            </Badge>
-          </div>
+        <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-blue-500/30 bg-gradient-to-br from-blue-900/10 via-indigo-900/10 to-slate-900/10 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/40 p-8 sm:p-12 shadow-xl space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="space-y-4 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30 text-xs px-3 py-1 font-bold">
+                  <Sparkles className="w-3.5 h-3.5 ml-1 text-blue-500" />
+                  التوثيق الأكاديمي والتقني المعتمد v3.5 Enterprise
+                </Badge>
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-xs px-3 py-1 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 ml-1 text-emerald-500" />
+                  {TOTAL_SOURCES_COUNT} مصدر ومرجع علمي مفهرس
+                </Badge>
+                <Badge variant="outline" className="bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30 text-xs px-3 py-1 font-bold">
+                  🔄 مزامنة فورية مع قاعدة البيانات
+                </Badge>
+              </div>
 
-          <div className="max-w-4xl space-y-3">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
-              التوثيق الشامل لمنظومة ذروة العلم والمصادر الأكاديمية
-            </h1>
-            <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
-              الدليل المرجعي الكامل للمعمارية الهندسية، محركات الذكاء الاصطناعي الـ 25، موسوعة المختبرات والمحاكيات الـ 45، ومكتبة المصادر والمراجع العلمية المعيارية المكونة من أكثر من 1,100 مرجع موثق مع بيان مجالات وأماكن تطبيقها في المنصة.
-            </p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+                التوثيق الشامل لمنظومة ذروة العلم والمصادر الأكاديمية
+              </h1>
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
+                الدليل المرجعي الكامل للمعمارية الهندسية، محركات الذكاء الاصطناعي الـ 25، موسوعة المختبرات والمحاكيات الـ 45، ومكتبة المصادر والمراجع العلمية المعيارية المكونة من أكثر من 1,100 مرجع موثق مع بيان مجالات وأماكن تطبيقها في المنصة.
+              </p>
+            </div>
+
+            {/* Corner Quick Download & Auto-Sync Card */}
+            <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-2 border-blue-500/30 shadow-2xl space-y-3 lg:w-84 flex-shrink-0 text-right">
+              <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2.5">
+                <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Download className="w-4 h-4 text-blue-500 animate-pulse" />
+                  <span>تنزيل جميع المعلومات (PDF)</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold font-mono">
+                  تحديث فوري
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                أي محتوى أو محاكاة أو مصدر تضيفه بالمنصة يُربط تلقائياً بالتوثيق وينزل في ملف الـ PDF لحظياً.
+              </p>
+              <div className="pt-1 flex flex-col gap-2">
+                <DocsExportSyncToolbar />
+              </div>
+            </div>
           </div>
 
           {/* Quick Stats Highlights */}
