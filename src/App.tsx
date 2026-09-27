@@ -1025,6 +1025,14 @@ const router = createBrowserRouter([
         element: <PublicRoute><PlatformDocumentation /></PublicRoute>,
       },
       {
+        path: 'docs',
+        element: <PublicRoute><PlatformDocumentation /></PublicRoute>,
+      },
+      {
+        path: 'documentation',
+        element: <PublicRoute><PlatformDocumentation /></PublicRoute>,
+      },
+      {
         path: 'published/:slug',
         element: <PublicRoute><PublishedProject /></PublicRoute>,
       },
