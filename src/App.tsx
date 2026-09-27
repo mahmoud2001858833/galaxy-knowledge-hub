@@ -602,273 +602,273 @@ const router = createBrowserRouter([
       },
       {
         path: 'experiments-section',
-        element: <AuthGuard><ExperimentsSection /></AuthGuard>,
+        element: <PublicRoute><ExperimentsSection /></PublicRoute>,
       },
       {
         path: 'simulation/blackbody-radiation',
-        element: <AuthGuard><BlackbodyRadiationSimulation /></AuthGuard>,
+        element: <PublicRoute><BlackbodyRadiationSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/build-atom',
-        element: <AuthGuard><BuildAtomSimulation /></AuthGuard>,
+        element: <PublicRoute><BuildAtomSimulation /></PublicRoute>,
       },
       {
         path: 'lhc-simulation',
-        element: <AuthGuard><LHCSimulation /></AuthGuard>,
+        element: <PublicRoute><LHCSimulation /></PublicRoute>,
       },
       {
         path: 'electromagnetic-waves',
-        element: <AuthGuard><ElectromagneticWavesSimulation /></AuthGuard>,
+        element: <PublicRoute><ElectromagneticWavesSimulation /></PublicRoute>,
       },
       {
         path: 'nuclear-reactions',
-        element: <AuthGuard><NuclearReactionsSimulation /></AuthGuard>,
+        element: <PublicRoute><NuclearReactionsSimulation /></PublicRoute>,
       },
       {
         path: 'chemical-reactions',
-        element: <AuthGuard><ChemicalReactionsSimulation /></AuthGuard>,
+        element: <PublicRoute><ChemicalReactionsSimulation /></PublicRoute>,
       },
       {
         path: 'fourier-series',
-        element: <AuthGuard><FourierSeriesSimulation /></AuthGuard>,
+        element: <PublicRoute><FourierSeriesSimulation /></PublicRoute>,
       },
       {
         path: '3d-function-visualizer',
-        element: <AuthGuard><Function3DVisualization /></AuthGuard>,
+        element: <PublicRoute><Function3DVisualization /></PublicRoute>,
       },
       {
         path: 'simulation/optics-lab',
-        element: <AuthGuard><OpticsLabSimulation /></AuthGuard>,
+        element: <PublicRoute><OpticsLabSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/circuit-builder',
-        element: <AuthGuard><CircuitBuilderSimulation /></AuthGuard>,
+        element: <PublicRoute><CircuitBuilderSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/circuit-builder-advanced',
-        element: <AuthGuard><CircuitBuilderAdvanced /></AuthGuard>,
+        element: <PublicRoute><CircuitBuilderAdvanced /></PublicRoute>,
       },
       {
         path: 'simulation/projectile-motion',
-        element: <AuthGuard><ProjectileMotion3D /></AuthGuard>,
+        element: <PublicRoute><ProjectileMotion3D /></PublicRoute>,
       },
       {
         path: 'simulation/projectile-motion-classic',
-        element: <AuthGuard><ProjectileMotionSimulation /></AuthGuard>,
+        element: <PublicRoute><ProjectileMotionSimulation /></PublicRoute>,
       },
 
 
       {
         path: 'simulation/solar-system',
-        element: <AuthGuard><SolarSystemSimulation /></AuthGuard>,
+        element: <PublicRoute><SolarSystemSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/solar-system-3d',
-        element: <AuthGuard><SolarSystem3D /></AuthGuard>,
+        element: <PublicRoute><SolarSystem3D /></PublicRoute>,
       },
       {
         path: 'simulation/genetics-lab',
-        element: <AuthGuard><GeneticsLabSimulation /></AuthGuard>,
+        element: <PublicRoute><GeneticsLabSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/ecosystem',
-        element: <AuthGuard><EcosystemSimulation /></AuthGuard>,
+        element: <PublicRoute><EcosystemSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/electromagnetism',
-        element: <AuthGuard><ElectromagnetismLabSimulation /></AuthGuard>,
+        element: <PublicRoute><ElectromagnetismLabSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/waves-sound',
-        element: <AuthGuard><WavesAndSoundSimulation /></AuthGuard>,
+        element: <PublicRoute><WavesAndSoundSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/static-electricity',
-        element: <AuthGuard><StaticElectricitySimulation /></AuthGuard>,
+        element: <PublicRoute><StaticElectricitySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/advanced-astronomy',
-        element: <AuthGuard><AdvancedAstronomySimulation /></AuthGuard>,
+        element: <PublicRoute><AdvancedAstronomySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/quantum-mechanics',
-        element: <AuthGuard><QuantumMechanicsSimulation /></AuthGuard>,
+        element: <PublicRoute><QuantumMechanicsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/analytical-chemistry',
-        element: <AuthGuard><AnalyticalChemistrySimulation /></AuthGuard>,
+        element: <PublicRoute><AnalyticalChemistrySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/electrochemistry',
-        element: <AuthGuard><ElectrochemistrySimulation /></AuthGuard>,
+        element: <PublicRoute><ElectrochemistrySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/molecular-biology',
-        element: <AuthGuard><MolecularBiologySimulation /></AuthGuard>,
+        element: <PublicRoute><MolecularBiologySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/human-body',
-        element: <AuthGuard><HumanBodySimulation /></AuthGuard>,
+        element: <PublicRoute><HumanBodySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/advanced-nuclear',
-        element: <AuthGuard><AdvancedNuclearSimulation /></AuthGuard>,
+        element: <PublicRoute><AdvancedNuclearSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/digital-electronics',
-        element: <AuthGuard><DigitalElectronicsSimulation /></AuthGuard>,
+        element: <PublicRoute><DigitalElectronicsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/earth-sciences',
-        element: <AuthGuard><EarthSciencesSimulation /></AuthGuard>,
+        element: <PublicRoute><EarthSciencesSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/rocket-science',
-        element: <AuthGuard><RocketScience3D /></AuthGuard>,
+        element: <PublicRoute><RocketScience3D /></PublicRoute>,
       },
       {
         path: 'simulation/rocket-science-classic',
-        element: <AuthGuard><RocketScienceSimulation /></AuthGuard>,
+        element: <PublicRoute><RocketScienceSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/advanced-optics',
-        element: <AuthGuard><AdvancedOpticsSimulation /></AuthGuard>,
+        element: <PublicRoute><AdvancedOpticsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/materials-science',
-        element: <AuthGuard><MaterialsScienceSimulation /></AuthGuard>,
+        element: <PublicRoute><MaterialsScienceSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/thermodynamics',
-        element: <AuthGuard><Thermodynamics3D /></AuthGuard>,
+        element: <PublicRoute><Thermodynamics3D /></PublicRoute>,
       },
       {
         path: 'simulation/thermodynamics-classic',
-        element: <AuthGuard><ThermodynamicsSimulation /></AuthGuard>,
+        element: <PublicRoute><ThermodynamicsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/fluid-mechanics',
-        element: <AuthGuard><FluidMechanics3D /></AuthGuard>,
+        element: <PublicRoute><FluidMechanics3D /></PublicRoute>,
       },
       {
         path: 'simulation/fluid-mechanics-classic',
-        element: <AuthGuard><FluidMechanicsSimulation /></AuthGuard>,
+        element: <PublicRoute><FluidMechanicsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/circular-motion',
-        element: <AuthGuard><CircularMotion3D /></AuthGuard>,
+        element: <PublicRoute><CircularMotion3D /></PublicRoute>,
       },
       {
         path: 'simulation/circular-motion-classic',
-        element: <AuthGuard><CircularMotionSimulation /></AuthGuard>,
+        element: <PublicRoute><CircularMotionSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/special-relativity',
-        element: <AuthGuard><SpecialRelativitySimulation /></AuthGuard>,
+        element: <PublicRoute><SpecialRelativitySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/interference-diffraction',
-        element: <AuthGuard><InterferenceDiffractionSimulation /></AuthGuard>,
+        element: <PublicRoute><InterferenceDiffractionSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/plasma-physics',
-        element: <AuthGuard><PlasmaPhysicsSimulation /></AuthGuard>,
+        element: <PublicRoute><PlasmaPhysicsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/chemical-kinetics',
-        element: <AuthGuard><ChemicalKineticsSimulation /></AuthGuard>,
+        element: <PublicRoute><ChemicalKineticsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/organic-chemistry',
-        element: <AuthGuard><OrganicChemistrySimulation /></AuthGuard>,
+        element: <PublicRoute><OrganicChemistrySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/states-of-matter',
-        element: <AuthGuard><StatesOfMatterSimulation /></AuthGuard>,
+        element: <PublicRoute><StatesOfMatterSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/acids-bases',
-        element: <AuthGuard><AcidsBasesSimulation /></AuthGuard>,
+        element: <PublicRoute><AcidsBasesSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/nuclear-applications',
-        element: <AuthGuard><NuclearApplicationsSimulation /></AuthGuard>,
+        element: <PublicRoute><NuclearApplicationsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/living-cell',
-        element: <AuthGuard><LivingCellSimulation /></AuthGuard>,
+        element: <PublicRoute><LivingCellSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/cell-division',
-        element: <AuthGuard><CellDivisionSimulation /></AuthGuard>,
+        element: <PublicRoute><CellDivisionSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/photosynthesis-respiration',
-        element: <AuthGuard><PhotosynthesisRespirationSimulation /></AuthGuard>,
+        element: <PublicRoute><PhotosynthesisRespirationSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/immune-system',
-        element: <AuthGuard><ImmuneSystemSimulation /></AuthGuard>,
+        element: <PublicRoute><ImmuneSystemSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/evolution',
-        element: <AuthGuard><EvolutionSimulation /></AuthGuard>,
+        element: <PublicRoute><EvolutionSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/spatial-geometry',
-        element: <AuthGuard><SpatialGeometrySimulation /></AuthGuard>,
+        element: <PublicRoute><SpatialGeometrySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/probability',
-        element: <AuthGuard><ProbabilitySimulation /></AuthGuard>,
+        element: <PublicRoute><ProbabilitySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/robotics',
-        element: <AuthGuard><RoboticsSimulation /></AuthGuard>,
+        element: <PublicRoute><RoboticsSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/mechanical-engineering',
-        element: <AuthGuard><MechanicalEngineeringSimulation /></AuthGuard>,
+        element: <PublicRoute><MechanicalEngineeringSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/photoelectric-effect',
-        element: <AuthGuard><PhotoelectricEffectSimulation /></AuthGuard>,
+        element: <PublicRoute><PhotoelectricEffectSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/millikan-oil-drop',
-        element: <AuthGuard><MillikanOilDropSimulation /></AuthGuard>,
+        element: <PublicRoute><MillikanOilDropSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/black-hole-relativity',
-        element: <AuthGuard><BlackHoleSimulation /></AuthGuard>,
+        element: <PublicRoute><BlackHoleSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/rutherford-scattering',
-        element: <AuthGuard><RutherfordScatteringSimulation /></AuthGuard>,
+        element: <PublicRoute><RutherfordScatteringSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/chemical-equilibrium',
-        element: <AuthGuard><ChemicalEquilibriumSimulation /></AuthGuard>,
+        element: <PublicRoute><ChemicalEquilibriumSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/crispr-gene-editing',
-        element: <AuthGuard><CrisprGeneEditingSimulation /></AuthGuard>,
+        element: <PublicRoute><CrisprGeneEditingSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/xray-diffraction',
-        element: <AuthGuard><XRayDiffractionSimulation /></AuthGuard>,
+        element: <PublicRoute><XRayDiffractionSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/aerodynamics-wind-tunnel',
-        element: <AuthGuard><AerodynamicsWindTunnelSimulation /></AuthGuard>,
+        element: <PublicRoute><AerodynamicsWindTunnelSimulation /></PublicRoute>,
       },
       {
         path: 'simulation/superconductivity',
-        element: <AuthGuard><SuperconductivitySimulation /></AuthGuard>,
+        element: <PublicRoute><SuperconductivitySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/orbital-mechanics',
-        element: <AuthGuard><OrbitalMechanicsSimulation /></AuthGuard>,
+        element: <PublicRoute><OrbitalMechanicsSimulation /></PublicRoute>,
       },
       {
         path: 'environmental-sustainability',

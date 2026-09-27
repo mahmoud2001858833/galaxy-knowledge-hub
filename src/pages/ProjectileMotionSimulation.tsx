@@ -74,9 +74,9 @@ const ProjectileMotionSimulation = () => {
       return [
         { id: 'v0', label: 'السرعة الابتدائية (v₀)', value: state.initialVelocity, unit: 'm/s', status: 'nominal' as const, min: 5, max: 100 },
         { id: 'angle', label: 'زاوية الإطلاق (θ)', value: state.angle, unit: '°', status: 'nominal' as const, min: 5, max: 85 },
-        { id: 'range', label: 'المدى الأفقي (Range)', value: Number(projectileStats.range.toFixed(1)), unit: 'm', status: Math.abs(projectileStats.range - 150) < 6 ? ('nominal' as const) : ('idle' as const), min: 0, max: 400 },
-        { id: 'maxH', label: 'أقصى ارتفاع (H_max)', value: Number(projectileStats.maxHeight.toFixed(1)), unit: 'm', status: projectileStats.maxHeight >= 80 ? ('nominal' as const) : ('idle' as const), min: 0, max: 200 },
-        { id: 'time', label: 'زمن التحليق (Time)', value: Number(projectileStats.flightTime.toFixed(2)), unit: 's', status: 'nominal' as const, min: 0, max: 20 },
+        { id: 'range', label: 'المدى الأفقي (Range)', value: Number((projectileStats?.range ?? 0).toFixed(1)), unit: 'm', status: Math.abs((projectileStats?.range ?? 0) - 150) < 6 ? ('nominal' as const) : ('idle' as const), min: 0, max: 400 },
+        { id: 'maxH', label: 'أقصى ارتفاع (H_max)', value: Number((projectileStats?.maxHeight ?? 0).toFixed(1)), unit: 'm', status: (projectileStats?.maxHeight ?? 0) >= 80 ? ('nominal' as const) : ('idle' as const), min: 0, max: 200 },
+        { id: 'time', label: 'زمن التحليق (Time)', value: Number((projectileStats?.flightTime ?? projectileStats?.timeOfFlight ?? 0).toFixed(2)), unit: 's', status: 'nominal' as const, min: 0, max: 20 },
       ];
     }
     if (activeTab === 'pendulum') {
@@ -952,9 +952,9 @@ const ProjectileMotionSimulation = () => {
                     tab: activeTab,
                     angle: state.angle,
                     initialVelocity: state.initialVelocity,
-                    range: Number(projectileStats.range.toFixed(1)),
-                    maxHeight: Number(projectileStats.maxHeight.toFixed(1)),
-                    flightTime: Number(projectileStats.flightTime.toFixed(2)),
+                    range: Number((projectileStats?.range ?? 0).toFixed(1)),
+                    maxHeight: Number((projectileStats?.maxHeight ?? 0).toFixed(1)),
+                    flightTime: Number((projectileStats?.flightTime ?? projectileStats?.timeOfFlight ?? 0).toFixed(2)),
                     gravity: GRAVITY_VALUES[state.environment],
                     pendulumPeriod: activeTab === 'pendulum' ? Number(pendulumStats.period.toFixed(2)) : undefined,
                   }}

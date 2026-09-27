@@ -405,12 +405,16 @@ export const useProjectilePhysics = () => {
 
   // ============ COMPUTED VALUES ============
 
-  const projectileStats = useMemo(() => ({
-    maxHeight: calculateMaxHeight(state.initialVelocity, state.angle, state.gravity, state.height),
-    range: calculateRange(state.initialVelocity, state.angle, state.gravity, state.height),
-    timeOfFlight: calculateTimeOfFlight(state.initialVelocity, state.angle, state.gravity, state.height),
-    currentSpeed: Math.sqrt(state.projectileVelocity.vx ** 2 + state.projectileVelocity.vy ** 2)
-  }), [state, calculateMaxHeight, calculateRange, calculateTimeOfFlight]);
+  const projectileStats = useMemo(() => {
+    const flightTimeVal = calculateTimeOfFlight(state.initialVelocity, state.angle, state.gravity, state.height);
+    return {
+      maxHeight: calculateMaxHeight(state.initialVelocity, state.angle, state.gravity, state.height),
+      range: calculateRange(state.initialVelocity, state.angle, state.gravity, state.height),
+      timeOfFlight: flightTimeVal,
+      flightTime: flightTimeVal,
+      currentSpeed: Math.sqrt(state.projectileVelocity.vx ** 2 + state.projectileVelocity.vy ** 2)
+    };
+  }, [state, calculateMaxHeight, calculateRange, calculateTimeOfFlight]);
 
   const pendulumStats = useMemo(() => {
     const energy = calculatePendulumEnergy(
