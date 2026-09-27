@@ -22,6 +22,7 @@ import {
   syncPlatformLiveDocumentation, 
   downloadComprehensivePlatformDossierPDF, 
   openPrintablePlatformDossierWindow,
+  downloadComprehensiveDossierHtmlFile,
   PlatformLiveSnapshot 
 } from '@/services/platformDocsExportService';
 
@@ -184,21 +185,44 @@ export const DocsExportSyncToolbar: React.FC = () => {
                   {/* Option 1: Mega Encyclopedia (500+ Pages) */}
                   <div 
                     onClick={() => {
-                      openPrintablePlatformDossierWindow();
-                      setIsExportModalOpen(false);
-                      toast.success('تم فتح الموسوعة الشاملة (500+ صفحة) في نافذة جديدة فائقة الوضوح. اضغط على زر "طباعة / حفظ كـ PDF" للتحميل الفوري.');
+                      try {
+                        openPrintablePlatformDossierWindow();
+                        setIsExportModalOpen(false);
+                        toast.success('تم فتح الموسوعة الشاملة (500+ صفحة) بنجاح. يمكنك الضغط على "طباعة / حفظ كـ PDF" للتحميل الفوري كملف PDF.');
+                      } catch (err) {
+                        downloadComprehensiveDossierHtmlFile();
+                        setIsExportModalOpen(false);
+                        toast.success('تم بدء تنزيل ملف الموسوعة الشاملة (500+ صفحة) مباشرة إلى جهازك.');
+                      }
                     }}
-                    className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-600 cursor-pointer transition-all space-y-2.5 text-right group shadow-xs hover:shadow-md"
+                    className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-600 cursor-pointer transition-all space-y-2.5 text-right group shadow-xs hover:shadow-md relative"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
-                      <Printer className="w-5 h-5" />
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
+                        <Printer className="w-5 h-5" />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadComprehensiveDossierHtmlFile();
+                          setIsExportModalOpen(false);
+                          toast.success('تم بدء تنزيل ملف الموسوعة الشاملة (500+ صفحة) مباشرة إلى جهازك!');
+                        }}
+                        className="h-7 px-2 text-[10px] text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg gap-1 border border-emerald-300 dark:border-emerald-700"
+                        title="تنزيل الملف مباشرة إلى جهازك"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>تنزيل مباشر 📥</span>
+                      </Button>
                     </div>
                     <div>
                       <div className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
                         الموسوعة الكبرى الشاملة (500+ صفحة)
                       </div>
                       <div className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 mt-0.5">
-                        تفكيك كل خيار وأداة تحكم في الـ 59 مختبراً، المعادلات، الروبوتات، و1,100+ مصدر بالتفصيل الممل.
+                        تفكيك كل خيار وأداة تحكم في الـ 60 مختبراً، المعادلات، الروبوتات، و1,100+ مصدر بالتفصيل الممل.
                       </div>
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-bold block w-fit">

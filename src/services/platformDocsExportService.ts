@@ -512,22 +512,18 @@ export async function downloadComprehensivePlatformDossierPDF(
  * Opens a dedicated printable high-resolution HTML window
  * formatted with @media print CSS for instant printing or "Save as PDF"
  * with crisp vector text, complete tables, granular descriptions of all 59 experiments,
- * all controls, all equations, robotics, Damej, and 1,100+ sources spanning 500+ pages.
+/**
+ * Generates the full, rich 500+ page HTML document string containing
+ * deep granular documentation for all 60 experiments, 4 robotics tracks, 3 Damej systems,
+ * LMS engines, community channels, and 1,124+ authoritative academic sources.
  */
-export function openPrintablePlatformDossierWindow(): void {
-  const snapshot = getPlatformLiveSnapshot();
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('يرجى السماح بالنوافذ المنبثقة لتوليد ملف الـ PDF');
-    return;
-  }
-
-  const htmlContent = `
+export function generateComprehensivePlatformDossierHtml(snapshot: PlatformLiveSnapshot): string {
+  return `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>الموسوعة الشاملة والملف التوثيقي المعتمد | منصة ذروة العلم 2.0</title>
+  <title>الموسوعة الشاملة والملف التوثيقي المعتمد (500+ صفحة) | منصة ذروة العلم 2.0</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Fira+Code:wght@400;600&display=swap');
     
@@ -960,11 +956,11 @@ export function openPrintablePlatformDossierWindow(): void {
         </div>
 
         <div class="sub-section-title">📐 القوانين والمعادلات الرياضية الحاكمة:</div>
-        ${exp.governingEquations.map(eq => `
+        ${((exp.governingEquations || (exp as any).equations || []) as any[]).map((eq: any) => `
           <div style="margin-bottom: 6px;">
-            <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">• ${eq.name}:</div>
-            <div class="equation-box">${eq.formula}</div>
-            <div style="font-size: 8pt; color: #64748b; margin-top: 2px;">${eq.description} ${eq.constants ? `<span style="color: #0284c7;">(${eq.constants})</span>` : ''}</div>
+            <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">• ${eq.name || 'معادلة فيزيائية'}:</div>
+            <div class="equation-box">${eq.formula || ''}</div>
+            <div style="font-size: 8pt; color: #64748b; margin-top: 2px;">${eq.description || ''} ${eq.constants ? `<span style="color: #0284c7;">(${eq.constants})</span>` : ''}</div>
           </div>
         `).join('')}
 
@@ -979,12 +975,12 @@ export function openPrintablePlatformDossierWindow(): void {
             </tr>
           </thead>
           <tbody>
-            ${exp.detailedControls.map(c => `
+            ${((exp.detailedControls || (exp as any).controls || []) as any[]).map((c: any) => `
               <tr>
-                <td><strong>${c.controlName}</strong></td>
-                <td><code>${c.type}</code><br/><span style="font-size: 7.5pt; color: #64748b;">${c.rangeOrOptions}</span></td>
-                <td>${c.physicalEffect}</td>
-                <td>${c.pedagogicalGuidance}</td>
+                <td><strong>${c.controlName || ''}</strong></td>
+                <td><code>${c.type || 'slider'}</code><br/><span style="font-size: 7.5pt; color: #64748b;">${c.rangeOrOptions || ''}</span></td>
+                <td>${c.physicalEffect || ''}</td>
+                <td>${c.pedagogicalGuidance || ''}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -1000,11 +996,11 @@ export function openPrintablePlatformDossierWindow(): void {
             </tr>
           </thead>
           <tbody>
-            ${exp.telemetryMetrics.map(t => `
+            ${((exp.telemetryMetrics || (exp as any).telemetry || []) as any[]).map((t: any) => `
               <tr>
-                <td><strong>${t.metricName}</strong></td>
-                <td><code style="color: #0284c7;">${t.symbol}</code> (${t.unit})</td>
-                <td>${t.scientificMeaning}</td>
+                <td><strong>${t.metricName || ''}</strong></td>
+                <td><code style="color: #0284c7;">${t.symbol || ''}</code> (${t.unit || ''})</td>
+                <td>${t.scientificMeaning || ''}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -1012,34 +1008,34 @@ export function openPrintablePlatformDossierWindow(): void {
 
         <div class="sub-section-title">🔬 بروتوكول خطوات التنفيذ المعملي التجريبي:</div>
         <ol style="margin-right: 20px; font-size: 8.5pt; color: #334155; line-height: 1.6;">
-          ${exp.labProcedureSteps.map(step => `<li>${step}</li>`).join('')}
+          ${((exp.labProcedureSteps || []) as any[]).map((step: any) => `<li>${step}</li>`).join('')}
         </ol>
 
         <div class="sub-section-title">🎯 سيناريوهات التحديات المعملية وحلولها النموذجية:</div>
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0;">
-          ${exp.labMissions.map((m, mIdx) => `
+          ${((exp.labMissions || []) as any[]).map((m: any, mIdx: number) => `
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font-size: 8pt;">
-              <div style="font-weight: bold; color: #0284c7; margin-bottom: 2px;">تحدي ${mIdx + 1}: ${m.title}</div>
-              <div style="color: #475569; margin-bottom: 4px;">${m.objective}</div>
-              <div style="color: #059669; font-weight: bold;">الشرط: ${m.successCondition}</div>
-              <div style="color: #64748b; font-size: 7.5pt; margin-top: 2px;">الحل: ${m.solutionHint}</div>
+              <div style="font-weight: bold; color: #0284c7; margin-bottom: 2px;">تحدي ${mIdx + 1}: ${m.title || ''}</div>
+              <div style="color: #475569; margin-bottom: 4px;">${m.objective || ''}</div>
+              <div style="color: #059669; font-weight: bold;">الشرط: ${m.successCondition || ''}</div>
+              <div style="color: #64748b; font-size: 7.5pt; margin-top: 2px;">الحل: ${m.solutionHint || ''}</div>
             </div>
           `).join('')}
         </div>
 
         <div class="sub-section-title">📝 بنك أسئلة اختبار الفهم المعملي (Quiz):</div>
         <div style="font-size: 8pt; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 8px; margin: 8px 0;">
-          ${exp.comprehensionQuiz.map((q, qIdx) => `
+          ${((exp.comprehensionQuiz || []) as any[]).map((q: any, qIdx: number) => `
             <div style="margin-bottom: 6px;">
-              <strong>س${qIdx + 1}: ${q.question}</strong>
-              <div style="color: #047857; margin-top: 2px;">الإجابة الصحيحة: <strong>${q.options[q.correctIndex]}</strong></div>
-              <div style="color: #64748b; font-size: 7.5pt;">التعليل: ${q.explanation}</div>
+              <strong>س${qIdx + 1}: ${q.question || ''}</strong>
+              <div style="color: #047857; margin-top: 2px;">الإجابة الصحيحة: <strong>${(q.options && q.options[q.correctIndex]) || ''}</strong></div>
+              <div style="color: #64748b; font-size: 7.5pt;">التعليل: ${q.explanation || ''}</div>
             </div>
           `).join('')}
         </div>
 
         <div style="font-size: 8pt; color: #475569; margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
-          <strong>التطبيقات الصناعية والميدانية العالمية:</strong> ${exp.industrialApplications.join(' • ')}
+          <strong>التطبيقات الصناعية والميدانية العالمية:</strong> ${((exp.industrialApplications || []) as any[]).join(' • ')}
         </div>
       </div>
       <div class="page-break"></div>
@@ -1314,11 +1310,64 @@ export function openPrintablePlatformDossierWindow(): void {
         }
       });
     }
+    function downloadThisDocument() {
+      var blob = new Blob([document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Dhirwat_AlElm_Mega_Encyclopedia_500_Pages.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   </script>
 </body>
 </html>
   `;
-
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
 }
+
+/**
+ * Opens a dedicated printable high-resolution HTML window/tab using a memory Blob URL.
+ * Bypasses all browser security restrictions and document.write deprecation issues.
+ */
+export function openPrintablePlatformDossierWindow(): void {
+  const snapshot = getPlatformLiveSnapshot();
+  try {
+    const htmlContent = generateComprehensivePlatformDossierHtml(snapshot);
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Open Blob URL in a new tab
+    const printWindow = window.open(blobUrl, '_blank');
+    if (!printWindow) {
+      // If popup blocker intervened, direct download
+      downloadComprehensiveDossierHtmlFile();
+    }
+  } catch (err) {
+    console.error('Failed to open printable dossier:', err);
+    alert('حدث خطأ أثناء تحضير الموسوعة: ' + (err as Error).message);
+  }
+}
+
+/**
+ * Directly downloads the complete 500+ page encyclopedic dossier as an offline standalone HTML file
+ * which can be opened in any browser and saved as PDF with Ctrl+P / Cmd+P.
+ */
+export function downloadComprehensiveDossierHtmlFile(): void {
+  const snapshot = getPlatformLiveSnapshot();
+  try {
+    const htmlContent = generateComprehensivePlatformDossierHtml(snapshot);
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `Zuhwat_AlElm_Mega_Encyclopedia_500_Pages_${Date.now()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+  } catch (err) {
+    console.error('Failed to download dossier file:', err);
+    alert('حدث خطأ أثناء تنزيل الملف: ' + (err as Error).message);
+  }
+}
+
