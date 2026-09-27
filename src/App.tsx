@@ -162,6 +162,7 @@ const EnergySkateParkSimulation = wrap(lazy(() => import("./pages/EnergySkatePar
 const CircuitConstructionKitDcSimulation = wrap(lazy(() => import("./pages/CircuitConstructionKitDcSimulation")));
 const MembraneTransportSimulation = wrap(lazy(() => import("./pages/MembraneTransportSimulation")));
 const ModelsOfHydrogenAtomSimulation = wrap(lazy(() => import("./pages/ModelsOfHydrogenAtomSimulation")));
+const InteractiveSimulationWorkbench = wrap(lazy(() => import("./pages/InteractiveSimulationWorkbench")));
 const EnvironmentalSustainability = wrap(lazy(() => import("./pages/EnvironmentalSustainability")));
 const CarbonCalculator = wrap(lazy(() => import("./pages/CarbonCalculator")));
 const SchoolProjects = wrap(lazy(() => import("./pages/SchoolProjects")));
@@ -914,6 +915,71 @@ const router = createBrowserRouter([
       {
         path: 'simulation/hydrogen-atom-models',
         element: <PublicRoute><ModelsOfHydrogenAtomSimulation /></PublicRoute>,
+      },
+      // 15 Interactive Simulations (Dhirwat Al-Elm 2.0)
+      {
+        path: 'simulation/build-a-nucleus',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="build-a-nucleus" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/bending-light',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="bending-light" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/faradays-electromagnetic-lab',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="faradays-electromagnetic-lab" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/geometric-optics-basics',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="geometric-optics-basics" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/pendulum-lab',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="pendulum-lab" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/wave-interference',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="wave-interference" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/natural-selection',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="natural-selection" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/my-solar-system',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="my-solar-system" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/ph-scale',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="ph-scale" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/neuron',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="neuron" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/quadrilateral',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="quadrilateral" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/hookes-law',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="hookes-law" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/quantum-measurement',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="quantum-measurement" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/balloons-and-static-electricity',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="balloons-and-static-electricity" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/projectile-sampling-distributions',
+        element: <PublicRoute><InteractiveSimulationWorkbench simId="projectile-sampling-distributions" /></PublicRoute>,
+      },
+      {
+        path: 'simulation/workbench/:simId',
+        element: <PublicRoute><InteractiveSimulationWorkbench /></PublicRoute>,
       },
       {
         path: 'environmental-sustainability',
