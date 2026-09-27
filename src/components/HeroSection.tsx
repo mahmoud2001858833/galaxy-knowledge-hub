@@ -79,20 +79,20 @@ const HeroSection: React.FC = () => {
           {/* Quick Metrics / Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-2 max-w-xl mx-auto lg:mx-0">
             <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-cyan-500/20 shadow-sm backdrop-blur-md text-center hover:border-cyan-500/40 transition-colors">
-              <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-300">45+</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">محاكاة 3D</div>
+              <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-300 font-mono" dir="ltr">49+</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">مختبراً تفاعلياً 3D</div>
             </div>
-            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-purple-500/20 shadow-sm backdrop-blur-md text-center hover:border-purple-500/40 transition-colors">
-              <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-300">25+</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">أداة AI ذكية</div>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-teal-500/20 shadow-sm backdrop-blur-md text-center hover:border-teal-500/40 transition-colors">
-              <div className="text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-300">دامج</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">تربية خاصة شاملة</div>
+            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-blue-500/20 shadow-sm backdrop-blur-md text-center hover:border-blue-500/40 transition-colors">
+              <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-300 font-mono" dir="ltr">99.8%</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">دقة المحاكاة والقياس</div>
             </div>
             <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-emerald-500/20 shadow-sm backdrop-blur-md text-center hover:border-emerald-500/40 transition-colors">
-              <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-300">200+</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">مرجع موثق</div>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-300 font-mono" dir="ltr">100%</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">شمولية رقمية (دامج)</div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-purple-500/20 shadow-sm backdrop-blur-md text-center hover:border-purple-500/40 transition-colors">
+              <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-300 font-mono" dir="ltr">25+</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">أداة ذكاء اصطناعي</div>
             </div>
           </div>
 

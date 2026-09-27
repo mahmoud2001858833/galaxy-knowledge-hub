@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -13,11 +13,59 @@ import {
   CheckCircle2,
   ExternalLink,
   GraduationCap,
-  HeartHandshake
+  HeartHandshake,
+  Gauge,
+  Bot,
+  BrainCircuit
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
 import { openInteractiveTourModal } from '@/components/home/InteractiveTourGuideModal';
+
+const AnimatedCounter: React.FC<{
+  end: number;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+  duration?: number;
+}> = ({ end, decimals = 0, prefix = '', suffix = '', duration = 1900 }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const elapsed = timestamp - startTimestamp;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Smooth ease-out cubic curve (starts fast, lands gently)
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentVal = easeOut * end;
+      setCount(currentVal);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        setCount(end);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [end, duration]);
+
+  const formattedValue = decimals > 0 
+    ? count.toFixed(decimals) 
+    : Math.round(count).toString();
+
+  return (
+    <span className="font-mono inline-flex items-center justify-center" dir="ltr">
+      {prefix}{formattedValue}{suffix}
+    </span>
+  );
+};
 
 interface ProductTourHeroProps {
   onStartTour?: () => void;
@@ -48,34 +96,32 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
         className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-15"
         style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.3) 1px, transparent 0)`,
-          backgroundSize: '32px 32px',
+          backgroundSize: '32px 32px'
         }}
       />
 
-      {/* Gentle Soft Ambient Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] sm:w-[850px] h-[320px] bg-gradient-to-tr from-blue-500/10 via-indigo-500/10 to-cyan-500/10 dark:from-blue-600/15 dark:via-purple-600/10 dark:to-transparent rounded-full blur-3xl pointer-events-none" />
+      {/* Gentle Ambient Blue/Cyan Glow Orbs */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[620px] h-[260px] sm:h-[340px] bg-gradient-to-tr from-blue-600/10 via-cyan-500/10 to-indigo-500/10 dark:from-blue-600/20 dark:via-cyan-500/15 dark:to-indigo-500/15 rounded-full blur-[90px] pointer-events-none" />
+      <div className="absolute -top-10 right-10 w-72 h-72 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-10 left-10 w-72 h-72 bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Main Center Stage Content */}
-      <div className="relative z-10 max-w-5xl mx-auto text-center space-y-6 sm:space-y-8 flex-1 flex flex-col justify-center items-center w-full">
+      {/* Center Stage Presentation Container */}
+      <div className="relative z-10 max-w-5xl w-full mx-auto flex flex-col items-center text-center space-y-7 sm:space-y-8 my-auto">
         
-        {/* Executive Official Badge */}
+        {/* Top Floating Badge */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold shadow-sm backdrop-blur-md"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/5 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-md"
         >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="tracking-tight">المنظومة الوطنية الموحدة للتعليم التفاعلي 2.0</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono font-bold">
-            2026
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            المنظومة الوطنية الأردنية للتعليم التفاعلي ثلاثي الأبعاد 2.0
           </span>
         </motion.div>
 
-        {/* Brand Emblem & Headline Group */}
+        {/* Hero Title & Identity */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -163,28 +209,51 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
           </Button>
         </motion.div>
 
-        {/* Telemetry Metric Cards */}
+        {/* Telemetry Metric Cards with Animated Count-Up Counters */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
           className="w-full pt-6 sm:pt-8 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3.5 max-w-4xl px-2"
         >
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
-            <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-mono">49+</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">مختبراً تفاعلياً 3D</div>
+          {/* 1. 49+ 3D Interactive Labs */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center group hover:border-blue-500/40 hover:shadow-md transition-all">
+            <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-mono flex items-center justify-center gap-1">
+              <AnimatedCounter end={49} suffix="+" duration={1900} />
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+              مختبراً تفاعلياً 3D
+            </div>
           </div>
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
-            <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-400 font-mono">99.8%</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">دقة المحاكاة الفيزيائية</div>
+
+          {/* 2. 99.8% Simulation & Measurement Precision */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center group hover:border-cyan-500/40 hover:shadow-md transition-all">
+            <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-400 font-mono flex items-center justify-center gap-1">
+              <AnimatedCounter end={99.8} decimals={1} suffix="%" duration={2100} />
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+              دقة المحاكاة والقياس
+            </div>
           </div>
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
-            <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">100%</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">شمولية رقمية (دامج)</div>
+
+          {/* 3. 100% Digital Inclusion (Damij) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center group hover:border-emerald-500/40 hover:shadow-md transition-all">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono flex items-center justify-center gap-1">
+              <AnimatedCounter end={100} suffix="%" duration={1800} />
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+              شمولية رقمية (دامج)
+            </div>
           </div>
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
-            <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 font-mono">14</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">مساراً ومنصة تخصصية</div>
+
+          {/* 4. 25+ AI Tools */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center group hover:border-purple-500/40 hover:shadow-md transition-all">
+            <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 font-mono flex items-center justify-center gap-1">
+              <AnimatedCounter end={25} suffix="+" duration={1700} />
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+              أداة ذكاء اصطناعي
+            </div>
           </div>
         </motion.div>
       </div>
