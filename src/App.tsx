@@ -201,6 +201,7 @@ const AIPlatformBuilder = wrap(lazy(() => import("./pages/AIPlatformBuilder")));
 const PublishedProject = wrap(lazy(() => import("./pages/PublishedProject")));
 const TenantSettings = wrap(lazy(() => import("./pages/TenantSettings")));
 const PlatformDocumentation = wrap(lazy(() => import("./pages/PlatformDocumentation")));
+const PrivacyAndTerms = wrap(lazy(() => import("./pages/PrivacyAndTerms")));
 const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionSystem")));
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
@@ -588,7 +589,15 @@ const router = createBrowserRouter([
       },
       {
         path: 'contact',
-        element: <AuthGuard><Contact /></AuthGuard>,
+        element: <PublicRoute><Contact /></PublicRoute>,
+      },
+      {
+        path: 'privacy',
+        element: <PublicRoute><PrivacyAndTerms /></PublicRoute>,
+      },
+      {
+        path: 'terms',
+        element: <PublicRoute><PrivacyAndTerms /></PublicRoute>,
       },
       {
         path: 'complaints',
