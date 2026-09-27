@@ -235,6 +235,7 @@ const DamijLanding: React.FC = () => {
           <SystemCard to="/damij/adhd"     icon={Activity}     title={t.sections.adhd.title}     description={t.sections.adhd.desc}     accent="hsl(var(--damij-accent-2))" delay={0.20} />
           <SystemCard to="/damij/braille"  icon={Eye}          title={t.sections.braille.title}  description={t.sections.braille.desc}  accent="hsl(var(--damij-primary))"  delay={0.25} />
           <SystemCard to="/damij/clinical" icon={FlaskConical} title={t.sections.clinical.title} description={t.sections.clinical.desc} accent="hsl(var(--damij-warm))"     delay={0.30} />
+          <SystemCard to="/damij/sources"  icon={BookMarked}   title="المكتبة العلمية والمصادر الموثقة" description="أرشيف معتمد يضم أكثر من 200 مرجع علمي ودولي وفق معايير APA وWHO مع نسخ فوري للاقتباسات." accent="hsl(var(--damij-primary))" delay={0.35} />
         </div>
       </section>
 

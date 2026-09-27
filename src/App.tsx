@@ -1117,7 +1117,7 @@ const router = createBrowserRouter([
       
       {
         path: 'education-section',
-        element: <AuthGuard><EducationSection /></AuthGuard>,
+        element: <PublicRoute><EducationSection /></PublicRoute>,
       },
       {
         path: 'ai-assistant-section',

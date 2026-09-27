@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Home, Hand, Layers, Brain, Activity, Eye, FlaskConical, Leaf, Menu, X } from 'lucide-react';
+import { Home, Hand, Layers, Brain, Activity, Eye, FlaskConical, Leaf, Menu, X, BookMarked } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DamijBrandLogo from './DamijBrandLogo';
 import DamijLanguageSwitcher from './DamijLanguageSwitcher';
@@ -33,6 +33,7 @@ const DamijHeader: React.FC = () => {
     { to: '/damij/adhd',     icon: Activity,     label: t.nav.adhd },
     { to: '/damij/braille',  icon: Eye,          label: t.nav.braille },
     { to: '/damij/clinical', icon: FlaskConical, label: t.nav.clinical },
+    { to: '/damij/sources',  icon: BookMarked,   label: 'المكتبة العلمية والمصادر' },
   ];
 
   return (

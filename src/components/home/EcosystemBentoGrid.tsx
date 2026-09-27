@@ -16,7 +16,11 @@ import {
   Eye, 
   Code2, 
   ShieldCheck, 
-  FileText
+  FileText,
+  Stethoscope,
+  Puzzle,
+  Leaf,
+  MessageSquare
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,14 +29,14 @@ import simulationsBg from '@/assets/simulations-3d-section.jpg';
 import roboticsBg from '@/assets/robotics-ai-section.jpg';
 import damijBg from '@/assets/damij-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
-import sourcesLibraryBg from '@/assets/sources-library-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
+import sourcesLibraryBg from '@/assets/sources-library-section.jpg';
 
 interface EcosystemItem {
   id: string;
   title: string;
   subtitle: string;
-  category: string;
+  category: 'stem' | 'ai' | 'btec' | 'inclusive' | 'skills';
   badge: string;
   description: string;
   image: string;
@@ -44,7 +48,7 @@ interface EcosystemItem {
 
 export const EcosystemBentoGrid: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'all' | 'stem' | 'ai' | 'inclusive'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'stem' | 'ai' | 'btec' | 'inclusive'>('all');
 
   const items: EcosystemItem[] = [
     {
@@ -62,7 +66,7 @@ export const EcosystemBentoGrid: React.FC = () => {
     },
     {
       id: 'robotics',
-      title: 'الروبوتات والذكاء الاصطناعي',
+      title: 'الروبوتات والذكاء الاصطناعي 2.0',
       subtitle: 'حركيات الأذرع الروبوتية، أنظمة ROS2 والـ LiDAR',
       category: 'ai',
       badge: 'هندسة & AI 2.0',
@@ -75,42 +79,29 @@ export const EcosystemBentoGrid: React.FC = () => {
     },
     {
       id: 'damij',
-      title: 'منصة دامج — التعليم الخاص والدمج',
-      subtitle: 'التقنيات المساعدة الشاملة وحلول الشمولية الذكية',
+      title: 'منصة دامج — التربية الخاصة والدمج',
+      subtitle: 'التقنيات المساعدة الشاملة والمكتبة العلمية الموثقة',
       category: 'inclusive',
-      badge: 'مبادرة وطنية معتمدة',
-      description: 'مترجم لغة الإشارة بالكاميرا، مترجم برايل اللمسي والصوتي، التشخيص التفريقي لاضطراب فرط الحركة ADHD، وأدوات دعم طيف التوحد.',
+      badge: 'مبادرة وطنية شاملة',
+      description: 'مترجم لغة الإشارة بالكاميرا، مترجم برايل اللمسي والصوتي، تشخيص التوحد وADHD، والمكتبة العلمية والمصادر المعتمدة وفق APA وWHO.',
       image: damijBg,
       icon: HeartHandshake,
-      highlights: ['مترجم برايل التفاعلي', 'كاشف لغة الإشارة بالكاميرا', 'فحص التوحد وADHD'],
+      highlights: ['مترجم برايل ولغة الإشارة', 'دعم التوحد وADHD', 'المكتبة العلمية والمصادر الموثقة'],
       link: '/damij',
       metrics: '100% شمولية رقمية'
     },
     {
       id: 'education',
-      title: 'التعليم الشامل ومسارات BTEC',
+      title: 'التعليم الشامل ومسارات BTEC المهنية',
       subtitle: 'المناهج العلمية والتقنية المعتمدة دولياً',
-      category: 'stem',
-      badge: '4 مسارات تعليمية',
-      description: 'مسارات متكاملة للمناهج المدرسية، مناهج BTEC الدولية لتكنولوجيا المعلومات، مسارات الاستدامة، وحسابات الطاقة البديلة.',
+      category: 'btec',
+      badge: 'معايير Pearson الدولية',
+      description: 'مسارات متكاملة للمناهج المدرسية، مناهج BTEC الدولية لتكنولوجيا المعلومات والبرمجة، الفن والتصميم، وإدارة المشاريع.',
       image: educationBg,
       icon: GraduationCap,
-      highlights: ['العلوم الطبيعية والأدب', 'مناهج BTEC الدولية', 'هندسة البرمجيات'],
+      highlights: ['تكنولوجيا المعلومات والبرمجة', 'الهندسة والروبوتات الميكانيكية', 'الفن والتصميم الرقمي'],
       link: '/education-section',
       metrics: 'معايير Pearson'
-    },
-    {
-      id: 'sources',
-      title: 'المكتبة العلمية والمصادر الموثقة',
-      subtitle: 'مراجع أكاديمية وأدلة دولية معتمدة وفق APA وWHO',
-      category: 'stem',
-      badge: '200+ مرجع دولي',
-      description: 'أرشيف معتمد يضم أبحاث APA، أدلة منظمة الصحة العالمية WHO، ومعايير W3C/WCAG مع ميزة النسخ الفوري للاقتباسات وتنزيل التقارير.',
-      image: sourcesLibraryBg,
-      icon: BookOpen,
-      highlights: ['أبحاث محكمة ودولية', 'اقتباس فوري بنظام APA', 'إرشادات WHO و WCAG'],
-      link: '/damij/sources',
-      metrics: 'توثيق أكاديمي كامل'
     },
     {
       id: 'assistant',
@@ -118,12 +109,77 @@ export const EcosystemBentoGrid: React.FC = () => {
       subtitle: 'دعم أكاديمي ونفسي موجه بنماذج Gemini المتطورة',
       category: 'ai',
       badge: 'مساعد فوري 24/7',
-      description: 'مساعدون أذكياء متخصصون لشرح النظريات المعقدة خطوة بخطوة، تصحيح الأخطاء البرمجية، وتوجيه مسار تعلم الطالب بدقة.',
+      description: 'مركز ذكاء اصطناعي شامل: المرشد النفسي لتنظيم القلق والتنفس الصندوقي، فلك المعرفة للعلوم، ومساعد تصحيح الأكواد والحلول.',
       image: aiAssistantBg,
       icon: Sparkles,
-      highlights: ['تفسير المفاهيم التفاعلي', 'توليد أسئلة بلوم المتدرجة', 'نطق وإملاء صوتي'],
+      highlights: ['المرشد النفسي وتنظيم القلق', 'فلك المعرفة والفيزياء', 'مصحح الأكواد بالذكاء الاصطناعي'],
       link: '/ai-assistant-section',
       metrics: 'دعم متعدد الوسائط'
+    },
+    {
+      id: 'medical',
+      title: 'المساعد الطبي المدرسي وطوارئ المدارس',
+      subtitle: 'دليل تفاعلي للتعامل مع الإسعافات والحالات المدرسية',
+      category: 'inclusive',
+      badge: 'بروتوكولات طوارئ فورية',
+      description: 'نظام فحص فوري بالكاميرا وإرشادات مباشرة ليعرف الطلاب والمعلمون كيفية التصرف مع حالات الرعاف، الإغماء، الجروح، والتشنجات.',
+      image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=1200&q=80',
+      icon: Stethoscope,
+      highlights: ['فحص فوري بالكاميرا', 'إرشادات واضحة للطلاب والمعلمين', 'أرقام الطوارئ السريعة'],
+      link: '/medical-assistant',
+      metrics: 'استجابة إسعافية فورية'
+    },
+    {
+      id: 'puzzles',
+      title: 'بنك ودوري الألغاز والتحديات الفكرية',
+      subtitle: 'تحديات تنافسية وألغاز ذكاء في الرياضيات والعلوم',
+      category: 'skills',
+      badge: 'أوسمة وتحديات يومية',
+      description: 'مسابقات فكرية مشوقة لتنمية مهارات التفكير العليا وحل المسائل في الرياضيات، الفيزياء، والكيمياء مع نظام نقاط ولوحة شرف.',
+      image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=1200&q=80',
+      icon: Puzzle,
+      highlights: ['ألغاز رياضية ومنطقية', 'لوحة صدارة الأبطال', 'نقاط خبرة وأوسمة تميز'],
+      link: '/subject-puzzles',
+      metrics: '120+ لغزاً تفاعلياً'
+    },
+    {
+      id: 'sustainability',
+      title: 'الاستدامة البيئية والطاقة البديلة',
+      subtitle: 'حساب البصمة الكربونية ومشاريع التدوير الخضراء',
+      category: 'stem',
+      badge: 'مبادرة الاستدامة الخضراء',
+      description: 'منظومة تفاعلية لحساب البصمة الكربونية الشخصية والمدرسية، أفكار مشاريع إعادة التدوير، ونماذج محاكاة الطاقة الشمسية والرياح.',
+      image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1200&q=80',
+      icon: Leaf,
+      highlights: ['حاسبة البصمة الكربونية', 'مشاريع إعادة التدوير المدرسية', 'محاكاة الطاقة المتجددة'],
+      link: '/environmental-sustainability',
+      metrics: 'مؤشر أثر بيئي حقيقي'
+    },
+    {
+      id: 'literary',
+      title: 'المنصات الأدبية واللغوية التفاعلية',
+      subtitle: 'إتقان اللغة العربية والإنجليزية بتمارين ذكية',
+      category: 'skills',
+      badge: 'اللغات والآداب',
+      description: 'تدريبات تفاعلية في النحو، الإعراب، البلاغة، وتراكيب اللغة الإنجليزية مصممة بأسلوب عصري يعزز الفصاحة اللغوية.',
+      image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80',
+      icon: BookOpen,
+      highlights: ['قواعد النحو والإعراب التفاعلي', 'تحليل النصوص الأدبية', 'تدريبات اللغة الإنجليزية'],
+      link: '/literary-platforms',
+      metrics: 'مناهج لغوية معتمدة'
+    },
+    {
+      id: 'forum',
+      title: 'منتدى مجتمع الطلبة والتعلم التشاركي',
+      subtitle: 'بيئة حوارية أكاديمية للتفاعل وحل المعضلات الدراسية',
+      category: 'skills',
+      badge: 'مجتمع أكاديمي نشط',
+      description: 'مساحة تفاعلية لتبادل التلخيصات الدراسية، مناقشة المسائل الصعبة مع الزملاء، والاستفادة من إرشادات وتوجيهات المعلمين.',
+      image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
+      icon: MessageSquare,
+      highlights: ['غرف نقاش علمية تخصصية', 'مشاركة الملاحظات والملخصات', 'إشراف أكاديمي مباشر'],
+      link: '/student-community-forum',
+      metrics: 'تفاعل طلابي مستمر'
     }
   ];
 
@@ -148,7 +204,7 @@ export const EcosystemBentoGrid: React.FC = () => {
         </h2>
 
         <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg leading-relaxed">
-          بنية متكاملة صُممت وفق أحدث معايير تجربة المستخدم والتعليم التفاعلي، حيث تتكامل المختبرات والذكاء الاصطناعي مع حلول الشمولية التامة.
+          بنية متكاملة صُممت وفق أحدث معايير تجربة المستخدم والتعليم التفاعلي، حيث تتكامل المختبرات والذكاء الاصطناعي مع مسارات BTEC المهنية والشمولية التامة.
         </p>
 
         {/* Corporate Restrained Segmented Controls */}
@@ -161,7 +217,7 @@ export const EcosystemBentoGrid: React.FC = () => {
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800 hover:text-slate-900'
             }`}
           >
-            جميع المسارات (6)
+            جميع المسارات ({items.length})
           </button>
           <button
             onClick={() => setActiveTab('stem')}
@@ -182,6 +238,16 @@ export const EcosystemBentoGrid: React.FC = () => {
             }`}
           >
             الروبوتات والذكاء الاصطناعي
+          </button>
+          <button
+            onClick={() => setActiveTab('btec')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'btec'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800 hover:text-slate-900'
+            }`}
+          >
+            مسارات BTEC المهنية
           </button>
           <button
             onClick={() => setActiveTab('inclusive')}
@@ -207,7 +273,7 @@ export const EcosystemBentoGrid: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.4, delay: index * 0.06 }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
               onClick={() => navigate(item.link)}
               className="group relative rounded-3xl overflow-hidden cursor-pointer bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
             >
@@ -249,33 +315,31 @@ export const EcosystemBentoGrid: React.FC = () => {
                     {item.title}
                   </h3>
 
-                  <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
                     {item.description}
                   </p>
-
-                  {/* Highlights Mini Pills */}
-                  <div className="flex flex-wrap gap-1.5 pt-1.5">
-                    {item.highlights.map((h, hIdx) => (
-                      <span
-                        key={hIdx}
-                        className="text-[10px] font-medium px-2.5 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300"
-                      >
-                        {h}
-                      </span>
-                    ))}
-                  </div>
                 </div>
 
-                {/* Action Footer */}
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                {/* Highlights List */}
+                <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                  {item.highlights.map((h, hIdx) => (
+                    <div key={hIdx} className="flex items-center gap-2 text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span>{h}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer with Metric and CTA */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-500 dark:text-slate-400">
                     {item.metrics}
                   </span>
                   
-                  <div className="flex items-center gap-1.5 text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    <span>استعراض المنصة</span>
-                    <ArrowLeft className="w-3.5 h-3.5 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform" />
-                  </div>
+                  <span className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 group-hover:underline">
+                    استكشف المسار
+                    <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+                  </span>
                 </div>
               </div>
             </motion.div>
