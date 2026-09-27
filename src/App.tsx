@@ -1101,6 +1101,10 @@ const router = createBrowserRouter([
         path: 'control-center',
         element: <SuperAdminControlHub />,
       },
+      {
+        path: 'super-admin-control-hub',
+        element: <SuperAdminControlHub />,
+      },
       
       {
         path: 'education-section',

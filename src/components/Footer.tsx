@@ -157,7 +157,7 @@ const Footer: React.FC = () => {
             <span>•</span>
             <Link to="/contact" className="hover:text-blue-600 transition-colors">تواصل معنا</Link>
             <span>•</span>
-            <Link to="/admin" className="hover:text-amber-600 transition-colors">بوابة المشرفين</Link>
+            <Link to="/super-admin-control-hub" className="hover:text-amber-600 transition-colors">لوحة الأدمن</Link>
             <span>•</span>
             <Link to="/privacy" className="hover:text-blue-600 transition-colors">الخصوصية والشروط</Link>
           </div>

@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
+import { openInteractiveTourModal } from '@/components/home/InteractiveTourGuideModal';
 
 interface UserProfile {
   id?: string;
@@ -25,7 +26,11 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
+           localStorage.getItem('galaxy_admin_authenticated') === 'true';
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,8 +49,10 @@ const Navbar = () => {
           .eq('user_id', session.user.id)
           .eq('access_level', 'super_admin')
           .limit(1);
-        const emailFallback = session.user.email === 'jowmahmoud6@gmail.com';
-        setIsSuperAdmin((accessRows && accessRows.length > 0) || emailFallback);
+        const emailFallback = session.user.email?.toLowerCase() === 'jowmahmoud6@gmail.com';
+        const isStoredAdmin = sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
+                              localStorage.getItem('galaxy_admin_authenticated') === 'true';
+        setIsSuperAdmin((accessRows && accessRows.length > 0) || emailFallback || isStoredAdmin);
       }
     };
     fetchUser();
@@ -59,12 +66,16 @@ const Navbar = () => {
         });
 
         supabase.from('admin_teacher_access').select('access_level').eq('user_id', session.user.id).eq('access_level', 'super_admin').limit(1).then(({ data }) => {
-          const emailFallback = session.user?.email === 'jowmahmoud6@gmail.com';
-          setIsSuperAdmin((!!data && data.length > 0) || emailFallback);
+          const emailFallback = session.user?.email?.toLowerCase() === 'jowmahmoud6@gmail.com';
+          const isStoredAdmin = sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
+                                localStorage.getItem('galaxy_admin_authenticated') === 'true';
+          setIsSuperAdmin((!!data && data.length > 0) || emailFallback || isStoredAdmin);
         });
       } else {
         setProfile(null);
-        setIsSuperAdmin(false);
+        const isStoredAdmin = sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
+                              localStorage.getItem('galaxy_admin_authenticated') === 'true';
+        setIsSuperAdmin(isStoredAdmin);
       }
     });
     return () => subscription.unsubscribe();
@@ -199,13 +210,14 @@ const Navbar = () => {
 
           {isSuperAdmin && (
             <Link
-              to="/control-center"
+              to="/super-admin-control-hub"
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold transition-all text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 dark:border-amber-400/30",
-                isActive('/control-center') && "bg-amber-500/20"
+                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all text-amber-900 bg-amber-500/15 hover:bg-amber-500/25 dark:text-amber-300 dark:bg-amber-400/10 dark:hover:bg-amber-400/20 border border-amber-500/40 shadow-sm flex items-center gap-1.5",
+                (isActive('/super-admin-control-hub') || isActive('/control-center') || isActive('/admin')) && "bg-amber-500/30 text-amber-950 dark:text-white"
               )}
             >
-              مركز التحكم
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              <span>لوحة الأدمن</span>
             </Link>
           )}
         </div>
@@ -255,12 +267,14 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
 
-                <Link to="/admin">
-                  <DropdownMenuItem className="flex items-center cursor-pointer text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>لوحة التحكم الإدارية</span>
-                  </DropdownMenuItem>
-                </Link>
+                {isSuperAdmin && (
+                  <Link to="/super-admin-control-hub">
+                    <DropdownMenuItem className="flex items-center cursor-pointer text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>لوحة الأدمن</span>
+                    </DropdownMenuItem>
+                  </Link>
+                )}
                 
                 <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
                 <DropdownMenuItem className="flex items-center cursor-pointer text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl px-2 py-2 text-xs" onClick={handleLogout}>
@@ -276,11 +290,14 @@ const Navbar = () => {
                   تسجيل الدخول
                 </Button>
               </Link>
-              <Link to="/experiments-section">
-                <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-xs rounded-xl px-4 py-2 shadow-sm">
-                  ابدأ الآن
-                </Button>
-              </Link>
+              <Button 
+                onClick={openInteractiveTourModal}
+                size="sm" 
+                className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-xs rounded-xl px-4 py-2 shadow-sm gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span>الجولة التعريفية</span>
+              </Button>
             </div>
           )}
         </div>
@@ -377,8 +394,11 @@ const Navbar = () => {
                 
                 {isSuperAdmin && (
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <Link to="/control-center" className="px-3 py-2.5 rounded-xl text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
-                      <span>مركز التحكم الإداري 2.0</span>
+                    <Link to="/super-admin-control-hub" className="px-3 py-2.5 rounded-xl text-xs font-bold text-amber-900 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span>لوحة الأدمن</span>
+                      </div>
                       <Settings className="w-4 h-4" />
                     </Link>
                   </div>
@@ -396,11 +416,13 @@ const Navbar = () => {
                           تسجيل الدخول
                         </Button>
                       </Link>
-                      <Link to="/experiments-section" className="block w-full">
-                        <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm">
-                          ابدأ الجولة التعريفية
-                        </Button>
-                      </Link>
+                      <Button 
+                        onClick={openInteractiveTourModal}
+                        className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>ابدأ الجولة التعريفية</span>
+                      </Button>
                     </div>
                   )}
                 </div>

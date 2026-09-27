@@ -53,6 +53,7 @@ import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager'
 import { SchoolBroadcastsManager } from '@/components/admin/lcm/SchoolBroadcastsManager';
 import { CommunityModerationManager } from '@/components/admin/lcm/CommunityModerationManager';
 import { AdminPuzzlesManagementHub } from '@/components/admin/AdminPuzzlesManagementHub';
+import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsManager';
 
 type AdminTab = 
   | 'overview'
@@ -203,7 +204,7 @@ export const SuperAdminControlHub: React.FC = () => {
     { id: 'dashboard', label: 'المؤشرات الحية والقياس', icon: LayoutDashboard },
     { id: 'simulations', label: 'المحاكيات والتجارب (49)', icon: Atom, badge: '49' },
     { id: 'puzzles', label: 'إدارة الألغاز والذكاء الاصطناعي', icon: HelpCircle, badge: 'AI 2.0' },
-    { id: 'users', label: 'المستخدمين والصلاحيات', icon: Users },
+    { id: 'users', label: 'المستخدمين والصلاحيات', icon: Users, badge: '618 مسجل' },
     { id: 'audit', label: 'سجل النشاط ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}` },
     { id: 'support', label: 'جلسات التواصل والدعم', icon: MessageSquare, badge: `${supportSessions.filter(s => s.unreadForAdmin).length || ''}` },
     { id: 'footer', label: 'محرر الفوتر ونهاية الصفحات', icon: Sliders },
@@ -613,48 +614,7 @@ export const SuperAdminControlHub: React.FC = () => {
 
             {/* 4. Users & Roles Management Tab */}
             {currentTab === 'users' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">إدارة المستخدمين والصلاحيات</h2>
-                    <p className="text-xs text-slate-500">التحكم في أدوار المشرفين والمعلمين وحصص الذكاء الاصطناعي</p>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">
-                  <table className="w-full text-right text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
-                        <th className="pb-3 pr-2">المستخدم</th>
-                        <th className="pb-3">البريد الإلكتروني</th>
-                        <th className="pb-3">الدور الحالي</th>
-                        <th className="pb-3">حصة الذكاء الاصطناعي اليومية</th>
-                        <th className="pb-3">الصلاحيات</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {[
-                        { name: 'محمود (المشرف العام)', email: 'jowmahmoud6@gmail.com', role: 'Super Admin', quota: 'غير محدود (Full)', perms: 'كافة الصلاحيات المطلقة' },
-                        { name: 'أ. عمر الشناوي', email: 'omar.chem@school.jo', role: 'Teacher', quota: '50 استعلام/يوم', perms: 'إعداد وتصدير الامتحانات' },
-                        { name: 'أحمد التميمي', email: 'ahmad.t@school.jo', role: 'Student', quota: '25 استعلام/يوم', perms: 'حل الألغاز والمحاكاة' },
-                        { name: 'المعلمة رانية حداد', email: 'rania.haddad@edu.jo', role: 'Teacher', quota: '50 استعلام/يوم', perms: 'إدارة الصفوف الافتراضية' },
-                      ].map((u, i) => (
-                        <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                          <td className="py-3.5 pr-2 font-bold text-slate-900 dark:text-white">{u.name}</td>
-                          <td className="py-3.5 font-mono text-slate-500" dir="ltr">{u.email}</td>
-                          <td className="py-3.5">
-                            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-400/20">
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="py-3.5 font-bold text-emerald-600">{u.quota}</td>
-                          <td className="py-3.5 text-slate-500">{u.perms}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <UsersPermissionsManager />
             )}
 
             {/* 5. Ultra-Granular Audit Trail Tab ("اعرف الإبرة من رماها") */}
