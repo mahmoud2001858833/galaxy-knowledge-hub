@@ -158,6 +158,10 @@ const AerodynamicsWindTunnelSimulation = wrap(lazy(() => import("./pages/Aerodyn
 const SuperconductivitySimulation = wrap(lazy(() => import("./pages/SuperconductivitySimulation")));
 const OrbitalMechanicsSimulation = wrap(lazy(() => import("./pages/OrbitalMechanicsSimulation")));
 const QuantumWaveInterferenceSimulation = wrap(lazy(() => import("./pages/QuantumWaveInterferenceSimulation")));
+const EnergySkateParkSimulation = wrap(lazy(() => import("./pages/EnergySkateParkSimulation")));
+const CircuitConstructionKitDcSimulation = wrap(lazy(() => import("./pages/CircuitConstructionKitDcSimulation")));
+const MembraneTransportSimulation = wrap(lazy(() => import("./pages/MembraneTransportSimulation")));
+const ModelsOfHydrogenAtomSimulation = wrap(lazy(() => import("./pages/ModelsOfHydrogenAtomSimulation")));
 const EnvironmentalSustainability = wrap(lazy(() => import("./pages/EnvironmentalSustainability")));
 const CarbonCalculator = wrap(lazy(() => import("./pages/CarbonCalculator")));
 const SchoolProjects = wrap(lazy(() => import("./pages/SchoolProjects")));
@@ -886,6 +890,30 @@ const router = createBrowserRouter([
       {
         path: 'simulation/quantum-interference',
         element: <PublicRoute><QuantumWaveInterferenceSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/energy-skate-park',
+        element: <PublicRoute><EnergySkateParkSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/circuit-construction-kit-dc',
+        element: <PublicRoute><CircuitConstructionKitDcSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/circuit-builder-interactive',
+        element: <PublicRoute><CircuitConstructionKitDcSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/membrane-transport',
+        element: <PublicRoute><MembraneTransportSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/models-of-the-hydrogen-atom',
+        element: <PublicRoute><ModelsOfHydrogenAtomSimulation /></PublicRoute>,
+      },
+      {
+        path: 'simulation/hydrogen-atom-models',
+        element: <PublicRoute><ModelsOfHydrogenAtomSimulation /></PublicRoute>,
       },
       {
         path: 'environmental-sustainability',
