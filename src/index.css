@@ -620,6 +620,44 @@ body, html, main {
   transition-duration: 0.01ms !important;
 }
 
+/* تمييز وتسطير الروابط */
+.accessibility-highlight-links a,
+.accessibility-highlight-links button {
+  text-decoration: underline !important;
+  text-decoration-color: #06b6d4 !important;
+  text-decoration-thickness: 2.5px !important;
+  text-underline-offset: 4px !important;
+}
+
+/* خط القراءة الميسرة وتباعد الأسطر */
+.accessibility-dyslexia body,
+.accessibility-dyslexia p,
+.accessibility-dyslexia span,
+.accessibility-dyslexia div,
+.accessibility-dyslexia h1,
+.accessibility-dyslexia h2,
+.accessibility-dyslexia h3,
+.accessibility-dyslexia h4 {
+  line-height: 2 !important;
+  letter-spacing: 0.035em !important;
+  word-spacing: 0.06em !important;
+}
+
+/* مؤشر الفأرة الكبير عالي الوضوح */
+.accessibility-large-cursor,
+.accessibility-large-cursor * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpolygon points='2,2 2,30 9,23 16,34 21,31 14,20 25,20' fill='%2306b6d4' stroke='%23ffffff' stroke-width='2.5'/%3E%3C/svg%3E"), auto !important;
+}
+
+/* تمييز العنصر الجاري قراءته بالصوت */
+.tts-speaking-outline {
+  outline: 3px solid #06b6d4 !important;
+  outline-offset: 3px !important;
+  background-color: rgba(6, 182, 212, 0.12) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
 /* أحجام الخطوط للوصول */
 [data-accessibility-mode="visual"] {
   font-size: var(--base-font-size, 18px);

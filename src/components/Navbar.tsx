@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { openInteractiveTourModal } from '@/components/home/InteractiveTourGuideModal';
 
 interface UserProfile {
@@ -24,6 +25,7 @@ const Navbar = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { activeFeaturesCount } = useAccessibility();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
@@ -224,14 +226,22 @@ const Navbar = () => {
 
         {/* User Account / Theme Toggle / Accessibility / Auth buttons */}
         <div className="hidden sm:flex items-center gap-2">
-          {/* Discreet Accessibility Trigger Button */}
+          {/* Accessibility Trigger Button */}
           <button
             onClick={openAccessibilityModal}
-            className="p-2 rounded-xl transition-all duration-200 border bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 border-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 shadow-sm"
-            title="إمكانية الوصول والشمولية (Accessibility)"
+            className={cn(
+              "relative p-2 rounded-xl transition-all duration-200 border shadow-sm",
+              activeFeaturesCount > 0
+                ? "bg-cyan-500/20 text-cyan-400 border-cyan-400/50 shadow-[0_0_12px_rgba(6,182,212,0.3)] animate-pulse"
+                : "bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 border-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
+            )}
+            title={activeFeaturesCount > 0 ? `إعدادات إمكانية الوصول (${activeFeaturesCount} نشطة)` : "إمكانية الوصول والشمولية (Accessibility)"}
             aria-label="إعدادات إمكانية الوصول"
           >
-            <Accessibility className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+            <Accessibility className="w-4 h-4" />
+            {activeFeaturesCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-cyan-400 ring-2 ring-slate-900" />
+            )}
           </button>
 
           <ThemeToggle />
@@ -307,10 +317,18 @@ const Navbar = () => {
           {/* Mobile Accessibility Button */}
           <button
             onClick={openAccessibilityModal}
-            className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800"
+            className={cn(
+              "relative p-1.5 rounded-lg border transition-all",
+              activeFeaturesCount > 0
+                ? "bg-cyan-500/20 text-cyan-400 border-cyan-400/50 shadow-sm"
+                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800"
+            )}
             title="إمكانية الوصول"
           >
             <Accessibility className="w-4 h-4" />
+            {activeFeaturesCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-cyan-400" />
+            )}
           </button>
           
           <ThemeToggle />

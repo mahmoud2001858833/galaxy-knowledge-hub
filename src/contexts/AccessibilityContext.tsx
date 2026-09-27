@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AccessibilityMode = 'standard' | 'visual' | 'hearing' | 'motor' | 'cognitive';
 export type FontSize = 'small' | 'medium' | 'large' | 'xl';
-export type PreferredVoice = 'male-ar' | 'female-ar' | 'male-en' | 'female-en';
+export type PreferredVoice = 'female-ar' | 'male-ar' | 'female-en' | 'male-en';
 
 export interface AccessibilitySettings {
   accessibilityMode: AccessibilityMode;
@@ -14,6 +14,10 @@ export interface AccessibilitySettings {
   voiceInput: boolean;
   signLanguage: boolean;
   textToSpeech: boolean;
+  readingGuide: boolean;
+  largeCursor: boolean;
+  dyslexiaFont: boolean;
+  highlightLinks: boolean;
   readingSpeed: number;
   preferredVoice: PreferredVoice;
 }
@@ -26,9 +30,11 @@ interface AccessibilityContextType {
   speakText: (text: string) => void;
   stopSpeaking: () => void;
   isSpeaking: boolean;
+  activeFeaturesCount: number;
 }
 
-const defaultSettings: AccessibilitySettings = {
+// All accessibility settings are OFF / DEFAULT initially
+export const defaultAccessibilitySettings: AccessibilitySettings = {
   accessibilityMode: 'standard',
   fontSize: 'medium',
   highContrast: false,
@@ -37,39 +43,60 @@ const defaultSettings: AccessibilitySettings = {
   voiceInput: false,
   signLanguage: false,
   textToSpeech: false,
+  readingGuide: false,
+  largeCursor: false,
+  dyslexiaFont: false,
+  highlightLinks: false,
   readingSpeed: 1.0,
   preferredVoice: 'female-ar',
 };
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'accessibility_settings';
+const STORAGE_KEY = 'galaxy_accessibility_settings_v2';
 
 export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<AccessibilitySettings>(defaultSettings);
+  const [settings, setSettings] = useState<AccessibilitySettings>(defaultAccessibilitySettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const lastSpokenElementRef = useRef<HTMLElement | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // تحميل الإعدادات عند بدء التطبيق
+  // Load Settings on start
   useEffect(() => {
     loadSettings();
   }, []);
 
-  // تطبيق الإعدادات على الصفحة
+  // Apply Settings to DOM whenever they change
   useEffect(() => {
     applySettings(settings);
   }, [settings]);
 
+  // Count how many features are currently turned ON
+  const activeFeaturesCount = [
+    settings.accessibilityMode !== 'standard',
+    settings.fontSize !== 'medium',
+    settings.highContrast,
+    settings.reduceMotion,
+    settings.screenReader,
+    settings.voiceInput,
+    settings.signLanguage,
+    settings.textToSpeech,
+    settings.readingGuide,
+    settings.largeCursor,
+    settings.dyslexiaFont,
+    settings.highlightLinks
+  ].filter(Boolean).length;
+
   const loadSettings = async () => {
     try {
-      // أولاً: جلب من localStorage
       const storedSettings = localStorage.getItem(STORAGE_KEY);
       if (storedSettings) {
         const parsed = JSON.parse(storedSettings);
-        setSettings({ ...defaultSettings, ...parsed });
+        setSettings({ ...defaultAccessibilitySettings, ...parsed });
       }
 
-      // ثانياً: إذا كان المستخدم مسجل، جلب من قاعدة البيانات
+      // Check DB if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
@@ -79,34 +106,31 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
           .single();
 
         if (data) {
-          const dbSettings: AccessibilitySettings = {
-            accessibilityMode: data.accessibility_mode as AccessibilityMode,
-            fontSize: data.font_size as FontSize,
-            highContrast: data.high_contrast,
-            reduceMotion: data.reduce_motion,
-            screenReader: data.screen_reader,
-            voiceInput: data.voice_input,
-            signLanguage: data.sign_language,
-            textToSpeech: data.text_to_speech,
-            readingSpeed: Number(data.reading_speed),
-            preferredVoice: data.preferred_voice as PreferredVoice,
+          const dbSettings: Partial<AccessibilitySettings> = {
+            accessibilityMode: (data.accessibility_mode as AccessibilityMode) || 'standard',
+            fontSize: (data.font_size as FontSize) || 'medium',
+            highContrast: Boolean(data.high_contrast),
+            reduceMotion: Boolean(data.reduce_motion),
+            screenReader: Boolean(data.screen_reader),
+            voiceInput: Boolean(data.voice_input),
+            signLanguage: Boolean(data.sign_language),
+            textToSpeech: Boolean(data.text_to_speech),
+            readingSpeed: Number(data.reading_speed) || 1.0,
+            preferredVoice: (data.preferred_voice as PreferredVoice) || 'female-ar',
           };
-          setSettings(dbSettings);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(dbSettings));
+          setSettings(prev => ({ ...prev, ...dbSettings }));
         }
       }
     } catch (error) {
-      console.error('Error loading accessibility settings:', error);
+      console.warn('Error loading accessibility settings:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const saveSettings = async (newSettings: AccessibilitySettings) => {
-    // حفظ في localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
 
-    // حفظ في قاعدة البيانات إذا كان المستخدم مسجل
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -125,103 +149,195 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
         });
       }
     } catch (error) {
-      console.error('Error saving accessibility settings:', error);
+      console.warn('Error saving accessibility settings:', error);
     }
   };
 
-  const applySettings = (settings: AccessibilitySettings) => {
+  const applySettings = (currentSettings: AccessibilitySettings) => {
     const root = document.documentElement;
 
-    // حجم الخط
-    const fontSizeMap: Record<FontSize, string> = {
-      small: '14px',
-      medium: '16px',
-      large: '18px',
-      xl: '22px',
-    };
-    root.style.setProperty('--base-font-size', fontSizeMap[settings.fontSize]);
+    // 1. Font Size Scaling (Clean rem scaling on document element)
+    if (currentSettings.fontSize === 'large') {
+      root.style.fontSize = '112.5%'; // ~18px
+    } else if (currentSettings.fontSize === 'xl') {
+      root.style.fontSize = '125%';   // ~20px
+    } else if (currentSettings.fontSize === 'small') {
+      root.style.fontSize = '90%';    // ~14.4px
+    } else {
+      root.style.fontSize = '';       // Default 100% natural
+    }
 
-    // التباين العالي
-    if (settings.highContrast) {
+    // 2. High Contrast
+    if (currentSettings.highContrast) {
       root.classList.add('high-contrast');
     } else {
       root.classList.remove('high-contrast');
     }
 
-    // تقليل الحركة
-    if (settings.reduceMotion) {
+    // 3. Reduce Motion
+    if (currentSettings.reduceMotion) {
       root.classList.add('reduce-motion');
     } else {
       root.classList.remove('reduce-motion');
     }
 
-    // وضع الوصول
-    root.setAttribute('data-accessibility-mode', settings.accessibilityMode);
+    // 4. Highlight Links
+    if (currentSettings.highlightLinks) {
+      root.classList.add('accessibility-highlight-links');
+    } else {
+      root.classList.remove('accessibility-highlight-links');
+    }
+
+    // 5. Dyslexia / Enhanced Line Spacing
+    if (currentSettings.dyslexiaFont) {
+      root.classList.add('accessibility-dyslexia');
+    } else {
+      root.classList.remove('accessibility-dyslexia');
+    }
+
+    // 6. Large Cursor
+    if (currentSettings.largeCursor) {
+      root.classList.add('accessibility-large-cursor');
+    } else {
+      root.classList.remove('accessibility-large-cursor');
+    }
+
+    // 7. Mode attribute
+    root.setAttribute('data-accessibility-mode', currentSettings.accessibilityMode);
   };
 
   const updateSettings = (newSettings: Partial<AccessibilitySettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    saveSettings(updated);
+    setSettings(prev => {
+      const updated = { ...prev, ...newSettings };
+      saveSettings(updated);
+      return updated;
+    });
   };
 
+  // Turn ALL settings completely OFF (Back to 100% natural default)
   const resetSettings = () => {
-    setSettings(defaultSettings);
-    saveSettings(defaultSettings);
+    stopSpeaking();
+    setSettings(defaultAccessibilitySettings);
+    saveSettings(defaultAccessibilitySettings);
   };
 
-  // وظيفة قراءة النص العالمية مع دعم الصوت الأنثوي
+  // Web Speech API Voice Selection & Utterance
   const speakText = useCallback((text: string) => {
-    if (!text || !settings.textToSpeech) return;
+    if (!text || typeof window === 'undefined' || !window.speechSynthesis) return;
 
-    speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const voices = speechSynthesis.getVoices();
-    const isArabic = settings.preferredVoice.includes('-ar');
-    const isFemale = settings.preferredVoice.includes('female');
-    
-    // قائمة أسماء الأصوات النسائية الشائعة
-    const femaleVoiceNames = ['female', 'woman', 'samira', 'mariam', 'laila', 'hoda', 'maged', 'majida', 'amira', 'fatima', 'zira', 'hedda', 'sabina', 'paulina'];
-    const maleVoiceNames = ['male', 'man', 'maged', 'tarik', 'omar', 'david', 'mark', 'james'];
-    
-    // البحث عن الصوت المناسب
-    const voice = voices.find(v => {
-      const matchesLang = isArabic ? v.lang.startsWith('ar') : v.lang.startsWith('en');
-      if (!matchesLang) return false;
-      
-      const voiceNameLower = v.name.toLowerCase();
-      if (isFemale) {
-        // البحث عن صوت أنثوي
-        return femaleVoiceNames.some(name => voiceNameLower.includes(name)) ||
-               (!maleVoiceNames.some(name => voiceNameLower.includes(name)));
-      } else {
-        // البحث عن صوت ذكوري
-        return maleVoiceNames.some(name => voiceNameLower.includes(name));
+      const utterance = new SpeechSynthesisUtterance(text);
+      const isArabic = settings.preferredVoice.includes('-ar');
+      const isFemale = settings.preferredVoice.includes('female');
+
+      utterance.lang = isArabic ? 'ar-SA' : 'en-US';
+      utterance.rate = settings.readingSpeed || 1.0;
+      utterance.pitch = isFemale ? 1.1 : 0.95;
+      utterance.volume = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const matchingVoice = voices.find(v => {
+        const matchesLang = isArabic ? v.lang && (v.lang.startsWith('ar') || v.lang.includes('Arabic')) : v.lang && v.lang.startsWith('en');
+        if (!matchesLang) return false;
+        const nameLower = v.name.toLowerCase();
+        if (isFemale) {
+          return nameLower.includes('female') || nameLower.includes('laila') || nameLower.includes('mariam') || nameLower.includes('zira');
+        } else {
+          return nameLower.includes('male') || nameLower.includes('tarik') || nameLower.includes('maged');
+        }
+      }) || voices.find(v => isArabic ? v.lang && v.lang.startsWith('ar') : v.lang && v.lang.startsWith('en'));
+
+      if (matchingVoice) {
+        utterance.voice = matchingVoice;
       }
-    }) || voices.find(v => isArabic ? v.lang.startsWith('ar') : v.lang.startsWith('en')) || voices[0];
-    
-    if (voice) {
-      utterance.voice = voice;
-      console.log('Selected voice:', voice.name, 'Lang:', voice.lang);
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (lastSpokenElementRef.current) {
+          lastSpokenElementRef.current.classList.remove('tts-speaking-outline');
+        }
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        if (lastSpokenElementRef.current) {
+          lastSpokenElementRef.current.classList.remove('tts-speaking-outline');
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech synthesis error:', e);
+      setIsSpeaking(false);
     }
-
-    utterance.rate = settings.readingSpeed;
-    utterance.pitch = isFemale ? 1.1 : 0.9; // نغمة أعلى قليلاً للصوت الأنثوي
-    utterance.volume = 1;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    speechSynthesis.speak(utterance);
-  }, [settings.textToSpeech, settings.readingSpeed, settings.preferredVoice]);
+  }, [settings.readingSpeed, settings.preferredVoice]);
 
   const stopSpeaking = useCallback(() => {
-    speechSynthesis.cancel();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setIsSpeaking(false);
+    if (lastSpokenElementRef.current) {
+      lastSpokenElementRef.current.classList.remove('tts-speaking-outline');
+      lastSpokenElementRef.current = null;
+    }
   }, []);
+
+  // Global Interactive Text-To-Speech (Triggered when user lights up textToSpeech)
+  useEffect(() => {
+    if (!settings.textToSpeech) {
+      stopSpeaking();
+      return;
+    }
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Ignore buttons inside settings panel or inputs
+      if (target.closest('[data-no-tts="true"]') || target.closest('input') || target.closest('textarea')) {
+        return;
+      }
+
+      // Check readable text tags
+      const readableTarget = target.closest('p, h1, h2, h3, h4, h5, h6, li, [data-readable="true"]') as HTMLElement | null;
+      if (!readableTarget) return;
+
+      const rawText = readableTarget.innerText?.trim();
+      if (!rawText || rawText.length < 2 || rawText.length > 500) return;
+
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+
+      hoverTimeoutRef.current = setTimeout(() => {
+        if (lastSpokenElementRef.current) {
+          lastSpokenElementRef.current.classList.remove('tts-speaking-outline');
+        }
+        readableTarget.classList.add('tts-speaking-outline');
+        lastSpokenElementRef.current = readableTarget;
+        speakText(rawText);
+      }, 400); // 400ms hover delay prevents jitter
+    };
+
+    const handleMouseOut = () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+
+    document.addEventListener('mouseover', handleMouseOver);
+    document.addEventListener('mouseout', handleMouseOut);
+
+    return () => {
+      document.removeEventListener('mouseover', handleMouseOver);
+      document.removeEventListener('mouseout', handleMouseOut);
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      if (lastSpokenElementRef.current) {
+        lastSpokenElementRef.current.classList.remove('tts-speaking-outline');
+      }
+    };
+  }, [settings.textToSpeech, speakText, stopSpeaking]);
 
   return (
     <AccessibilityContext.Provider value={{ 
@@ -232,6 +348,7 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
       speakText,
       stopSpeaking,
       isSpeaking,
+      activeFeaturesCount
     }}>
       {children}
     </AccessibilityContext.Provider>
