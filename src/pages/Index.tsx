@@ -16,6 +16,7 @@ import FuturePlatformsShowcase from '@/components/home/FuturePlatformsShowcase';
 import EducationalResources from '@/components/EducationalResources';
 import InteractiveTourGuideModal from '@/components/home/InteractiveTourGuideModal';
 import InstitutionalPartnershipSection from '@/components/home/InstitutionalPartnershipSection';
+import InteractiveMousePresentationDeck from '@/components/home/InteractiveMousePresentationDeck';
 
 const Index = () => {
   let dir = 'rtl';
@@ -99,6 +100,13 @@ const Index = () => {
         <SafeBoundary name="InstitutionalPartnershipSection">
           <InstitutionalPartnershipSection />
         </SafeBoundary>
+
+        {/* Stage 10: Interactive 3D Mouse-Parallax Platform Presentation Deck (العرض التقديمي التفاعلي ثلاثي الأبعاد) */}
+        <div id="tour-stage-presentation-deck">
+          <SafeBoundary name="InteractiveMousePresentationDeck">
+            <InteractiveMousePresentationDeck />
+          </SafeBoundary>
+        </div>
       </main>
       
       <SafeBoundary name="Footer">

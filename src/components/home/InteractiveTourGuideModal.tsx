@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, Compass, X, Play, Pause, Square, ChevronRight, ChevronLeft, 
   Volume2, VolumeX, Atom, Cpu, HeartHandshake, Eye, ShieldCheck, 
-  CheckCircle2, ArrowUpRight, MousePointer2, Building2, RotateCcw
+  CheckCircle2, ArrowUpRight, MousePointer2, Building2, RotateCcw, Presentation
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +90,17 @@ const TOUR_MILESTONES: TourMilestone[] = [
     voiceText: 'بوابة الشراكة المؤسسية تتيح للمدارس والجامعات والوزارات الاستفادة الكاملة من بنية المنصة ومختبراتها المعتمدة.',
     icon: Building2,
     accentColor: 'from-blue-600 to-indigo-600',
+    mouseTarget: { xPercent: 50, yPercent: 48 }
+  },
+  {
+    id: 7,
+    targetId: 'tour-stage-presentation-deck',
+    badge: 'المحطة السابعة • العرض التفاعلي 3D',
+    title: 'العرض التقديمي التفاعلي ثلاثي الأبعاد للمنصة',
+    description: 'عرض تقديمي تفاعلي يستجيب لحركة الماوس ويشرح ركائز المنظومة، مع دعم وضع المسرح للشاشات الكبرى والمحاضرات.',
+    voiceText: 'وأخيراً العرض التقديمي التفاعلي ثلاثي الأبعاد الذي يستجيب لحركة الماوس ويشرح ركائز المنظومة بدقة.',
+    icon: Presentation,
+    accentColor: 'from-cyan-500 to-indigo-600',
     mouseTarget: { xPercent: 50, yPercent: 48 }
   }
 ];
