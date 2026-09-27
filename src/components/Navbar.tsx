@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu } from 'lucide-react';
+import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -142,6 +142,7 @@ const Navbar = () => {
   const navLinks = [
     { label: 'المختبرات 3D', path: '/experiments-section', badge: '49 محاكاة', icon: Atom },
     { label: 'الروبوتات و AI', path: '/robotics-section', icon: Cpu },
+    { label: 'مجتمع الطلبة', path: '/community', badge: 'حي', icon: MessageSquare },
     { label: 'منصة دامج', path: '/damij', icon: HeartHandshake },
     { label: 'التعليم الشامل', path: '/education-section', icon: Layers },
     { label: 'المكتبة العلمية', path: '/damij/sources', icon: BookOpen },
