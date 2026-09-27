@@ -32,7 +32,10 @@ import {
   Sparkles,
   ArrowRight,
   Sun,
-  Moon
+  Moon,
+  BookOpen,
+  GraduationCap,
+  Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,8 +47,16 @@ import { platformSettings, type PlatformSettings, type FooterLink } from '@/serv
 import { liveSupportService, type SupportSession } from '@/services/liveSupportService';
 import { QuantumQuestionGenerator } from '@/components/admin/QuantumQuestionGenerator';
 import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow';
+import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
+import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
+import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
+import { SchoolBroadcastsManager } from '@/components/admin/lcm/SchoolBroadcastsManager';
 
 type AdminTab = 
+  | 'overview'
+  | 'lcm'
+  | 'faculty'
+  | 'broadcasts'
   | 'dashboard'
   | 'simulations'
   | 'puzzles'
@@ -112,7 +123,7 @@ export const SuperAdminControlHub: React.FC = () => {
   const [passkeyError, setPasskeyError] = useState(false);
 
   // Active Tab & Sidebar State
-  const [currentTab, setCurrentTab] = useState<AdminTab>('dashboard');
+  const [currentTab, setCurrentTab] = useState<AdminTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [globalSearch, setGlobalSearch] = useState('');
 
@@ -272,6 +283,10 @@ export const SuperAdminControlHub: React.FC = () => {
 
   // Navigation Items
   const navTabs: { id: AdminTab; label: string; icon: React.FC<{ className?: string }>; badge?: string }[] = [
+    { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°' },
+    { id: 'lcm', label: 'إدارة المحتوى والمناهج LCM', icon: BookOpen, badge: '32 مقرر' },
+    { id: 'faculty', label: 'الكوادر والصلاحيات الأكاديمية', icon: GraduationCap, badge: '24' },
+    { id: 'broadcasts', label: 'التعاميم والإعلانات المدرسية', icon: Megaphone, badge: 'بث' },
     { id: 'dashboard', label: 'المؤشرات الحية والقياس', icon: LayoutDashboard },
     { id: 'simulations', label: 'المحاكيات والتجارب (49)', icon: Atom, badge: '49' },
     { id: 'puzzles', label: 'إدارة الألغاز والتحديات', icon: HelpCircle, badge: `${puzzles.length}` },
@@ -485,6 +500,26 @@ export const SuperAdminControlHub: React.FC = () => {
         {/* Main Workspace Body */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="max-w-7xl mx-auto space-y-8">
+            {/* 0. Executive 360° Overview & Platform Digest */}
+            {currentTab === 'overview' && (
+              <ExecutiveOverviewTab onNavigateTab={(tab) => setCurrentTab(tab as AdminTab)} />
+            )}
+
+            {/* 0.1 Advanced Learning Content Management (LCM) */}
+            {currentTab === 'lcm' && (
+              <LCMContentManager />
+            )}
+
+            {/* 0.2 Faculty & Academic Staff Management */}
+            {currentTab === 'faculty' && (
+              <FacultyStaffManager />
+            )}
+
+            {/* 0.3 School Broadcasts & Announcements */}
+            {currentTab === 'broadcasts' && (
+              <SchoolBroadcastsManager />
+            )}
+
             {/* 1. Dashboard & Live Metrics Tab */}
             {currentTab === 'dashboard' && (
               <div className="space-y-6">
