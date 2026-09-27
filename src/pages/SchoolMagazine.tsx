@@ -116,9 +116,9 @@ const SchoolMagazine = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-[#030712] text-slate-100 relative overflow-hidden" dir="rtl">
       {/* Header */}
-      <div className="bg-card border-b sticky top-0 z-10 shadow-sm backdrop-blur-lg bg-opacity-90">
+      <div className="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-20 shadow-xl backdrop-blur-xl">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -126,28 +126,39 @@ const SchoolMagazine = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate(-1)}
-                className="hover:bg-primary/10"
+                className="hover:bg-slate-800 text-slate-300"
               >
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-xl sm:text-2xl font-black text-white">
                   مجلة مدرسة عنبه الثانوية الشاملة للبنين
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  آخر الأخبار والفعاليات المدرسية
+                <p className="text-xs text-slate-400">
+                  آخر الأخبار، الفعاليات المدرسية، والمبادرات العلمية
                 </p>
               </div>
             </div>
-            {isSuperAdmin && (
+
+            <div className="flex items-center gap-2">
               <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="gap-2"
+                onClick={() => navigate('/scientific-journal')}
+                variant="outline"
+                className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-xs hidden sm:flex gap-1.5 rounded-xl"
               >
-                <Plus className="h-4 w-4" />
-                رفع خبر جديد
+                <span>المجلة العلمية والأبحاث 3D</span>
               </Button>
-            )}
+
+              {isSuperAdmin && (
+                <Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="gap-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white"
+                >
+                  <Plus className="h-4 w-4" />
+                  رفع خبر جديد
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -534,7 +534,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'visual-library',
-        element: <AuthGuard><VisualLibrary /></AuthGuard>,
+        element: <PublicRoute><VisualLibrary /></PublicRoute>,
       },
       {
         path: 'upload-image',
@@ -542,7 +542,23 @@ const router = createBrowserRouter([
       },
       {
         path: 'scientific-journal',
-        element: <AuthGuard><ScientificJournal /></AuthGuard>,
+        element: <PublicRoute><ScientificJournal /></PublicRoute>,
+      },
+      {
+        path: 'research',
+        element: <PublicRoute><ScientificJournal /></PublicRoute>,
+      },
+      {
+        path: 'scientific-research',
+        element: <PublicRoute><ScientificJournal /></PublicRoute>,
+      },
+      {
+        path: 'papers',
+        element: <PublicRoute><ScientificJournal /></PublicRoute>,
+      },
+      {
+        path: 'magazine',
+        element: <PublicRoute><ScientificJournal /></PublicRoute>,
       },
       {
         path: 'upload-journal',
