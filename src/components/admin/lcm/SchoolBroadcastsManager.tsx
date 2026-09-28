@@ -38,47 +38,40 @@ export interface Announcement {
 const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   {
     id: 'ann-1',
-    title: 'بدء التسجيل في الأولمبياد الوطني للروبوتات وحلبة الكود A*',
-    category: 'robotics',
-    categoryLabel: 'تحديات ومسابقات علمية',
-    targetAudience: 'students',
-    audienceLabel: 'الطلاب فقط',
-    content: 'تدعو إدارة المنصة كافة طلبة مسار الروبوتات والذكاء الاصطناعي و BTEC للمشاركة في منافسات الملاحة الذاتية 2D Maze Arena وتصفيات الذراع الآلية الذكية.',
-    author: 'م. حسام القاسم - قسم الروبوتات',
-    createdAt: '2026-09-27 10:30',
-    viewsCount: 420,
-    acknowledgedCount: 185
-  },
-  {
-    id: 'ann-2',
-    title: 'جدول الامتحانات التشخيصية المقننة وفق مستويات بلوم للفصل الأول',
-    category: 'exams',
-    categoryLabel: 'جداول وتقييمات',
+    title: 'الإطلاق الرسمي لمنظومة ذروة العلم والمختبرات الافتراضية 3D',
+    category: 'academic',
+    categoryLabel: 'إعلان رسمي',
     targetAudience: 'all',
     audienceLabel: 'كافة مستخدمي المنصة',
-    content: 'تم اعتماد جدول الاختبارات التشخيصية الإلكترونية للمباحث العلمية (فيزياء، كيمياء، أحياء، رياضيات). يرجى مراجعة بنك الأسئلة والمحاكيات ثلاثية الأبعاد المرتبطة بكل درس.',
-    author: 'د. سامية نصر - الشؤون التعليمية',
-    createdAt: '2026-09-26 14:00',
-    viewsCount: 890,
-    acknowledgedCount: 540
-  },
-  {
-    id: 'ann-3',
-    title: 'تعميم إداري: تحديث معايير الاعتماد الأكاديمي لمقررات BTEC',
-    category: 'academic',
-    categoryLabel: 'تعميم إداري',
-    targetAudience: 'teachers',
-    audienceLabel: 'المعلمون والمشرفون',
-    content: 'يرجى من جميع معلمي المسار التقني والهندسي رفع خطط الدروس والروابط المباشرة لنفق الرياح والمختبرات الافتراضية ضمن منصة LCM المحدثة قبل نهاية الأسبوع.',
-    author: 'المشرف العام - إدارة مدرسة عنبه',
-    createdAt: '2026-09-25 09:15',
-    viewsCount: 38,
-    acknowledgedCount: 22
+    content: 'مرحباً بكم في منصة ذروة العلم، البنية التحتية الرقمية المتكاملة للمختبرات العلمية ثلاثية الأبعاد، الذكاء الاصطناعي، ومسارات Pearson BTEC الدولية ومشروع دامج للتربية الخاصة.',
+    author: 'المشرف العام - إدارة منظومة ذروة العلم',
+    createdAt: '2026-09-28 00:00',
+    viewsCount: 1,
+    acknowledgedCount: 1
   }
 ];
 
 export const SchoolBroadcastsManager: React.FC = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
+    try {
+      const saved = localStorage.getItem('galaxy_school_broadcasts_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Strictly purge legacy mock announcements
+          const clean = parsed.filter(a => a && !['ann-2', 'ann-3'].includes(a.id) && !a.author?.includes('سامية'));
+          if (clean.length > 0) return clean;
+        }
+      }
+    } catch {}
+    return INITIAL_ANNOUNCEMENTS;
+  });
+
+  // Save clean announcements
+  useEffect(() => {
+    localStorage.setItem('galaxy_school_broadcasts_v1', JSON.stringify(announcements));
+  }, [announcements]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -88,7 +81,7 @@ export const SchoolBroadcastsManager: React.FC = () => {
     category: 'academic' as Announcement['category'],
     targetAudience: 'all' as Announcement['targetAudience'],
     content: '',
-    author: 'إدارة المنصة المدرسية'
+    author: 'المشرف العام - إدارة ذروة العلم'
   });
 
   const filteredAnnouncements = announcements.filter(a => {

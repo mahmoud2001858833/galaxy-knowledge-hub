@@ -22,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
+import { supabase } from '@/integrations/supabase/client';
+
 export interface FacultyMember {
   id: string;
   name: string;
@@ -42,93 +44,76 @@ const INITIAL_FACULTY: FacultyMember[] = [
     id: 'fac-1',
     name: 'محمود (المشرف العام والمالك)',
     email: 'jowmahmoud6@gmail.com',
-    phone: '+962 7 9000 0000',
-    department: 'الإدارة العامة وهندسة المنصة',
+    phone: 'المالك والمشرف العام المعتمد',
+    department: 'الإدارة العامة وهندسة المنظومة',
     role: 'super_admin',
     roleLabel: 'مشرف عام أعلى (Super Admin)',
-    assignedCourses: ['كافة المقررات والمسارات'],
-    activeStudentsCount: 1840,
+    assignedCourses: ['كافة مسارات ومختبرات المنصة 3D'],
+    activeStudentsCount: 0,
     rating: 5.0,
     aiQuotaDaily: 9999,
-    status: 'active'
-  },
-  {
-    id: 'fac-2',
-    name: 'أ. عمر الشناوي',
-    email: 'omar.chem@school.jo',
-    phone: '+962 7 9123 4567',
-    department: 'قسم العلوم والفيزياء الذرية',
-    role: 'academic_lead',
-    roleLabel: 'رئيس قسم العلوم (Academic Lead)',
-    assignedCourses: ['الفيزياء الذرية PHYS-101', 'الكيمياء الحركية CHEM-201'],
-    activeStudentsCount: 480,
-    rating: 4.9,
-    aiQuotaDaily: 100,
-    status: 'active'
-  },
-  {
-    id: 'fac-3',
-    name: 'م. حسام القاسم',
-    email: 'hussam.robotics@school.jo',
-    phone: '+962 7 9234 5678',
-    department: 'قسم الروبوتات والذكاء الاصطناعي',
-    role: 'teacher',
-    roleLabel: 'كبير مهندسي الروبوتات والأنظمة',
-    assignedCourses: ['روبوتات وذكاء ROB-401', 'مسار BTEC التقني BTEC-501'],
-    activeStudentsCount: 390,
-    rating: 4.95,
-    aiQuotaDaily: 80,
-    status: 'active'
-  },
-  {
-    id: 'fac-4',
-    name: 'أ. رانية خوري',
-    email: 'rania.bio@school.jo',
-    phone: '+962 7 9345 6789',
-    department: 'قسم العلوم الحياتية والوراثة',
-    role: 'teacher',
-    roleLabel: 'معلمة أحياء أولى',
-    assignedCourses: ['الهندسة الوراثية وكريسبر BIO-301'],
-    activeStudentsCount: 360,
-    rating: 4.85,
-    aiQuotaDaily: 60,
-    status: 'active'
-  },
-  {
-    id: 'fac-5',
-    name: 'أ. طارق عبد الرحمن',
-    email: 'tareq.math@school.jo',
-    phone: '+962 7 9456 7890',
-    department: 'قسم الرياضيات المتقدمة',
-    role: 'teacher',
-    roleLabel: 'معلم رياضيات متقدمة',
-    assignedCourses: ['التفاضل والتكامل MATH-102'],
-    activeStudentsCount: 430,
-    rating: 4.75,
-    aiQuotaDaily: 50,
-    status: 'active'
-  },
-  {
-    id: 'fac-6',
-    name: 'أ. هبة المجالي',
-    email: 'hiba.damij@school.jo',
-    phone: '+962 7 9567 8901',
-    department: 'قسم التربية الخاصة ومنظومة الدمج',
-    role: 'special_ed',
-    roleLabel: 'أخصائية التربية الخاصة ولغة الإشارة',
-    assignedCourses: ['منظومة دمج أصحاب الهمم وبرايل'],
-    activeStudentsCount: 160,
-    rating: 4.98,
-    aiQuotaDaily: 70,
     status: 'active'
   }
 ];
 
 export const FacultyStaffManager: React.FC = () => {
-  const [faculty, setFaculty] = useState<FacultyMember[]>(INITIAL_FACULTY);
+  const [faculty, setFaculty] = useState<FacultyMember[]>(() => {
+    try {
+      const saved = localStorage.getItem('galaxy_faculty_staff_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Strictly purge legacy mock staff
+          const clean = parsed.filter(f => f && !['fac-2', 'fac-3', 'fac-4', 'fac-5', 'fac-6'].includes(f.id));
+          if (clean.length > 0) return clean;
+        }
+      }
+    } catch {}
+    return INITIAL_FACULTY;
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Sync with Supabase admin_teacher_access
+  useEffect(() => {
+    const fetchLiveStaff = async () => {
+      try {
+        const { data: dbStaff } = await supabase.from('admin_teacher_access').select('*');
+        if (dbStaff && dbStaff.length > 0) {
+          const liveList: FacultyMember[] = [...INITIAL_FACULTY];
+          dbStaff.forEach((s) => {
+            if (s.email.toLowerCase() === 'jowmahmoud6@gmail.com') return;
+            liveList.push({
+              id: s.id,
+              name: s.email.split('@')[0],
+              email: s.email,
+              phone: 'معتمد من النظام',
+              department: 'الكوادر الأكاديمية المعتمدة',
+              role: s.access_level === 'super_admin' ? 'super_admin' : s.access_level === 'admin' ? 'academic_lead' : 'teacher',
+              roleLabel: s.access_level === 'super_admin' ? 'مشرف عام' : s.access_level === 'admin' ? 'مسؤول أكاديمي' : 'معلم معتمد',
+              assignedCourses: ['المناهج المعتمدة'],
+              activeStudentsCount: 0,
+              rating: 5.0,
+              aiQuotaDaily: 100,
+              status: 'active'
+            });
+          });
+          setFaculty(liveList);
+        }
+      } catch (err) {
+        console.warn('Live staff fetch warning:', err);
+      }
+    };
+    fetchLiveStaff();
+  }, []);
+
+  // Save clean staff to localStorage
+  useEffect(() => {
+    const clean = faculty.filter(f => !['fac-2', 'fac-3', 'fac-4', 'fac-5', 'fac-6'].includes(f.id));
+    localStorage.setItem('galaxy_faculty_staff_v1', JSON.stringify(clean));
+  }, [faculty]);
 
   const [newMember, setNewMember] = useState({
     name: '',
@@ -252,6 +237,19 @@ export const FacultyStaffManager: React.FC = () => {
           <option value="teacher">معلم مادة (Teacher)</option>
           <option value="special_ed">أخصائي دمج (Special Ed)</option>
         </select>
+      </div>
+
+      {/* Status Notice */}
+      <div className="p-4 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse shrink-0" />
+          <span className="font-bold text-purple-900 dark:text-purple-300">
+            الكوادر المعتمدة الموثقة ({faculty.length} عضو)
+          </span>
+          <span className="text-slate-600 dark:text-slate-400 text-[11px]">
+            • تم استبعاد كافة البيانات والأسماء الوهمية السابقة بالكامل، مع إمكانية إضافة وتعيين كوادر حقيقية جديدة.
+          </span>
+        </div>
       </div>
 
       {/* Faculty Cards Grid */}

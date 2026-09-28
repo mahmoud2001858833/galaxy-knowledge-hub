@@ -34,93 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { PartnershipApplication } from '@/pages/InstitutionalPartnerships';
 
-const INITIAL_PARTNERSHIP_APPLICATIONS: PartnershipApplication[] = [
-  {
-    id: 'seed-1',
-    refNumber: 'PARTNER-2026-849201',
-    institutionName: 'مدارس الملك عبدالله الثاني للتميز',
-    institutionType: 'school',
-    country: 'المملكة الأردنية الهاشمية',
-    city: 'عمان / إربد / الزرقاء',
-    representativeName: 'د. خالد الزعبي',
-    roleTitle: 'مدير عام شبكة مدارس التميز',
-    email: 'k.al-zoubi@excellence.edu.jo',
-    phone: '+962 7 9555 1234',
-    studentCount: '1,500 - 5,000 طالب',
-    partnershipType: 'ترخيص مختبرات 3D المدرسية',
-    notes: 'نرغب في تزويد كافة فروع مدارس التميز في المحافظات بالمختبرات الافتراضية 3D وربطها بالصفوف الذكية وتدريب 85 معلماً على توظيف المنظومة.',
-    status: 'mou_signed',
-    submittedAt: '2026-09-20T10:30:00Z'
-  },
-  {
-    id: 'seed-2',
-    refNumber: 'PARTNER-2026-319042',
-    institutionName: 'الجامعة الألمانية الأردنية (GJU) - كلية الهندسة',
-    institutionType: 'university',
-    country: 'المملكة الأردنية الهاشمية',
-    city: 'مادبا / عمان',
-    representativeName: 'أ.د. رانيا المجالي',
-    roleTitle: 'عميدة كلية هندسة الحاسوب والذكاء الاصطناعي',
-    email: 'rania.majali@gju.edu.jo',
-    phone: '+962 7 7788 9900',
-    studentCount: '1,500 - 5,000 طالب',
-    partnershipType: 'ربط جامعي وتدريب كوادر',
-    notes: 'شراكة بحثية وتطبيقية لربط مختبر الروبوتات والـ ROS2 بمشاريع تخرج طلبة هندسة الميكاترونكس وهندسة البرمجيات ونشر الأوراق في المجلة العلمية.',
-    status: 'reviewing',
-    submittedAt: '2026-09-24T14:15:00Z'
-  },
-  {
-    id: 'seed-3',
-    refNumber: 'PARTNER-2026-728103',
-    institutionName: 'وزارة التربية والتعليم - إدارة المناهج والكتب المدرسية',
-    institutionType: 'ministry',
-    country: 'المملكة الأردنية الهاشمية',
-    city: 'عمان',
-    representativeName: 'م. سامر الطراونة',
-    roleTitle: 'مدير مديرية تكنولوجيا التعليم والمختبرات',
-    email: 's.tarawneh@moe.gov.jo',
-    phone: '+962 6 560 7181',
-    studentCount: 'أكثر من 5,000 طالب',
-    partnershipType: 'أخرى / مذكرة تفاهم شاملة',
-    notes: 'دراسة اعتماد المحاكيات ثلاثية الأبعاد كمصدر إثرائي رسمي لمناهج العلوم والفيزياء والكيمياء في المدارس الحكومية، وتطبيق حلول مشروع دامج لغرف المصادر.',
-    status: 'new',
-    submittedAt: '2026-09-27T09:00:00Z'
-  },
-  {
-    id: 'seed-4',
-    refNumber: 'PARTNER-2026-442918',
-    institutionName: 'كلية لومينوس الجامعية التقنية (LTUC)',
-    institutionType: 'university',
-    country: 'المملكة الأردنية الهاشمية',
-    city: 'عمان',
-    representativeName: 'د. يوسف الحنيطي',
-    roleTitle: 'رئيس قسم تكنولوجيا المعلومات والبرمجة',
-    email: 'y.hneiti@ltuc.com',
-    phone: '+962 7 8899 4433',
-    studentCount: '1,500 - 5,000 طالب',
-    partnershipType: 'اعتماد مسارات BTEC المهنية',
-    notes: 'اعتماد منصة BTEC ومصحح الأكواد ومساعد المشاريع كأداة تدريب لطلبة دبلوم هندسة البرمجيات Pearson BTEC وتوثيق ساعات التدريب العملي.',
-    status: 'mou_signed',
-    submittedAt: '2026-09-22T11:45:00Z'
-  },
-  {
-    id: 'seed-5',
-    refNumber: 'PARTNER-2026-194820',
-    institutionName: 'مؤسسة الأمل لدعم ذوي الإعاقة والتربية الخاصة',
-    institutionType: 'ngo',
-    country: 'المملكة الأردنية الهاشمية',
-    city: 'عمان',
-    representativeName: 'أ. ليلى قطامي',
-    roleTitle: 'المدير التنفيذي',
-    email: 'l.qutami@hope-inclusion.org',
-    phone: '+962 7 9123 4567',
-    studentCount: '500 - 1,500 طالب',
-    partnershipType: 'تطبيق شمولية مشروع دامج',
-    notes: 'تطبيق مترجم لغة الإشارة الفوري وقارئ برايل التفاعلي وأدوات دعم التوحد في 12 مركزاً تابعاً للمؤسسة، مع تدريب الأخصائيين الميدانيين.',
-    status: 'new',
-    submittedAt: '2026-09-28T01:10:00Z'
-  }
-];
+const INITIAL_PARTNERSHIP_APPLICATIONS: PartnershipApplication[] = [];
 
 export const InstitutionalPartnershipsManager: React.FC = () => {
   const [applications, setApplications] = useState<PartnershipApplication[]>([]);
@@ -131,27 +45,23 @@ export const InstitutionalPartnershipsManager: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
-  // Load from localStorage or seed
+  // Load authentic applications from storage (purge legacy fake seeds)
   useEffect(() => {
     try {
       const stored = localStorage.getItem('galaxy_partnerships_requests');
       if (stored) {
         const parsed: PartnershipApplication[] = JSON.parse(stored);
-        // Combine parsed with seeds (avoiding duplicates by refNumber)
-        const existingRefs = new Set(parsed.map(p => p.refNumber));
-        const combined = [...parsed];
-        INITIAL_PARTNERSHIP_APPLICATIONS.forEach(seed => {
-          if (!existingRefs.has(seed.refNumber)) {
-            combined.push(seed);
-          }
-        });
-        setApplications(combined);
-      } else {
-        setApplications(INITIAL_PARTNERSHIP_APPLICATIONS);
-        localStorage.setItem('galaxy_partnerships_requests', JSON.stringify(INITIAL_PARTNERSHIP_APPLICATIONS));
+        if (Array.isArray(parsed)) {
+          // Strictly purge legacy mock seeds (seed-1, seed-2...)
+          const realOnly = parsed.filter(p => p && !p.id.startsWith('seed-'));
+          setApplications(realOnly);
+          localStorage.setItem('galaxy_partnerships_requests', JSON.stringify(realOnly));
+          return;
+        }
       }
+      setApplications([]);
     } catch {
-      setApplications(INITIAL_PARTNERSHIP_APPLICATIONS);
+      setApplications([]);
     }
   }, []);
 
