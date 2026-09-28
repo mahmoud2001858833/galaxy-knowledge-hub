@@ -28,7 +28,8 @@ import {
   ArrowRight,
   TrendingUp,
   FileQuestion,
-  Database
+  Database,
+  BrainCircuit
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -178,7 +179,7 @@ export const AdminPuzzlesManagementHub: React.FC = () => {
       return;
     }
 
-    try { labSound?.click(); } catch(e) {}
+    try { (labSound as any)?.playClick?.() || (labSound as any)?.click?.(); } catch(e) {}
     setIsGenerating(true);
     setGenerationProgress(15);
     setGeneratedPuzzles([]);
@@ -286,7 +287,7 @@ export const AdminPuzzlesManagementHub: React.FC = () => {
       setGenerationProgress(100);
       setGeneratedPuzzles(generated);
       toast.success(`تم توليد ${generated.length} ألغاز بنجاح فائق بواسطة الذكاء الاصطناعي!`);
-      try { labSound?.success(); } catch(e) {}
+      try { (labSound as any)?.playSuccess?.() || (labSound as any)?.success?.(); } catch(e) {}
     } catch (err: any) {
       clearInterval(progressTimer);
       toast.error('حدث خطأ أثناء التوليد، يرجى المحاولة ثانية');
@@ -330,7 +331,7 @@ export const AdminPuzzlesManagementHub: React.FC = () => {
       setGeneratedPuzzles(prev => prev.filter(p => p.id !== puzzle.id));
 
       toast.success(`تم نشر "${puzzle.title}" بنجاح في بنك الألغاز والمنظومة! 🎉`);
-      try { labSound?.success(); } catch(e) {}
+      try { (labSound as any)?.playSuccess?.() || (labSound as any)?.success?.(); } catch(e) {}
     } catch (err: any) {
       // Fallback local save
       const localStr = localStorage.getItem(LOCAL_STORAGE_OVERRIDE_KEY);

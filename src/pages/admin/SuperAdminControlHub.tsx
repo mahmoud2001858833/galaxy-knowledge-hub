@@ -56,6 +56,7 @@ import { CommunityModerationManager } from '@/components/admin/lcm/CommunityMode
 import { AdminPuzzlesManagementHub } from '@/components/admin/AdminPuzzlesManagementHub';
 import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsManager';
 import { InstitutionalPartnershipsManager } from '@/components/admin/InstitutionalPartnershipsManager';
+import SafeBoundary from '@/components/common/SafeBoundary';
 import { supabase } from '@/integrations/supabase/client';
 
 type AdminTab = 
@@ -650,7 +651,9 @@ export const SuperAdminControlHub: React.FC = () => {
 
             {/* 3. Puzzles Management Tab */}
             {currentTab === 'puzzles' && (
-              <AdminPuzzlesManagementHub />
+              <SafeBoundary name="AdminPuzzlesManagementHub">
+                <AdminPuzzlesManagementHub />
+              </SafeBoundary>
             )}
 
             {/* 4. Users & Roles Management Tab */}
