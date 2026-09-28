@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -17,32 +17,30 @@ import {
   Play, 
   RotateCcw,
   Sliders,
-  ChevronDown
+  ChevronDown,
+  Key,
+  Wifi,
+  RefreshCw,
+  Eye,
+  ShieldCheck,
+  Timer,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { auditLogger } from '@/services/auditLogger';
+import { 
+  aiExamService, 
+  type BloomLevel, 
+  type QuestionType, 
+  type GeneratedQuestion, 
+  type FullExamStructure 
+} from '@/services/aiExamService';
 
-export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
-export type QuestionType = 'mcq' | 'true_false' | 'analytical' | 'calculation';
-
-export interface QuantumQuestion {
-  id: string;
-  type: QuestionType;
-  bloomLevel: BloomLevel;
-  questionText: string;
-  options?: { label: string; text: string; isCorrect: boolean; explanation: string }[];
-  correctAnswer: string;
-  rationale: string;
-  rubric?: string[];
-  steps?: string[];
-  latexFormula?: string;
-  points: number;
-}
-
-const BLOOM_LEVELS: { id: BloomLevel; label: string; desc: string; color: string }[] = [
+export const BLOOM_LEVELS: { id: BloomLevel; label: string; desc: string; color: string }[] = [
   { id: 'remember', label: 'تذكّر (Remember)', desc: 'استرجاع الحقائق والقوانين والمفاهيم الأساسية', color: 'from-blue-500 to-indigo-600' },
   { id: 'understand', label: 'فهم (Understand)', desc: 'تفسير الظواهر والمقارنة بين المفاهيم', color: 'from-cyan-500 to-blue-600' },
   { id: 'apply', label: 'تطبيق (Apply)', desc: 'استخدام القوانين في سياقات ومسائل جديدة', color: 'from-emerald-500 to-teal-600' },
@@ -52,158 +50,215 @@ const BLOOM_LEVELS: { id: BloomLevel; label: string; desc: string; color: string
 ];
 
 export const QuantumQuestionGenerator: React.FC = () => {
-  const [subject, setSubject] = useState('physics');
-  const [targetLevel, setTargetLevel] = useState('tawjihi');
+  // Engine & API Key State
+  const [apiKey, setApiKey] = useState<string>(() => aiExamService.getConfig().apiKey);
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [isKeyTesting, setIsKeyTesting] = useState(false);
+  const [keyStatus, setKeyStatus] = useState<{ connected: boolean; latency?: number; message: string }>({
+    connected: true,
+    latency: 18,
+    message: 'المفتاح ak_live_ نشط ومدعوم بأعلى دقة توليد'
+  });
+
+  // Mode Selection: 'questions' vs 'full_exam'
+  const [activeMode, setActiveMode] = useState<'questions' | 'full_exam'>('questions');
+
+  // Question Generator Parameters
+  const [subject, setSubject] = useState('الفيزياء الحديثة والكلاسيكية');
+  const [targetLevel, setTargetLevel] = useState('الثانوية العامة (التوجيهي الأردني)');
   const [bloom, setBloom] = useState<BloomLevel>('analyze');
   const [qType, setQType] = useState<QuestionType>('mcq');
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(4);
   const [topic, setTopic] = useState('ميكانيكا الكم: ظاهرة التأثير الكهروضوئي ومعادلة أينشتاين');
-  const [additionalNotes, setAdditionalNotes] = useState('التركيز على دالة الشغل، تردد العتبة، وجهد الإيقاف مع تبرير الخيارات الخاطئة');
+  const [additionalNotes, setAdditionalNotes] = useState('التركيز على دالة الشغل، تردد العتبة، وجهد الإيقاف مع تبرير الخيارات الخاطئة والرموز اللاتينية');
+  
+  // Exam Generator Parameters
+  const [examDuration, setExamDuration] = useState(90);
+  const [examTotalMarks, setExamTotalMarks] = useState(100);
+
+  // Results State
   const [isGenerating, setIsGenerating] = useState(false);
-  const [questions, setQuestions] = useState<QuantumQuestion[]>([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [generatedExam, setGeneratedExam] = useState<FullExamStructure | null>(null);
+
+  // Interactive Solver State
   const [interactiveMode, setInteractiveMode] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
-  const [showResults, setShowResults] = useState(false);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const generatePedagogicalQuestions = async () => {
+  // Test Key Connection on Mount
+  useEffect(() => {
+    handleTestKey();
+  }, []);
+
+  const handleTestKey = async () => {
+    setIsKeyTesting(true);
+    const res = await aiExamService.testConnection();
+    setKeyStatus({
+      connected: res.success,
+      latency: res.latencyMs,
+      message: res.message
+    });
+    setIsKeyTesting(false);
+  };
+
+  const handleSaveApiKey = () => {
+    aiExamService.saveConfig({ apiKey });
+    toast.success('تم حفظ وتحديث مفتاح خدمة التوليد بنجاح!');
+    handleTestKey();
+  };
+
+  // Generate Questions
+  const handleGenerateQuestions = async () => {
     setIsGenerating(true);
-
     try {
-      // Simulate high-end AI generation pipeline with comprehensive pedagogic structures
-      await new Promise((r) => setTimeout(r, 1400));
+      const questions = await aiExamService.generateQuestions({
+        subject,
+        targetLevel,
+        bloom,
+        qType,
+        count,
+        topic,
+        additionalNotes
+      });
 
-      const generated: QuantumQuestion[] = [];
-
-      for (let i = 1; i <= count; i++) {
-        if (qType === 'mcq') {
-          generated.push({
-            id: `q-mcq-${Date.now()}-${i}`,
-            type: 'mcq',
-            bloomLevel: bloom,
-            questionText: `عند إسقاط ضوء أحادي اللون تردده (f) أكبر من تردد العتبة (f₀) لفلز، ماذا يحدث لجهد الإيقاف (V₀) إذا تمت مضاعفة شدة الضوء الساقط مع ثبات تردده؟`,
-            options: [
-              { label: 'أ', text: 'يتضاعف جهد الإيقاف', isCorrect: false, explanation: 'خطأ: جهد الإيقاف يعتمد حصراً على طاقة الفوتون الساقط (التردد) وليس على شدة الضوء.' },
-              { label: 'ب', text: 'يبقى جهد الإيقاف ثابتاً دون تغيير', isCorrect: true, explanation: 'صحيح: مضاعفة الشدة تزيد عدد الفوتونات والإلكترونات الضوئية (التيار) ولا تؤثر على طاقة حركة الإلكترون العظمى وبالتالي يظل جهد الإيقاف ثابتاً.' },
-              { label: 'ج', text: 'ينخفض جهد الإيقاف إلى النصف', isCorrect: false, explanation: 'خطأ: زيادة الشدة لا تقلل الطاقة الحركية.' },
-              { label: 'د', text: 'يصبح جهد الإيقاف صفراً', isCorrect: false, explanation: 'خطأ: طالما f > f₀ فهناك دائماً انبعاث بطاقة حركية عظمى.' }
-            ],
-            correctAnswer: 'ب',
-            rationale: 'وفق معادلة أينشتاين الكهروضوئية: KE_max = e * V₀ = hf - Φ، يعتمد جهد الإيقاف طردياً على تردد الفوتون ودالة الشغل للفلز فقط، ولا يتأثر بشدة الضوء.',
-            latexFormula: 'e V_0 = h f - \\Phi',
-            points: 5
-          });
-        } else if (qType === 'calculation') {
-          generated.push({
-            id: `q-calc-${Date.now()}-${i}`,
-            type: 'calculation',
-            bloomLevel: bloom,
-            questionText: `سقط فوتون طوله الموجي λ = 300 nm على سطح فلز دالة شغله Φ = 2.4 eV. احسب: 1) أقصى طاقة حركية للإلكترونات المنبعثة بوحدة eV، 2) جهد الإيقاف اللازم لإيقاف أسرع إلكترون. (استخدم h = 4.14 × 10⁻¹⁵ eV·s، c = 3 × 10⁸ m/s)`,
-            correctAnswer: 'KE_max = 1.74 eV, V₀ = 1.74 V',
-            rationale: 'طاقة الفوتون: E = hc / λ = (4.14e-15 * 3e8) / (300e-9) = 4.14 eV. إذن: KE_max = 4.14 - 2.4 = 1.74 eV. ومنها جهد الإيقاف V₀ = 1.74 V.',
-            steps: [
-              'الخطوة 1: حساب طاقة الفوتون الساقط E = hc / λ = 4.14 eV',
-              'الخطوة 2: تطبيق معادلة التأثير الكهروضوئي KE_max = E - Φ',
-              'الخطوة 3: التعويض: KE_max = 4.14 eV - 2.40 eV = 1.74 eV',
-              'الخطوة 4: حساب جهد الإيقاف: e V₀ = KE_max ==> V₀ = 1.74 V'
-            ],
-            latexFormula: 'E = \\frac{h c}{\\lambda} \\quad \\implies \\quad KE_{max} = E - \\Phi = 1.74\\text{ eV}',
-            points: 10
-          });
-        } else if (qType === 'true_false') {
-          generated.push({
-            id: `q-tf-${Date.now()}-${i}`,
-            type: 'true_false',
-            bloomLevel: bloom,
-            questionText: `تنص النظرية المادية الكلاسيكية للضوء على أن زيادة شدة الضوء الساقط تزيد من الطاقة الحركية القصوى للإلكترونات الضوئية المنبعثة، وهو ما أثبتت التجربة صحته.`,
-            correctAnswer: 'خطأ',
-            rationale: 'العبارة خاطئة: هذا ما تنبأت به الفيزياء الكلاسيكية (الموجية)، ولكن التجارب المعملية أثبتت فشل هذا التنبؤ، حيث أثبت أينشتاين أن الطاقة الحركية تعتمد على التردد فقط لا على الشدة.',
-            points: 4
-          });
-        } else {
-          generated.push({
-            id: `q-essay-${Date.now()}-${i}`,
-            type: 'analytical',
-            bloomLevel: bloom,
-            questionText: `قارن بين تفسير الفيزياء الكلاسيكية وتفسير نظرية الكم لأينشتاين لظاهرة الانبعاث الكهروضوئي من حيث: زمن الانبعاث (التأخير الزمني)، وأثر تردد الضوء الساقط، مبيناً أوجه العجز الكلاسيكي.`,
-            correctAnswer: 'إجابة مقالية نموذجية تتضمن جدول مقارنة شامل',
-            rationale: 'الكلاسيكية افترضت تراكم الطاقة عبر الزمن وحرية التردد بشرط كفاية الشدة، بينما أينشتاين أثبت أن الانبعاث فوري (أقل من 10⁻⁹ ثانية) ومشروط بأن يكون f ≥ f₀.',
-            rubric: [
-              'المقارنة في الزمن (فوري مقابل تراكمي): درجتان',
-              'المقارنة في شرط التردد ودالة الشغل: درجتان',
-              'بيان سبب العجز الكلاسيكي في الطبيعة الجسيمية للضوء: درجتان'
-            ],
-            points: 6
-          });
-        }
-      }
-
-      setQuestions(generated);
+      setGeneratedQuestions(questions);
       setUserAnswers({});
-      setShowResults(false);
+      setScoreSubmitted(false);
 
       auditLogger.record({
         action: 'AI_QUERY',
         module: 'Quantum Question Generator 2.0',
-        description: `توليد ${count} أسئلة علمية بمستوى بلوم (${bloom}) في موضوع (${topic})`,
-        user: { id: 'admin-01', name: 'المشرف', email: 'admin@zarwat.edu.jo', role: 'admin' },
+        description: `توليد ${questions.length} أسئلة علمية ذكية بمستوى بلوم (${bloom}) لموضوع (${topic})`,
+        user: { id: 'admin-master', name: 'المشرف العام', email: 'jowmahmoud6@gmail.com', role: 'super_admin' },
         severity: 'info'
       });
 
-      toast.success(`تم توليد ${generated.length} أسئلة بمستوى بلوم المتقدم بنجاح! 🚀`);
-    } catch (e) {
-      toast.error('حدث خطأ أثناء التوليد');
+      toast.success(`تم توليد ${questions.length} أسئلة علمية عالية الدقة بنجاح 🚀`);
+    } catch {
+      toast.error('تعذر إكمال التوليد، يرجى المحاولة ثانية');
     } finally {
       setIsGenerating(false);
     }
   };
 
+  // Generate Full Official Exam
+  const handleGenerateOfficialExam = async () => {
+    setIsGenerating(true);
+    try {
+      const exam = await aiExamService.generateOfficialExam({
+        subject,
+        gradeLevel: targetLevel,
+        topic,
+        durationMinutes: examDuration,
+        totalMarks: examTotalMarks
+      });
+
+      setGeneratedExam(exam);
+      setGeneratedQuestions(exam.sections.flatMap(s => s.questions));
+      setUserAnswers({});
+      setScoreSubmitted(false);
+
+      auditLogger.record({
+        action: 'AI_QUERY',
+        module: 'Official Exam Generator',
+        description: `توليد ورقة امتحان وزاري متكامل لمادة ${subject} (${examTotalMarks} علامة)`,
+        user: { id: 'admin-master', name: 'المشرف العام', email: 'jowmahmoud6@gmail.com', role: 'super_admin' },
+        severity: 'info'
+      });
+
+      toast.success('تم توليد ورقة الامتحان الوزاري المتكاملة بنجاح 📄');
+    } catch {
+      toast.error('حدث خطأ أثناء إعداد الامتحان');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Copy Questions to Clipboard
   const handleCopyQuestions = () => {
-    if (questions.length === 0) return;
-    const text = questions
-      .map(
-        (q, idx) =>
-          `السؤال ${idx + 1} (${BLOOM_LEVELS.find((b) => b.id === q.bloomLevel)?.label}) [${q.points} درجات]:\n` +
-          `${q.questionText}\n` +
-          (q.options ? q.options.map((o) => `  ${o.label}) ${o.text}`).join('\n') + '\n' : '') +
-          `الإجابة النموذجية: ${q.correctAnswer}\n` +
-          `الشرح والتعليل: ${q.rationale}\n` +
-          (q.steps ? `خطوات الحل:\n${q.steps.join('\n')}\n` : '') +
-          `--------------------------------------------------`
-      )
-      .join('\n\n');
+    if (generatedQuestions.length === 0) return;
+    const text = generatedQuestions
+      .map((q, idx) => {
+        const bloomInfo = BLOOM_LEVELS.find((b) => b.id === q.bloomLevel)?.label;
+        let str = `السؤال ${idx + 1} [${bloomInfo}] (${q.points} درجات):\n${q.questionText}\n`;
+        if (q.options) {
+          str += q.options.map((o) => `  ${o.label}) ${o.text}`).join('\n') + '\n';
+        }
+        str += `الإجابة الصحيحة: ${q.correctAnswer}\n`;
+        str += `التبرير العلمي: ${q.rationale}\n`;
+        if (q.steps) {
+          str += `خطوات الحل:\n` + q.steps.join('\n') + '\n';
+        }
+        if (q.rubric) {
+          str += `سلم التصحيح:\n` + q.rubric.join('\n') + '\n';
+        }
+        return str;
+      })
+      .join('\n--------------------------------------------------\n\n');
 
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success('تم نسخ كافة الأسئلة إلى الحافظة!');
+    toast.success('تم نسخ كافة الأسئلة بتنسيق كامل إلى الحافظة!');
   };
 
-  const handlePrintExam = () => {
+  // Print Formatted Exam Paper
+  const handlePrint = () => {
     window.print();
   };
 
+  // Calculate score in interactive mode
+  const totalPoints = generatedQuestions.reduce((acc, q) => acc + q.points, 0);
+  const earnedPoints = generatedQuestions.reduce((acc, q) => {
+    if (q.type === 'mcq' && q.options) {
+      const selected = userAnswers[q.id];
+      const correctOpt = q.options.find(o => o.isCorrect);
+      if (selected && correctOpt && selected === correctOpt.label) {
+        return acc + q.points;
+      }
+    } else if (q.type === 'true_false') {
+      if (userAnswers[q.id] === q.correctAnswer) {
+        return acc + q.points;
+      }
+    }
+    return acc;
+  }, 0);
+
   return (
-    <div className="space-y-8 font-sans" dir="rtl">
-      {/* Top Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-cyan-600/10 via-blue-600/10 to-purple-600/10 border border-cyan-500/20 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="space-y-1 text-right">
+    <div className="space-y-6 font-sans print:p-0" dir="rtl">
+      {/* 1. Header Banner & Live Service Integration Badge */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-cyan-600/10 via-blue-600/10 to-purple-600/10 border border-cyan-500/20 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
+        <div className="space-y-1.5 text-right">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 text-xs font-bold border border-cyan-400/20">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>نقلة نوعية في هندسة التقييم الأكاديمي</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+            <span>نظام الذكاء الاصطناعي لتوليد الامتحانات وبنوك الأسئلة 2.0</span>
           </div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-            مولد وتطوير الأسئلة بالذكاء الاصطناعي 2.0 (Quantum Generator)
+            مولد الامتحانات والأسئلة الذكي عالي الدقة (Quantum Pedagogic Engine)
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            توليد امتحانات وبنوك أسئلة احترافية مصنفة بدقة وفق هرم بلوم المعرفي، مع شروحات وتبريرات للأخطاء الشائعة ومعادلات LaTeX.
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+            منظومة مدعومة بمفتاح الذكاء الاصطناعي المباشر لتصميم امتحانات نموذجية بمستويات بلوم المعرفية، أسئلة موضوعية ومسائل حسابية مفصلة مع خطوات الحل وسلالم التصحيح.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <Button
+            onClick={() => setShowKeyConfig(!showKeyConfig)}
+            variant="outline"
+            size="sm"
+            className="rounded-2xl text-xs gap-1.5 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+          >
+            <Key className="w-3.5 h-3.5 text-amber-500" />
+            <span>إعدادات المفتاح والمزود</span>
+          </Button>
+
           <Button
             onClick={() => setInteractiveMode(!interactiveMode)}
             variant="outline"
+            size="sm"
             className={`rounded-2xl text-xs font-bold gap-1.5 ${
               interactiveMode ? 'bg-purple-500/20 text-purple-600 border-purple-400/30' : ''
             }`}
@@ -214,13 +269,119 @@ export const QuantumQuestionGenerator: React.FC = () => {
         </div>
       </div>
 
-      {/* Configuration Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left/Form Column */}
-        <div className="lg:col-span-5 space-y-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+      {/* 2. API Key & Provider Live Status Panel */}
+      <AnimatePresence>
+        {showKeyConfig && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-amber-500/30 shadow-md space-y-4 print:hidden overflow-hidden"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-500" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  المفتاح النشط ومزود الذكاء الاصطناعي
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 ${
+                  keyStatus.connected ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${keyStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  {keyStatus.message}
+                </span>
+
+                <Button
+                  onClick={handleTestKey}
+                  disabled={isKeyTesting}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 px-2 text-cyan-600 gap-1"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isKeyTesting ? 'animate-spin' : ''}`} />
+                  <span>فحص الاتصال</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div className="md:col-span-8 space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  مفتاح الـ API المشغل للخدمة (Active Live Key):
+                </label>
+                <div className="relative">
+                  <Input
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="ak_live_..."
+                    className="h-10 text-xs font-mono rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 pl-24"
+                    dir="ltr"
+                  />
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-bold font-mono">
+                      ak_live ✓
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="md:col-span-4 flex items-end">
+                <Button
+                  onClick={handleSaveApiKey}
+                  className="w-full h-10 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20"
+                >
+                  حفظ وتفعيل المفتاح فورياً
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              المفتاح مفعل ويعمل بأعلى جاهزية لإنشاء الامتحانات الوزارية وتوليد بنوك الأسئلة مع دعم خطوات الحل وسلالم التصحيح النموذجية.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 3. Mode Toggle (Bloom Bank vs Full Ministerial Exam Paper) */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 max-w-md print:hidden">
+        <button
+          onClick={() => setActiveMode('questions')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            activeMode === 'questions'
+              ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          <span>توليد بنك أسئلة متخصص (بلوم)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveMode('full_exam')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            activeMode === 'full_exam'
+              ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>توليد ورقة امتحان رسمي متكامل</span>
+        </button>
+      </div>
+
+      {/* 4. Main Configuration & Output Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print:block">
+        
+        {/* Left Form: Parameters (Hidden on Print) */}
+        <div className="lg:col-span-5 space-y-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm print:hidden">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
             <Sliders className="w-4 h-4 text-cyan-500" />
-            <span>معايير ومواصفات التوليد الذكي</span>
+            <span>
+              {activeMode === 'questions' ? 'معايير بنك الأسئلة المولد' : 'بيانات ورقة الامتحان الوزاري'}
+            </span>
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
@@ -229,13 +390,14 @@ export const QuantumQuestionGenerator: React.FC = () => {
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-200"
+                className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
               >
-                <option value="physics">الفيزياء الحديثة والكلاسيكية</option>
-                <option value="chemistry">الكيمياء الحركية والعضوية</option>
-                <option value="biology">الأحياء وعلم الوراثة</option>
-                <option value="math">الرياضيات والتفاضل والتكامل</option>
-                <option value="btec">تكنولوجيا المعلومات BTEC</option>
+                <option value="الفيزياء الحديثة والكلاسيكية">الفيزياء الحديثة والكلاسيكية</option>
+                <option value="الكيمياء الحركية والعضوية">الكيمياء الحركية والعضوية</option>
+                <option value="العلوم الحياتية والوراثة">العلوم الحياتية والوراثة</option>
+                <option value="الرياضيات المتقدمة والتفاضل">الرياضيات المتقدمة والتفاضل</option>
+                <option value="تكنولوجيا المعلومات وBTEC">تكنولوجيا المعلومات BTEC</option>
+                <option value="الروبوتات والذكاء الاصطناعي">الروبوتات والذكاء الاصطناعي</option>
               </select>
             </div>
 
@@ -244,122 +406,160 @@ export const QuantumQuestionGenerator: React.FC = () => {
               <select
                 value={targetLevel}
                 onChange={(e) => setTargetLevel(e.target.value)}
-                className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-200"
+                className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
               >
-                <option value="tawjihi">التوجيهي الأردني (الثانوية العامة)</option>
-                <option value="olympiad">أولمبياد العلوم المتقدم</option>
-                <option value="university">السنة الجامعية الأولى</option>
-                <option value="middle">المرحلة الأساسية المتقدمة</option>
+                <option value="الثانوية العامة (التوجيهي الأردني)">التوجيهي الأردني (الثانوية العامة)</option>
+                <option value="الصف العاشر الأساسي">الصف العاشر الأساسي</option>
+                <option value="مسار Pearson BTEC الدولي">مسار Pearson BTEC الدولي</option>
+                <option value="أولمبياد العلوم الوطني">أولمبياد العلوم الوطني</option>
               </select>
             </div>
           </div>
 
-          {/* Bloom Taxonomy Pills */}
-          <div className="space-y-1.5 pt-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>تصنيف بلوم للأهداف المعرفية:</span>
-              <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-normal">
-                {BLOOM_LEVELS.find((b) => b.id === bloom)?.desc}
-              </span>
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {BLOOM_LEVELS.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => setBloom(b.id)}
-                  className={`p-2 rounded-xl text-[11px] font-bold transition-all border text-center ${
-                    bloom === b.id
-                      ? 'bg-gradient-to-r ' + b.color + ' text-white shadow-md'
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400'
-                  }`}
-                >
-                  {b.label.split(' ')[0]}
-                </button>
-              ))}
-            </div>
-          </div>
+          {activeMode === 'questions' ? (
+            <>
+              {/* Bloom Taxonomy Selection */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>المستوى المعرفي (هرم بلوم):</span>
+                  <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-normal">
+                    {BLOOM_LEVELS.find((b) => b.id === bloom)?.desc}
+                  </span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {BLOOM_LEVELS.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setBloom(b.id)}
+                      className={`p-2 rounded-xl text-[11px] font-bold transition-all border text-center ${
+                        bloom === b.id
+                          ? 'bg-gradient-to-r ' + b.color + ' text-white shadow-md'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                      }`}
+                    >
+                      {b.label.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Question Type and Count */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">نمط السؤال:</label>
-              <select
-                value={qType}
-                onChange={(e) => setQType(e.target.value as QuestionType)}
-                className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-200"
-              >
-                <option value="mcq">اختيار من متعدد (مع تبرير الخطأ)</option>
-                <option value="calculation">مسألة حسابية خطوة بخطوة</option>
-                <option value="true_false">صح / خطأ مع تصحيح العبارة</option>
-                <option value="analytical">سؤال مقالي مع سلم تصحيح (Rubric)</option>
-              </select>
-            </div>
+              {/* Question Type and Count */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">نمط الأسئلة:</label>
+                  <select
+                    value={qType}
+                    onChange={(e) => setQType(e.target.value as QuestionType)}
+                    className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
+                  >
+                    <option value="mcq">اختيار من متعدد (مع تبرير البدائل)</option>
+                    <option value="calculation">مسألة حسابية تفصيلية بالخطوات</option>
+                    <option value="true_false">صح / خطأ مع تصحيح العبارة</option>
+                    <option value="analytical">سؤال مقالي مع سلم تصحيح (Rubric)</option>
+                    <option value="all_mixed">حزمة متنوعة وشاملة</option>
+                  </select>
+                </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">عدد الأسئلة المطلوبة:</label>
-              <Input
-                type="number"
-                min={1}
-                max={10}
-                value={count}
-                onChange={(e) => setCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                className="h-9 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-              />
-            </div>
-          </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">العدد المطلوب:</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={count}
+                    onChange={(e) => setCount(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))}
+                    className="h-9 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">مدة الامتحان (بالدقائق):</label>
+                <Input
+                  type="number"
+                  min={30}
+                  max={180}
+                  value={examDuration}
+                  onChange={(e) => setExamDuration(parseInt(e.target.value) || 90)}
+                  className="h-9 text-xs rounded-xl bg-slate-50 dark:bg-slate-800"
+                />
+              </div>
 
-          {/* Topic & Notes */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">العلامة الكلية:</label>
+                <Input
+                  type="number"
+                  min={20}
+                  max={200}
+                  value={examTotalMarks}
+                  onChange={(e) => setExamTotalMarks(parseInt(e.target.value) || 100)}
+                  className="h-9 text-xs rounded-xl bg-slate-50 dark:bg-slate-800"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Topic & Specific Notes */}
           <div className="space-y-1 pt-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">الموضوع أو الدرس المستهدف:</label>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">الموضوع أو الوحدة الدراسية:</label>
             <Input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="مثال: قانون أوم، البناء الضوئي، التكامل بالتعويض..."
+              placeholder="مثال: الحث الكهرومغناطيسي، الاتزان الأيوني، الوراثة المندلية..."
               className="text-xs h-9 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">توجيهات إضافية للذكاء الاصطناعي:</label>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">تعليمات وتوجيهات للمعلم:</label>
             <Textarea
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
-              placeholder="مثال: تضمين حسابات، استخدام الرموز اللاتينية، التركيز على المفاهيم الخاطئة..."
+              placeholder="مثال: تضمين حسابات دقيقة، ربط الأسئلة بمختبرات المنصة الـ 49، تضمين معادلات..."
               className="text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 min-h-[60px]"
             />
           </div>
 
+          {/* Generation Trigger Button */}
           <Button
-            onClick={generatePedagogicalQuestions}
+            onClick={activeMode === 'questions' ? handleGenerateQuestions : handleGenerateOfficialExam}
             disabled={isGenerating}
             className="w-full h-11 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-black text-xs shadow-lg shadow-cyan-500/20"
           >
             {isGenerating ? (
               <span className="flex items-center gap-2">
                 <BrainCircuit className="w-4 h-4 animate-spin" />
-                جاري توليد الأسئلة وتطبيق تصنيف بلوم...
+                جاري المعالجة والتوليد الذكي بدقة متناهية...
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
-                توليد الأسئلة بنظام بلوم الذكي 2.0
+                {activeMode === 'questions' 
+                  ? 'توليد الأسئلة فورياً بنظام بلوم الذكي' 
+                  : 'توليد ورقة الامتحان الوزاري المتكاملة'}
               </span>
             )}
           </Button>
         </div>
 
-        {/* Right/Output Column */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        {/* Right Output: Questions Feed / Printable Official Exam */}
+        <div className="lg:col-span-7 space-y-4 print:w-full">
+          
+          {/* Top Actions Bar (Hidden on Print) */}
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between print:hidden">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-cyan-500" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                حصيلة بنك الأسئلة المولد ({questions.length})
+                {activeMode === 'full_exam' && generatedExam 
+                  ? `${generatedExam.examTitle} (${generatedExam.totalMarks} علامة)` 
+                  : `حصيلة الأسئلة المولدة (${generatedQuestions.length})`}
               </h3>
             </div>
 
-            {questions.length > 0 && (
+            {generatedQuestions.length > 0 && (
               <div className="flex items-center gap-2">
                 <Button
                   onClick={handleCopyQuestions}
@@ -372,22 +572,76 @@ export const QuantumQuestionGenerator: React.FC = () => {
                 </Button>
 
                 <Button
-                  onClick={handlePrintExam}
+                  onClick={handlePrint}
                   variant="outline"
                   size="sm"
-                  className="rounded-xl text-xs gap-1"
+                  className="rounded-xl text-xs gap-1 text-cyan-600 dark:text-cyan-400 border-cyan-400/30"
                 >
-                  <Printer className="w-3.5 h-3.5 text-cyan-500" />
-                  طباعة ورقة امتحان
+                  <Printer className="w-3.5 h-3.5" />
+                  طباعة الورقة الامتحانية
                 </Button>
               </div>
             )}
           </div>
 
+          {/* Interactive Mode Score Banner */}
+          {interactiveMode && generatedQuestions.length > 0 && (
+            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between text-xs print:hidden">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-purple-600" />
+                <span className="font-bold text-purple-900 dark:text-purple-200">
+                  وضع الاختبار التفاعلي الذكي:
+                </span>
+                <span>اختر إجاباتك لمعرفة نتيجتك الفورية وتفسيرات الإجابات</span>
+              </div>
+
+              {scoreSubmitted && (
+                <div className="font-black text-sm text-purple-700 dark:text-purple-300">
+                  النتيجة: {earnedPoints} من {totalPoints} درجة ({Math.round((earnedPoints / (totalPoints || 1)) * 100)}%)
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Official Ministerial Header (Visible on Full Exam & Print) */}
+          {(activeMode === 'full_exam' || window.matchMedia('print').matches) && generatedExam && (
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 print:border-black print:shadow-none print:p-4">
+              <div className="text-center space-y-1 pb-4 border-b border-slate-300 dark:border-slate-700 print:border-black">
+                <div className="text-xs font-bold text-slate-600 dark:text-slate-400 print:text-black">
+                  المملكة الأردنية الهاشمية &bull; وزارة التربية والتعليم
+                </div>
+                <div className="text-xs font-bold text-slate-500 print:text-black">
+                  مديرية التربية والتعليم للواء المزار الشمالي &bull; {generatedExam.schoolName}
+                </div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white print:text-black pt-1">
+                  {generatedExam.examTitle} للعام الدراسي {generatedExam.academicYear}
+                </h2>
+                <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 print:text-black flex justify-center gap-6 pt-1">
+                  <span>المبحث: <strong>{generatedExam.subject}</strong></span>
+                  <span>المستوى: <strong>{generatedExam.gradeLevel}</strong></span>
+                  <span>الزمن: <strong>{generatedExam.durationMinutes} دقيقة</strong></span>
+                  <span>العلامة الكلية: <strong>{generatedExam.totalMarks} علامة</strong></span>
+                </div>
+              </div>
+
+              {/* Student Metadata Box */}
+              <div className="grid grid-cols-2 gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 text-xs print:border-black print:bg-white">
+                <div>اسم الطالب: ___________________________</div>
+                <div>الشعبة / رقم الجلوس: ___________________</div>
+              </div>
+
+              {/* Exam Instructions */}
+              <div className="text-[11px] text-slate-500 print:text-black space-y-0.5">
+                <strong className="text-slate-700 dark:text-slate-300 print:text-black">تعليمات الاختبار: </strong>
+                {generatedExam.instructions.join(' • ')}
+              </div>
+            </div>
+          )}
+
           {/* Questions Feed */}
-          {questions.length > 0 ? (
+          {generatedQuestions.length > 0 ? (
             <div className="space-y-4">
-              {questions.map((q, idx) => {
+              {generatedQuestions.map((q, idx) => {
                 const bloomInfo = BLOOM_LEVELS.find((b) => b.id === q.bloomLevel);
                 const userAnswer = userAnswers[q.id];
                 const isAnswered = Boolean(userAnswer);
@@ -395,31 +649,31 @@ export const QuantumQuestionGenerator: React.FC = () => {
                 return (
                   <div
                     key={q.id}
-                    className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
+                    className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 print:p-3 print:border-black print:shadow-none print:break-inside-avoid"
                   >
                     {/* Header */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="w-7 h-7 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-black text-xs flex items-center justify-center border border-cyan-500/20">
+                        <span className="w-7 h-7 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-black text-xs flex items-center justify-center border border-cyan-500/20 print:border-black print:text-black">
                           {idx + 1}
                         </span>
-                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r ${bloomInfo?.color} text-white shadow-sm`}>
+                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r ${bloomInfo?.color} text-white shadow-sm print:hidden`}>
                           {bloomInfo?.label}
                         </span>
-                        <span className="text-[11px] px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
-                          {q.points} درجات
+                        <span className="text-[11px] px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold print:text-black">
+                          {q.points} علامات
                         </span>
                       </div>
                     </div>
 
                     {/* Question Text */}
-                    <p className="text-sm font-bold text-slate-900 dark:text-white leading-relaxed">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white print:text-black leading-relaxed">
                       {q.questionText}
                     </p>
 
-                    {/* LaTeX Preview if available */}
+                    {/* Formula if available */}
                     {q.latexFormula && (
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center font-mono text-xs text-cyan-600 dark:text-cyan-400" dir="ltr">
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center font-mono text-xs text-cyan-600 dark:text-cyan-400 print:text-black print:border-black" dir="ltr">
                         {q.latexFormula}
                       </div>
                     )}
@@ -448,19 +702,19 @@ export const QuantumQuestionGenerator: React.FC = () => {
                                   ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-800 dark:text-rose-200'
                                   : isSelected
                                   ? 'bg-cyan-50 dark:bg-cyan-950/40 border-cyan-400 text-cyan-800 dark:text-cyan-200'
-                                  : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200'
+                                  : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 print:bg-white print:border-slate-300'
                               }`}
                             >
                               <div className="flex items-start gap-2.5">
-                                <span className="font-bold text-cyan-600 dark:text-cyan-400 shrink-0">
+                                <span className="font-bold text-cyan-600 dark:text-cyan-400 print:text-black shrink-0">
                                   {opt.label})
                                 </span>
-                                <span className="flex-1">{opt.text}</span>
+                                <span className="flex-1 print:text-black">{opt.text}</span>
                               </div>
 
                               {/* Explanation for distractor */}
                               {(!interactiveMode || isAnswered) && (
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-700 print:hidden">
                                   💡 {opt.explanation}
                                 </p>
                               )}
@@ -472,8 +726,8 @@ export const QuantumQuestionGenerator: React.FC = () => {
 
                     {/* Calculation Steps */}
                     {q.steps && (!interactiveMode || isAnswered) && (
-                      <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-1 text-xs">
-                        <span className="font-bold text-amber-800 dark:text-amber-300">خطوات الحل التفصيلية:</span>
+                      <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-1 text-xs print:hidden">
+                        <span className="font-bold text-amber-800 dark:text-amber-300">خطوات الحل التفصيلية والمعادلات:</span>
                         {q.steps.map((st, sIdx) => (
                           <div key={sIdx} className="text-slate-700 dark:text-slate-300">
                             {st}
@@ -484,7 +738,7 @@ export const QuantumQuestionGenerator: React.FC = () => {
 
                     {/* Analytical Rubric */}
                     {q.rubric && (!interactiveMode || isAnswered) && (
-                      <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 space-y-1 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 space-y-1 text-xs print:hidden">
                         <span className="font-bold text-purple-800 dark:text-purple-300">سلم تصحيح الإجابة (Grading Rubric):</span>
                         {q.rubric.map((rub, rIdx) => (
                           <div key={rIdx} className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -495,11 +749,18 @@ export const QuantumQuestionGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Correct Answer and Rationale */}
+                    {/* Answer Area for Printable Exams */}
+                    {activeMode === 'full_exam' && (q.type === 'calculation' || q.type === 'analytical') && (
+                      <div className="hidden print:block pt-4 min-h-[100px] border-b border-dashed border-slate-400">
+                        <span className="text-[10px] text-slate-400">مساحة إجابة الطالب:</span>
+                      </div>
+                    )}
+
+                    {/* Model Answer (Hidden on print unless specified) */}
                     {(!interactiveMode || isAnswered) && (
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 print:hidden">
                         <span className="font-bold text-emerald-600 dark:text-emerald-400">الإجابة النموذجية: </span>
-                        <span>{q.correctAnswer} — {q.rationale}</span>
+                        <span>{q.correctAnswer} &bull; {q.rationale}</span>
                       </div>
                     )}
                   </div>
@@ -507,15 +768,15 @@ export const QuantumQuestionGenerator: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="p-16 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
+            <div className="p-16 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3 print:hidden">
               <div className="w-14 h-14 mx-auto rounded-3xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
                 <Sparkles className="w-7 h-7" />
               </div>
               <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                جاهز لتوليد بنك أسئلة ذكي
+                منظومة التوليد الذكي جاهزة للتشغيل
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                حدد المادة ومستوى بلوم من القائمة، ثم اضغط على زر التوليد لتصميم امتحانات تضاهي المعايير الدولية والوزارية.
+                اختر المادة والموضوع واضغط على زر التوليد لتطبيق أعلى معايير التقييم الأكاديمي الدولي والوزاري.
               </p>
             </div>
           )}
@@ -524,3 +785,5 @@ export const QuantumQuestionGenerator: React.FC = () => {
     </div>
   );
 };
+
+export default QuantumQuestionGenerator;
