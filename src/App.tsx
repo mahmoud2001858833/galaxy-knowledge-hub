@@ -207,6 +207,8 @@ const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionS
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
 const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
+const ExamGeneratorStudio = wrap(lazy(() => import("./pages/ExamGeneratorStudio")));
+const LiveInteractiveExam = wrap(lazy(() => import("./pages/LiveInteractiveExam")));
 const SmartCitySection = wrap(lazy(() => import("./pages/SmartCitySection")));
 const AIArchitecturalDesign = wrap(lazy(() => import("./pages/AIArchitecturalDesign")));
 const RoboticConstruction = wrap(lazy(() => import("./pages/RoboticConstruction")));
@@ -546,6 +548,18 @@ const router = createBrowserRouter([
       {
         path: 'exam-scanner',
         element: <AuthGuard><ExamScannerPage /></AuthGuard>,
+      },
+      {
+        path: 'exam-generator',
+        element: <PublicRoute><ExamGeneratorStudio /></PublicRoute>,
+      },
+      {
+        path: 'exam-studio',
+        element: <PublicRoute><ExamGeneratorStudio /></PublicRoute>,
+      },
+      {
+        path: 'live-exam/:examId',
+        element: <PublicRoute><LiveInteractiveExam /></PublicRoute>,
       },
       {
         path: 'puzzle/:puzzleId',

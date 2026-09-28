@@ -341,10 +341,10 @@ export const InteractiveCapabilitiesDemo: React.FC = () => {
           </div>
 
           <Button
-            onClick={() => navigate('/exam-scanner')}
+            onClick={() => navigate('/exam-generator')}
             className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm"
           >
-            <span>تجربة مولد الاختبارات الذكي الكامل</span>
+            <span>دخول استوديو توليد الامتحانات الورقية والإلكترونية المتكامل</span>
             <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
           </Button>
         </div>
