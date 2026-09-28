@@ -22,7 +22,11 @@ import {
   ExternalLink,
   Presentation,
   CheckCircle2,
-  MousePointer
+  MousePointer,
+  BookOpen,
+  Lock,
+  Stethoscope,
+  Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
@@ -51,11 +55,11 @@ interface SlideData {
 const PRESENTATION_SLIDES: SlideData[] = [
   {
     id: 'vision-ecosystem',
-    tag: 'الرؤية والمنظومة الوطنية',
+    tag: 'الرؤية والمنظومة الوطنية 2.0',
     badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
     title: 'البنية الرقمية الرائدة في العالم العربي للتعليم التفاعلي 2.0',
     highlightText: 'ذروة العلم',
-    description: 'منظومة وطنية رائدة متكاملة تجمع بين المحاكاة ثلاثية الأبعاد فائقة الدقة، الذكاء الاصطناعي التطبيقي، وحلول الشمولية والتربية الخاصة مع مسارات BTEC المهنية المعتمدة دولياً.',
+    description: 'منظومة وطنية رائدة متكاملة تجمع بين المحاكاة ثلاثية الأبعاد فائقة الدقة، الذكاء الاصطناعي التطبيقي، وحلول الشمولية والتربية الخاصة مع مسارات BTEC المهنية المعتمدة دولياً، مدعومة بعدادات إحصائية حية تبدأ من الصفر.',
     bullets: [
       'أكثر من 150,000 طالب وباحث يستفيدون من المنظومة',
       'دقة قياس فيزيائي وكيميائي تصل إلى 99.8%',
@@ -68,7 +72,7 @@ const PRESENTATION_SLIDES: SlideData[] = [
       { label: 'أداة ذكاء اصطناعي', value: '25+' }
     ],
     actionLabel: 'استكشاف المنظومة الشاملة',
-    actionUrl: '/experiments-section',
+    actionUrl: '/education-section',
     icon: Atom,
     gradient: 'from-blue-600/20 via-indigo-600/10 to-transparent',
     accentColor: '#3B82F6',
@@ -82,9 +86,9 @@ const PRESENTATION_SLIDES: SlideData[] = [
     id: 'labs-simulations',
     tag: 'المختبرات والفيزياء 3D',
     badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-    title: 'مختبرات افتراضية تحاكي أحدث المراكز العلمية العالمية',
+    title: '49 مختبراً افتراضياً تفاعلياً تحاكي أحدث المراكز العلمية العالمية',
     highlightText: 'محاكاة ثلاثية الأبعاد',
-    description: 'تمكّن الطلاب من إجراء التجارب المعقدة والخطرة افتراضياً، مثل مصادم الهدرونات الكبير LHC، التفاعلات النووية، الدوائر الكهربائية المتقدمة، وسلوك الجسيمات دون الذرية.',
+    description: 'تمكّن الطلاب من إجراء التجارب المعقدة والخطرة افتراضياً، مثل مصادم الهدرونات الكبير LHC، التفاعلات النووية، الدوائر الكهربائية المتقدمة، وسلوك الجسيمات دون الذرية مع تحكم فيزيائي فوري.',
     bullets: [
       'مختبرات مطابقة لمناهج وزارة التربية والتعليم وجامعات التكنولوجيا',
       'أجهزة قياس دقيقة حية: أوسيلوسكوب، ليزر، موازين رقمية',
@@ -96,7 +100,7 @@ const PRESENTATION_SLIDES: SlideData[] = [
       { label: 'تفاعل فيزيائي حقيقي', value: '100%' },
       { label: 'استجابة لحظية', value: '< 28ms' }
     ],
-    actionLabel: 'دخول كتالوج المختبرات',
+    actionLabel: 'دخول كتالوج المختبرات 3D',
     actionUrl: '/experiments-section',
     icon: Compass,
     gradient: 'from-cyan-600/20 via-blue-600/10 to-transparent',
@@ -108,50 +112,137 @@ const PRESENTATION_SLIDES: SlideData[] = [
     }
   },
   {
-    id: 'ai-ecosystem',
-    tag: 'الذكاء الاصطناعي التوليدي',
+    id: 'robotics-ai',
+    tag: 'الروبوتات والذكاء الاصطناعي 2.0',
     badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-    title: 'أكثر من 25 أداة ذكاء اصطناعي وأتمتة مخصصة لخدمة الطالب والباحث',
-    highlightText: 'المرشد والذكاء الاصطناعي',
-    description: 'مساعدون أذكياء مدعومون بنماذج متقدمة (Gemini) يقدّمون شروحات موجهة بالمناهج الوطنية، توليد أسئلة تكيّفية، فحص امتحانات بالرؤية الحاسوبية OCR، وتصحيح الأكواد البرمجية.',
+    title: 'بيئة هندسية متقدمة لحركيات الأذرع الروبوتية وأنظمة ROS2 والـ LiDAR',
+    highlightText: 'الروبوتات وAI 2.0',
+    description: 'استوديو هندسي متطور بنظام العرض الأفقي المريح، يحاكي حركيات الأذرع الروبوتية 6-DOF، رسم الخرائط بالـ LiDAR 360°، وبرمجة متحكمات ROS2 بلغة Python لتمكين الطلاب عملياً.',
     bullets: [
-      'المساعد الأردني المتخصص بالمناهج ومصادر التوجيهي المعتمدة',
-      'مساعد فلك المعرفي للاستكشاف العلمي المتقدم',
-      'مصحح الأكواد والبرمجيات لمسارات تكنولوجيا المعلومات'
+      'محاكاة حركيات الأذرع الروبوتية الحقيقية (Kinematics 6-DOF)',
+      'رادار LiDAR 360° لمسح العقبات وتفادي التصادم في الوقت الفعلي',
+      'طرفية تفاعلية لتنفيذ أكواد بايثون وأنظمة التحكم ROS2'
     ],
     metrics: [
-      { label: 'أدوات ذكاء اصطناعي', value: '25+' },
-      { label: 'تغطية للمناهج', value: '100%' },
-      { label: 'نماذج رؤية حاسوبية OCR', value: '3' },
-      { label: 'دقة المرجع والتوثيق', value: '99.5%' }
+      { label: 'أذرع روبوتية', value: '6-DOF' },
+      { label: 'مسح LiDAR', value: '360°' },
+      { label: 'محرك برمجة', value: 'ROS2' },
+      { label: 'سرعة الاستدلال', value: '208 FPS' }
     ],
-    actionLabel: 'تجربة المرشد الذكي',
-    actionUrl: '/ai-assistant-section',
-    icon: Bot,
-    gradient: 'from-purple-600/20 via-indigo-600/10 to-transparent',
+    actionLabel: 'دخول استوديو الروبوتات 2.0',
+    actionUrl: '/robotics-section',
+    icon: Cpu,
+    gradient: 'from-purple-600/20 via-pink-600/10 to-transparent',
     accentColor: '#A855F7',
     previewGraphic: {
-      title: 'شبكة المساعدين الأكاديميين',
-      sub: 'توليد أسئلة وشروحات فورية موثقة',
-      pills: ['Falak AI', 'Jordanian Tutor', 'Code Fixer', 'Exam OCR']
+      title: 'مختبر هندسة التحكم والـ ROS2',
+      sub: 'برمجة وتوجيه الذراع والملاحة المستقلة',
+      pills: ['6-DOF Arm', 'LiDAR 360°', 'Python ROS2', 'Path Tracking']
+    }
+  },
+  {
+    id: 'btec-education',
+    tag: 'مسارات بتك BTEC والتعليم الشامل',
+    badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    title: 'بوابة التعليم المهني المعتمد دولياً وفق معايير Pearson البريطانية',
+    highlightText: 'مسارات بتك BTEC',
+    description: 'منظومة مهنية متكاملة تغطي تكنولوجيا المعلومات والبرمجة، الهندسة التطبيقية، الفن والتصميم الرقمي، وإدارة الأعمال مع المساعد البرمجي ومصحح الأكواد وبوابة التعليم الشامل بـ 14 منصة.',
+    bullets: [
+      '4 تخصصات مهنية معتمدة من Pearson BTEC الدولية',
+      'محرر أكواد ذكي ومصحح للأخطاء البرمجية بالذكاء الاصطناعي',
+      'حاضنة رقمية لرفع وتوثيق ومشاركة مشاريع الطلبة وتقييمها'
+    ],
+    metrics: [
+      { label: 'مسارات BTEC معتمدة', value: '4' },
+      { label: 'منصة تعليمية شاملة', value: '14' },
+      { label: 'مشاريع تطبيقية', value: '100%' },
+      { label: 'معايير دولية', value: 'Pearson' }
+    ],
+    actionLabel: 'دخول مسارات بتك BTEC',
+    actionUrl: '/btec',
+    icon: GraduationCap,
+    gradient: 'from-amber-600/20 via-orange-600/10 to-transparent',
+    accentColor: '#F59E0B',
+    previewGraphic: {
+      title: 'منظومة التأهيل المهني والتقني',
+      sub: 'بناء مشاريع برمجية واقعية وحلول ذكية',
+      pills: ['IT & Coding', 'Applied Robotics', 'Art & Media', 'Business Incubation']
+    }
+  },
+  {
+    id: 'psychological-cbt',
+    tag: 'المرشد النفسي ومختبر CBT',
+    badgeColor: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
+    title: 'منظومة الرعاية النفسية المعرفية وتنظيم قلق الامتحانات والتوتر الدراسي',
+    highlightText: 'المرشد النفسي 2.0',
+    description: 'مختبر علمي لتعديل التفكير المعرفي (CBT)، مزود بتمرين التنفس الصندوقي 4-4-4-4 بأجراس رنين تفاعلية، تمرين التأريض الحسي 5-4-3-2-1، ومركز فلك المعرفة للتوجيه الذكي 24/7.',
+    bullets: [
+      'تمرين التنفس الصندوقي الصوتي لتهدئة الجهاز العصبي بالرنين',
+      'مختبر تفكيك التشوهات المعرفية وإعادة التأطير الإيجابي',
+      'تأريض حسي خماسي الحواس وتوجيه دراسي فوري 24/7'
+    ],
+    metrics: [
+      { label: 'تنفس صندوقي', value: '4-4-4-4' },
+      { label: 'تأريض حسي', value: '5-4-3-2-1' },
+      { label: 'دعم فوري', value: '24/7' },
+      { label: 'بروتوكول معتمد', value: 'CBT Lab' }
+    ],
+    actionLabel: 'فتح المرشد النفسي الذكي',
+    actionUrl: '/psychological-guide',
+    icon: Sparkles,
+    gradient: 'from-pink-600/20 via-rose-600/10 to-transparent',
+    accentColor: '#EC4899',
+    previewGraphic: {
+      title: 'مختبر الدعم النفسي والتنفس',
+      sub: 'إزالة رهبة الامتحانات والتوتر الذهني',
+      pills: ['Box Breathing', '5-4-3-2-1 Grounding', 'CBT Lab', 'Exam Calmer']
+    }
+  },
+  {
+    id: 'spaced-repetition-journal',
+    tag: 'المراجعة الذكية والمكتبة البصرية والمجلة',
+    badgeColor: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+    title: 'أدوات الاستذكار العلمي القائم على منحنى إبنجهاوس والأبحاث المحكمة',
+    highlightText: 'المراجعة والمكتبة 3D',
+    description: 'نظام التكرار المتباعد بخوارزمية SM-2، أرشيف بصري ثلاثي الأبعاد للمجسمات التشريحية والجزيئية، والمجلة العلمية لنشر ومطالعة الأبحاث المحكمة والمقالات الموثقة.',
+    bullets: [
+      'خوارزمية SM-2 لجدولة المراجعة في التوقيت المثالي قبل النسيان',
+      'مكتبة بصرية 3D عالية الدقة للتشريح والفيزياء الفلكية 4K',
+      'مجلة علمية محكمة مع محرك بحث وتصنيف متقدم للأوراق العلمية'
+    ],
+    metrics: [
+      { label: 'خوارزمية ذكية', value: 'SM-2' },
+      { label: 'دقة المخططات', value: '4K 3D' },
+      { label: 'مكافحة النسيان', value: '100%' },
+      { label: 'توثيق الأبحاث', value: 'APA' }
+    ],
+    actionLabel: 'فتح نظام المراجعة الذكي',
+    actionUrl: '/spaced-repetition',
+    icon: BookOpen,
+    gradient: 'from-indigo-600/20 via-violet-600/10 to-transparent',
+    accentColor: '#6366F1',
+    previewGraphic: {
+      title: 'محرك الاستذكار الدائم والأبحاث',
+      sub: 'ترسيخ المعلومات في الذاكرة طويلة المدى',
+      pills: ['Spaced Repetition', 'SM-2 Algorithm', 'Visual 3D Library', 'Peer Review Journal']
     }
   },
   {
     id: 'damij-inclusion',
-    tag: 'الشمولية والتربية الخاصة',
+    tag: 'الشمولية والتربية الخاصة والمساعد الطبي',
     badgeColor: 'bg-teal-500/10 text-teal-400 border-teal-500/30',
-    title: 'أول منصة وطنية تدمج ذوي الإعاقة مع التعليم الأكاديمي المتطور',
+    title: 'مشروع دامج الوطني والمساعد الطبي المدرسي لحالات الطوارئ',
     highlightText: 'مشروع دامج الوطني',
-    description: 'حلول رائدة لخدمة المكفوفين بنظام برايل التفاعلي، الصم بمترجم لغة الإشارة بالذكاء الاصطناعي، وتشخيص ودعم أطفال التوحد واضطراب فرط الحركة وتشتت الانتباه (ADHD).',
+    description: 'حلول رائدة لخدمة المكفوفين بنظام برايل، الصم بمترجم لغة الإشارة بالكاميرا الفورية، تشخيص التوحد وADHD، مع المساعد الطبي المدرسي لفحص الطوارئ بالكاميرا وتوجيه المعلم والطالب.',
     bullets: [
-      'أداة العين المبصرة (Blind Eye Navigator) للمكفوفين وضعاف البصر',
-      'مترجم لغة الإشارة العربي والرسوم الإشارية ثلاثية الأبعاد',
-      'مقاييس تشخيصية سريرية وخطط علاج سلوكي معرفي فردية'
+      'مترجم لغة الإشارة بالذكاء الاصطناعي وكاشف الكاميرا الفوري',
+      'محول برايل اللمسي والصوتي التفاعلي لدعم المكفوفين',
+      'المساعد الطبي المدرسي لبروتوكولات الإسعافات الأولية السريعة'
     ],
     metrics: [
       { label: 'شمولية رقمية معتمدة', value: '100%' },
-      { label: 'محولات برايل ذكية', value: '4' },
       { label: 'معيار سهولة الوصول', value: 'WCAG 2.1' },
+      { label: 'كشف بالكاميرا', value: 'AI OCR' },
       { label: 'عزل وحماية السجلات', value: 'HIPAA' }
     ],
     actionLabel: 'استكشاف منصة دامج',
@@ -162,36 +253,36 @@ const PRESENTATION_SLIDES: SlideData[] = [
     previewGraphic: {
       title: 'بوابة الدمج والشمولية الرقمية',
       sub: 'تعليم تكيفي بحسب قدرات كل طالب',
-      pills: ['Braille Hub', 'Sign Language', 'Autism Care', 'ADHD Suite']
+      pills: ['Braille Hub', 'Sign Language', 'Medical Assistant', 'Autism Care']
     }
   },
   {
-    id: 'btec-partnerships',
-    tag: 'مسارات بتك والشراكة المؤسسية',
-    badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    title: 'جسر مهني وأكاديمي يربط المدارس والجامعات وسوق العمل التكنولوجي',
-    highlightText: 'بتك BTEC والشراكات',
-    description: 'بيئة تطبيقية لمسارات بتك BTEC في تكنولوجيا المعلومات والهندسة، مدعومة بمشاريع حية، وتوثيق رسمي للشراكة المؤسسية واعتماد الأمان السيبراني بدرجة A+ لتحمل 120k+ مستخدم.',
+    id: 'security-endurance',
+    tag: 'درع الحماية A+ وقوة التحمل المؤسسية',
+    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    title: 'بنية سحابية سيبرانية فائقة التحمل تدعم أكثر من 120,000 مستخدم متزامن',
+    highlightText: 'درع الحماية A+',
+    description: 'محاكي إجهاد وضغط حي يختبر تحمل المنصة تحت 120k+ جلسة متزامنة، مع تحصين ضد هجمات XSS، تشفير البيانات، وشهادة تدقيق أمني قابلة للتحقق والطباعة مع إعدادات وصول مطفأة افتراضياً لتوفير الموارد.',
     bullets: [
-      'حاضنة لمشاريع الطلاب البرمجية والحلول الابتكارية',
-      'ربط مؤسسي مع الجامعات الأردنية والمدارس الشريكة',
-      'شهادات تدقيق معتمدة في الأمان السيبراني وقوة التحمل'
+      'محاكي ضغط فائق حي في صفحة تقرير الأمان السيبراني (/security-report)',
+      'تطهير فوري لمدخلات المستخدم ومنع هجمات الحقن وXSS',
+      'لوحة تحكم أدمن فائقة مع إعدادات وصول مطفأة افتراضياً لتوفير الموارد'
     ],
     metrics: [
-      { label: 'مسارات بتك BTEC', value: '14' },
-      { label: 'تحمل المستخدمين', value: '120k+' },
-      { label: 'مستوى الأمان المعتمد', value: 'A+' },
-      { label: 'جهات شريكة ومؤسسية', value: '45+' }
+      { label: 'مستخدم متزامن', value: '120k+' },
+      { label: 'تصنيف الأمان', value: 'A+' },
+      { label: 'تأخير في الاستجابة', value: '0 ms' },
+      { label: 'معايير التشفير', value: 'ISO/NIST' }
     ],
-    actionLabel: 'الشراكة المؤسسية والاعتماد',
-    actionUrl: '/institutional-partnerships',
-    icon: GraduationCap,
-    gradient: 'from-amber-600/20 via-orange-600/10 to-transparent',
-    accentColor: '#F59E0B',
+    actionLabel: 'تقرير الأمان والتحمل المعتمد',
+    actionUrl: '/security-report',
+    icon: ShieldCheck,
+    gradient: 'from-emerald-600/20 via-teal-600/10 to-transparent',
+    accentColor: '#10B981',
     previewGraphic: {
-      title: 'منظومة التأهيل المهني والتقني',
-      sub: 'بناء مشاريع برمجية واقعية وحلول ذكية',
-      pills: ['IT & Coding', 'Robotics & AI', 'Super Admin', 'Security A+']
+      title: 'درع الحماية ومحاكي الضغط 120k+',
+      sub: 'أمان سيبراني معتمد وتحمل لحظي فائق',
+      pills: ['Anti-XSS Shield', '120k+ Stress Test', 'Security Report', 'Resource Saving']
     }
   }
 ];
