@@ -454,6 +454,22 @@ const router = createBrowserRouter([
         element: <PublicRoute><BTEC /></PublicRoute>,
       },
       {
+        path: 'btec-tracks',
+        element: <PublicRoute><BTEC /></PublicRoute>,
+      },
+      {
+        path: 'btec-section',
+        element: <PublicRoute><BTEC /></PublicRoute>,
+      },
+      {
+        path: 'btec-it',
+        element: <PublicRoute><BTECInformationTechnology /></PublicRoute>,
+      },
+      {
+        path: 'tech-coding',
+        element: <PublicRoute><TechCodingPlatform /></PublicRoute>,
+      },
+      {
         path: 'btec/information-technology',
         element: <PublicRoute><BTECInformationTechnology /></PublicRoute>,
       },
@@ -595,6 +611,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'forum',
+        element: <PublicRoute><StudentCommunityForum /></PublicRoute>,
+      },
+      {
+        path: 'student-community-forum',
         element: <PublicRoute><StudentCommunityForum /></PublicRoute>,
       },
       {
@@ -808,6 +828,10 @@ const router = createBrowserRouter([
         element: <PublicRoute><SpecialRelativitySimulation /></PublicRoute>,
       },
       {
+        path: 'special-relativity',
+        element: <PublicRoute><SpecialRelativitySimulation /></PublicRoute>,
+      },
+      {
         path: 'simulation/interference-diffraction',
         element: <PublicRoute><InterferenceDiffractionSimulation /></PublicRoute>,
       },
@@ -884,6 +908,10 @@ const router = createBrowserRouter([
         element: <PublicRoute><BlackHoleSimulation /></PublicRoute>,
       },
       {
+        path: 'black-hole',
+        element: <PublicRoute><BlackHoleSimulation /></PublicRoute>,
+      },
+      {
         path: 'simulation/rutherford-scattering',
         element: <PublicRoute><RutherfordScatteringSimulation /></PublicRoute>,
       },
@@ -904,11 +932,23 @@ const router = createBrowserRouter([
         element: <PublicRoute><AerodynamicsWindTunnelSimulation /></PublicRoute>,
       },
       {
+        path: 'aerodynamics-wind-tunnel-simulation',
+        element: <PublicRoute><AerodynamicsWindTunnelSimulation /></PublicRoute>,
+      },
+      {
+        path: 'aerodynamics-wind-tunnel',
+        element: <PublicRoute><AerodynamicsWindTunnelSimulation /></PublicRoute>,
+      },
+      {
         path: 'simulation/superconductivity',
         element: <PublicRoute><SuperconductivitySimulation /></PublicRoute>,
       },
       {
         path: 'simulation/orbital-mechanics',
+        element: <PublicRoute><OrbitalMechanicsSimulation /></PublicRoute>,
+      },
+      {
+        path: 'orbital-mechanics',
         element: <PublicRoute><OrbitalMechanicsSimulation /></PublicRoute>,
       },
       {
@@ -1018,7 +1058,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'environmental/school-projects',
-        element: <AuthGuard><SchoolProjects /></AuthGuard>,
+        element: <PublicRoute><SchoolProjects /></PublicRoute>,
+      },
+      {
+        path: 'school-projects',
+        element: <PublicRoute><SchoolProjects /></PublicRoute>,
       },
       {
         path: 'environmental/home-projects',
@@ -1050,7 +1094,15 @@ const router = createBrowserRouter([
       },
       {
         path: 'environmental/recycling-advisor',
-        element: <AuthGuard><RecyclingProjectAdvisor /></AuthGuard>,
+        element: <PublicRoute><RecyclingProjectAdvisor /></PublicRoute>,
+      },
+      {
+        path: 'recycling-project-advisor',
+        element: <PublicRoute><RecyclingProjectAdvisor /></PublicRoute>,
+      },
+      {
+        path: 'recycling-advisor',
+        element: <PublicRoute><RecyclingProjectAdvisor /></PublicRoute>,
       },
       {
         path: 'environmental/eco-predict',
@@ -1066,7 +1118,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'art-design',
-        element: <AuthGuard><ArtDesign /></AuthGuard>,
+        element: <PublicRoute><ArtDesign /></PublicRoute>,
       },
       {
         path: 'drawing-challenge/:roomId',
@@ -1155,6 +1207,18 @@ const router = createBrowserRouter([
       },
       {
         path: 'education-section',
+        element: <PublicRoute><EducationSection /></PublicRoute>,
+      },
+      {
+        path: 'education',
+        element: <PublicRoute><EducationSection /></PublicRoute>,
+      },
+      {
+        path: 'comprehensive-education',
+        element: <PublicRoute><EducationSection /></PublicRoute>,
+      },
+      {
+        path: 'education-hub',
         element: <PublicRoute><EducationSection /></PublicRoute>,
       },
       {

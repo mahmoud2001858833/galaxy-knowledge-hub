@@ -10,7 +10,6 @@ import {
   Briefcase, 
   Cog, 
   ArrowLeft, 
-  ArrowRight, 
   Sparkles, 
   Layers, 
   FolderOpen, 
@@ -19,17 +18,14 @@ import {
   Rocket, 
   Cpu, 
   Award, 
-  BookOpen, 
-  ExternalLink,
-  ShieldCheck,
-  CheckCircle2,
-  Play
+  Play,
+  GraduationCap
 } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import SafeBoundary from '@/components/common/SafeBoundary';
 
-const BTEC = () => {
+const BTECContent = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'all' | 'it' | 'engineering' | 'art' | 'business'>('all');
 
@@ -66,7 +62,7 @@ const BTEC = () => {
       subLinks: [
         { label: "مختبر الروبوتات والـ ROS2", url: "/robotics-section", icon: Cpu },
         { label: "محاكاة الهندسة الميكانيكية", url: "/simulation/mechanical-engineering", icon: Cog },
-        { label: "نفق الرياح والديناميكا الهوائية", url: "/aerodynamics-wind-tunnel-simulation", icon: Play },
+        { label: "نفق الرياح والديناميكا الهوائية", url: "/simulation/aerodynamics-wind-tunnel", icon: Play },
       ]
     },
     {
@@ -117,33 +113,41 @@ const BTEC = () => {
         keywords="بتك, BTEC, التعليم المهني, Pearson BTEC, تكنولوجيا المعلومات, برمجة, هندسة, روبوتات, فن وتصميم, إدارة أعمال, ذروة العلم"
       />
       <div className="fixed inset-0 pointer-events-none z-0">
-        <StarField starCount={200} />
+        <StarField starCount={150} />
       </div>
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-8 sm:py-12 relative z-10 max-w-7xl">
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
-          <Link to="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            الرئيسية
-          </Link>
-          <span>/</span>
-          <Link to="/education-section" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            قسم التعليم والمسارات
-          </Link>
-          <span>/</span>
-          <span className="text-slate-900 dark:text-white font-bold">
-            مسارات بتك BTEC
-          </span>
+      <main className="flex-1 container mx-auto px-4 py-8 sm:py-12 relative z-10 max-w-7xl space-y-8">
+        {/* Navigation Breadcrumb & Quick Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <Link to="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              الرئيسية
+            </Link>
+            <span>/</span>
+            <Link to="/education-section" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              قسم التعليم والمسارات
+            </Link>
+            <span>/</span>
+            <span className="text-slate-900 dark:text-white font-bold">
+              مسارات بتك BTEC
+            </span>
+          </div>
+
+          <Button
+            onClick={() => navigate('/education-section')}
+            variant="outline"
+            size="sm"
+            className="rounded-xl text-xs font-bold border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 w-fit"
+          >
+            <GraduationCap className="w-4 h-4 ml-1 rtl:ml-1 rtl:mr-0" />
+            <span>عرض منصات التعليم الشامل الـ 14</span>
+            <ArrowLeft className="w-3.5 h-3.5 mr-1 rtl:mr-0 rtl:ml-1" />
+          </Button>
         </div>
 
         {/* Hero Banner */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative rounded-3xl p-6 sm:p-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden mb-12"
-        >
+        <div className="relative rounded-3xl p-6 sm:p-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden">
           <div className="absolute top-0 end-0 w-96 h-96 bg-gradient-to-br from-blue-500/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
           
           <div className="relative z-10 max-w-4xl space-y-4">
@@ -180,10 +184,10 @@ const BTEC = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Filter Navigation */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Button
             onClick={() => setActiveTab('all')}
             variant={activeTab === 'all' ? 'default' : 'outline'}
@@ -222,87 +226,81 @@ const BTEC = () => {
         </div>
 
         {/* Main Fields Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-          <AnimatePresence>
-            {filteredFields.map((field, index) => {
-              const Icon = field.icon;
-              return (
-                <motion.div
-                  key={field.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4, delay: index * 0.08 }}
-                  className={`relative rounded-3xl bg-white dark:bg-slate-900 border ${field.borderColor} shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col justify-between p-6 sm:p-8`}
-                >
-                  <div className="space-y-6">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {field.badge}
-                        </div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white pt-1">
-                          {field.title}
-                        </h2>
-                        <div className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500">
-                          {field.subtitle}
-                        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {filteredFields.map((field) => {
+            const Icon = field.icon;
+            return (
+              <div
+                key={field.id}
+                className={`relative rounded-3xl bg-white dark:bg-slate-900 border ${field.borderColor} shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col justify-between p-6 sm:p-8 hover:-translate-y-1`}
+              >
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {field.badge}
                       </div>
-
-                      <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${field.color} text-white flex items-center justify-center shadow-lg shrink-0`}>
-                        <Icon className="w-8 h-8" />
+                      <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white pt-1">
+                        {field.title}
+                      </h2>
+                      <div className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500">
+                        {field.subtitle}
                       </div>
                     </div>
 
-                    {/* Description */}
-                    <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                      {field.description}
-                    </p>
-
-                    {/* Sub-tools & Modules Direct Buttons */}
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                        الأدوات والمعامل المدمجة:
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {field.subLinks.map((sub, sIdx) => {
-                          const SubIcon = sub.icon;
-                          return (
-                            <button
-                              key={sIdx}
-                              onClick={() => navigate(sub.url)}
-                              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-right group transition-all text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200"
-                            >
-                              <div className="flex items-center gap-2">
-                                <SubIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
-                                <span>{sub.label}</span>
-                              </div>
-                              <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-1 transition-transform" />
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${field.color} text-white flex items-center justify-center shadow-lg shrink-0`}>
+                      <Icon className="w-8 h-8" />
                     </div>
                   </div>
 
-                  {/* Main Action Launcher */}
-                  <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-4">
-                    <span className="text-xs text-slate-400 dark:text-slate-500">
-                      جاهز للاستخدام الفوري
-                    </span>
-                    <Button
-                      onClick={() => navigate(field.mainLink)}
-                      className={`rounded-xl px-5 font-bold shadow-md bg-gradient-to-r ${field.color} hover:opacity-95 text-white`}
-                    >
-                      دخول المسار الكامل
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                    </Button>
+                  {/* Description */}
+                  <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {field.description}
+                  </p>
+
+                  {/* Sub-tools & Modules Direct Buttons */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      الأدوات والمعامل المدمجة:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {field.subLinks.map((sub, sIdx) => {
+                        const SubIcon = sub.icon;
+                        return (
+                          <button
+                            key={sIdx}
+                            onClick={() => navigate(sub.url)}
+                            className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-right group transition-all text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200"
+                          >
+                            <div className="flex items-center gap-2">
+                              <SubIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                              <span>{sub.label}</span>
+                            </div>
+                            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-1 transition-transform" />
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                </div>
+
+                {/* Main Action Launcher */}
+                <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-4">
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    جاهز للاستخدام الفوري
+                  </span>
+                  <Button
+                    onClick={() => navigate(field.mainLink)}
+                    className={`rounded-xl px-5 font-bold shadow-md bg-gradient-to-r ${field.color} hover:opacity-95 text-white`}
+                  >
+                    دخول المسار الكامل
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Global BTEC Quick Launcher Hub */}
@@ -339,6 +337,14 @@ const BTEC = () => {
       
       <Footer />
     </div>
+  );
+};
+
+const BTEC = () => {
+  return (
+    <SafeBoundary name="BTEC">
+      <BTECContent />
+    </SafeBoundary>
   );
 };
 
