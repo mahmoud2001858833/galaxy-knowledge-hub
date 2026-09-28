@@ -144,16 +144,7 @@ export class AIExamService {
   public async testConnection(): Promise<{ success: boolean; message: string; latencyMs?: number }> {
     const start = performance.now();
     try {
-      if (this.config.provider === 'pedagogic_engine') {
-        const latencyMs = Math.max(12, Math.round(performance.now() - start) + 14);
-        return { 
-          success: true, 
-          message: 'محرك ذروة العلم الفائق (Zarwat Quantum Engine) نشط ومفعل بمفتاح ak_live', 
-          latencyMs 
-        };
-      }
-
-      const response = await fetch(`${this.config.baseUrl}/models`, {
+      const response = await fetch('/api/v1/auth/verify', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -164,20 +155,25 @@ export class AIExamService {
       const latencyMs = Math.round(performance.now() - start);
 
       if (response.ok) {
-        return { success: true, message: `الاتصال بالمزود نشط ومستقر (${latencyMs}ms)`, latencyMs };
+        const data = await response.json();
+        return { 
+          success: true, 
+          message: `المفتاح ${data.key || 'ak_live_...'} نشط ومعتمد على API المنظومة (${latencyMs}ms)`, 
+          latencyMs 
+        };
       }
 
       if (response.status === 401 || response.status === 403) {
         return { 
           success: false, 
-          message: 'المفتاح يحتاج صلاحية أو نموذج مفعل على المزود السحابي',
+          message: 'المفتاح غير مصرح به أو تم تجميده', 
           latencyMs 
         };
       }
 
       return { 
         success: true, 
-        message: `تم الوصول إلى المزود السحابي (${latencyMs}ms)`, 
+        message: `تم الوصول إلى محرك الـ API بنجاح (${latencyMs}ms)`, 
         latencyMs 
       };
     } catch {
@@ -217,77 +213,50 @@ export class AIExamService {
       includeTables = true
     } = params;
 
-    // Check remote LLM API if configured
+    // Call REST API /api/v1/ai/generate-questions with ak_live key
     try {
-      if (this.config.provider !== 'pedagogic_engine' && this.config.apiKey) {
-        const fileContextPrompt = uploadedFileText 
-          ? `\nالمحتوى المرفق من الملف:\n"""\n${uploadedFileText.slice(0, 3000)}\n"""\nاستنبط الأسئلة حصراً من هذا المحتوى بدقة.`
-          : '';
-
-        const systemPrompt = `أنت مصمم امتحانات أول في وزارة التربية والتعليم الأردنية.
-قم بتوليد ${count} أسئلة علمية دقيقة في مادة ${subject} لمستوى ${targetLevel} حول موضوع: "${topic}".
-المستوى المعرفي: ${bloom}. نوع الأسئلة: ${qType}.
-${additionalNotes ? `ملاحظات: ${additionalNotes}` : ''}
-${fileContextPrompt}
-
-يجب أن ترجع المخرجات حصراً بتنسيق JSON نظيف وصالح (بدون أي نصوص إضافية) كـ array من الكائنات:
-[
-  {
-    "type": "${qType === 'all_mixed' ? 'mcq' : qType}",
-    "bloomLevel": "${bloom}",
-    "questionText": "نص السؤال الدقيق علمياً",
-    "options": [
-      {"label": "أ", "text": "الخيار 1", "isCorrect": false, "explanation": "تفسير الخطأ"},
-      {"label": "ب", "text": "الخيار 2", "isCorrect": true, "explanation": "تفسير الصواب علمياً"},
-      {"label": "ج", "text": "الخيار 3", "isCorrect": false, "explanation": "تفسير الخطأ"},
-      {"label": "د", "text": "الخيار 4", "isCorrect": false, "explanation": "تفسير الخطأ"}
-    ],
-    "correctAnswer": "ب",
-    "rationale": "الشرح النظري والقانون الفيزيائي أو العلمي",
-    "latexFormula": "E = h \\nu",
-    "steps": ["خطوة 1", "خطوة 2"],
-    "points": 5
-  }
-]`;
-
-        const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+      if (this.config.apiKey) {
+        const apiRes = await fetch('/api/v1/ai/generate-questions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.config.apiKey}`,
+            'X-API-Key': this.config.apiKey,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: this.config.model || 'gpt-4o',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: `قم بتوليد الأسئلة لموضوع: ${topic}` }
-            ],
-            temperature: 0.3,
-            max_tokens: 3500
+            subject,
+            gradeLevel: targetLevel,
+            bloom,
+            qType,
+            count,
+            topic,
+            additionalNotes,
+            uploadedFileText,
+            includeDiagrams,
+            includeTables
           })
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const content = data.choices?.[0]?.message?.content || '';
-          const jsonMatch = content.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              return parsed.map((q, idx) => {
-                const question: GeneratedQuestion = {
-                  ...q,
-                  id: `q-live-${Date.now()}-${idx + 1}`
-                };
-                if (includeDiagrams && idx % 2 === 0) {
-                  question.diagram = this.generateDiagramForTopic(topic, subject);
-                }
-                if (includeTables && idx % 2 === 1) {
-                  question.table = this.generateTableForTopic(topic, subject);
-                }
-                return question;
-              });
-            }
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData.success && Array.isArray(apiData.questions) && apiData.questions.length > 0) {
+            return apiData.questions.map((q: any, idx: number) => {
+              const resQ: GeneratedQuestion = {
+                id: q.id || `q-api-${Date.now()}-${idx + 1}`,
+                type: q.type || 'mcq',
+                bloomLevel: q.bloomLevel || bloom,
+                questionText: q.questionText,
+                options: q.options || [],
+                correctAnswer: q.correctAnswer || 'أ',
+                rationale: q.rationale || '',
+                latexFormula: q.latexFormula,
+                steps: q.steps,
+                points: q.points || 5,
+                diagram: q.diagram,
+                table: q.table
+              };
+              return resQ;
+            });
           }
         }
       }

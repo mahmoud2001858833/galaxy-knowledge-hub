@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu, MessageSquare, ShieldCheck, FileText } from 'lucide-react';
+import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu, MessageSquare, ShieldCheck, FileText, Key, Terminal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -283,6 +283,13 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
 
+                <Link to="/api-keys">
+                  <DropdownMenuItem className="flex items-center cursor-pointer text-blue-700 dark:text-cyan-300 hover:bg-blue-500/10 rounded-xl px-2 py-2 text-xs font-semibold">
+                    <Terminal className="mr-2 h-4 w-4 text-blue-500" />
+                    <span>واجهة المطورين ومفاتيح API</span>
+                  </DropdownMenuItem>
+                </Link>
+
                 {isSuperAdmin && (
                   <Link to="/super-admin-control-hub">
                     <DropdownMenuItem className="flex items-center cursor-pointer text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 rounded-xl px-2 py-2 text-xs font-bold">
@@ -424,6 +431,15 @@ const Navbar = () => {
                     </div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 font-mono font-bold">
                       A+ 120k
+                    </span>
+                  </Link>
+                  <Link to="/api-keys" className="px-3 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:bg-blue-50 dark:hover:bg-cyan-950/40 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-3.5 h-3.5 text-blue-500" />
+                      <span>واجهة المطورين ومفاتيح API</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 font-mono font-bold">
+                      REST v1
                     </span>
                   </Link>
                   <button 

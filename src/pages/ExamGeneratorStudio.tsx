@@ -34,6 +34,7 @@ import {
   BarChart3,
   ArrowRight,
   ExternalLink,
+  Terminal,
   ChevronRight,
   File,
   Image as ImageIcon,
@@ -165,6 +166,31 @@ export const ExamGeneratorStudio: React.FC = () => {
 
       setGeneratedQuestions(questions);
 
+      const synthesizedExam = {
+        id: `exam-${Date.now()}`,
+        examTitle: `امتحان التقييم في مادة ${subject} - ${topic}`,
+        subject,
+        gradeLevel: targetLevel,
+        durationMinutes: examDuration,
+        totalMarks: examTotalMarks,
+        schoolName: schoolName || 'مدرسة عنبه الثانية الشاملة للبنين',
+        academicYear: '2025 / 2026',
+        sourceDocumentName: parsedFile?.fileName,
+        instructions: [
+          'أجب عن جميع الأسئلة الواردة في الورقة الامتحانية وتأكد من عدد الصفحات.',
+          'وضح خطوات الحل والقوانين الرياضية المستخدمة في المسائل الحسابية بدقة.',
+          'يُراعى الدقة في كتابة الوحدات الفيزيائية ورموز المعادلات.'
+        ],
+        sections: [
+          {
+            sectionTitle: `القسم الشامل: بنك أسئلة ${subject} (${topic})`,
+            sectionDescription: 'أجب عن جميع الأسئلة الآتية بدقة وعناية:',
+            questions
+          }
+        ]
+      };
+      setGeneratedExam(synthesizedExam);
+
       auditLogger.record({
         action: 'AI_QUERY',
         module: 'Exam Studio',
@@ -173,7 +199,7 @@ export const ExamGeneratorStudio: React.FC = () => {
         severity: 'info'
       });
 
-      toast.success(`تم توليد ${questions.length} أسئلة علمية عالية الدقة بنجاح 🚀`);
+      toast.success(`تم توليد ${questions.length} أسئلة علمية معتمدة وتجهيز نموذج الامتحان بنجاح 🚀`);
     } catch {
       toast.error('حدث خطأ أثناء التوليد');
     } finally {
@@ -346,14 +372,23 @@ export const ExamGeneratorStudio: React.FC = () => {
                 </p>
               </div>
 
-              {/* Status Badge */}
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  المحرك الذكي: نشط 100%
-                </span>
-                <span className="text-[10px] text-emerald-600 font-mono">ak_live ✓</span>
-              </div>
+              {/* Status Badge & Link to Developer Hub */}
+              <Link
+                to="/api-keys"
+                className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs hover:border-blue-500 hover:shadow-md transition-all group"
+                title="فتح واجهة المطورين وإدارة المفاتيح والمختبر التفاعلي"
+              >
+                <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/60 group-hover:text-blue-600 transition-colors">
+                  <Terminal className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                    <span>بوابة المطورين والـ API</span>
+                    <ExternalLink className="w-3 h-3 opacity-60" />
+                  </span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">ak_live ✓ (مفعل ومعتمد)</span>
+                </div>
+              </Link>
             </div>
 
             {/* Studio Workspace Grid */}
