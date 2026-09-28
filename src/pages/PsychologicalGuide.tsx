@@ -88,10 +88,10 @@ const moods: MoodOption[] = [
     emoji: '😫', 
     label: 'إرهاق واحتراق دراسي', 
     desc: 'إنهاك ذهني، فقدان الشغف، وصعوبة الاستمرار',
-    color: 'from-purple-500 via-indigo-600 to-slate-700', 
-    bgGradient: 'from-purple-950/80 via-slate-950 to-black',
-    accent: '#a855f7',
-    pulseColor: 'bg-purple-500'
+    color: 'from-amber-600 via-orange-600 to-slate-700', 
+    bgGradient: 'from-amber-950/80 via-slate-950 to-black',
+    accent: '#f59e0b',
+    pulseColor: 'bg-amber-500'
   },
   { 
     id: 'sad',
@@ -553,9 +553,9 @@ export const PsychologicalGuide: React.FC = () => {
               onClick={() => setActiveSosTab(activeSosTab === 'reframing' ? 'none' : 'reframing')}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-purple-950/40 border-purple-500/40 text-purple-200 hover:bg-purple-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="rounded-xl bg-cyan-950/40 border-cyan-500/40 text-cyan-200 hover:bg-cyan-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <Brain className="w-3.5 h-3.5 text-purple-400" />
+              <Brain className="w-3.5 h-3.5 text-cyan-400" />
               <span>إعادة التأطير المعرفي CBT</span>
             </Button>
 
@@ -769,7 +769,7 @@ export const PsychologicalGuide: React.FC = () => {
                         </button>
                         <button
                           onClick={() => setActiveSosTab('reframing')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'reframing' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'reframing' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-300'}`}
                         >
                           التأطير المعرفي CBT
                         </button>
@@ -851,7 +851,7 @@ export const PsychologicalGuide: React.FC = () => {
                                 ✔ «{rc.rational}»
                               </div>
                               <div className="text-[10px] text-slate-300 border-t border-slate-700 pt-1.5 flex items-center gap-1">
-                                <span className="font-bold text-purple-400">خطوة فورية:</span>
+                                <span className="font-bold text-cyan-400">خطوة فورية:</span>
                                 <span>{rc.action}</span>
                               </div>
                             </div>
@@ -922,7 +922,7 @@ export const PsychologicalGuide: React.FC = () => {
                 {/* Header Profile */}
                 <div className="flex items-center justify-between pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-600 to-blue-600 flex items-center justify-center text-white shadow-lg">
                       <Heart className="w-6 h-6 animate-pulse" />
                     </div>
                     <div>
@@ -949,7 +949,7 @@ export const PsychologicalGuide: React.FC = () => {
                 </div>
 
                 {/* Messages List */}
-                <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 max-h-[520px] scrollbar-thin scrollbar-thumb-purple-500/40">
+                <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 max-h-[520px] scrollbar-thin scrollbar-thumb-cyan-500/40">
                   <AnimatePresence>
                     {messages.map((message) => (
                       <motion.div
@@ -961,7 +961,7 @@ export const PsychologicalGuide: React.FC = () => {
                         <div
                           className={`max-w-[90%] sm:max-w-[80%] p-4 sm:p-5 rounded-3xl ${
                             message.role === 'user'
-                              ? 'bg-purple-600/30 border border-purple-500/50 text-white rounded-tr-none shadow-sm'
+                              ? 'bg-cyan-600/30 border border-cyan-500/50 text-white rounded-tr-none shadow-sm'
                               : 'bg-slate-800/90 border border-white/10 text-slate-100 rounded-tl-none shadow-md'
                           }`}
                         >
@@ -984,7 +984,7 @@ export const PsychologicalGuide: React.FC = () => {
                           {/* Suggested Resources Links */}
                           {message.suggestions && message.suggestions.length > 0 && (
                             <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
-                              <div className="text-[11px] font-bold text-purple-300">
+                              <div className="text-[11px] font-bold text-cyan-300">
                                 خطوات مقترحة لأجلك الآن:
                               </div>
                               <div className="grid grid-cols-1 gap-1.5">
@@ -1000,13 +1000,13 @@ export const PsychologicalGuide: React.FC = () => {
                                           if (sug.url === '#quran') setActiveSosTab('quran');
                                           if (sug.url === '#pomodoro') setActiveSosTab('pomodoro');
                                         }}
-                                        className="flex items-center justify-between p-2.5 rounded-xl bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/30 text-right transition-colors text-xs font-semibold text-purple-200"
+                                        className="flex items-center justify-between p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 text-right transition-colors text-xs font-semibold text-cyan-200"
                                       >
                                         <span className="flex items-center gap-2">
                                           <span>{sug.icon}</span>
                                           <span>{sug.title}</span>
                                         </span>
-                                        <Zap className="w-3.5 h-3.5 text-purple-400" />
+                                        <Zap className="w-3.5 h-3.5 text-cyan-400" />
                                       </button>
                                     );
                                   }
@@ -1039,7 +1039,7 @@ export const PsychologicalGuide: React.FC = () => {
                                 {speakingMessageId === message.id ? (
                                   <VolumeX className="w-3.5 h-3.5 text-rose-400" />
                                 ) : (
-                                  <Volume2 className="w-3.5 h-3.5 text-purple-300" />
+                                  <Volume2 className="w-3.5 h-3.5 text-cyan-300" />
                                 )}
                                 <span>{speakingMessageId === message.id ? 'إيقاف الصوت' : 'استماع صوتي'}</span>
                               </button>
@@ -1074,12 +1074,12 @@ export const PsychologicalGuide: React.FC = () => {
                     onKeyDown={handleKeyPress}
                     placeholder="تحدث بحرية عما تشعر به، أو اسأل عن كيفية تخفيف توتر الامتحانات..."
                     disabled={isLoading}
-                    className="flex-1 min-h-[50px] max-h-32 bg-slate-800/70 border-white/10 text-white placeholder:text-slate-400 rounded-2xl resize-none text-xs sm:text-sm p-3 focus:border-rose-500"
+                    className="flex-1 min-h-[50px] max-h-32 bg-slate-800/70 border-white/10 text-white placeholder:text-slate-400 rounded-2xl resize-none text-xs sm:text-sm p-3 focus:border-cyan-500"
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={isLoading || !inputText.trim()}
-                    className="h-12 px-5 rounded-2xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white font-bold shrink-0 shadow-lg"
+                    className="h-12 px-5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-bold shrink-0 shadow-lg"
                   >
                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-1" />}
                     <span className="hidden sm:inline">إرسال</span>

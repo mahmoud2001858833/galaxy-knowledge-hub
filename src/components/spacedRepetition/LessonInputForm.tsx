@@ -173,7 +173,7 @@ const LessonInputForm: React.FC<LessonInputFormProps> = ({ onSubmit }) => {
             <Button
               type="submit"
               disabled={loading || !formData.subject_name || !formData.lesson_name}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-6 text-lg font-bold rounded-xl transition-all duration-300 shadow-lg shadow-indigo-500/25"
+              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-6 text-lg font-bold rounded-xl transition-all duration-300 shadow-lg shadow-cyan-500/25"
             >
               {loading ? (
                 <>

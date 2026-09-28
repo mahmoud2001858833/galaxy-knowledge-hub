@@ -38,7 +38,7 @@ const TOUR_STEPS: TourStep[] = [
     subtitle: 'العلم وراء تحويل المعلومات إلى الذاكرة الدائمة',
     badge: 'الخطوة 1 من 5',
     icon: Brain,
-    color: 'from-indigo-500 to-purple-600',
+    color: 'from-cyan-500 to-blue-600',
     content: 'يعتمد هذا النظام على اكتشاف العالم الألماني هيرمان إبنجهاوس (منحنى النسيان): ينسى الإنسان ما يقارب 70% من أي معلومة جديدة خلال 24 ساعة إذا لم تتم مراجعتها. باستخدام هذا النظام، ستراجع الدروس في اللحظات الدقيقة قبل نسيانها لتثبيتها بنسبة تصل إلى 95%!',
     highlightPoints: [
       'توفير 60% من وقت وجهد الاستذكار التقليدي العشوائي',
@@ -81,7 +81,7 @@ const TOUR_STEPS: TourStep[] = [
     subtitle: 'اختبر نفسك قبل النظر إلى الحل',
     badge: 'الخطوة 4 من 5',
     icon: Layers,
-    color: 'from-purple-500 to-pink-600',
+    color: 'from-blue-600 to-teal-600',
     content: 'أقوى وسيلة للاستذكار عالمياً هي "الاسترجاع النشط". يوفر لك النظام استوديو بطاقات تعليمية فلاشكارد ذكية:',
     highlightPoints: [
       'انقر لقلب البطاقة وقراءة المفاهيم والقوانين والمسائل',
@@ -238,7 +238,7 @@ export const SpacedRepetitionTourModal: React.FC<SpacedRepetitionTourModalProps>
             <Button
               onClick={handleNext}
               size="sm"
-              className="rounded-xl text-xs gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold shadow-md shadow-indigo-500/25 px-5"
+              className="rounded-xl text-xs gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-md shadow-cyan-500/25 px-5"
             >
               <span>{isLast ? 'ابدأ الاستذكار الآن 🚀' : 'التالي'}</span>
               {!isLast && <ArrowLeft className="w-4 h-4 mr-1" />}

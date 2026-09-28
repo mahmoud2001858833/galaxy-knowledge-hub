@@ -117,7 +117,7 @@ const ProgressAnalytics: React.FC<ProgressAnalyticsProps> = ({ reviews, lessons,
   const statCards = [
     { icon: BookOpen, label: 'إجمالي الدروس', value: statistics.totalLessons, color: 'text-blue-400', bg: 'bg-blue-500/20' },
     { icon: Target, label: 'المراجعات المكتملة', value: `${statistics.completedReviews}/${statistics.totalReviews}`, color: 'text-green-400', bg: 'bg-green-500/20' },
-    { icon: Brain, label: 'نسبة التذكر', value: `${statistics.avgRetention}%`, color: 'text-purple-400', bg: 'bg-purple-500/20' },
+    { icon: Brain, label: 'نسبة التذكر', value: `${statistics.avgRetention}%`, color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
     { icon: Flame, label: 'أيام الالتزام', value: streak, color: 'text-orange-400', bg: 'bg-orange-500/20' },
     { icon: TrendingUp, label: 'نسبة الإنجاز', value: `${statistics.completionRate}%`, color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
     { icon: Calendar, label: 'أكثر يوم إنتاجية', value: statistics.mostProductiveDay, color: 'text-amber-400', bg: 'bg-amber-500/20' },
@@ -173,7 +173,7 @@ const ProgressAnalytics: React.FC<ProgressAnalyticsProps> = ({ reviews, lessons,
                     contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4f46e5', borderRadius: '8px' }}
                     labelStyle={{ color: '#fff' }}
                   />
-                  <Bar dataKey="completed" name="مراجعات مكتملة" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="completed" name="مراجعات مكتملة" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -243,7 +243,7 @@ const ProgressAnalytics: React.FC<ProgressAnalyticsProps> = ({ reviews, lessons,
                   labelStyle={{ color: '#fff' }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="reviews" name="المراجعات" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6' }} />
+                <Line type="monotone" dataKey="reviews" name="المراجعات" stroke="#06b6d4" strokeWidth={2} dot={{ fill: '#06b6d4' }} />
                 <Line type="monotone" dataKey="retention" name="نسبة التذكر" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e' }} />
               </LineChart>
             </ResponsiveContainer>

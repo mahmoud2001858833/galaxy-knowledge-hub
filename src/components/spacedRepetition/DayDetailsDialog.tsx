@@ -151,7 +151,7 @@ const DayDetailsDialog: React.FC<DayDetailsDialogProps> = ({
                             <span className="text-sm" style={{ color: subject?.color }}>
                               {subject?.label}
                             </span>
-                            <Badge variant="outline" className="text-purple-400 border-purple-500/30 text-xs">
+                            <Badge variant="outline" className="text-cyan-400 border-cyan-500/30 text-xs">
                               المراجعة #{review.review_number}
                             </Badge>
                           </div>

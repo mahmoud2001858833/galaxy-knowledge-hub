@@ -28,9 +28,9 @@ const HeroSection: React.FC = () => {
   const quickJumpLinks = [
     { label: 'المختبرات 3D', icon: Atom, link: '/experiments-section', color: 'hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/40' },
     { label: 'الروبوتات و AI', icon: Zap, link: '/robotics-section', color: 'hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/40' },
-    { label: 'منصة دامج', icon: HeartHandshake, link: '/damij', color: 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-500/40' },
-    { label: 'المرشد الذكي', icon: Sparkles, link: '/ai-assistant-section', color: 'hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-500/40' },
-    { label: 'المكتبة العلمية', icon: BookOpen, link: '/damij/sources', color: 'hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/40' },
+    { label: 'مسارات BTEC', icon: GraduationCap, link: '/btec', color: 'hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-500/40' },
+    { label: 'المرشد الذكي', icon: Sparkles, link: '/ai-assistant-section', color: 'hover:text-cyan-500 dark:hover:text-cyan-400 hover:border-cyan-500/40' },
+    { label: 'المكتبة العلمية', icon: BookOpen, link: '/sources-library', color: 'hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/40' },
     { label: 'المدينة الذكية', icon: Building2, link: '/smart-city', color: 'hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/40' }
   ];
 
@@ -38,9 +38,9 @@ const HeroSection: React.FC = () => {
     <section className="relative min-h-[94vh] flex items-center justify-center overflow-hidden py-16 sm:py-24 px-4 sm:px-6" dir={dir}>
       {/* Ambient background glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-cyan-600/15 via-blue-500/15 to-purple-600/15 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-cyan-600/15 via-blue-500/15 to-indigo-600/15 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-10 right-10 w-[450px] h-[450px] bg-teal-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-20 left-10 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-20 left-10 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">

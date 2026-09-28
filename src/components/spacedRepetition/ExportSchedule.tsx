@@ -292,7 +292,7 @@ const ExportSchedule: React.FC<ExportScheduleProps> = ({ reviews, lessons, calen
           onClick={exportAsICal}
           className="text-white hover:bg-indigo-500/20 cursor-pointer"
         >
-          <CalendarIcon className="h-4 w-4 ml-2 text-purple-400" />
+          <CalendarIcon className="h-4 w-4 ml-2 text-cyan-400" />
           تقويم iCal
         </DropdownMenuItem>
         <DropdownMenuItem 

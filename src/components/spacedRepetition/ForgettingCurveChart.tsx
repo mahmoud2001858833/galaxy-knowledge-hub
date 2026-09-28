@@ -110,7 +110,7 @@ const ForgettingCurveChart: React.FC<ForgettingCurveChartProps> = ({ reviews }) 
               <p className="text-xs text-slate-400">بعد 30 يوم</p>
             </div>
             <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
+              <div className="flex items-center gap-2 text-cyan-400 mb-1">
                 <Brain className="h-4 w-4" />
                 <span className="text-sm">المراجعات</span>
               </div>
@@ -184,7 +184,7 @@ const ForgettingCurveChart: React.FC<ForgettingCurveChartProps> = ({ reviews }) 
                 <Scatter
                   dataKey="reviewPoint"
                   name="نقاط المراجعة"
-                  fill="#8b5cf6"
+                  fill="#06b6d4"
                   shape={(props: any) => {
                     if (props.payload.reviewPoint === null) return null;
                     return (
@@ -192,7 +192,7 @@ const ForgettingCurveChart: React.FC<ForgettingCurveChartProps> = ({ reviews }) 
                         cx={props.cx}
                         cy={props.cy}
                         r={6}
-                        fill="#8b5cf6"
+                        fill="#06b6d4"
                         stroke="#fff"
                         strokeWidth={2}
                       />
@@ -205,7 +205,7 @@ const ForgettingCurveChart: React.FC<ForgettingCurveChartProps> = ({ reviews }) 
                   <ReferenceLine
                     key={day}
                     x={day}
-                    stroke="#8b5cf6"
+                    stroke="#06b6d4"
                     strokeDasharray="5 5"
                     opacity={0.5}
                   />
@@ -227,8 +227,8 @@ const ForgettingCurveChart: React.FC<ForgettingCurveChartProps> = ({ reviews }) 
                 <span className="text-slate-300">المنحنى الأخضر: التذكر مع نظام المراجعة</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-purple-500 rounded-full" />
-                <span className="text-slate-300">النقاط البنفسجية: أوقات المراجعة المثالية</span>
+                <div className="w-4 h-4 bg-cyan-500 rounded-full" />
+                <span className="text-slate-300">النقاط السماوية: أوقات المراجعة المثالية</span>
               </div>
             </div>
           </div>

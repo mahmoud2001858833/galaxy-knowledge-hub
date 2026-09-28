@@ -347,11 +347,11 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
   return (
     <div className="space-y-6">
       {/* Studio Top Control HUD with Gamification */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-900/95 via-indigo-950/80 to-purple-950/90 border border-purple-500/30 shadow-[0_0_40px_rgba(168,85,247,0.15)] backdrop-blur-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/90 border border-cyan-500/30 shadow-[0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-xl">
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3.5 py-1 rounded-full text-xs font-black bg-purple-500/20 text-purple-300 border border-purple-400/40 flex items-center gap-2 shadow-sm">
-              <Layers className="w-4 h-4 text-purple-400 animate-pulse" />
+            <span className="px-3.5 py-1 rounded-full text-xs font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center gap-2 shadow-sm">
+              <Layers className="w-4 h-4 text-cyan-400 animate-pulse" />
               استوديو الاسترجاع النشط الفائق (Active Recall Studio)
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${rank.color}`}>
@@ -412,7 +412,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
           <Button
             onClick={() => setIsCreateOpen(true)}
             size="sm"
-            className="h-10 rounded-2xl text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white gap-1.5 shadow-md shadow-purple-500/25"
+            className="h-10 rounded-2xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white gap-1.5 shadow-md shadow-cyan-500/25"
           >
             <Plus className="w-4 h-4" />
             <span>إضافة بطاقة</span>
@@ -426,12 +426,12 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
           onClick={handleFlip}
           animate={{ rotateY: isFlipped ? 180 : 0 }}
           transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
-          className="w-full min-h-[380px] rounded-3xl cursor-pointer relative shadow-[0_0_50px_rgba(99,102,241,0.2)] transition-all border border-indigo-500/40 hover:border-purple-400"
+          className="w-full min-h-[380px] rounded-3xl cursor-pointer relative shadow-[0_0_50px_rgba(6,182,212,0.18)] transition-all border border-cyan-500/40 hover:border-cyan-300"
           style={{ transformStyle: 'preserve-3d' }}
         >
           {/* FRONT FACE (Question / Challenge) */}
           <div
-            className={`absolute inset-0 p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950/90 to-purple-950/80 border border-indigo-500/30 flex flex-col justify-between ${
+            className={`absolute inset-0 p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950/90 to-cyan-950/80 border border-indigo-500/30 flex flex-col justify-between ${
               isFlipped ? 'pointer-events-none opacity-0' : 'opacity-100'
             }`}
             style={{ backfaceVisibility: 'hidden' }}
@@ -450,7 +450,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
                   className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700"
                   title="استماع صوتي نقي"
                 >
-                  {isSpeaking ? <VolumeX className="w-4 h-4 text-purple-400 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+                  {isSpeaking ? <VolumeX className="w-4 h-4 text-cyan-400 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
                 </button>
                 <span className="text-xs text-slate-400 font-mono">وجه البطاقة: السؤال</span>
               </div>
@@ -494,7 +494,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
 
           {/* BACK FACE (Answer, Verification, SM-2 Rating) */}
           <div
-            className={`absolute inset-0 p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-purple-950/90 to-slate-950 border border-purple-500/40 flex flex-col justify-between ${
+            className={`absolute inset-0 p-8 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/80 border border-cyan-500/40 flex flex-col justify-between ${
               !isFlipped ? 'pointer-events-none opacity-0' : 'opacity-100'
             }`}
             style={{ 
@@ -516,28 +516,28 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
                   className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700"
                   title="استماع صوتي للإجابة"
                 >
-                  {isSpeaking ? <VolumeX className="w-4 h-4 text-purple-400 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+                  {isSpeaking ? <VolumeX className="w-4 h-4 text-cyan-400 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
                 </button>
                 <span className="text-xs text-slate-400 font-mono">الظهر: التفسير</span>
               </div>
             </div>
 
             <div className="my-auto space-y-3 px-2">
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-purple-500/20 text-slate-100 text-sm sm:text-base leading-relaxed whitespace-pre-line font-medium shadow-inner">
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-cyan-500/20 text-slate-100 text-sm sm:text-base leading-relaxed whitespace-pre-line font-medium shadow-inner">
                 {currentCard.back}
               </div>
 
               {currentCard.simulationUrl && (
                 <div 
                   onClick={(e) => e.stopPropagation()} 
-                  className="flex items-center justify-between p-3 rounded-xl bg-purple-950/60 border border-purple-400/30 text-xs"
+                  className="flex items-center justify-between p-3 rounded-xl bg-cyan-950/60 border border-cyan-400/30 text-xs"
                 >
-                  <span className="text-purple-300 font-bold flex items-center gap-1.5">
-                    <Atom className="w-4 h-4 text-purple-400 animate-spin-slow" />
+                  <span className="text-cyan-300 font-bold flex items-center gap-1.5">
+                    <Atom className="w-4 h-4 text-cyan-400 animate-spin-slow" />
                     <span>مرتبط بمختبر: {currentCard.simulationName}</span>
                   </span>
                   <Link to={currentCard.simulationUrl} target="_blank">
-                    <Button size="sm" className="rounded-xl text-xs bg-purple-600 text-white h-7 gap-1">
+                    <Button size="sm" className="rounded-xl text-xs bg-cyan-600 hover:bg-cyan-500 text-white h-7 gap-1">
                       <Play className="w-3 h-3 fill-current" />
                       <span>فتح المحاكاة 3D</span>
                     </Button>
@@ -549,7 +549,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
             {/* SM-2 Recall Feedback Grading Buttons */}
             <div 
               onClick={(e) => e.stopPropagation()} 
-              className="pt-4 border-t border-purple-500/20 space-y-2 text-xs"
+              className="pt-4 border-t border-cyan-500/20 space-y-2 text-xs"
             >
               <span className="text-slate-300 font-bold block text-center">
                 كيف كان مستوى استرجاعك لهذه المعلومة؟ (خوارزمية SM-2):
@@ -611,7 +611,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
 
         <Button
           onClick={handleNextCard}
-          className="rounded-2xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white gap-1.5 shadow-md shadow-indigo-500/25"
+          className="rounded-2xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white gap-1.5 shadow-md shadow-cyan-500/25"
         >
           <span>البطاقة التالية</span>
           <ArrowLeft className="w-4 h-4" />
@@ -620,10 +620,10 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
 
       {/* Create Custom Flashcard Modal */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-lg bg-slate-950 border-purple-500/30 text-slate-100 rounded-3xl p-6 space-y-4" dir="rtl">
+        <DialogContent className="max-w-lg bg-slate-950 border-cyan-500/30 text-slate-100 rounded-3xl p-6 space-y-4" dir="rtl">
           <DialogHeader className="text-right space-y-1 pb-3 border-b border-slate-800">
             <DialogTitle className="text-xl font-black text-white flex items-center gap-2">
-              <Plus className="w-5 h-5 text-purple-400" />
+              <Plus className="w-5 h-5 text-cyan-400" />
               <span>إنشاء بطاقة استرجاع نشط جديدة</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-400">
@@ -661,7 +661,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-bold block">الإجابة والشرح النموذجي (ظهر البطاقة):</label>
+              <label className="text-slate-300 font-bold block">الإجابة والشرح النموذج (ظهر البطاقة):</label>
               <Textarea
                 value={newBack}
                 onChange={(e) => setNewBack(e.target.value)}
@@ -693,7 +693,7 @@ export const ActiveRecallFlashcards: React.FC<ActiveRecallFlashcardsProps> = ({
 
               <Button
                 type="submit"
-                className="rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white gap-1.5 shadow-md"
+                className="rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 text-white gap-1.5 shadow-md shadow-cyan-500/20"
               >
                 <Check className="w-4 h-4" />
                 <span>حفظ البطاقة في المحفظة</span>

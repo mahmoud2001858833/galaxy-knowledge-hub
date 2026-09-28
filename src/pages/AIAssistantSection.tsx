@@ -80,10 +80,10 @@ export const AIAssistantSection: React.FC = () => {
       icon: Heart,
       featured: true,
       description: "منظومة إرشاد نفسي متقدمة قائمة على العلاج المعرفي السلوكي (CBT) وعلم النفس العصبي. تساعدك في تفريغ الضغط الدراسي، خفض قلق الامتحانات، استعادة التركيز، وممارسة تقنيات التنفس والتأريض الحسي.",
-      color: "from-rose-500 via-pink-600 to-purple-600",
-      gradient: "from-rose-600/20 via-pink-600/10 to-transparent",
-      bgLight: "bg-rose-50 dark:bg-rose-950/20",
-      borderColor: "border-rose-300 dark:border-rose-700/50",
+      color: "from-teal-500 via-emerald-600 to-cyan-600",
+      gradient: "from-teal-600/20 via-emerald-600/10 to-transparent",
+      bgLight: "bg-teal-50 dark:bg-teal-950/20",
+      borderColor: "border-teal-300 dark:border-teal-700/50",
       link: "/psychological-guide",
       features: [
         "تمارين التنفس الصندوقي 4-4-4-4 مع مؤشر بصري وصوتي حي",
@@ -100,8 +100,8 @@ export const AIAssistantSection: React.FC = () => {
       badge: "الفيزياء الكونية والعلوم المتقدمة",
       icon: Sparkles,
       description: "رفيقك العلمي الذكي لشرح أعمق النظريات في الفيزياء الكونية، النسبية، ميكانيكا الكم، والربط التفاعلي المباشر مع مختبرات الـ 3D والمناهج المدرسية والجامعية.",
-      color: "from-indigo-500 via-purple-600 to-blue-600",
-      gradient: "from-indigo-600/20 via-purple-600/10 to-transparent",
+      color: "from-indigo-500 via-cyan-600 to-blue-600",
+      gradient: "from-indigo-600/20 via-cyan-600/10 to-transparent",
       bgLight: "bg-indigo-50 dark:bg-indigo-950/20",
       borderColor: "border-indigo-300 dark:border-indigo-800/40",
       link: "/falak-knowledge-ai",
@@ -295,7 +295,7 @@ export const AIAssistantSection: React.FC = () => {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          <Link to="/" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+          <Link to="/" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
             الرئيسية
           </Link>
           <span>/</span>
@@ -305,21 +305,21 @@ export const AIAssistantSection: React.FC = () => {
         </div>
 
         {/* Hero Banner with Futuristic AI Glassmorphism */}
-        <section className="relative rounded-3xl p-6 sm:p-12 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-500/20 shadow-2xl overflow-hidden">
-          <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-gradient-to-br from-purple-500/15 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-pink-500/10 via-blue-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <section className="relative rounded-3xl p-6 sm:p-12 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white border border-cyan-500/20 shadow-2xl overflow-hidden">
+          <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-gradient-to-br from-cyan-500/15 via-blue-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-teal-500/10 via-blue-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-4xl space-y-6 text-right">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-400/30 text-purple-300 text-xs font-bold backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-              <Brain className="w-4 h-4 text-purple-400" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs font-bold backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <Brain className="w-4 h-4 text-cyan-400" />
               <span>منظومة المرشد الذكي والمساعدين التخصصيين 2.0</span>
             </div>
 
             <div className="space-y-3">
               <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight">
                 مركز{' '}
-                <span className="bg-gradient-to-r from-purple-400 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-cyan-400 via-blue-300 to-emerald-300 bg-clip-text text-transparent">
                   المرشد الذكي
                 </span>{' '}
                 والمساعدين الأكاديميين
@@ -332,7 +332,7 @@ export const AIAssistantSection: React.FC = () => {
             {/* Quick Live Telemetry Pills */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-                <div className="text-xl sm:text-2xl font-black text-purple-300 font-mono" dir="ltr">25+</div>
+                <div className="text-xl sm:text-2xl font-black text-cyan-300 font-mono" dir="ltr">25+</div>
                 <div className="text-[11px] text-slate-400 font-semibold mt-0.5">أداة ونموذج ذكي</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
@@ -344,7 +344,7 @@ export const AIAssistantSection: React.FC = () => {
                 <div className="text-[11px] text-slate-400 font-semibold mt-0.5">خصوصية وأمان تام</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-                <div className="text-xl sm:text-2xl font-black text-rose-300 font-mono" dir="ltr">CBT & AI</div>
+                <div className="text-xl sm:text-2xl font-black text-teal-300 font-mono" dir="ltr">CBT & AI</div>
                 <div className="text-[11px] text-slate-400 font-semibold mt-0.5">دعم معرفي ونفسي</div>
               </div>
             </div>
@@ -352,14 +352,14 @@ export const AIAssistantSection: React.FC = () => {
         </section>
 
         {/* SPECIAL SPOTLIGHT: المرشد النفسي والوجداني (Hero Spotlight Banner) */}
-        <section className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-rose-950/60 via-purple-950/60 to-slate-900 border border-rose-500/30 shadow-xl overflow-hidden">
+        <section className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-teal-950/60 via-slate-900 to-cyan-950/60 border border-teal-500/30 shadow-xl overflow-hidden">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-purple-600 text-white flex items-center justify-center shadow-lg shrink-0">
-                <Heart className="w-8 h-8 animate-pulse" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center shadow-lg shrink-0">
+                <Heart className="w-8 h-8 animate-pulse text-cyan-200" />
               </div>
               <div className="space-y-1.5 text-right">
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-bold">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-[11px] font-bold">
                   <span>مساحتك الآمنة للتفريغ والسكينة</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white">
@@ -374,7 +374,7 @@ export const AIAssistantSection: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 shrink-0 w-full lg:w-auto justify-end">
               <Button
                 onClick={() => navigate('/psychological-guide')}
-                className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white font-bold text-xs sm:text-sm px-6 h-12 shadow-lg flex items-center gap-2"
+                className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-bold text-xs sm:text-sm px-6 h-12 shadow-lg flex items-center gap-2"
               >
                 <Heart className="w-4 h-4" />
                 <span>دخول جلسة الإرشاد النفسي</span>
@@ -389,14 +389,14 @@ export const AIAssistantSection: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <Bot className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                 <span>المختبر التفاعلي للاستفسارات الفورية</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 جرّب طرح أي سؤال أكاديمي أو استشارة نفسية أو استفسار برمجي واشهد دقة الاستجابة وسرعتها.
               </p>
             </div>
-            <span className="text-[11px] px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold font-mono">
+            <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-100 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold font-mono">
               محرك ذروة المعرفي 2.0
             </span>
           </div>
@@ -411,7 +411,7 @@ export const AIAssistantSection: React.FC = () => {
                 <button
                   key={idx}
                   onClick={() => handleAskQuestion(pq.q, pq.a)}
-                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 hover:bg-purple-50 dark:hover:bg-purple-950/40 border border-slate-200/80 dark:border-slate-700 text-right transition-all text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between group shadow-sm"
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 border border-slate-200/80 dark:border-slate-700 text-right transition-all text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between group shadow-sm"
                 >
                   <span className="line-clamp-1">{pq.q}</span>
                   <Badge variant="outline" className="text-[10px] shrink-0 mr-2 bg-white dark:bg-slate-900 font-bold">
@@ -429,12 +429,12 @@ export const AIAssistantSection: React.FC = () => {
               onChange={(e) => setActiveQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCustomQuery()}
               placeholder="اكتب سؤالك الأكاديمي، استفسارك البرمجي، أو ما تشعر به هنا..."
-              className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-2xl h-12 px-4 focus:ring-2 focus:ring-purple-500"
+              className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-2xl h-12 px-4 focus:ring-2 focus:ring-cyan-500"
             />
             <Button
               onClick={handleCustomQuery}
               disabled={isTyping || !activeQuery.trim()}
-              className="rounded-2xl px-5 h-12 bg-purple-600 hover:bg-purple-700 text-white shrink-0 font-bold text-xs gap-1.5 shadow-md"
+              className="rounded-2xl px-5 h-12 bg-cyan-600 hover:bg-cyan-500 text-white shrink-0 font-bold text-xs gap-1.5 shadow-md"
             >
               {isTyping ? 'جاري التحليل...' : 'إرسال'}
               <Send className="w-3.5 h-3.5" />
@@ -448,17 +448,17 @@ export const AIAssistantSection: React.FC = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-5 rounded-2xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-300/80 dark:border-purple-800/50 space-y-3"
+                className="p-5 rounded-2xl bg-cyan-50/80 dark:bg-cyan-950/30 border border-cyan-300/80 dark:border-cyan-800/50 space-y-3"
               >
-                <div className="flex items-center justify-between text-xs font-bold text-purple-700 dark:text-purple-300">
+                <div className="flex items-center justify-between text-xs font-bold text-cyan-700 dark:text-cyan-300">
                   <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                     <span>إجابة المساعد الذكي:</span>
                   </span>
                   
                   <button
                     onClick={() => speakText(aiAnswer)}
-                    className="flex items-center gap-1 text-[11px] text-purple-600 dark:text-purple-400 hover:underline font-semibold"
+                    className="flex items-center gap-1 text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline font-semibold"
                   >
                     {isSpeaking ? <VolumeX className="w-3.5 h-3.5 text-rose-500" /> : <Volume2 className="w-3.5 h-3.5" />}
                     <span>{isSpeaking ? 'إيقاف الصوت' : 'استماع صوتي'}</span>
@@ -572,7 +572,7 @@ export const AIAssistantSection: React.FC = () => {
 
                     {/* Title & Subtitle */}
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                         {ast.title}
                       </h3>
                       <div className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
@@ -589,7 +589,7 @@ export const AIAssistantSection: React.FC = () => {
                     <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
                       {ast.features.map((feat, fIdx) => (
                         <div key={fIdx} className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
                           <span>{feat}</span>
                         </div>
                       ))}
@@ -598,10 +598,10 @@ export const AIAssistantSection: React.FC = () => {
 
                   {/* Launch action footer */}
                   <div className="pt-5 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                    <span className="text-xs font-bold text-purple-600 dark:text-purple-400 group-hover:underline">
+                    <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 group-hover:underline">
                       بدء الجلسة والاستشارة
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-purple-600 group-hover:text-white transition-colors flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-600 group-hover:text-white transition-colors flex items-center justify-center text-slate-600 dark:text-slate-300">
                       <ArrowLeft className="w-4 h-4 rtl:rotate-0 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
                     </div>
                   </div>

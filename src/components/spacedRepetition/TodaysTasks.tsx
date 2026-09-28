@@ -152,7 +152,7 @@ const TodaysTasks: React.FC<TodaysTasksProps> = ({ reviews, lessons, streak, onC
                 </span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="text-purple-400 border-purple-500/30">
+                <Badge variant="outline" className="text-cyan-400 border-cyan-500/30">
                   المراجعة #{review.review_number}
                 </Badge>
                 {isOverdue && (
@@ -382,7 +382,7 @@ const TodaysTasks: React.FC<TodaysTasksProps> = ({ reviews, lessons, streak, onC
                         <div className="flex items-center gap-2 text-xs">
                           <span style={{ color: subject?.color }}>{subject?.label}</span>
                           <span className="text-slate-500">•</span>
-                          <span className="text-purple-400">المراجعة #{review.review_number}</span>
+                          <span className="text-cyan-400">المراجعة #{review.review_number}</span>
                         </div>
                       </div>
                     </div>

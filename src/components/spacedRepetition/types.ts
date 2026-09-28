@@ -51,7 +51,7 @@ export const SUBJECTS = [
   { value: 'biology', label: 'الأحياء', color: '#22c55e' },
   { value: 'math', label: 'الرياضيات', color: '#f59e0b' },
   { value: 'arabic', label: 'اللغة العربية', color: '#ef4444' },
-  { value: 'english', label: 'اللغة الإنجليزية', color: '#8b5cf6' },
+  { value: 'english', label: 'اللغة الإنجليزية', color: '#0284c7' },
   { value: 'islamic', label: 'التربية الإسلامية', color: '#06b6d4' },
   { value: 'history', label: 'التاريخ', color: '#f97316' },
   { value: 'geography', label: 'الجغرافيا', color: '#84cc16' },

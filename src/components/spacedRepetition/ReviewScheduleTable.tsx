@@ -169,7 +169,7 @@ const ReviewScheduleTable: React.FC<ReviewScheduleTableProps> = ({
                               <Badge variant="outline" className="text-indigo-400 border-indigo-500/30">
                                 {subject?.label}
                               </Badge>
-                              <Badge variant="outline" className="text-purple-400 border-purple-500/30">
+                              <Badge variant="outline" className="text-cyan-400 border-cyan-500/30">
                                 المراجعة #{review.review_number}
                               </Badge>
                             </div>

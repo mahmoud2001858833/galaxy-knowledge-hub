@@ -51,8 +51,8 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   competitionBadgeUrl: '/gju-competition',
   footerLinks: [
     { id: '1', title: 'المختبرات والمحاكاة 3D', url: '/experiments-section', category: 'quick', badge: '49+' },
-    { id: '2', title: 'منصة دامج للتربية الخاصة', url: '/damij', category: 'special_ed', badge: 'جديد' },
-    { id: '3', title: 'المكتبة العلمية والمصادر', url: '/damij/sources', category: 'academic', badge: '200+' },
+    { id: '2', title: 'مسارات التعليم والمهني BTEC', url: '/btec', category: 'special_ed', badge: 'جديد' },
+    { id: '3', title: 'المكتبة العلمية والمصادر', url: '/spaced-repetition', category: 'academic', badge: 'SM-2 Pro' },
     { id: '4', title: 'مساعد فالك المعرفة الذكي', url: '/ai-assistant-section', category: 'academic' },
     { id: '5', title: 'قسم المدينة الذكية والابتكار', url: '/smart-city', category: 'quick' },
     { id: '6', title: 'تواصل معنا واستفسر', url: '/contact', category: 'quick' },

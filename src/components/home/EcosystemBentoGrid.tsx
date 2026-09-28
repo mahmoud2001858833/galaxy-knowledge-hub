@@ -27,7 +27,6 @@ import { Button } from '@/components/ui/button';
 
 import simulationsBg from '@/assets/simulations-3d-section.jpg';
 import roboticsBg from '@/assets/robotics-ai-section.jpg';
-import damijBg from '@/assets/damij-section.jpg';
 import educationBg from '@/assets/education-section.jpg';
 import aiAssistantBg from '@/assets/ai-assistant-section.jpg';
 import sourcesLibraryBg from '@/assets/sources-library-section.jpg';
@@ -36,7 +35,7 @@ interface EcosystemItem {
   id: string;
   title: string;
   subtitle: string;
-  category: 'stem' | 'ai' | 'btec' | 'inclusive' | 'skills';
+  category: 'stem' | 'ai' | 'btec' | 'skills';
   badge: string;
   description: string;
   image: string;
@@ -48,7 +47,7 @@ interface EcosystemItem {
 
 export const EcosystemBentoGrid: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'all' | 'stem' | 'ai' | 'btec' | 'inclusive'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'stem' | 'ai' | 'btec' | 'skills'>('all');
 
   const items: EcosystemItem[] = [
     {
@@ -76,19 +75,6 @@ export const EcosystemBentoGrid: React.FC = () => {
       highlights: ['حركيات الأذرع 6-DOF', 'برمجة ROS2 و Python', 'ملاحة 360° LiDAR'],
       link: '/robotics-section',
       metrics: '208 FPS استدلال'
-    },
-    {
-      id: 'damij',
-      title: 'منصة دامج — التربية الخاصة والدمج',
-      subtitle: 'التقنيات المساعدة الشاملة والمكتبة العلمية الموثقة',
-      category: 'inclusive',
-      badge: 'مبادرة وطنية شاملة',
-      description: 'مترجم لغة الإشارة بالكاميرا، مترجم برايل اللمسي والصوتي، تشخيص التوحد وADHD، والمكتبة العلمية والمصادر المعتمدة وفق APA وWHO.',
-      image: damijBg,
-      icon: HeartHandshake,
-      highlights: ['مترجم برايل ولغة الإشارة', 'دعم التوحد وADHD', 'المكتبة العلمية والمصادر الموثقة'],
-      link: '/damij',
-      metrics: '100% شمولية رقمية'
     },
     {
       id: 'education',
@@ -120,7 +106,7 @@ export const EcosystemBentoGrid: React.FC = () => {
       id: 'medical',
       title: 'المساعد الطبي المدرسي وطوارئ المدارس',
       subtitle: 'دليل تفاعلي للتعامل مع الإسعافات والحالات المدرسية',
-      category: 'inclusive',
+      category: 'skills',
       badge: 'بروتوكولات طوارئ فورية',
       description: 'نظام فحص فوري بالكاميرا وإرشادات مباشرة ليعرف الطلاب والمعلمون كيفية التصرف مع حالات الرعاف، الإغماء، الجروح، والتشنجات.',
       image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=1200&q=80',
@@ -250,14 +236,14 @@ export const EcosystemBentoGrid: React.FC = () => {
             مسارات BTEC المهنية
           </button>
           <button
-            onClick={() => setActiveTab('inclusive')}
+            onClick={() => setActiveTab('skills')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'inclusive'
+              activeTab === 'skills'
                 ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800 hover:text-slate-900'
             }`}
           >
-            التربية الخاصة والدمج (دامج)
+            المهارات والتحديات
           </button>
         </div>
       </div>

@@ -98,20 +98,6 @@ const EducationSectionContent: React.FC = () => {
       features: ['تحريك الأذرع الروبوتية 6-DOF', 'رسم الخرائط بالـ LiDAR', 'برمجة ROS2 التفاعلية', 'تتبع المسارات الذكي']
     },
     {
-      id: 'damij',
-      title: 'منصة دامج — التعليم الخاص والدمج',
-      category: 'support',
-      categoryLabel: 'التربية الخاصة والشمولية',
-      badge: 'مبادرة شمولية وطنية',
-      description: 'المنصة الوطنية للدمج: كاشف لغة الإشارة بالكاميرا، مترجم برايل اللمسي والصوتي، أدوات دعم طيف التوحد، واختبارات فرط الحركة ADHD مع المكتبة العلمية المعتمدة.',
-      icon: '🤝',
-      color: 'from-teal-600 to-emerald-600',
-      bgLight: 'bg-teal-50 dark:bg-teal-950/20',
-      borderColor: 'border-teal-200 dark:border-teal-800/40',
-      link: '/damij',
-      features: ['مترجم لغة الإشارة بالكاميرا', 'نظام برايل التفاعلي', 'دعم التوحد وتشتت الانتباه ADHD', 'المكتبة العلمية والمصادر الموثقة']
-    },
-    {
       id: 'ai-assistant',
       title: 'المرشد الذكي والذكاء الاصطناعي',
       category: 'tech',
@@ -119,9 +105,9 @@ const EducationSectionContent: React.FC = () => {
       badge: 'دعم ذكي 24/7',
       description: 'مركز المساعدين الموجهين: المرشد النفسي لتنظيم القلق، فلك المعرفة للنظريات العلمية، ومساعد تصحيح الأكواد والرياضيات.',
       icon: '🧠',
-      color: 'from-violet-600 to-purple-600',
-      bgLight: 'bg-violet-50 dark:bg-violet-950/20',
-      borderColor: 'border-violet-200 dark:border-violet-800/40',
+      color: 'from-cyan-600 to-blue-600',
+      bgLight: 'bg-cyan-50 dark:bg-cyan-950/20',
+      borderColor: 'border-cyan-200 dark:border-cyan-800/40',
       link: '/ai-assistant-section',
       features: ['مرشد نفسي لتنظيم الضغط والامتحانات', 'فلك المعرفة للعلوم والفضاء', 'مساعد تصحيح الأكواد والحلول', 'توجيه أكاديمي شخصي']
     },
