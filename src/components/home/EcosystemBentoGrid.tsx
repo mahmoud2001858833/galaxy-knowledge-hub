@@ -38,7 +38,7 @@ interface EcosystemItem {
   id: string;
   title: string;
   subtitle: string;
-  category: 'stem' | 'ai' | 'btec' | 'skills' | 'academic';
+  category: 'stem' | 'ai' | 'btec' | 'skills' | 'academic' | 'educational';
   badge: string;
   description: string;
   image: string;
@@ -50,7 +50,7 @@ interface EcosystemItem {
 
 export const EcosystemBentoGrid: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'all' | 'academic' | 'stem' | 'ai' | 'btec' | 'skills'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'educational' | 'academic' | 'stem' | 'ai' | 'btec' | 'skills'>('all');
 
   const items: EcosystemItem[] = [
     {
@@ -170,64 +170,64 @@ export const EcosystemBentoGrid: React.FC = () => {
       link: '/student-community-forum',
       metrics: 'تفاعل طلابي مستمر'
     },
-    // Educational Subject Platforms (Math, Chemistry, Physics, Biology)
+    // Educational Subject Platforms (Math, Chemistry, Biology, Physics)
     {
       id: 'math-platform',
-      title: 'منصة الرياضيات والتحليل الرياضي',
-      subtitle: 'التفاضل والتكامل، الجبر الخطي، والهندسة الفراغية',
-      category: 'academic',
+      title: 'منصة الرياضيات',
+      subtitle: 'الهندسة الفضائية 3D، حساب التفاضل والتكامل، والتحليل البياني',
+      category: 'educational',
       badge: 'منهاج وزاري متقدم',
       description: 'بيئة تفاعلية متكاملة لدراسة الرياضيات، الاشتقاق والتكامل، رسم المنحنيات ثلاثية الأبعاد، وبنك المسائل الوزارية المحلولة خطوة بخطوة.',
-      image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://digital-brilliance.online/wp-content/uploads/2024/05/7bb1a96e-fbeb-4aac-8ce9-dde1e408f1a0.webp',
       icon: Calculator,
       highlights: ['حساب التفاضل والتكامل 3D', 'الجبر الخطي والمصفوفات', 'بنك المسائل والحل النموذجي'],
-      link: '/math',
+      link: '/mathematics',
       metrics: '1,500+ مسألة محلولة'
     },
     {
       id: 'chemistry-platform',
-      title: 'منصة الكيمياء والتفاعلات الجزيئية',
-      subtitle: 'الكيمياء الحركية، الاتزان، والتركيب العضوي',
-      category: 'academic',
+      title: 'منصة الكيمياء',
+      subtitle: 'الاتزان الكيميائي، المعايرة، التفاعلات الجزيئية، والجدول الدوري',
+      category: 'educational',
       badge: 'مختبر كيميائي حي',
       description: 'محاكاة تفاعلات كيميائية حية، الجدول الدوري التفاعلي ثلاثي الأبعاد، موازنة المعادلات، وحسابات سرعة التفاعل وثابت الاتزان.',
-      image: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://www.ra2ed.com/UserFiles/cq5dam.lcover.jpeg',
       icon: FlaskConical,
       highlights: ['الجدول الدوري ثلاثي الأبعاد', 'تفاعلات التأكسد والاختزال', 'موازنة المعادلات الكيميائية'],
       link: '/chemistry',
       metrics: 'محاكاة تفاعلات حية'
     },
     {
-      id: 'physics-platform',
-      title: 'منصة الفيزياء والكونيات المتقدمة',
-      subtitle: 'الميكانيكا الكلاسيكية، الكهرومغناطيسية، والكم',
-      category: 'academic',
-      badge: 'فيزياء تطبيقية ونظرية',
-      description: 'منصة متخصصة في محاكاة قوانين نيوتن، الكهرومغناطيسية، البصريات الهندسية، والفيزياء النووية مع أدوات قياس رقمية ومسائل وزارية.',
-      image: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=1200&q=80',
-      icon: Atom,
-      highlights: ['الميكانيكا والمقذوفات', 'المجالات الكهربائية والمغناطيسية', 'فيزياء الكم والنسبية'],
-      link: '/physics',
-      metrics: '49+ تجربة محاكاة'
-    },
-    {
       id: 'biology-platform',
-      title: 'منصة الأحياء والعلوم الحياتية',
-      subtitle: 'بيولوجيا الخلية، تعديل الجينات CRISPR، والتشريح',
-      category: 'academic',
+      title: 'منصة الأحياء',
+      subtitle: 'الخلية الحية، علم الوراثة، تقنية CRISPR، والمجهر الافتراضي',
+      category: 'educational',
       badge: 'علوم حياتية معتمدة',
       description: 'استكشاف مجسمات ثلاثية الأبعاد للخلية الحية، تضاعف DNA وبناء البروتينات، التنوع الحيوي، وأطالس التشريح التفاعلية فائقة الدقة.',
-      image: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://th.bing.com/th/id/OIP.GmUR4ZRzF9gWiCj7wukbuwAAAA?cb=iwc2&rs=1&pid=ImgDetMain',
       icon: Dna,
       highlights: ['تضاعف DNA وبناء البروتين', 'الهندسة الوراثية وكريسبر', 'أطلس التشريح البشري 3D'],
       link: '/biology',
       metrics: 'نماذج تشريحية 4K'
+    },
+    {
+      id: 'physics-platform',
+      title: 'منصة الفيزياء',
+      subtitle: 'ميكانيكا نيوتن، البصريات، الكهرومغناطيسية، والفيزياء الذكية 3D',
+      category: 'educational',
+      badge: 'فيزياء تطبيقية ونظرية',
+      description: 'منصة متخصصة في محاكاة قوانين نيوتن، الكهرومغناطيسية، البصريات الهندسية، والفيزياء النووية مع أدوات قياس رقمية ومسائل وزارية.',
+      image: 'https://www.chemixlab.com/wp-content/uploads/2024/01/Thomsons-Model-of-an-Atom-Atomic-Model-History-Limitations-Example.jpg',
+      icon: Atom,
+      highlights: ['الميكانيكا والمقذوفات', 'المجالات الكهربائية والمغناطيسية', 'فيزياء الكم والنسبية'],
+      link: '/physics',
+      metrics: '49+ تجربة محاكاة'
     }
   ];
 
   const filteredItems = activeTab === 'all' 
     ? items 
-    : items.filter(item => item.category === activeTab);
+    : items.filter(item => item.category === activeTab || (activeTab === 'educational' && item.category === 'academic'));
 
   return (
     <section 
@@ -262,15 +262,15 @@ export const EcosystemBentoGrid: React.FC = () => {
             جميع المسارات ({items.length})
           </button>
           <button
-            onClick={() => setActiveTab('academic')}
+            onClick={() => setActiveTab('educational')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeTab === 'academic'
-                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-500/25'
+              activeTab === 'educational' || activeTab === 'academic'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
                 : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 hover:bg-blue-100'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>المنصات التعليمية (الرياضيات، الكيمياء، الفيزياء، الأحياء)</span>
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>المنصات التعليمية</span>
             <Badge className="px-1.5 py-0 text-[10px] bg-blue-500 text-white">4</Badge>
           </button>
           <button
@@ -338,6 +338,9 @@ export const EcosystemBentoGrid: React.FC = () => {
                   alt={item.title}
                   className="w-full h-full object-cover object-center group-hover:scale-104 transition-transform duration-500 ease-out"
                   loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80';
+                  }}
                 />
                 
                 {/* Seamless light/dark gradient blend */}

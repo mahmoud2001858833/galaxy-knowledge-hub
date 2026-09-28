@@ -512,6 +512,10 @@ const router = createBrowserRouter([
         element: <AuthGuard><Mathematics /></AuthGuard>,
       },
       {
+        path: 'math',
+        element: <AuthGuard><Mathematics /></AuthGuard>,
+      },
+      {
         path: 'mathematics/calculator',
         element: <AuthGuard><CalculatorPage /></AuthGuard>,
       },
