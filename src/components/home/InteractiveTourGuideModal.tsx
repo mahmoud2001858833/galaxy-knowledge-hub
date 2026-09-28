@@ -117,15 +117,7 @@ export const InteractiveTourGuideModal: React.FC = () => {
 
     window.addEventListener('galaxy_open_tour_welcome', handleOpenTrigger);
 
-    // Strict Device Persistence: Only show once ever per device unless triggered manually
-    const decisionTaken = localStorage.getItem('galaxy_tour_decision_taken');
-    if (!decisionTaken) {
-      const timer = setTimeout(() => {
-        setIsDecisionModalOpen(true);
-      }, 900);
-      return () => clearTimeout(timer);
-    }
-
+    // Only listen for manual triggers, never pop up automatically on mount
     return () => {
       window.removeEventListener('galaxy_open_tour_welcome', handleOpenTrigger);
     };

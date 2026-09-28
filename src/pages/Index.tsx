@@ -14,7 +14,6 @@ import InteractiveCapabilitiesDemo from '@/components/home/InteractiveCapabiliti
 import PlatformBenchmarkMatrix from '@/components/home/PlatformBenchmarkMatrix';
 import FuturePlatformsShowcase from '@/components/home/FuturePlatformsShowcase';
 import EducationalResources from '@/components/EducationalResources';
-import InteractiveTourGuideModal from '@/components/home/InteractiveTourGuideModal';
 import InstitutionalPartnershipSection from '@/components/home/InstitutionalPartnershipSection';
 import InteractiveMousePresentationDeck from '@/components/home/InteractiveMousePresentationDeck';
 
@@ -111,11 +110,6 @@ const Index = () => {
       
       <SafeBoundary name="Footer">
         <Footer />
-      </SafeBoundary>
-
-      {/* Global Interactive Walkthrough Spotlight Modal */}
-      <SafeBoundary name="InteractiveTourGuideModal">
-        <InteractiveTourGuideModal />
       </SafeBoundary>
     </div>
   );

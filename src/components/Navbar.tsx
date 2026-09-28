@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
-import { openInteractiveTourModal } from '@/components/home/InteractiveTourGuideModal';
 
 interface UserProfile {
   id?: string;
@@ -307,14 +306,15 @@ const Navbar = () => {
                   تسجيل الدخول
                 </Button>
               </Link>
-              <Button 
-                onClick={openInteractiveTourModal}
-                size="sm" 
-                className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-xs rounded-xl px-4 py-2 shadow-sm gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                <span>الجولة التعريفية</span>
-              </Button>
+              <Link to="/education-section">
+                <Button 
+                  size="sm" 
+                  className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-xs rounded-xl px-4 py-2 shadow-sm gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>المنظومة التعليمية</span>
+                </Button>
+              </Link>
             </div>
           )}
         </div>
@@ -450,13 +450,14 @@ const Navbar = () => {
                           تسجيل الدخول
                         </Button>
                       </Link>
-                      <Button 
-                        onClick={openInteractiveTourModal}
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm gap-1.5"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>ابدأ الجولة التعريفية</span>
-                      </Button>
+                      <Link to="/education-section" className="block w-full">
+                        <Button 
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>المنظومة التعليمية</span>
+                        </Button>
+                      </Link>
                     </div>
                   )}
                 </div>

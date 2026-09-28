@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
-import { openInteractiveTourModal } from '@/components/home/InteractiveTourGuideModal';
 
 const AnimatedCounter: React.FC<{
   end: number;
@@ -74,11 +73,12 @@ interface ProductTourHeroProps {
 export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour }) => {
   const navigate = useNavigate();
 
-  const handleStartInteractiveTour = () => {
-    if (onStartTour) {
-      onStartTour();
+  const handleExplorePlatform = () => {
+    const target = document.getElementById('tour-stage-ecosystem') || document.getElementById('mission-section');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
     } else {
-      openInteractiveTourModal();
+      navigate('/education-section');
     }
   };
 
@@ -164,14 +164,14 @@ export const ProductTourHero: React.FC<ProductTourHeroProps> = ({ onStartTour })
           transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5 sm:gap-3 pt-2 w-full max-w-2xl px-2"
         >
-          {/* Guided Tour Launcher */}
+          {/* Platform Explore Launcher */}
           <Button
             size="lg"
-            onClick={handleStartInteractiveTour}
+            onClick={handleExplorePlatform}
             className="w-full sm:w-auto h-11 sm:h-12 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-bold text-xs sm:text-sm shadow-md transition-all duration-200 flex items-center justify-center gap-2 group"
           >
             <Sparkles className="w-4 h-4 text-cyan-400 dark:text-blue-600 transition-transform group-hover:rotate-12" />
-            <span>ابدأ الجولة التعريفية</span>
+            <span>استكشاف المنظومة</span>
           </Button>
 
           {/* 3D Simulations Launcher */}

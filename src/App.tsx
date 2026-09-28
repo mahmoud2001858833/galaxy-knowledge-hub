@@ -15,7 +15,6 @@ import { AutoReadWrapper } from '@/components/accessibility/AutoReadWrapper';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
-import WelcomeGuide from '@/components/WelcomeGuide';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LiveSupportCornerWidget } from '@/components/support/LiveSupportCornerWidget';
 import SafeBoundary from '@/components/common/SafeBoundary';
@@ -338,7 +337,6 @@ const RootLayout = () => {
     <AutoReadWrapper>
       <ScrollToTop />
       <Outlet />
-      {!isGJUMode && <SafeBoundary name="WelcomeGuide"><WelcomeGuide /></SafeBoundary>}
       {!isGJUMode && <SafeBoundary name="PlatformGuideAssistant"><PlatformGuideAssistant /></SafeBoundary>}
       {!isGJUMode && <SafeBoundary name="LiveSupportCornerWidget"><LiveSupportCornerWidget /></SafeBoundary>}
       {!isGJUMode && <SafeBoundary name="AccessibilityPanel"><AccessibilityPanel /></SafeBoundary>}
