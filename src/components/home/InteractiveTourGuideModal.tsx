@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, Compass, X, Play, Pause, Square, ChevronRight, ChevronLeft, 
-  Volume2, VolumeX, Atom, Cpu, HeartHandshake, Eye, ShieldCheck, 
-  CheckCircle2, ArrowUpRight, MousePointer2, Building2, RotateCcw, Presentation,
-  GraduationCap, BookOpen, Stethoscope, Lock
+  Volume2, VolumeX, Atom, Cpu, HeartHandshake, ShieldCheck, 
+  Presentation, GraduationCap, BookOpen, Music, Mic, MicOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,97 +22,69 @@ interface TourMilestone {
   voiceText: string;
   icon: React.ElementType;
   accentColor: string;
-  mouseTarget: { xPercent: number; yPercent: number };
 }
 
+// Ordered purely downwards from top to bottom (هبوط متسلسل انسيابي)
 const TOUR_MILESTONES: TourMilestone[] = [
   {
     id: 1,
     targetId: 'tour-stage-hero',
-    badge: 'المحطة الأولى • البوابة الرقمية والعدادات الحية',
+    badge: 'المحطة 1 • البوابة الرقمية والعدادات الحية المتصاعدة',
     title: 'مرحباً بك في منصة ذروة العلم 2.0',
     description: 'المنظومة الوطنية الأردنية للتعليم التفاعلي ثلاثي الأبعاد، مع العدادات الرقمية الحية المتصاعدة: 49+ مختبراً تفاعلياً، 99.8% دقة القياس، 100% شمولية دامج، و25+ أداة ذكاء اصطناعي.',
     voiceText: 'مرحباً بكم في منصة ذروة العلم، المنظومة الوطنية للتعليم التفاعلي والمختبرات الذكية، مع عدادات إحصائية رقمية حية.',
     icon: Sparkles,
-    accentColor: 'from-cyan-500 to-blue-600',
-    mouseTarget: { xPercent: 50, yPercent: 42 }
+    accentColor: 'from-cyan-500 to-blue-600'
   },
   {
     id: 2,
-    targetId: 'tour-stage-capabilities',
-    badge: 'المحطة الثانية • شبكة المختبرات والمحاكاة 3D',
-    title: 'المختبرات والمحاكاة ثلاثية الأبعاد 3D',
-    description: '49 مختبراً تفاعلياً فائق الدقة: ميكانيكا الكم، النسبية الخاصة، كريسبر لتعديل الجينات، والدوائر الكهربائية مع تحكم فيزيائي فوري وتصدير للبيانات بدقة 99.8%.',
-    voiceText: 'هنا تجدون تسعة وأربعين مختبراً ومحاكاة علمية تفاعلية ثلاثية الأبعاد تغطي كافة المناهج العلمية بدقة تسعة وتسعين بالمئة.',
-    icon: Atom,
-    accentColor: 'from-blue-600 to-cyan-500',
-    mouseTarget: { xPercent: 40, yPercent: 46 }
+    targetId: 'tour-stage-ecosystem',
+    badge: 'المحطة 2 • مسارات بتك BTEC والتعليم الشامل',
+    title: 'مسارات Pearson BTEC وبوابة التعليم الشامل',
+    description: 'مسارات التعليم المهني الدولي المعتمد: تكنولوجيا المعلومات، الهندسة، الفن والتصميم، وإدارة الأعمال مع المساعد البرمجي، ومصحح الأكواد، وبوابة التعليم الشامل بـ 14 منصة متخصصة.',
+    voiceText: 'مسارات بتك المهنية الدولية وبوابة التعليم الشامل بأربعة عشر مساراً متكاملاً تشمل تكنولوجيا المعلومات والهندسة والأعمال.',
+    icon: GraduationCap,
+    accentColor: 'from-blue-600 to-indigo-600'
   },
   {
     id: 3,
     targetId: 'tour-stage-capabilities',
-    badge: 'المحطة الثالثة • الهندسة المتقدمة والـ ROS2',
-    title: 'استوديو الروبوتات والذكاء الاصطناعي 2.0',
-    description: 'بيئة هندسية مطورة بنظام العرض الأفقي تحاكي حركيات الأذرع الروبوتية 6-DOF، رسم الخرائط بالـ LiDAR 360°، وبرمجة متحكمات ROS2 بلغة Python.',
-    voiceText: 'قسم الروبوتات والذكاء الاصطناعي المطور بالعرض الأفقي لمحاكاة الأذرع الهندسية وأجهزة الاستشعار والرادار ليدار وبرمجة آر أو إس تو.',
-    icon: Cpu,
-    accentColor: 'from-purple-600 to-pink-500',
-    mouseTarget: { xPercent: 62, yPercent: 46 }
+    badge: 'المحطة 3 • شبكة المختبرات 3D والروبوتات 2.0',
+    title: 'المختبرات التفاعلية 3D واستوديو الروبوتات والـ ROS2',
+    description: '49 مختبراً تفاعلياً فائق الدقة (الكم، النسبية، الدوائر الكهربائية) مع استوديو الروبوتات المطور بنظام العرض الأفقي لمحاكاة الأذرع 6-DOF، والـ LiDAR 360° وبرمجة ROS2 بلغة Python.',
+    voiceText: 'شبكة المختبرات التفاعلية ثلاثية الأبعاد بدقة تسعة وتسعين بالمئة، واستوديو الروبوتات والذكاء الاصطناعي بنظام العرض الأفقي.',
+    icon: Atom,
+    accentColor: 'from-cyan-600 to-purple-600'
   },
   {
     id: 4,
-    targetId: 'tour-stage-ecosystem',
-    badge: 'المحطة الرابعة • مسارات BTEC والتعليم الشامل',
-    title: 'مسارات بتك BTEC المهنية وبوابة التعليم الشامل',
-    description: 'مسارات Pearson BTEC المعتمدة: تكنولوجيا المعلومات، الهندسة، الفن والتصميم، وإدارة الأعمال مع المساعد البرمجي، مصحح الأكواد، وبوابة التعليم الشامل بـ 14 منصة.',
-    voiceText: 'مسارات بتك المهنية الدولية وبوابة التعليم الشامل بأربعة عشر مساراً متكاملاً تشمل تكنولوجيا المعلومات والهندسة والأعمال.',
-    icon: GraduationCap,
-    accentColor: 'from-blue-600 to-indigo-600',
-    mouseTarget: { xPercent: 45, yPercent: 44 }
+    targetId: 'tour-stage-future',
+    badge: 'المحطة 4 • منظومة دامج والرعاية الطبية المدرسية',
+    title: 'مشروع دامج الوطني والمساعد الطبي المدرسي',
+    description: 'مترجم لغة الإشارة الفوري بالكاميرا، مترجم برايل اللمسي والصوتي، أدوات تقييم التوحد وADHD، مع المساعد الطبي المدرسي للطوارئ والإسعافات الأولية الذكية.',
+    voiceText: 'مشروع دامج الوطني للتربية الخاصة والشمولية التامة مع مترجم لغة الإشارة وبرايل والمساعد الطبي المدرسي للطوارئ.',
+    icon: ShieldCheck,
+    accentColor: 'from-emerald-600 to-teal-500'
   },
   {
     id: 5,
-    targetId: 'tour-stage-ecosystem',
-    badge: 'المحطة الخامسة • المرشد النفسي والذكاء الموجه',
-    title: 'المرشد النفسي ومختبر تفكيك القلق CBT',
-    description: 'مختبر تعديل التفكير الإدراكي، تمرين التنفس الصندوقي 4-4-4-4 بأجراس رنين الويب، التأريض الحسي 5-4-3-2-1، وفلك المعرفة لتنظيم قلق الامتحانات والتوتر 24/7.',
-    voiceText: 'المرشد النفسي ومختبر تفكيك القلق بتمارين التنفس الصندوقي الصوتي والتأريض الحسي لتنظيم التوتر وقلق الامتحانات.',
-    icon: HeartHandshake,
-    accentColor: 'from-violet-600 to-purple-600',
-    mouseTarget: { xPercent: 55, yPercent: 44 }
+    targetId: 'tour-stage-resources',
+    badge: 'المحطة 5 • استراتيجيات التعلم والمكتبة البصرية',
+    title: 'نظام المراجعة الذكي SM-2 والمكتبة والمجلة العلمية',
+    description: 'خوارزمية مكافحة النسيان SM-2 لجدولة الاستذكار الذكية، المكتبة البصرية ثلاثية الأبعاد 4K، والمجلة العلمية المحكمة لنشر المقالات والأبحاث المعتمدة.',
+    voiceText: 'نظام المراجعة الذكي المعتمد على خوارزمية التكرار المتباعد والمكتبة البصرية ثلاثية الأبعاد والمجلة العلمية المحكمة.',
+    icon: BookOpen,
+    accentColor: 'from-amber-500 to-orange-500'
   },
   {
     id: 6,
-    targetId: 'tour-stage-resources',
-    badge: 'المحطة السادسة • استراتيجيات التعلم والمراجع',
-    title: 'نظام المراجعة الذكي والمكتبة البصرية والمجلة',
-    description: 'خوارزمية مكافحة النسيان SM-2 مع بطاقات الاستذكار الذكية، المكتبة البصرية ثلاثية الأبعاد 4K، والمجلة العلمية المحكمة لنشر المقالات والأبحاث المعتمدة.',
-    voiceText: 'نظام المراجعة الذكي المعتمد على خوارزمية التكرار المتباعد والمكتبة البصرية ثلاثية الأبعاد والمجلة العلمية المحكمة.',
-    icon: BookOpen,
-    accentColor: 'from-amber-500 to-orange-500',
-    mouseTarget: { xPercent: 50, yPercent: 46 }
-  },
-  {
-    id: 7,
-    targetId: 'tour-stage-future',
-    badge: 'المحطة السابعة • الشمولية والرعاية الطبية',
-    title: 'منظومة دامج الوطنية والمساعد الطبي المدرسي',
-    description: 'مترجم لغة الإشارة الفوري بالكاميرا، مترجم برايل اللمسي والصوتي، تشخيص التوحد وADHD، ودليل الإسعافات الطبية المدرسية الفوري المزود بفحص الكاميرا.',
-    voiceText: 'مشروع دامج الوطني للتربية الخاصة والشمولية التامة مع مترجم لغة الإشارة وبرايل والمساعد الطبي المدرسي للطوارئ.',
-    icon: ShieldCheck,
-    accentColor: 'from-emerald-600 to-teal-500',
-    mouseTarget: { xPercent: 48, yPercent: 48 }
-  },
-  {
-    id: 8,
     targetId: 'tour-stage-presentation-deck',
-    badge: 'المحطة الثامنة • درع الحماية A+ والعرض 3D',
-    title: 'درع الحماية السيبراني والعرض التقديمي 3D',
-    description: 'تحصين فائق معتمد لتحمل أكثر من 120,000 مستخدم متزامن، مع العرض التقديمي التفاعلي ثلاثي الأبعاد المستجيب لحركة الماوس ووضع المسرح.',
-    voiceText: 'وأخيراً درع الحماية والتحمل لأكثر من مائة وعشرين ألف مستخدم متزامن، والعرض التقديمي التفاعلي ثلاثي الأبعاد المستجيب لحركة الماوس.',
+    badge: 'المحطة 6 • العرض التقديمي الشامل ودرع الحماية A+',
+    title: 'العرض التقديمي التفاعلي وحصن الحماية والتحمل',
+    description: 'استعراض 360° شامل لأركان المنظومة مع درع الحماية السيبراني A+ ومحرك التخزين المؤقت المصمم لتحمل أكثر من 120,000 مستخدم متزامن بكفاءة قصوى.',
+    voiceText: 'وأخيراً العرض التقديمي التفاعلي الشامل مع درع الحماية والتحمل لأكثر من مائة وعشرين ألف مستخدم متزامن.',
     icon: Presentation,
-    accentColor: 'from-cyan-500 to-indigo-600',
-    mouseTarget: { xPercent: 50, yPercent: 48 }
+    accentColor: 'from-cyan-500 to-indigo-600'
   }
 ];
 
@@ -121,18 +92,20 @@ export const InteractiveTourGuideModal: React.FC = () => {
   // Decision Modal State
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
 
-  // Active Guided Tour State
+  // Active Guided Tour State (Smooth Auto-Descent, NO MOUSE)
   const [isTourActive, setIsTourActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 100, y: 100 });
-  const [isClicking, setIsClicking] = useState(false);
-  const [secondsRemaining, setSecondsRemaining] = useState(7);
+  
+  // Audio State (Nasheed without music + Optional Voiceover)
+  const [isNasheedMuted, setIsNasheedMuted] = useState(false);
+  const [isVoiceoverEnabled, setIsVoiceoverEnabled] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(8);
 
-  // Auto-progress timer ref
+  // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Check on mount if user on this device already completed or dismissed the tour
@@ -144,7 +117,7 @@ export const InteractiveTourGuideModal: React.FC = () => {
 
     window.addEventListener('galaxy_open_tour_welcome', handleOpenTrigger);
 
-    // Strict Device Persistence: Only show once ever per device unless clicked manually
+    // Strict Device Persistence: Only show once ever per device unless triggered manually
     const decisionTaken = localStorage.getItem('galaxy_tour_decision_taken');
     if (!decisionTaken) {
       const timer = setTimeout(() => {
@@ -158,9 +131,45 @@ export const InteractiveTourGuideModal: React.FC = () => {
     };
   }, []);
 
-  // Speak Arabic voiceover without music
+  // Cleanup highlights and timers on unmount
+  useEffect(() => {
+    return () => {
+      clearAllHighlights();
+      stopSpeech();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
+  // Clear spotlight glowing classes from page
+  const clearAllHighlights = () => {
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.galaxy-tour-spotlight-active').forEach(node => {
+        node.classList.remove('galaxy-tour-spotlight-active');
+      });
+    }
+  };
+
+  // Play Nasheed (Audio without music)
+  const playNasheed = () => {
+    if (!audioRef.current || isNasheedMuted) return;
+    audioRef.current.volume = 0.45;
+    audioRef.current.play().catch(() => {
+      console.log('Audio autoplay blocked or waiting for user interaction');
+    });
+  };
+
+  // Pause Nasheed
+  const pauseNasheed = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  };
+
+  // Speak Arabic voiceover without music (Optional voice narration)
   const speakText = (text: string) => {
-    if (isAudioMuted || typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (!isVoiceoverEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
 
     try {
       window.speechSynthesis.cancel();
@@ -190,27 +199,31 @@ export const InteractiveTourGuideModal: React.FC = () => {
     }
   };
 
-  // Handle Choice 1: Start Guided Tour
+  // Start Tour (Triggered by user click - audio is immediately permitted)
   const handleStartGuidedTour = () => {
-    // Save decision permanently so it never shows automatically again on this device
     localStorage.setItem('galaxy_tour_decision_taken', 'true');
     setIsDecisionModalOpen(false);
     setIsTourActive(true);
     setIsPaused(false);
     setCurrentStepIndex(0);
-    toast.info('بدأت الجولة التعريفية التفاعلية 🚀 يمكنك إيقافها في أي وقت');
+    
+    // Play soothing vocal nasheed without music immediately
+    playNasheed();
+    toast.success('بدأت الجولة الانسيابية مع نشيد بدون موسيقى 🎵', {
+      description: 'الصفحة ستنزل تلقائياً وبشكل أنيق بدون أي مؤشر ماوس'
+    });
+
     executeStep(0);
   };
 
-  // Handle Choice 2: Self Exploration (Does NOTHING, closes smoothly)
+  // Handle Self Exploration (Closes cleanly)
   const handleSelfExploration = () => {
-    // Save decision permanently so it never shows automatically again on this device
     localStorage.setItem('galaxy_tour_decision_taken', 'true');
     setIsDecisionModalOpen(false);
     toast.success('مرحباً بك! تصفح المنصة بحرية تامة 🧭');
   };
 
-  // Stop / Exit Tour and smoothly scroll back to top of the page
+  // Stop / Exit Tour and smoothly glide back to the top of the page
   const stopTour = (scrollBackToTop = true) => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -220,12 +233,14 @@ export const InteractiveTourGuideModal: React.FC = () => {
       clearInterval(countdownIntervalRef.current);
       countdownIntervalRef.current = null;
     }
+    clearAllHighlights();
     stopSpeech();
+    pauseNasheed();
+
     setIsTourActive(false);
     setIsPaused(false);
 
-    if (scrollBackToTop) {
-      // Smoothly return platform back to the very top as requested
+    if (scrollBackToTop && typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -235,14 +250,18 @@ export const InteractiveTourGuideModal: React.FC = () => {
     if (isPaused) {
       // Resume
       setIsPaused(false);
-      speakText(TOUR_MILESTONES[currentStepIndex].voiceText);
+      playNasheed();
+      if (isVoiceoverEnabled) {
+        speakText(TOUR_MILESTONES[currentStepIndex].voiceText);
+      }
       startCountdown(secondsRemaining, () => {
         executeStep(currentStepIndex + 1);
       });
-      toast.info('تم استئناف الجولة التعريفية');
+      toast.info('تم استئناف الهبوط التلقائي للجولة');
     } else {
       // Pause
       setIsPaused(true);
+      pauseNasheed();
       if (timerRef.current) clearTimeout(timerRef.current);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
       stopSpeech();
@@ -272,11 +291,10 @@ export const InteractiveTourGuideModal: React.FC = () => {
     }, startSec * 1000);
   };
 
-  // Execute a specific tour milestone
+  // Execute a specific tour milestone (Smooth, downward glide without mouse)
   const executeStep = (stepIdx: number) => {
     if (stepIdx >= TOUR_MILESTONES.length) {
-      // Finished all milestones!
-      toast.success('اكتملت الجولة التعريفية بنجاح! جاري العودة لبداية المنصة 🎉');
+      toast.success('اكتملت الجولة التعريفية بنجاح! جاري العودة لقمة المنصة 🎉');
       stopTour(true);
       return;
     }
@@ -285,49 +303,41 @@ export const InteractiveTourGuideModal: React.FC = () => {
     setCurrentStepIndex(stepIdx);
     setIsPaused(false);
 
-    // 1. Smooth gradual scrolling ("شوي شوي")
+    // 1. Clear previous highlights
+    clearAllHighlights();
+
+    // 2. Smooth downward gliding of the page ("الصفحة لحالها بتصير تنزل بشكل انيق")
     if (stepIdx === 0) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       const el = document.getElementById(milestone.targetId);
       if (el) {
+        // Add elegant spotlight glow
+        el.classList.add('galaxy-tour-spotlight-active');
+
         const isMobile = window.innerWidth < 768;
-        const yOffset = isMobile ? -75 : -110;
+        const yOffset = isMobile ? -65 : -95;
         const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
         window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
       }
     }
 
-    // 2. Animate Virtual Mouse to the section with safe viewport bounds
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const isMobile = viewportWidth < 640;
+    // 3. Audio management: Keep nasheed playing smoothly
+    if (!isNasheedMuted && audioRef.current && audioRef.current.paused) {
+      audioRef.current.play().catch(() => {});
+    }
 
-    const rawTargetX = (viewportWidth * milestone.mouseTarget.xPercent) / 100;
-    const rawTargetY = (viewportHeight * milestone.mouseTarget.yPercent) / 100;
+    // 4. Voice narration if toggled
+    if (isVoiceoverEnabled) {
+      speakText(milestone.voiceText);
+    }
 
-    // Keep mouse safely on screen
-    const clampedX = Math.min(Math.max(rawTargetX, isMobile ? 35 : 70), isMobile ? viewportWidth - 55 : viewportWidth - 110);
-    const clampedY = Math.min(Math.max(rawTargetY, isMobile ? 90 : 120), isMobile ? viewportHeight - 210 : viewportHeight - 160);
-
-    setMousePosition({ x: clampedX, y: clampedY });
-
-    // Simulate clicking aura after mouse arrives
-    setTimeout(() => {
-      setIsClicking(true);
-      setTimeout(() => setIsClicking(false), 500);
-    }, 800);
-
-    // 3. Audio narration (voiceover without music)
-    speakText(milestone.voiceText);
-
-    // 4. Auto-advance after 7.5 seconds (Total ~45 seconds for 6 steps)
-    startCountdown(7, () => {
+    // 5. Auto-advance to next station after 8 seconds
+    startCountdown(8, () => {
       executeStep(stepIdx + 1);
     });
   };
 
-  // Next / Previous manual controls
   const handleNextStep = () => {
     executeStep(currentStepIndex + 1);
   };
@@ -342,10 +352,18 @@ export const InteractiveTourGuideModal: React.FC = () => {
 
   return (
     <>
+      {/* Hidden Audio Player for Soothing Vocal Nasheed (Without Music) */}
+      <audio
+        ref={audioRef}
+        src="/sounds/tour-vocal-nasheed.mp3"
+        loop
+        preload="auto"
+      />
+
       {/* 1. Initial Elegant Welcome Decision Modal ("مربع انيق وجميل فيه خيارين") */}
       <AnimatePresence>
         {isDecisionModalOpen && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md font-sans" dir="rtl">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md font-sans" dir="rtl">
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 25 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -382,14 +400,14 @@ export const InteractiveTourGuideModal: React.FC = () => {
                   أهلاً بك في منصة ذروة العلم
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
-                  يسرنا انضمامك! اختر الطريقة التي تفضلها للبدء: جولة ذكية وسلسة توضح لك ميزات المنصة، أو الاستكشاف الذاتي المباشر.
+                  يسرنا انضمامك! اختر الطريقة التي تفضلها للبدء: جولة انسيابية تنزل بالصفحة تلقائياً مع نشيد عذب بدون موسيقى، أو الاستكشاف الذاتي المباشر.
                 </p>
               </div>
 
               {/* Two Distinct Choice Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
                 
-                {/* Option 1: Start Guided Tour */}
+                {/* Option 1: Start Guided Tour (Smooth Auto-Descent with Nasheed) */}
                 <motion.div
                   whileHover={{ scale: 1.025 }}
                   whileTap={{ scale: 0.98 }}
@@ -398,23 +416,23 @@ export const InteractiveTourGuideModal: React.FC = () => {
                 >
                   <div className="space-y-2">
                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/30">
-                      <Sparkles className="w-5 h-5 animate-pulse" />
+                      <Music className="w-5 h-5 animate-pulse" />
                     </div>
                     <h3 className="text-base font-black text-white group-hover:text-cyan-300 transition-colors">
-                      بدء الجولة التعريفية
+                      بدء الجولة الانسيابية
                     </h3>
                     <p className="text-[11px] text-slate-300 leading-relaxed">
-                      جولة مرئية هادئة (45 ثانية) مع مؤشر تفاعلي وصوت نقي يشرح لك أهم الأقسام والمختبرات 3D خطوة بخطوة.
+                      هبوط تلقائي أنيق ينزل بالصفحة خطوة بخطوة بدون ماوس، مع نشيد هادئ بدون موسيقى يوضح لك كافة الأقسام والمختبرات.
                     </p>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-cyan-500/20 flex items-center justify-between text-xs font-bold text-cyan-300">
-                    <span>انطلاق الجولة 🚀</span>
+                    <span>انطلاق الجولة والنشيد 🎵</span>
                     <Play className="w-3.5 h-3.5 fill-current" />
                   </div>
                 </motion.div>
 
-                {/* Option 2: Self-Exploration (Nothing happens, closes cleanly) */}
+                {/* Option 2: Self-Exploration */}
                 <motion.div
                   whileHover={{ scale: 1.025 }}
                   whileTap={{ scale: 0.98 }}
@@ -429,7 +447,7 @@ export const InteractiveTourGuideModal: React.FC = () => {
                       الاستكشاف الذاتي
                     </h3>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      تصفح المنصة بمفردك وحرية تامة دون أي إرشادات موجهة أو تنقلات تلقائية بالصفحة.
+                      تصفح المنصة بمفردك وحرية تامة دون أي إرشادات موجهة أو هبوط تلقائي بالصفحة.
                     </p>
                   </div>
 
@@ -449,91 +467,58 @@ export const InteractiveTourGuideModal: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 2. Active Guided Tour Engine with Virtual Mouse & Floating Explanation */}
+      {/* 2. Active Guided Tour Engine (Pure Auto-Descent, NO MOUSE) */}
       <AnimatePresence>
         {isTourActive && currentMilestone && (
           <div className="fixed inset-0 pointer-events-none z-[9990] font-sans" dir="rtl">
             
-            {/* Subtle dimming backdrop overlay */}
-            <div className="absolute inset-0 bg-slate-950/20 pointer-events-none" />
-
-            {/* Virtual Animated Mouse Pointer ("ماوس هيك بيشار على اشي وبيشرح") */}
-            <motion.div
-              animate={{ 
-                x: mousePosition.x, 
-                y: mousePosition.y 
-              }}
-              transition={{ 
-                type: 'spring', 
-                damping: 24, 
-                stiffness: 120 
-              }}
-              className="absolute top-0 left-0 -translate-x-3 -translate-y-3 z-[9995] pointer-events-none flex flex-col items-center"
-            >
-              {/* Virtual Cursor Icon */}
-              <div className="relative">
-                <svg
-                  className="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-[0_4px_16px_rgba(6,182,212,0.7)]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M5.5 3.5L18.5 13.5L12 14.5L15 20.5L12.5 21.5L9.5 15.5L5.5 18.5V3.5Z"
-                    fill="#06B6D4"
-                    stroke="#FFFFFF"
-                    strokeWidth="1.6"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-
-                {/* Pulsing Target Halo */}
-                <motion.div
-                  animate={{ scale: [1, 2.2, 1], opacity: [0.85, 0, 0.85] }}
-                  transition={{ repeat: Infinity, duration: 1.6 }}
-                  className="absolute -top-2 -left-2 w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-cyan-400 pointer-events-none"
-                />
-
-                {/* Click Ripple Wave */}
-                {isClicking && (
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 1 }}
-                    animate={{ scale: 3, opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="absolute top-2 left-2 w-6 h-6 rounded-full bg-cyan-400"
-                  />
-                )}
-              </div>
-
-              {/* Cursor Label Badge */}
+            {/* Top Auto-Cruise Status & Progress Ribbon */}
+            <div className="absolute top-3 inset-x-3 sm:inset-x-auto sm:right-1/2 sm:translate-x-1/2 max-w-lg w-full z-[9999] pointer-events-auto">
               <motion.div
-                initial={{ opacity: 0, y: 5 }}
+                initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-1 px-2.5 py-0.5 rounded-full bg-slate-950/95 text-cyan-300 text-[10px] font-bold border border-cyan-400/40 shadow-xl backdrop-blur-md whitespace-nowrap"
+                className="px-4 py-2 rounded-2xl bg-slate-950/90 border border-cyan-500/40 shadow-xl backdrop-blur-xl flex items-center justify-between text-xs text-slate-200"
               >
-                {currentMilestone.title.slice(0, 22)}...
-              </motion.div>
-            </motion.div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  <span className="font-bold text-cyan-300">
+                    هبوط تلقائي سلس بالصفحة
+                  </span>
+                  <span className="text-slate-400 text-[10px]">
+                    (بدون ماوس)
+                  </span>
+                </div>
 
-            {/* Floating Tour Explanation Card (Responsive: Bottom-docked on mobile, centered on desktop) */}
-            <div className="absolute bottom-4 inset-x-3 sm:inset-x-auto sm:right-1/2 sm:translate-x-1/2 max-w-xl w-full z-[9998] pointer-events-auto">
+                <div className="flex items-center gap-2 text-[11px] font-mono text-cyan-400">
+                  <span className="flex items-center gap-1">
+                    <Music className="w-3 h-3 text-cyan-400" />
+                    نشيد صوتي بدون موسيقى
+                  </span>
+                  <span className="text-slate-500">•</span>
+                  <span>{currentStepIndex + 1}/{TOUR_MILESTONES.length}</span>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Floating Tour Card Docked Elegantly at the Bottom */}
+            <div className="absolute bottom-4 inset-x-3 sm:inset-x-auto sm:right-1/2 sm:translate-x-1/2 max-w-2xl w-full z-[9998] pointer-events-auto">
               <motion.div
                 key={currentMilestone.id}
-                initial={{ opacity: 0, y: 25, scale: 0.95 }}
+                initial={{ opacity: 0, y: 25, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 25, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="p-4 sm:p-5 rounded-3xl bg-slate-900/95 border-2 border-cyan-500/50 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-2xl text-slate-100 space-y-3.5"
+                exit={{ opacity: 0, y: 25, scale: 0.96 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="p-4 sm:p-5 rounded-3xl bg-slate-900/95 border-2 border-cyan-500/50 shadow-[0_0_60px_rgba(6,182,212,0.3)] backdrop-blur-2xl text-slate-100 space-y-3.5"
               >
                 {/* Header row */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="p-2 rounded-2xl bg-cyan-500/15 text-cyan-400 border border-cyan-400/30">
-                      {React.createElement(currentMilestone.icon, { className: 'w-4 h-4' })}
+                    <span className="p-2.5 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 text-cyan-400 border border-cyan-400/40">
+                      {React.createElement(currentMilestone.icon, { className: 'w-5 h-5' })}
                     </span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-cyan-500/15 text-cyan-300 border-none text-[10px] font-bold">
+                        <Badge className="bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 text-[10px] font-bold">
                           {currentMilestone.badge}
                         </Badge>
                         <span className="text-[10px] text-slate-400 font-mono">
@@ -546,21 +531,56 @@ export const InteractiveTourGuideModal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Audio Mute & Stop & Pause Buttons */}
+                  {/* Audio Controls & Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
+                    
+                    {/* Nasheed (Without Music) Toggle */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const newMuted = !isNasheedMuted;
+                        setIsNasheedMuted(newMuted);
+                        if (audioRef.current) {
+                          if (newMuted) {
+                            audioRef.current.pause();
+                            toast.info('تم كتم النشيد');
+                          } else {
+                            audioRef.current.play().catch(() => {});
+                            toast.info('تم تشغيل النشيد بدون موسيقى 🎵');
+                          }
+                        }
+                      }}
+                      className={`h-8 px-2 rounded-xl border text-xs gap-1 ${
+                        isNasheedMuted 
+                          ? 'border-slate-800 text-slate-400 bg-slate-950' 
+                          : 'border-cyan-500/50 text-cyan-300 bg-cyan-950/40 shadow-sm shadow-cyan-500/20'
+                      }`}
+                      title={isNasheedMuted ? 'تشغيل النشيد (بدون موسيقى)' : 'كتم النشيد'}
+                    >
+                      {isNasheedMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Music className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />}
+                      <span className="hidden md:inline">{isNasheedMuted ? 'نشيد مكتوم' : 'نشيد نقي'}</span>
+                    </Button>
+
+                    {/* Voiceover Narration Toggle */}
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        const newMuted = !isAudioMuted;
-                        setIsAudioMuted(newMuted);
-                        if (newMuted) stopSpeech();
-                        else speakText(currentMilestone.voiceText);
+                        const nextVoice = !isVoiceoverEnabled;
+                        setIsVoiceoverEnabled(nextVoice);
+                        if (nextVoice) {
+                          speakText(currentMilestone.voiceText);
+                          toast.info('تم تفعيل التعليق الصوتي 🎙️');
+                        } else {
+                          stopSpeech();
+                          toast.info('تم كتم التعليق الصوتي');
+                        }
                       }}
                       className="w-8 h-8 rounded-xl text-slate-400 hover:text-white"
-                      title={isAudioMuted ? 'تشغيل الصوت النقي' : 'كتم الصوت'}
+                      title={isVoiceoverEnabled ? 'كتم التعليق الصوتي' : 'تفعيل التعليق الصوتي الإرشادي'}
                     >
-                      {isAudioMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+                      {isVoiceoverEnabled ? <Mic className="w-3.5 h-3.5 text-emerald-400" /> : <MicOff className="w-3.5 h-3.5 text-slate-500" />}
                     </Button>
 
                     {/* Pause / Resume Button */}
@@ -569,7 +589,7 @@ export const InteractiveTourGuideModal: React.FC = () => {
                       variant="outline"
                       onClick={togglePause}
                       className="h-8 px-2.5 rounded-xl border-slate-700 text-slate-200 text-xs gap-1"
-                      title={isPaused ? 'استئناف' : 'إيقاف مؤقت'}
+                      title={isPaused ? 'استئناف الهبوط التلقائي' : 'إيقاف مؤقت'}
                     >
                       {isPaused ? <Play className="w-3 h-3 fill-current text-emerald-400" /> : <Pause className="w-3 h-3 text-amber-400" />}
                       <span className="hidden sm:inline">{isPaused ? 'استئناف' : 'مؤقت'}</span>
@@ -601,11 +621,11 @@ export const InteractiveTourGuideModal: React.FC = () => {
                     {TOUR_MILESTONES.map((_, idx) => (
                       <div
                         key={idx}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                        className={`h-1.5 rounded-full transition-all duration-500 ${
                           idx === currentStepIndex
-                            ? 'w-6 bg-gradient-to-r from-cyan-400 to-blue-500'
+                            ? 'w-7 bg-gradient-to-r from-cyan-400 to-blue-500'
                             : idx < currentStepIndex
-                            ? 'w-2 bg-cyan-400/80'
+                            ? 'w-2.5 bg-cyan-400/80'
                             : 'w-2 bg-slate-800'
                         }`}
                       />
