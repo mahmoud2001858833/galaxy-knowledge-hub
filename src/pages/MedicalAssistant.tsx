@@ -8,7 +8,8 @@ import {
   HeartPulse, Zap, ChevronRight, Cpu, ScanLine, Camera, CameraOff,
   FlipHorizontal, Volume2, VolumeX, AlertOctagon, GraduationCap,
   Clock, CheckCircle2, Siren, Upload, Eye, RefreshCw, BookOpen,
-  Info, BellRing, PhoneCall, ChevronDown, ChevronUp, Layers, Check
+  Info, BellRing, PhoneCall, ChevronDown, ChevronUp, Layers, Check,
+  Thermometer, Wind, Pill, Droplet, UserCheck, AlertCircle, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -610,12 +611,292 @@ export const ALL_CONDITIONS_CATEGORIES = [
   "عيون وأذن وأسنان"
 ];
 
+export interface TriageSymptom {
+  id: string;
+  label: string;
+  severity: 'critical' | 'urgent' | 'routine';
+  category: string;
+  associatedConditionIds: number[];
+  quickAction: string;
+}
+
+export const TRIAGE_SYMPTOMS: TriageSymptom[] = [
+  // Critical (Red)
+  {
+    id: 'unconscious',
+    label: 'فقدان مفاجئ وتام للوعي أو عدم الاستجابة للمناداة واللمس',
+    severity: 'critical',
+    category: 'الوعي والتنفس',
+    associatedConditionIds: [1, 2, 10],
+    quickAction: 'افحص النبض والتنفس فوراً وضعه في وضع الإفاقة إن كان يتنفس أو ابدأ الإنعاش فوراً.'
+  },
+  {
+    id: 'choking',
+    label: 'انسداد مجرى الهواء أو غصة وعجز عن النطق والسعال (إشارة الخنق باليدين)',
+    severity: 'critical',
+    category: 'الوعي والتنفس',
+    associatedConditionIds: [5],
+    quickAction: 'طبّق مناورة هايمليك فوراً (5 ضربات ظهرية تليها 5 ضغطات بطنية للداخل والأعلى).'
+  },
+  {
+    id: 'convulsions',
+    label: 'تشنجات واختلاجات عضلية عنيفة مع خروج رغوة أو عض اللسان',
+    severity: 'critical',
+    category: 'الجهاز العصبي',
+    associatedConditionIds: [1],
+    quickAction: 'احمِ رأس الطالب بوسادة، أبعد المقاعد، لا تضع أي شيء في فمه، واحسب زمن النوبة.'
+  },
+  {
+    id: 'anaphylaxis_throat',
+    label: 'تورم سريع باللسان والشفتين مع صوت صفير حاد واختناق بعد طعام أو لسعة',
+    severity: 'critical',
+    category: 'الحساسية والتنفس',
+    associatedConditionIds: [3],
+    quickAction: 'احقن قلم الإبينفرين (EpiPen) في منتصف الفخذ الخارجي 10 ثوانٍ واتصل بـ 911 فوراً.'
+  },
+  {
+    id: 'arterial_bleed',
+    label: 'نزيف دموي غزير نابض أو تدفق مستمر لا يتوقف بالضغط المباشر',
+    severity: 'critical',
+    category: 'الجروح والنزيف',
+    associatedConditionIds: [12],
+    quickAction: 'اضغط بقوة شديدة ومستمرة بضمادة سميكة وارفع الطرف فوق مستوى القلب.'
+  },
+  {
+    id: 'head_trauma_vomit',
+    label: 'ضربة رأس قوية مع تقيؤ متكرر أو فقدان توازن أو خروج سائل مائي من الأذن',
+    severity: 'critical',
+    category: 'إصابات الرأس',
+    associatedConditionIds: [10],
+    quickAction: 'ثبت رأس وعنق الطالب، امنعه من الحركة، واستدعِ الإسعاف للاشتباه بارتجاج أو نزف دماغي.'
+  },
+
+  // Urgent (Yellow)
+  {
+    id: 'asthma_attack',
+    label: 'نوبة ربو حادة مع ضيق تنفس وأزيز بالصدر واستخدام عضلات الرقبة للتنفس',
+    severity: 'urgent',
+    category: 'الحساسية والتنفس',
+    associatedConditionIds: [4],
+    quickAction: 'اجعل الطالب يجلس مستقيماً وأعطه 2-4 بخات فنتولين عبر القمع وانتظر 10 دقائق.'
+  },
+  {
+    id: 'hypoglycemia_shake',
+    label: 'تعرق بارد ورعشة شديدة باليدين مع دوخة وتشوش (طالب مصاب بالسكري)',
+    severity: 'urgent',
+    category: 'السكري والتمثيل الغذائي',
+    associatedConditionIds: [2],
+    quickAction: 'طبّق قاعدة 15/15: أعطه نصف كوب عصير محلى أو 3 قطع سكر وانتظر 15 دقيقة.'
+  },
+  {
+    id: 'suspected_fracture',
+    label: 'تشوه واضح في العظم مع ألم شديد وعجز تام عن تحريك أو وطء الطرف',
+    severity: 'urgent',
+    category: 'العظام والإصابات',
+    associatedConditionIds: [11],
+    quickAction: 'ثبت الطرف بجبيرة مؤقتة دون محاولة تعديل وضع العظم المكسور وضع كمادة باردة.'
+  },
+  {
+    id: 'chemical_eye_burn',
+    label: 'رذاذ حمض أو مادة كيميائية في العين أو على الجلد بمختبر العلوم',
+    severity: 'urgent',
+    category: 'حوادث المختبر',
+    associatedConditionIds: [6, 7],
+    quickAction: 'اغسل العين أو الجلد بماء جارٍ فاتر لـ 15-20 دقيقة متواصلة وانزع الملابس الملوثة.'
+  },
+  {
+    id: 'heat_exhaustion',
+    label: 'إعياء حراري مع دوخة وغثيان وجلد شاحب بارد بعد طابور أو حصة شمسية',
+    severity: 'urgent',
+    category: 'البيئة والحرارة',
+    associatedConditionIds: [9],
+    quickAction: 'انقل الطالب لمكان مكيف، ارفع قدميه، ورطّب جسده برذاذ ماء فاتر وأعطه سوائل.'
+  },
+  {
+    id: 'scorpion_sting',
+    label: 'لدغة عقرب أو أفعى أو حشرة سامة مع ألم حارق وتورم سريع بالرحلات',
+    severity: 'urgent',
+    category: 'الرحلات والبيئة',
+    associatedConditionIds: [18],
+    quickAction: 'أبقِ المصاب ساكناً تماماً، ضع العضو أسفل مستوى القلب، واتصل بـ 911.'
+  },
+
+  // Routine (Green)
+  {
+    id: 'nosebleed',
+    label: 'نزيف أنفي (رعاف) مدرسي معتاد دون إصابة رأس',
+    severity: 'routine',
+    category: 'إسعاف فصلي',
+    associatedConditionIds: [13],
+    quickAction: 'أمل الرأس للأمام واضغط على جانبي الأنف اللحميين لـ 10 دقائق متواصلة للتخثر.'
+  },
+  {
+    id: 'ankle_sprain',
+    label: 'التواء كاحل أو كدمة بعد نشاط رياضي مع قدرة جزئية على المشي',
+    severity: 'routine',
+    category: 'إسعاف فصلي',
+    associatedConditionIds: [19],
+    quickAction: 'بروتوكول R.I.C.E: راحة، كمادة باردة 15 دقيقة، رباط ضاغط خفيف، ورفع القدم.'
+  },
+  {
+    id: 'minor_cut',
+    label: 'جرح سطحي أو خدش جلدي مع نزف خفيف متوقف',
+    severity: 'routine',
+    category: 'إسعاف فصلي',
+    associatedConditionIds: [12],
+    quickAction: 'اغسل بالماء والصابون وطهر بمحلول معقم ثم غطه بضمادة لاصقة نظيفة.'
+  },
+  {
+    id: 'dust_in_eye',
+    label: 'دخول غبار أو رماد في العين مع احمرار ودموع خفيفة',
+    severity: 'routine',
+    category: 'إسعاف فصلي',
+    associatedConditionIds: [14],
+    quickAction: 'اغسل العين بماء نقي أو محلول ملحي ولا تدع الطالب يفرك عينه إطلاقاً.'
+  },
+  {
+    id: 'panic_anxiety',
+    label: 'نوبة هلع أو تسارع تنفس وبكاء وتوتر نفسي قبل الامتحانات المدرسية',
+    severity: 'routine',
+    category: 'دعم نفسي وسلوكي',
+    associatedConditionIds: [17],
+    quickAction: 'انقل الطالب لمكان هادئ، دربه على التنفس المربع 4-4-4، وقدم له كأس ماء فاتر.'
+  }
+];
+
+export type AgeGroupKey = 'early' | 'elementary' | 'adolescent';
+
+export interface AgeVitalData {
+  stageName: string;
+  ageRange: string;
+  heartRate: string;
+  respiratoryRate: string;
+  bloodPressure: string;
+  temperature: string;
+  oxygenSaturation: string;
+  notes: string;
+  emergencyDoses: {
+    drug: string;
+    dose: string;
+    note: string;
+  }[];
+}
+
+export const VITAL_SIGNS_BY_AGE: Record<AgeGroupKey, AgeVitalData> = {
+  early: {
+    stageName: 'رياض الأطفال والطفولة المبكرة',
+    ageRange: '4 - 6 سنوات',
+    heartRate: '80 - 120 نبضة / دقيقة',
+    respiratoryRate: '20 - 30 نفس / دقيقة',
+    bloodPressure: '90/60 إلى 105/70 ملم زئبق',
+    temperature: '36.5°C - 37.5°C',
+    oxygenSaturation: '96% - 100%',
+    notes: 'النبض والتنفس أسرع طبيعياً مقارنة بالبالغين. انتبه لعلامات التجفاف وزرقة الشفاه.',
+    emergencyDoses: [
+      { drug: 'قلم الإبينفرين (EpiPen Jr)', dose: '0.15 ملغ', note: 'للأطفال تحت 25-30 كغم عند الصدمة التحسسية الحادة' },
+      { drug: 'فنتولين (Salbutamol) استنشاق', dose: '2-4 بخات عبر القمع (Spacer)', note: 'تكرر بعد 10-15 دقيقة عند استمرار الأزيز مع مراقبة التنفس' },
+      { drug: 'محلول السكر السريع (Hypoglycemia)', dose: '10-15 غرام كربوهيدرات', note: 'نصف كوب عصير تفاح أو 3 ملاعق سكر صغيرة بالماء' }
+    ]
+  },
+  elementary: {
+    stageName: 'المرحلة الابتدائية',
+    ageRange: '7 - 11 سنة',
+    heartRate: '75 - 110 نبضة / دقيقة',
+    respiratoryRate: '18 - 24 نفس / دقيقة',
+    bloodPressure: '95/60 إلى 115/75 ملم زئبق',
+    temperature: '36.5°C - 37.5°C',
+    oxygenSaturation: '96% - 100%',
+    notes: 'الفئة الأكثر عرضة لإصابات الملاعب والكسور ونوبات الربو أثناء الركض في الطابور.',
+    emergencyDoses: [
+      { drug: 'قلم الإبينفرين (EpiPen)', dose: '0.15 ملغ (<30 كغم) أو 0.30 ملغ (>30 كغم)', note: 'حقن فوري في منتصف الفخذ الخارجي بزاوية 90 درجة والضغط 10 ثوانٍ' },
+      { drug: 'فنتولين (Salbutamol) استنشاق', dose: '4 بخات عبر القمع (Spacer)', note: 'نفس عميق وحبس الهواء 5 ثوانٍ بعد كل بخة' },
+      { drug: 'قاعدة 15/15 لهبوط السكر', dose: '15 غرام كربوهيدرات سريعة', note: 'نصف علبة عصير محلى ثم انتظار 15 دقيقة وإعادة القياس بالجهاز' }
+    ]
+  },
+  adolescent: {
+    stageName: 'المرحلة المتوسطة والثانوية',
+    ageRange: '12 - 18 سنة',
+    heartRate: '60 - 100 نبضة / دقيقة',
+    respiratoryRate: '12 - 20 نفس / دقيقة',
+    bloodPressure: '105/65 إلى 125/80 ملم زئبق',
+    temperature: '36.5°C - 37.5°C',
+    oxygenSaturation: '96% - 100%',
+    notes: 'معدلات الحيوية تقارب البالغين تماماً. حوادث مختبر العلوم والإغماء العصبي شائعة.',
+    emergencyDoses: [
+      { drug: 'قلم الإبينفرين (EpiPen Adult)', dose: '0.30 ملغ', note: 'جرعة اليافعين والبالغين فوق وزن 30 كغم' },
+      { drug: 'فنتولين (Salbutamol)', dose: '4-8 بخات عبر القمع في النوبات الحادة', note: 'استدعاء الإسعاف فوراً إذا لم يهدأ التنفس بعد الجرعة' },
+      { drug: 'سكر سريع', dose: '15-20 غرام كربوهيدرات', note: 'علبة عصير كاملة أو 4 أقراص جلوكوز طبية من العيادة' }
+    ]
+  }
+};
+
 const MedicalAssistant = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeCondition, setActiveCondition] = useState<MedicalCondition | null>(null);
   const [activeTab, setActiveTab] = useState<'teacher' | 'students' | 'fatal'>('teacher');
+
+  // Top Section Navigation
+  const [mainSection, setMainSection] = useState<'protocols' | 'triage' | 'vitals'>('protocols');
+
+  // Interactive Clinical Triage State
+  const [selectedTriageSymptoms, setSelectedTriageSymptoms] = useState<string[]>([]);
+  const [selectedTriageCategory, setSelectedTriageCategory] = useState<string>('all');
+
+  // Pediatric Vitals Age Group State
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroupKey>('elementary');
+
+  // Triage Analysis Computation
+  const triageAssessment = useMemo(() => {
+    if (selectedTriageSymptoms.length === 0) return null;
+    
+    const selectedObj = TRIAGE_SYMPTOMS.filter(s => selectedTriageSymptoms.includes(s.id));
+    const hasCritical = selectedObj.some(s => s.severity === 'critical');
+    const hasUrgent = selectedObj.some(s => s.severity === 'urgent');
+
+    let level: 'critical' | 'urgent' | 'routine' = 'routine';
+    let codeName = 'كود أخضر 🟢 - إسعاف روتيني فصلي';
+    let summary = 'الحالة مستقرة سريرياً ولا تستدعي الذعر. قم بتقديم الإسعاف الأولي الفصلي المناسب ومراقبة استقرار الطالب.';
+    let borderColor = 'border-emerald-500/40';
+    let bgColor = 'bg-emerald-500/10';
+    let textColor = 'text-emerald-300';
+    let badgeBg = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+
+    if (hasCritical) {
+      level = 'critical';
+      codeName = 'كود أحمر 🔴 - طوارئ حرجة قصوى (خطر على الحياة)';
+      summary = 'خطر داهم يهدد مجرى التنفس أو الدماغ أو الدورة الدموية! اتصل فوراً بـ 911 وطبق بروتوكول الثواني الأولى دون تردد.';
+      borderColor = 'border-rose-500/50';
+      bgColor = 'bg-rose-500/15';
+      textColor = 'text-rose-300';
+      badgeBg = 'bg-rose-500/20 text-rose-300 border-rose-500/50 animate-pulse';
+    } else if (hasUrgent) {
+      level = 'urgent';
+      codeName = 'كود أصفر 🟡 - طارئ مدرسي مستعجل';
+      summary = 'حالة تتطلب تدخلاً سريعاً ومراجعة عيادة المدرسة فوراً لمنع تدهورها واستدعاء ولي الأمر.';
+      borderColor = 'border-amber-500/50';
+      bgColor = 'bg-amber-500/15';
+      textColor = 'text-amber-300';
+      badgeBg = 'bg-amber-500/20 text-amber-300 border-amber-500/50';
+    }
+
+    const matchedCondIds = Array.from(new Set(selectedObj.flatMap(s => s.associatedConditionIds)));
+    const matchedConditions = medicalConditions.filter(c => matchedCondIds.includes(c.id));
+
+    return {
+      level,
+      codeName,
+      summary,
+      borderColor,
+      bgColor,
+      textColor,
+      badgeBg,
+      selectedCount: selectedTriageSymptoms.length,
+      actions: selectedObj.map(s => ({ id: s.id, label: s.label, action: s.quickAction })),
+      matchedConditions
+    };
+  }, [selectedTriageSymptoms]);
 
   // Emergency SOS Modal
   const [isSOSModalOpen, setIsSOSModalOpen] = useState(false);
@@ -904,126 +1185,596 @@ const MedicalAssistant = () => {
           </div>
         </div>
 
-        {/* Search & Categories Bar */}
-        <div className="space-y-4">
-          {/* Search Box */}
-          <div className="relative max-w-3xl mx-auto">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث عن حالة أو عارض طبي (مثل: صرع، هبوط سكر، اختناق، كسر، حرق، ربو)..."
-              className="bg-white/5 border-white/10 text-white pr-12 h-14 text-sm sm:text-base backdrop-blur-xl rounded-2xl focus-visible:ring-rose-500/40"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
+        {/* Navigation Segmented Control */}
+        <div className="flex items-center justify-center pt-2">
+          <div className="bg-white/5 border border-white/10 p-1.5 rounded-2xl backdrop-blur-xl flex flex-wrap items-center justify-center gap-1.5 shadow-xl max-w-3xl w-full">
+            <button
+              onClick={() => setMainSection('protocols')}
+              className={`flex-1 min-w-[150px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
+                mainSection === 'protocols'
+                  ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-600/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>دليل البروتوكولات ({medicalConditions.length})</span>
+            </button>
 
-          {/* Categories Pill Slider */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar justify-start sm:justify-center">
-            {ALL_CONDITIONS_CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
-                    active
-                      ? "bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30 font-black"
-                      : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  {cat === 'all' ? 'جميع الحالات الطبية' : cat}
-                </button>
-              );
-            })}
+            <button
+              onClick={() => setMainSection('triage')}
+              className={`flex-1 min-w-[150px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
+                mainSection === 'triage'
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-600/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>أداة الفرز السريري الذكي</span>
+            </button>
+
+            <button
+              onClick={() => setMainSection('vitals')}
+              className={`flex-1 min-w-[150px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
+                mainSection === 'vitals'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-600/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <HeartPulse className="w-4 h-4" />
+              <span>المؤشرات والجرعات المدرسية</span>
+            </button>
           </div>
         </div>
 
-        {/* Medical Conditions Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredConditions.map((cond, index) => (
-            <motion.div
-              key={cond.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.02, 0.25) }}
-              whileHover={{ y: -4 }}
-              className="group h-full flex flex-col"
-            >
-              <div className="relative h-full rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden shadow-lg hover:border-rose-500/50 hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-300">
-                
-                {/* Emergency Level Tag */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black border ${
-                    cond.emergencyLevel === 'حرج جداً' 
-                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
-                      : cond.emergencyLevel === 'طارئ'
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                  }`}>
-                    {cond.emergencyLevel}
-                  </span>
+        {/* ================= SECTION 1: PROTOCOLS DIRECTORY ================= */}
+        {mainSection === 'protocols' && (
+          <div className="space-y-6">
+            {/* Search & Categories Bar */}
+            <div className="space-y-4">
+              {/* Search Box */}
+              <div className="relative max-w-3xl mx-auto">
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ابحث عن حالة أو عارض طبي (مثل: صرع، هبوط سكر، اختناق، كسر، حرق، ربو)..."
+                  className="bg-white/5 border-white/10 text-white pr-12 h-14 text-sm sm:text-base backdrop-blur-xl rounded-2xl focus-visible:ring-rose-500/40"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
 
-                  <span className="text-[10px] text-white/50 flex items-center gap-1 font-semibold">
-                    <Clock className="w-3 h-3 text-amber-400" />
-                    {cond.goldenTime}
-                  </span>
-                </div>
+              {/* Categories Pill Slider */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar justify-start sm:justify-center">
+                {ALL_CONDITIONS_CATEGORIES.map((cat) => {
+                  const active = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                        active
+                          ? "bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30 font-black"
+                          : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      {cat === 'all' ? 'جميع الحالات الطبية' : cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                {/* Title & Icon */}
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform">
-                    {cond.icon}
+            {/* Medical Conditions Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredConditions.map((cond, index) => (
+                <motion.div
+                  key={cond.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(index * 0.02, 0.25) }}
+                  whileHover={{ y: -4 }}
+                  className="group h-full flex flex-col"
+                >
+                  <div className="relative h-full rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden shadow-lg hover:border-rose-500/50 hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-300">
+                    
+                    {/* Emergency Level Tag */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black border ${
+                        cond.emergencyLevel === 'حرج جداً' 
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                          : cond.emergencyLevel === 'طارئ'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                      }`}>
+                        {cond.emergencyLevel}
+                      </span>
+
+                      <span className="text-[10px] text-white/50 flex items-center gap-1 font-semibold">
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        {cond.goldenTime}
+                      </span>
+                    </div>
+
+                    {/* Title & Icon */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform">
+                        {cond.icon}
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-white text-base leading-snug group-hover:text-rose-300 transition-colors">
+                          {cond.name}
+                        </h3>
+                        <span className="text-[11px] text-white/50 block mt-0.5">
+                          {cond.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Immediate Quick Protocol Snapshot */}
+                    <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 mb-3 space-y-1">
+                      <span className="text-[10px] text-rose-400 font-bold block">🚨 خطوة المعلم الأولى:</span>
+                      <p className="text-xs text-white/80 line-clamp-2 leading-relaxed">
+                        {cond.teacherProtocol[0]}
+                      </p>
+                    </div>
+
+                    {/* Student Actions Sneak Peek */}
+                    <div className="bg-blue-500/5 p-2 rounded-xl border border-blue-500/15 mb-4 text-[11px] text-blue-200/90 flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <span className="truncate">دور الطلاب: {cond.studentActions[0]}</span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/10 mt-auto">
+                      <button
+                        onClick={() => {
+                          setActiveCondition(cond);
+                          setActiveTab('teacher');
+                        }}
+                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/30 transition-all"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>بروتوكول التصرف الفوري</span>
+                      </button>
+                    </div>
+
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-white text-base leading-snug group-hover:text-rose-300 transition-colors">
-                      {cond.name}
-                    </h3>
-                    <span className="text-[11px] text-white/50 block mt-0.5">
-                      {cond.category}
-                    </span>
-                  </div>
-                </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                {/* Immediate Quick Protocol Snapshot */}
-                <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 mb-3 space-y-1">
-                  <span className="text-[10px] text-rose-400 font-bold block">🚨 خطوة المعلم الأولى:</span>
-                  <p className="text-xs text-white/80 line-clamp-2 leading-relaxed">
-                    {cond.teacherProtocol[0]}
+        {/* ================= SECTION 2: SMART RAPID CLINICAL TRIAGE ================= */}
+        {mainSection === 'triage' && (
+          <div className="space-y-6">
+            {/* Triage Introduction & Legend */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold mb-2">
+                    <Activity className="w-3.5 h-3.5" />
+                    <span>نظام الفرز السريري المدرسي الميداني (School Triage)</span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white">
+                    حدّد الأعراض التي تلاحظها على الطالب فوراً
+                  </h3>
+                  <p className="text-xs sm:text-sm text-white/70 max-w-2xl mt-1 leading-relaxed">
+                    اختر عارضاً أو أكثر من القائمة بالأسفل. سيقوم النظام بحساب درجة الخطورة فوراً، وتحديد مستوى الكود (أحمر، أصفر، أخضر)، وعرض التوجيهات الفورية وروابط بروتوكول الحالة المسؤولة مباشرة.
                   </p>
                 </div>
 
-                {/* Student Actions Sneak Peek */}
-                <div className="bg-blue-500/5 p-2 rounded-xl border border-blue-500/15 mb-4 text-[11px] text-blue-200/90 flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span className="truncate">دور الطلاب: {cond.studentActions[0]}</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-2 border-t border-white/10 mt-auto">
+                {/* Clear Selection Button */}
+                {selectedTriageSymptoms.length > 0 && (
                   <button
-                    onClick={() => {
-                      setActiveCondition(cond);
-                      setActiveTab('teacher');
-                    }}
-                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/30 transition-all"
+                    onClick={() => setSelectedTriageSymptoms([])}
+                    className="self-start md:self-center px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all flex items-center gap-1.5"
                   >
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    <span>بروتوكول التصرف الفوري</span>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>إعادة ضبط الأعراض ({selectedTriageSymptoms.length})</span>
                   </button>
+                )}
+              </div>
+
+              {/* Triage Code Legend */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-white/10 text-xs">
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                  <div>
+                    <strong className="block font-bold">كود أحمر (حرج فوري):</strong>
+                    <span className="text-[11px] text-white/70">خطر حياة - 911 فوراً وتدخل أول 60 ثانية</span>
+                  </div>
                 </div>
 
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0" />
+                  <div>
+                    <strong className="block font-bold">كود أصفر (طارئ مستعجل):</strong>
+                    <span className="text-[11px] text-white/70">عيادة المدرسة وإشراف تمريضي خلال 5 دقائق</span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
+                  <div>
+                    <strong className="block font-bold">كود أخضر (إسعاف روتيني):</strong>
+                    <span className="text-[11px] text-white/70">إسعاف فصلي معتاد ومراقبة ومتابعة هادئة</span>
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+
+            {/* Live Triage Assessment Card */}
+            {triageAssessment ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`p-6 rounded-3xl border-2 ${triageAssessment.borderColor} ${triageAssessment.bgColor} backdrop-blur-2xl shadow-2xl space-y-5`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                  <div>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-black border mb-2 ${triageAssessment.badgeBg}`}>
+                      {triageAssessment.codeName}
+                    </span>
+                    <h4 className="text-lg sm:text-xl font-black text-white">
+                      نتيجة تقييم الفرز السريري (استناداً إلى {triageAssessment.selectedCount} أعراض محددة)
+                    </h4>
+                    <p className={`text-xs sm:text-sm font-semibold mt-1 ${triageAssessment.textColor}`}>
+                      {triageAssessment.summary}
+                    </p>
+                  </div>
+
+                  {triageAssessment.level === 'critical' && (
+                    <a
+                      href="tel:911"
+                      className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-600/40 animate-bounce self-start sm:self-center"
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                      <span>اتصال 911 فوراً</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* Instant Actions List */}
+                <div className="space-y-2">
+                  <span className="text-xs font-extrabold text-white/90 block">
+                    ⚡ الإجراءات الإسعافية الفورية الواجب اتخاذها الآن:
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {triageAssessment.actions.map((act, i) => (
+                      <div key={act.id} className="p-3 rounded-2xl bg-black/40 border border-white/10 flex items-start gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-white/10 text-white text-xs font-black flex items-center justify-center shrink-0">
+                          {i + 1}
+                        </span>
+                        <div>
+                          <strong className="text-xs text-white block mb-0.5">{act.label}</strong>
+                          <p className="text-[11px] text-amber-200/90 leading-relaxed">{act.action}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Associated Conditions Direct Jump */}
+                {triageAssessment.matchedConditions.length > 0 && (
+                  <div className="pt-3 border-t border-white/10 space-y-2.5">
+                    <span className="text-xs font-extrabold text-white/80 block">
+                      📋 افتح البروتوكول الكامل للحالات الطبية المرتبطة بهذه الأعراض:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {triageAssessment.matchedConditions.map(cond => (
+                        <button
+                          key={cond.id}
+                          onClick={() => {
+                            setActiveCondition(cond);
+                            setActiveTab('teacher');
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold flex items-center gap-2 transition-all hover:border-rose-400"
+                        >
+                          <span>{cond.icon}</span>
+                          <span>{cond.name}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-white/50" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <div className="p-6 rounded-3xl border border-dashed border-white/20 bg-white/[0.02] text-center space-y-2">
+                <Info className="w-8 h-8 text-white/30 mx-auto" />
+                <p className="text-sm font-bold text-white/70">لم يتم اختيار أي عارض بعد</p>
+                <p className="text-xs text-white/40">انقر على الأعراض الملاحظة بالأسفل لإجراء التقييم السريري الفوري وتحديد كود الطوارئ.</p>
+              </div>
+            )}
+
+            {/* Category Filter for Symptoms */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar justify-start sm:justify-center">
+              {[
+                { id: 'all', label: 'جميع الأعراض (17)' },
+                { id: 'الوعي والتنفس', label: 'الوعي والتنفس' },
+                { id: 'الجهاز العصبي', label: 'الجهاز العصبي' },
+                { id: 'الحساسية والتنفس', label: 'الحساسية والتنفس' },
+                { id: 'الجروح والنزيف', label: 'الجروح والنزيف' },
+                { id: 'إصابات الرأس', label: 'إصابات الرأس' },
+                { id: 'السكري والتمثيل الغذائي', label: 'السكري' },
+                { id: 'العظام والإصابات', label: 'العظام' },
+                { id: 'إسعاف فصلي', label: 'إسعاف فصلي' }
+              ].map(cat => {
+                const active = selectedTriageCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedTriageCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                      active
+                        ? "bg-amber-600 text-white border-amber-500 shadow-md shadow-amber-600/30"
+                        : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Symptoms Selection Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {TRIAGE_SYMPTOMS
+                .filter(sym => selectedTriageCategory === 'all' || sym.category === selectedTriageCategory)
+                .map((sym) => {
+                  const isChecked = selectedTriageSymptoms.includes(sym.id);
+                  const severityBadge = sym.severity === 'critical'
+                    ? { bg: 'bg-rose-500/20 text-rose-300 border-rose-500/40', text: 'حرج فوري' }
+                    : sym.severity === 'urgent'
+                    ? { bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40', text: 'طارئ مستعجل' }
+                    : { bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', text: 'إسعاف روتيني' };
+
+                  return (
+                    <div
+                      key={sym.id}
+                      onClick={() => {
+                        setSelectedTriageSymptoms(prev =>
+                          prev.includes(sym.id) ? prev.filter(x => x !== sym.id) : [...prev, sym.id]
+                        );
+                      }}
+                      className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between select-none ${
+                        isChecked
+                          ? 'bg-white/15 border-amber-400 shadow-lg shadow-amber-500/10'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${severityBadge.bg}`}>
+                            {severityBadge.text}
+                          </span>
+
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${
+                            isChecked
+                              ? 'bg-amber-500 border-amber-400 text-black font-black'
+                              : 'border-white/30 bg-black/20'
+                          }`}>
+                            {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                        </div>
+
+                        <h5 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                          {sym.label}
+                        </h5>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
+                        <span>{sym.category}</span>
+                        <span className="text-amber-300/80 font-semibold truncate max-w-[150px]">{sym.quickAction}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+
+        {/* ================= SECTION 3: PEDIATRIC VITAL SIGNS & EMERGENCY DOSAGES ================= */}
+        {mainSection === 'vitals' && (
+          <div className="space-y-6">
+            {/* Header & Stage Switcher */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-bold mb-2">
+                  <Stethoscope className="w-3.5 h-3.5" />
+                  <span>دليل العلامات الحيوية والجرعات الإسعافية المعتمدة لسن المدرسة</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white">
+                  المؤشرات الحيوية الطبيعية والجرعات الإسعافية حسب المرحلة العمرية
+                </h3>
+                <p className="text-xs sm:text-sm text-white/70 max-w-2xl mt-1 leading-relaxed">
+                  تختلف معدلات النبض والتنفس وضغط الدم الطبيعي وجرعات الإبينفرين والبخاخات باختلاف سن ووزن الطالب. اختر المرحلة الدراسية لعرض الحدود المرجعية المعتمدة.
+                </p>
+              </div>
+
+              {/* Age Stage Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-white/10">
+                {(['early', 'elementary', 'adolescent'] as AgeGroupKey[]).map(key => {
+                  const stage = VITAL_SIGNS_BY_AGE[key];
+                  const active = selectedAgeGroup === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedAgeGroup(key)}
+                      className={`p-3 rounded-2xl border text-right transition-all ${
+                        active
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-lg shadow-blue-600/30'
+                          : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <strong className="block text-sm font-black">{stage.stageName}</strong>
+                      <span className="text-[11px] opacity-80">{stage.ageRange}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Current Age Stage Vitals 5-Card Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              {/* Heart Rate */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-white/60">معدل النبض الطبيعي</span>
+                  <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400">
+                    <HeartPulse className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-lg font-black text-rose-300 block">
+                    {VITAL_SIGNS_BY_AGE[selectedAgeGroup].heartRate}
+                  </span>
+                  <span className="text-[10px] text-white/40 block mt-1">يُقاس من الشريان الكعبري أو السباتي</span>
+                </div>
+              </div>
+
+              {/* Respiratory Rate */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-white/60">معدل التنفس الطبيعي</span>
+                  <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400">
+                    <Wind className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-lg font-black text-cyan-300 block">
+                    {VITAL_SIGNS_BY_AGE[selectedAgeGroup].respiratoryRate}
+                  </span>
+                  <span className="text-[10px] text-white/40 block mt-1">يُحسب بعدد حركات الصدر لدقيقة كاملة</span>
+                </div>
+              </div>
+
+              {/* Blood Pressure */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-white/60">ضغط الدم المرجعي</span>
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-lg font-black text-amber-300 block">
+                    {VITAL_SIGNS_BY_AGE[selectedAgeGroup].bloodPressure}
+                  </span>
+                  <span className="text-[10px] text-white/40 block mt-1">انقباضي / انبساطي بوضعية الجلوس</span>
+                </div>
+              </div>
+
+              {/* Body Temperature */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-white/60">حرارة الجسم الطبيعية</span>
+                  <div className="p-2 rounded-xl bg-orange-500/20 text-orange-400">
+                    <Thermometer className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-lg font-black text-orange-300 block">
+                    {VITAL_SIGNS_BY_AGE[selectedAgeGroup].temperature}
+                  </span>
+                  <span className="text-[10px] text-white/40 block mt-1">الحمى المدرسية تبدأ من 38.0°C فما فوق</span>
+                </div>
+              </div>
+
+              {/* Oxygen Saturation */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-white/60">تشبع الأكسجين SpO2</span>
+                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+                    <Droplet className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-lg font-black text-emerald-300 block">
+                    {VITAL_SIGNS_BY_AGE[selectedAgeGroup].oxygenSaturation}
+                  </span>
+                  <span className="text-[10px] text-white/40 block mt-1">أقل من 94% يعتبر هبوط أكسجين يستدعي 911</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stage Clinical Notes Callout */}
+            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-200 text-xs flex items-center gap-3">
+              <Info className="w-5 h-5 text-blue-400 shrink-0" />
+              <span><strong>توجيه إكلينيكي لهذه المرحلة:</strong> {VITAL_SIGNS_BY_AGE[selectedAgeGroup].notes}</span>
+            </div>
+
+            {/* Emergency Dosages for Selected Stage */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
+              <div className="flex items-center gap-2">
+                <Pill className="w-5 h-5 text-amber-400" />
+                <h4 className="text-base sm:text-lg font-black text-white">
+                  الجرعات المعتمدة للحالات الإسعافية الطارئة لـ ({VITAL_SIGNS_BY_AGE[selectedAgeGroup].stageName})
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {VITAL_SIGNS_BY_AGE[selectedAgeGroup].emergencyDoses.map((item, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2">
+                    <span className="text-xs font-black text-amber-300 block">{item.drug}</span>
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-white font-mono font-bold text-xs">
+                      الجرعة: {item.dose}
+                    </div>
+                    <p className="text-[11px] text-white/60 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Permanent School Life-Saving Clinical Rules */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h4 className="text-base sm:text-lg font-black text-white">
+                  القواعد الذهبية المعتمدة للتدخل الإسعافي المدرسي
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 space-y-1.5">
+                  <strong className="text-rose-300 font-bold block">1. الإنعاش القلبي (CPR):</strong>
+                  <p className="text-white/70 leading-relaxed text-[11px]">
+                    30 ضغطة صدرية بمعدل 100-120/دقيقة في منتصف الصدر لعمق 5 سم، يليها نفسان إنقاذيان (أو ضغطات مستمرة بدون توقف).
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 space-y-1.5">
+                  <strong className="text-cyan-300 font-bold block">2. غسل الحروق والمواد الكيميائية:</strong>
+                  <p className="text-white/70 leading-relaxed text-[11px]">
+                    ماء جارٍ فاتر لـ 15 إلى 20 دقيقة كاملة. ممنوع الثلج أو معجون الأسنان أو الزيوت نهائياً لتفادي تلف الجلد.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 space-y-1.5">
+                  <strong className="text-amber-300 font-bold block">3. بروتوكول الرعاف الطبي:</strong>
+                  <p className="text-white/70 leading-relaxed text-[11px]">
+                    إمالة الرأس للأمام قليلاً (وليس للخلف) والضغط المتواصل على جانبي الأنف اللحميين لـ 10 دقائق كاملة دون رفع الأصابع.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 space-y-1.5">
+                  <strong className="text-emerald-300 font-bold block">4. تثبيت الكسور والالتواء:</strong>
+                  <p className="text-white/70 leading-relaxed text-[11px]">
+                    تطبيق جبيرة مؤقتة بكرتون أو مجلة دون محاولة تعديل العظم المكسور، ووضع كيس ثلج ملفوف بقماش لتقليل الورم.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </main>
 

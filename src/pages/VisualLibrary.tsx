@@ -178,47 +178,45 @@ export const VisualLibrary: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-[#030712] text-slate-100 transition-colors duration-300 relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-slate-50 text-slate-900 transition-colors duration-300 relative overflow-hidden" dir="rtl">
       <SEO 
-        title="المكتبة البصرية العلمية 3D فائقة الدقة - Visual Science Studio" 
-        description="استكشف مئات المخططات العلمية عالية الدقة 4K، الرسوم البيانية، ونماذج المحاكاة ثلاثية الأبعاد في الفيزياء، الكيمياء، الأحياء، والفلك" 
-        keywords="المكتبة البصرية, انفوجرافيك علمي, رسوم بيانية, فيزياء, كيمياء, ذروة العلم, مخططات 4K, نماذج 3D" 
+        title="المكتبة البصرية والمخططات العلمية المعتمدة - Visual Science Atlas" 
+        description="استكشف مئات المخططات العلمية المعتمدة عالية الدقة 4K، الرسوم البيانية، ونماذج المحاكاة ثلاثية الأبعاد في الفيزياء، الكيمياء، الأحياء، والفلك" 
+        keywords="المكتبة البصرية, مخططات علمية, رسوم بيانية, فيزياء, كيمياء, ذروة العلم, مخططات 4K, نماذج 3D" 
       />
-
-      <StarField starCount={400} />
 
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 py-8 relative z-10 max-w-7xl space-y-8">
         
-        {/* Luxury Hero Banner with Cosmic Neon Accents */}
-        <div className="relative p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-blue-950/80 via-slate-900/90 to-cyan-950/70 border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-2xl overflow-hidden">
-          {/* Glowing orbs */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+        {/* Official Accredited Academic Hero Banner */}
+        <div className="relative p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm overflow-hidden">
+          {/* Subtle Institutional Gradients */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50/70 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-50/60 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] opacity-60 pointer-events-none" />
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-4 max-w-3xl">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center gap-2 shadow-sm">
-                  <ImageIcon className="w-4 h-4 text-cyan-400 animate-pulse" />
-                  أطلس المخططات العلمية التفاعلية (Visual Science Atlas)
+                <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/80 flex items-center gap-2 shadow-xs">
+                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                  أطلس المخططات العلمية المعتمدة (Visual Science Atlas)
                 </span>
-                <Badge variant="outline" className="text-xs font-mono border-blue-400/40 text-blue-300 bg-blue-950/40">
+                <Badge variant="outline" className="text-xs font-mono border-slate-300 text-slate-700 bg-slate-50">
                   4K Ultra-HD & Vector SVG
                 </Badge>
-                <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
-                  ✓ معتمدة وفق المناهج الحديثة
+                <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                  ✓ معتمدة ومطابقة للمناهج الدراسية
                 </Badge>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-200 to-indigo-300 leading-tight">
+              <h1 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight">
                 المكتبة البصرية والمخططات العلمية 3D
               </h1>
 
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-medium">
-                بوابتك الرقمية المرئية لمئات المخططات التشريحية، الرسوم البيانية الدقيقة، والتراكيب الجزيئية ثلاثية الأبعاد المصممة خصيصاً لتبسيط النظريات المعقدة وربطها مباشرة بالمختبرات الافتراضية.
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+                المستودع البصري الرسمي لمئات المخططات التشريحية الدقيقة، الرسوم البيانية المتجهة، والتراكيب الجزيئية ثلاثية الأبعاد المصممة خصيصاً لتبسيط النظريات وتيسير الشرح وربطها بالمختبرات الافتراضية.
               </p>
             </div>
 
@@ -227,34 +225,34 @@ export const VisualLibrary: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Metrics Ribbon */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-cyan-500/20 text-xs">
-            <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-slate-400 text-[11px] block">إجمالي المخططات الرقمية</span>
-              <div className="text-2xl font-black text-white mt-1">{assets.length} مخططاً</div>
-              <span className="text-[10px] text-cyan-400 font-bold">بدقة فائقة حتى 4K</span>
+          {/* Quick Metrics Ribbon - Light Official */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-200/80 text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70">
+              <span className="text-slate-500 text-[11px] block font-medium">إجمالي المخططات الرقمية</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">{assets.length} مخططاً</div>
+              <span className="text-[10px] text-blue-600 font-bold">بدقة فائقة حتى 4K</span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-slate-400 text-[11px] block">مربوطة بمختبرات حية</span>
-              <div className="text-2xl font-black text-cyan-400 mt-1">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70">
+              <span className="text-slate-500 text-[11px] block font-medium">مربوطة بمختبرات حية</span>
+              <div className="text-2xl font-black text-blue-600 mt-1">
                 {assets.filter(a => !!a.simulationUrl).length} تجربة 3D
               </div>
-              <span className="text-[10px] text-cyan-300">فتح مباشر للمختبر الافتراضي</span>
+              <span className="text-[10px] text-slate-500">فتح مباشر للمختبر الافتراضي</span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-slate-400 text-[11px] block">مجالات العلوم المغطاة</span>
-              <div className="text-2xl font-black text-blue-400 mt-1">6 تخصصات رئيسية</div>
-              <span className="text-[10px] text-slate-400">فيزياء • كيمياء • أحياء • فلك</span>
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70">
+              <span className="text-slate-500 text-[11px] block font-medium">مجالات العلوم المغطاة</span>
+              <div className="text-2xl font-black text-indigo-600 mt-1">6 تخصصات رئيسية</div>
+              <span className="text-[10px] text-slate-500">فيزياء • كيمياء • أحياء • فلك</span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-slate-400 text-[11px] block">التنزيلات والاستخدام</span>
-              <div className="text-2xl font-black text-emerald-400 mt-1">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70">
+              <span className="text-slate-500 text-[11px] block font-medium">التنزيلات والاستخدام</span>
+              <div className="text-2xl font-black text-emerald-600 mt-1">
                 {assets.reduce((acc, a) => acc + a.downloadsCount, 0).toLocaleString()} تحميلاً
               </div>
-              <span className="text-[10px] text-emerald-300">متاحة مجاناً للطلبة والمعلمين</span>
+              <span className="text-[10px] text-emerald-700">متاحة مجاناً للطلبة والمعلمين</span>
             </div>
           </div>
         </div>
@@ -272,14 +270,14 @@ export const VisualLibrary: React.FC = () => {
                   onClick={() => setSelectedSubject(cat.id)}
                   className={`py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shrink-0 border ${
                     isSelected
-                      ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white border-cyan-400/60 shadow-lg shadow-cyan-500/25 scale-[1.03]'
-                      : 'bg-slate-900/90 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white hover:bg-slate-850'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100/80 hover:text-slate-900'
                   }`}
                 >
                   <span className="text-base">{cat.icon}</span>
                   <span>{cat.label}</span>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
                   }`}>
                     {cat.count}
                   </span>
@@ -289,22 +287,22 @@ export const VisualLibrary: React.FC = () => {
           </div>
 
           {/* Filter Bar 1: Search + Fast Filter Switches + Sort & View Modes */}
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/95 border border-slate-800/90 shadow-2xl backdrop-blur-xl space-y-4">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-4">
             
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
               {/* Search Field */}
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-cyan-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ابحث باسم المخطط، المفهوم العلمي، أو الكلمات المفتاحية (مثال: بور، DNA، كريسبر، ليدار، سنيل)..."
-                  className="h-11 pr-11 pl-10 text-xs sm:text-sm rounded-2xl bg-slate-950/80 border-slate-700/80 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
+                  className="h-11 pr-11 pl-10 text-xs sm:text-sm rounded-2xl bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                 />
                 {searchQuery && (
                   <button 
                     onClick={() => setSearchQuery('')}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -314,28 +312,28 @@ export const VisualLibrary: React.FC = () => {
               {/* Controls Group */}
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-between lg:justify-end">
                 {/* Sort selector */}
-                <div className="flex items-center gap-1.5 text-xs bg-slate-950/80 px-3 py-1.5 rounded-2xl border border-slate-800">
-                  <span className="text-slate-400 shrink-0">الترتيب:</span>
+                <div className="flex items-center gap-1.5 text-xs bg-slate-50 px-3 py-1.5 rounded-2xl border border-slate-200">
+                  <span className="text-slate-500 shrink-0 font-medium">الترتيب:</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="bg-transparent text-cyan-300 font-bold border-none outline-none cursor-pointer text-xs"
+                    className="bg-transparent text-blue-700 font-bold border-none outline-none cursor-pointer text-xs"
                   >
-                    <option value="downloads" className="bg-slate-900 text-slate-200">الأكثر تحميلاً</option>
-                    <option value="views" className="bg-slate-900 text-slate-200">الأكثر مشاهدة</option>
-                    <option value="recent" className="bg-slate-900 text-slate-200">الأحدث إضافة</option>
-                    <option value="title" className="bg-slate-900 text-slate-200">أبجدياً (أ-ي)</option>
+                    <option value="downloads" className="bg-white text-slate-800">الأكثر تحميلاً</option>
+                    <option value="views" className="bg-white text-slate-800">الأكثر مشاهدة</option>
+                    <option value="recent" className="bg-white text-slate-800">الأحدث إضافة</option>
+                    <option value="title" className="bg-white text-slate-800">أبجدياً (أ-ي)</option>
                   </select>
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-200">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-xl transition-all ${
                       viewMode === 'grid' 
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'text-slate-400 hover:text-slate-700'
                     }`}
                     title="عرض الشبكة القياسي"
                   >
@@ -345,8 +343,8 @@ export const VisualLibrary: React.FC = () => {
                     onClick={() => setViewMode('detailed')}
                     className={`p-2 rounded-xl transition-all ${
                       viewMode === 'detailed' 
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'text-slate-400 hover:text-slate-700'
                     }`}
                     title="عرض البطاقات التفصيلية"
                   >
@@ -356,8 +354,8 @@ export const VisualLibrary: React.FC = () => {
                     onClick={() => setViewMode('compact')}
                     className={`p-2 rounded-xl transition-all ${
                       viewMode === 'compact' 
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'text-slate-400 hover:text-slate-700'
                     }`}
                     title="معرض الصور المصغر"
                   >
@@ -368,19 +366,19 @@ export const VisualLibrary: React.FC = () => {
             </div>
 
             {/* Filter Bar 2: Secondary Facets (Type, Level, Resolution, Fast Toggles) */}
-            <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
               
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Content Type Filter */}
-                <div className="flex items-center gap-1 bg-slate-950/60 p-1 rounded-2xl border border-slate-800/80">
+                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-200">
                   {typePills.map(t => (
                     <button
                       key={t.id}
                       onClick={() => setSelectedType(t.id)}
                       className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all ${
                         selectedType === t.id
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
                       {t.label}
@@ -392,7 +390,7 @@ export const VisualLibrary: React.FC = () => {
                 <select
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value)}
-                  className="h-8 px-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 font-medium"
+                  className="h-8 px-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-medium"
                 >
                   <option value="all">كافة المراحل الدراسية</option>
                   <option value="basic">المرحلة الأساسية</option>
@@ -404,7 +402,7 @@ export const VisualLibrary: React.FC = () => {
                 <select
                   value={selectedResolution}
                   onChange={(e) => setSelectedResolution(e.target.value)}
-                  className="h-8 px-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 font-medium"
+                  className="h-8 px-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-medium"
                 >
                   <option value="all">كافة دقات العرض</option>
                   <option value="4k">دقة فائقة 4K Ultra-HD</option>
@@ -419,13 +417,13 @@ export const VisualLibrary: React.FC = () => {
                   onClick={() => setOnlyWithSimulations(!onlyWithSimulations)}
                   className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border flex items-center gap-1.5 ${
                     onlyWithSimulations
-                      ? 'bg-purple-500/20 text-purple-300 border-purple-400/50 shadow-sm'
-                      : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'
+                      ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
                   }`}
                 >
-                  <Atom className="w-3.5 h-3.5 text-purple-400" />
+                  <Atom className="w-3.5 h-3.5 text-blue-600" />
                   <span>مربوطة بمختبر 3D فقط</span>
-                  {onlyWithSimulations && <Check className="w-3 h-3 text-purple-400" />}
+                  {onlyWithSimulations && <Check className="w-3 h-3 text-blue-600" />}
                 </button>
 
                 {/* Featured Toggle */}
@@ -433,20 +431,20 @@ export const VisualLibrary: React.FC = () => {
                   onClick={() => setOnlyFeatured(!onlyFeatured)}
                   className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border flex items-center gap-1.5 ${
                     onlyFeatured
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-400/50 shadow-sm'
-                      : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'
+                      ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                   <span>المختارة والمميزة</span>
-                  {onlyFeatured && <Check className="w-3 h-3 text-amber-400" />}
+                  {onlyFeatured && <Check className="w-3 h-3 text-amber-600" />}
                 </button>
 
                 {/* Reset Filters */}
                 {hasActiveFilters && (
                   <button
                     onClick={resetFilters}
-                    className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 transition-all flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-all flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>إعادة ضبط ({filteredAssets.length})</span>
@@ -456,12 +454,12 @@ export const VisualLibrary: React.FC = () => {
             </div>
 
             {/* Results count banner */}
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60">
+            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
               <span className="font-mono">
-                يتم عرض <strong className="text-cyan-400">{filteredAssets.length}</strong> من أصل {assets.length} أصلاً بيانياً
+                يتم عرض <strong className="text-blue-700 font-bold">{filteredAssets.length}</strong> من أصل {assets.length} أصلاً بيانياً
               </span>
               {hasActiveFilters && (
-                <span className="text-[11px] text-amber-300/80">الفلاتر المتقدمة مفعّلة</span>
+                <span className="text-[11px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">الفلاتر المتقدمة مفعّلة</span>
               )}
             </div>
           </div>
@@ -477,12 +475,12 @@ export const VisualLibrary: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
-                className="rounded-3xl bg-slate-900/90 border border-slate-800/90 hover:border-cyan-500/50 shadow-xl overflow-hidden flex flex-col justify-between transition-all group hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:-translate-y-1 duration-300"
+                className="rounded-3xl bg-white border border-slate-200/90 hover:border-blue-400 shadow-sm hover:shadow-xl overflow-hidden flex flex-col justify-between transition-all group hover:-translate-y-1 duration-300"
               >
                 {/* Image Preview with Hover Overlay */}
                 <div 
                   onClick={() => setSelectedAssetModal(asset)}
-                  className="relative h-60 overflow-hidden cursor-pointer bg-slate-950"
+                  className="relative h-60 overflow-hidden cursor-pointer bg-slate-100"
                 >
                   <img 
                     src={asset.imageUrl} 
@@ -490,18 +488,18 @@ export const VisualLibrary: React.FC = () => {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent" />
 
                   {/* Top Badges */}
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 flex-wrap">
-                    <Badge className="bg-slate-950/90 backdrop-blur-md text-cyan-300 border border-cyan-400/30 text-[10px] font-mono font-bold shadow-sm">
+                    <Badge className="bg-white/95 backdrop-blur-md text-slate-800 border border-slate-200 text-[10px] font-mono font-bold shadow-xs">
                       {asset.resolution}
                     </Badge>
-                    <Badge className="bg-blue-600/90 text-white text-[10px] font-bold shadow-sm">
+                    <Badge className="bg-blue-600 text-white text-[10px] font-bold shadow-xs">
                       {asset.subjectLabel}
                     </Badge>
                     {asset.isFeatured && (
-                      <Badge className="bg-amber-500/90 text-slate-950 text-[10px] font-black">
+                      <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">
                         ★ مميز
                       </Badge>
                     )}
@@ -509,25 +507,25 @@ export const VisualLibrary: React.FC = () => {
 
                   {/* Top Left: Level Badge */}
                   <div className="absolute top-3 left-3">
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900/80 backdrop-blur-md text-slate-300 border border-slate-700/80">
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/90 backdrop-blur-md text-slate-700 border border-slate-200">
                       {asset.levelLabel}
                     </span>
                   </div>
 
                   {/* Center Hover Action */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950/40 backdrop-blur-xs">
-                    <div className="p-3.5 rounded-2xl bg-cyan-500/20 backdrop-blur-md text-cyan-200 border border-cyan-400/40 shadow-xl flex items-center gap-2">
-                      <Maximize2 className="w-5 h-5 text-cyan-300" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/30 backdrop-blur-xs">
+                    <div className="p-3.5 rounded-2xl bg-white/95 text-slate-900 border border-slate-200 shadow-xl flex items-center gap-2">
+                      <Maximize2 className="w-5 h-5 text-blue-600" />
                       <span className="text-xs font-bold">معاينة وتكبير 4K</span>
                     </div>
                   </div>
 
                   {/* Bottom Image Info */}
-                  <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between text-[11px] text-slate-300">
-                    <span className="font-bold text-slate-200 bg-slate-900/80 px-2 py-0.5 rounded-md backdrop-blur-md">
+                  <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between text-[11px] text-white">
+                    <span className="font-bold text-white bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md">
                       {asset.assetTypeLabel}
                     </span>
-                    <span className="text-slate-300 font-mono bg-slate-900/80 px-2 py-0.5 rounded-md backdrop-blur-md">
+                    <span className="text-white font-mono bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md">
                       📥 {asset.downloadsCount.toLocaleString()} تحميلاً
                     </span>
                   </div>
@@ -536,10 +534,10 @@ export const VisualLibrary: React.FC = () => {
                 {/* Card Body */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
-                    <h3 className="text-base font-black text-white group-hover:text-cyan-300 transition-colors leading-snug line-clamp-2">
+                    <h3 className="text-base font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
                       {asset.title}
                     </h3>
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                       {asset.description}
                     </p>
                   </div>
@@ -549,7 +547,7 @@ export const VisualLibrary: React.FC = () => {
                     {asset.tags.slice(0, 4).map((t, idx) => (
                       <span 
                         key={idx}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 font-medium"
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium border border-slate-200/60"
                       >
                         #{t}
                       </span>
@@ -557,11 +555,11 @@ export const VisualLibrary: React.FC = () => {
                   </div>
 
                   {/* Card Actions */}
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                     <Button
                       onClick={() => setSelectedAssetModal(asset)}
                       size="sm"
-                      className="flex-1 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-md shadow-cyan-500/20 gap-1.5"
+                      className="flex-1 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs gap-1.5"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>معاينة وتكبير</span>
@@ -572,7 +570,7 @@ export const VisualLibrary: React.FC = () => {
                         <Button
                           size="icon"
                           variant="outline"
-                          className="rounded-xl border-purple-500/40 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300"
+                          className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
                           title={asset.simulationName || 'فتح المختبر التفاعلي 3D'}
                         >
                           <Atom className="w-4 h-4 animate-spin-slow" />
@@ -584,7 +582,7 @@ export const VisualLibrary: React.FC = () => {
                       onClick={() => handleDownload(asset)}
                       size="icon"
                       variant="outline"
-                      className="rounded-xl border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40"
+                      className="rounded-xl border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-300"
                       title="تنزيل بالأبعاد الأصلية"
                     >
                       <Download className="w-4 h-4" />
@@ -603,46 +601,46 @@ export const VisualLibrary: React.FC = () => {
               <motion.div
                 key={asset.id}
                 layout
-                className="rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-6 shadow-xl transition-all group"
+                className="rounded-3xl bg-white border border-slate-200/90 hover:border-blue-400 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-all group"
               >
                 <div 
                   onClick={() => setSelectedAssetModal(asset)}
-                  className="w-full sm:w-64 h-44 rounded-2xl overflow-hidden shrink-0 relative cursor-pointer bg-slate-950"
+                  className="w-full sm:w-64 h-44 rounded-2xl overflow-hidden shrink-0 relative cursor-pointer bg-slate-100"
                 >
                   <img 
                     src={asset.imageUrl} 
                     alt={asset.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                  <span className="absolute bottom-2 right-2 text-[10px] font-mono font-bold bg-slate-950/80 px-2 py-0.5 rounded text-cyan-300">
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
+                  <span className="absolute bottom-2 right-2 text-[10px] font-mono font-bold bg-white/95 px-2 py-0.5 rounded text-slate-800 border border-slate-200">
                     {asset.resolution}
                   </span>
                 </div>
 
                 <div className="flex-1 space-y-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-blue-600/90 text-white text-[10px]">{asset.subjectLabel}</Badge>
-                    <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-300">{asset.assetTypeLabel}</Badge>
-                    <span className="text-xs text-slate-400">{asset.levelLabel}</span>
-                    <span className="text-xs text-slate-500 font-mono mr-auto">📥 {asset.downloadsCount} تحميلاً</span>
+                    <Badge className="bg-blue-600 text-white text-[10px]">{asset.subjectLabel}</Badge>
+                    <Badge variant="outline" className="text-[10px] border-slate-200 text-slate-700 bg-slate-50">{asset.assetTypeLabel}</Badge>
+                    <span className="text-xs text-slate-500">{asset.levelLabel}</span>
+                    <span className="text-xs text-slate-400 font-mono mr-auto">📥 {asset.downloadsCount} تحميلاً</span>
                   </div>
 
                   <h3 
                     onClick={() => setSelectedAssetModal(asset)}
-                    className="text-lg font-black text-white hover:text-cyan-300 cursor-pointer transition-colors"
+                    className="text-lg font-black text-slate-900 hover:text-blue-600 cursor-pointer transition-colors"
                   >
                     {asset.title}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                     {asset.description}
                   </p>
 
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex flex-wrap gap-1.5">
                       {asset.tags.map((t, idx) => (
-                        <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                        <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">
                           #{t}
                         </span>
                       ))}
@@ -651,7 +649,7 @@ export const VisualLibrary: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {asset.simulationUrl && (
                         <Link to={asset.simulationUrl} target="_blank">
-                          <Button size="sm" variant="outline" className="rounded-xl border-purple-500/40 text-purple-400 hover:bg-purple-500/20 text-xs gap-1.5">
+                          <Button size="sm" variant="outline" className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 text-xs gap-1.5">
                             <Atom className="w-3.5 h-3.5" />
                             <span>المختبر 3D</span>
                           </Button>
@@ -660,7 +658,7 @@ export const VisualLibrary: React.FC = () => {
                       <Button
                         onClick={() => handleDownload(asset)}
                         size="sm"
-                        className="rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white gap-1.5"
+                        className="rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>تنزيل</span>
@@ -681,7 +679,7 @@ export const VisualLibrary: React.FC = () => {
                 key={asset.id}
                 layout
                 onClick={() => setSelectedAssetModal(asset)}
-                className="group relative h-44 rounded-2xl overflow-hidden cursor-pointer bg-slate-950 border border-slate-800 hover:border-cyan-500/60 shadow-lg transition-all"
+                className="group relative h-44 rounded-2xl overflow-hidden cursor-pointer bg-slate-100 border border-slate-200 hover:border-blue-400 shadow-xs hover:shadow-md transition-all"
               >
                 <img 
                   src={asset.imageUrl} 
@@ -690,7 +688,7 @@ export const VisualLibrary: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
                 <div className="absolute bottom-2 right-2 left-2 space-y-1">
-                  <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded inline-block">
+                  <span className="text-[9px] font-bold text-white bg-blue-600/90 px-1.5 py-0.5 rounded inline-block">
                     {asset.subjectLabel}
                   </span>
                   <p className="text-xs font-bold text-white line-clamp-2 leading-tight">
@@ -704,13 +702,13 @@ export const VisualLibrary: React.FC = () => {
 
         {/* Empty state */}
         {filteredAssets.length === 0 && (
-          <div className="text-center py-20 bg-slate-900/50 rounded-3xl border border-slate-800 p-8 space-y-4">
-            <ImageIcon className="w-16 h-16 mx-auto text-slate-600" />
+          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 space-y-4 shadow-sm">
+            <ImageIcon className="w-16 h-16 mx-auto text-slate-300" />
             <div className="space-y-1">
-              <h3 className="text-lg font-black text-white">لا توجد مخططات علمية مطابقة لمعايير البحث والفلترة</h3>
-              <p className="text-xs text-slate-400">جرب البحث بكلمات أخرى أو قم بإلغاء بعض الفلاتر المفعلة.</p>
+              <h3 className="text-lg font-black text-slate-900">لا توجد مخططات علمية مطابقة لمعايير البحث والفلترة</h3>
+              <p className="text-xs text-slate-500">جرب البحث بكلمات أخرى أو قم بإلغاء بعض الفلاتر المفعلة.</p>
             </div>
-            <Button onClick={resetFilters} className="rounded-xl text-xs font-bold bg-cyan-600 text-white">
+            <Button onClick={resetFilters} className="rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700">
               إعادة ضبط كافة الفلاتر
             </Button>
           </div>
@@ -718,44 +716,44 @@ export const VisualLibrary: React.FC = () => {
 
       </main>
 
-      {/* Luxury Interactive Lightbox Modal */}
+      {/* Official Light Interactive Lightbox Modal */}
       <AnimatePresence>
         {selectedAssetModal && (
           <Dialog open={!!selectedAssetModal} onOpenChange={() => { setSelectedAssetModal(null); setIsZoomed(false); }}>
-            <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-slate-950/95 border-cyan-500/30 text-slate-100 rounded-3xl p-6 sm:p-8 space-y-6 shadow-[0_0_60px_rgba(6,182,212,0.2)] backdrop-blur-2xl" dir="rtl">
-              <DialogHeader className="text-right space-y-3 pb-4 border-b border-slate-800">
+            <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-white border border-slate-200 text-slate-900 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl" dir="rtl">
+              <DialogHeader className="text-right space-y-3 pb-4 border-b border-slate-100">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs">
+                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold">
                       {selectedAssetModal.subjectLabel}
                     </Badge>
-                    <Badge variant="outline" className="text-xs font-mono border-blue-400/40 text-blue-300">
+                    <Badge variant="outline" className="text-xs font-mono border-slate-300 text-slate-700 bg-slate-50">
                       {selectedAssetModal.resolution}
                     </Badge>
-                    <span className="text-xs text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                    <span className="text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                       {selectedAssetModal.assetTypeLabel}
                     </span>
-                    <span className="text-xs text-purple-300 bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-500/30">
+                    <span className="text-xs text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
                       {selectedAssetModal.levelLabel}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+                  <div className="flex items-center gap-3 text-xs text-slate-500 font-mono">
                     <span>👁️ {selectedAssetModal.viewsCount.toLocaleString()} مشاهدة</span>
                     <span>📥 {selectedAssetModal.downloadsCount.toLocaleString()} تنزيلاً</span>
                   </div>
                 </div>
 
-                <DialogTitle className="text-xl sm:text-3xl font-black text-white leading-tight">
+                <DialogTitle className="text-xl sm:text-3xl font-black text-slate-900 leading-tight">
                   {selectedAssetModal.title}
                 </DialogTitle>
-                <DialogDescription className="text-xs sm:text-sm text-slate-400">
-                  {selectedAssetModal.category} • مرجع علمي رقمي مفتوح المصدر للطلبة والمعلمين
+                <DialogDescription className="text-xs sm:text-sm text-slate-500">
+                  {selectedAssetModal.category} • مرجع علمي معتمد مفتوح المصدر للطلبة والمعلمين
                 </DialogDescription>
               </DialogHeader>
 
               {/* Lightbox Main Image Display with Pan & Zoom */}
-              <div className="relative rounded-3xl overflow-hidden bg-black/80 border border-slate-800 flex items-center justify-center min-h-[380px] p-2">
+              <div className="relative rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center min-h-[380px] p-2">
                 <img 
                   src={selectedAssetModal.imageUrl} 
                   alt={selectedAssetModal.title}
@@ -768,33 +766,33 @@ export const VisualLibrary: React.FC = () => {
                 <div className="absolute bottom-4 left-4 flex items-center gap-2">
                   <button
                     onClick={() => setIsZoomed(!isZoomed)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-900/90 backdrop-blur-md text-xs font-bold text-white border border-slate-700 flex items-center gap-2 shadow-lg hover:border-cyan-400"
+                    className="px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md text-xs font-bold text-slate-700 border border-slate-200 flex items-center gap-2 shadow-sm hover:border-blue-400"
                   >
-                    {isZoomed ? <ZoomOut className="w-4 h-4 text-cyan-400" /> : <ZoomIn className="w-4 h-4 text-cyan-400" />}
+                    {isZoomed ? <ZoomOut className="w-4 h-4 text-blue-600" /> : <ZoomIn className="w-4 h-4 text-blue-600" />}
                     <span>{isZoomed ? 'تصغير (100%)' : 'تكبير الفحص (150%)'}</span>
                   </button>
                 </div>
 
                 <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md text-xs font-mono text-cyan-300 border border-cyan-500/30">
+                  <span className="px-3 py-1 rounded-xl bg-white/95 backdrop-blur-md text-xs font-mono text-blue-700 border border-blue-200 shadow-xs">
                     {selectedAssetModal.resolution}
                   </span>
                 </div>
               </div>
 
               {/* Description & Scientific Details */}
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <h4 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
                   <span>الشرح العلمي والتفاصيل المنهجية المعتمدة:</span>
                 </h4>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
                   {selectedAssetModal.description}
                 </p>
 
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800/80">
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200">
                   {selectedAssetModal.tags.map((t, idx) => (
-                    <span key={idx} className="text-[10px] px-2.5 py-1 rounded-md bg-slate-950 text-slate-400 border border-slate-800">
+                    <span key={idx} className="text-[10px] px-2.5 py-1 rounded-md bg-white text-slate-600 border border-slate-200">
                       #{t}
                     </span>
                   ))}
@@ -803,19 +801,19 @@ export const VisualLibrary: React.FC = () => {
 
               {/* Related 3D Simulation Link Banner */}
               {selectedAssetModal.simulationUrl && (
-                <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-900/80 to-blue-950/60 border border-purple-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                <div className="p-5 rounded-2xl bg-blue-50/80 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                   <div className="space-y-1">
-                    <div className="text-sm font-bold text-purple-300 flex items-center gap-2">
-                      <Atom className="w-5 h-5 text-purple-400 animate-spin-slow" />
+                    <div className="text-sm font-bold text-blue-900 flex items-center gap-2">
+                      <Atom className="w-5 h-5 text-blue-600 animate-spin-slow" />
                       <span>المختبر التفاعلي المرتبط بهذا الرسم البياني</span>
                     </div>
-                    <p className="text-xs text-slate-300">
-                      جرّب المفهوم عملياً داخل مختبر محاكاة: <strong className="text-white">{selectedAssetModal.simulationName}</strong>
+                    <p className="text-xs text-slate-600">
+                      جرّب المفهوم عملياً داخل مختبر محاكاة: <strong className="text-blue-900 font-bold">{selectedAssetModal.simulationName}</strong>
                     </p>
                   </div>
 
                   <Link to={selectedAssetModal.simulationUrl} target="_blank">
-                    <Button className="rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white gap-2 shrink-0 shadow-lg shadow-purple-500/25">
+                    <Button className="rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2 shrink-0 shadow-xs">
                       <Play className="w-4 h-4 fill-current" />
                       <span>تشغيل المختبر 3D الآن</span>
                     </Button>
@@ -824,11 +822,11 @@ export const VisualLibrary: React.FC = () => {
               )}
 
               {/* Modal Actions */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
                 <Button
                   onClick={() => { setSelectedAssetModal(null); setIsZoomed(false); }}
                   variant="outline"
-                  className="rounded-xl text-xs border-slate-800 text-slate-400 hover:text-white"
+                  className="rounded-xl text-xs border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 >
                   إغلاق النافذة
                 </Button>
@@ -837,15 +835,15 @@ export const VisualLibrary: React.FC = () => {
                   <Button
                     onClick={() => copyImageLink(selectedAssetModal.imageUrl)}
                     variant="outline"
-                    className="rounded-xl text-xs gap-1.5 border-slate-700 hover:border-slate-600 text-slate-200"
+                    className="rounded-xl text-xs gap-1.5 border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
                   >
-                    {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedLink ? 'تم النسخ' : 'نسخ الرابط المباشر'}</span>
                   </Button>
 
                   <Button
                     onClick={() => handleDownload(selectedAssetModal)}
-                    className="rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white gap-2 shadow-lg shadow-cyan-500/25"
+                    className="rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-xs"
                   >
                     <Download className="w-4 h-4" />
                     <span>تنزيل الأصل البصري بالدقة الكاملة ({selectedAssetModal.resolution})</span>

@@ -236,6 +236,63 @@ const EducationSectionContent: React.FC = () => {
       borderColor: 'border-purple-200 dark:border-purple-800/40',
       link: '/study-organization',
       features: ['صانع جداول المذاكرة الذكية', 'قائمة مهام يومية وأسبوعية', 'مؤقت بومودورو للتركيز', 'تقارير الإنجاز الأكاديمي']
+    },
+    // Dedicated Educational Subject Platforms
+    {
+      id: 'math',
+      title: 'منصة الرياضيات والتحليل الرياضي',
+      category: 'academic',
+      categoryLabel: 'المنصات التعليمية التخصصية',
+      badge: 'منهاج وزاري متقدم',
+      description: 'بيئة تفاعلية متكاملة لدراسة الرياضيات، الاشتقاق والتكامل، رسم المنحنيات ثلاثية الأبعاد، وبنك المسائل الوزارية المحلولة خطوة بخطوة.',
+      icon: '📐',
+      color: 'from-blue-600 to-indigo-600',
+      bgLight: 'bg-blue-50 dark:bg-blue-950/20',
+      borderColor: 'border-blue-200 dark:border-blue-800/40',
+      link: '/math',
+      features: ['حساب التفاضل والتكامل 3D', 'الجبر الخطي والمصفوفات', 'بنك المسائل والحل النموذجي', 'رسوم تفاعلية فورية']
+    },
+    {
+      id: 'chemistry',
+      title: 'منصة الكيمياء والتفاعلات الجزيئية',
+      category: 'academic',
+      categoryLabel: 'المنصات التعليمية التخصصية',
+      badge: 'مختبر كيميائي حي',
+      description: 'محاكاة تفاعلات كيميائية حية، الجدول الدوري التفاعلي ثلاثي الأبعاد، موازنة المعادلات، وحسابات سرعة التفاعل وثابت الاتزان.',
+      icon: '🧪',
+      color: 'from-teal-600 to-emerald-600',
+      bgLight: 'bg-teal-50 dark:bg-teal-950/20',
+      borderColor: 'border-teal-200 dark:border-teal-800/40',
+      link: '/chemistry',
+      features: ['الجدول الدوري ثلاثي الأبعاد', 'تفاعلات التأكسد والاختزال', 'موازنة المعادلات الكيميائية', 'الروابط والكيمياء العضوية']
+    },
+    {
+      id: 'physics',
+      title: 'منصة الفيزياء والكونيات المتقدمة',
+      category: 'academic',
+      categoryLabel: 'المنصات التعليمية التخصصية',
+      badge: 'فيزياء تطبيقية ونظرية',
+      description: 'منصة متخصصة في محاكاة قوانين نيوتن، الكهرومغناطيسية، البصريات الهندسية، والفيزياء النووية مع أدوات قياس رقمية ومسائل وزارية.',
+      icon: '⚛️',
+      color: 'from-cyan-600 to-blue-600',
+      bgLight: 'bg-cyan-50 dark:bg-cyan-950/20',
+      borderColor: 'border-cyan-200 dark:border-cyan-800/40',
+      link: '/physics',
+      features: ['الميكانيكا والمقذوفات', 'المجالات الكهربائية والمغناطيسية', 'فيزياء الكم والنسبية', 'أجهزة قياس معملية دقيقة']
+    },
+    {
+      id: 'biology',
+      title: 'منصة الأحياء والعلوم الحياتية',
+      category: 'academic',
+      categoryLabel: 'المنصات التعليمية التخصصية',
+      badge: 'علوم حياتية معتمدة',
+      description: 'استكشاف مجسمات ثلاثية الأبعاد للخلية الحية، تضاعف DNA وبناء البروتينات، التنوع الحيوي، وأطالس التشريح التفاعلية فائقة الدقة.',
+      icon: '🧬',
+      color: 'from-emerald-600 to-green-600',
+      bgLight: 'bg-emerald-50 dark:bg-emerald-950/20',
+      borderColor: 'border-emerald-200 dark:border-emerald-800/40',
+      link: '/biology',
+      features: ['تضاعف DNA وبناء البروتين', 'الهندسة الوراثية وكريسبر', 'أطلس التشريح البشري 3D', 'بيولوجيا الخلية والأيض']
     }
   ];
 
@@ -539,6 +596,18 @@ const EducationSectionContent: React.FC = () => {
                   }`}
                 >
                   جميع المنصات ({platforms.length})
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('academic')}
+                  className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
+                    selectedCategory === 'academic'
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-500/25'
+                      : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 hover:bg-blue-100'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>المنصات التعليمية (الرياضيات، الكيمياء، الفيزياء، الأحياء)</span>
+                  <Badge className="px-1.5 py-0 text-[10px] bg-blue-500 text-white">4</Badge>
                 </button>
                 <button
                   onClick={() => setSelectedCategory('stem')}
