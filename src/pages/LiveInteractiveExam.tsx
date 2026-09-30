@@ -52,19 +52,27 @@ export const LiveInteractiveExam: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [finalSubmission, setFinalSubmission] = useState<StudentExamSubmission | null>(null);
 
-  // Load Exam Package
+  // Load Exam Package (Local + Cloud)
   useEffect(() => {
     if (!examId) {
       setIsLoading(false);
       return;
     }
 
-    const pkg = aiExamService.getOnlineExam(examId);
-    if (pkg) {
-      setExamPackage(pkg);
-      setTimeLeftSeconds(pkg.allowedMinutes * 60);
+    const cached = aiExamService.getOnlineExam(examId);
+    if (cached) {
+      setExamPackage(cached);
+      setTimeLeftSeconds(cached.allowedMinutes * 60);
+      setIsLoading(false);
+    } else {
+      aiExamService.getOnlineExamAsync(examId).then((cloudPkg) => {
+        if (cloudPkg) {
+          setExamPackage(cloudPkg);
+          setTimeLeftSeconds(cloudPkg.allowedMinutes * 60);
+        }
+        setIsLoading(false);
+      }).catch(() => setIsLoading(false));
     }
-    setIsLoading(false);
   }, [examId]);
 
   // Countdown Timer

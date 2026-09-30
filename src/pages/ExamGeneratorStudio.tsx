@@ -269,10 +269,13 @@ export const ExamGeneratorStudio: React.FC = () => {
     });
   };
 
-  // Load submissions when switching tabs
+  // Load submissions when switching tabs (Local + Supabase Cloud)
   useEffect(() => {
     if (activeExamPackageId) {
       setSubmissions(aiExamService.getSubmissionsForExam(activeExamPackageId));
+      aiExamService.getSubmissionsForExamAsync(activeExamPackageId).then(cloudSubs => {
+        setSubmissions(cloudSubs);
+      }).catch(() => {});
     }
   }, [activeTab, activeExamPackageId]);
 

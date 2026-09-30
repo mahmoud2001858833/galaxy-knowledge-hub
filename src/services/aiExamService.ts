@@ -1,8 +1,5 @@
-/**
- * AI Exam & Pedagogical Question Generation Service
- * Powered by high-capability LLM routing, Bloom's Cognitive Taxonomy,
- * Visual Scientific Diagram Generators, and Multi-Format Exports.
- */
+import { supabase } from '@/integrations/supabase/client';
+
 
 export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
 export type QuestionType = 'mcq' | 'true_false' | 'analytical' | 'calculation' | 'all_mixed';
@@ -380,7 +377,7 @@ export class AIExamService {
   }
 
   /**
-   * Save an Online Exam Package for Student Sharing
+   * Save an Online Exam Package for Student Sharing (Local Cache + Supabase Cloud)
    */
   public saveOnlineExam(exam: FullExamStructure, regConfig: OnlineExamRegistrationConfig): OnlineExamPackage {
     const pkg: OnlineExamPackage = {
@@ -392,6 +389,7 @@ export class AIExamService {
       allowedMinutes: exam.durationMinutes
     };
 
+    // 1. Local Cache
     try {
       const existing = localStorage.getItem(ONLINE_EXAMS_STORAGE_KEY);
       const list: OnlineExamPackage[] = existing ? JSON.parse(existing) : [];
@@ -399,11 +397,31 @@ export class AIExamService {
       localStorage.setItem(ONLINE_EXAMS_STORAGE_KEY, JSON.stringify(list));
     } catch {}
 
+    // 2. Cloud Supabase Storage
+    try {
+      supabase.from('ai_exam_packages').insert({
+        id: pkg.id,
+        exam_title: exam.examTitle,
+        subject: exam.subject,
+        grade_level: exam.gradeLevel,
+        topic: exam.sections[0]?.questions[0]?.questionText?.slice(0, 50) || exam.subject,
+        total_marks: exam.totalMarks,
+        duration_minutes: exam.durationMinutes,
+        school_name: exam.schoolName,
+        academic_year: exam.academicYear,
+        source_document_name: exam.sourceDocumentName,
+        exam_data: pkg.exam as any,
+        registration_config: pkg.registrationConfig as any
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase exam package sync:', error.message);
+      }).catch(() => {});
+    } catch {}
+
     return pkg;
   }
 
   /**
-   * Get an Online Exam Package by ID
+   * Get an Online Exam Package by ID (Synchronous from Local Cache)
    */
   public getOnlineExam(examId: string): OnlineExamPackage | null {
     try {
@@ -417,19 +435,84 @@ export class AIExamService {
   }
 
   /**
-   * Record a Student Exam Submission
+   * Get an Online Exam Package by ID (Async with Supabase Cloud Fallback)
+   */
+  public async getOnlineExamAsync(examId: string): Promise<OnlineExamPackage | null> {
+    // 1. Try local cache first
+    const cached = this.getOnlineExam(examId);
+    if (cached) return cached;
+
+    // 2. Fetch from Supabase Cloud Database
+    try {
+      const { data, error } = await supabase
+        .from('ai_exam_packages')
+        .select('*')
+        .eq('id', examId)
+        .single();
+
+      if (!error && data) {
+        const pkg: OnlineExamPackage = {
+          id: data.id,
+          exam: data.exam_data as FullExamStructure,
+          registrationConfig: data.registration_config as OnlineExamRegistrationConfig,
+          createdAt: data.created_at,
+          active: true,
+          allowedMinutes: data.duration_minutes || 45
+        };
+
+        // Cache locally for faster offline access
+        try {
+          const existing = localStorage.getItem(ONLINE_EXAMS_STORAGE_KEY);
+          const list: OnlineExamPackage[] = existing ? JSON.parse(existing) : [];
+          if (!list.some(p => p.id === pkg.id)) {
+            list.unshift(pkg);
+            localStorage.setItem(ONLINE_EXAMS_STORAGE_KEY, JSON.stringify(list));
+          }
+        } catch {}
+
+        return pkg;
+      }
+    } catch {}
+
+    return null;
+  }
+
+  /**
+   * Record a Student Exam Submission (Local Cache + Supabase Cloud)
    */
   public submitStudentExam(submission: StudentExamSubmission) {
+    // 1. Local Cache
     try {
       const existing = localStorage.getItem(SUBMISSIONS_STORAGE_KEY);
       const list: StudentExamSubmission[] = existing ? JSON.parse(existing) : [];
       list.unshift(submission);
       localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(list));
     } catch {}
+
+    // 2. Cloud Supabase Storage
+    try {
+      supabase.from('ai_exam_submissions').insert({
+        id: submission.id,
+        exam_id: submission.examId,
+        student_name: submission.studentName,
+        student_class: submission.studentClass,
+        section: submission.section,
+        seat_number: submission.seatNumber,
+        school_name: submission.schoolName,
+        answers: (submission.answers || {}) as any,
+        score: submission.score,
+        total_possible: submission.totalPossible,
+        percentage: submission.percentage,
+        time_taken_minutes: submission.timeTakenMinutes,
+        submitted_at: submission.submittedAt
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase submission sync:', error.message);
+      }).catch(() => {});
+    } catch {}
   }
 
   /**
-   * Get all Submissions for a specific Exam
+   * Get all Submissions for a specific Exam (Synchronous from Local Cache)
    */
   public getSubmissionsForExam(examId: string): StudentExamSubmission[] {
     try {
@@ -440,6 +523,44 @@ export class AIExamService {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * Get all Submissions for a specific Exam (Async with Supabase Cloud Sync)
+   */
+  public async getSubmissionsForExamAsync(examId: string): Promise<StudentExamSubmission[]> {
+    const local = this.getSubmissionsForExam(examId);
+    try {
+      const { data, error } = await supabase
+        .from('ai_exam_submissions')
+        .select('*')
+        .eq('exam_id', examId)
+        .order('submitted_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const cloudSubmissions: StudentExamSubmission[] = data.map(row => ({
+          id: row.id,
+          examId: row.exam_id,
+          studentName: row.student_name,
+          studentClass: row.student_class || '',
+          section: row.section || '',
+          seatNumber: row.seat_number || '',
+          schoolName: row.school_name || '',
+          score: Number(row.score),
+          totalPossible: Number(row.total_possible),
+          percentage: Number(row.percentage),
+          submittedAt: row.submitted_at,
+          timeTakenMinutes: Number(row.time_taken_minutes || 0),
+          answers: (row.answers as Record<string, string>) || {}
+        }));
+
+        const mergedMap = new Map<string, StudentExamSubmission>();
+        local.forEach(s => mergedMap.set(s.id, s));
+        cloudSubmissions.forEach(s => mergedMap.set(s.id, s));
+        return Array.from(mergedMap.values());
+      }
+    } catch {}
+    return local;
   }
 
   /**
