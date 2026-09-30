@@ -220,6 +220,7 @@ export class AIExamService {
         bloom,
         subject,
         topic,
+        fileName: topic || subject,
         includeDiagrams,
         includeTables
       });
@@ -316,6 +317,7 @@ export class AIExamService {
 
     // If document is uploaded, synthesize all sections directly from the document text
     if (uploadedFileText && uploadedFileText.trim().length > 20) {
+      const docName = sourceDocumentName || topic || subject;
       const mcqQuestions = DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
         documentText: uploadedFileText,
         count: 4,
@@ -323,6 +325,7 @@ export class AIExamService {
         bloom: 'understand',
         subject,
         topic,
+        fileName: docName,
         includeDiagrams,
         includeTables: false
       });
@@ -334,6 +337,7 @@ export class AIExamService {
         bloom: 'apply',
         subject,
         topic,
+        fileName: docName,
         includeDiagrams: false,
         includeTables
       });
@@ -345,6 +349,7 @@ export class AIExamService {
         bloom: 'analyze',
         subject,
         topic,
+        fileName: docName,
         includeDiagrams,
         includeTables: false
       });

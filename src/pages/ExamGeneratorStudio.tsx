@@ -66,110 +66,7 @@ import {
 import { fileParserService, type ParsedDocumentResult } from '@/services/fileParserService';
 import { DocumentExamSynthesisEngine, type DocumentAnalysisResult } from '@/services/documentExamSynthesisEngine';
 import SafeBoundary from '@/components/common/SafeBoundary';
-
-export const BLOOM_LEVELS: { id: BloomLevel; label: string; desc: string; color: string }[] = [
-  { id: 'remember', label: 'تذكّر (Remember)', desc: 'استرجاع الحقائق والقوانين والمفاهيم الأساسية', color: 'from-blue-500 to-indigo-600' },
-  { id: 'understand', label: 'فهم (Understand)', desc: 'تفسير الظواهر والمقارنة بين المفاهيم', color: 'from-cyan-500 to-blue-600' },
-  { id: 'apply', label: 'تطبيق (Apply)', desc: 'استخدام القوانين في سياقات ومسائل جديدة', color: 'from-emerald-500 to-teal-600' },
-  { id: 'analyze', label: 'تحليل (Analyze)', desc: 'تفكيك المسألة واستنتاج العلاقات والرسوم البيانية', color: 'from-amber-500 to-orange-600' },
-  { id: 'evaluate', label: 'تقييم (Evaluate)', desc: 'إصدار أحكام ونقد الفرضيات والنتائج التجريبية', color: 'from-purple-500 to-pink-600' },
-  { id: 'create', label: 'ابتكار (Create)', desc: 'تصميم تجربة أو ابتكار حل علمي غير تقليدي', color: 'from-rose-500 to-red-600' }
-];
-
-export interface CurriculumPreset {
-  id: string;
-  badge: string;
-  title: string;
-  subject: string;
-  targetLevel: string;
-  topic: string;
-  durationMinutes: number;
-  totalMarks: number;
-  icon: string;
-  notes: string;
-  color: string;
-}
-
-export const CURRICULUM_PRESETS: CurriculumPreset[] = [
-  {
-    id: 'physics_tawjihi',
-    badge: 'توجيهي علمي',
-    title: 'فيزياء: الكهرومغناطيسية والكم',
-    subject: 'الفيزياء الحديثة والكلاسيكية',
-    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
-    topic: 'الحث الكهرومغناطيسي، الحث الذاتي والمتبادل، والظاهرة الكهروضوئية',
-    durationMinutes: 90,
-    totalMarks: 100,
-    icon: '⚛️',
-    notes: 'مخططات دوائر وتبرير كامل لجميع البدائل وتطبيق قوانين فاراداي ولنز وآينشتاين',
-    color: 'from-cyan-500 to-blue-600'
-  },
-  {
-    id: 'chemistry_tawjihi',
-    badge: 'توجيهي علمي',
-    title: 'كيمياء: الحموض والقواعد والاتزان',
-    subject: 'الكيمياء الحركية والعضوية',
-    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
-    topic: 'الاتزان في محاليل الحموض والقواعد وتأثير الأيون المشترك والمحلول المنظم pH',
-    durationMinutes: 90,
-    totalMarks: 100,
-    icon: '🧪',
-    notes: 'حسابات Ka و pH والمحلول المنظم وتحديد الأزواج المترافقة',
-    color: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'math_scientific',
-    badge: 'توجيهي علمي',
-    title: 'رياضيات: التفاضل وتطبيقات القيم القصوى',
-    subject: 'الرياضيات والتفاضل والتكامل',
-    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
-    topic: 'قواعد الاشتقاق، المعدلات المرتبطة بالزمن، وتطبيقات القيم القصوى الهندسية',
-    durationMinutes: 120,
-    totalMarks: 100,
-    icon: '📐',
-    notes: 'خطوات إيجاد المشتقات والمعدلات وتحديد إشارات المشتقة الأولى والثانية',
-    color: 'from-purple-500 to-indigo-600'
-  },
-  {
-    id: 'biology_tawjihi',
-    badge: 'توجيهي علمي',
-    title: 'علوم حياتية: الوراثة وتضاعف DNA',
-    subject: 'العلوم الحياتية والوراثة',
-    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
-    topic: 'الوراثة المندلية وسجل النسب، وتضاعف DNA وبناء البروتين والسيال العصبي',
-    durationMinutes: 90,
-    totalMarks: 100,
-    icon: '🧬',
-    notes: 'مربعات بانيت وحساب الروابط الهيدروجينية وترجمة كودونات mRNA',
-    color: 'from-rose-500 to-pink-600'
-  },
-  {
-    id: 'btec_robotics',
-    badge: 'BTEC دولي',
-    title: 'تكنولوجيا وBTEC: الروبوتات والمتحكمات',
-    subject: 'تكنولوجيا المعلومات BTEC',
-    targetLevel: 'مسار Pearson BTEC الدولي',
-    topic: 'المتحكمات الدقيقة، برمجة أردوينو، والحساسات الرقمية والتناظرية والتحكم PWM',
-    durationMinutes: 90,
-    totalMarks: 100,
-    icon: '🤖',
-    notes: 'حسابات التردد وزوايا المحركات الخطوية ومخطط الدوائر المتكاملة',
-    color: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'english_tawjihi',
-    badge: 'توجيهي أردني',
-    title: 'اللغة الإنجليزية: القراءة والقواعد',
-    subject: 'اللغة الإنجليزية (English Language)',
-    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
-    topic: 'Reading Comprehension, Conditionals, Passive Voice and Academic Collocations',
-    durationMinutes: 90,
-    totalMarks: 100,
-    icon: '🇬🇧',
-    notes: 'Grammar transformation, inferences, and contextual vocabulary analysis',
-    color: 'from-blue-600 to-sky-700'
-  }
-];
+import { BLOOM_LEVELS, CURRICULUM_PRESETS, type CurriculumPreset } from '@/constants/examPresets';
 
 export const ExamGeneratorStudio: React.FC = () => {
   const navigate = useNavigate();
@@ -378,7 +275,7 @@ export const ExamGeneratorStudio: React.FC = () => {
       setParsingStage(2);
       await new Promise(r => setTimeout(r, 300));
       setParsingStage(3);
-      const analysis = DocumentExamSynthesisEngine.analyzeDocument(result.extractedText);
+      const analysis = DocumentExamSynthesisEngine.analyzeDocument(result.extractedText, undefined, undefined, file.name);
       setDocAnalysis(analysis);
 
       // Stage 4: Proposition Classification
@@ -387,21 +284,47 @@ export const ExamGeneratorStudio: React.FC = () => {
 
       // Map domain to Arabic subject name
       const domainToSubject: Record<string, string> = {
-        physics: 'الفيزياء الحديثة والكلاسيكية',
-        chemistry: 'الكيمياء الحركية والعضوية',
-        biology: 'العلوم الحياتية والوراثة',
-        mathematics: 'الرياضيات والتفاضل والتكامل',
+        physics: 'الفيزياء (الثانوية العامة - التوجيهي الأردني)',
+        chemistry: 'الكيمياء (الثانوية العامة - التوجيهي الأردني)',
+        biology: 'العلوم الحياتية (الثانوية العامة - التوجيهي الأردني)',
+        mathematics: 'الرياضيات والتفاضل والتكامل (التوجيهي الأردني)',
         technology: 'تكنولوجيا المعلومات وBTEC',
         language_humanities: 'اللغة العربية والعلوم الإنسانية',
         general: 'العلوم العامة والمعارف المتكاملة'
       };
 
-      setSubject(domainToSubject[analysis.domain] || 'العلوم العامة والمعارف المتكاملة');
+      const detectedSubject = analysis.domain === 'chemistry' 
+        ? 'الكيمياء (الثانوية العامة - التوجيهي الأردني)'
+        : (domainToSubject[analysis.domain] || 'العلوم العامة والمعارف المتكاملة');
+      setSubject(detectedSubject);
+
       const detectedTopic = analysis.title || (result.topicsSummary.length > 0 && result.topicsSummary[0] !== 'المحتوى العلمي المرفق' ? result.topicsSummary.join(' • ') : file.name.replace(/\.[^/.]+$/, ''));
       setTopic(detectedTopic);
 
       setParsingStage(5);
       toast.success(`تم قراءة الملف وتحليل ${analysis.propositions.length} قضية علمية بالتفصيل الممل! 📄 (${result.wordCount} كلمة)`);
+
+      // Immediately synthesize the official ministerial examination paper directly from the uploaded file!
+      try {
+        toast.info('جارٍ توليد ورقة الامتحان الوزاري مباشرة من محتوى كتابك المفحوص... ⚡');
+        const exam = await aiExamService.generateOfficialExam({
+          subject: detectedSubject,
+          gradeLevel: targetLevel,
+          topic: detectedTopic,
+          durationMinutes: examDuration,
+          totalMarks: examTotalMarks,
+          uploadedFileText: result.extractedText,
+          sourceDocumentName: file.name,
+          includeDiagrams,
+          includeTables
+        });
+        if (schoolName) exam.schoolName = schoolName;
+        setGeneratedExam(exam);
+        setGeneratedQuestions(exam.sections.flatMap(s => s.questions));
+        toast.success(`تم بنجاح توليد ورقة الامتحان الوزاري المشتقة 100% من كتابك (${file.name})! 📄`);
+      } catch (genErr) {
+        console.warn('Auto generation after upload notice:', genErr);
+      }
     } catch (err: any) {
       console.error('File parsing error:', err);
       toast.error('حدث خطأ أثناء قراءة الملف، تأكد من سلامة المستند أو الصورة');
@@ -1804,6 +1727,28 @@ export const ExamGeneratorStudio: React.FC = () => {
                       >
                         <UploadCloud className="w-4 h-4" />
                         <span>انقر هنا لرفع ملف المنهاج وبدء الفحص الآن 📄</span>
+                      </Button>
+                    )}
+
+                    {/* Direct Generation Button if file is uploaded and ready */}
+                    {creationSource === 'file' && parsedFile && !generatedExam && (
+                      <Button
+                        type="button"
+                        onClick={handleGenerateFullExam}
+                        disabled={isGenerating}
+                        className="rounded-2xl text-xs h-12 px-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white font-black gap-2 shadow-lg shadow-emerald-500/25 hover:from-emerald-500 hover:to-cyan-500"
+                      >
+                        {isGenerating ? (
+                          <span className="flex items-center gap-2">
+                            <BrainCircuit className="w-4 h-4 animate-spin" />
+                            <span>جارٍ توليد الامتحان من كتابك...</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4" />
+                            <span>🚀 اضغط هنا لتوليد ورقة الامتحان الوزاري الآن من كتابك ({parsedFile.fileName.slice(0, 30)})</span>
+                          </span>
+                        )}
                       </Button>
                     )}
                   </div>
