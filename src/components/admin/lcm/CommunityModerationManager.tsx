@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   CommunityMessage,
   COMMUNITY_CHANNELS,
@@ -50,24 +51,87 @@ export const CommunityModerationManager: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'approved' | 'blocked'>('all');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Fetch live messages from Supabase on mount
+  useEffect(() => {
+    const fetchModerationMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_forum_messages')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const parsed: CommunityMessage[] = data.map((row: any) => {
+            if (row.raw_data && row.raw_data.id) {
+              return {
+                ...row.raw_data,
+                id: row.id,
+                isPinned: row.is_pinned ?? row.raw_data.isPinned,
+                status: row.status ?? row.raw_data.status,
+                reactions: row.reactions ?? row.raw_data.reactions,
+              };
+            }
+            return {
+              id: row.id,
+              studentName: row.student_name || row.author_name || 'طالب ذروة العلم',
+              studentAvatar: row.student_avatar || row.author_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+              studentRole: (row.student_role || row.author_role || 'طالب متميز') as any,
+              studentGrade: row.student_grade || row.author_grade || 'توجيهي علمي',
+              channelId: (row.channel_id || row.channel || 'general') as any,
+              content: row.content || '',
+              imageUrl: row.image_url || undefined,
+              platformMention: row.platform_mention || row.mention || undefined,
+              timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : 'الآن',
+              createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+              reactions: row.reactions || { thumbsUp: 0, inspiring: 0, question: 0, brilliant: 0 },
+              isPinned: !!row.is_pinned,
+              status: (row.status || row.moderation_status || 'approved') as any,
+              flagReason: row.flag_reason || undefined,
+              safetyScore: Number(row.safety_score) || 100,
+              replyTo: row.reply_to || undefined
+            };
+          });
+
+          setMessages(parsed);
+          localStorage.setItem('galaxy_community_messages_v1', JSON.stringify(parsed));
+        }
+      } catch (err) {
+        console.warn('Moderation fetch error:', err);
+      }
+    };
+
+    fetchModerationMessages();
+  }, []);
+
   // Sync to localStorage
   useEffect(() => {
     localStorage.setItem('galaxy_community_messages_v1', JSON.stringify(messages));
+    window.dispatchEvent(new Event('galaxy_community_updated'));
   }, [messages]);
 
   // Admin Actions
-  const handleDeleteMessage = (id: string) => {
+  const handleDeleteMessage = async (id: string) => {
     setMessages(prev => prev.filter(m => m.id !== id));
+    try {
+      await supabase.from('community_forum_messages').delete().eq('id', id);
+      await supabase.from('admin_audit_logs').insert({
+        action: 'DELETE_FORUM_MESSAGE',
+        details: { messageId: id }
+      });
+    } catch (err) {
+      console.warn('Error deleting message from Supabase:', err);
+    }
     toast({
       title: '🗑️ تم حذف الرسالة بنجاح',
-      description: 'أزيلت الرسالة فورياً من منتدى الطلبة العام.'
+      description: 'أزيلت الرسالة فورياً من منتدى الطلبة العام وقاعدة البيانات السحابية.'
     });
   };
 
-  const handleTogglePin = (id: string) => {
+  const handleTogglePin = async (id: string) => {
+    let nextState = false;
     setMessages(prev => prev.map(m => {
       if (m.id === id) {
-        const nextState = !m.isPinned;
+        nextState = !m.isPinned;
         toast({
           title: nextState ? '📌 تم تثبيت المنشور' : 'تم إلغاء التثبيت',
           description: nextState ? 'سيظهر المنشور في أعلى المنتدى كمساهمة علمية متميزة.' : ''
@@ -76,9 +140,21 @@ export const CommunityModerationManager: React.FC = () => {
       }
       return m;
     }));
+
+    try {
+      await supabase.from('community_forum_messages').update({ is_pinned: nextState }).eq('id', id);
+    } catch (err) {
+      console.warn('Error updating pin status:', err);
+    }
   };
 
-  const handleIssueWarning = (studentName: string) => {
+  const handleIssueWarning = async (studentName: string) => {
+    try {
+      await supabase.from('admin_audit_logs').insert({
+        action: 'ISSUE_STUDENT_WARNING',
+        details: { studentName, timestamp: new Date().toISOString() }
+      });
+    } catch (err) {}
     toast({
       title: `⚠️ تم إصدار إنذار رسمي للطالب: ${studentName}`,
       description: 'سيتلقى الطالب إشعاراً إدارياً رسمياً بضرورة الالتزام بالميثاق الأخلاقي.',
@@ -86,7 +162,13 @@ export const CommunityModerationManager: React.FC = () => {
     });
   };
 
-  const handleBanStudent = (studentName: string) => {
+  const handleBanStudent = async (studentName: string) => {
+    try {
+      await supabase.from('admin_audit_logs').insert({
+        action: 'BAN_STUDENT',
+        details: { studentName, durationDays: 7, timestamp: new Date().toISOString() }
+      });
+    } catch (err) {}
     toast({
       title: `🚫 تم حظر الطالب: ${studentName}`,
       description: 'تم تقييد وصول الطالب إلى منتدى المحادثة العامة لمدة 7 أيام.',
@@ -94,11 +176,21 @@ export const CommunityModerationManager: React.FC = () => {
     });
   };
 
-  const handleApproveMessage = (id: string) => {
+  const handleApproveMessage = async (id: string) => {
     setMessages(prev => prev.map(m => m.id === id ? { ...m, status: 'approved', safetyScore: 99.9 } : m));
+    try {
+      await supabase.from('community_forum_messages').update({
+        status: 'approved',
+        moderation_status: 'approved',
+        is_flagged: false,
+        safety_score: 99.9
+      }).eq('id', id);
+    } catch (err) {
+      console.warn('Error approving message in Supabase:', err);
+    }
     toast({
       title: '✅ تم اعتماد وتبرئة الرسالة',
-      description: 'أُعيد تصنيف الرسالة كمنشور آمن وموثوق.'
+      description: 'أُعيد تصنيف الرسالة كمنشور آمن وموثوق ومزامنتها سحابياً.'
     });
   };
 

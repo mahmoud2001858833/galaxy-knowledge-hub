@@ -153,10 +153,10 @@ export const AdminPuzzlesManagementHub: React.FC = () => {
   // Subject Metrics
   const metrics = useMemo(() => {
     const total = puzzles.length;
-    const physics = puzzles.filter(p => p.subject.includes('فيزياء')).length;
-    const chemistry = puzzles.filter(p => p.subject.includes('كيمياء')).length;
-    const biology = puzzles.filter(p => p.subject.includes('أحياء')).length;
-    const math = puzzles.filter(p => p.subject.includes('رياضيات')).length;
+    const physics = puzzles.filter(p => (p.subject || '').includes('فيزياء')).length;
+    const chemistry = puzzles.filter(p => (p.subject || '').includes('كيمياء')).length;
+    const biology = puzzles.filter(p => (p.subject || '').includes('أحياء')).length;
+    const math = puzzles.filter(p => (p.subject || '').includes('رياضيات')).length;
     const totalPoints = puzzles.reduce((acc, p) => acc + (p.points || 0), 0);
     return { total, physics, chemistry, biology, math, totalPoints };
   }, [puzzles]);
@@ -164,10 +164,13 @@ export const AdminPuzzlesManagementHub: React.FC = () => {
   // Filtered puzzles in repository
   const filteredPuzzles = useMemo(() => {
     return puzzles.filter(p => {
-      const matchSubject = selectedSubjectFilter === 'all' || p.subject.includes(selectedSubjectFilter);
+      const pSub = p.subject || '';
+      const pTitle = p.title || '';
+      const pQuestion = p.question || '';
+      const matchSubject = selectedSubjectFilter === 'all' || pSub.includes(selectedSubjectFilter);
       const matchDiff = selectedDiffFilter === 'all' || p.difficulty === selectedDiffFilter;
       const q = searchQuery.trim().toLowerCase();
-      const matchSearch = !q || p.title.toLowerCase().includes(q) || p.question.toLowerCase().includes(q);
+      const matchSearch = !q || pTitle.toLowerCase().includes(q) || pQuestion.toLowerCase().includes(q);
       return matchSubject && matchDiff && matchSearch;
     });
   }, [puzzles, selectedSubjectFilter, selectedDiffFilter, searchQuery]);

@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { PartnershipApplication } from '@/pages/InstitutionalPartnerships';
 
 const INITIAL_PARTNERSHIP_APPLICATIONS: PartnershipApplication[] = [];
@@ -45,24 +46,56 @@ export const InstitutionalPartnershipsManager: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
-  // Load authentic applications from storage (purge legacy fake seeds)
+  // Load authentic applications from storage and Supabase
   useEffect(() => {
     try {
       const stored = localStorage.getItem('galaxy_partnerships_requests');
       if (stored) {
         const parsed: PartnershipApplication[] = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          // Strictly purge legacy mock seeds (seed-1, seed-2...)
           const realOnly = parsed.filter(p => p && !p.id.startsWith('seed-'));
           setApplications(realOnly);
-          localStorage.setItem('galaxy_partnerships_requests', JSON.stringify(realOnly));
-          return;
         }
       }
-      setApplications([]);
-    } catch {
-      setApplications([]);
-    }
+    } catch {}
+
+    const fetchCloudPartnerships = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('institutional_partnerships')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const parsed: PartnershipApplication[] = data.map((d: any) => {
+            if (d.raw_data && d.raw_data.id) return d.raw_data;
+            return {
+              id: d.id,
+              refNumber: `PARTNER-${d.id.slice(-6)}`,
+              institutionName: d.organization_name,
+              institutionType: (d.organization_type || 'school') as any,
+              country: d.country || 'المملكة الأردنية الهاشمية',
+              city: d.city || 'عمان',
+              representativeName: d.representative_name,
+              roleTitle: d.representative_title || '',
+              email: d.email,
+              phone: d.phone || '',
+              studentCount: `${d.estimated_users || '500'} طالب`,
+              partnershipType: d.partnership_goals || 'ترخيص مختبرات 3D المدرسية',
+              notes: d.admin_notes || '',
+              status: (d.status === 'approved' ? 'mou_signed' : d.status === 'reviewing' ? 'reviewing' : 'new') as any,
+              submittedAt: d.created_at
+            };
+          });
+          setApplications(parsed);
+          localStorage.setItem('galaxy_partnerships_requests', JSON.stringify(parsed));
+        }
+      } catch (e) {
+        console.warn('Partnerships cloud fetch error:', e);
+      }
+    };
+
+    fetchCloudPartnerships();
   }, []);
 
   const saveApplications = (updated: PartnershipApplication[]) => {
@@ -74,7 +107,7 @@ export const InstitutionalPartnershipsManager: React.FC = () => {
     }
   };
 
-  const handleStatusChange = (appId: string, newStatus: PartnershipApplication['status']) => {
+  const handleStatusChange = async (appId: string, newStatus: PartnershipApplication['status']) => {
     const updated = applications.map(app => {
       if (app.id === appId) {
         return { ...app, status: newStatus };
@@ -82,16 +115,29 @@ export const InstitutionalPartnershipsManager: React.FC = () => {
       return app;
     });
     saveApplications(updated);
-    toast.success('تم تحديث حالة طلب الشراكة بنجاح');
+    try {
+      await supabase.from('institutional_partnerships').update({
+        status: newStatus === 'mou_signed' ? 'approved' : newStatus,
+        admin_notes: adminNotes || undefined
+      }).eq('id', appId);
+    } catch (err) {
+      console.warn('Supabase status update warning:', err);
+    }
+    toast.success('تم تحديث حالة طلب الشراكة بنجاح ومزامنتها');
     if (selectedApp && selectedApp.id === appId) {
       setSelectedApp({ ...selectedApp, status: newStatus });
     }
   };
 
-  const handleDelete = (appId: string) => {
+  const handleDelete = async (appId: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا السجل المؤسسي؟')) return;
     const updated = applications.filter(app => app.id !== appId);
     saveApplications(updated);
+    try {
+      await supabase.from('institutional_partnerships').delete().eq('id', appId);
+    } catch (err) {
+      console.warn('Supabase delete partnership warning:', err);
+    }
     toast.success('تم حذف السجل بنجاح');
     if (selectedApp && selectedApp.id === appId) {
       setSelectedApp(null);

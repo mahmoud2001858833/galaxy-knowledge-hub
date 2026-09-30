@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PartnershipApplication {
   id: string;
@@ -107,6 +108,24 @@ export const InstitutionalPartnerships: React.FC = () => {
       const existing: PartnershipApplication[] = existingStr ? JSON.parse(existingStr) : [];
       existing.unshift(newApplication);
       localStorage.setItem('galaxy_partnerships_requests', JSON.stringify(existing));
+
+      supabase.from('institutional_partnerships').insert({
+        id: newApplication.id,
+        organization_name: newApplication.institutionName,
+        organization_type: newApplication.institutionType,
+        representative_name: newApplication.representativeName,
+        representative_title: newApplication.roleTitle,
+        email: newApplication.email,
+        phone: newApplication.phone,
+        country: newApplication.country,
+        city: newApplication.city,
+        partnership_goals: `${newApplication.partnershipType} - ${newApplication.notes}`,
+        status: 'pending',
+        raw_data: newApplication,
+        created_at: newApplication.submittedAt
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase partnership insert warning:', error);
+      });
     } catch (err) {
       console.error('Failed to save to localStorage:', err);
     }

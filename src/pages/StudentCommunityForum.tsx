@@ -43,6 +43,7 @@ import {
 import { PlatformResourceMention, PLATFORM_MENTIONS_CATALOG } from '@/data/platformMentionsData';
 import { PlatformMentionModal } from '@/components/community/PlatformMentionModal';
 import { CommunityMessageCard } from '@/components/community/CommunityMessageCard';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'galaxy_community_messages_v1';
 const STUDENT_PROFILE_KEY = 'galaxy_community_student_profile_v1';
@@ -70,8 +71,9 @@ export const StudentCommunityForum: React.FC = () => {
   const [studentGrade, setStudentGrade] = useState<string>('توجيهي علمي');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
 
-  // Initialize and load messages
+  // Initialize and load messages with Supabase Cloud Sync
   useEffect(() => {
+    // 1. Instant load from localStorage
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -88,11 +90,73 @@ export const StudentCommunityForum: React.FC = () => {
         setStudentGrade(parsed.grade || 'توجيهي علمي');
       }
     } catch (e) {
-      console.error('Error loading community data', e);
+      console.error('Error loading community local cache', e);
       setMessages(INITIAL_COMMUNITY_MESSAGES);
     }
 
-    // Listen for storage changes or custom broadcast
+    // 2. Fetch live messages from Supabase
+    const fetchCloudMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_forum_messages')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const cloudMessages: CommunityMessage[] = data.map((row: any) => {
+            if (row.raw_data && row.raw_data.id) {
+              return {
+                ...row.raw_data,
+                id: row.id,
+                isPinned: row.is_pinned ?? row.raw_data.isPinned,
+                status: row.status ?? row.raw_data.status,
+                reactions: row.reactions ?? row.raw_data.reactions,
+              };
+            }
+            return {
+              id: row.id,
+              studentName: row.student_name || row.author_name || 'طالب ذروة العلم',
+              studentAvatar: row.student_avatar || row.author_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+              studentRole: (row.student_role || row.author_role || 'طالب متميز') as any,
+              studentGrade: row.student_grade || row.author_grade || 'توجيهي علمي',
+              channelId: (row.channel_id || row.channel || 'general') as any,
+              content: row.content || '',
+              imageUrl: row.image_url || undefined,
+              platformMention: row.platform_mention || row.mention || undefined,
+              timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : 'الآن',
+              createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+              reactions: row.reactions || { thumbsUp: 0, inspiring: 0, question: 0, brilliant: 0 },
+              isPinned: !!row.is_pinned,
+              status: (row.status || row.moderation_status || 'approved') as any,
+              flagReason: row.flag_reason || undefined,
+              safetyScore: Number(row.safety_score) || 100,
+              replyTo: row.reply_to || undefined
+            };
+          });
+
+          setMessages(cloudMessages);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudMessages));
+        }
+      } catch (err) {
+        console.warn('Supabase community fetch warning:', err);
+      }
+    };
+
+    fetchCloudMessages();
+
+    // 3. Subscribe to Realtime Postgres changes
+    const channel = supabase
+      .channel('public:community_forum_messages')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'community_forum_messages' },
+        () => {
+          fetchCloudMessages();
+        }
+      )
+      .subscribe();
+
+    // 4. Listen for local storage changes or custom broadcast
     const handleUpdate = () => {
       try {
         const updated = localStorage.getItem(STORAGE_KEY);
@@ -106,6 +170,7 @@ export const StudentCommunityForum: React.FC = () => {
     window.addEventListener('galaxy_community_updated', handleUpdate);
 
     return () => {
+      supabase.removeChannel(channel);
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('galaxy_community_updated', handleUpdate);
     };
@@ -118,6 +183,40 @@ export const StudentCommunityForum: React.FC = () => {
       window.dispatchEvent(new Event('galaxy_community_updated'));
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const syncMessageToCloud = async (msg: CommunityMessage) => {
+    try {
+      await supabase.from('community_forum_messages').upsert({
+        id: msg.id,
+        channel_id: msg.channelId,
+        channel: msg.channelId,
+        student_name: msg.studentName,
+        author_name: msg.studentName,
+        student_avatar: msg.studentAvatar,
+        author_avatar: msg.studentAvatar,
+        student_role: msg.studentRole,
+        author_role: msg.studentRole,
+        student_grade: msg.studentGrade,
+        author_grade: msg.studentGrade,
+        content: msg.content,
+        image_url: msg.imageUrl,
+        platform_mention: msg.platformMention,
+        mention: msg.platformMention,
+        reactions: msg.reactions,
+        is_pinned: !!msg.isPinned,
+        is_flagged: msg.status === 'flagged',
+        status: msg.status,
+        moderation_status: msg.status,
+        flag_reason: msg.flagReason,
+        safety_score: msg.safetyScore,
+        reply_to: msg.replyTo,
+        raw_data: msg,
+        created_at: new Date(msg.createdAt || Date.now()).toISOString(),
+      });
+    } catch (err) {
+      console.warn('Sync message to Supabase cloud warning:', err);
     }
   };
 
@@ -194,6 +293,7 @@ export const StudentCommunityForum: React.FC = () => {
 
     const updated = [newMessage, ...messages];
     saveMessages(updated);
+    syncMessageToCloud(newMessage);
 
     // Reset composer
     setInputText('');
@@ -210,34 +310,46 @@ export const StudentCommunityForum: React.FC = () => {
 
   // Reaction Handler
   const handleReaction = (messageId: string, type: 'thumbsUp' | 'inspiring' | 'question' | 'brilliant') => {
+    let targetMsg: CommunityMessage | undefined;
     const updated = messages.map(m => {
       if (m.id === messageId) {
-        return {
+        const mutated = {
           ...m,
           reactions: {
             ...m.reactions,
             [type]: (m.reactions[type] || 0) + 1,
           }
         };
+        targetMsg = mutated;
+        return mutated;
       }
       return m;
     });
     saveMessages(updated);
+    if (targetMsg) {
+      syncMessageToCloud(targetMsg);
+    }
   };
 
   // Report Handler
   const handleReport = (messageId: string) => {
+    let targetMsg: CommunityMessage | undefined;
     const updated = messages.map(m => {
       if (m.id === messageId) {
-        return {
+        const mutated = {
           ...m,
           status: 'flagged' as const,
           flagReason: 'بلاغ من طالب لمراجعة المشرف الإداري'
         };
+        targetMsg = mutated;
+        return mutated;
       }
       return m;
     });
     saveMessages(updated);
+    if (targetMsg) {
+      syncMessageToCloud(targetMsg);
+    }
     toast.info('تم تقديم البلاغ للرقابة الإدارية وسيتعامل المشرف معه فوراً.');
   };
 

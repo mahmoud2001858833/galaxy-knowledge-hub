@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Announcement {
   id: string;
@@ -67,7 +68,41 @@ export const SchoolBroadcastsManager: React.FC = () => {
     return INITIAL_ANNOUNCEMENTS;
   });
 
-  // Save clean announcements
+  // Fetch from Supabase on mount
+  useEffect(() => {
+    const fetchBroadcasts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('school_broadcasts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const loaded: Announcement[] = data.map((b: any) => ({
+            id: b.id,
+            title: b.title,
+            category: (b.category || 'academic') as Announcement['category'],
+            categoryLabel: b.category_label || 'إعلان عام',
+            targetAudience: (b.target_audience || 'all') as Announcement['targetAudience'],
+            audienceLabel: b.audience_label || 'الجميع',
+            content: b.content,
+            author: b.author || 'إدارة المنصة المدرسية',
+            createdAt: b.created_at ? new Date(b.created_at).toISOString().replace('T', ' ').slice(0, 16) : new Date().toISOString().replace('T', ' ').slice(0, 16),
+            viewsCount: b.views_count || 1,
+            acknowledgedCount: b.acknowledged_count || 0
+          }));
+          setAnnouncements(loaded);
+          localStorage.setItem('galaxy_school_broadcasts_v1', JSON.stringify(loaded));
+        }
+      } catch (err) {
+        console.warn('Failed to fetch broadcasts from Supabase:', err);
+      }
+    };
+
+    fetchBroadcasts();
+  }, []);
+
+  // Save clean announcements to localStorage
   useEffect(() => {
     localStorage.setItem('galaxy_school_broadcasts_v1', JSON.stringify(announcements));
   }, [announcements]);
@@ -93,7 +128,7 @@ export const SchoolBroadcastsManager: React.FC = () => {
     return matchesSearch && matchesCat;
   });
 
-  const handleCreateAnnouncement = (e: React.FormEvent) => {
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnn.title || !newAnn.content) {
       toast.error('يرجى كتابة عنوان ونص التعميم');
@@ -131,6 +166,25 @@ export const SchoolBroadcastsManager: React.FC = () => {
 
     setAnnouncements([created, ...announcements]);
     setIsCreateModalOpen(false);
+
+    try {
+      await supabase.from('school_broadcasts').insert({
+        id: created.id,
+        title: created.title,
+        category: created.category,
+        category_label: created.categoryLabel,
+        target_audience: created.targetAudience,
+        audience_label: created.audienceLabel,
+        content: created.content,
+        author: created.author,
+        views_count: created.viewsCount,
+        acknowledged_count: created.acknowledgedCount,
+        created_at: new Date().toISOString()
+      });
+    } catch (err) {
+      console.warn('Error inserting announcement to Supabase:', err);
+    }
+
     setNewAnn({
       title: '',
       category: 'academic',
@@ -138,12 +192,17 @@ export const SchoolBroadcastsManager: React.FC = () => {
       content: '',
       author: 'إدارة المنصة المدرسية'
     });
-    toast.success('تم بث التعميم ونشره فورياً لجميع الفئات المستهدفة!');
+    toast.success('تم بث التعميم ونشره سحابياً لجميع الفئات المستهدفة!');
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     setAnnouncements(prev => prev.filter(a => a.id !== id));
-    toast.success('تم حذف التعميم');
+    try {
+      await supabase.from('school_broadcasts').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Error deleting announcement from Supabase:', err);
+    }
+    toast.success('تم حذف التعميم من المنصة وقاعدة البيانات');
   };
 
   return (
